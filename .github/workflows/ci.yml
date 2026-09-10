@@ -3,8 +3,12 @@ on:
   push:
   pull_request:
 jobs:
-  skeleton:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "skeleton repo: no build yet"
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - run: dotnet build GhProjectsBoards.sln --configuration Release
