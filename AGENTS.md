@@ -19,6 +19,33 @@ Write agent-facing and shared development documents in English. Respond to the u
 - Continue through relevant build checks and non-destructive validation. For UI work, verify the ordinary executable and user interaction path; a successful build alone does not establish usability.
 - Pause only the dependent work for unresolved product decisions, wider scope, unauthorized remote writes, or destructive actions. Do not repeat an approval already given.
 - Use explicitly designated test data for live GitHub mutation tests. Never store or print authentication tokens.
+- Follow [README.md](README.md) for build and run instructions, and [tests/README.md](tests/README.md) for validation guidance.
+
+## Code, tests, comments, and commits
+
+- **Code — How:** Make the implementation understandable through clear names and structure.
+- **Tests — What:** Express and verify agreed observable behavior, rather than incidental implementation details. Add or update tests when behavior changes; include a regression test for bug fixes when feasible.
+- **Comments — Why / Why not:** Explain non-obvious rationale, constraints, and deliberately rejected alternatives near the relevant code. Do not restate what the code already makes clear.
+- **Commit messages — Why:** Summarize the change and explain why it is needed. Use the body for background and trade-offs when useful.
+
+These are primary responsibilities, not exclusive categories. Add comments only when they help the reader, keep them accurate as code changes, and never invent rationale or rejected alternatives.
+
+## Testing
+
+Before changing production behavior, read [test policy](tests/README.md).
+
+- Derive expected behavior from the relevant Issue and agreed specification,
+  not merely from the current implementation.
+- Use short Red-Green-Refactor cycles, one behavior at a time.
+  Confirm the intended failure before implementing the change.
+  Bug fixes start with a reproducing regression test.
+- Prefer real in-process collaborators and observable results.
+  Use test doubles at external or nondeterministic boundaries as needed.
+  Verify interactions when they are part of the contract, not merely
+  implementation details.
+- Never weaken, delete, or skip tests, or bypass checks, merely to obtain
+  a passing result. Justify legitimate test changes against an authorized
+  behavior change or a demonstrated defect in the test.
 
 ## Closeout
 
