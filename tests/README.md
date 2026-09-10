@@ -1,6 +1,6 @@
 # Tests
 
-Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12).
+Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2), [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3), and [#12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12).
 
 Derive cases from the relevant Issue's acceptance criteria. Keep local automated tests, ordinary Windows UI checks, and live GitHub tests distinct. Use only explicitly designated data for live mutation tests.
 
@@ -74,11 +74,23 @@ Use NUnit for all three test levels. Classify by the boundary exercised, not by 
 
 In WPF, the proposed controller-level tests normally target ViewModels and commands. Pure ViewModel tests do not validate XAML bindings, focus, keyboard input, or the visual tree; desktop E2E covers those interactions. WPF-specific in-process tests may need an STA thread and a Dispatcher, but most application logic should not depend on either.
 
-Keep many cheap logic tests, fewer integration cases, and a small set of high-value E2E journeys. Add unit and integration projects with their first real behavior; do not create empty projects or placeholder passing tests. When the gh/storage implementations arrive, test argument and JSON handling, exit codes, timeouts, cancellation, persistence, and restart recovery at their own boundaries.
+Keep many cheap logic tests, fewer integration cases, and a small set of high-value E2E journeys. Add test projects with their first real behavior; do not create empty projects or placeholder passing tests. Verify argument/JSON handling, exit codes, timeouts, and cancellation at the gh boundary; add actual persistence and restart checks when storage is implemented.
 
-## Current executable smoke test
+## Unit and integration tests
 
-`GhProjectsBoards.E2E.Tests` uses NUnit 4 and FlaUI UIA3. It launches the normal app, checks its main-window identity/title/visibility, closes it through UI Automation, and verifies normal process exit. The application reference is build-only; the test does not call application internals. This is shell coverage, not acceptance of Project registration, grid editing, persistence, synchronization, or GHEC + EMU.
+`GhProjectsBoards.Tests` uses the same NUnit, adapter, and test SDK versions as the desktop project. It exercises real connection/diagnostic logic, substitutes remote responses through `IGhProcessRunner`, and launches its own test assembly as a fake gh executable for process-boundary cases. The fake accepts synthetic scenarios only and has no network fallback.
+
+```powershell
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
+```
+
+Cases cover Unicode/quotes/stdin, missing and invalid executables, child environment isolation, timeout/cancellation, safe diagnostic output, HTTP and GraphQL failures, authentication states, stable identity, host changes, storage write guards, separate scopes/resource permissions, and ViewModel orchestration. Live cases are excluded from this command.
+
+## Ordinary executable tests
+
+`GhProjectsBoards.E2E.Tests` uses NUnit 4 and FlaUI UIA3. It launches the normal app, verifies connection journeys and window shutdown through UI Automation, and checks the original launch process's exit code. References are build-only; tests do not call application internals. Routine cases use a test-only fake gh selected through the ordinary path field, an isolated `GH_CONFIG_DIR`, and synthetic data. They cover diagnostics, rechecking, explicit account rebinding, command copying, missing CLI/login, cancellation, and closing while gh is active. No developer credentials or live API requests are needed.
+
+The test thread uses per-monitor DPI awareness and restores its prior context afterward. This keeps [UI Automation physical coordinates](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-screenscaling) consistent with window screenshots at non-100% scaling. These tests do not establish Project registration, editing, persistence, synchronization, or GHEC + EMU acceptance.
 
 ### Run on Windows
 
@@ -90,18 +102,36 @@ Install the .NET 10 SDK, sign in to an interactive Windows desktop, and run from
 .\scripts\Test-E2E.ps1 -Configuration Debug
 ```
 
-The script builds the solution and runs only the E2E category. It needs no WinAppDriver/Appium server and does not change execution policy, screen-lock settings, or machine-wide environment variables. Keep the desktop unlocked; do not interact with it during the test. A disconnected or locked remote session can invalidate UI testing. Match the app/test elevation; administrator access is not required by this skeleton.
+The script builds the solution and runs only the E2E category. It needs no WinAppDriver/Appium server and does not change execution policy, screen-lock settings, or machine-wide environment variables. Keep the desktop unlocked; do not interact with it during the test. A disconnected or locked remote session can invalidate UI testing. Match the app/test elevation; administrator access is not required.
 
 Reports are written to a unique `TestResults/e2e/<run-id>/` directory. Failures attempt to attach a PNG of the app window, not the whole desktop. A covered window can capture overlapping content: use a clean desktop and synthetic data, and review artifacts before sharing. No screenshot is guaranteed if the window never appears or has already exited. Cleanup targets only the process launched by the test; it does not make a failed close assertion pass.
 
-A plain `dotnet test` skips desktop E2E unless `GHPB_RUN_E2E=1` is explicitly set. The script supplies this flag, `GHPB_E2E_APP_PATH`, and `GHPB_E2E_ARTIFACTS` for its child processes and restores previous process environment values afterward. Skipped tests are not a successful E2E run. Visual Studio can discover the test; running through the script is the simplest supported entry point.
+A plain `dotnet test` skips desktop E2E unless `GHPB_RUN_E2E=1` is explicitly set. The script supplies this flag, `GHPB_E2E_APP_PATH`, `GHPB_E2E_FAKE_GH_PATH`, and `GHPB_E2E_ARTIFACTS` for its child processes and restores previous process environment values afterward. It requires a nonempty executed suite with no skipped cases. Skipped tests are not a successful E2E run. Visual Studio can discover the tests; running through the script is the supported entry point.
+
+## Live sandbox validation
+
+Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) first. Live tests are confined to `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; identifiers are checked before mutations. Stored gh authentication must use the designated account and keyring, with `repo` and `project` scopes. The tests do not alter gh configuration or obtain a token.
+
+```powershell
+.\scripts\Test-LiveGitHub.ps1
+# A different real gh executable:
+.\scripts\Test-LiveGitHub.ps1 -GhPath 'C:\path\to\gh.exe'
+# Recheck the ordinary UI without creating more test data:
+.\scripts\Test-LiveGitHub.ps1 -DiagnosticsOnly
+```
+
+The default run executes a production-adapter scenario followed by a real-CLI ordinary UI check. It creates a disposable Issue with Japanese text, newlines, and quotes; independently reads the result; updates and rereads it; adds it to Project 3; updates an existing Status field; and independently checks Issue identity, Project identity, and the selected option. Cleanup deletes only the created item and Issue. A separate Issue GET must return 404 or 410, and a final Project snapshot must match the original item/field identities. The retained scope Issue and existing items/fields must survive. The bounded sandbox fixture rejects a baseline exceeding 100 items or fields rather than comparing a partial snapshot.
+
+The separate `LiveGitHub` category is guarded by `GHPB_RUN_LIVE_GITHUB=1`. The script supplies the real CLI/app paths and a unique `TestResults/live/<run-id>/` directory, restores its process environment afterward, and requires executed TRX results with no skips. `-DiagnosticsOnly` does not establish adapter mutation acceptance.
+
+`adapter-evidence.json` records stage outcomes, returned resource IDs, timestamps, subprocess count/duration, and cleanup status. It never records request bodies, credentials, or raw process streams. An uncertain create is not retried. If the run fails or is interrupted, inspect the run marker and returned IDs, reconcile remote state, and clean up only that run's data before starting another scenario. Preserve failed evidence; do not overwrite it with a later pass. UI screenshots use the ordinary window and real account metadata; review them before sharing.
 
 ## CI and later acceptance
 
-PR CI builds both projects and lists discovered tests. It deliberately does not launch the desktop UI yet. Discovery/build success is not UI execution evidence. Add unit/integration execution as those suites are implemented. Before enabling desktop E2E in CI, validate a dedicated interactive Windows session and publish failure artifacts. Do not execute untrusted public PR code on a developer PC or credentialed self-hosted runner.
+PR CI builds the solution, executes unit/integration tests excluding `LiveGitHub`, and lists desktop tests without launching them. Discovery/build success is not UI or live execution evidence. Before enabling desktop E2E in CI, validate a dedicated interactive Windows session and publish failure artifacts. Do not execute untrusted public PR code on a developer PC or credentialed self-hosted runner.
 
 For future UI tests, assign stable `AutomationProperties.AutomationId` values, prefer condition-based waits over fixed sleeps, keep desktop execution serial, and use screen/page objects as journeys grow. Address virtualized rows by stable item identity, not visible row index. Clipboard automation must restore prior content where practical. Text injection does not prove Japanese IME composition behavior; keep a real IME acceptance check alongside automated tests.
 
-Before the app gains storage or GitHub access, provide an isolated test workspace and fake external boundary for routine E2E. Do not use developer credentials or real business Projects. Validate real gh/API behavior separately against explicitly designated test data, including read-back after mutations. Treat this as live-system verification, not a replacement for deterministic CI. GHEC + EMU authentication, policy, and network behavior remain unverified until checked in that environment.
+Keep routine E2E isolated from developer credentials and business Projects. When storage arrives, provide an isolated test workspace and verify recovery using the real implementation. Live gh/API readback is separate from deterministic CI. GHEC + EMU authentication, policy, and network behavior remain unverified until checked in that environment.
 
 Derive acceptance cases from each owning Issue. In particular, editing/switching/restarting must not write to GitHub; only changed fields may be submitted; conflicts and unknown creation results must not trigger blind overwrites or duplicate creation. [#12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12) owns cross-feature acceptance and 100-item performance evidence.

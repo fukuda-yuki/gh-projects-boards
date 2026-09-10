@@ -27,17 +27,21 @@ public sealed class SmokeTests
 
         Assert.That(Environment.UserInteractive, Is.True,
             "An interactive Windows desktop is required; this does not verify that it is unlocked.");
+        using var dpi = new DesktopDpiScope();
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH");
         Assert.That(!string.IsNullOrWhiteSpace(executable) && File.Exists(executable), Is.True,
             "Build the app and set GHPB_E2E_APP_PATH, or use scripts/Test-E2E.ps1.");
         executable = Path.GetFullPath(executable!);
 
         using var automation = new UIA3Automation();
-        using var application = Application.Launch(new ProcessStartInfo(executable)
+        using var process = Process.Start(new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
             WorkingDirectory = Path.GetDirectoryName(executable)!
-        });
+        })!;
+        // GetMainWindow replaces FlaUI's Process reference. Keep the original
+        // launch handle separately so the exit code remains available after close.
+        using var application = Application.Attach(process.Id);
         Window? window = null;
         try
         {
@@ -49,14 +53,16 @@ public sealed class SmokeTests
                 () => !window.Properties.IsOffscreen.Value,
                 timeout: TimeSpan.FromSeconds(5));
             Assert.That(visible.Result, Is.True, "The main window did not become visible.");
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("CheckConnectionButton")), Is.Not.Null,
+                "The ordinary executable must expose the connection workflow.");
 
             // Use the actual UI close action, not process termination as the assertion.
             window.Close();
             var exited = Retry.WhileFalse(
-                () => application.HasExited,
+                () => process.HasExited,
                 timeout: TimeSpan.FromSeconds(10));
             Assert.That(exited.Result, Is.True, "Closing the window did not terminate the application.");
-            Assert.That(application.ExitCode, Is.Zero);
+            Assert.That(process.ExitCode, Is.Zero);
         }
         catch
         {

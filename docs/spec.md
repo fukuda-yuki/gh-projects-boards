@@ -1,6 +1,23 @@
 # Specification
 
-This outline records agreed behavioral boundaries from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Detailed contracts belong here as their owning Issues are resolved. None of the behavior below is implemented by the skeleton.
+This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics and the internal API boundary are implemented; the editing, persistence, and apply sections describe future work in their owning Issues.
+
+## Connection and API access
+
+Source: [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3).
+
+- Startup is local. Manual checking detects or uses the selected gh executable, reads its version and active authentication metadata, and obtains the stable numeric viewer ID from `/user` on the explicit hostname. Authentication JSON content determines validity even when `auth status` exits with zero.
+- A connection binds hostname, stable viewer ID, and gh executable. Rechecking does not adopt a different binding. Reads and writes recheck authentication and identity immediately before dispatch; mismatches permanently invalidate that context. An explicit new connection creates a new binding. This is in-memory groundwork for future workspaces, not persistence.
+- Issue and Project URLs must be HTTPS on the selected host, with explicit repository/owner and number. Each diagnostic independently reports read access, `viewerCanUpdate`, and the relevant OAuth update scope. Absent metadata stays unknown. Actual permissions and scope presence are separate; neither alone proves a later mutation will succeed.
+- Only stored gh authentication is used by child processes. The four token environment variables are excluded without altering global settings. The UI reports variable names, never values. Authentication metadata is projected without the token field. Plaintext storage exposes the `hosts.yml` path and blocks writes; unknown storage blocks writes too. Reads remain available for diagnosis.
+- The app never retrieves, stores, or displays credentials. Raw stdout/stderr and payloads are transient parser inputs, not logs or diagnostic output. Safe diagnostics expose outcome, HTTP status, exit code, classified error codes, and timing; remote error messages are omitted.
+- REST and GraphQL use explicit host and target, `ArgumentList`, and UTF-8 JSON stdin. No shell interprets the payload. Child prompts, debug output, telemetry, and implicit gh host/repository overrides are disabled.
+- The default timeout is 30 seconds per gh process, including stdin transfer. Cancelling or closing the window terminates the owned child process. Multiple commands can make the overall connection check longer than one process timeout.
+- Results distinguish success, failure, cancellation, timeout, and unknown outcome, retaining available data and classified GraphQL errors. Partial GraphQL data is not complete success. Interrupted dispatched writes and potentially applied server failures are unknown; preflight failures establish that the target write was not dispatched. No automatic retry is performed.
+
+Preflight cannot atomically lock gh authentication against changes made by another process between the identity check and API dispatch. Do not switch external gh authentication during an operation. Eliminating that race would require a different credential/session mechanism; token extraction is outside this design.
+
+GHEC + EMU IdP/browser authentication, enterprise host behavior, organization policy, required scopes, proxy/TLS connectivity, credential-store availability, and executable restrictions remain unverified until tested in the company environment under [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
 
 ## Editing and drafts
 
@@ -21,6 +38,5 @@ Track Issue creation, returned IDs, Project addition, field assignment, and resu
 ## Contracts to define
 
 - Supported field and item-type matrix: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2).
-- Connection/account identity and diagnostics: [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3).
 - Persistence format, location, and recovery: [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8).
 - Distribution and company environment checks: [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).

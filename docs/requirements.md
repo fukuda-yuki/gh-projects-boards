@@ -32,4 +32,4 @@ Kanban ([#14](https://github.com/fukuda-yuki/gh-projects-boards/issues/14)), Gan
 
 ## Open scope
 
-Editable fields, supported item types, grid selection, and distribution conditions are not implied by the skeleton. Resolve them through [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); see [decisions](decisions.md).
+Connection diagnostics and the guarded API adapter implement the initial [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3) slice. Editable fields, supported item types, grid selection, persistence, and distribution conditions remain in their owning Issues. Resolve technology and distribution choices through [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); see [decisions](decisions.md).
