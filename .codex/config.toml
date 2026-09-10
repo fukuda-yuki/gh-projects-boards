@@ -1,0 +1,10 @@
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+model_reasoning_summary = "concise"
+
+[features]
+multi_agent = false
+
+[features.context_management]
+experimental_mode = true
