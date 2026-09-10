@@ -1,0 +1,7 @@
+# .NET / Visual Studio (minimal)
+[Bb]in/
+[Oo]bj/
+.vs/
+TestResults/
+*.user
+*.suo
