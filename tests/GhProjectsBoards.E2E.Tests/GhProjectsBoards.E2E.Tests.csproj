@@ -17,5 +17,7 @@
     <!-- Build the ordinary app, but do not call its implementation from E2E tests. -->
     <ProjectReference Include="../../src/GhProjectsBoards.App/GhProjectsBoards.App.csproj"
                       ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

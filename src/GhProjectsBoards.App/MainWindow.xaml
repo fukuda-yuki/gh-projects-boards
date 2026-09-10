@@ -3,6 +3,115 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         AutomationProperties.AutomationId="MainWindow"
         Title="GitHub Projects Boards"
-        Width="1000"
-        Height="650">
+        Width="1100" Height="820" MinWidth="850" MinHeight="600"
+        Background="#F4F6FA" FontFamily="Yu Gothic UI, Segoe UI" FontSize="14">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleWhenTrue" />
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="MinHeight" Value="34" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="MinHeight" Value="34" />
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#202B3B" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28" MaxWidth="1050">
+            <TextBlock Text="GitHub に接続" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock Text="保存済みのGitHub CLI認証で、接続先と対象ごとの権限を確認します。" Margin="0,6,0,20" />
+
+            <Border Background="White" BorderBrush="#DCE2EB" BorderThickness="1" CornerRadius="8" Padding="20">
+                <Grid IsEnabled="{Binding CanCheck}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Label Content="gh.exe" Target="{Binding ElementName=ExecutablePathBox}" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" x:Name="ExecutablePathBox" AutomationProperties.AutomationId="ExecutablePath"
+                             Text="{Binding ExecutablePath, UpdateSourceTrigger=PropertyChanged}" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="10,0,0,0">
+                        <Button Content="参照…" Click="Browse_Click" AutomationProperties.AutomationId="BrowseExecutableButton" />
+                        <Button Content="再検出" Click="Detect_Click" />
+                    </StackPanel>
+                    <Label Grid.Row="1" Content="ホスト" Target="{Binding ElementName=HostBox}" VerticalAlignment="Center" Margin="0,10,0,0" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="HostBox" AutomationProperties.AutomationId="HostInput"
+                             Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Margin="0,10,0,0" />
+                    <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Text="確認する対象（任意）" FontWeight="SemiBold" Margin="0,20,0,8" />
+                    <Label Grid.Row="3" Content="Issue URL" Target="{Binding ElementName=IssueUrlBox}" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" x:Name="IssueUrlBox"
+                             AutomationProperties.AutomationId="IssueUrlInput" Text="{Binding IssueUrl, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="https://github.com/owner/repository/issues/1" />
+                    <Label Grid.Row="4" Content="Project URL" Target="{Binding ElementName=ProjectUrlBox}" VerticalAlignment="Center" Margin="0,10,0,0" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ProjectUrlBox"
+                             AutomationProperties.AutomationId="ProjectUrlInput" Text="{Binding ProjectUrl, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="https://github.com/users/owner/projects/3 または /orgs/owner/projects/3" Margin="0,10,0,0" />
+                </Grid>
+            </Border>
+            <TextBlock Text="{Binding EnvironmentText}" Foreground="#526077" FontSize="12" Margin="2,8,0,16" />
+            <StackPanel Orientation="Horizontal">
+                <Button Content="接続を確認 / 再確認" Click="Check_Click" IsDefault="True" IsEnabled="{Binding CanCheck}"
+                        AutomationProperties.AutomationId="CheckConnectionButton" Background="#1F5EA8" Foreground="White" BorderBrush="#1F5EA8" />
+                <Button Content="キャンセル" Click="Cancel_Click" IsEnabled="{Binding IsBusy}" AutomationProperties.AutomationId="CancelConnectionButton" />
+                <Button Content="新しい接続として確認" Click="Switch_Click" IsEnabled="{Binding CanSwitch}"
+                        AutomationProperties.AutomationId="NewConnectionButton" />
+            </StackPanel>
+            <ProgressBar Height="4" Margin="0,12,0,0" IsIndeterminate="{Binding IsBusy}"
+                         Visibility="{Binding IsBusy, Converter={StaticResource VisibleWhenTrue}}" />
+
+            <Border Background="White" BorderBrush="#DCE2EB" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,16,0,16">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" AutomationProperties.AutomationId="ConnectionStatus"
+                               AutomationProperties.LiveSetting="Polite" Margin="0,0,0,14" />
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="115" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="gh バージョン" Margin="0,0,0,8" />
+                        <TextBlock Grid.Column="1" Text="{Binding VersionText}" AutomationProperties.AutomationId="VersionValue" />
+                        <TextBlock Grid.Row="1" Text="利用者 / 接続先" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AccountText}" AutomationProperties.AutomationId="AccountValue" />
+                        <TextBlock Grid.Row="2" Text="資格情報保存先" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StorageText}" AutomationProperties.AutomationId="StorageValue" />
+                        <TextBlock Grid.Row="3" Text="スコープ" Margin="0,0,0,12" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ScopeText}" AutomationProperties.AutomationId="ScopeValue" />
+                        <TextBlock Grid.Row="4" Text="Issue" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding IssueText}" AutomationProperties.AutomationId="IssueResult" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="5" Text="Project" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ProjectText}" AutomationProperties.AutomationId="ProjectResult" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <Expander Header="ログイン・権限追加の手順" AutomationProperties.AutomationId="LoginHelpExpander">
+                <StackPanel Margin="0,12,0,0">
+                    <TextBlock Text="PowerShellでコマンドを実行し、通常のブラウザーで認証した後、この画面で再確認してください。環境変数の認証を使用している場合は、それらを設定していないPowerShellで実行します。" Margin="0,0,0,10" />
+                    <TextBlock Text="初回ログイン" FontWeight="SemiBold" />
+                    <DockPanel Margin="0,6,0,12">
+                        <Button DockPanel.Dock="Right" Content="コピー" Click="CopyLogin_Click" AutomationProperties.AutomationId="CopyLoginButton" Margin="8,0,0,0" />
+                        <TextBox Text="{Binding LoginCommand, Mode=OneWay}" IsReadOnly="True" AutomationProperties.AutomationId="LoginCommand"
+                                 HorizontalScrollBarVisibility="Auto" />
+                    </DockPanel>
+                    <TextBlock Text="スコープの追加" FontWeight="SemiBold" />
+                    <DockPanel Margin="0,6,0,12">
+                        <Button DockPanel.Dock="Right" Content="コピー" Click="CopyRefresh_Click" AutomationProperties.AutomationId="CopyRefreshButton" Margin="8,0,0,0" />
+                        <TextBox Text="{Binding RefreshCommand, Mode=OneWay}" IsReadOnly="True" AutomationProperties.AutomationId="RefreshCommand"
+                                 HorizontalScrollBarVisibility="Auto" />
+                    </DockPanel>
+                    <TextBlock Text="スコープの追加だけでは、個別のIssueやProjectへの権限は付与されません。会社のGHEC＋EMU環境での認証・ネットワーク・実行条件は未検証です。"
+                               Foreground="#526077" FontSize="12" />
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
 </Window>

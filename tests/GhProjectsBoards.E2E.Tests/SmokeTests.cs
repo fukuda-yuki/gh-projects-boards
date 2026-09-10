@@ -52,6 +52,8 @@ public sealed class SmokeTests
                 () => !window.Properties.IsOffscreen.Value,
                 timeout: TimeSpan.FromSeconds(5));
             Assert.That(visible.Result, Is.True, "The main window did not become visible.");
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("CheckConnectionButton")), Is.Not.Null,
+                "The ordinary executable must expose the connection workflow.");
 
             // Use the actual UI close action, not process termination as the assertion.
             window.Close();
