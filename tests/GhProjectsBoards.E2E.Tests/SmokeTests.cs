@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
