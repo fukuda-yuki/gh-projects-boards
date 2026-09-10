@@ -1,6 +1,7 @@
 <Window x:Class="GhProjectsBoards.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="MainWindow"
         Title="GitHub Projects Boards"
         Width="1000"
         Height="650">

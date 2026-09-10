@@ -12,3 +12,6 @@ jobs:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
       - run: dotnet build GhProjectsBoards.sln --configuration Release
+      # Discovery is not a successful desktop E2E run. Run the UI locally for now.
+      - name: Discover desktop E2E tests (do not launch UI)
+        run: dotnet test tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj --configuration Release --no-build --list-tests
