@@ -19,12 +19,23 @@ dotnet build GhProjectsBoards.sln --configuration Release
 
 `GitHub Projects Boards` というタイトルの空ウィンドウが開き、閉じると終了します。この骨組みの起動に gh の導入やログインは不要です。配布形式・同梱ランタイム等は [Issue #13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13) で別途決定します。
 
+### Desktop E2E
+
+Run on an unlocked, interactive Windows desktop with the .NET 10 SDK:
+
+```powershell
+.\scripts\Test-E2E.ps1
+```
+
+This NUnit + FlaUI smoke test covers the ordinary executable's window and shutdown only. See [test instructions and boundaries](tests/README.md). PR CI builds/discovers the test; it does not execute desktop E2E yet.
+
 ## 構成
 
-- `GhProjectsBoards.sln`：アプリ1プロジェクトを含むソリューション
+- `GhProjectsBoards.sln`：WPF アプリと E2E テストを含むソリューション
 - `src/GhProjectsBoards.App/`：WPF の起動処理と空ウィンドウ
 - `docs/`：要件・仕様・構成・技術判断の骨組み
-- `tests/`：試験の入口。テストプロジェクトは機能実装時に追加
+- `tests/`：NUnit + FlaUI の E2E スモークテストと試験方針
+- `scripts/Test-E2E.ps1`：Windows での E2E 実行スクリプト
 
 ## 文書
 
@@ -36,3 +47,4 @@ dotnet build GhProjectsBoards.sln --configuration Release
 | [技術判断](docs/decisions.md) | 決定事項・理由・未決事項 |
 | [試験](tests/README.md) | 検証方針と受け入れ条件の参照先 |
 | [AGENTS.md](AGENTS.md) | このリポジトリでの作業ルール |
+
