@@ -33,11 +33,14 @@ public sealed class SmokeTests
         executable = Path.GetFullPath(executable!);
 
         using var automation = new UIA3Automation();
-        using var application = Application.Launch(new ProcessStartInfo(executable)
+        using var process = Process.Start(new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
             WorkingDirectory = Path.GetDirectoryName(executable)!
-        });
+        })!;
+        // GetMainWindow replaces FlaUI's Process reference. Keep the original
+        // launch handle separately so the exit code remains available after close.
+        using var application = Application.Attach(process.Id);
         Window? window = null;
         try
         {
@@ -53,10 +56,10 @@ public sealed class SmokeTests
             // Use the actual UI close action, not process termination as the assertion.
             window.Close();
             var exited = Retry.WhileFalse(
-                () => application.HasExited,
+                () => process.HasExited,
                 timeout: TimeSpan.FromSeconds(10));
             Assert.That(exited.Result, Is.True, "Closing the window did not terminate the application.");
-            Assert.That(application.ExitCode, Is.Zero);
+            Assert.That(process.ExitCode, Is.Zero);
         }
         catch
         {
