@@ -109,7 +109,7 @@ internal sealed class GhApiTransport(IGhProcessRunner runner, string executable,
                 401 => FailureKind.AuthenticationExpired,
                 403 when retryAfter is not null || Header(headers, "X-RateLimit-Remaining") == "0" => FailureKind.RateLimited,
                 403 => FailureKind.PermissionDenied,
-                404 => FailureKind.NotFoundOrInaccessible,
+                404 or 410 => FailureKind.NotFoundOrInaccessible,
                 429 => FailureKind.RateLimited,
                 >= 500 => FailureKind.Network,
                 _ => FailureKind.InvalidInput

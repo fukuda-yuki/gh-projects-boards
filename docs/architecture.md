@@ -4,7 +4,21 @@ Source: [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and [#2
 
 ## Current structure
 
-`GhProjectsBoards.sln` contains one WPF application: `src/GhProjectsBoards.App`. It targets .NET 10 and opens an empty window. No grid, domain model, persistence implementation, or GitHub adapter has been added.
+`GhProjectsBoards.sln` contains one .NET 10 WPF application and two test projects. All production connection logic remains internal to `src/GhProjectsBoards.App`; no public API or additional application assembly is introduced.
+
+| Implemented component | Responsibility |
+| --- | --- |
+| `MainWindow` / `ConnectionViewModel` | Ordinary connection screen, manual checks, copyable login guidance, cancellation and shutdown |
+| `GhConnectionService` / `ConnectionContext` | Authentication metadata, stable viewer identity, serialized preflight and target dispatch, credential-store write guard |
+| `TargetDiagnostics` / `GitHubAddress` | Explicit same-host URL parsing and separate Issue/Project access and scope reports |
+| `GhApiTransport` / `ApiRequest` / `ApiResult` | REST/GraphQL request construction and structured response/error classification |
+| `GhProcessRunner` | Shell-free process execution, child environment control, JSON stdin, concurrent stream drains, timeout and process cleanup |
+
+UI diagnostics reach GitHub through the connection service. The low-level transport has no user-facing entry point; future features must use the guarded service with their bound context. The service serializes its own work but cannot lock external changes to gh authentication. It exposes no automatic retry or persistence.
+
+`GhProjectsBoards.Tests` exercises production collaborators and provides a synthetic gh process at the nondeterministic boundary. `GhProjectsBoards.E2E.Tests` has build-only references and drives the ordinary executable through UI Automation. Opt-in live cases use the real adapter and CLI against exact sandbox identifiers. See [test boundaries](../tests/README.md).
+
+Project registration, grid editing, draft storage, and apply queues have not been implemented.
 
 ## Responsibility boundaries
 
@@ -19,4 +33,4 @@ Introduce code boundaries when an implementing Issue needs them. Do not create e
 
 ## Data and process design
 
-Pending: data contracts, storage schema, adapter interface, and operation lifecycle. Preserve the distinctions in [specification](spec.md); record chosen technologies in [decisions](decisions.md).
+Connection and API result contracts are defined in [specification](spec.md). Project/Issue editing data contracts, storage schema, and recoverable apply lifecycle remain pending. Preserve their distinct responsibilities and record resolved technologies in [decisions](decisions.md).

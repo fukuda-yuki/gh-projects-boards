@@ -1,50 +1,64 @@
 # gh-projects-boards
 
-GitHub Projects を表形式で扱い、新規 Issue と既存 Issue を同じ画面で一括編集する C# 製 Windows デスクトップアプリ。
+A Windows desktop application for preparing GitHub Issue and Project changes in a table. Requirements and acceptance criteria belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
 
-現時点では **WPF + .NET 10 の空ウィンドウを起動する骨組みのみ**です。表編集、GitHub 接続、下書き保存は未実装です。
+The current executable provides **GitHub CLI connection and permission diagnostics**. Project registration, table editing, draft persistence, and manual apply are future features in their owning Issues.
 
-## 開発
+## Build and run
 
-Issue 駆動で進めます。要件と受け入れ条件の正本は [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) と関連 Issue です。WPF + .NET 10 の選択と未決事項は [技術判断](docs/decisions.md) を参照してください。
-
-### ビルド・起動
-
-Windows と .NET 10 SDK が必要です。リポジトリのルートで実行します。
+Use Windows and the .NET 10 SDK. Run from the repository root:
 
 ```powershell
 dotnet build GhProjectsBoards.sln --configuration Release
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows\GhProjectsBoards.App.exe
 ```
 
-`GitHub Projects Boards` というタイトルの空ウィンドウが開き、閉じると終了します。この骨組みの起動に gh の導入やログインは不要です。配布形式・同梱ランタイム等は [Issue #13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13) で別途決定します。
+The ordinary executable opens the Japanese connection screen. Launching it requires no GitHub login and makes no network request. Distribution and runtime packaging remain in [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
 
-### Desktop E2E
+## Check a connection
 
-Run on an unlocked, interactive Windows desktop with the .NET 10 SDK:
+1. Install [GitHub CLI](https://cli.github.com/). The app looks for `gh.exe` on PATH and under Program Files; browse or enter another executable if necessary. The current metadata contract has been verified with gh 2.100.0.
+2. Enter the GitHub hostname, such as `github.com`. Optionally enter an Issue URL and a user/organization Project URL on that host.
+3. Select **接続を確認 / 再確認**. Read the CLI version, account and stable ID, credential storage, scopes, and separate Issue/Project results. `不明` means the value has not been established; a successful login alone does not establish write access.
+4. If login or additional scopes are needed, expand **ログイン・権限追加の手順**, copy the appropriate PowerShell command, and run it in your terminal. Complete browser authentication there, then recheck in the app. The app does not initiate login or change gh configuration itself.
+5. After an intentional account, host, or executable change, review the destination and select **新しい接続として確認**. Rechecking an old connection never silently adopts another identity.
+
+The screen only diagnoses access; it does not edit Issues or Projects. Inputs and connection state are kept in memory and reset when the app exits. Cancel stops the current check; closing the window cancels outstanding work before shutdown.
+
+## Credentials and failures
+
+The app uses gh's stored authentication. It excludes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its gh children and reports only which variable names are present. It does not modify the parent environment or extract, display, duplicate, or persist a token.
+
+Windows credential-store (`keyring`) authentication permits guarded adapter writes. Plaintext `hosts.yml` storage is displayed with its path and blocks writes; unknown storage also blocks writes. Restore access to the Windows credential store and log in again without `--insecure-storage`, then recheck. Login/refresh commands copied into your own terminal follow that terminal's environment; remove any token-variable overrides there if you intend to update stored gh authentication.
+
+Each gh process has a default 30-second timeout. Authentication, target access, rate limits, network errors, cancellation, and unknown write results are distinct. A dispatched write with an uncertain result is never automatically resent. Diagnostics omit request bodies and raw process streams.
+
+See [connection behavior](docs/spec.md), [implementation boundaries](docs/architecture.md), and [technical decisions](docs/decisions.md). Company GHEC + EMU authentication, policies, and network conditions require separate validation.
+
+## Test
 
 ```powershell
+# Deterministic unit/integration tests; no live GitHub:
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
+
+# Ordinary executable, controlled gh boundary; unlocked desktop required:
 .\scripts\Test-E2E.ps1
+
+# Real adapter writes and ordinary-executable diagnostics in the authorized sandbox:
+.\scripts\Test-LiveGitHub.ps1
 ```
 
-This NUnit + FlaUI smoke test covers the ordinary executable's window and shutdown only. See [test instructions and boundaries](tests/README.md). PR CI builds/discovers the test; it does not execute desktop E2E yet.
+The live script targets only [fukuda-yuki/codex-sandbox](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3), creates disposable data, independently reads back each change, and deletes that data. Read the [sandbox scope record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before running. Failures retain evidence under `TestResults/live/`; inspect cleanup and uncertain results before another run.
 
-## 構成
+CI executes unit/integration tests and only discovers desktop tests. CI success is not desktop or live-system execution evidence. See the [test policy and instructions](tests/README.md).
 
-- `GhProjectsBoards.sln`：WPF アプリと E2E テストを含むソリューション
-- `src/GhProjectsBoards.App/`：WPF の起動処理と空ウィンドウ
-- `docs/`：要件・仕様・構成・技術判断の骨組み
-- `tests/`：NUnit + FlaUI の E2E スモークテストと試験方針
-- `scripts/Test-E2E.ps1`：Windows での E2E 実行スクリプト
+## Structure and sources
 
-## 文書
-
-| 文書 | 内容 |
-| --- | --- |
-| [要件](docs/requirements.md) | 製品の目的、対象範囲、関連 Issue |
-| [仕様](docs/spec.md) | 合意済みの動作原則と未定義の契約 |
-| [構成](docs/architecture.md) | 現在の構成と今後分離する責務 |
-| [技術判断](docs/decisions.md) | 決定事項・理由・未決事項 |
-| [試験](tests/README.md) | 検証方針と受け入れ条件の参照先 |
-| [AGENTS.md](AGENTS.md) | このリポジトリでの作業ルール |
-
+- `src/GhProjectsBoards.App/`: WPF application, connection orchestration, internal gh adapter.
+- `tests/`: NUnit unit/integration tests, test-only fake gh executable, and FlaUI desktop tests.
+- `scripts/`: separate deterministic desktop and live sandbox entry points.
+- [Requirements](docs/requirements.md): product outline and Issue map.
+- [Specification](docs/spec.md): agreed behavior and unresolved contracts.
+- [Architecture](docs/architecture.md): implemented and future responsibilities.
+- [Decisions](docs/decisions.md): resolved choices and their limits.
+- [AGENTS.md](AGENTS.md): repository development rules.

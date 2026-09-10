@@ -57,6 +57,7 @@ internal sealed class GhApiTests
     [TestCase(401, FailureKind.AuthenticationExpired)]
     [TestCase(403, FailureKind.PermissionDenied)]
     [TestCase(404, FailureKind.NotFoundOrInaccessible)]
+    [TestCase(410, FailureKind.NotFoundOrInaccessible)]
     [TestCase(429, FailureKind.RateLimited)]
     [TestCase(503, FailureKind.Network)]
     public async Task ClassifiesHttpFailuresWithoutEchoingRemoteMessages(int status, FailureKind expected)

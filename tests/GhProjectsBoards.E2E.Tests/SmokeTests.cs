@@ -27,6 +27,7 @@ public sealed class SmokeTests
 
         Assert.That(Environment.UserInteractive, Is.True,
             "An interactive Windows desktop is required; this does not verify that it is unlocked.");
+        using var dpi = new DesktopDpiScope();
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH");
         Assert.That(!string.IsNullOrWhiteSpace(executable) && File.Exists(executable), Is.True,
             "Build the app and set GHPB_E2E_APP_PATH, or use scripts/Test-E2E.ps1.");

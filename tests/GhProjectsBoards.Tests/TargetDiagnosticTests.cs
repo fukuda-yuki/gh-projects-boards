@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.App.GitHub;
 using NUnit.Framework;
 
@@ -36,7 +37,10 @@ internal sealed class TargetDiagnosticTests
         Assert.That(project.CanRead, Is.True);
         Assert.That(project.CanUpdate, Is.True);
         Assert.That(project.HasWriteScope, Is.False, "An account's resource permission does not grant a missing OAuth scope.");
-        Assert.That(runner.Commands.Any(command => command.StandardInput?.TrimStart().StartsWith("mutation") == true), Is.False);
+        var documents = runner.Commands.Where(command => command.StandardInput is not null)
+            .Select(command => JsonSerializer.Deserialize<JsonElement>(command.StandardInput!).GetProperty("query").GetString()!);
+        Assert.That(documents.All(document => document.TrimStart().StartsWith("query", StringComparison.Ordinal)), Is.True,
+            "Diagnostics must send GraphQL queries, never mutations; inspect the JSON document rather than its envelope.");
     }
 
     [Test]

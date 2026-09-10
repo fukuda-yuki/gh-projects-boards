@@ -42,6 +42,22 @@ internal sealed class GhProcessTests
     }
 
     [Test]
+    public async Task ExistingButInvalidExecutableIsAStartFailureWithoutRawErrorOutput()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"ghpb-invalid-{Guid.NewGuid():N}.exe");
+        try
+        {
+            await File.WriteAllTextAsync(path, "synthetic-invalid-executable");
+            var result = await new GhProcessRunner().RunAsync(new GhCommand(path, []));
+            Assert.That(result.Completion, Is.EqualTo(ProcessCompletion.StartFailed));
+            Assert.That(result.Started, Is.False);
+            Assert.That(result.ExitCode, Is.Null);
+            Assert.That(result.StandardError, Is.Empty);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
     public async Task RemovesAmbientCredentialsAndRoutingOnlyFromTheChild()
     {
         var settings = new Dictionary<string, string?>

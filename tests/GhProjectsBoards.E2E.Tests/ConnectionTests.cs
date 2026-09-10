@@ -105,6 +105,7 @@ public sealed class ConnectionTests
     private static void WithApplication(Action<Window, Process, Fixture> journey)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1") Assert.Ignore("Run scripts/Test-E2E.ps1 on an interactive desktop.");
+        using var dpi = new DesktopDpiScope();
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
         var fake = Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!;
         Assert.That(File.Exists(executable) && File.Exists(fake), Is.True, "Build the ordinary app and fake gh test executable.");
