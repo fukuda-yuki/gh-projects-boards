@@ -102,11 +102,33 @@ Install the .NET 10 SDK, sign in to an interactive Windows desktop, and run from
 .\scripts\Test-E2E.ps1 -Configuration Debug
 ```
 
-The script builds the solution and runs only the E2E category. It needs no WinAppDriver/Appium server and does not change execution policy, screen-lock settings, or machine-wide environment variables. Keep the desktop unlocked; do not interact with it during the test. A disconnected or locked remote session can invalidate UI testing. Match the app/test elevation; administrator access is not required.
+The script builds the solution and runs the deterministic E2E category, excluding real IME cases. It needs no WinAppDriver/Appium server and does not change execution policy, screen-lock settings, or machine-wide environment variables. Keep the desktop unlocked; do not interact with it during the test. A disconnected or locked remote session can invalidate UI testing. Match the app/test elevation; administrator access is not required.
 
 Reports are written to a unique `TestResults/e2e/<run-id>/` directory. Failures attempt to attach a PNG of the app window, not the whole desktop. A covered window can capture overlapping content: use a clean desktop and synthetic data, and review artifacts before sharing. No screenshot is guaranteed if the window never appears or has already exited. Cleanup targets only the process launched by the test; it does not make a failed close assertion pass.
 
 A plain `dotnet test` skips desktop E2E unless `GHPB_RUN_E2E=1` is explicitly set. The script supplies this flag, `GHPB_E2E_APP_PATH`, `GHPB_E2E_FAKE_GH_PATH`, and `GHPB_E2E_ARTIFACTS` for its child processes and restores previous process environment values afterward. It requires a nonempty executed suite with no skipped cases. Skipped tests are not a successful E2E run. Visual Studio can discover the tests; running through the script is the supported entry point.
+
+## Offline grid acceptance and measurements
+
+[#19](https://github.com/fukuda-yuki/gh-projects-boards/issues/19) owns this prototype's results and rejection decision. Logic tests cover the five field rules, CRLF/LF TSV with trailing blanks, atomic rejection, explicit clearing, stable new-row identity, and operation Undo. Ordinary-executable grid journeys cover entry without gh, rectangle selection, keyboard paste/clear/Undo, errors and correction, choices, virtualized row 101, Esc without committed-row rollback, and text-editor Undo isolation.
+
+Run real IME checks separately with **Microsoft Japanese IME selected in alphanumeric mode** on an unlocked desktop:
+
+```powershell
+.\scripts\Test-E2E.ps1 -RealIme
+```
+
+This sets `GHPB_RUN_REAL_IME` for the child run and restores the process environment afterward. Physical virtual-key input enables Japanese mode, types romanized syllables, converts and confirms, and cancels composition; Unicode insertion is not used as proof of these behaviors. The reconversion case seeds text, then selects the native IME's actual reconversion menu item and checks cell commit plus one Undo. The fixtures restore alphanumeric mode and clipboard content. The direct-start case currently **fails** because the first key is dropped; keep this reproducer failing until a demonstrated fix changes the observed result. An ordinary E2E or CI pass does not override that acceptance failure.
+
+For an independent real-input review, open the normal exe and prototype, select a Title cell, enable Japanese mode, and type `n`, `i` slowly. Retain the observed `い` result and original value/Undo state. Then press Esc to cancel; use F2 to start editing and repeat `nihongo`, Space twice, candidate selection, first Enter (same editor, no history), and second Enter (one committed operation and downward move). Re-enter and cancel a different composition; select committed Japanese text, open its native reconversion menu with Shift+F10, choose a different candidate, commit, and Undo. Record operator, OS/IME/runtime/app version, scaling, screenshots, failures, and unverified checks in #19. An agent-operated check is not a human review.
+
+```powershell
+.\scripts\Measure-Grid.ps1
+```
+
+Measurements use the existing test projects and real application collaborators. Each series retains warmup sample 0, ten measured samples, median, and maximum in `TestResults/grid-measurements/<run-id>/`. `environment.json` records versions, CPU/memory, source state, and app hash; `ui-elapsed.json` also records window DPI. `application-processing.json` measures the ViewModel, validation, history, and notifications without WPF subscribers. It excludes rendering, clipboard, input, and UI Automation; model initialization is not display latency. `ui-elapsed.json` measures the ordinary executable through FlaUI and includes its input calls and condition waits. There is no invented performance pass threshold.
+
+The UI series measures the prototype-button-to-ready transition for 100 rows, ten consecutive cell edits, a Ctrl+End/Ctrl+Home scroll round trip, and 10x5/100x5 paste and operation Undo. Clipboard setup and last-row content assertions occur outside paste timing; the payload changes all five cells per row. Each paste must create exactly one operation and Undo must restore the endpoint. These are local elapsed times, not click-to-photon measurements, human editing speed, large-dataset guarantees, or persistence/apply performance. Preserve failed runs separately; the script requires executed, non-skipped measurement cases. The in-process measurement fixture is explicit and excluded from routine correctness checks.
 
 ## Live sandbox validation
 

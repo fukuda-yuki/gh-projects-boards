@@ -1,6 +1,6 @@
 # Specification
 
-This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics and the internal API boundary are implemented; the editing, persistence, and apply sections describe future work in their owning Issues.
+This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics, the internal API boundary, and an offline editing prototype are implemented; production editing, persistence, and apply remain future work in their owning Issues.
 
 ## Connection and API access
 
@@ -20,6 +20,12 @@ Preflight cannot atomically lock gh authentication against changes made by anoth
 GHEC + EMU IdP/browser authentication, enterprise host behavior, organization policy, required scopes, proxy/TLS connectivity, credential-store availability, and executable restrictions remain unverified until tested in the company environment under [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
 
 ## Editing and drafts
+
+The [#19 prototype](https://github.com/fukuda-yuki/gh-projects-boards/issues/19) is an independent, discard-on-close window containing 100 deterministic rows and five fields defined for the prototype: required single-line Title, required Issue state Open/Closed, nullable decimal Number, nullable `yyyy-MM-dd` Date, and nullable Choice High/Medium/Low. Issue state is distinct from Project Status. These fields do not decide the product field matrix.
+
+Rectangular CRLF/LF TSV applies at the selection's top-left; trailing empty cells survive parsing and mean no change. Invalid values, ragged rows, and out-of-bounds destinations reject the whole operation. A dedicated clear/Delete outside editing explicitly empties optional cells; required fields make the whole clear invalid. Adding a row defaults state to Open, flags its empty Title, focuses that cell, and supports row 101 without paste-driven auto-append.
+
+Each committed cell edit, range paste, clear, and row addition has one Undo entry; rejected and unchanged operations have none. Stable local row IDs preserve operation targets through virtualization. Editor text, committed values, and errors remain separate; editor cancellation cannot roll back earlier committed operations. Tab/Shift+Tab navigate, Enter commits and moves down, and editor keys/IME confirmation belong to the editor. The current implementation fails the direct-start Japanese IME requirement and is not an adopted grid component; see [the decision](decisions.md#editing-grid-component) and #19 evidence.
 
 Editing, Project switching, and local saving do not write to GitHub. Preserve drafts across refresh and restart. Existing-cell blank paste means no change by default; clearing a value is explicit. Local new rows are distinct from GitHub Draft items. See [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7) and [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8).
 

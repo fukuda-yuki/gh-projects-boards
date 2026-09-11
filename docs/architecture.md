@@ -13,12 +13,14 @@ Source: [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and [#2
 | `TargetDiagnostics` / `GitHubAddress` | Explicit same-host URL parsing and separate Issue/Project access and scope reports |
 | `GhApiTransport` / `ApiRequest` / `ApiResult` | REST/GraphQL request construction and structured response/error classification |
 | `GhProcessRunner` | Shell-free process execution, child environment control, JSON stdin, concurrent stream drains, timeout and process cleanup |
+| `GridPrototypeWindow` | Separate offline WPF DataGrid, native text/IME editors, choice templates, selection and keyboard commands, validation feedback |
+| `GridPrototypeViewModel` / `GridPrototypeRow` / `GridFieldRules` | Deterministic rows with stable IDs, immutable committed values, complete-operation validation and staging, in-memory operation Undo |
 
 UI diagnostics reach GitHub through the connection service. The low-level transport has no user-facing entry point; future features must use the guarded service with their bound context. The service serializes its own work but cannot lock external changes to gh authentication. It exposes no automatic retry or persistence.
 
 `GhProjectsBoards.Tests` exercises production collaborators and provides a synthetic gh process at the nondeterministic boundary. `GhProjectsBoards.E2E.Tests` has build-only references and drives the ordinary executable through UI Automation. Opt-in live cases use the real adapter and CLI against exact sandbox identifiers. See [test boundaries](../tests/README.md).
 
-Project registration, grid editing, draft storage, and apply queues have not been implemented.
+The grid prototype has no dependency on the connection service or gh adapter. Its editors hold temporary input and commit through the ViewModel; row recycling does not own operation identity. Text columns retain WPF's native input handling through a small internal column subclass, while cell commit reads the editor document to preserve native reconversion. This candidate is rejected under [#19](https://github.com/fukuda-yuki/gh-projects-boards/issues/19); product grid selection remains open. Project registration, production editing, draft storage, and apply queues have not been implemented.
 
 ## Responsibility boundaries
 

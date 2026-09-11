@@ -8,7 +8,17 @@ Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#
 
 **Reason:** WPF provides a Windows desktop window in the agreed C# environment, and .NET 10 is an LTS release. See the official [WPF overview](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/overview/) and [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
 
-**Limit:** This chooses the application shell, not a grid component or storage technology. Grid suitability still requires the prototype and license checks in #2.
+**Limit:** This chooses the application shell, not a grid component or storage technology. The grid spike has a separate decision below; other #2 choices remain open.
+
+## Editing-grid component
+
+**Decision:** Do not adopt the evaluated WPF DataGrid prototype for production editing. Keep it reachable in the ordinary executable as an offline evaluation artifact. [#19](https://github.com/fukuda-yuki/gh-projects-boards/issues/19) owns the evidence and measurements.
+
+**Reason:** Direct Japanese composition from a selected cell drops the first key in the evaluated Microsoft Japanese IME environment. The loss was reproduced with FlaUI physical keys and separate, slowly paced native UI operations. F2 before composition avoids that path, but requiring users to remember a workaround is insufficient for the intended editing experience. Cell/range editing, atomic validation and Undo can be supplied with app-local code; that does not compensate for silent text loss.
+
+**Implementation burden:** Standard DataGrid provides navigation, selection, virtualization, and native TextBox/ComboBox editing. Operation-level Undo, atomic TSV interpretation/validation, blank-versus-clear behavior, stable row identity, and explicit new-row handling are supplemental implementation. A small text-column subclass keeps one-way initialization editable while retaining native input handling; reading the editor document at commit handles observed reconversion/Text-property divergence. Direct IME startup remains unresolved.
+
+**License and limit:** [WPF is MIT-licensed](https://github.com/dotnet/wpf/blob/main/LICENSE.TXT); this prototype adds no component fee, package, or assembly. This does not choose the application license. The rejection applies to the evaluated prototype/environment, not every possible WPF customization or IME. A follow-up must compare a demonstrated editor-lifecycle repair against alternative components, including cost and license terms before adoption. Persistence, real GitHub field mapping, apply, and broader #2/#7/#12 acceptance remain separate.
 
 ## Automated testing
 
@@ -34,7 +44,7 @@ Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#
 
 | Topic | Status | Required follow-up |
 | --- | --- | --- |
-| Grid component | Pending | Prototype paste, IME, keyboard editing, Undo, and 100-row responsiveness in #2 |
+| Grid component | Evaluated candidate rejected in #19 | Resolve direct IME startup or select another component, then repeat the real-input gate |
 | Local persistence | Pending; SQLite is a candidate in #2 | Decide from draft and recovery requirements before #8 implementation |
 | Editable fields and item types | Pending | Define supported, read-only, and excluded cases in #2 |
 | External components and application license | Pending | Record component licenses and the repository license policy in #2 |

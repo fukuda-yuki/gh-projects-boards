@@ -2,7 +2,7 @@
 
 A Windows desktop application for preparing GitHub Issue and Project changes in a table. Requirements and acceptance criteria belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
 
-The current executable provides **GitHub CLI connection and permission diagnostics**. Project registration, table editing, draft persistence, and manual apply are future features in their owning Issues.
+The current executable provides **GitHub CLI connection and permission diagnostics** and an **offline editing-grid prototype**. Project registration, production table editing, draft persistence, and manual apply are future features in their owning Issues.
 
 ## Build and run
 
@@ -25,6 +25,18 @@ The ordinary executable opens the Japanese connection screen. Launching it requi
 
 The screen only diagnoses access; it does not edit Issues or Projects. Inputs and connection state are kept in memory and reset when the app exits. Cancel stops the current check; closing the window cancels outstanding work before shutdown.
 
+## Try the editing-grid prototype
+
+From the connection screen, select **編集グリッド試作**. No connection check is required. The separate window starts with 100 synthetic rows; closing it discards every edit. It neither runs gh nor fetches, saves, or applies GitHub data. [#19](https://github.com/fukuda-yuki/gh-projects-boards/issues/19) owns the spike and its adoption decision.
+
+1. Select a cell and press **F2** to edit. Title is required single-line text; Issue state is Open/Closed; Number accepts a decimal with `.`; Date accepts `yyyy-MM-dd`; Choice is empty, High, Medium, or Low.
+2. Use **Tab / Shift+Tab**, **Enter**, and arrow keys to navigate. Enter during Japanese conversion confirms the IME without moving; the next Enter commits the cell and moves down. Esc cancels uncommitted input.
+3. Select a rectangle with Shift and arrow keys, then use **Ctrl+V** or **貼り付け** with rectangular TSV. Empty pasted cells mean no change. An invalid value, inconsistent row width, or destination overflow rejects the entire paste and displays its location and reason.
+4. Use **値をクリア** or **Delete** outside editing to clear optional cells. Including a required field rejects the whole clear. Delete inside an editor deletes text.
+5. Use **元に戻す** or **Ctrl+Z** outside editing to reverse one committed cell edit, paste, clear, or row addition. Ctrl+Z inside the text editor belongs to its uncommitted text buffer. **新規行追加** adds row 101 and focuses its required Title.
+
+**Adoption result: rejected for the current editing requirement.** On the evaluated Microsoft Japanese IME environment, typing directly into a selected cell loses the first key (`n`, `i` becomes `い`, not `に`). F2 before composition avoids this reproduced path, but this is insufficient for adopting the component. Keep this prototype as an evaluation artifact; see #19 for successful checks, failed evidence, timings, and the follow-up boundary. This does not complete #2, #7, or #12.
+
 ## Credentials and failures
 
 The app uses gh's stored authentication. It excludes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its gh children and reports only which variable names are present. It does not modify the parent environment or extract, display, duplicate, or persist a token.
@@ -43,6 +55,12 @@ dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configu
 
 # Ordinary executable, controlled gh boundary; unlocked desktop required:
 .\scripts\Test-E2E.ps1
+
+# Actual Microsoft Japanese IME; currently reproduces the adoption-blocking failure:
+.\scripts\Test-E2E.ps1 -RealIme
+
+# Warmup plus ten samples, with application and UI elapsed times separated:
+.\scripts\Measure-Grid.ps1
 
 # Real adapter writes and ordinary-executable diagnostics in the authorized sandbox:
 .\scripts\Test-LiveGitHub.ps1
