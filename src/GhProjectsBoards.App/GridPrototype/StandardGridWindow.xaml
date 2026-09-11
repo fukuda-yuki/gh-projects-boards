@@ -1,0 +1,26 @@
+<Window x:Class="GhProjectsBoards.App.GridPrototype.StandardGridWindow" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="標準DataGrid比較" AutomationProperties.AutomationId="StandardGridWindow"
+        Width="900" Height="680" WindowStartupLocation="CenterOwner" FontSize="14">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="標準DataGridとTextBoxの入力比較 ／ 試験データ・終了時破棄"
+                   Margin="0,0,0,12" TextWrapping="Wrap" />
+        <DockPanel Grid.Row="1" Margin="0,0,0,16">
+            <TextBlock Text="比較用TextBox：" VerticalAlignment="Center" />
+            <TextBox x:Name="ReferenceTextBox" AutomationProperties.AutomationId="ReferenceTextBox" MinHeight="32" />
+        </DockPanel>
+        <DataGrid Grid.Row="2" x:Name="StandardGrid" AutomationProperties.AutomationId="StandardGrid"
+                  ItemsSource="{Binding}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  CanUserSortColumns="False" CanUserReorderColumns="False" SelectionMode="Extended" SelectionUnit="Cell"
+                  EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling" RowHeight="36">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="タイトル" Width="*" Binding="{Binding Title, Mode=TwoWay}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>

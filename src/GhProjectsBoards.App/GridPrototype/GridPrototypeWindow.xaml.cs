@@ -16,7 +16,10 @@ internal partial class GridPrototypeWindow : Window
     {
         InitializeComponent();
         DataContext = model;
+        GridInputTrace.Attach(this, EditorGrid, "prototype", () => model.UndoCount);
     }
+    private void OpenStandardGrid_Click(object sender, RoutedEventArgs e)
+        => new StandardGridWindow { Owner = this }.ShowDialog();
     private void Grid_Loaded(object sender, RoutedEventArgs e)
     {
         FocusCell(model.Rows[0], GridField.Title);

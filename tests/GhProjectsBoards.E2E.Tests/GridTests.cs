@@ -18,6 +18,17 @@ namespace GhProjectsBoards.E2E.Tests;
 [Apartment(ApartmentState.STA)]
 public sealed class GridTests
 {
+    [Test]
+    public void OrdinaryExecutableOffersAStandardGridAndTextBoxComparison()
+    {
+        using var app = new GridAppDriver();
+        app.OpenStandardComparison();
+        Assert.That(app.Element("StandardGrid").AsGrid().RowCount, Is.EqualTo(100));
+        Assert.That(app.Element("ReferenceTextBox").AsTextBox().Text, Is.Empty);
+        app.AssertNoGhCalls();
+        app.CloseNormally();
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     [Category("RealIme")]
@@ -325,6 +336,7 @@ internal sealed class GridAppDriver : IDisposable
     private readonly string fixtureDirectory;
     private readonly Window main;
     private readonly System.Windows.IDataObject? previousClipboard;
+    private Window? comparisonOwner;
     public Window Window { get; private set; }
     public string Artifacts { get; }
     public double GridOpenMilliseconds { get; }
@@ -374,6 +386,15 @@ internal sealed class GridAppDriver : IDisposable
         cf.ByProcessId(process.Id).And(cf.ByControlType(FlaUI.Core.Definitions.ControlType.MenuItem)).And(cf.ByName(name)));
     public string Text(string id) => Element(id).Name;
     public string EditorText => Element("GridCellEditor").Patterns.Text.Pattern.DocumentRange.GetText(-1);
+    public void OpenStandardComparison()
+    {
+        var owner = Window;
+        Button("OpenStandardGridButton").Invoke();
+        Wait(() => owner.ModalWindows.Any(window => window.AutomationId == "StandardGridWindow"));
+        comparisonOwner = owner;
+        Window = owner.ModalWindows.Single(window => window.AutomationId == "StandardGridWindow");
+        Wait(() => Window.FindFirstDescendant(cf => cf.ByAutomationId("StandardGrid")) is not null);
+    }
     // WPF substitutes a row/column description when an empty cell's Name is requested.
     // ValuePattern reports the actual cell content, including an explicit empty value.
     public string Value(int rowId, int column) => Cell(rowId, column).Patterns.Value.Pattern.Value.Value;
@@ -411,6 +432,13 @@ internal sealed class GridAppDriver : IDisposable
         Is.True, "The ordinary grid did not reach the expected UI state.");
     public void CloseNormally()
     {
+        if (comparisonOwner is not null)
+        {
+            Window.Close();
+            Wait(() => comparisonOwner.ModalWindows.All(window => window.AutomationId != "StandardGridWindow"));
+            Window = comparisonOwner;
+            comparisonOwner = null;
+        }
         Window.Close();
         // IME helper windows may outlive the grid. Verify this window closes and then
         // require the original application process to exit normally as well.

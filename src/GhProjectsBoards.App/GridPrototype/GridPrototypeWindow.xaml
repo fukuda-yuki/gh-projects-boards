@@ -45,6 +45,8 @@
             <RowDefinition Height="*" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,8">
+            <Button DockPanel.Dock="Right" Content="標準DataGrid比較" Click="OpenStandardGrid_Click"
+                    AutomationProperties.AutomationId="OpenStandardGridButton" />
             <TextBlock DockPanel.Dock="Right" Text="{Binding RowCountText}" AutomationProperties.AutomationId="GridRowCount"
                        VerticalAlignment="Center" FontSize="18" Foreground="#526077" />
             <TextBlock Text="編集グリッド試作" FontSize="26" FontWeight="SemiBold" Foreground="#202B3B" />
