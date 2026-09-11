@@ -14,11 +14,13 @@ Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#
 
 **Decision:** Do not adopt the evaluated WPF DataGrid prototype for production editing. Keep it reachable in the ordinary executable as an offline evaluation artifact. [#19](https://github.com/fukuda-yuki/gh-projects-boards/issues/19) owns the evidence and measurements.
 
+**Follow-up boundary:** Retain WPF DataGrid as a candidate during [#20](https://github.com/fukuda-yuki/gh-projects-boards/issues/20). A standard DataGridTextColumn with writable TwoWay binding reproduces the same direct-start failure in the evaluated environment, while its F2 path and a standalone TextBox retain the first syllable. This localizes the observed failure to the transition into editing, without establishing its internal WPF/IME cause or proving that all small repairs are impossible. No demonstrated repair is adopted. Cell selection remains separate from editing; the unsuccessful timing/state experiments are retained in #20 rather than production code.
+
 **Reason:** Direct Japanese composition from a selected cell drops the first key in the evaluated Microsoft Japanese IME environment. The loss was reproduced with FlaUI physical keys and separate, slowly paced native UI operations. F2 before composition avoids that path, but requiring users to remember a workaround is insufficient for the intended editing experience. Cell/range editing, atomic validation and Undo can be supplied with app-local code; that does not compensate for silent text loss.
 
 **Implementation burden:** Standard DataGrid provides navigation, selection, virtualization, and native TextBox/ComboBox editing. Operation-level Undo, atomic TSV interpretation/validation, blank-versus-clear behavior, stable row identity, and explicit new-row handling are supplemental implementation. A small text-column subclass keeps one-way initialization editable while retaining native input handling; reading the editor document at commit handles observed reconversion/Text-property divergence. Direct IME startup remains unresolved.
 
-**License and limit:** [WPF is MIT-licensed](https://github.com/dotnet/wpf/blob/main/LICENSE.TXT); this prototype adds no component fee, package, or assembly. This does not choose the application license. The rejection applies to the evaluated prototype/environment, not every possible WPF customization or IME. A follow-up must compare a demonstrated editor-lifecycle repair against alternative components, including cost and license terms before adoption. Persistence, real GitHub field mapping, apply, and broader #2/#7/#12 acceptance remain separate.
+**License and limit:** [WPF is MIT-licensed](https://github.com/dotnet/wpf/blob/main/LICENSE.TXT); this prototype adds no component fee, package, or assembly. This does not choose the application license. The rejection applies to the evaluated prototype/environment, not every possible WPF customization or IME. Further lifecycle work needs a demonstrated cause; alternative-component evaluation and changes to selection behavior require a separate scope decision. Any external adoption requires cost/license review and authority for dependency changes. Persistence, real GitHub field mapping, apply, and broader #2/#7/#12 acceptance remain separate.
 
 ## Automated testing
 
@@ -44,7 +46,7 @@ Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#
 
 | Topic | Status | Required follow-up |
 | --- | --- | --- |
-| Grid component | Evaluated candidate rejected in #19 | Resolve direct IME startup or select another component, then repeat the real-input gate |
+| Grid component | Prototype not adopted; WPF DataGrid retained as a candidate in #20 | Resolve the demonstrated direct-start failure before adoption; standard comparison and failed repairs are recorded in #20 |
 | Local persistence | Pending; SQLite is a candidate in #2 | Decide from draft and recovery requirements before #8 implementation |
 | Editable fields and item types | Pending | Define supported, read-only, and excluded cases in #2 |
 | External components and application license | Pending | Record component licenses and the repository license policy in #2 |

@@ -35,7 +35,9 @@ From the connection screen, select **編集グリッド試作**. No connection c
 4. Use **値をクリア** or **Delete** outside editing to clear optional cells. Including a required field rejects the whole clear. Delete inside an editor deletes text.
 5. Use **元に戻す** or **Ctrl+Z** outside editing to reverse one committed cell edit, paste, clear, or row addition. Ctrl+Z inside the text editor belongs to its uncommitted text buffer. **新規行追加** adds row 101 and focuses its required Title.
 
-**Adoption result: rejected for the current editing requirement.** On the evaluated Microsoft Japanese IME environment, typing directly into a selected cell loses the first key (`n`, `i` becomes `い`, not `に`). F2 before composition avoids this reproduced path, but this is insufficient for adopting the component. Keep this prototype as an evaluation artifact; see #19 for successful checks, failed evidence, timings, and the follow-up boundary. This does not complete #2, #7, or #12.
+Select **標準DataGrid比較** inside the prototype to open a standard DataGrid with 100 writable, TwoWay-bound Title rows and a standalone TextBox. The comparison grid uses default text-column editors and has no prototype validation, operation Undo, or custom input handlers. It also discards its synthetic data on close.
+
+**Adoption status: not adopted; IME investigation remains open.** On the evaluated Microsoft Japanese IME environment, typing directly into a selected cell loses the first key (`n`, `i` becomes `い`, not `に`). [#20](https://github.com/fukuda-yuki/gh-projects-boards/issues/20) also reproduces this in the standard comparison grid; F2 composition and the standalone TextBox work. Bounded lifecycle changes have not established a repair and are not included. WPF DataGrid remains a candidate, while the #19 prototype rejection and failing reproducer remain valid. See the Issues for evidence and unresolved causes. This does not complete #2, #7, or #12.
 
 ## Credentials and failures
 
@@ -58,6 +60,11 @@ dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configu
 
 # Actual Microsoft Japanese IME; currently reproduces the adoption-blocking failure:
 .\scripts\Test-E2E.ps1 -RealIme
+
+# Standard DataGrid / prototype / TextBox comparison; retains failing controls:
+.\scripts\Compare-GridIme.ps1
+# Same input with buffered event observations:
+.\scripts\Compare-GridIme.ps1 -TraceInput
 
 # Warmup plus ten samples, with application and UI elapsed times separated:
 .\scripts\Measure-Grid.ps1

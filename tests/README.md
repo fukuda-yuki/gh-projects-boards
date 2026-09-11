@@ -130,6 +130,21 @@ Measurements use the existing test projects and real application collaborators. 
 
 The UI series measures the prototype-button-to-ready transition for 100 rows, ten consecutive cell edits, a Ctrl+End/Ctrl+Home scroll round trip, and 10x5/100x5 paste and operation Undo. Clipboard setup and last-row content assertions occur outside paste timing; the payload changes all five cells per row. Each paste must create exactly one operation and Undo must restore the endpoint. These are local elapsed times, not click-to-photon measurements, human editing speed, large-dataset guarantees, or persistence/apply performance. Preserve failed runs separately; the script requires executed, non-skipped measurement cases. The in-process measurement fixture is explicit and excluded from routine correctness checks.
 
+### Standard-control IME comparison
+
+[#20](https://github.com/fukuda-yuki/gh-projects-boards/issues/20) owns the comparison and bounded repair experiments. From the ordinary prototype, **標準DataGrid比較** opens a default DataGridTextColumn with writable TwoWay Title bindings and a standalone TextBox. Neither comparison control uses the prototype's commit, validation, Undo, or input handlers.
+
+```powershell
+.\scripts\Compare-GridIme.ps1
+.\scripts\Compare-GridIme.ps1 -TraceInput
+```
+
+Both commands require Microsoft Japanese IME selected in alphanumeric mode and an unlocked desktop. The explicit `ImeComparison` fixture uses fresh application processes for three samples of prototype direct/F2, standard direct/F2, and TextBox input. It asserts the actual physical-key result `にほんご`, preserving failures rather than treating a failed control as a pass. Two additional cases hold the initial key for 250 ms to distinguish hold duration from inter-key spacing. These diagnostics are separate from the existing `-RealIme` acceptance gate; the original failed acceptance test remains active.
+
+Each unique `TestResults/ime-comparison/<run-id>/` retains TRX, per-key displayed/committed values, focus, DPI, screenshots, app hash, environment, and source state. `-TraceInput` sets `GHPB_GRID_INPUT_TRACE_DIRECTORY` only for that run. The app buffers routed input, focus, edit-boundary, committed-value, and history observations and writes JSON when the window closes; it does not handle input, force layout, or drain the Dispatcher to observe it. Diagnostics are off by default. The script restores process environment values, and the fixture restores the required alphanumeric mode and clipboard. Repeat without tracing to check for observation effects. A process crash may prevent buffered traces from being written; TRX and external screenshots remain separate evidence.
+
+The current direct-start paths in both grids fail, including the held-key controls; F2 and TextBox succeed in the evaluated environment. The script therefore reports a nonzero result for this retained failure. No Unicode injection, F2 substitution for direct input, or weakening of expectations establishes acceptance. Record further findings and experiment patches in #20, not in product documents.
+
 ## Live sandbox validation
 
 Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) first. Live tests are confined to `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; identifiers are checked before mutations. Stored gh authentication must use the designated account and keyring, with `repo` and `project` scopes. The tests do not alter gh configuration or obtain a token.
