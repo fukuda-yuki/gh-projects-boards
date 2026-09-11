@@ -1,4 +1,6 @@
 using System.IO;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using FlaUI.Core.AutomationElements;
@@ -23,6 +25,9 @@ public sealed class ImeComparisonTests
 
     [TestCaseSource(nameof(StartupCases))]
     public void StartupRetainsFirstSyllable(string scenario, bool f2, int sample)
+        => RunStartup(scenario, f2, sample, 0);
+
+    private static void RunStartup(string scenario, bool f2, int sample, int initialKeyHoldMilliseconds)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_REAL_IME") != "1")
             Assert.Ignore("Requires Microsoft Japanese IME selected in alphanumeric mode.");
@@ -43,6 +48,14 @@ public sealed class ImeComparisonTests
             : cell.FindFirstDescendant(cf => cf.ByControlType(ControlType.Edit));
         string Text() => Editor()?.Patterns.Text.Pattern.DocumentRange.GetText(-1) ?? "<no editor>";
         var observations = new List<object>();
+        var started = Stopwatch.GetTimestamp();
+        var dpi = GetDpiForWindow(new nint(app.Window.Properties.NativeWindowHandle.Value));
+        void Observe(string step) => observations.Add(new
+        {
+            step, milliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds, text = Text(),
+            value = cell.Patterns.Value.IsSupported ? cell.Patterns.Value.Pattern.Value.Value : null,
+            editorHasFocus = Editor()?.Properties.HasKeyboardFocus.Value
+        });
         try
         {
             if (scenario != "textbox") Assert.That(Editor(), Is.Null, "The direct-start cell must not already be editing.");
@@ -53,13 +66,21 @@ public sealed class ImeComparisonTests
             }
             Keyboard.TypeVirtualKeyCode(0x16);
             FlaUI.Core.Input.Wait.UntilInputIsProcessed();
-            observations.Add(new { step = "IME enabled", text = Text() });
+            Observe("IME enabled");
             foreach (var key in new[] { VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H,
                 VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O })
             {
-                Keyboard.Type(key);
+                if (initialKeyHoldMilliseconds > 0 && observations.Count == 1)
+                {
+                    // A separate stimulus distinguishes first-key hold duration from
+                    // the interval between successive keys; it does not replace fast input.
+                    Keyboard.Press(key);
+                    Thread.Sleep(initialKeyHoldMilliseconds);
+                    Keyboard.Release(key);
+                }
+                else Keyboard.Type(key);
                 FlaUI.Core.Input.Wait.UntilInputIsProcessed();
-                observations.Add(new { step = key.ToString(), text = Text() });
+                Observe(key.ToString());
             }
             app.Capture($"comparison-{scenario}-f2-{f2}-{sample}");
             Assert.That(Text(), Is.EqualTo("にほんご"), "Physical n+i must retain the first syllable.");
@@ -68,7 +89,7 @@ public sealed class ImeComparisonTests
         finally
         {
             var path = Path.Combine(app.Artifacts, $"comparison-{scenario}-f2-{f2}-{sample}-{Guid.NewGuid():N}.json");
-            File.WriteAllText(path, JsonSerializer.Serialize(new { scenario, f2, sample, observations }, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(path, JsonSerializer.Serialize(new { scenario, f2, sample, initialKeyHoldMilliseconds, dpi, observations }, new JsonSerializerOptions { WriteIndented = true }));
             TestContext.AddTestAttachment(path);
             for (var cancel = 0; cancel < 3 && Editor() is not null; cancel++)
             {
@@ -80,4 +101,11 @@ public sealed class ImeComparisonTests
             app.CloseNormally();
         }
     }
+
+    [TestCase("prototype")]
+    [TestCase("standard")]
+    public void HeldInitialKeyRetainsFirstSyllable(string scenario) => RunStartup(scenario, false, 1, 250);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(nint hwnd);
 }

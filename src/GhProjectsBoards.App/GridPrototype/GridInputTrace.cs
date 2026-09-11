@@ -16,10 +16,11 @@ internal static class GridInputTrace
         var directory = Environment.GetEnvironmentVariable("GHPB_GRID_INPUT_TRACE_DIRECTORY");
         if (string.IsNullOrWhiteSpace(directory)) return;
         var observations = new List<object>();
+        var droppedObservations = 0;
         var started = Stopwatch.GetTimestamp();
         void Record(string name, RoutedEventArgs args)
         {
-            if (observations.Count >= 10000) return;
+            if (observations.Count >= 10000) { droppedObservations++; return; }
             var key = args as KeyEventArgs;
             var composition = args as TextCompositionEventArgs;
             var focus = Keyboard.FocusedElement;
@@ -33,7 +34,12 @@ internal static class GridInputTrace
                 text = composition?.Text, composition = composition?.TextComposition.CompositionText,
                 focus = focus?.GetType().Name, editorText = (focus as TextBox)?.Text,
                 row = grid.CurrentCell.Item?.ToString(), column = grid.CurrentColumn?.DisplayIndex,
-                committed = grid.CurrentCell.Item is GridPrototypeRow row ? row.Title : null,
+                committed = grid.CurrentCell.Item switch
+                {
+                    GridPrototypeRow row => row.Title,
+                    StandardGridWindow.StandardRow row => row.Title,
+                    _ => null
+                },
                 undoCount = history?.Invoke()
             });
         }
@@ -54,7 +60,7 @@ internal static class GridInputTrace
             {
                 Directory.CreateDirectory(directory);
                 File.WriteAllText(Path.Combine(directory, $"{scenario}-{Guid.NewGuid():N}.json"),
-                    JsonSerializer.Serialize(new { scenario, runtime = Environment.Version.ToString(), observations },
+                    JsonSerializer.Serialize(new { scenario, runtime = Environment.Version.ToString(), droppedObservations, observations },
                         new JsonSerializerOptions { WriteIndented = true }));
             }
             catch (IOException) { /* Optional diagnostics must not prevent ordinary window shutdown. */ }

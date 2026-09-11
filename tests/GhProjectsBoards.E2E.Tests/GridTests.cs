@@ -25,6 +25,14 @@ public sealed class GridTests
         app.OpenStandardComparison();
         Assert.That(app.Element("StandardGrid").AsGrid().RowCount, Is.EqualTo(100));
         Assert.That(app.Element("ReferenceTextBox").AsTextBox().Text, Is.Empty);
+        var cell = app.Element("StandardGrid").AsGrid().Rows[1].Cells[0];
+        cell.Click();
+        Assert.That(cell.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Edit)), Is.Null);
+        Keyboard.Type(VirtualKeyShort.F2);
+        GridAppDriver.Wait(() => cell.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Edit)) is not null);
+        Keyboard.Type("comparison");
+        Keyboard.Type(VirtualKeyShort.RETURN);
+        GridAppDriver.Wait(() => cell.Patterns.Value.Pattern.Value.Value == "comparison");
         app.AssertNoGhCalls();
         app.CloseNormally();
     }

@@ -13,7 +13,7 @@ internal partial class StandardGridWindow : Window
 
     // Deliberately writable: this control is the standard TwoWay-binding baseline,
     // independent of the prototype's validation and operation history.
-    private sealed class StandardRow(int id)
+    internal sealed class StandardRow(int id)
     {
         public string Title { get; set; } = $"試験データ {id:000}";
         public override string ToString() => $"行 {id:000}";
