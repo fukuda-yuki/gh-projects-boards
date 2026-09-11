@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [switch]$RealIme
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,7 +18,7 @@ $testProject = 'tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.cspr
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')
 $results = Join-Path $repoRoot "TestResults/e2e/$runId"
 $previous = @{}
-foreach ($name in @('GHPB_RUN_E2E', 'GHPB_E2E_APP_PATH', 'GHPB_E2E_ARTIFACTS', 'GHPB_E2E_FAKE_GH_PATH')) {
+foreach ($name in @('GHPB_RUN_E2E', 'GHPB_RUN_REAL_IME', 'GHPB_E2E_APP_PATH', 'GHPB_E2E_ARTIFACTS', 'GHPB_E2E_FAKE_GH_PATH')) {
     $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 
@@ -30,13 +31,15 @@ try {
     }
 
     $env:GHPB_RUN_E2E = '1'
+    $env:GHPB_RUN_REAL_IME = if ($RealIme) { '1' } else { '0' }
+    $testFilter = if ($RealIme) { 'TestCategory=RealIme' } else { 'TestCategory=E2E&TestCategory!=RealIme' }
     $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows/GhProjectsBoards.App.exe"
     $env:GHPB_E2E_FAKE_GH_PATH = Join-Path $repoRoot "tests/GhProjectsBoards.Tests/bin/$Configuration/net10.0-windows/GhProjectsBoards.Tests.exe"
     $env:GHPB_E2E_ARTIFACTS = $results
     New-Item -ItemType Directory -Path $results -Force | Out-Null
 
     dotnet test $testProject --configuration $Configuration --no-build `
-        --filter 'TestCategory=E2E' --logger 'trx;LogFileName=e2e.trx' `
+        --filter $testFilter --logger 'trx;LogFileName=e2e.trx' `
         --results-directory $results -- `
         NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=120000
     if ($LASTEXITCODE -ne 0) {

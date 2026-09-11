@@ -1,5 +1,6 @@
 using GhProjectsBoards.App.GridPrototype;
 using NUnit.Framework;
+using System.Threading;
 
 namespace GhProjectsBoards.Tests;
 
@@ -7,6 +8,18 @@ namespace GhProjectsBoards.Tests;
 [Category("Integration")]
 internal sealed class GridPrototypeIntegrationTests
 {
+    [Test]
+    [Apartment(ApartmentState.STA)]
+    public void PrototypeWindowCanLoadItsXamlAndSyntheticBindings()
+    {
+        var window = new GridPrototypeWindow();
+        Assert.That(window.DataContext, Is.TypeOf<GridPrototypeViewModel>());
+        var grid = (System.Windows.Controls.DataGrid)window.FindName("EditorGrid");
+        Assert.That(grid.Columns.Select(column => column.IsReadOnly), Is.All.False,
+            "Separating the committed values from editors must not make the grid read-only.");
+        window.Close();
+    }
+
     [Test]
     public void RejectedPasteCanBeCorrectedAndUndoneWithoutLosingEarlierEdits()
     {

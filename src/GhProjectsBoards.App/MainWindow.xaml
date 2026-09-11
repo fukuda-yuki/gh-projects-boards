@@ -24,7 +24,11 @@
     </Window.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="28" MaxWidth="1050">
-            <TextBlock Text="GitHub に接続" FontSize="28" FontWeight="SemiBold" />
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="編集グリッド試作" Click="OpenGridPrototype_Click"
+                        AutomationProperties.AutomationId="OpenGridPrototypeButton" />
+                <TextBlock Text="GitHub に接続" FontSize="28" FontWeight="SemiBold" />
+            </DockPanel>
             <TextBlock Text="保存済みのGitHub CLI認証で、接続先と対象ごとの権限を確認します。" Margin="0,6,0,20" />
 
             <Border Background="White" BorderBrush="#DCE2EB" BorderThickness="1" CornerRadius="8" Padding="20">

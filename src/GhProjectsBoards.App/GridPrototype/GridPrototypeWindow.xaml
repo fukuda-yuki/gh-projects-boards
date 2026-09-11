@@ -1,0 +1,118 @@
+<Window x:Class="GhProjectsBoards.App.GridPrototype.GridPrototypeWindow" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        xmlns:local="clr-namespace:GhProjectsBoards.App.GridPrototype"
+        Title="編集グリッド試作 — GitHub Projects Boards" AutomationProperties.AutomationId="GridPrototypeWindow"
+        Width="1120" Height="760" MinWidth="900" MinHeight="550" WindowStartupLocation="CenterOwner"
+        FontFamily="Yu Gothic UI, Segoe UI" FontSize="14" Background="#F4F6FA">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleWhenTrue" />
+        <local:NonEmptyConverter x:Key="HasText" />
+        <x:Array Type="{x:Type sys:String}" x:Key="IssueStates">
+            <sys:String>Open</sys:String><sys:String>Closed</sys:String>
+        </x:Array>
+        <x:Array Type="{x:Type sys:String}" x:Key="Choices">
+            <x:Static Member="sys:String.Empty" /><sys:String>High</sys:String><sys:String>Medium</sys:String><sys:String>Low</sys:String>
+        </x:Array>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7" /><Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="MinHeight" Value="36" />
+        </Style>
+        <Style x:Key="CellStyle" TargetType="DataGridCell">
+            <Setter Property="ToolTip" Value="{Binding Tag, RelativeSource={RelativeSource Self}}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}, Converter={StaticResource HasText}}" Value="True">
+                    <Setter Property="BorderBrush" Value="#BE3636" /><Setter Property="BorderThickness" Value="2" />
+                    <Setter Property="Background" Value="#FFF0ED" /><Setter Property="Foreground" Value="#861B1B" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TextDisplay" TargetType="TextBlock">
+            <Setter Property="Padding" Value="8,4" /><Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="TextEditor" TargetType="TextBox">
+            <Setter Property="Padding" Value="6,2" /><Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="AutomationProperties.AutomationId" Value="GridCellEditor" />
+        </Style>
+        <Style x:Key="ChoiceEditor" TargetType="ComboBox">
+            <Setter Property="AutomationProperties.AutomationId" Value="GridChoiceEditor" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,8">
+            <TextBlock DockPanel.Dock="Right" Text="{Binding RowCountText}" AutomationProperties.AutomationId="GridRowCount"
+                       VerticalAlignment="Center" FontSize="18" Foreground="#526077" />
+            <TextBlock Text="編集グリッド試作" FontSize="26" FontWeight="SemiBold" Foreground="#202B3B" />
+        </DockPanel>
+        <TextBlock Grid.Row="1" Text="試験データ・終了時破棄  ／  タイトルとIssue状態は必須。数値・日付・選択肢は空欄にできます。"
+                   AutomationProperties.AutomationId="GridPrototypeNotice" Foreground="#526077" Margin="0,0,0,16" TextWrapping="Wrap" />
+        <DockPanel Grid.Row="2" Margin="0,0,0,14">
+            <TextBlock DockPanel.Dock="Right" Text="空欄の貼り付け＝変更なし" VerticalAlignment="Center" Foreground="#526077" />
+            <StackPanel Orientation="Horizontal">
+                <Button Content="新規行追加(_N)" Click="AddRow_Click" AutomationProperties.AutomationId="GridAddRowButton" />
+                <Button Content="貼り付け(_P)" Click="Paste_Click" AutomationProperties.AutomationId="GridPasteButton" />
+                <Button Content="値をクリア(_D)" Click="Clear_Click" AutomationProperties.AutomationId="GridClearButton" />
+                <Button Content="{Binding UndoText}" Click="Undo_Click" IsEnabled="{Binding CanUndo}" AutomationProperties.AutomationId="GridUndoButton" />
+            </StackPanel>
+        </DockPanel>
+        <DataGrid Grid.Row="3" x:Name="EditorGrid" AutomationProperties.AutomationId="PrototypeGrid"
+                  ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                  SelectionMode="Extended" SelectionUnit="Cell" EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling" RowHeight="36" ColumnHeaderHeight="38" RowHeaderWidth="68"
+                  BorderBrush="#CED6E0" Background="White" HorizontalGridLinesBrush="#E6EAF0" VerticalGridLinesBrush="#E6EAF0"
+                  Loaded="Grid_Loaded" PreparingCellForEdit="PreparingCellForEdit" CellEditEnding="CellEditEnding"
+                  PreviewKeyDown="Grid_PreviewKeyDown">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Header" Value="{Binding}" />
+                    <Setter Property="AutomationProperties.AutomationId" Value="{Binding Id, StringFormat=GridRow_{0}}" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding RowLabel, StringFormat=行 {0}}" />
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.RowHeaderTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding RowLabel}" FontSize="12" />
+                        <TextBlock Text=" 新" FontSize="11" Foreground="#1F5EA8" Visibility="{Binding IsNew, Converter={StaticResource VisibleWhenTrue}}" />
+                    </StackPanel>
+                </DataTemplate>
+            </DataGrid.RowHeaderTemplate>
+            <DataGrid.Columns>
+                <local:PrototypeTextColumn Header="タイトル *" Width="*" MinWidth="240" Binding="{Binding Title, Mode=OneWay}"
+                                           ElementStyle="{StaticResource TextDisplay}" EditingElementStyle="{StaticResource TextEditor}">
+                    <local:PrototypeTextColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource CellStyle}"><Setter Property="Tag" Value="{Binding TitleError}" /><Setter Property="AutomationProperties.Name" Value="{Binding Title}" /></Style></local:PrototypeTextColumn.CellStyle>
+                </local:PrototypeTextColumn>
+                <DataGridTemplateColumn Header="Issue状態 *" Width="120" ClipboardContentBinding="{Binding State}">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding State}" Style="{StaticResource TextDisplay}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate><DataTemplate><ComboBox SelectedItem="{Binding State, Mode=OneWay}" ItemsSource="{StaticResource IssueStates}" Style="{StaticResource ChoiceEditor}" /></DataTemplate></DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource CellStyle}"><Setter Property="Tag" Value="{Binding StateError}" /><Setter Property="AutomationProperties.Name" Value="{Binding State}" /></Style></DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+                <local:PrototypeTextColumn Header="数値" Width="130" Binding="{Binding NumberText, Mode=OneWay}"
+                                           ElementStyle="{StaticResource TextDisplay}" EditingElementStyle="{StaticResource TextEditor}">
+                    <local:PrototypeTextColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource CellStyle}"><Setter Property="Tag" Value="{Binding NumberError}" /><Setter Property="AutomationProperties.Name" Value="{Binding NumberText}" /></Style></local:PrototypeTextColumn.CellStyle>
+                </local:PrototypeTextColumn>
+                <local:PrototypeTextColumn Header="日付 (yyyy-MM-dd)" Width="180" Binding="{Binding DateText, Mode=OneWay}"
+                                           ElementStyle="{StaticResource TextDisplay}" EditingElementStyle="{StaticResource TextEditor}">
+                    <local:PrototypeTextColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource CellStyle}"><Setter Property="Tag" Value="{Binding DateError}" /><Setter Property="AutomationProperties.Name" Value="{Binding DateText}" /></Style></local:PrototypeTextColumn.CellStyle>
+                </local:PrototypeTextColumn>
+                <DataGridTemplateColumn Header="選択肢" Width="130" ClipboardContentBinding="{Binding Choice}">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Choice}" Style="{StaticResource TextDisplay}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate><DataTemplate><ComboBox SelectedItem="{Binding Choice, Mode=OneWay}" ItemsSource="{StaticResource Choices}" Style="{StaticResource ChoiceEditor}" /></DataTemplate></DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellStyle><Style TargetType="DataGridCell" BasedOn="{StaticResource CellStyle}"><Setter Property="Tag" Value="{Binding ChoiceError}" /><Setter Property="AutomationProperties.Name" Value="{Binding Choice}" /></Style></DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Grid.Row="4" Margin="0,12,0,0">
+            <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="GridStatus" AutomationProperties.LiveSetting="Polite"
+                       TextWrapping="Wrap" Foreground="#202B3B" MinHeight="22" />
+            <TextBlock Text="F2：編集  ·  Tab：次のセル  ·  Enter：確定して下へ  ·  Esc：入力取消  ·  Ctrl+V：貼り付け  ·  Ctrl+Z：元に戻す"
+                       Foreground="#526077" FontSize="12" TextWrapping="Wrap" Margin="0,7,0,0" />
+        </StackPanel>
+    </Grid>
+</Window>

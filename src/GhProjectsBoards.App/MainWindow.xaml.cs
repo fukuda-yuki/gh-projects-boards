@@ -26,6 +26,8 @@ public partial class MainWindow : Window
         await operation;
     }
     private void Cancel_Click(object sender, RoutedEventArgs e) => model.Cancel();
+    private void OpenGridPrototype_Click(object sender, RoutedEventArgs e)
+        => new GridPrototype.GridPrototypeWindow { Owner = this }.ShowDialog();
     private void Detect_Click(object sender, RoutedEventArgs e) => model.ExecutablePath = ConnectionViewModel.FindGh();
     private void Browse_Click(object sender, RoutedEventArgs e)
     {

@@ -16,6 +16,7 @@ internal sealed class GridPrototypeRow(int id, GridValues values, bool isNew = f
     public int Id { get; } = id;
     public string RowLabel => $"{Id:000}";
     public bool IsNew { get; } = isNew;
+    public override string ToString() => $"行 {RowLabel}";
     public GridValues Values { get; private set; } = values;
     public string Title => Values.Title;
     public string State => Values.State;
@@ -44,7 +45,8 @@ internal sealed class GridPrototypeRow(int id, GridValues values, bool isNew = f
         var updated = next.GroupBy(error => error.Address.Field).ToDictionary(group => group.Key, group => group.First().Message);
         if (errors.Count == 0 && updated.Count == 0) return;
         errors = updated;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(""));
+        foreach (var property in new[] { nameof(TitleError), nameof(StateError), nameof(NumberError), nameof(DateError), nameof(ChoiceError) })
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
     public event PropertyChangedEventHandler? PropertyChanged;
 }
