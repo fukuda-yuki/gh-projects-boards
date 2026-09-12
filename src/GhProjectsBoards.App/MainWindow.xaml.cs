@@ -20,6 +20,10 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         AppWindow.Resize(new SizeInt32(1080, 960));
+        ExecutableInput.Text = model.ExecutablePath;
+        HostInput.Text = model.Host;
+        IssueInput.Text = model.IssueUrl;
+        ProjectInput.Text = model.ProjectUrl;
         ExecutableInput.TextChanged += (_, _) => { if (!rendering) model.ExecutablePath = ExecutableInput.Text; };
         HostInput.TextChanged += (_, _) => { if (!rendering) model.Host = HostInput.Text; };
         IssueInput.TextChanged += (_, _) => { if (!rendering) model.IssueUrl = IssueInput.Text; };
@@ -48,10 +52,8 @@ public sealed partial class MainWindow : Window
         rendering = true;
         try
         {
-            if (ExecutableInput.Text != model.ExecutablePath) ExecutableInput.Text = model.ExecutablePath;
-            if (HostInput.Text != model.Host) HostInput.Text = model.Host;
-            if (IssueInput.Text != model.IssueUrl) IssueInput.Text = model.IssueUrl;
-            if (ProjectInput.Text != model.ProjectUrl) ProjectInput.Text = model.ProjectUrl;
+            // TextChanged can arrive after another control's notification. Never write
+            // model snapshots back over newer input while rendering diagnostic state.
             var enabled = model.CanCheck && !closingRequested && !pickerOpen;
             ExecutableInput.IsEnabled = HostInput.IsEnabled = IssueInput.IsEnabled = ProjectInput.IsEnabled = enabled;
             DetectButton.IsEnabled = BrowseButton.IsEnabled = CheckButton.IsEnabled = enabled;
@@ -77,11 +79,15 @@ public sealed partial class MainWindow : Window
     {
         if (closingRequested || operation is { IsCompleted: false }) return;
         UiMessage.Text = "";
+        model.ExecutablePath = ExecutableInput.Text;
+        model.Host = HostInput.Text;
+        model.IssueUrl = IssueInput.Text;
+        model.ProjectUrl = ProjectInput.Text;
         operation = model.CheckAsync(newConnection);
         await operation;
     }
     private void Cancel_Click(object sender, RoutedEventArgs args) => model.Cancel();
-    private void Detect_Click(object sender, RoutedEventArgs args) => model.ExecutablePath = ConnectionViewModel.FindGh();
+    private void Detect_Click(object sender, RoutedEventArgs args) => ExecutableInput.Text = ConnectionViewModel.FindGh();
 
     private async void Browse_Click(object sender, RoutedEventArgs args)
     {
@@ -94,7 +100,7 @@ public sealed partial class MainWindow : Window
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
             picker.FileTypeFilter.Add(".exe");
             var file = await picker.PickSingleFileAsync();
-            if (file is not null && !closingRequested) model.ExecutablePath = file.Path;
+            if (file is not null && !closingRequested) ExecutableInput.Text = file.Path;
         }
         catch (Exception)
         {
