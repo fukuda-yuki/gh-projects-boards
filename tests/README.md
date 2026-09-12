@@ -55,7 +55,11 @@ The connection contract includes these four journeys:
 
 Routine tests choose fake gh through the normal path field, set isolated `GH_CONFIG_DIR` and use synthetic data. There is no developer credential or business-Project dependency. OLE/native clipboard access is test infrastructure; save/restore available clipboard content, retry short-lived contention, and report restoration failure rather than silently clearing it. Do not publish clipboard data.
 
+Additional cases cover native picker selection/cancellation and both title-bar Close and Alt+F4, while an editable/read-only TextBox is focused and while gh is active. Tests never move focus away from the TextBox to prepare for shutdown. Command-copy checks materialize the original OLE formats before replacement, verify Unicode/custom-format restoration with synthetic data, then restore the user's clipboard and compare text privately. If an offered format cannot be captured, abort before copying. Arbitrary application-specific delayed formats still require their owning application's validation.
+
 Results go to unique `TestResults/e2e/<run-id>/` directories. Keep TRX and metadata for the source/build/environment. Failure capture is limited to the app rectangle; overlapping windows may still contain private content, so use a clean desktop and review before sharing. Capture failure must not hide a test failure. Cleanup may terminate only owned processes and must not turn a failed normal-close assertion into a pass.
+
+The runner retains build/test logs, source state, resolved package assets, runtime versions, file hashes for the app executable/DLL, Core DLL, WinUI DLLs and both test assemblies. It checks the required journey names as well as counts, so replacing a connection journey with an unrelated passing case cannot satisfy the gate. Connection fixtures record owned process IDs, normal versus forced exit and remaining recorded children. Raw screen/log/clipboard evidence stays local until reviewed for publication.
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
 

@@ -1,1 +1,4 @@
 * text=auto
+# Preserve the upstream terms exactly, including their original line endings.
+docs/notices/* -text -diff
+docs/notices/*.json text diff

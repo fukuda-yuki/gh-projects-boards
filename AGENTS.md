@@ -24,7 +24,7 @@ Write agent-facing and shared development documents in English. Respond to the u
 - Inspect the branch, worktree and existing changes before editing; preserve the user's work. Work on an Issue-linked branch unless explicitly instructed otherwise.
 - Make the smallest coherent change. Do not prebuild later Issues or treat a skeleton as a completed feature. Do not merge unrelated experimental branches to obtain reusable code.
 - Pin required dependencies and review their exact artifacts and terms. Dependency changes require authority for the current outcome. Required commercial use must not depend on paid or company-size/revenue eligibility.
-- For WinUI work, load the relevant installed setup, development-workflow, UI-testing and code-review skills. Repository requirements take precedence. Loading a skill does not authorize machine configuration changes.
+- For WinUI work, load the relevant installed development-workflow, UI-testing and code-review skills; load design guidance when authoring XAML. Use the setup skill only for an explicit setup request. Repository requirements take precedence. Loading a skill does not authorize machine configuration changes.
 - Continue through relevant build checks and non-destructive validation. UI completion requires the ordinary executable and the real user path; compilation or test discovery alone is insufficient.
 - Pause only dependent work for unresolved decisions, scope expansion, unauthorized remote writes or destructive actions. Do not repeat an approval already given and do not bypass enforced execution restrictions.
 - Follow [README.md](README.md) for build/run and [tests/README.md](tests/README.md) for validation. Never store or print authentication tokens.

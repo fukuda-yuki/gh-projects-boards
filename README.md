@@ -15,6 +15,8 @@ dotnet build GhProjectsBoards.sln --configuration Release
 
 The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Launching the connection screen requires no GitHub login and performs no network request. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
 
+The [dependency terms and source inventory](docs/dependencies.md) distinguishes Windows development use from binary redistribution. DWrite/Widgets redistribution applicability remains an unresolved #13 distribution blocker.
+
 ## Check a connection
 
 Install [GitHub CLI](https://cli.github.com/). Use automatic detection, browse, or enter the path to `gh.exe`. Enter the GitHub hostname and optionally an Issue URL and a user/organization Project URL on that host.

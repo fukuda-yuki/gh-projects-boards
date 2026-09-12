@@ -40,3 +40,5 @@ Preflight cannot atomically prevent another process from switching gh authentica
 | Distribution, component notices, signing, update/rollback and enterprise validation | #13 |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
+
+The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. Their applicability to the app-local payloads remains unresolved and blocks distribution under #13. The approved transfer from #22 is a scope decision, not license clearance. Preserve the exact [terms and package provenance](dependencies.md).
