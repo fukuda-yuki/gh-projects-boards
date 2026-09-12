@@ -12,6 +12,8 @@ jobs:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
       - run: dotnet build GhProjectsBoards.sln --configuration Release
+      - name: Build isolated WinUI input probe (not desktop acceptance)
+        run: dotnet build prototypes/WinUI.Feasibility/WinUI.Feasibility.csproj --configuration Release -p:RestoreLockedMode=true
       - name: Run unit and integration tests (no live GitHub)
         run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci
       # Discovery is not a successful desktop E2E run. Run the UI locally for now.

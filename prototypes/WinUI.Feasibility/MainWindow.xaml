@@ -1,0 +1,19 @@
+<Window x:Class="WinUI.Feasibility.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:tv="using:WinUI.TableView" Title="Issue 22 — WinUI feasibility">
+ <Grid Padding="24" RowSpacing="12">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <TextBlock Text="WinUI 入力検証 — 採用未決定" Style="{StaticResource TitleTextBlockStyle}"/>
+  <TextBlock Grid.Row="1" Text="セルを選択して日本語入力を開始。F2・変換・確定・取消・再変換を比較します。"/>
+  <tv:TableView x:Name="CandidateGrid" Grid.Row="2" AutoGenerateColumns="False"
+    ItemsSource="{x:Bind Rows}" SelectionUnit="Cell" SelectionMode="Extended"
+    AutomationProperties.AutomationId="CandidateGrid">
+   <tv:TableView.Columns>
+    <tv:TableViewTextColumn Header="Title" Binding="{Binding Title, Mode=TwoWay}" Width="360"/>
+    <tv:TableViewTextColumn Header="State" Binding="{Binding State, Mode=TwoWay}" Width="180"/>
+   </tv:TableView.Columns>
+  </tv:TableView>
+  <TextBox Grid.Row="3" Header="標準 TextBox 比較用" AutomationProperties.AutomationId="ReferenceEditor"/>
+ </Grid>
+</Window>
