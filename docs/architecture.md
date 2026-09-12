@@ -4,6 +4,8 @@ Source: [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and [#2
 
 ## Current structure
 
+The target UI is WinUI 3 / Windows App SDK; [#22](https://github.com/fukuda-yuki/gh-projects-boards/issues/22) owns the migration boundary. The isolated `prototypes/WinUI.Feasibility` executable tests candidate input behavior before production migration. It does not reference the WPF application or load its assemblies.
+
 `GhProjectsBoards.sln` contains one .NET 10 WPF application and two test projects. All production connection logic remains internal to `src/GhProjectsBoards.App`; no public API or additional application assembly is introduced.
 
 | Implemented component | Responsibility |

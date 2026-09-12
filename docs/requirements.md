@@ -8,6 +8,7 @@ A C# Windows desktop application for editing GitHub Issues in a Project-scoped t
 
 ## Agreed boundaries
 
+- Use C# + .NET 10 + WinUI 3 / Windows App SDK as the target platform. [#22](https://github.com/fukuda-yuki/gh-projects-boards/issues/22) owns migration validation; the currently integrated WPF executable does not establish WinUI acceptance.
 - Launch from a Windows executable; no browser extension or Excel dependency.
 - Explicitly register Projects and switch between them through Repository-oriented navigation. The navigation hierarchy does not redefine Project ownership or filter out Issues from other repositories.
 - GitHub is the authoritative data source. Keep local drafts and publish changes only through an explicit manual apply operation.

@@ -128,6 +128,8 @@ The separate `LiveGitHub` category is guarded by `GHPB_RUN_LIVE_GITHUB=1`. The s
 
 ## CI and later acceptance
 
+The isolated WinUI input probe uses the existing NUnit/FlaUI UIA3 dependencies with the separate `WinUiFeasibility` category. Run `./scripts/Test-WinUiFeasibility.ps1` on an unlocked desktop with Microsoft Japanese IME selected in alphanumeric mode. It builds the independent prototype using its lockfile, launches its normal unpackaged exe, tests launch/close and physical-key IME entry through a reference TextBox, F2, and direct cell selection. The script requires all four cases to execute and pass, with no skips. A failed probe is a rejected candidate gate, not a passing migration suite. It does not run under the ordinary `E2E` category. See the [probe instructions](../prototypes/WinUI.Feasibility/README.md).
+
 PR CI builds the solution, executes unit/integration tests excluding `LiveGitHub`, and lists desktop tests without launching them. Discovery/build success is not UI or live execution evidence. Before enabling desktop E2E in CI, validate a dedicated interactive Windows session and publish failure artifacts. Do not execute untrusted public PR code on a developer PC or credentialed self-hosted runner.
 
 For future UI tests, assign stable `AutomationProperties.AutomationId` values, prefer condition-based waits over fixed sleeps, keep desktop execution serial, and use screen/page objects as journeys grow. Address virtualized rows by stable item identity, not visible row index. Clipboard automation must restore prior content where practical. Text injection does not prove Japanese IME composition behavior; keep a real IME acceptance check alongside automated tests.

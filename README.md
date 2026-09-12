@@ -4,6 +4,8 @@ A Windows desktop application for preparing GitHub Issue and Project changes in 
 
 The current executable provides **GitHub CLI connection and permission diagnostics**. Project registration, table editing, draft persistence, and manual apply are future features in their owning Issues.
 
+The selected target platform is **C# + .NET 10 + WinUI 3 / Windows App SDK**. [Issue #22](https://github.com/fukuda-yuki/gh-projects-boards/issues/22) owns migration and its acceptance gates. The connection executable below remains WPF until a validated replacement is integrated. The separate [WinUI feasibility probe](prototypes/WinUI.Feasibility/README.md) is not the migrated product.
+
 ## Build and run
 
 Use Windows and the .NET 10 SDK. Run from the repository root:

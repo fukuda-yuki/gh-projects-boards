@@ -4,6 +4,8 @@ This document records agreed behavior from [Epic #1](https://github.com/fukuda-y
 
 ## Connection and API access
 
+The target UI platform is WinUI 3 / Windows App SDK on .NET 10 ([#22](https://github.com/fukuda-yuki/gh-projects-boards/issues/22)). Migration must preserve the behavior below, including cancellation, close while gh runs, identity isolation, and explicit apply. UI technology selection does not establish editable-grid acceptance.
+
 Source: [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3).
 
 - Startup is local. Manual checking detects or uses the selected gh executable, reads its version and active authentication metadata, and obtains the stable numeric viewer ID from `/user` on the explicit hostname. Authentication JSON content determines validity even when `auth status` exits with zero.

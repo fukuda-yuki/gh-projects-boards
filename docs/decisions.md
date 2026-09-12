@@ -4,11 +4,11 @@ Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#
 
 ## UI and runtime
 
-**Decision:** Use WPF with .NET 10 (`net10.0-windows`) for the minimal application skeleton. The user selected this option on 2026-09-10 while resolving the open UI/runtime choice in #2.
+**Decision:** Use C# + .NET 10 + WinUI 3 / Windows App SDK as the target UI platform, as selected in [#22](https://github.com/fukuda-yuki/gh-projects-boards/issues/22). This supersedes WPF as the target platform; the currently integrated connection application still uses WPF (`net10.0-windows`).
 
-**Reason:** WPF provides a Windows desktop window in the agreed C# environment, and .NET 10 is an LTS release. See the official [WPF overview](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/overview/) and [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
+**Reason:** The owning Issue explicitly selects WinUI 3 while preserving the validated GitHub integration and table-editing contracts.
 
-**Limit:** This chooses the application shell, not a grid component or storage technology. Grid suitability still requires the prototype and license checks in #2.
+**Limit:** This does not select a grid, MVVM library, stable SDK version, packaging mode, storage technology, or replacement E2E driver. The isolated probe's pinned dependencies are experimental choices for reproducibility, not product adoption. Grid suitability requires actual direct Japanese IME, selection/editing separation, atomic paste/clear, operation-level Undo, and enterprise license checks under #2/#22.
 
 ## Automated testing
 
