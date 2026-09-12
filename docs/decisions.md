@@ -1,45 +1,42 @@
 # Decisions
 
-Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) and [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13). Record each resolved choice with its reason and source. A proposed technology is not an accepted decision, and a skeleton does not complete either Issue.
+Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
-## UI and runtime
+## Platform
 
-**Decision:** Use WPF with .NET 10 (`net10.0-windows`) for the minimal application skeleton. The user selected this option on 2026-09-10 while resolving the open UI/runtime choice in #2.
+Use **C# + .NET 10 + WinUI 3 / Windows App SDK** for the native Windows desktop app. Native controls and public Windows APIs provide the UI boundary; application rules remain in one UI-independent Core library. Implement screens from their behavioral contracts, not from another framework's visual tree.
 
-**Reason:** WPF provides a Windows desktop window in the agreed C# environment, and .NET 10 is an LTS release. See the official [WPF overview](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/overview/) and [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
+Windows App SDK is pinned to `1.8.260804001` in the app project. The development target is `net10.0-windows10.0.26100.0`, x64, with minimum platform 19041. The development executable is unpackaged and self-contained to make ordinary-executable checks explicit. These are build settings, not a final supported-device or distribution promise. See [Microsoft WinUI 3 documentation](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/) and [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
 
-**Limit:** This chooses the application shell, not a grid component or storage technology. Grid suitability still requires the prototype and license checks in #2.
+No grid library, MVVM framework or persistence technology is selected by the platform decision. Select dependencies only for demonstrated requirements and acceptable unconditional commercial terms.
 
-## Automated testing
+## Testing
 
-**Decision:** Use NUnit across unit, integration, and desktop E2E tests; use FlaUI with UIA3 for native WPF E2E. The user delegated E2E tooling selection and introduction on 2026-09-10. Interpret controller-level integration in WPF as ViewModel/command plus real application-logic collaboration. See [test boundaries and execution](../tests/README.md).
+Use NUnit for logic, integration and desktop tests, and FlaUI UIA3 for the ordinary WinUI executable. No separate driver server or second permanent UI driver is required by this design. Exact test dependency versions live in the project files.
 
-**Reason:** [FlaUI](https://github.com/FlaUI/FlaUI) automates WPF using Windows UI Automation without a separate driver server. [NUnit apartment control](https://docs.nunit.org/articles/nunit/writing-tests/attributes/apartment.html) and [nonparallel execution](https://docs.nunit.org/articles/nunit/writing-tests/attributes/nonparallelizable.html) support desktop-test requirements while allowing one assertion framework across levels. [FlaUI UIA3](https://www.nuget.org/packages/FlaUI.UIA3/5.0.0) and [NUnit 4](https://www.nuget.org/packages/NUnit/4.6.1) are MIT-licensed; these are test-only dependencies, not a choice of application license. Exact direct dependency versions live in the test project file.
+Core tests exercise real application collaborators. The fake gh executable controls the external process boundary and has no network fallback. E2E uses stable AutomationIds, user operations and condition-based waits rather than private application calls or an assumed grid peer shape.
 
-**Limit:** CI executes deterministic unit/integration tests and discovers desktop tests. Desktop E2E runs locally on an interactive Windows desktop. Live GitHub tests are separate, opt-in, and limited to the designated sandbox; they do not establish GHEC + EMU compatibility. NuGet compatibility and compilation do not establish runtime reliability.
+Keep deterministic CI, interactive desktop E2E, physical-key IME automation, human IME acceptance, performance and live GitHub validation separate. Discovery and compilation do not establish runtime acceptance. See [test policy](../tests/README.md).
 
-## GitHub authentication and process boundary
+## Authentication and process ownership
 
-**Decision:** Use stored gh authentication and internal app-local connection/API classes for [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3). Remove all four gh token environment overrides from child processes. Project only non-token authentication metadata; require recognized keyring storage for writes. Keep plaintext and unknown storage diagnosable without permitting writes.
+Use stored gh authentication. Exclude all four gh token environment overrides from children, expose only safe authentication metadata and require recognized keyring storage before writes. Plaintext and unknown storage remain diagnosable without permitting writes.
 
-**Reason:** [gh environment variables](https://cli.github.com/manual/gh_help_environment) can override stored accounts. [gh login](https://cli.github.com/manual/gh_auth_login) can fall back to plaintext storage, and [JSON auth status](https://cli.github.com/manual/gh_auth_status) can exit zero despite an authentication problem. These behaviors require explicit diagnostics and child-process policy; extracting tokens would create a second credential owner.
+Use `ArgumentList`, UTF-8 JSON stdin, explicit hostname/target, asynchronous execution, a 30-second process timeout, cancellation and structured results. Bind stable viewer identity and recheck before dispatch. Never automatically resend a failed or uncertain write.
 
-**Decision:** Use `ArgumentList` and UTF-8 JSON stdin with explicit hostname/target, asynchronous execution, a 30-second process timeout, cancellation, and structured outcomes. Bind to stable viewer ID and recheck before dispatch. A failed or uncertain write is never automatically resent.
+These rules avoid a second credential owner and keep issue content as data. See [gh environment variables](https://cli.github.com/manual/gh_help_environment), [login](https://cli.github.com/manual/gh_auth_login), [auth status](https://cli.github.com/manual/gh_auth_status) and [specification](spec.md).
 
-**Reason:** Issue text must remain data, and incomplete responses must not become duplicate writes. Keeping the adapter in the application and adding only the authorized NUnit project supplies the current behavior without committing to later workspace/storage abstractions.
+Preflight cannot atomically prevent another process from switching gh authentication. Connection state is in memory. Persistent workspaces and company-environment verification have their own acceptance criteria.
 
-**Limit:** Preflight does not atomically prevent another process from switching gh authentication between commands. The adapter relies on the selected gh executable and operating-system credential store. Current connection state is in memory; persistence and company-environment validation remain separate work.
+## Decision ownership
 
-## Remaining choices
+| Topic | Owner |
+| --- | --- |
+| Supported field/item matrix and component suitability | #2 |
+| Few-row Japanese input contract | #24 |
+| Table editing, selection, paste and Undo | #7 |
+| Local persistence and recovery | #8 |
+| Cross-feature E2E and performance | #12 |
+| Distribution, component notices, signing, update/rollback and enterprise validation | #13 |
 
-| Topic | Status | Required follow-up |
-| --- | --- | --- |
-| Grid component | Pending | Prototype paste, IME, keyboard editing, Undo, and 100-row responsiveness in #2 |
-| Local persistence | Pending; SQLite is a candidate in #2 | Decide from draft and recovery requirements before #8 implementation |
-| Editable fields and item types | Pending | Define supported, read-only, and excluded cases in #2 |
-| External components and application license | Pending | Record component licenses and the repository license policy in #2 |
-| Distribution | Pending | Decide Windows/CPU support, runtime packaging, gh installation, signing, and delivery in #13 |
-
-## Validation limits
-
-Grid usability, storage recovery, and GHEC + EMU compatibility require their own evidence. Live sandbox verification establishes only the exercised operations. Do not infer broader product acceptance from compilation, deterministic tests, or connection diagnostics.
+Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.

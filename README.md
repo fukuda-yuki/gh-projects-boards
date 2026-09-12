@@ -1,64 +1,60 @@
 # gh-projects-boards
 
-A Windows desktop application for preparing GitHub Issue and Project changes in a table. Requirements and acceptance criteria belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
+A native Windows desktop application built with **C#, .NET 10 and WinUI 3 / Windows App SDK** for preparing GitHub Issue and Project changes in a table.
 
-The current executable provides **GitHub CLI connection and permission diagnostics**. Project registration, table editing, draft persistence, and manual apply are future features in their owning Issues.
+GitHub remains the source of truth. Editing is local; only an explicit apply operation publishes changes. Product requirements and acceptance belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
 
 ## Build and run
 
-Use Windows and the .NET 10 SDK. Run from the repository root:
+Use Windows x64, the .NET 10 SDK and Windows SDK 10.0.26100.0. Run from the repository root:
 
 ```powershell
 dotnet build GhProjectsBoards.sln --configuration Release
-.\src\GhProjectsBoards.App\bin\Release\net10.0-windows\GhProjectsBoards.App.exe
+.\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
 
-The ordinary executable opens the Japanese connection screen. Launching it requires no GitHub login and makes no network request. Distribution and runtime packaging remain in [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
+The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Launching the connection screen requires no GitHub login and performs no network request. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
 
 ## Check a connection
 
-1. Install [GitHub CLI](https://cli.github.com/). The app looks for `gh.exe` on PATH and under Program Files; browse or enter another executable if necessary. The current metadata contract has been verified with gh 2.100.0.
-2. Enter the GitHub hostname, such as `github.com`. Optionally enter an Issue URL and a user/organization Project URL on that host.
-3. Select **接続を確認 / 再確認**. Read the CLI version, account and stable ID, credential storage, scopes, and separate Issue/Project results. `不明` means the value has not been established; a successful login alone does not establish write access.
-4. If login or additional scopes are needed, expand **ログイン・権限追加の手順**, copy the appropriate PowerShell command, and run it in your terminal. Complete browser authentication there, then recheck in the app. The app does not initiate login or change gh configuration itself.
-5. After an intentional account, host, or executable change, review the destination and select **新しい接続として確認**. Rechecking an old connection never silently adopts another identity.
+Install [GitHub CLI](https://cli.github.com/). Use automatic detection, browse, or enter the path to `gh.exe`. Enter the GitHub hostname and optionally an Issue URL and a user/organization Project URL on that host.
 
-The screen only diagnoses access; it does not edit Issues or Projects. Inputs and connection state are kept in memory and reset when the app exits. Cancel stops the current check; closing the window cancels outstanding work before shutdown.
+Select **接続を確認 / 再確認** to inspect the CLI version, account and stable ID, credential storage, scopes, and separate Issue/Project permissions. `不明` means unverified; successful login does not by itself establish write access.
+
+The **ログイン・権限追加の手順** section supplies PowerShell commands to copy and run in your own terminal. Complete browser authentication there, then recheck. The app does not initiate login or alter gh configuration.
+
+After an intentional account, host or executable change, review the destination and select **新しい接続として確認**. Rechecking never silently adopts another identity. Cancel stops the check; closing the window waits for the owned gh operation to stop. Connection inputs and state are in memory.
 
 ## Credentials and failures
 
-The app uses gh's stored authentication. It excludes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its gh children and reports only which variable names are present. It does not modify the parent environment or extract, display, duplicate, or persist a token.
+Child gh processes use stored authentication. The app removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN` from those children without changing the parent environment. It reports variable names, never their values, and never extracts, displays or stores a token.
 
-Windows credential-store (`keyring`) authentication permits guarded adapter writes. Plaintext `hosts.yml` storage is displayed with its path and blocks writes; unknown storage also blocks writes. Restore access to the Windows credential store and log in again without `--insecure-storage`, then recheck. Login/refresh commands copied into your own terminal follow that terminal's environment; remove any token-variable overrides there if you intend to update stored gh authentication.
+Recognized Windows credential-store (`keyring`) authentication permits guarded adapter writes. Plaintext or unknown credential storage blocks writes but remains diagnosable. Commands copied into your terminal use that terminal's environment; remove token overrides there when updating stored authentication.
 
-Each gh process has a default 30-second timeout. Authentication, target access, rate limits, network errors, cancellation, and unknown write results are distinct. A dispatched write with an uncertain result is never automatically resent. Diagnostics omit request bodies and raw process streams.
-
-See [connection behavior](docs/spec.md), [implementation boundaries](docs/architecture.md), and [technical decisions](docs/decisions.md). Company GHEC + EMU authentication, policies, and network conditions require separate validation.
+Each gh process has a default 30-second timeout. Authentication failures, resource permissions, rate limits, network errors, cancellation and uncertain write outcomes are distinct. An uncertain write is never automatically resent. Diagnostics omit request bodies and raw process streams.
 
 ## Test
 
 ```powershell
-# Deterministic unit/integration tests; no live GitHub:
+# Core logic and adapter integration; no live GitHub:
 dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
 
-# Ordinary executable, controlled gh boundary; unlocked desktop required:
+# Ordinary WinUI executable with isolated fake gh; unlocked desktop required:
 .\scripts\Test-E2E.ps1
 
-# Real adapter writes and ordinary-executable diagnostics in the authorized sandbox:
+# Authorized real-GitHub validation; read the sandbox scope first:
 .\scripts\Test-LiveGitHub.ps1
 ```
 
-The live script targets only [fukuda-yuki/codex-sandbox](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3), creates disposable data, independently reads back each change, and deletes that data. Read the [sandbox scope record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before running. Failures retain evidence under `TestResults/live/`; inspect cleanup and uncertain results before another run.
+Read the [test policy](tests/README.md) before running. Live tests target only [the designated sandbox repository](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3). They create and clean up disposable data. Inspect retained failures and uncertain outcomes before another live run.
 
-CI executes unit/integration tests and only discovers desktop tests. CI success is not desktop or live-system execution evidence. See the [test policy and instructions](tests/README.md).
+CI runs deterministic tests and discovers desktop tests without launching UI. It does not establish desktop, IME, live-system or company GHEC + EMU acceptance. Current execution evidence and incomplete feature scope belong to the owning Issues, not this README.
 
-## Structure and sources
+## Structure
 
-- `src/GhProjectsBoards.App/`: WPF application, connection orchestration, internal gh adapter.
-- `tests/`: NUnit unit/integration tests, test-only fake gh executable, and FlaUI desktop tests.
-- `scripts/`: separate deterministic desktop and live sandbox entry points.
-- [Requirements](docs/requirements.md): product outline and Issue map.
-- [Specification](docs/spec.md): agreed behavior and unresolved contracts.
-- [Architecture](docs/architecture.md): implemented and future responsibilities.
-- [Decisions](docs/decisions.md): resolved choices and their limits.
-- [AGENTS.md](AGENTS.md): repository development rules.
+- `src/GhProjectsBoards.Core/`: UI-independent connection orchestration and guarded GitHub CLI/API logic.
+- `src/GhProjectsBoards.App/`: WinUI 3 presentation, window lifetime, native dialogs and clipboard.
+- `tests/`: NUnit logic/integration tests, isolated fake gh, and FlaUI UIA3 desktop journeys.
+- `scripts/`: deterministic desktop and live sandbox execution entry points.
+
+[Requirements](docs/requirements.md) · [Specification](docs/spec.md) · [Architecture](docs/architecture.md) · [Decisions](docs/decisions.md) · [AGENTS.md](AGENTS.md)

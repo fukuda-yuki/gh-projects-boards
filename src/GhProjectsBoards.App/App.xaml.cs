@@ -1,7 +1,16 @@
-using System.Windows;
+using Microsoft.UI.Xaml;
 
 namespace GhProjectsBoards.App;
 
 public partial class App : Application
 {
+    private MainWindow? window;
+
+    public App() => InitializeComponent();
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        window = new MainWindow();
+        window.Activate();
+    }
 }

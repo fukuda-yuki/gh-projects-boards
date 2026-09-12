@@ -6,59 +6,57 @@ Write agent-facing and shared development documents in English. Respond to the u
 
 ## Authority
 
-- Develop from GitHub Issues in this repository. Read the relevant Issue and its comments before starting.
-- Issues own requirements, acceptance criteria, open questions, future work, and development plans. The user's current request defines the authorized scope.
-- Use [requirements](docs/requirements.md) for the product outline, [specification](docs/spec.md) for agreed behavior, [architecture](docs/architecture.md) for structure, and [decisions](docs/decisions.md) for technical choices. Keep these concise.
-- Do not turn a candidate technology or unresolved requirement into a decision. Clarify choices that affect the result, while continuing independent authorized work. Record resolved choices in the owning document.
+- Develop from the relevant GitHub Issue and its comments. The user's current request defines the authorized scope and supersedes an outdated plan. Reconcile the owning Issue when the direction changes.
+- Issues own acceptance criteria, unresolved decisions, task status and execution evidence. Use [requirements](docs/requirements.md) for the product outline, [specification](docs/spec.md) for agreed behavior, [architecture](docs/architecture.md) for structure, and [decisions](docs/decisions.md) for accepted choices.
+- Write shared documents as the current product contract. Keep implementation chronology, rejected experiments and progress reports in Git, Issues and PRs, not in product or agent documentation. Do not falsify execution results or rewrite Git history to simplify documentation.
+
+## Product and implementation
+
+- Build a native Windows desktop application with C#, .NET 10 and WinUI 3 / Windows App SDK. This is the platform, not an open selection task. It is not a web application.
+- Keep GitHub access, identity, validation and application orchestration independent of UI frameworks. Preserve their behavior and regression tests; change them only for an authorized requirement or demonstrated defect.
+- Implement UI from the agreed behavior using native WinUI controls and public APIs. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
+- Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid candidate is not an accepted component merely because it compiles.
+- Develop the shell, agent instructions, build and test infrastructure independently of unresolved grid-input or release-packaging work. A blocker stops only the work that actually depends on it.
+- Preserve Project-scoped work, explicit GitHub apply, local drafts, account/host isolation, selection versus editing, IME confirmation versus cell commit, and operation-level Undo. Do not replace required editable behavior with a read-only demonstration.
 
 ## Execution
 
-- Inspect the current branch, worktree, and existing changes before editing. Preserve the user's work.
-- Make the smallest coherent change for the current outcome. Do not prebuild later Issues, introduce speculative layers, or treat a skeleton as a completed feature.
-- Add dependencies, test projects, and abstractions only when the current outcome needs them. Dependency or lockfile changes require explicit authority.
-- Continue through relevant build checks and non-destructive validation. For UI work, verify the ordinary executable and user interaction path; a successful build alone does not establish usability.
-- Pause only the dependent work for unresolved product decisions, wider scope, unauthorized remote writes, or destructive actions. Do not repeat an approval already given.
-- Use explicitly designated test data for live GitHub mutation tests. Never store or print authentication tokens.
-- Follow [README.md](README.md) for build and run instructions, and [tests/README.md](tests/README.md) for validation guidance.
+- Inspect the branch, worktree and existing changes before editing; preserve the user's work. Work on an Issue-linked branch unless explicitly instructed otherwise.
+- Make the smallest coherent change. Do not prebuild later Issues or treat a skeleton as a completed feature. Do not merge unrelated experimental branches to obtain reusable code.
+- Pin required dependencies and review their exact artifacts and terms. Dependency changes require authority for the current outcome. Required commercial use must not depend on paid or company-size/revenue eligibility.
+- For WinUI work, load the relevant installed setup, development-workflow, UI-testing and code-review skills. Repository requirements take precedence. Loading a skill does not authorize machine configuration changes.
+- Continue through relevant build checks and non-destructive validation. UI completion requires the ordinary executable and the real user path; compilation or test discovery alone is insufficient.
+- Pause only dependent work for unresolved decisions, scope expansion, unauthorized remote writes or destructive actions. Do not repeat an approval already given and do not bypass enforced execution restrictions.
+- Follow [README.md](README.md) for build/run and [tests/README.md](tests/README.md) for validation. Never store or print authentication tokens.
 
-## Code, tests, comments, and commits
+## Code, tests, comments and commits
 
-- **Code — How:** Make the implementation understandable through clear names and structure.
-- **Tests — What:** Express and verify agreed observable behavior, rather than incidental implementation details. Add or update tests when behavior changes; include a regression test for bug fixes when feasible.
-- **Comments — Why / Why not:** Explain non-obvious rationale, constraints, and deliberately rejected alternatives near the relevant code. Do not restate what the code already makes clear.
-- **Commit messages — Why:** Summarize the change and explain why it is needed. Use the body for background and trade-offs when useful.
-
-These are primary responsibilities, not exclusive categories. Add comments only when they help the reader, keep them accurate as code changes, and never invent rationale or rejected alternatives.
+- **Code — How:** use clear names and structure.
+- **Tests — What:** verify agreed observable behavior, including prohibited side effects, rather than incidental UI-tree structure or private calls.
+- **Comments — Why / Why not:** explain a non-obvious constraint near the relevant code; do not narrate development history or invent rationale.
+- **Commit messages — Why:** explain the purpose and relevant trade-offs.
 
 ## Testing
 
-Before changing production behavior, read [test policy](tests/README.md).
+Read [test policy](tests/README.md) before changing production behavior.
 
-- Derive expected behavior from the relevant Issue and agreed specification,
-  not merely from the current implementation.
-- Use short Red-Green-Refactor cycles, one behavior at a time.
-  Confirm the intended failure before implementing the change.
-  Bug fixes start with a reproducing regression test.
-- Prefer real in-process collaborators and observable results.
-  Use test doubles at external or nondeterministic boundaries as needed.
-  Verify interactions when they are part of the contract, not merely
-  implementation details.
-- Never weaken, delete, or skip tests, or bypass checks, merely to obtain
-  a passing result. Justify legitimate test changes against an authorized
-  behavior change or a demonstrated defect in the test.
+- Derive expectations from the Issue and specification, not merely the implementation. Use short Red-Green-Refactor cycles and reproduce a bug before fixing it. Report a Red or Green result only when it was observed.
+- Prefer real collaborators and state/output assertions. Substitute only external or nondeterministic boundaries as needed. Test doubles must not replace the behavior being verified.
+- Preserve logic and integration assertions during UI work. Desktop E2E drives the ordinary WinUI executable through public UI Automation, with an isolated fake gh for deterministic connection journeys.
+- Keep deterministic tests, desktop E2E, physical-key IME automation, human input acceptance, performance and live GitHub checks distinct. Unicode insertion is not IME evidence.
+- Never weaken, delete or skip contractual tests merely to obtain a pass. Justify changes against an authorized behavior change or demonstrated test defect. Replacement of UI-specific mechanics must retain behavioral coverage.
+- Record source, environment, command, executed/passed/failed/skipped counts and artifacts. Zero execution, discovery-only and skip-only outcomes are not passing acceptance. Keep failed attempts; do not repurpose another executable's results.
 
-  ## Authorized GitHub sandbox
+## Authorized GitHub sandbox
 
-- For live GitHub validation, the user has designated these exact sandbox resources:
+- Exact live-validation resources:
   - Repository: https://github.com/fukuda-yuki/codex-sandbox
   - Project: https://github.com/users/fukuda-yuki/projects/3
-- The user has pre-authorized all sandbox operations confined to these resources, including remote writes, configuration changes, and deletions. Do not ask for repeated approval for in-scope sandbox work or cleanup.
-- Read the [sandbox scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before sandbox work. Keep validation results and task history in GitHub Issues, not in this file.
-- The installed GitHub CLI is available at `C:\Program Files\GitHub CLI\gh.exe`. Explicitly target `fukuda-yuki/codex-sandbox` with `--repo` and Project `3` with `--owner fukuda-yuki`, or verify equivalent API target identifiers. Do not infer mutation targets from the current checkout.
-- This authorization does not extend to other repositories, Projects, or account and organization settings. It does not override enforced execution restrictions; report an actual block and its reason if one occurs.
+- The user has pre-authorized operations confined to these resources, including remote writes, configuration changes and deletions. Do not ask again for in-scope sandbox validation or cleanup.
+- Read the [sandbox scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before sandbox work. Keep its task history in Issues.
+- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`. Explicitly select repository `fukuda-yuki/codex-sandbox` and Project `3` with owner `fukuda-yuki`, or verify equivalent API IDs. Never infer mutation targets from the checkout.
+- Sandbox authorization does not cover other repositories, Projects, account/organization settings, or override enforced execution restrictions. Repository development writes need authority from the current task.
 
 ## Closeout
 
-- Report changes, validation, failures, and unverified scope separately. Distinguish local completion from GitHub integration and product acceptance.
-- Link PRs to the relevant Issues. Use `Closes #...` only when the Issue's full acceptance criteria are satisfied; use `Refs #...` for partial work.
-- Keep task status and findings in Issues, PRs, and the final response; keep implementation history in Git. Do not copy task histories into product documents.
+Report changes, validation, failures and unverified scope separately. Distinguish branch delivery, main integration and product acceptance. Link PRs with `Refs #...` for partial work; use `Closes #...` only when the full acceptance is satisfied. Keep task status in Issues/PRs and the response, and implementation history in Git.

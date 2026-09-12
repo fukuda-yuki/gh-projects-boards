@@ -3,12 +3,11 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <UseAppHost>true</UseAppHost>
-    <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- The test assembly also supplies an isolated fake gh process for adapter/E2E tests. -->
+    <!-- This assembly supplies the isolated fake gh used by adapter and desktop tests. -->
     <GenerateProgramFile>false</GenerateProgramFile>
     <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
   </PropertyGroup>
@@ -16,8 +15,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" PrivateAssets="all" />
     <PackageReference Include="NUnit" Version="4.6.1" PrivateAssets="all" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../src/GhProjectsBoards.App/GhProjectsBoards.App.csproj" />
+    <ProjectReference Include="../../src/GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -1,54 +1,136 @@
-using System.Windows;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
-using Microsoft.Win32;
+using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics;
+using Windows.Storage.Pickers;
 
 namespace GhProjectsBoards.App;
 
-public partial class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
     private readonly ConnectionViewModel model = new();
     private Task? operation;
+    private bool rendering;
+    private bool pickerOpen;
     private bool closingRequested;
+    private bool closed;
 
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = model;
+        AppWindow.Resize(new SizeInt32(1080, 960));
+        ExecutableInput.TextChanged += (_, _) => { if (!rendering) model.ExecutablePath = ExecutableInput.Text; };
+        HostInput.TextChanged += (_, _) => { if (!rendering) model.Host = HostInput.Text; };
+        IssueInput.TextChanged += (_, _) => { if (!rendering) model.IssueUrl = IssueInput.Text; };
+        ProjectInput.TextChanged += (_, _) => { if (!rendering) model.ProjectUrl = ProjectInput.Text; };
+        model.PropertyChanged += ModelChanged;
+        AppWindow.Closing += Closing;
+        Closed += (_, _) =>
+        {
+            closed = true;
+            closingRequested = true;
+            model.PropertyChanged -= ModelChanged;
+        };
+        Render();
     }
 
-    private async void Check_Click(object sender, RoutedEventArgs e) => await CheckAsync(false);
-    private async void Switch_Click(object sender, RoutedEventArgs e) => await CheckAsync(true);
+    private void ModelChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (closed) return;
+        if (DispatcherQueue.HasThreadAccess) Render();
+        else DispatcherQueue.TryEnqueue(Render);
+    }
+
+    private void Render()
+    {
+        if (closed) return;
+        rendering = true;
+        try
+        {
+            if (ExecutableInput.Text != model.ExecutablePath) ExecutableInput.Text = model.ExecutablePath;
+            if (HostInput.Text != model.Host) HostInput.Text = model.Host;
+            if (IssueInput.Text != model.IssueUrl) IssueInput.Text = model.IssueUrl;
+            if (ProjectInput.Text != model.ProjectUrl) ProjectInput.Text = model.ProjectUrl;
+            var enabled = model.CanCheck && !closingRequested && !pickerOpen;
+            ExecutableInput.IsEnabled = HostInput.IsEnabled = IssueInput.IsEnabled = ProjectInput.IsEnabled = enabled;
+            DetectButton.IsEnabled = BrowseButton.IsEnabled = CheckButton.IsEnabled = enabled;
+            SwitchButton.IsEnabled = enabled && model.CanSwitch;
+            CancelButton.IsEnabled = model.IsBusy && !closingRequested;
+            StatusValue.Text = model.StatusText;
+            EnvironmentValue.Text = model.EnvironmentText;
+            VersionValue.Text = model.VersionText;
+            AccountValue.Text = model.AccountText;
+            StorageValue.Text = model.StorageText;
+            ScopeValue.Text = model.ScopeText;
+            IssueValue.Text = model.IssueText;
+            ProjectValue.Text = model.ProjectText;
+            LoginCommandValue.Text = model.LoginCommand;
+            RefreshCommandValue.Text = model.RefreshCommand;
+        }
+        finally { rendering = false; }
+    }
+
+    private async void Check_Click(object sender, RoutedEventArgs args) => await CheckAsync(false);
+    private async void Switch_Click(object sender, RoutedEventArgs args) => await CheckAsync(true);
     private async Task CheckAsync(bool newConnection)
     {
-        if (operation is { IsCompleted: false }) return;
+        if (closingRequested || operation is { IsCompleted: false }) return;
+        UiMessage.Text = "";
         operation = model.CheckAsync(newConnection);
         await operation;
     }
-    private void Cancel_Click(object sender, RoutedEventArgs e) => model.Cancel();
-    private void Detect_Click(object sender, RoutedEventArgs e) => model.ExecutablePath = ConnectionViewModel.FindGh();
-    private void Browse_Click(object sender, RoutedEventArgs e)
+    private void Cancel_Click(object sender, RoutedEventArgs args) => model.Cancel();
+    private void Detect_Click(object sender, RoutedEventArgs args) => model.ExecutablePath = ConnectionViewModel.FindGh();
+
+    private async void Browse_Click(object sender, RoutedEventArgs args)
     {
-        var dialog = new OpenFileDialog { Filter = "実行ファイル (*.exe)|*.exe", CheckFileExists = true, Title = "gh.exe を選択" };
-        if (dialog.ShowDialog(this) == true) model.ExecutablePath = dialog.FileName;
+        if (pickerOpen || closingRequested) return;
+        pickerOpen = true;
+        Render();
+        try
+        {
+            var picker = new FileOpenPicker();
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+            picker.FileTypeFilter.Add(".exe");
+            var file = await picker.PickSingleFileAsync();
+            if (file is not null && !closingRequested) model.ExecutablePath = file.Path;
+        }
+        catch (Exception)
+        {
+            if (!closed) UiMessage.Text = "ファイルを選択できませんでした。gh.exe のパスを入力してください。";
+        }
+        finally { pickerOpen = false; Render(); }
     }
-    private void CopyLogin_Click(object sender, RoutedEventArgs e) => Copy(model.LoginCommand);
-    private void CopyRefresh_Click(object sender, RoutedEventArgs e) => Copy(model.RefreshCommand);
+
+    private void CopyLogin_Click(object sender, RoutedEventArgs args) => Copy(model.LoginCommand);
+    private void CopyRefresh_Click(object sender, RoutedEventArgs args) => Copy(model.RefreshCommand);
     private void Copy(string text)
     {
-        try { Clipboard.SetText(text); }
-        catch (ExternalException) { model.ShowClipboardFailure(); }
+        try
+        {
+            var data = new DataPackage();
+            data.SetText(text);
+            Clipboard.SetContent(data);
+            Clipboard.Flush();
+        }
+        catch (Exception) { model.ShowClipboardFailure(); }
     }
-    protected override async void OnClosing(CancelEventArgs e)
+
+    private async void Closing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        base.OnClosing(e);
-        if (e.Cancel || operation is not { IsCompleted: false }) return;
-        e.Cancel = true;
+        if (operation is not { IsCompleted: false })
+        {
+            closingRequested = true;
+            return;
+        }
+        args.Cancel = true;
         if (closingRequested) return;
         closingRequested = true;
+        Render();
         model.Cancel();
-        // Let the owned gh process stop before shutting down the WPF dispatcher.
+        // Keep the UI dispatcher alive until the owned gh operation has stopped.
         await operation;
-        Close();
+        DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
     }
 }

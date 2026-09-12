@@ -1,137 +1,88 @@
 # Tests
 
-Sources: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2), [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3), and [#12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12).
-
-Derive cases from the relevant Issue's acceptance criteria. Keep local automated tests, ordinary Windows UI checks, and live GitHub tests distinct. Use only explicitly designated data for live mutation tests.
-
-[Issue #12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12) owns cross-feature acceptance and performance measurements. An empty test suite or successful build does not establish feature acceptance.
+Derive acceptance from the relevant Issue and [specification](../docs/spec.md). Use the least expensive test boundary that can detect the failure. Preserve contractual behavior when changing test mechanics.
 
 ## Test policy
 
-### Workflow
+Start with a short test list covering normal behavior, boundaries, failures and prohibited side effects. Use short Red-Green-Refactor cycles. Confirm a test's intended failure before implementing the behavior; unrelated build/environment failure is not a behavioral Red. Bug fixes start with a reproducer.
 
-Start with a short test list derived from the Issue's acceptance criteria.
-Consider normal cases, boundaries, failures, and prohibited side effects.
+Prefer real in-process collaborators and observable results. A test may exercise several collaborating classes. Substitute external or nondeterministic boundaries when control is needed; do not mock the behavior under test or calculate expected values with the same production logic. Validate real adapters separately. Persistence tests must use the actual implementation and isolated storage.
 
-Turn one item into a runnable test and confirm that it fails for the
-intended reason. Unrelated build or environment failures are not evidence
-that the test detects the missing behavior.
+Retain logic/adapter assertions during UI work. UI-specific selectors, focus and lifetime mechanics may change when justified by the specified user contract. Never remove, weaken, skip or relabel failures merely to obtain a pass. Document-only changes need no new behavior test; behavior-preserving refactoring uses the existing regression suite. Report unavailable execution honestly.
 
-Make the smallest coherent production change, then refactor with the
-relevant tests green. Extend the test list as new cases are discovered.
-Run the affected suite before completion.
+## Boundaries
 
-### Boundaries and assertions
-
-A behavior test may exercise several collaborating classes.
-Do not require one isolated test fixture per production class.
-
-Use real application logic by default. Substitute GitHub access,
-gh execution, time, or other difficult boundaries when the scenario
-requires control or isolation.
-
-When testing persistence, exercise the actual persistence implementation
-against isolated test storage. A fake store does not prove durability
-or recovery.
-
-Assert observable results and contractual side effects.
-Do not mock the behavior under test or compute expected values by
-reusing the production logic being verified.
-
-Validate real adapters separately. Passing against a test double does
-not establish live GitHub or GHEC + EMU compatibility.
-
-### Test levels
-
-- Logic tests verify rules using real domain and application objects.
-- Integration tests exercise connected components, including UI
-  orchestration where relevant, without mocking every lower layer.
-- UI E2E tests exercise the real Windows application through user actions.
-  Controlled external boundaries are allowed; identify them in results.
-
-Choose the lowest-cost level that can detect the relevant failure.
-Do not duplicate every case at every level.
-Live GitHub mutation tests remain separate and explicitly authorized.
-
-### Exceptions
-
-Documentation-only changes do not require new behavior tests.
-Behavior-preserving refactoring normally uses existing tests.
-
-Exploratory spikes and environments that cannot execute the required
-tests must be reported explicitly. Record alternative checks and
-unverified scope; do not claim an unobserved Red or Green result.
-
-## Test boundaries
-
-Use NUnit for all three test levels. Classify by the boundary exercised, not by the name of the class under test.
-
-| Level | Scope | External dependencies |
+| Level | Scope | Execution |
 | --- | --- | --- |
-| Unit | Validation, field differences, three-way comparisons, paste interpretation, operation-state rules; isolated ViewModel behavior can also be unit-tested | No UI, disk, network, or real gh |
-| Integration | ViewModel/commands plus real application logic; persistence and gh adapter integration belong here too | Use temporary real storage when relevant; fake the remote/process boundary, not every collaborating class |
-| Desktop E2E | Launch the ordinary app executable and drive its actual WPF UI with FlaUI UIA3 | Deterministic synthetic data and isolated storage once those features exist; no live GitHub by default |
+| Logic/integration | Core rules, connection orchestration and real gh process handling with a synthetic executable | Deterministic CI; no UI or live GitHub |
+| Desktop E2E | Ordinary WinUI 3 executable, real public UI Automation and isolated fake gh | Unlocked Windows desktop, serial execution |
+| Physical-key IME | Real Japanese IME, composition/focus/value and confirmation boundaries | Controlled Windows desktop; separate evidence |
+| Human IME acceptance | Natural typing, candidates, cancellation/reconversion and selection/editing usability | Explicit human confirmation |
+| Live GitHub | Production adapter and real CLI against exact sandbox resources | Opt-in, authorized and independently read back |
+| Performance | Defined workload, warmup, sample counts and environment | Separate raw measurements; #12 owns acceptance |
 
-In WPF, the proposed controller-level tests normally target ViewModels and commands. Pure ViewModel tests do not validate XAML bindings, focus, keyboard input, or the visual tree; desktop E2E covers those interactions. WPF-specific in-process tests may need an STA thread and a Dispatcher, but most application logic should not depend on either.
+Core tests do not validate XAML, native focus, the visual tree or clipboard. E2E must run the product executable, not a probe or placeholder. It verifies the launched process loads `Microsoft.UI.Xaml.dll`; a successful substitute executable is not product evidence.
 
-Keep many cheap logic tests, fewer integration cases, and a small set of high-value E2E journeys. Add test projects with their first real behavior; do not create empty projects or placeholder passing tests. Verify argument/JSON handling, exit codes, timeouts, and cancellation at the gh boundary; add actual persistence and restart checks when storage is implemented.
+## Logic and integration
 
-## Unit and integration tests
-
-`GhProjectsBoards.Tests` uses the same NUnit, adapter, and test SDK versions as the desktop project. It exercises real connection/diagnostic logic, substitutes remote responses through `IGhProcessRunner`, and launches its own test assembly as a fake gh executable for process-boundary cases. The fake accepts synthetic scenarios only and has no network fallback.
+`GhProjectsBoards.Tests` references Core, not the UI application. It supplies an isolated fake gh executable with synthetic scenarios and no network fallback. Test dependency versions are pinned in its project file.
 
 ```powershell
 dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
 ```
 
-Cases cover Unicode/quotes/stdin, missing and invalid executables, child environment isolation, timeout/cancellation, safe diagnostic output, HTTP and GraphQL failures, authentication states, stable identity, host changes, storage write guards, separate scopes/resource permissions, and ViewModel orchestration. Live cases are excluded from this command.
+Preserve coverage of Unicode/quotes/stdin, invalid executables, child environment isolation, timeout/cancellation, safe errors, HTTP/GraphQL outcomes, authentication/storage guards, stable identity, host changes, scopes, resource permissions and orchestration. No new UI acceptance is inferred from these results.
 
-## Ordinary executable tests
+## Desktop E2E
 
-`GhProjectsBoards.E2E.Tests` uses NUnit 4 and FlaUI UIA3. It launches the normal app, verifies connection journeys and window shutdown through UI Automation, and checks the original launch process's exit code. References are build-only; tests do not call application internals. Routine cases use a test-only fake gh selected through the ordinary path field, an isolated `GH_CONFIG_DIR`, and synthetic data. They cover diagnostics, rechecking, explicit account rebinding, command copying, missing CLI/login, cancellation, and closing while gh is active. No developer credentials or live API requests are needed.
-
-The test thread uses per-monitor DPI awareness and restores its prior context afterward. This keeps [UI Automation physical coordinates](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-screenscaling) consistent with window screenshots at non-100% scaling. These tests do not establish Project registration, editing, persistence, synchronization, or GHEC + EMU acceptance.
-
-### Run on Windows
-
-Install the .NET 10 SDK, sign in to an interactive Windows desktop, and run from the repository root:
+`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3 with build-only app/fake-gh references. Tests may not call product internals. Launch the ordinary exe, use stable AutomationIds on real controls, wait for observable conditions and verify both UI close and the original process's exit status. Do not assume a top-level native window has the same AutomationId as its XAML content or that every table exposes GridPattern.
 
 ```powershell
 .\scripts\Test-E2E.ps1
-# Optional debug build:
 .\scripts\Test-E2E.ps1 -Configuration Debug
 ```
 
-The script builds the solution and runs only the E2E category. It needs no WinAppDriver/Appium server and does not change execution policy, screen-lock settings, or machine-wide environment variables. Keep the desktop unlocked; do not interact with it during the test. A disconnected or locked remote session can invalidate UI testing. Match the app/test elevation; administrator access is not required.
+Use Windows x64 with the build prerequisites from [README](../README.md). Keep the interactive desktop unlocked, run serially and match app/test elevation. The script does not alter security policy, machine environment, lock settings or install a driver server. A disconnected/locked session is not valid UI evidence.
 
-Reports are written to a unique `TestResults/e2e/<run-id>/` directory. Failures attempt to attach a PNG of the app window, not the whole desktop. A covered window can capture overlapping content: use a clean desktop and synthetic data, and review artifacts before sharing. No screenshot is guaranteed if the window never appears or has already exited. Cleanup targets only the process launched by the test; it does not make a failed close assertion pass.
+The connection contract includes these four journeys:
 
-A plain `dotnet test` skips desktop E2E unless `GHPB_RUN_E2E=1` is explicitly set. The script supplies this flag, `GHPB_E2E_APP_PATH`, `GHPB_E2E_FAKE_GH_PATH`, and `GHPB_E2E_ARTIFACTS` for its child processes and restores previous process environment values afterward. It requires a nonempty executed suite with no skipped cases. Skipped tests are not a successful E2E run. Visual Studio can discover the tests; running through the script is the supported entry point.
+| Journey | Required observable result |
+| --- | --- |
+| Startup and close | Product title and connection screen are visible; ordinary close exits the launched process successfully |
+| Connection and identity | Issue/Project diagnostics, explicit rebind after identity change, copyable host-specific login command and no mutations |
+| Cancellation and close during gh | User cancellation and window close stop the owned child; controls recover appropriately |
+| Actionable failures | Missing executable and missing login are explained without displaying an invented account or permission |
 
-## Live sandbox validation
+Routine tests choose fake gh through the normal path field, set isolated `GH_CONFIG_DIR` and use synthetic data. There is no developer credential or business-Project dependency. OLE/native clipboard access is test infrastructure; save/restore available clipboard content, retry short-lived contention, and report restoration failure rather than silently clearing it. Do not publish clipboard data.
 
-Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) first. Live tests are confined to `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; identifiers are checked before mutations. Stored gh authentication must use the designated account and keyring, with `repo` and `project` scopes. The tests do not alter gh configuration or obtain a token.
+Results go to unique `TestResults/e2e/<run-id>/` directories. Keep TRX and metadata for the source/build/environment. Failure capture is limited to the app rectangle; overlapping windows may still contain private content, so use a clean desktop and review before sharing. Capture failure must not hide a test failure. Cleanup may terminate only owned processes and must not turn a failed normal-close assertion into a pass.
+
+Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
+
+## Editable-grid contract
+
+Derive table cases from #7 and the few-row input contract in #24. Address rows by stable identity rather than visible row index. Selection/range navigation must not change draft or committed values. Verify direct physical-key Japanese input and F2 independently, retaining initial input exactly once. Verify IME confirmation versus cell commit, candidates, cancellation, reconversion, keyboard navigation and public UI Automation.
+
+Unicode insertion is not IME evidence. The application must not replay keys/text, insert F2 on behalf of direct input, or use private TSF/runtime hooks. A passing F2 case does not establish direct input. Human usability acceptance stays separate from injected physical-key automation. Do not mark unimplemented table tests or another executable's results as passing product coverage.
+
+Independent shell and test-infrastructure work does not wait for a grid component to pass. Table acceptance does.
+
+## Live sandbox
+
+Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before running. Targets are exactly `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; verify API IDs before mutation. Use designated stored keyring authentication with the required scopes. Never extract tokens or alter authentication configuration in tests.
 
 ```powershell
 .\scripts\Test-LiveGitHub.ps1
-# A different real gh executable:
-.\scripts\Test-LiveGitHub.ps1 -GhPath 'C:\path\to\gh.exe'
-# Recheck the ordinary UI without creating more test data:
 .\scripts\Test-LiveGitHub.ps1 -DiagnosticsOnly
+.\scripts\Test-LiveGitHub.ps1 -GhPath 'C:\path\to\gh.exe'
 ```
 
-The default run executes a production-adapter scenario followed by a real-CLI ordinary UI check. It creates a disposable Issue with Japanese text, newlines, and quotes; independently reads the result; updates and rereads it; adds it to Project 3; updates an existing Status field; and independently checks Issue identity, Project identity, and the selected option. Cleanup deletes only the created item and Issue. A separate Issue GET must return 404 or 410, and a final Project snapshot must match the original item/field identities. The retained scope Issue and existing items/fields must survive. The bounded sandbox fixture rejects a baseline exceeding 100 items or fields rather than comparing a partial snapshot.
+The default run creates a disposable Issue with Unicode/newlines/quotes, independently reads it, updates/rereads it, adds it to Project 3 and verifies a Status update. Cleanup removes only that run's created item/Issue and independently verifies absence and preservation of existing items/fields. The retained scope Issue must survive. The fixture rejects a baseline over 100 items/fields rather than verifying a partial snapshot.
 
-The separate `LiveGitHub` category is guarded by `GHPB_RUN_LIVE_GITHUB=1`. The script supplies the real CLI/app paths and a unique `TestResults/live/<run-id>/` directory, restores its process environment afterward, and requires executed TRX results with no skips. `-DiagnosticsOnly` does not establish adapter mutation acceptance.
+`-DiagnosticsOnly` runs the real-CLI UI diagnostics without mutation and is not adapter-write acceptance. The `LiveGitHub` category is separately gated. Unique `TestResults/live/` evidence includes structured results, resource IDs, timestamps, process timings and cleanup status, not payloads or credentials. An uncertain create is not retried. After failure/interruption, reconcile the run marker/IDs and clean up only that run before another scenario. Review live screenshots for account metadata before sharing.
 
-`adapter-evidence.json` records stage outcomes, returned resource IDs, timestamps, subprocess count/duration, and cleanup status. It never records request bodies, credentials, or raw process streams. An uncertain create is not retried. If the run fails or is interrupted, inspect the run marker and returned IDs, reconcile remote state, and clean up only that run's data before starting another scenario. Preserve failed evidence; do not overwrite it with a later pass. UI screenshots use the ordinary window and real account metadata; review them before sharing.
+## CI and reporting
 
-## CI and later acceptance
+Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and lists desktop tests without launching them. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session.
 
-PR CI builds the solution, executes unit/integration tests excluding `LiveGitHub`, and lists desktop tests without launching them. Discovery/build success is not UI or live execution evidence. Before enabling desktop E2E in CI, validate a dedicated interactive Windows session and publish failure artifacts. Do not execute untrusted public PR code on a developer PC or credentialed self-hosted runner.
-
-For future UI tests, assign stable `AutomationProperties.AutomationId` values, prefer condition-based waits over fixed sleeps, keep desktop execution serial, and use screen/page objects as journeys grow. Address virtualized rows by stable item identity, not visible row index. Clipboard automation must restore prior content where practical. Text injection does not prove Japanese IME composition behavior; keep a real IME acceptance check alongside automated tests.
-
-Keep routine E2E isolated from developer credentials and business Projects. When storage arrives, provide an isolated test workspace and verify recovery using the real implementation. Live gh/API readback is separate from deterministic CI. GHEC + EMU authentication, policy, and network behavior remain unverified until checked in that environment.
-
-Derive acceptance cases from each owning Issue. In particular, editing/switching/restarting must not write to GitHub; only changed fields may be submitted; conflicts and unknown creation results must not trigger blind overwrites or duplicate creation. [#12](https://github.com/fukuda-yuki/gh-projects-boards/issues/12) owns cross-feature acceptance and 100-item performance evidence.
+Report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, a narrow probe, sandbox success and human acceptance are distinct claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.

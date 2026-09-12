@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
-using System.Windows;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Tools;
@@ -44,18 +43,10 @@ public sealed class ConnectionTests
 
             var help = Element(window, "LoginHelpExpander");
             help.Patterns.ExpandCollapse.Pattern.Expand();
-            var previous = Clipboard.GetDataObject();
-            try
-            {
-                Button(window, "CopyLoginButton").Invoke();
-                WaitFor(() => Clipboard.ContainsText() && Clipboard.GetText().Contains("auth login --web", StringComparison.Ordinal));
-                Assert.That(Clipboard.GetText(), Does.Contain("--hostname 'example.test'"));
-            }
-            finally
-            {
-                if (previous is not null) Clipboard.SetDataObject(previous, true);
-                else Clipboard.Clear();
-            }
+            using var clipboard = new NativeClipboardScope();
+            Button(window, "CopyLoginButton").Invoke();
+            WaitFor(() => NativeClipboardScope.ReadText()?.Contains("auth login --web", StringComparison.Ordinal) == true);
+            Assert.That(NativeClipboardScope.ReadText(), Does.Contain("--hostname 'example.test'"));
         });
     }
 
@@ -105,6 +96,7 @@ public sealed class ConnectionTests
     private static void WithApplication(Action<Window, Process, Fixture> journey)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1") Assert.Ignore("Run scripts/Test-E2E.ps1 on an interactive desktop.");
+        Assert.That(Environment.UserInteractive, Is.True, "An interactive desktop is required.");
         using var dpi = new DesktopDpiScope();
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
         var fake = Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!;
@@ -122,6 +114,7 @@ public sealed class ConnectionTests
         {
             window = application.GetMainWindow(automation, TimeSpan.FromSeconds(20));
             Assert.That(window, Is.Not.Null);
+            WinUiProcess.AssertRuntime(process);
             SetText(window!, "ExecutablePath", fake);
             SetText(window!, "HostInput", "example.test");
             journey(window!, process, fixture);
