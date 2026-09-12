@@ -15,7 +15,8 @@ public partial class App : Application
                 var trace = Environment.GetEnvironmentVariable("GHPB_IME_TRACE");
                 if (!string.IsNullOrEmpty(trace)) System.IO.File.WriteAllText(trace + ".error.txt", error.Exception.ToString());
             };
-        window = mode is "column" or "standard" ? new InputProbeWindow(mode) : new MainWindow();
+        window = mode == "ready" ? new ReadyInputWindow() :
+            mode is "column" or "standard" ? new InputProbeWindow(mode) : new MainWindow();
         window.Activate();
     }
 }
