@@ -299,6 +299,9 @@ public sealed class ConnectionTests
     {
         try
         {
+            // UIA state updates precede compositor frames and Expander/picker animations.
+            // This delay is only for the image; behavioral assertions use state-based waits.
+            Thread.Sleep(350);
             var path = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, $"{name}-{Guid.NewGuid():N}.png");
             using var capture = Capture.Element(window);
             capture.ToFile(path);
