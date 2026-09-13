@@ -27,6 +27,34 @@ Editing, Project switching, and local saving do not write to GitHub. Preserve dr
 
 Keep Issue fields, Project item fields, and application work state distinct. Share the same Issue's body fields across Projects while retaining each Project item's own values. Missing, unreadable, unsupported, and explicitly empty values are different states. See [#6](https://github.com/fukuda-yuki/gh-projects-boards/issues/6).
 
+### Bounded Project read contract
+
+The Core Project reader accepts an explicitly selected Project node ID bound to the existing connection's host and stable viewer ID. It uses the guarded connection service for every page. It performs queries only, with the same identity preflight, credential isolation, per-process timeout and cancellation as other reads. Project registration/navigation UI is separate work.
+
+Each returned Project has a stable owner ID, node ID, number and URL. Repository and Issue identities also include the connection scope. Items retain their own node ID, content identity, archived flag and field values. Issues are indexed separately from items: two Project results refer to the same logical Issue key, while their item values remain independent. These are immutable read observations; there is no cross-result cache, automatic synchronization or draft state.
+
+| Data | Read behavior |
+| --- | --- |
+| Issue title and Open/Closed state | Loaded directly from the Issue, never through a field display name |
+| Project single-select, including Status | Field ID, Project ownership, option IDs/names and selected option ID |
+| Issue-derived or organization Issue fields exposed by a Project | Ownership and Project field identity/type retained; their projected values are unsupported in this slice |
+| Other Project fields | Identity, type and known ownership retained as unsupported; unknown ownership stays unknown |
+| PR / GitHub Draft | Explicit item kinds with content IDs; no ordinary Issue or local-new-row conversion |
+| Redacted/null content | Unavailable content with the Project item identity retained |
+| Unknown item/value types | Explicitly unsupported, retaining encountered type and available IDs |
+
+Field names and option names are display metadata, never identity or destination selectors. Native Issue properties use their Issue identity and typed title/state properties; a same-named Project field has its own field ID. No capability to edit, create or clear is granted by this read contract.
+
+The reader traverses Project field definitions, items and every implemented item-value connection to the terminal page, including more than 100 entries. It checks node/ownership identities, duplicate fields/options/items/Issues/value IDs, duplicate field assignments, repeated cursors, missing paging metadata and inconsistent total counts. On API or structural failure it stops further requests, retains already observed data and reports a classified problem. No automatic retry occurs.
+
+Result outcomes are Complete, Partial, Failed, Cancelled and TimedOut. Cancellation/timeout can retain a partial Project. Per-connection completion flags describe traversal, not universal support or readability. A Complete result means the requested traversal completed without detected problems; it can contain explicitly unsupported fields and known unavailable items. It does not establish a transactionally consistent snapshot: GitHub does not pin successive queries to one revision, and equal-count concurrent replacements can escape count/cursor checks.
+
+Values distinguish Present, Empty, Unsupported, Unavailable and NotLoaded. An explicit null option, or an absent supported field after a complete, error-free traversal, is Empty. On a partial read, nulls become Unavailable and absent supported fields stay NotLoaded; redacted content never implies an empty Issue or field. Unknown option IDs retain the observed ID as Unavailable. Partial GraphQL data is retained but never treated as complete. Missing or unsupported data cannot authorize clearing or deletion; this slice has no writes or apply implementation.
+
+The broader MVP field/item editing matrix remains under [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2). Body, assignees, labels, milestone, text/number/date/iteration/multi-select, Issue fields and relationships remain candidates requiring separate read/edit/clear decisions.
+
+Schema references: [GitHub Project types](https://docs.github.com/en/graphql/reference/projects), [Project API queries and redacted items](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects), and [cursor pagination](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api).
+
 ## Refresh and apply
 
 Compare the fetched baseline, local draft, and current GitHub value per field. Retain drafts and surface conflicts. Manual apply sends only changed fields after review; success, failure, and unknown results remain distinct. Resume only after reconciliation, without blindly resending successful or uncertain writes. See [#9](https://github.com/fukuda-yuki/gh-projects-boards/issues/9) and [#10](https://github.com/fukuda-yuki/gh-projects-boards/issues/10).

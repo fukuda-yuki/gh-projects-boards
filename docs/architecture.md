@@ -4,7 +4,7 @@
 
 | Project | Responsibility |
 | --- | --- |
-| `GhProjectsBoards.Core` (`net10.0`) | Connection orchestration, identity, authorization checks, URL parsing, structured API results and gh process ownership |
+| `GhProjectsBoards.Core` (`net10.0`) | Connection orchestration, identity, authorization checks, Project read models/retrieval, structured API results and gh process ownership |
 | `GhProjectsBoards.App` (WinUI 3, .NET 10, Windows x64) | Presentation, native controls, window lifetime, dialogs, clipboard and public UI Automation |
 
 The app references Core. Core does not reference a UI framework or the app. Keep the internal logic surface limited to its app and test consumers. Do not add empty Domain/Application/Infrastructure projects or general-purpose frameworks.
@@ -25,6 +25,14 @@ UI code uses connection orchestration rather than duplicating authentication or 
 Presentation notifications are handled on the WinUI dispatcher. The UI owns any window-bound API; Core receives no Window, DispatcherQueue, visual tree or clipboard object.
 
 Text controls own in-progress input. Diagnostic rendering does not write model snapshots back into editable fields: deferred native text notifications must not erase newer input in another control. The check action reads all current inputs before starting the Core operation. Native executable selection updates the path control through the same input boundary.
+
+## Project retrieval boundary
+
+`Projects/ProjectReader` reads one explicitly selected, connection-scoped Project through `GhConnectionService.SendAsync`. Per-read state holds field definitions, an Issue dictionary and independent Project items; it is discarded after producing the result. `ProjectQueries` contains fixed query documents with ID/cursor variables. Nested value pagination uses item IDs and verifies their owning Project.
+
+`ProjectReadModel` separates scoped node identity, Issue title/state, Project field definitions/options, item values, availability and traversal results. Display names never select fields. The reader has no UI, persistence, draft, mutation or second authentication collaborator. Ordinary startup and `--input-check` remain independent entry points; wiring retrieval into navigation/grid presentation belongs to their owning Issues.
+
+Raw API data stays transient. Safe read diagnostics contain outcome, stage, problem/failure classification and HTTP status, not response messages or content. See the [bounded read contract](spec.md#bounded-project-read-contract) for completeness and unsupported-type semantics.
 
 ## Native input boundary
 
