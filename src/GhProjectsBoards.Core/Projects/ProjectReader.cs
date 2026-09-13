@@ -17,6 +17,7 @@ internal sealed class ProjectReader(GhConnectionService service)
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
         private readonly Dictionary<ScopedId, IssueReadModel> issues = [];
         private readonly Dictionary<ScopedId, ItemBuilder> items = [];
+        private readonly HashSet<string> valueIds = new(StringComparer.Ordinal);
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
         private ApiOutcome? interruption;
@@ -144,7 +145,7 @@ internal sealed class ProjectReader(GhConnectionService service)
         {
             var type = Text(node, "__typename");
             var valueId = OptionalText(node, "id");
-            if (valueId is not null && !item.ValueIds.Add(valueId)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+            if (valueId is not null && !valueIds.Add(valueId)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
             var field = Optional(node, "field");
             if (field.ValueKind != JsonValueKind.Object)
             {
@@ -191,18 +192,20 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         private ProjectItemReadModel BuildItem(ItemBuilder item, bool complete)
         {
+            var kind = item.Kind == ProjectItemKind.Issue && (item.ContentId is null || !issues.ContainsKey(item.ContentId))
+                ? ProjectItemKind.Unavailable : item.Kind;
             // Nulls or absent fields from any incomplete read cannot become clear instructions.
             var values = item.Values.Select(value => !complete && value.Availability == ValueAvailability.Empty
                 ? value with { Availability = ValueAvailability.Unavailable } : value).ToList();
             foreach (var field in fields.Values.Where(field => !item.FieldIds.Contains(field.Id)))
             {
                 var availability = field.Availability == ValueAvailability.Unsupported ? ValueAvailability.Unsupported
-                    : item.Kind == ProjectItemKind.Unavailable ? ValueAvailability.Unavailable
-                    : item.Kind == ProjectItemKind.Unsupported ? ValueAvailability.NotLoaded
+                    : kind == ProjectItemKind.Unavailable ? ValueAvailability.Unavailable
+                    : kind == ProjectItemKind.Unsupported ? ValueAvailability.NotLoaded
                     : complete && item.Complete ? ValueAvailability.Empty : ValueAvailability.NotLoaded;
                 values.Add(new(field.Id, null, field.TypeName, availability));
             }
-            return new(item.Id, item.Kind, item.Type, item.ContentId, item.IsArchived, values.AsReadOnly(), item.Complete);
+            return new(item.Id, kind, item.Type, item.ContentId, item.IsArchived, values.AsReadOnly(), item.Complete);
         }
 
         private async Task<bool> WalkAsync(string stage, string query, string id,
@@ -321,7 +324,6 @@ internal sealed class ProjectReader(GhConnectionService service)
             public ScopedId? ContentId { get; set; }
             public List<ProjectFieldValue> Values { get; } = [];
             public HashSet<ScopedId> FieldIds { get; } = [];
-            public HashSet<string> ValueIds { get; } = new(StringComparer.Ordinal);
             public bool Complete { get; set; }
         }
     }

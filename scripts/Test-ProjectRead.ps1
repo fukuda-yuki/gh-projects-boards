@@ -35,4 +35,3 @@ finally {
     foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
     Pop-Location
 }
-

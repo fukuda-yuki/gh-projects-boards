@@ -73,4 +73,3 @@ internal static class ProjectQueries
         }
         """.Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
 }
-

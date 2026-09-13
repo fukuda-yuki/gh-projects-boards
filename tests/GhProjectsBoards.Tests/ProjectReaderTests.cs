@@ -397,6 +397,33 @@ internal sealed class ProjectReaderTests
         Assert.That(result.Project.Items.Single().Values.Single().Availability, Is.EqualTo(ValueAvailability.NotLoaded));
     }
 
+
+    [Test]
+    public async Task IncompleteIssueMetadataDoesNotLeaveAnOrdinaryIssueWithADanglingReference()
+    {
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([Item("P1", content: new { __typename = "Issue", id = "I1",
+                number = 1, url = "https://github.com/example/repository/issues/1", title = "Synthetic", state = "OPEN",
+                repository = (object?)null })], 1))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
+        Assert.That(result.Project!.Issues, Is.Empty);
+        Assert.That(result.Project.Items.Single().Kind, Is.EqualTo(ProjectItemKind.Unavailable));
+        Assert.That(result.Project.Items.Single().ContentId!.NodeId, Is.EqualTo("I1"));
+    }
+
+    [Test]
+    public async Task DuplicateValueNodeAcrossDifferentItemsIsDetected()
+    {
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([
+                Item("P1", "T1", Page([Value("P1", "P1-status", id: "shared-value")], 1), Issue("I1", 1)),
+                Item("P1", "T2", Page([Value("P1", "P1-status", id: "shared-value")], 1), Issue("I2", 2))], 2))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
+        Assert.That(result.Problems.Any(p => p.Kind == ReadProblemKind.DuplicateIdentity), Is.True);
+    }
+
     private static async Task<ProjectReadResult> Read(ProjectBoundary boundary, CancellationToken cancellation = default)
     {
         var service = new GhConnectionService("gh.exe", Scope.Host, boundary.Runner);
