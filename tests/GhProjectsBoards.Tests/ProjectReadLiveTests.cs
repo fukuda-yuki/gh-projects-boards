@@ -96,7 +96,7 @@ internal sealed class ProjectReadLiveTests
         }
     }
 
-    private sealed class ReadOnlyRunner : IGhProcessRunner
+    internal sealed class ReadOnlyRunner : IGhProcessRunner
     {
         private readonly GhProcessRunner runner = new();
         public int Count { get; private set; }

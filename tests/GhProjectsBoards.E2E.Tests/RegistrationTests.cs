@@ -146,7 +146,8 @@ public sealed partial class RegistrationTests
             Root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, "registration-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Root); Write();
         }
-        public void Write(int delay = 0, long id = 42) => File.WriteAllText(Path.Combine(Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, readDelayMs = delay, id }));
+        public void Write(int delay = 0, long id = 42, string? remoteTitle = null, string? remoteOption = null, bool partial = false)
+            => File.WriteAllText(Path.Combine(Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, readDelayMs = delay, id, remoteTitle, remoteOption, partial }));
         public JsonElement[] Calls() => File.Exists(Path.Combine(Root, "calls.jsonl")) ? File.ReadAllLines(Path.Combine(Root, "calls.jsonl")).Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray() : [];
         public void Run(Action<Window> action, bool alreadyClosed = false, bool interrupt = false)
         {

@@ -23,6 +23,16 @@ internal sealed class EditingGrid : Grid
     private bool selecting;
     private int generation;
     internal void CancelPending() => generation++;
+    internal bool CanRefresh => !controls.SelectMany(r => r).OfType<TitleCell>().Any(t => t.Composing);
+    internal (string Item, FieldKey? Field)? SelectionIdentity => active ? (rows[currentRow].ItemId, rows[currentRow].Cells[currentColumn].Key) : null;
+    internal void RestoreSelection((string Item, FieldKey? Field)? identity)
+    {
+        if (identity is not { } target) return;
+        var r = Array.FindIndex(rows, row => row.ItemId == target.Item);
+        if (r < 0) { selection.Text = "選択していた項目はProjectで未観測です。別の行には移動していません。"; return; }
+        var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
+        if (c >= 0) Select(r, c, false, false);
+    }
     internal EditingGrid(ProjectRegistration registration, DraftSession session)
     {
         this.session = session; projectId = registration.Snapshot.Id.NodeId;
@@ -30,19 +40,24 @@ internal sealed class EditingGrid : Grid
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         rows = session.Workspace.Open(registration);
         RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new());
-        var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var toolbar = new StackPanel { Spacing = 8 };
+        var editCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var recoveryCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        toolbar.Children.Add(editCommands); toolbar.Children.Add(recoveryCommands);
         void Command(string text, string id, Action action)
         {
             var b = new Button { Content = text }; AutomationProperties.SetAutomationId(b, id);
-            b.Click += (_, _) => Run(action); toolbar.Children.Add(b);
+            b.Click += (_, _) => Run(action); editCommands.Children.Add(b);
         }
         Command("コピー", "GridCopy", Copy);
         var paste = new Button { Content = "貼り付け" }; AutomationProperties.SetAutomationId(paste, "GridPaste");
-        paste.Click += async (_, _) => await PasteAsync(); toolbar.Children.Add(paste);
+        paste.Click += async (_, _) => await PasteAsync(); editCommands.Children.Add(paste);
         Command("値をクリア", "GridClear", ClearSelected);
         Command("操作を元に戻す", "GridUndo", () => session.Workspace.Undo(projectId));
         var save = new Button { Content = "ローカル保存を再試行" }; AutomationProperties.SetAutomationId(save, "GridSave");
-        save.Click += async (_, _) => { await session.FlushAsync(); Update(); }; toolbar.Children.Add(save);
+        save.Click += async (_, _) => { await session.FlushAsync(); Update(); }; recoveryCommands.Children.Add(save);
+        var compare = new Button { Content = "競合・未確認を比較" }; AutomationProperties.SetAutomationId(compare, "GridConflicts");
+        compare.Click += async (_, _) => await CompareAsync(); recoveryCommands.Children.Add(compare);
         Children.Add(toolbar);
         var info = new StackPanel { Spacing = 4 }; info.Children.Add(status); info.Children.Add(selection);
         AutomationProperties.SetAutomationId(status, "DraftStatus"); AutomationProperties.SetAutomationId(selection, "GridSelection");
@@ -92,6 +107,56 @@ internal sealed class EditingGrid : Grid
         Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; Update(); };
         Update(); _ = session.FlushAsync();
     }
+    private async Task CompareAsync()
+    {
+        if (!CanRefresh) { status.Text = "IME変換を自然な操作で確定・取消してから比較してください。"; return; }
+        CancelPending();
+        var fields = session.Workspace.Fields.Where(f => f.Conflict || f.Observation?.Reason is not null).ToArray();
+        var diagnostics = string.Join("\n", session.Workspace.StructuralChanges.Concat(session.Workspace.UndoWarnings));
+        if (fields.Length == 0) {
+            var summary = new ContentDialog { XamlRoot = XamlRoot, Title = "構成変更とUndo", CloseButtonText = "閉じる",
+                Content = new ScrollViewer { MaxHeight = 340, Content = new TextBlock { TextWrapping = TextWrapping.Wrap, Text = "競合・未確認の保存フィールドはありません。\n" + diagnostics } } };
+            await summary.ShowAsync(); return;
+        }
+        var picker = new ComboBox { Header = "保存フィールド（IDで識別）", ItemsSource = fields.Select(f => $"{(f.Key.Kind == "Title" ? "タイトル" : "単一選択")} / {f.Key.NodeId} / {f.Key.FieldId}").ToArray(), SelectedIndex = 0 };
+        AutomationProperties.SetAutomationId(picker, "ConflictField");
+        var detail = new TextBlock { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
+        AutomationProperties.SetAutomationId(detail, "ConflictComparison");
+        var text = new TextBox { Header = "別のタイトル" }; AutomationProperties.SetAutomationId(text, "ConflictAlternativeTitle");
+        var options = new ComboBox { Header = "別の選択肢", DisplayMemberPath = "Name" }; AutomationProperties.SetAutomationId(options, "ConflictAlternativeOption");
+        var clear = new CheckBox { Content = "明示的にクリア" }; AutomationProperties.SetAutomationId(clear, "ConflictAlternativeClear");
+        var other = new Button { Content = "別の値をローカル採用" }; AutomationProperties.SetAutomationId(other, "ConflictUseAlternative");
+        var content = new StackPanel { Spacing = 8 }; foreach (var element in new FrameworkElement[] { picker, new ScrollViewer { MaxHeight = 260, Content = detail }, text, options, clear, other }) content.Children.Add(element);
+        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "競合・未確認の比較（ローカルのみ）", Content = content,
+            PrimaryButtonText = "GitHub値を採用", SecondaryButtonText = "ローカル値を保持", CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
+        AutomationProperties.SetAutomationId(dialog, "ConflictDialog");
+        DraftField selected = fields[0]; ResolutionDecision? decision = null; LocalValue? alternative = null;
+        void Show()
+        {
+            selected = session.Workspace.Fields.Single(f => f.Key == fields[picker.SelectedIndex].Key); var remote = selected.Observation!;
+            string Display(string? v) => v is null ? "（明示的な空値）" : selected.Key.Kind == "Title" ? v : $"{remote.Options.SingleOrDefault(o => o.Id == v)?.Name ?? "選択肢不明"} [ID: {v}]";
+            detail.Text = $"所有: {(selected.Key.Kind == "Title" ? "Issue（同じアカウント内で共有）" : "Project項目")}\nProject: {remote.Project.NodeId}\n観測: {remote.At.LocalDateTime:yyyy-MM-dd HH:mm:ss}\nB 基準: {Display(selected.Baseline)}\nL ローカル: {Display(selected.Change is { } local ? local.Value : selected.Baseline)}\nR GitHub: {(remote.Availability is ValueAvailability.Present or ValueAvailability.Empty ? Display(remote.Value) : EditingWorkspace.AvailabilityText(remote.Availability))}\n{remote.Reason ?? "有効な値競合。選択はローカル保存のみです。"}\n未確定文字: {selected.Buffer ?? "なし"}";
+            decision = selected.Conflict && remote.Reason is null ? session.Workspace.Decision(selected.Key) : null;
+            if (diagnostics.Length > 0) detail.Text += "\n\n構成変更・Undo:\n" + diagnostics;
+            dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = other.IsEnabled = decision is not null;
+            text.Visibility = selected.Key.Kind == "Title" ? Visibility.Visible : Visibility.Collapsed;
+            options.Visibility = clear.Visibility = selected.Key.Kind == "Select" ? Visibility.Visible : Visibility.Collapsed;
+            text.Text = selected.Change?.Value ?? selected.Baseline ?? ""; options.ItemsSource = remote.Options; options.SelectedIndex = -1; clear.IsChecked = false;
+        }
+        picker.SelectionChanged += (_, _) => Show();
+        other.Click += (_, _) =>
+        {
+            alternative = selected.Key.Kind == "Title" ? new(text.Text) : clear.IsChecked == true ? new(null, true)
+                : options.SelectedItem is SelectOption option ? new(option.Id) : null;
+            if (alternative is not null) dialog.Hide();
+        };
+        Show(); var result = await dialog.ShowAsync();
+        if (decision is null || result == ContentDialogResult.None && alternative is null) return;
+        var value = alternative ?? (result == ContentDialogResult.Primary ? selected.Observation!.Value : selected.Change is { } local ? local.Value : selected.Baseline) switch
+        { null => new LocalValue(null, true), var chosen => new LocalValue(chosen) };
+        await session.CommitAsync(candidate => { candidate.Resolve(selected.Observation!.Project.NodeId, decision, value); return candidate; }, () => IsLoaded && CanRefresh);
+        Update();
+    }
     private bool updating;
     private void FocusedCell(int r, int c)
     {
@@ -106,14 +171,19 @@ internal sealed class EditingGrid : Grid
         try
         {
             status.Text = $"このProject {rows.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
+            status.Text += $" / 競合 {session.Workspace.Fields.Count(f => f.Conflict)} / 未確認 {session.Workspace.Fields.Count(f => f.Observation?.Reason is not null)}";
+            status.Text += $"\n構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
             selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
             for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
             {
                 var cell = rows[r].Cells[c];
                 var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
                 markers[r][c].Text = (selected ? "選択 " : "") + (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
+                var field = session.Workspace.Field(cell);
+                markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
+                if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
                 if (controls[r][c] is TitleCell text) text.Refresh();
-                if (controls[r][c] is ComboBox combo) combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
+                if (controls[r][c] is ComboBox combo) { combo.IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null; combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell)); }
             }
         }
         finally { updating = false; }
@@ -215,6 +285,7 @@ internal sealed class EditingGrid : Grid
     {
         private readonly EditingGrid owner; private readonly int row, column; private readonly EditCell cell;
         private bool restoring; private bool composing;
+        public bool Composing => composing;
         public bool Editing { get; private set; }
         public TitleCell(EditingGrid owner, int row, int column, EditCell cell)
         {
@@ -231,6 +302,8 @@ internal sealed class EditingGrid : Grid
         }
         public void Refresh()
         {
+            var field = owner.session.Workspace.Field(cell);
+            IsReadOnly = !cell.Editable || field?.Conflict == true || field?.Observation?.Reason is { } reason && !reason.StartsWith("未確定文字");
             var buffer = owner.session.Workspace.Buffer(cell);
             var committed = owner.session.Workspace.Value(cell);
             var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind == "Select"
