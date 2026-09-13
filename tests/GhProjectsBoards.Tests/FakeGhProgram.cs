@@ -91,8 +91,25 @@ internal static class FakeGhProgram
         {
             using var payload = JsonDocument.Parse(input);
             if (query.Contains("ProjectFields") && settings.TryGetProperty("readDelayMs", out var readDelay)) await Task.Delay(readDelay.GetInt32());
+            if (query.Contains("ProjectItems") && payload.RootElement.GetProperty("variables").TryGetProperty("after", out var cursor)
+                && cursor.ValueKind == JsonValueKind.String && settings.TryGetProperty("partial", out var partial) && partial.GetBoolean())
+            { Console.Write("HTTP/2.0 403 Forbidden\r\nContent-Type: application/json\r\n\r\n{}"); return 1; }
             var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host);
-            if (response is not null) { WriteHttp(response); return 0; }
+            if (response is not null)
+            {
+                if (query.Contains("ProjectItems"))
+                {
+                    var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
+                    foreach (var item in node["data"]!["node"]!["items"]!["nodes"]!.AsArray().Where(i => i!["content"]?["id"]?.ToString() == "I1"))
+                    {
+                        if (settings.TryGetProperty("remoteTitle", out var title) && title.ValueKind == JsonValueKind.String) item!["content"]!["title"] = title.GetString();
+                        if (settings.TryGetProperty("remoteOption", out var option) && option.ValueKind == JsonValueKind.String)
+                            item!["fieldValues"]!["nodes"]![0]!["optionId"] = option.GetString();
+                    }
+                    response = node;
+                }
+                WriteHttp(response); return 0;
+            }
         }
         if (query?.Contains("projectV2", StringComparison.Ordinal) == true)
         {

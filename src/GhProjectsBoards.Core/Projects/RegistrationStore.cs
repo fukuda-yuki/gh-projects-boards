@@ -11,7 +11,7 @@ internal sealed record ProjectRegistration(string ViewerLogin, string OwnerLogin
     IReadOnlyList<RepositoryReadModel> Repositories, string? DefaultRepository,
     DateTimeOffset RetrievedAt, ProjectReadModel Snapshot);
 internal sealed record StorageProblem(string File, string Kind);
-internal sealed record RegistrationLoad(IReadOnlyList<ProjectRegistration> Registrations, IReadOnlyList<StorageProblem> Problems);
+internal sealed record RegistrationLoad(IReadOnlyList<ProjectRegistration> Registrations, IReadOnlyList<StorageProblem> Problems, DraftRecord[]? Checkpoints = null);
 
 // Each file is an atomic metadata/snapshot pair. ConnectionContext is deliberately absent.
 internal sealed class RegistrationStore
@@ -46,6 +46,7 @@ internal sealed class RegistrationStore
     {
         var values = new List<ProjectRegistration>();
         var problems = new List<StorageProblem>();
+        DraftRecord[] acceptedCheckpoints = [];
         if (!Directory.Exists(Root)) return new(values, File.Exists(Root) ? [new("registration store", "DataRootIsFile")] : problems);
         try
         {
@@ -64,9 +65,19 @@ internal sealed class RegistrationStore
                 problems.Add(new(Path.GetFileName(file), "InterruptedOperation"));
             foreach (var file in Directory.EnumerateFiles(Root, "*.bak").Where(f => !File.Exists(f[..^4])))
                 problems.Add(new(Path.GetFileName(file), "OrphanedLastGoodBackup"));
+            var draftStore = new DraftStore(Root);
+            var checkpoints = await draftStore.CheckpointsAsync();
+            acceptedCheckpoints = checkpoints.Records;
+            foreach (var checkpoint in checkpoints.Records)
+            {
+                values.RemoveAll(r => r.Snapshot.Id.Scope == checkpoint.Scope);
+                values.AddRange(checkpoint.Registrations!.Select(FromRecord));
+            }
+            values.RemoveAll(r => checkpoints.Problems.Any(p => p.File == Path.GetFileName(draftStore.FileFor(r.Snapshot.Id.Scope))));
+            problems.AddRange(checkpoints.Problems);
         }
         catch (Exception ex) when (StorageFailure(ex)) { problems.Add(new("registration store", Classification(ex))); }
-        return new(values, problems);
+        return new(values, problems, acceptedCheckpoints);
     }
 
     public async Task SaveAsync(ProjectRegistration registration, CancellationToken token = default, Func<bool>? canCommit = null)
@@ -74,6 +85,8 @@ internal sealed class RegistrationStore
         Validate(registration);
         Directory.CreateDirectory(Root);
         using var gate = Lock();
+        if ((await new DraftStore(Root).LoadAsync(registration.Snapshot.Id.Scope))?.Registrations is not null)
+            throw new InvalidDataException("Profile migrated; reopen before changing registrations.");
         var file = FileFor(registration.Snapshot.Id);
         // Never overwrite an unreadable or newer-format record with an apparent new registration.
         if (File.Exists(file)) _ = await ReadAsync(file, token);
@@ -96,6 +109,8 @@ internal sealed class RegistrationStore
     {
         Directory.CreateDirectory(Root);
         using var gate = Lock();
+        if ((await new DraftStore(Root).LoadAsync(key.Scope))?.Registrations is not null)
+            throw new InvalidDataException("Profile migrated; reopen before changing registrations.");
         var file = FileFor(key);
         var removed = file + ".removed";
         if (File.Exists(file))
@@ -112,6 +127,19 @@ internal sealed class RegistrationStore
     }
 
     private FileStream Lock() => new(Path.Combine(Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    // Called only by the final checkpoint predicate, while its common root writer lock is held.
+    internal bool MatchesLegacy(ConnectionScope scope, IEnumerable<ProjectRegistration> expected)
+    {
+        var actual = new List<RegistrationRecord>();
+        foreach (var file in Directory.EnumerateFiles(Root, "*.json"))
+        {
+            var record = JsonSerializer.Deserialize<RegistrationRecord>(File.ReadAllText(file), Json) ?? throw new InvalidDataException("Invalid legacy record.");
+            var registration = FromRecord(record);
+            if (registration.Snapshot.Id.Scope == scope) actual.Add(record);
+        }
+        string Canonical(IEnumerable<RegistrationRecord> records) => JsonSerializer.Serialize(records.OrderBy(r => r.Snapshot.Id.NodeId).ToArray(), Json);
+        return Canonical(actual) == Canonical(expected.Where(r => r.Snapshot.Id.Scope == scope).Select(ToRecord));
+    }
     private static bool StorageFailure(Exception ex) => ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException;
     private static string Classification(Exception ex) => ex switch
     {
@@ -124,6 +152,11 @@ internal sealed class RegistrationStore
         var record = await JsonSerializer.DeserializeAsync<RegistrationRecord>(stream, Json, token)
             ?? throw new InvalidDataException("EmptyRecord");
         if (record.Version != 1 || record.Snapshot is null || record.Snapshot.Issues is null) throw new InvalidDataException("UnsupportedSchema");
+        return FromRecord(record);
+    }
+    internal static ProjectRegistration FromRecord(RegistrationRecord record)
+    {
+        if (record is null || record.Version != 1 || record.Snapshot is null || record.Snapshot.Issues is null) throw new InvalidDataException("UnsupportedSchema");
         var s = record.Snapshot;
         if (s.Issues.Any(i => i is null || i.Id is null) || s.Issues.Select(i => i.Id).Distinct().Count() != s.Issues.Length) throw new InvalidDataException("DuplicateOrNullIssue");
         var project = new ProjectReadModel(s.Id, s.OwnerId, s.OwnerType, s.Number, s.Url, s.Title, s.Fields,
@@ -133,7 +166,7 @@ internal sealed class RegistrationStore
         Validate(result);
         return result;
     }
-    private static RegistrationRecord ToRecord(ProjectRegistration r)
+    internal static RegistrationRecord ToRecord(ProjectRegistration r)
     {
         var s = r.Snapshot;
         return new(1, r.ViewerLogin, r.OwnerLogin, r.Repositories, r.DefaultRepository, r.RetrievedAt,
@@ -159,8 +192,8 @@ internal sealed class RegistrationStore
             || p.Issues.Any(pair => pair.Key != pair.Value.Id || !Valid(pair.Key) || !Valid(pair.Value.Repository.Id) || !Valid(pair.Value.Repository.OwnerId))
             || r.Repositories.Any(repo => !Valid(repo.Id) || !Valid(repo.OwnerId))) throw new InvalidDataException("InconsistentSnapshot");
     }
-    private sealed record RegistrationRecord(int Version, string ViewerLogin, string OwnerLogin,
+    internal sealed record RegistrationRecord(int Version, string ViewerLogin, string OwnerLogin,
         IReadOnlyList<RepositoryReadModel> Repositories, string? DefaultRepository, DateTimeOffset RetrievedAt, SnapshotRecord Snapshot);
-    private sealed record SnapshotRecord(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number, string Url, string Title,
+    internal sealed record SnapshotRecord(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number, string Url, string Title,
         IReadOnlyList<ProjectFieldDefinition> Fields, IssueReadModel[] Issues, IReadOnlyList<ProjectItemReadModel> Items, bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
 }

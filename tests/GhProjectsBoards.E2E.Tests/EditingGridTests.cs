@@ -114,7 +114,7 @@ public sealed partial class RegistrationTests
         f.Run(w => { OpenSaved(w, profile: true); Assert.That(CellText(w, 0), Is.EqualTo("Recover after failed save")); });
     }
     [Test]
-    public void RefreshCannotReplaceCacheWhenEditingStartsDuringRetrieval()
+    public void RefreshPreservesPendingInputStartedDuringRetrieval()
     {
         using var f = new Fixture();
         f.Run(w =>
@@ -124,11 +124,13 @@ public sealed partial class RegistrationTests
             f.Write(delay: 500); Invoke(w, "RefreshProjectButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("取得中"));
             Element(w, "GridCell0_0").Click(); Set(w, "GridCell0_0", "During refresh");
-            Wait(() => Text(w, "RegistrationStatus").Contains("置換していません"));
+            Wait(() => Text(w, "RegistrationStatus").Contains("照合をローカル保存"));
             Assert.That(File.ReadAllBytes(file), Is.EqualTo(baseline));
             Assert.That(CellText(w, 0), Is.EqualTo("During refresh"));
-            var calls = f.Calls().Length; Invoke(w, "RefreshProjectButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("更新は停止")); Assert.That(f.Calls().Length, Is.EqualTo(calls));
+            Invoke(w, "RefreshProjectButton");
+            Wait(() => Text(w, "RegistrationStatus").Contains("照合をローカル保存"));
+            Assert.That(CellText(w, 0), Is.EqualTo("During refresh"));
+            Assert.That(Durable(f).GetProperty("Fields").EnumerateArray().Single(x => x.GetProperty("Key").GetProperty("NodeId").GetString() == "I1").GetProperty("Buffer").GetString(), Is.EqualTo("During refresh"));
         });
     }
     [Test]
@@ -146,7 +148,7 @@ public sealed partial class RegistrationTests
             Invoke(w, "UnregisterProjectButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("SecondaryButton")) is not null);
             Element(w, "SecondaryButton").AsButton().Invoke();
-            Wait(() => Directory.GetFiles(f.Data, "*.json").Length == 1);
+            Wait(() => Durable(f).GetProperty("Registrations") is { ValueKind: JsonValueKind.Array } registrations && registrations.GetArrayLength() == 1);
             OpenSaved(w, "Project 2"); Assert.That(CellText(w, 0), Is.EqualTo("Shared survives"));
             Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
         });

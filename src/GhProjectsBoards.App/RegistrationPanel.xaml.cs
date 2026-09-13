@@ -20,6 +20,7 @@ public sealed partial class RegistrationPanel : UserControl
         workspace = value;
         workspace.Changed += Update;
         workspace.Transitioning += () => { foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.CancelPending(); };
+        workspace.CanRefresh = () => EditorHost.Children.OfType<EditingGrid>().All(grid => grid.CanRefresh);
         Owner.TextChanged += (_, _) => { Repositories.ItemsSource = null; };
         Update();
     }
@@ -72,15 +73,23 @@ public sealed partial class RegistrationPanel : UserControl
                 if (!ReferenceEquals(rendered, selected))
                 {
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
+                    var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();
-                    if (workspace.Drafts is { } drafts) { EditorHost.Children.Add(new EditingGrid(selected, drafts)); Items.Visibility = Visibility.Collapsed; }
+                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;
                 Summary.Text = $"{p.Title} / {selected.OwnerLogin} / {p.Id.NodeId}\nキャッシュ：最終成功 {selected.RetrievedAt.LocalDateTime:g} / 最新の試行：{RegistrationWorkspace.AttemptText(workspace.LatestAttempt)}\n項目 {p.Items.Count} / Issue {p.Issues.Count} / 非対応フィールド {p.Fields.Count(f => f.Availability == ValueAvailability.Unsupported)} / 閲覧不可 {p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable)}\nローカル編集（GitHub未反映）";
+                if (workspace.Incomplete is { } staged)
+                {
+                    Grid.SetRow(Items, 4); Items.MaxHeight = 160;
+                    Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(staged).ToArray();
+                    Summary.Text += "\n一部取得の未採用観測（保存キャッシュ・下書きとは別）：未取得範囲は不明です。";
+                }
             }
             else
             {
+                Grid.SetRow(Items, 3); Items.MaxHeight = double.PositiveInfinity;
                 DefaultRepository.Text = "";
                 EditorHost.Children.Clear(); Items.Visibility = Visibility.Visible; rendered = null; Items.ItemsSource = workspace.Incomplete is { } partial ? PreviewRows(partial).ToArray() : Array.Empty<string>();
                 Summary.Text = workspace.Incomplete is { } p ? $"未登録・一部取得のプレビュー：{p.Title} / 項目 {p.Items.Count}。完全な保存ではありません。" : "左の登録済みProjectを選択してください。選択だけでは通信しません。";

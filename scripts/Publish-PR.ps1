@@ -1,6 +1,6 @@
 # User-run publication only. The implementation agent must not execute this script.
 [CmdletBinding()]
-param([string]$Manifest = (Join-Path (Split-Path $PSScriptRoot -Parent) 'TestResults/editing-delivery/publication.json'))
+param([string]$Manifest = (Join-Path (Split-Path $PSScriptRoot -Parent) 'TestResults/refresh-delivery/publication.json'))
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $gh = 'C:\Program Files\GitHub CLI\gh.exe'
@@ -15,7 +15,7 @@ function Invoke-Gh([string[]]$Arguments) {
     return ($result -join "`n").Trim()
 }
 $m = Get-Content -LiteralPath $Manifest -Raw | ConvertFrom-Json
-if ($m.repository -ne 'fukuda-yuki/gh-projects-boards' -or $m.branch -ne 'codex/issue-7-editable-workspace' -or $m.head -notmatch '^[0-9a-f]{40}$') { throw 'Unexpected publication identity.' }
+if ($m.repository -ne 'fukuda-yuki/gh-projects-boards' -or $m.branch -ne 'codex/issue-9-refresh-reconciliation' -or $m.head -notmatch '^[0-9a-f]{40}$') { throw 'Unexpected publication identity.' }
 if ((Invoke-Git -Arguments @('remote','get-url','origin')) -ne 'https://github.com/fukuda-yuki/gh-projects-boards.git') { throw 'Origin does not match the intended repository.' }
 $pushUrls = (Invoke-Git -Arguments @('remote','get-url','--push','--all','origin')) -split "`n"
 if ($pushUrls.Count -ne 1 -or $pushUrls[0] -ne 'https://github.com/fukuda-yuki/gh-projects-boards.git') { throw 'Push destination differs or has multiple targets.' }
@@ -38,8 +38,9 @@ if ($existing.Count -eq 1) {
     if ($published.Count -ne 1) { throw 'PR creation readback is ambiguous. Inspect GitHub before retrying.' }
     $number = [string]$published[0].number
 }
-$pr = Invoke-Gh -Arguments @('pr','view',$number,'--repo',$m.repository,'--json','url,headRefOid,baseRefName,state') | ConvertFrom-Json
+$pr = Invoke-Gh -Arguments @('pr','view',$number,'--repo',$m.repository,'--json','url,headRefOid,baseRefName,state,title,body') | ConvertFrom-Json
 if ($pr.headRefOid -ne $m.head -or $pr.baseRefName -ne 'main' -or $pr.state -ne 'OPEN') { throw 'PR head/base/state verification failed.' }
+if ($pr.title -ne $m.title -or $pr.body.Replace("`r`n", "`n").TrimEnd() -cne (Get-Content -LiteralPath $body -Raw).Replace("`r`n", "`n").TrimEnd()) { throw 'Prepared PR title/body was not retained; inspect before retrying.' }
 Write-Host "Published/reused: $($pr.url)"
 $deadline = [DateTime]::UtcNow.AddMinutes(10)
 do {

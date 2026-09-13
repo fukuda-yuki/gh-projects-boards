@@ -3,10 +3,11 @@ namespace GhProjectsBoards.Core.Projects;
 internal sealed record FieldKey(string Kind, string NodeId, string? ProjectId = null, string? FieldId = null);
 internal sealed record LocalValue(string? Value, bool Clear = false);
 internal sealed record DraftField(FieldKey Key, string? Baseline, ScopedId SourceProject, DateTimeOffset RetrievedAt,
-    LocalValue? Change, string? Buffer, long Stamp);
+    LocalValue? Change, string? Buffer, long Stamp, FieldObservation? Observation = null, bool Conflict = false);
 internal sealed record FieldChange(FieldKey Key, DraftField Before, DraftField After);
-internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[] Changes);
-internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History);
+internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[] Changes, string? InvalidReason = null, bool Resolution = false);
+internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History,
+    RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null);
 internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline, string? Reason, SelectOption[] Options,
     ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null)
 {
@@ -15,7 +16,7 @@ internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline,
 internal sealed record EditRow(string ItemId, EditCell[] Cells);
 
 // All field and transaction state for one identity scope travels through one durable record.
-internal sealed class EditingWorkspace
+internal sealed partial class EditingWorkspace
 {
     private readonly Dictionary<FieldKey, DraftField> fields = [];
     private readonly List<EditTransaction> history = [];
@@ -24,13 +25,14 @@ internal sealed class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(1, Scope, Revision, fields.Values.ToArray(), history.ToArray());
+    public DraftRecord Snapshot() => new(2, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges);
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
         var result = new EditingWorkspace(record.Scope) { Revision = record.Revision };
         foreach (var field in record.Fields) result.fields.Add(field.Key, field);
         result.history.AddRange(record.History);
+        result.registrations = record.Registrations; result.structuralChanges = record.StructuralChanges ?? [];
         return result;
     }
     public string? Value(EditCell cell) => cell.Key is { } key && fields.TryGetValue(key, out var f)
@@ -73,13 +75,6 @@ internal sealed class EditingWorkspace
                 if (!fields.ContainsKey(cell.Key!))
                 {
                     fields.Add(cell.Key!, new(cell.Key!, cell.Baseline, p.Id, registration.RetrievedAt, null, null, 0));
-                    Revision++;
-                }
-                else if (fields[cell.Key!] is { Change: null, Buffer: null } old && old.SourceProject == p.Id
-                    && old.RetrievedAt != registration.RetrievedAt && !history.Any(t => t.Changes.Any(c => c.Key == cell.Key)))
-                {
-                    // Unedited observations can follow a successful explicit refresh; active drafts never rebase here.
-                    fields[cell.Key!] = old with { Baseline = cell.Baseline, RetrievedAt = registration.RetrievedAt };
                     Revision++;
                 }
             }
@@ -151,8 +146,10 @@ internal sealed class EditingWorkspace
                 value = clear ? null : options[0].Id;
             }
             var old = fields[key];
+            if (old.Conflict || old.Observation?.Reason is { } blocked && !blocked.StartsWith("未確定文字")) throw new InvalidOperationException(old.Observation?.Reason ?? "競合の比較画面で採用値を選択してください。");
             var change = value == old.Baseline ? null : new LocalValue(value, clear);
-            var next = old with { Change = change, Buffer = null, Stamp = Revision + 1 };
+            var next = old with { Change = change, Buffer = null, Stamp = Revision + 1,
+                Observation = old.Observation?.Reason?.StartsWith("未確定文字") == true ? old.Observation with { Reason = null } : old.Observation };
             if (changes.TryGetValue(key, out var duplicate) && duplicate.After.Change != next.Change)
                 throw new InvalidOperationException("同じIssueへの値が競合しています。");
             changes[key] = new(key, old, next);
@@ -164,29 +161,35 @@ internal sealed class EditingWorkspace
     }
     public void Undo(string projectId)
     {
-        var transaction = history.LastOrDefault(t => t.ProjectId == projectId);
+        var transaction = history.LastOrDefault(t => t.ProjectId == projectId && t.InvalidReason is null);
         if (transaction is null) return;
-        if (transaction.Changes.Any(c => !fields.TryGetValue(c.Key, out var current) || current != c.After))
+        if (transaction.Changes.Any(c => !fields.TryGetValue(c.Key, out var current) || !SameUndoState(current, c.After)))
             throw new InvalidOperationException("後続の共有編集または編集中の文字があるため、この操作は元に戻せません。");
-        foreach (var c in transaction.Changes) fields[c.Key] = c.Before;
+        foreach (var c in transaction.Changes) fields[c.Key] = c.Before with { Observation = fields[c.Key].Observation };
         history.Remove(transaction); Revision++;
     }
     private static bool Belongs(FieldKey key, ProjectReadModel p) => key.ProjectId == p.Id.NodeId || key.Kind == "Title" && p.Issues.Keys.Any(id => id.NodeId == key.NodeId);
-    public bool HasWork(ProjectReadModel p) => fields.Values.Any(f => (f.Change is not null || f.Buffer is not null) && Belongs(f.Key, p))
+    public bool HasWork(ProjectReadModel p) => fields.Values.Any(f => (f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason is not null) && (Belongs(f.Key, p) || f.SourceProject == p.Id))
         || history.Any(t => t.Changes.Any(c => Belongs(c.Key, p)));
-    public void ForgetObservations(ProjectReadModel p)
-    {
-        if (HasWork(p)) throw new InvalidOperationException("Drafts must be reconciled before refresh.");
-        foreach (var key in fields.Keys.Where(k => Belongs(k, p)).ToArray()) fields.Remove(key);
-        Revision++;
-    }
     public void Discard(ProjectReadModel project, IEnumerable<ProjectReadModel> surviving)
     {
-        var shared = surviving.Where(p => p.Id.Scope == Scope).SelectMany(p => p.Issues.Keys).Select(k => k.NodeId).ToHashSet();
+        var remaining = surviving.Where(p => p.Id.Scope == Scope).ToArray();
+        var shared = remaining.SelectMany(p => p.Issues.Keys).Select(k => k.NodeId).ToHashSet();
         var removed = fields.Keys.Where(k => k.ProjectId == project.Id.NodeId || k.Kind == "Title"
-            && project.Issues.Keys.Any(id => id.NodeId == k.NodeId) && !shared.Contains(k.NodeId)).ToHashSet();
+            && (project.Issues.Keys.Any(id => id.NodeId == k.NodeId) || fields[k].SourceProject == project.Id) && !shared.Contains(k.NodeId)).ToHashSet();
         foreach (var key in removed) fields.Remove(key);
-        history.RemoveAll(t => t.ProjectId == project.Id.NodeId || t.Changes.Any(c => removed.Contains(c.Key)));
+        history.RemoveAll(t => t.Changes.All(c => removed.Contains(c.Key)));
+        for (var i = 0; i < history.Count; i++)
+        {
+            if (history[i].Changes.Any(c => removed.Contains(c.Key))) history[i] = history[i] with {
+                Changes = history[i].Changes.Where(c => !removed.Contains(c.Key)).ToArray(), InvalidReason = "登録解除で一部の対象を破棄したため、複合操作のUndoを無効化しました。共有値は保持しています。" };
+            if (history[i].ProjectId == project.Id.NodeId && history[i].InvalidReason is null)
+            {
+                var destination = remaining.FirstOrDefault(p => history[i].Changes.All(c => c.Key.Kind == "Title" && p.Issues.Keys.Any(id => id.NodeId == c.Key.NodeId)));
+                history[i] = destination is null ? history[i] with { InvalidReason = "登録解除で操作対象が分かれたためUndoを無効化しました。共有値は保持しています。" }
+                    : history[i] with { ProjectId = destination.Id.NodeId };
+            }
+        }
         Revision++;
     }
 }

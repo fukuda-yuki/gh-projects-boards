@@ -111,7 +111,11 @@ try {
         GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo = 1
         GridRectangleCopyPasteValidationClearAndOperationUndo = 1
         FailedDraftSaveCancelsNavigationAndCloseUntilRetry = 1
-        RefreshCannotReplaceCacheWhenEditingStartsDuringRetrieval = 1
+        RefreshPreservesPendingInputStartedDuringRetrieval = 1
+        RefreshConflictComparisonResolutionAndRestart = 3
+        RefreshIndependentFieldsAndPartialFailureKeepCompleteCheckpoint = 1
+        RefreshCancellationAndCloseRetainExistingConflict = 1
+        DeliberateRefreshInterruptionRecoversCoherentCheckpoint = 1
         UnregistrationRequiresDecisionAndPreservesSurvivingSharedDraft = 1
         DeliberateProcessInterruptionRecoversAcknowledgedTransactionAndUndo = 1
     }
