@@ -7,7 +7,7 @@ internal sealed record DraftField(FieldKey Key, string? Baseline, ScopedId Sourc
 internal sealed record FieldChange(FieldKey Key, DraftField Before, DraftField After);
 internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[] Changes, string? InvalidReason = null, bool Resolution = false);
 internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History,
-    RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null);
+    RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null, ApplyBatch[]? Journal = null);
 internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline, string? Reason, SelectOption[] Options,
     ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null)
 {
@@ -25,7 +25,7 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(2, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges);
+    public DraftRecord Snapshot() => new(3, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray());
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -33,6 +33,7 @@ internal sealed partial class EditingWorkspace
         foreach (var field in record.Fields) result.fields.Add(field.Key, field);
         result.history.AddRange(record.History);
         result.registrations = record.Registrations; result.structuralChanges = record.StructuralChanges ?? [];
+        result.journal.AddRange(record.Journal ?? []);
         return result;
     }
     public string? Value(EditCell cell) => cell.Key is { } key && fields.TryGetValue(key, out var f)

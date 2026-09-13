@@ -1,5 +1,13 @@
 # Architecture
 
+## Existing-field execution boundary
+
+`RegistrationWorkspace` owns preparation and lifecycle of Apply. `EditingWorkspace` produces revision-bound immutable field plans and keeps the journal separate from Undo. `ApplyRemote` uses the existing `GhConnectionService`, guarded transport and complete `ProjectReader` for preflight and independent verification. It does not own credentials or launch processes directly.
+
+`ApplyExecutor` holds a per-profile filesystem execution lease throughout reads, waits, dispatch and acknowledgement, and checks the durable revision before proceeding. The writer lock remains a separate short critical section. Version 3 of the authoritative `DraftRecord` adds execution history; v1/v2 remain readable. Each journal transition passes through the same validated, flushed, atomic checkpoint boundary as local work. Failed acknowledgement stops further dispatch and leaves durable Running as recovery evidence. `.execution.lock` contains no authoritative queue data; OS ownership is released on process termination.
+
+The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. UI Automation uses stable Apply control IDs; tests substitute only gh responses or use the authorized live fixture.
+
 ## Production projects
 
 | Project | Responsibility |

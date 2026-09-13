@@ -87,6 +87,12 @@ internal sealed class GhApiTransport(IGhProcessRunner runner, string executable,
         var status = int.Parse(statusMatch.Groups[1].Value, CultureInfo.InvariantCulture);
         var headers = process.StandardOutput[..separator];
         var retryAfter = ReadRetryAfter(Header(headers, "Retry-After"));
+        if (Header(headers, "X-RateLimit-Remaining") == "0" && long.TryParse(Header(headers, "X-RateLimit-Reset"), out var reset)
+            && reset >= 0 && reset <= 253402300799)
+        {
+            var untilReset = DateTimeOffset.FromUnixTimeSeconds(reset) - DateTimeOffset.UtcNow;
+            if (untilReset > (retryAfter ?? TimeSpan.Zero)) retryAfter = untilReset;
+        }
         var body = process.StandardOutput[(separator + separatorLength)..];
         JsonElement? data = null;
         var validJson = true;

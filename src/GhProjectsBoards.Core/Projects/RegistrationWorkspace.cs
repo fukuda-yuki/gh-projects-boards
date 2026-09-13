@@ -5,7 +5,7 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal enum RegistrationAttempt { None, Retrieving, Complete, Partial, Cancelled, Failed, SaveFailed }
 
-internal sealed class RegistrationWorkspace(RegistrationStore store)
+internal sealed partial class RegistrationWorkspace(RegistrationStore store)
 {
     private readonly DraftStore draftStore = new(store.Root);
     private readonly Dictionary<ConnectionScope, DraftSession> drafts = [];
@@ -211,6 +211,7 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
     }
     public async Task UnregisterAsync(bool retainDrafts = false, bool discardDrafts = false)
     {
+        if (Drafts?.Workspace.HasUnresolvedApply == true) { Status = "未解決のApply履歴があるため登録解除できません。履歴を再照合してください。"; Changed?.Invoke(); return; }
         Transitioning?.Invoke();
         var selected = Selected;
         await StopAsync();

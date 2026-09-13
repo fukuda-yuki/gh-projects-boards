@@ -85,7 +85,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
             new ConnectionContext(normalizedHost, identity.Id, identity.Login!, executable));
     }
 
-    public async Task<ApiResult> SendAsync(ConnectionContext context, ApiRequest request, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> SendAsync(ConnectionContext context, ApiRequest request, CancellationToken cancellationToken = default, string? requiredScope = null)
     {
         try { await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled); }
@@ -112,6 +112,8 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
                 return new ApiResult(ApiOutcome.Failed,
                     authentication!.Store == CredentialStore.Plaintext
                         ? FailureKind.PlaintextCredentials : FailureKind.UnknownCredentialStore);
+            if (request.IsMutation && requiredScope is not null && authentication!.HasScope(requiredScope) != true)
+                return new ApiResult(ApiOutcome.Failed, FailureKind.PermissionDenied);
             if (cancellationToken.IsCancellationRequested) return new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled);
             return await new GhApiTransport(runner, executable, timeout).SendAsync(normalizedHost, request, cancellationToken);
         }

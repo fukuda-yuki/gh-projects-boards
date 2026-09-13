@@ -232,7 +232,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                         {
                             stopped = true;
                             interruption = result.Outcome;
-                            problems.Add(new(ReadProblemKind.Api, stage, result.Failure, result.Outcome, result.HttpStatus));
+                            problems.Add(new(ReadProblemKind.Api, stage, result.Failure, result.Outcome, result.HttpStatus, result.RetryAfter));
                             // Only GraphQL partial data is a usable failed response, never an HTTP error body.
                             if (result.Failure != FailureKind.GraphQl) return false;
                         }

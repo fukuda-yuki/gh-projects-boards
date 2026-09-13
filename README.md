@@ -48,7 +48,7 @@ $env:GHPB_DATA_ROOT = 'C:\Temp\ghpb-registration-check'
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
 
-Before checkpoint migration, each scoped Project has one hash-named JSON file containing both settings and cache. Migrated profiles use the authoritative checkpoint described below. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. Drafts use the separate versioned store described below; Apply history remains future work.
+Before checkpoint migration, each scoped Project has one hash-named JSON file containing both settings and cache. Migrated profiles use the authoritative checkpoint described below. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. Drafts use the separate versioned store described below; Apply history uses the authoritative version 3 checkpoint.
 
 ## Credentials and failures
 
@@ -85,6 +85,12 @@ Click a cell once and type Japanese directly, or use F2. The line below each edi
 This keeps the native input method available for verification while full table editing, paste, Undo and 100-row behavior are implemented under [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7). Launch without the option for the connection screen. See [tests](tests/README.md) for automated and human input checks.
 
 ## Test
+
+### Apply existing fields
+
+In a connected registered Project, choose **Apply…**, select rows, and review field differences. Resolve any displayed conflicts locally before reviewing again. **明示的にApply** sends existing title and single-select changes only. Pending text is excluded. **実行履歴…** shows field outcomes and provides explicit revalidation/resume; reopening never resumes writes. Uncertain work may require withdrawing the old approval and preparing a fresh review. Already verified success is not resent. Cancellation does not roll back completed changes.
+
+Execution history is stored in version 3 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1 and 2 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
 
 ```powershell
 # Core logic and adapter integration; no live GitHub:
