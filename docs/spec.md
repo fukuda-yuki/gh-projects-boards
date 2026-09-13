@@ -1,6 +1,18 @@
 # Specification
 
-This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics, bounded retrieval and Project registration/cache are implemented; bounded existing-Issue editing and local draft recovery are implemented. Apply and the broader editing/storage requirements remain in their owning Issues.
+This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Acceptance and remaining scope belong to the owning Issues.
+
+## Existing-field Apply
+
+Source: #10 and the #8/#9 existing-field contracts. Only existing Issue titles and Project-owned single-select values (including explicit clear) are supported. No create/add/duplicate, Draft conversion, Issue state, other field types, all-Project execution or remote Undo is included.
+
+Apply defaults to the selected Project. The user selects rows, then the app saves local work, retrieves a complete Project observation and reconciles it. The review shows scoped identities, field ownership, current and intended values, selected-row/field/operation counts and zero creations. Pending editor text is excluded and retained; active composition defers preparation. Resolve conflicts through the existing comparison UI and prepare a new review. A local revision change invalidates an open review. Confirmed field payloads are immutable and shared Issue titles are deduplicated.
+
+Execution is sequential. Each operation checks account/host, membership, typed values, field/options and capability again before dispatch, including after waits and explicit resume. New incompatible remote values block the operation. Only the changed field is sent. A durable Running intent precedes dispatch; save failure prevents sending. Verified acknowledgement, remaining local values, shared title caches, baseline and execution history share one checkpoint commit. Later committed values and pending buffers survive acknowledgement of an earlier payload. Affected old Undo entries cannot restore pre-Apply baselines.
+
+The journal distinguishes Pending, Running, Succeeded, Failed, Unknown, Waiting, Blocked, Cancelled and Superseded. Running recovered after interruption is potentially sent. Startup never dispatches. Explicit resume observes current values; convergence with the intended value is acknowledged as observed convergence, not proof of the original request. Old or different values following uncertainty require a new decision. Withdrawing an old approval retains all attempt records; a subsequent fresh review can authorize a new operation. Ordinary unregister blocks unresolved history. Navigation/connection changes cancel and settle owned work; a running batch keeps its original target.
+
+The APIs do not provide a documented compare-and-swap precondition for these inputs. Read/write races remain; there is no exactly-once guarantee, multi-record transaction or rollback. See the API/storage decision below and #10 for execution evidence and remaining acceptance.
 
 ## Connection and API access
 
@@ -117,7 +129,7 @@ The comparison UI shows B/L/R, observation time, ownership, IDs and current bloc
 
 Version 2 profile checkpoints atomically contain registrations/caches, baselines, observations, drafts, buffers, conflicts and history. A checked, flushed temporary file and one atomic replacement form the commit; there is no second cache write. Root/profile locks and expected durable revision reject competing writers; first migration also compares all legacy registrations under the lock. Restore registrations and drafts from the same checkpoint object. Broken profiles do not prevent independent valid profiles from restoring. Version 1 records remain readable and previous files/backups are retained. Publish success only after durable replacement; failures leave the original in-memory work and last coherent checkpoint intact. A crash after replacement but before UI notification recovers the committed checkpoint on restart.
 
-Apply remains unimplemented. #10 must revalidate target identity, value and capability immediately before dispatch, including queued operations whose observations can become stale while waiting. Refresh is an observation, not a server-side lock or a transactionally consistent multi-page snapshot, and cannot eliminate the read/write race. New rows and broader fields remain outside this slice. See [#9](https://github.com/fukuda-yuki/gh-projects-boards/issues/9), [#10](https://github.com/fukuda-yuki/gh-projects-boards/issues/10), [GitHub Project schema](https://docs.github.com/en/graphql/reference/projects) and [pagination](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api).
+Existing-field Apply must revalidate target identity, value and capability immediately before dispatch, including queued operations whose observations can become stale while waiting. Refresh is an observation, not a server-side lock or a transactionally consistent multi-page snapshot, and cannot eliminate the read/write race. New rows and broader fields remain outside this slice. See [#9](https://github.com/fukuda-yuki/gh-projects-boards/issues/9), [#10](https://github.com/fukuda-yuki/gh-projects-boards/issues/10), [GitHub Project schema](https://docs.github.com/en/graphql/reference/projects) and [pagination](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api).
 
 ## New Issue creation
 

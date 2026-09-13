@@ -16,7 +16,7 @@
                 <TextBlock x:Name="Identity" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkspaceIdentity"/>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button x:Name="Add" Content="Projectを追加" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
-                    <Button x:Name="Cancel" Content="取得・検索をキャンセル" Click="CancelWork" AutomationProperties.AutomationId="CancelProjectButton"/>
+                    <Button x:Name="Cancel" Content="処理をキャンセル" Click="CancelWork" AutomationProperties.AutomationId="CancelProjectButton"/>
                 </StackPanel>
             </StackPanel>
             <TextBlock x:Name="Status" Grid.Row="1" TextWrapping="Wrap" AutomationProperties.AutomationId="RegistrationStatus"/>
@@ -48,6 +48,8 @@
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
                     <Button x:Name="Refresh" Content="最新を取得" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
                     <Button x:Name="Remove" Content="ローカル登録を解除…" Click="RemoveProject" AutomationProperties.AutomationId="UnregisterProjectButton"/>
+                    <Button x:Name="Apply" Content="Apply…" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
+                    <Button x:Name="ApplyHistory" Content="実行履歴…" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
                     <TextBox x:Name="DefaultRepository" Header="既定Repository（取得範囲には影響しません）" Width="380" AutomationProperties.AutomationId="DefaultRepository"/>

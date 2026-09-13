@@ -28,9 +28,10 @@ function Api([string]$Endpoint, [string]$Method = 'GET', $Body = $null, [switch]
 function Graph([string]$Query, $Variables = @{}, [switch]$AllowMissingNode) { Api 'graphql' 'POST' @{ query = $Query; variables = $Variables } -AllowMissingNode:$AllowMissingNode }
 function Save { $script:fixture | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $Manifest -Encoding utf8 }
 function Snapshot {
-    $result = Graph 'query { repository(owner:"fukuda-yuki",name:"codex-sandbox") { id issue(number:1) { id title body state } } user(login:"fukuda-yuki") { projectV2(number:3) { id fields(first:100) { pageInfo { hasNextPage } nodes { ... on ProjectV2FieldCommon { id name dataType } ... on ProjectV2SingleSelectField { options { id name } } } } items(first:100) { pageInfo { hasNextPage } nodes { id isArchived content { ... on Issue { id title state } } } } } } }'
+    $result = Graph 'query { repository(owner:"fukuda-yuki",name:"codex-sandbox") { id issue(number:1) { id title body state } } user(login:"fukuda-yuki") { projectV2(number:3) { id fields(first:100) { pageInfo { hasNextPage } nodes { ... on ProjectV2FieldCommon { id name dataType } ... on ProjectV2SingleSelectField { options { id name } } } } items(first:100) { pageInfo { hasNextPage } nodes { id isArchived content { ... on Issue { id title state } } fieldValues(first:100) { pageInfo { hasNextPage } nodes { __typename ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2FieldCommon { id } } } } } } } } } }'
     $p = $result.data.user.projectV2
     if ($result.data.repository.id -ne $repository -or $p.id -ne $project -or $p.items.pageInfo.hasNextPage -or $p.fields.pageInfo.hasNextPage) { throw 'Exact bounded sandbox identities/traversal were not verified.' }
+    if (@($p.items.nodes | Where-Object { $_.fieldValues.pageInfo.hasNextPage }).Count -ne 0) { throw 'Pre-existing value traversal is incomplete.' }
     return $result.data
 }
 $scope = Api 'repos/fukuda-yuki/codex-sandbox/issues/1'

@@ -47,6 +47,8 @@ public sealed partial class RegistrationPanel : UserControl
             Register.IsEnabled = choice is not null && workspace.CanRead && choice.Id.Scope == workspace.Profile && !workspace.IsBusy;
             DiscoveryForm.IsEnabled = !workspace.IsBusy;
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
+            Apply.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
+            ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy;
             Remove.IsEnabled = workspace.Selected is not null;
             SaveSetting.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
             DefaultRepository.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;

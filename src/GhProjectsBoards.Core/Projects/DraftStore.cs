@@ -18,6 +18,11 @@ internal sealed class DraftStore(string registrationRoot)
     };
     public string FileFor(ConnectionScope scope) => Path.Combine(root,
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{scope.Host}\n{scope.ViewerId}"))) + ".json");
+    public IDisposable AcquireExecution(ConnectionScope scope)
+    {
+        Directory.CreateDirectory(root);
+        return new FileStream(FileFor(scope) + ".execution.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    }
     public async Task<(DraftRecord[] Records, StorageProblem[] Problems)> CheckpointsAsync()
     {
         var records = new List<DraftRecord>(); var problems = new List<StorageProblem>();
@@ -86,9 +91,10 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
+        ApplyJournal.Validate(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
             && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind == "Select" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
         bool Field(DraftField? f) => f is not null && Key(f.Key) && f.SourceProject is not null && f.SourceProject.Scope == r.Scope

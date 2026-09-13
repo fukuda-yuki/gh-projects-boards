@@ -134,6 +134,8 @@ The ordinary executable E2E suite includes three resolution choices with B/L/R r
 
 ## CI and reporting
 
+The existing-field Apply tests exercise the actual planner, session, store, executor, guarded connection and reader with synthetic gh responses. They inspect mutation payloads and coherent recovered records, keeping query-only refresh/edit guards unchanged. The ordinary Apply desktop case reviews and applies a title, then reopens its history without dispatch. `scripts/Test-ApplyLive.ps1` runs the ordinary app with real stored authentication against only the designated sandbox, through title/set/clear and independent readback. Its fixture setup/cleanup counts are separate from product operations; interrupted manifests must be reconciled before another setup.
+
 Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and lists desktop tests without launching them. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session.
 
 Report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, a narrow probe, sandbox success and human acceptance are distinct claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.

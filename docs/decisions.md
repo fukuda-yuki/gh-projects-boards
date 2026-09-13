@@ -2,6 +2,14 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
+## Existing-field mutation and journal
+
+Use `updateIssue` with only `id/title`, `updateProjectV2ItemFieldValue` with Project/item/field IDs and `singleSelectOptionId`, and `clearProjectV2ItemFieldValue` for explicit clear. Their documented inputs expose no expected-value/revision conditional update. `clientMutationId` is not a lock or a proven idempotency key. Verify the returned identity (and title) plus a separate authoritative field read; unknown or mismatching outcomes remain unapplied. Sources: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects).
+
+Use sequential dispatch with at least one second between mutation starts, revalidating after the wait. Honor Retry-After and primary reset headers; absent timing defaults to one minute with exponential increases. Rescheduling is bounded to three waits per execution and always revalidates. Only a known rate-limit rejection permits automatic mutation rescheduling. Ambiguous writes require explicit reconciliation. Transport never retries mutations. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
+
+Keep execution records in version 3 of the existing profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
+
 ## Platform
 
 Use **C# + .NET 10 + WinUI 3 / Windows App SDK** for the native Windows desktop app. Native controls and public Windows APIs provide the UI boundary; application rules remain in one UI-independent Core library. Implement screens from their behavioral contracts, not from another framework's visual tree.

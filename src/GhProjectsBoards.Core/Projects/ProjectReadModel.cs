@@ -33,7 +33,7 @@ internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string Ow
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
     bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
-    ApiOutcome? ApiOutcome = null, int? HttpStatus = null);
+    ApiOutcome? ApiOutcome = null, int? HttpStatus = null, TimeSpan? RetryAfter = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,
     IReadOnlyList<ReadProblem> Problems)
 {

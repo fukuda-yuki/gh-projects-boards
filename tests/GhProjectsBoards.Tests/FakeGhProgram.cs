@@ -80,6 +80,30 @@ internal static class FakeGhProgram
             Console.Write(JsonSerializer.Serialize(new[] { new { host, login = "fixture-user", active = true, state, tokenSource = source, scopes = "repo,project,read:org" } }));
             return 0;
         }
+        if (mutation && query is not null && input is not null && settings.TryGetProperty("apply", out var allowApply) && allowApply.GetBoolean())
+        {
+            using var payload = JsonDocument.Parse(input);
+            var value = payload.RootElement.GetProperty("variables").GetProperty("input");
+            var stateFile = Path.Combine(directory, "apply-state.json");
+            var saved = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile))! : new System.Text.Json.Nodes.JsonObject();
+            File.AppendAllText(Path.Combine(directory, "apply-requests.jsonl"), value.GetRawText() + "\n");
+            if (settings.TryGetProperty("applyDelayMs", out var applyDelay)) await Task.Delay(applyDelay.GetInt32());
+            if (query.Contains("ApplyTitle") && value.GetProperty("id").GetString() == "I1")
+            {
+                saved["title"] = value.GetProperty("title").GetString(); File.WriteAllText(stateFile, saved.ToJsonString());
+                WriteHttp(new { data = new { updateIssue = new { issue = new { id = "I1", title = value.GetProperty("title").GetString() } } } }); return 0;
+            }
+            if ((query.Contains("ApplySelect") || query.Contains("ApplyClear")) && value.GetProperty("projectId").GetString() == "P1"
+                && value.GetProperty("itemId").GetString() == "P1-T1" && value.GetProperty("fieldId").GetString() == "P1-status")
+            {
+                saved["option"] = query.Contains("ApplyClear") ? null : value.GetProperty("value").GetProperty("singleSelectOptionId").GetString();
+                File.WriteAllText(stateFile, saved.ToJsonString());
+                if (query.Contains("ApplyClear")) WriteHttp(new { data = new { clearProjectV2ItemFieldValue = new { projectV2Item = new { id = "P1-T1" } } } });
+                else WriteHttp(new { data = new { updateProjectV2ItemFieldValue = new { projectV2Item = new { id = "P1-T1" } } } });
+                return 0;
+            }
+            return 2;
+        }
         if (!api || mutation) return 2;
         if (args[1] == "user")
         {
@@ -105,6 +129,17 @@ internal static class FakeGhProgram
                         if (settings.TryGetProperty("remoteTitle", out var title) && title.ValueKind == JsonValueKind.String) item!["content"]!["title"] = title.GetString();
                         if (settings.TryGetProperty("remoteOption", out var option) && option.ValueKind == JsonValueKind.String)
                             item!["fieldValues"]!["nodes"]![0]!["optionId"] = option.GetString();
+                        var applyState = Path.Combine(directory, "apply-state.json");
+                        if (File.Exists(applyState))
+                        {
+                            var applied = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(applyState))!.AsObject();
+                            if (applied.ContainsKey("title")) item!["content"]!["title"] = applied["title"]!.ToString();
+                            if (applied.ContainsKey("option"))
+                            {
+                                if (applied["option"] is null) { item!["fieldValues"]!["nodes"] = new System.Text.Json.Nodes.JsonArray(); item["fieldValues"]!["totalCount"] = 0; }
+                                else item!["fieldValues"]!["nodes"]![0]!["optionId"] = applied["option"]!.ToString();
+                            }
+                        }
                     }
                     response = node;
                 }
