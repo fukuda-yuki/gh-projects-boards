@@ -69,6 +69,7 @@ public sealed class LiveApplyTests
             {
                 w = reopenedApp.GetMainWindow(automation, TimeSpan.FromSeconds(20)) ?? throw new AssertionException("Missing reopened window");
                 WinUiProcess.AssertRuntime(reopened); Keyboard.TypeVirtualKeyCode(0x12); w.SetForeground(); Click("ProjectsPageButton");
+                Wait(() => E("SavedProfiles").AsComboBox().Items.Length == 1);
                 E("SavedProfiles").AsComboBox().Select(0);
                 var projectTitle = Checkpoint().GetProperty("Registrations")[0].GetProperty("Snapshot").GetProperty("Title").GetString()!;
                 Wait(() => w.FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null); w.FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
