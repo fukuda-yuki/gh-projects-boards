@@ -197,7 +197,9 @@ public sealed partial class RegistrationTests
             Assert.That(Element(w, "GridCell1_0").Properties.HasKeyboardFocus.Value, Is.True);
             if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
             {
-                cell.Click(); Keyboard.TypeVirtualKeyCode(0x1C); Key(VirtualKeyShort.SPACE);
+                cell.Click();
+                if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
+                Keyboard.TypeVirtualKeyCode(0x1C); Key(VirtualKeyShort.SPACE);
                 var alternative = cell.Text; Assert.That(alternative, Is.Not.Empty.And.Not.EqualTo("日本語"));
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Text, Is.EqualTo(alternative));
