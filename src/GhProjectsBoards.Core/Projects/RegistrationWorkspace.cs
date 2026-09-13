@@ -7,6 +7,19 @@ internal enum RegistrationAttempt { None, Retrieving, Complete, Partial, Cancell
 
 internal sealed class RegistrationWorkspace(RegistrationStore store)
 {
+    private readonly DraftStore draftStore = new(store.Root);
+    private readonly Dictionary<ConnectionScope, DraftSession> drafts = [];
+    private readonly HashSet<ConnectionScope> blockedDrafts = [];
+    public event Action? Transitioning;
+    public void CancelPendingEdits() => Transitioning?.Invoke();
+    public DraftSession? Drafts => Profile is { } scope ? drafts.GetValueOrDefault(scope) : null;
+    public bool HasDraftWork(ProjectReadModel project) => blockedDrafts.Contains(project.Id.Scope) || drafts.TryGetValue(project.Id.Scope, out var d) && d.Workspace.HasWork(project);
+    public async Task<bool> FlushDraftsAsync()
+    {
+        foreach (var session in drafts.Values.ToArray())
+            if (!await session.FlushAsync()) { Status = session.Status; Changed?.Invoke(); return false; }
+        return true;
+    }
     private CancellationTokenSource? cancellation;
     private Task? owned;
     private int generation;
@@ -32,32 +45,54 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
     {
         var loaded = await store.LoadAsync();
         registrations.Clear(); registrations.AddRange(loaded.Registrations);
+        foreach (var scope in registrations.Select(r => r.Snapshot.Id.Scope).Distinct())
+        {
+            try
+            {
+                var record = await draftStore.LoadAsync(scope);
+                drafts[scope] = new(draftStore, record is null ? new(scope) : EditingWorkspace.Restore(record), record?.Revision ?? 0);
+            }
+            catch (Exception) { blockedDrafts.Add(scope); }
+        }
         Status = loaded.Problems.Count == 0 ? "ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。"
             : "保存データに問題があります。自動修復・削除はしていません：" + string.Join(" / ", loaded.Problems.Select(p => $"{p.File}: {p.Kind}"));
         Changed?.Invoke();
+        if (blockedDrafts.Count > 0) { Status = "下書きのスキーマ・破損・アクセスに問題があります。編集とキャッシュ置換を停止しています。元ファイルは保持しています。"; Changed?.Invoke(); }
     }
     public async Task BindAsync(ConnectionContext? next, GhConnectionService? nextService = null)
     {
+        Transitioning?.Invoke();
+        if (!await FlushDraftsAsync()) return;
         await StopAsync();
         context = next; service = next is null ? null : nextService ?? new(next.Executable, next.Host);
         Profile = next is null ? null : ConnectionScope.From(next);
+        if (Profile is { } profile && !drafts.ContainsKey(profile) && !blockedDrafts.Contains(profile))
+        {
+            try { var record = await draftStore.LoadAsync(profile); drafts[profile] = new(draftStore, record is null ? new(profile) : EditingWorkspace.Restore(record), record?.Revision ?? 0); }
+            catch (Exception) { blockedDrafts.Add(profile); }
+        }
         Selected = null; Incomplete = null;
         ConnectionRevision++;
         Changed?.Invoke();
     }
     public void InvalidateConnection()
     {
+        Transitioning?.Invoke();
         generation++; cancellation?.Cancel(); context = null; service = null;
         Profile = null; Selected = null; Incomplete = null; ConnectionRevision++; Changed?.Invoke();
     }
     public async Task SelectProfileAsync(ConnectionScope? profile)
     {
+        Transitioning?.Invoke();
+        if (!await FlushDraftsAsync()) return;
         await StopAsync();
         Profile = profile; Selected = null; Incomplete = null;
         Changed?.Invoke();
     }
     public async Task SelectAsync(ScopedId id)
     {
+        Transitioning?.Invoke();
+        if (!await FlushDraftsAsync()) return;
         await StopAsync();
         Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == id && id.Scope == Profile);
         Incomplete = null;
@@ -87,6 +122,7 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
             if (choice.Id.Scope != Profile) throw new DiscoveryException(FailureKind.IdentityChanged);
             defaultRepository = ValidateRepository(defaultRepository);
             var existing = registrations.SingleOrDefault(r => r.Snapshot.Id == choice.Id);
+            if (refresh && existing is not null && HasDraftWork(existing.Snapshot)) { Status = "下書き・編集中の文字があります。競合照合 (#9) が実装されるまで、このProjectの更新は停止します。"; return; }
             if (existing is not null && !refresh) { Selected = existing; Status = "既に登録されています。同じ保存データを開きました。"; return; }
             var requestGeneration = generation;
             var bound = context!;
@@ -116,7 +152,10 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
             var saved = new ProjectRegistration(bound.Login, choice.OwnerLogin, links, defaultRepository,
                 DateTimeOffset.UtcNow, result.Project);
             Status = "取得完了。ローカル保存中…"; Changed?.Invoke();
-            try { await store.SaveAsync(saved, token); }
+            if (blockedDrafts.Contains(choice.Id.Scope) || existing is not null && (HasDraftWork(result.Project) || HasDraftWork(existing.Snapshot)))
+            { Status = "取得中に関連する下書きが見つかりました。キャッシュは置換していません。"; return; }
+            try { await store.SaveAsync(saved, token, () => requestGeneration == generation && context == bound && !bound.IsInvalidated
+                && (existing is null || !HasDraftWork(existing.Snapshot) && !HasDraftWork(result.Project))); }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
             {
@@ -125,6 +164,7 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
                 return;
             }
             registrations.RemoveAll(r => r.Snapshot.Id == choice.Id); registrations.Add(saved);
+            if (existing is not null) Drafts?.Workspace.ForgetObservations(existing.Snapshot);
             attempts[choice.Id] = RegistrationAttempt.Complete;
             if (generation == requestGeneration) { Selected = saved; Incomplete = null; }
             Status = "登録完了：取得結果と設定をローカルに保存しました。";
@@ -142,11 +182,16 @@ internal sealed class RegistrationWorkspace(RegistrationStore store)
             Status = "既定Repositoryをローカル保存しました。取得範囲は変わりません。";
         });
     }
-    public async Task UnregisterAsync()
+    public async Task UnregisterAsync(bool retainDrafts = false, bool discardDrafts = false)
     {
+        Transitioning?.Invoke();
         var selected = Selected;
         await StopAsync();
         if (selected is null || selected.Snapshot.Id.Scope != Profile) return;
+        if (blockedDrafts.Contains(selected.Snapshot.Id.Scope)) { Status = "下書きを確認できないため登録解除を停止しています。"; Changed?.Invoke(); return; }
+        if (HasDraftWork(selected.Snapshot) && !retainDrafts && !discardDrafts) { Status = "下書きがあります。保持または破棄を明示してください。"; Changed?.Invoke(); return; }
+        if (discardDrafts && Drafts is { } d) d.Workspace.Discard(selected.Snapshot, registrations.Where(r => r != selected).Select(r => r.Snapshot));
+        if (!await FlushDraftsAsync()) return;
         await RunAsync(async token =>
         {
             await store.RemoveAsync(selected.Snapshot.Id, token);

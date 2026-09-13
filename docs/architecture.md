@@ -42,9 +42,13 @@ Raw API data stays transient. Safe read diagnostics contain outcome, stage, prob
 
 `RegistrationStore` owns version 1 JSON per scoped Project. Explicit snapshot storage records flatten Issue dictionaries into lists; restoration validates schema, identities and availability. Hash-derived filenames avoid remote-name paths. A root lock serializes processes; write-through temporary files are flushed, read back and validated before same-directory move/replacement. Backup/interrupted files are preserved for diagnosis rather than silently accepted as current data.
 
-`MainWindow` owns connection transitions and normal-close settlement. `RegistrationPanel` contains only WinUI presentation, navigation/dialog coordination and event wiring. It clears discovery controls when profile/binding changes and uses a virtualized ListView for immutable preview strings. The input-check window remains independent. There is no draft/shared-edit record in this cache.
+`MainWindow` owns connection transitions and normal-close settlement. `RegistrationPanel` contains only WinUI presentation, navigation/dialog coordination and event wiring. It clears discovery controls when profile/binding changes and uses EditingGrid for complete registered data and immutable preview strings for partial results. EditingGrid uses native TextBoxes, ComboBoxes and a scrolling ListView with stable per-row containers. The input-check window remains independent. The cache remains independent from the profile-scoped DraftStore.
 
 ## Native input boundary
+
+`EditingWorkspace` owns UI-independent scoped cell identities, pinned baselines, buffers, field differences, TSV validation, atomic transactions and guarded Project Undo. It has no network collaborator. `DraftStore` writes one whole profile revision through a checked temporary file and atomic replacement; `DraftSession` serializes saves and tracks acknowledged durable revisions. `RegistrationWorkspace` restores sessions, protects lifecycle transitions and guards cache replacement immediately before its filesystem commit.
+
+`EditingGrid` owns native text/choice controls, rectangular selection, focus, clipboard and presentation. Each row container keeps its captured keys for its lifetime, with horizontal/vertical scrolling. Native text/composition events feed recoverable buffers synchronously, while local saves run asynchronously. Pending clipboard operations are invalidated on transitions. The close path cancels pending UI work, releases text focus and disables editing before draining durable saves; failure keeps the window open.
 
 `InputCheckWindow` hosts a bounded three-row/two-column input surface within the app. The explicit `--input-check` launch option opens it; ordinary startup opens `MainWindow`. The input surface has no connection or storage collaborator and uses discard-on-exit synthetic values.
 

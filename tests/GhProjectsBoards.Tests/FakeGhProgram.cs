@@ -11,6 +11,15 @@ internal static class FakeGhProgram
     {
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
+        if (args.FirstOrDefault() == "--seed-editing" && args.Length == 2)
+        {
+            var root = args[1];
+            if (!Path.IsPathFullyQualified(root) || Directory.Exists(root) || File.Exists(root)) return 2;
+            var store = new GhProjectsBoards.Core.Projects.RegistrationStore(root);
+            await store.SaveAsync(EditingTests.Registration());
+            await store.SaveAsync(EditingTests.Registration("P2"));
+            return 0;
+        }
         if (args.FirstOrDefault() == "environment")
         {
             var variables = new[] { "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN",

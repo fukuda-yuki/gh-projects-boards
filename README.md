@@ -31,11 +31,11 @@ After an intentional account, host or executable change, review the destination 
 
 After checking a connection, open **登録済みProject / Projectを追加**, then **Projectを追加**. Select or enter an owner, optionally select one of its repositories, and search Projects. Repository results are actual GitHub Project links. Alternatively enter a same-host user/organization Project URL, including a Project without repository links. Discovery traverses all pages before presenting a complete list.
 
-Review the identity, account and supported retrieval scope, then choose **取得してローカル登録**. Only a completed traversal durably saved locally becomes a registration. Duplicate URLs/routes open the same host/viewer/Project workspace. **最新を取得** explicitly refreshes it. The preview retains all retrieved items and unsupported/unavailable states; it is not the editable grid from #7.
+Review the identity, account and supported retrieval scope, then choose **取得してローカル登録**. Only a completed traversal durably saved locally becomes a registration. Duplicate URLs/routes open the same host/viewer/Project workspace. **最新を取得** explicitly refreshes it. The registered workspace edits existing Issue titles and Project single-select values locally, while retaining item classifications and read-only metadata.
 
 On restart, open the Project page and explicitly choose a saved profile to view its cached Projects without network access. Cached account metadata is not authentication. Check the connection before new server operations. Changing connection host/executable clears the active workspace binding and discovery results.
 
-The per-Project default repository is only a local setting for future Issue creation. **ローカル登録を解除…** confirms local registration/cache removal; it does not modify GitHub. Drafts and their retention/recovery are not implemented (#8).
+The per-Project default repository is only a local setting for future Issue creation. **ローカル登録を解除…** confirms local registration/cache removal; it does not modify GitHub. When local work exists, cancellation is the default; explicitly retain it or discard only work not shared by another registration.
 
 ### Local registration storage
 
@@ -48,9 +48,19 @@ $env:GHPB_DATA_ROOT = 'C:\Temp\ghpb-registration-check'
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
 
-Each scoped Project has one hash-named JSON file containing both settings and cache. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. This format does not decide #8's draft/Undo/apply-history storage.
+Each scoped Project has one hash-named JSON file containing both settings and cache. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. Drafts use the separate versioned store described below; Apply history remains future work.
 
 ## Credentials and failures
+
+### Local editing and recovery
+
+Existing Issue titles and Project single-select fields can be edited in registered Projects when their dated update capability was retrieved. Older caches show unknown permission and remain read-only until an explicit successful refresh. F2 and direct Japanese input are separate entry paths; IME Enter confirms composition, and the next Enter commits locally. Shift+arrows select rectangles. Toolbar copy/paste/clear/Undo and selected-cell Ctrl+C/V/Z operate on the grid; editing Ctrl+Z stays native. Empty pasted cells mean no change. No operation here applies changes to GitHub.
+
+`Drafts/` below the registration root stores one version 1 JSON per host/viewer, separately from registration records. It includes private titles, buffers, baselines and Undo history. It is unencrypted and inherits the current user's directory protection; protect backups too. No credentials or raw API payloads are stored. Normal switching/close waits for durable saving; a failed save keeps the editor open and shows a retry action. Do not terminate the app while recovering unsaved work. Forced termination only guarantees the last acknowledged revision, not subsequent typing. `.tmp` files are unacknowledged attempts; `.bak` is the previous revision. Preserve all files for diagnosis, stop app instances before manual recovery, and never substitute another scope's file.
+
+Refresh is temporarily blocked when the Project has related drafts, buffers or Undo history until #9 reconciliation is implemented. Unregistration defaults to cancellation and offers explicit retain/discard; shared Issue work survives. Retained work can be reopened when the same Project is registered again. Deleting the entire data directory removes registration and draft recovery data and is not an application command.
+
+For an isolated manual check, build Release and run `scripts/Start-EditingCheck.ps1`. It creates a new synthetic data directory and launches the ordinary executable with process-local `GHPB_DATA_ROOT`. Open the Project page, select `github.com / ID 42`, then `P1`/`P2`; no connection check is needed. Each contains 101 shared Issues with independent single-select values. Reuse that exact directory with `-DataRoot <absolute-path> -Resume` to check process restart; the default always creates new data. `-PrepareOnly` creates the setup without launching. Existing directories are never overwritten.
 
 Child gh processes use stored authentication. The app removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN` from those children without changing the parent environment. It reports variable names, never their values, and never extracts, displays or stores a token.
 

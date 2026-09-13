@@ -18,7 +18,8 @@ internal sealed record ProjectReadProgress(string Stage, int Fields, int Items, 
 internal sealed record ReadValue<T>(ValueAvailability Availability, T? Value = default);
 internal sealed record RepositoryReadModel(ScopedId Id, ScopedId OwnerId, string NameWithOwner);
 internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repository, int Number, string Url,
-    ReadValue<string> Title, ReadValue<IssueState?> State);
+    ReadValue<string> Title, ReadValue<IssueState?> State, CapabilityObservation? Capability = null);
+internal sealed record CapabilityObservation(bool? CanUpdate, DateTimeOffset ObservedAt);
 internal sealed record SelectOption(string Id, string Name);
 internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, string Name,
     string TypeName, string DataType, FieldOwner ValueOwner, IReadOnlyList<SelectOption> Options,
@@ -30,7 +31,7 @@ internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, s
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
-    bool FieldsComplete, bool ItemsComplete);
+    bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
     ApiOutcome? ApiOutcome = null, int? HttpStatus = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,

@@ -10,7 +10,7 @@ using Application = FlaUI.Core.Application;
 namespace GhProjectsBoards.E2E.Tests;
 
 [TestFixture, Category("E2E"), NonParallelizable, Apartment(ApartmentState.STA)]
-public sealed class RegistrationTests
+public sealed partial class RegistrationTests
 {
     [Test]
     public void ChangingConnectionInputsClearsPrivateDiscoveryAndDisablesReads()
@@ -148,7 +148,7 @@ public sealed class RegistrationTests
         }
         public void Write(int delay = 0, long id = 42) => File.WriteAllText(Path.Combine(Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, readDelayMs = delay, id }));
         public JsonElement[] Calls() => File.Exists(Path.Combine(Root, "calls.jsonl")) ? File.ReadAllLines(Path.Combine(Root, "calls.jsonl")).Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray() : [];
-        public void Run(Action<Window> action, bool alreadyClosed = false)
+        public void Run(Action<Window> action, bool alreadyClosed = false, bool interrupt = false)
         {
             var exe = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
             var start = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
@@ -158,18 +158,26 @@ public sealed class RegistrationTests
             try
             {
                 window = app.GetMainWindow(automation, TimeSpan.FromSeconds(20)); Assert.That(window, Is.Not.Null); WinUiProcess.AssertRuntime(process);
-                action(window!); if (!alreadyClosed) window!.Close(); Wait(() => process.HasExited); Assert.That(process.ExitCode, Is.Zero);
+                FlaUI.Core.Input.Keyboard.TypeVirtualKeyCode(0x12);
+                window!.SetForeground();
+                Wait(() => GetForegroundWindow() == window.Properties.NativeWindowHandle.Value);
+                action(window!);
+                if (interrupt) process.Kill(true); else if (!alreadyClosed) window!.Close();
+                Wait(() => process.HasExited);
+                if (!interrupt) Assert.That(process.ExitCode, Is.Zero);
                 Assert.That(Calls().Select(c => c.GetProperty("pid").GetInt32()).Distinct().Any(Running), Is.False);
             }
             catch { if (window is not null && !process.HasExited) Capture(window, Root, "failure"); throw; }
             finally
             {
-                var normal = process.HasExited;
-                if (!normal) { process.Kill(true); process.WaitForExit(5000); }
-                File.WriteAllText(Path.Combine(Root, "lifetime-" + process.Id + ".json"), JsonSerializer.Serialize(new { normal, code = process.ExitCode, pid = process.Id }));
+                var normal = process.HasExited && !interrupt;
+                if (!process.HasExited) { process.Kill(true); process.WaitForExit(5000); }
+                File.WriteAllText(Path.Combine(Root, "lifetime-" + process.Id + ".json"), JsonSerializer.Serialize(new { normal, deliberateInterruption = interrupt, code = process.ExitCode, pid = process.Id }));
             }
         }
         private static bool Running(int pid) { try { using var p = Process.GetProcessById(pid); return !p.HasExited; } catch (ArgumentException) { return false; } }
         public void Dispose() => dpi.Dispose();
     }
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
 }

@@ -23,7 +23,7 @@ internal sealed class RegistrationStore
         TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { info =>
         {
             if (info.Kind == JsonTypeInfoKind.Object)
-                foreach (var property in info.Properties) property.IsRequired = true;
+                foreach (var property in info.Properties) property.IsRequired = property.Name != "Capability";
         } } },
         Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
     };
@@ -69,7 +69,7 @@ internal sealed class RegistrationStore
         return new(values, problems);
     }
 
-    public async Task SaveAsync(ProjectRegistration registration, CancellationToken token = default)
+    public async Task SaveAsync(ProjectRegistration registration, CancellationToken token = default, Func<bool>? canCommit = null)
     {
         Validate(registration);
         Directory.CreateDirectory(Root);
@@ -86,6 +86,8 @@ internal sealed class RegistrationStore
         }
         _ = await ReadAsync(temp, token);
         token.ThrowIfCancellationRequested();
+        // No await separates the caller's final draft/generation guard from atomic replacement.
+        if (canCommit is not null && !canCommit()) throw new InvalidDataException("RegistrationCommitObsolete");
         if (File.Exists(file)) File.Replace(temp, file, file + ".bak");
         else File.Move(temp, file);
     }
@@ -125,7 +127,7 @@ internal sealed class RegistrationStore
         var s = record.Snapshot;
         if (s.Issues.Any(i => i is null || i.Id is null) || s.Issues.Select(i => i.Id).Distinct().Count() != s.Issues.Length) throw new InvalidDataException("DuplicateOrNullIssue");
         var project = new ProjectReadModel(s.Id, s.OwnerId, s.OwnerType, s.Number, s.Url, s.Title, s.Fields,
-            s.Issues.ToDictionary(i => i.Id), s.Items, s.FieldsComplete, s.ItemsComplete);
+            s.Issues.ToDictionary(i => i.Id), s.Items, s.FieldsComplete, s.ItemsComplete, s.Capability);
         var result = new ProjectRegistration(record.ViewerLogin, record.OwnerLogin, record.Repositories,
             record.DefaultRepository, record.RetrievedAt, project);
         Validate(result);
@@ -135,7 +137,7 @@ internal sealed class RegistrationStore
     {
         var s = r.Snapshot;
         return new(1, r.ViewerLogin, r.OwnerLogin, r.Repositories, r.DefaultRepository, r.RetrievedAt,
-            new(s.Id, s.OwnerId, s.OwnerType, s.Number, s.Url, s.Title, s.Fields, s.Issues.Values.ToArray(), s.Items, s.FieldsComplete, s.ItemsComplete));
+            new(s.Id, s.OwnerId, s.OwnerType, s.Number, s.Url, s.Title, s.Fields, s.Issues.Values.ToArray(), s.Items, s.FieldsComplete, s.ItemsComplete, s.Capability));
     }
     private static void Validate(ProjectRegistration r)
     {
@@ -160,5 +162,5 @@ internal sealed class RegistrationStore
     private sealed record RegistrationRecord(int Version, string ViewerLogin, string OwnerLogin,
         IReadOnlyList<RepositoryReadModel> Repositories, string? DefaultRepository, DateTimeOffset RetrievedAt, SnapshotRecord Snapshot);
     private sealed record SnapshotRecord(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number, string Url, string Title,
-        IReadOnlyList<ProjectFieldDefinition> Fields, IssueReadModel[] Issues, IReadOnlyList<ProjectItemReadModel> Items, bool FieldsComplete, bool ItemsComplete);
+        IReadOnlyList<ProjectFieldDefinition> Fields, IssueReadModel[] Issues, IReadOnlyList<ProjectItemReadModel> Items, bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
 }

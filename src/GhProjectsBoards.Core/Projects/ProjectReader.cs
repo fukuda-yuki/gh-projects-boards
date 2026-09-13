@@ -65,7 +65,7 @@ internal sealed class ProjectReader(GhConnectionService service)
             var owner = Property(node, "owner");
             var metadata = new ProjectReadModel(projectId, Id(owner), Text(owner, "__typename"),
                 PositiveInt(node, "number"), SameHostUrl(node, "url"), Text(node, "title", allowEmpty: true),
-                [], new Dictionary<ScopedId, IssueReadModel>(), [], false, false);
+                [], new Dictionary<ScopedId, IssueReadModel>(), [], false, false, Capability(node));
             if (project is not null && (metadata.OwnerId != project.OwnerId || metadata.Number != project.Number))
                 throw new ReadException(ReadProblemKind.IncompleteTraversal);
             project ??= metadata;
@@ -128,7 +128,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                     var repository = Property(content, "repository");
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
-                        ReadTitle(content), ReadState(content));
+                        ReadTitle(content), ReadState(content), Capability(content));
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                     if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present)
                         problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue"));
@@ -276,6 +276,7 @@ internal sealed class ProjectReader(GhConnectionService service)
             }
         }
 
+        private static CapabilityObservation Capability(JsonElement node) => new(Optional(node, "viewerCanUpdate").ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => (bool?)null }, DateTimeOffset.UtcNow);
         private ScopedId Id(JsonElement node) => new(projectId.Scope, Text(node, "id"));
         private void MatchProject(JsonElement node)
         {

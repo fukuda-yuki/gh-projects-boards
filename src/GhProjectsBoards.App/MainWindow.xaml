@@ -7,7 +7,7 @@
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="24,12">
-            <Button Content="接続設定" Click="ShowConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
+            <Button x:Name="ConnectionTab" Content="接続設定" Click="ShowConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
             <Button Content="登録済みProject / Projectを追加" Click="ShowProjects" AutomationProperties.AutomationId="ProjectsPageButton"/>
         </StackPanel>
     <ScrollViewer x:Name="ConnectionPage" Grid.Row="1" AutomationProperties.AutomationId="ConnectionScreen"

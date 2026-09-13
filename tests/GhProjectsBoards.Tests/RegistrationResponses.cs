@@ -26,7 +26,7 @@ internal static class RegistrationResponses
         if (!variables.TryGetProperty("id", out var idProperty)) return null;
         var id = idProperty.GetString()!;
         if (query.Contains("RegistrationLinks")) return new { data = new { node = new { repositories = Page(id == "P1" ? [Repo("first"), Repo("second")] : []) } } };
-        if (query.Contains("ProjectFields")) return new { data = new { node = new { __typename = "ProjectV2", id, number = id == "P1" ? 1 : 2,
+        if (query.Contains("ProjectFields")) return new { data = new { node = new { __typename = "ProjectV2", viewerCanUpdate = true, id, number = id == "P1" ? 1 : 2,
             title = "Project " + (id == "P1" ? "1" : "2"), url = $"https://{host}/users/sample-user/projects/{(id == "P1" ? 1 : 2)}", owner = new { id = "O1", __typename = "User" },
             fields = Page([ProjectReaderTests.Field(id, id + "-status"), ProjectReaderTests.Field(id, id + "-text", "Other", "TEXT")]) } } };
         if (query.Contains("ProjectItems"))
@@ -36,7 +36,7 @@ internal static class RegistrationResponses
                 var repo = number % 2 == 0 ? "second" : "first";
                 return ProjectReaderTests.Item(id, id + "-T" + number,
                     Page([ProjectReaderTests.Value(id, id + "-status", id: id + "-V" + number)]),
-                    new { __typename = "Issue", id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
+                    new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
                         url = $"https://{host}/sample-user/{repo}/issues/{number}", repository = Repo(repo) });
             }
             return new { data = new { node = new { __typename = "ProjectV2", id,

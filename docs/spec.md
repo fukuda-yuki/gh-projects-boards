@@ -1,6 +1,6 @@
 # Specification
 
-This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics, bounded retrieval and Project registration/cache are implemented; editing, draft persistence and apply remain future work in their owning Issues.
+This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics, bounded retrieval and Project registration/cache are implemented; bounded existing-Issue editing and local draft recovery are implemented. Apply and the broader editing/storage requirements remain in their owning Issues.
 
 ## Connection and API access
 
@@ -28,13 +28,50 @@ Source: [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4), with b
 - Registration identity is normalized host + stable viewer ID + Project node ID. Multiple repository navigation entries select the same saved record. Left navigation groups the explicitly selected profile by owner and actual repository links, with a separate unlinked group.
 - Only a Complete reader result plus successful durable local save publishes registration success. Unsupported field types and unavailable content do not negate a completed traversal. Partial first attempts are not registrations. Cancelled/failed refreshes preserve the previous saved snapshot. Stage/count progress has no invented percentage.
 - Startup and navigation are local. Saved profiles require explicit selection and are marked cached/unverified; they do not restore authentication. A checked matching connection is required for server operations. Switching profile/context cancels and settles owned work. Obsolete results cannot publish into another profile or save after cancellation.
-- The preview displays all retrieved items, Issue repository/number/title/Open-Closed and single-select values. Other item kinds, archived items and unsupported/unavailable/empty/not-loaded values remain distinct. This read preview does not implement #7 editing, drafts, Apply or Undo.
-- Default repository is an optional local `owner/repo` setting for future Issue creation and does not filter retrieval. Unregistration confirms removal of only the selected scoped registration and its owned cache/backup/temp data, after settling retrieval. No GitHub data is mutated. No drafts store exists; #8 retention/discard/shared-draft acceptance remains open.
+- The preview displays all retrieved items, Issue repository/number/title/Open-Closed and single-select values. Other item kinds, archived items and unsupported/unavailable/empty/not-loaded values remain distinct. The registered workspace supports the bounded editing contract below; partial retrieval remains a read-only preview.
+- Default repository is an optional local `owner/repo` setting for future Issue creation and does not filter retrieval. Unregistration confirms removal of only the selected scoped registration and its owned cache/backup/temp data, after settling retrieval. No GitHub data is mutated. When drafts or operation history exist, cancellation is the default; the user explicitly chooses retention or discard of exclusively owned work. Shared Issue drafts and their baseline provenance survive while another registration references them.
 - Version 1 registration JSON is an atomic settings/snapshot record with schema and nested identity validation. Saves flush and verify temporary data before replacement, retain the previous file as a backup and reject concurrent writers. Corruption, unsupported schema, access/save failures and interrupted files are diagnosed without automatic data reset. See [storage and recovery instructions](../README.md#local-registration-storage).
 
 ## Editing and drafts
 
 Editing, Project switching, and local saving do not write to GitHub. Preserve drafts across refresh and restart. Existing-cell blank paste means no change by default; clearing a value is explicit. Local new rows are distinct from GitHub Draft items. See [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7) and [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8).
+
+### Bounded registered-Project field matrix
+
+This production slice does not finalize or reduce #2's broader MVP matrix.
+
+| Field/item | Read | Local edit | Explicit clear | Validation and identity |
+| --- | --- | --- | --- | --- |
+| Existing Issue title | Loaded Issue title | Yes, with observed Issue update capability | Rejected | Nonblank, no tabs/newlines; scoped Issue node ID |
+| Project-owned single-select, including Status | Option ID and label | Yes, with observed Project update capability | Yes | Existing option ID; Project/item/field IDs; labels are display/input metadata |
+| Repository/number and Issue Open/Closed | Read-only reference column | No | No | Native Issue identity, never the Status label |
+| Other fields | Explicit supported-read/unsupported classification in reference column | No | No | Preserve fetched ownership and field IDs |
+| PR / GitHub Draft / unavailable / unknown item | Explicit classification retained as a row | No | No | Never convert to an Issue or local new row |
+| Unsupported/unavailable/not-loaded value | Distinct classification | No | No | Never interpret as editable empty |
+
+The reader obtains `Issue.viewerCanUpdate` and `ProjectV2.viewerCanUpdate` as nullable, dated observations. Only explicit true with an observation timestamp permits the corresponding local editor. Old registration records remain readable with unknown capability. Cached capability does not authenticate a profile or promise a future mutation will succeed. No keystroke makes a permission/network request. See the official [Issue schema](https://docs.github.com/en/graphql/reference/issues) and [Project schema](https://docs.github.com/en/graphql/reference/projects).
+
+### Selection, input and rectangular operations
+
+Columns are title, Project-owned single-select fields in retrieved order, then read-only reference metadata. Scrolling does not change a control's stable row/field keys. This bounded ListView retains native editors per row rather than recycling a live editor into another row; very large workloads remain a separate performance boundary.
+
+Selection prepares native TextBox focus and replacement selection before direct typing. Actual native text/composition or F2 starts editing. Arrows while selected move one cell; Shift+arrows extend a rectangle. Arrows while editing retain native caret/candidate behavior. Enter during composition confirms the IME only; the later Enter validates/commits the cell and moves down one row. Tab/Shift+Tab commit an active editor then move in row-major order. Enter/arrows clamp at an edge; Tab clamps at the first/last cell. No navigation creates a row. Escape outside composition cancels the cell buffer; native composition/candidate cancellation remains separate. Navigating to another cell preserves incomplete buffers instead of committing or discarding them.
+
+The native choice editor commits an explicitly selected option. Delete or **値をクリア** is an explicit clear operation for selected cells. A required title or read-only target rejects the whole clear. During text editing/composition Ctrl+Z belongs to native text; while selected Ctrl+Z belongs to grid-operation Undo. Ctrl+C/V while selected and the toolbar commands operate on the rectangle. A pending clipboard read is invalidated on workspace transition/close and cannot retarget another profile.
+
+TSV uses literal tabs and LF/CRLF row separators, without quoted-cell escaping. One final row separator is accepted; internal/trailing empty cells are preserved. Rows must have equal widths and fit entirely in existing rows/columns. Empty pasted cells mean no change, including empty trailing cells; they never mean clear. Every destination must be editable, even for a blank cell. A nonempty single-select label must match exactly one option; duplicate labels are rejected, while the choice editor selects by ID. Invalid shape, bounds, permission or values cause no partial operation and report a position/reason where a cell is identifiable. Unknown/unavailable values cannot be copied as empty cells.
+
+Each successful paste/clear is one transaction. Undo restores the exact preceding field draft state, explicit clear intent and recoverable buffer. It verifies every affected field's expected state/version before modifying any field; later shared-Issue edits or an active buffer reject the entire Undo. Project histories cannot undo another Project's independent work.
+
+### Local durability and lifecycle
+
+Fetched observations, editor buffers and committed local differences remain separate. Committing/saving never modifies the baseline; returning to baseline removes the effective difference. Titles share a host/viewer/Issue identity across Projects; selects remain scoped to Project/item/field IDs. Opening another cached observation never replaces an active draft's pinned baseline. The UI distinguishes per-Project and profile-wide changed-field counts and local saving/saved/failed states from GitHub synchronization.
+
+One version 1 JSON draft record per host/stable viewer under `Drafts/` holds baseline value/source Project/retrieval time, clear/value intent, recoverable text, field stamps and transaction history. It contains neither credentials, raw API payloads nor private IME state. Startup/profile selection restore it locally. A restored buffer is pending text, not a committed cell.
+
+Draft saves are serialized. Under a filesystem writer lock, the expected durable revision is checked, a temporary record is flushed and validated, and the complete profile record is atomically replaced with a last-good backup. A cross-field operation is recovered wholly or not at all. The session advances its acknowledged revision only after success and drains later changes before reporting a successful flush. Competing-process/stale saves fail instead of overwriting. Corruption, incompatible schema, mismatched scope and interrupted files are diagnosed without resetting source data. Intermediate edits after the last successful save may be lost on forced termination; normal transitions/close wait for a successful flush. Save failure keeps in-memory text and cancels navigation/close.
+
+Until #9 reconciliation exists, refresh/cache replacement is blocked for related differences, buffers or Undo history. Unrelated Project work remains available. The final cache replacement rechecks drafts and operation generation synchronously immediately before the atomic replace. Unregistration settles owned work and defaults to cancellation, offering explicit retention or discard. Discard never removes Issue work shared by another registration; its pinned source provenance remains in the surviving draft record.
 
 ## Data identity and availability
 
@@ -56,7 +93,7 @@ Each returned Project has a stable owner ID, node ID, number and URL. Repository
 | Redacted/null content | Unavailable content with the Project item identity retained |
 | Unknown item/value types | Explicitly unsupported, retaining encountered type and available IDs |
 
-Field names and option names are display metadata, never identity or destination selectors. Native Issue properties use their Issue identity and typed title/state properties; a same-named Project field has its own field ID. No capability to edit, create or clear is granted by this read contract.
+Field names and option names are display metadata, never identity or destination selectors. Native Issue properties use their Issue identity and typed title/state properties; a same-named Project field has its own field ID. The bounded editor additionally reads dated Issue and Project viewerCanUpdate observations. Missing/denied observations do not enable editing; creation and remote application remain outside this contract.
 
 The reader traverses Project field definitions, items and every implemented item-value connection to the terminal page, including more than 100 entries. It checks node/ownership identities, duplicate fields/options/items/Issues/value IDs, duplicate field assignments, repeated cursors, missing paging metadata and inconsistent total counts. On API or structural failure it stops further requests, retains already observed data and reports a classified problem. No automatic retry occurs.
 

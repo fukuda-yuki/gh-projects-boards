@@ -38,7 +38,7 @@
                     <ListView x:Name="Candidates" Height="120" SelectionChanged="CandidateSelected" AutomationProperties.AutomationId="ProjectCandidates"/>
                     <TextBlock x:Name="Confirmation" TextWrapping="Wrap" AutomationProperties.AutomationId="ProjectConfirmation"/>
                     <TextBox x:Name="InitialRepository" Header="将来の新規Issueの既定Repository（任意、owner/repo）" AutomationProperties.AutomationId="InitialDefaultRepository"/>
-                    <TextBlock Text="取得対象：Project識別情報・フィールド定義・全項目、IssueのタイトルとOpen/Closed、Project単一選択値。その他の型・閲覧不可は区別して保持します。編集・下書き機能は未実装です。" TextWrapping="Wrap"/>
+                    <TextBlock Text="取得対象：Project識別情報・フィールド定義・全項目、IssueのタイトルとOpen/Closed、Project単一選択値。その他の型・閲覧不可は区別して保持します。タイトル・Project単一選択をローカル編集できます。GitHubには反映しません。" TextWrapping="Wrap"/>
                     <Button x:Name="Register" Content="取得してローカル登録" Click="RegisterProject" AutomationProperties.AutomationId="RegisterProjectButton"/>
                 </StackPanel>
             </ScrollViewer>
@@ -53,6 +53,7 @@
                     <TextBox x:Name="DefaultRepository" Header="既定Repository（取得範囲には影響しません）" Width="380" AutomationProperties.AutomationId="DefaultRepository"/>
                     <Button x:Name="SaveSetting" Content="設定を保存" Click="SaveDefault" AutomationProperties.AutomationId="SaveProjectSettingButton"/>
                 </StackPanel>
+                <Grid x:Name="EditorHost" Grid.Row="3"/>
                 <ListView x:Name="Items" Grid.Row="3" SelectionMode="None" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectItems">
                     <ListView.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"/></DataTemplate></ListView.ItemTemplate>
                 </ListView>

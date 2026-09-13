@@ -44,6 +44,8 @@ Discovery uses the current official [Repository.projectsV2](https://docs.github.
 
 ## Decision ownership
 
+For the bounded #7/#8 editing slice, use separate versioned JSON draft records with existing .NET libraries. One record per host/stable viewer makes cross-field operations and shared Issue-title history atomic without coordinating per-Project draft files. Registration caches remain independent. Reuse checked temporary writes, write-through flush, same-directory replacement and locking; add session save serialization and optimistic durable-revision checks. This is not a multi-device store, database, remote reconciliation engine or Apply journal. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
+
 | Topic | Owner |
 | --- | --- |
 | Supported field/item matrix and component suitability | #2 |
