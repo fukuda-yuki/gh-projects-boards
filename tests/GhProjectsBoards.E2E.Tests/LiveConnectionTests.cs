@@ -28,7 +28,8 @@ public sealed class LiveConnectionTests
         Assert.That(File.Exists(executable) && File.Exists(gh), Is.True);
         using var process = Process.Start(new ProcessStartInfo(executable)
         {
-            UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!
+            UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!,
+            Environment = { ["GHPB_DATA_ROOT"] = Path.Combine(artifacts, "connection-data-" + Guid.NewGuid().ToString("N")) }
         })!;
         using var automation = new UIA3Automation();
         using var application = Application.Attach(process.Id);

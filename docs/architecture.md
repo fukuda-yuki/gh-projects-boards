@@ -34,6 +34,16 @@ Text controls own in-progress input. Diagnostic rendering does not write model s
 
 Raw API data stays transient. Safe read diagnostics contain outcome, stage, problem/failure classification and HTTP status, not response messages or content. See the [bounded read contract](spec.md#bounded-project-read-contract) for completeness and unsupported-type semantics.
 
+## Registration boundary
+
+`ProjectDiscovery` performs guarded, query-only owner/repository/Project discovery and stable URL resolution. It pages GitHub repository associations independently from ProjectReader's item traversal. It has no mutation path or second authentication mechanism.
+
+`RegistrationWorkspace` owns the selected saved profile, registrations, current attempt and cancellable work. It reuses `ProjectReader`, publishes success after durable save, and settles work on context/profile changes and local removal. Connection context is live-only; saved profile identity is never promoted into authentication.
+
+`RegistrationStore` owns version 1 JSON per scoped Project. Explicit snapshot storage records flatten Issue dictionaries into lists; restoration validates schema, identities and availability. Hash-derived filenames avoid remote-name paths. A root lock serializes processes; write-through temporary files are flushed, read back and validated before same-directory move/replacement. Backup/interrupted files are preserved for diagnosis rather than silently accepted as current data.
+
+`MainWindow` owns connection transitions and normal-close settlement. `RegistrationPanel` contains only WinUI presentation, navigation/dialog coordination and event wiring. It clears discovery controls when profile/binding changes and uses a virtualized ListView for immutable preview strings. The input-check window remains independent. There is no draft/shared-edit record in this cache.
+
 ## Native input boundary
 
 `InputCheckWindow` hosts a bounded three-row/two-column input surface within the app. The explicit `--input-check` launch option opens it; ordinary startup opens `MainWindow`. The input surface has no connection or storage collaborator and uses discard-on-exit synthetic values.

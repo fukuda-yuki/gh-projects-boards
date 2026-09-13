@@ -63,6 +63,14 @@ The runner retains build/test logs, source state, resolved package assets, runti
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
 
+## Registration verification
+
+The deterministic registration cases exercise production discovery, workspace and reader collaborators with external process responses, plus the real JSON store in unique temporary directories. They cover paging/errors, duplicate routes, 101 items/two repositories/two Projects, scoped identity, late cancelled results, partial/failed/cancelled attempts, file replacement failure, writer contention, corrupt/versioned data, restart and local removal. The original reader and connection regression tests remain intact.
+
+`Test-E2E.ps1` also runs the ordinary executable through the visible Project entry point using isolated fake gh and `GHPB_DATA_ROOT`. New journeys register via a linked repository and URL, detect duplicates, scroll to item 101, restart the process into actual saved content/settings, unregister locally, cancel and close during retrieval, and clear private discovery on a connection change. Existing eleven connection/native-window journeys and twelve separately run IME scenarios remain distinct. All deterministic desktop launches receive a dedicated data root; no invalid override falls back to the developer's cache.
+
+Screenshots and JSON caches use synthetic data and are retained privately with TRX/process records. Review images before publication. New registration/discovery flows do not create or mutate live fixtures; the optional existing ProjectRead smoke is independent and cannot establish wider discovery/two-Project acceptance. Draft/Undo persistence, enterprise policies and distribution are unverified by this suite.
+
 ## Editable-grid contract
 
 Derive table cases from #7 and the few-row input contract in #24. Address rows by stable identity rather than visible row index. Selection/range navigation must not change draft or committed values. Verify direct physical-key Japanese input and F2 independently, retaining initial input exactly once. Verify IME confirmation versus cell commit, candidates, cancellation, reconversion, keyboard navigation and public UI Automation.

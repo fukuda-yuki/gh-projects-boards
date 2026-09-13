@@ -1,0 +1,47 @@
+using System.Text.Json;
+
+namespace GhProjectsBoards.Tests;
+
+// Synthetic data shared only by tests and the external fake-gh executable.
+internal static class RegistrationResponses
+{
+    public static object? Query(string query, JsonElement variables, string host = "github.com")
+    {
+        var next = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
+        object Page(object[] nodes, bool more = false, int? total = null) => new { nodes, totalCount = total ?? nodes.Length, pageInfo = new { hasNextPage = more, endCursor = more ? "next" : null } };
+        object Repo(string name) => new { id = "R-" + name, nameWithOwner = "sample-user/" + name, owner = new { id = "O1" } };
+        object Choice(int number) => new { id = "P" + number, number, title = "Project " + number, url = $"https://{host}/users/sample-user/projects/{number}", owner = new { id = "O1", login = "sample-user", __typename = "User" } };
+        if (query.Contains("RegistrationOwners")) return new { data = new { viewer = new { organizations = Page([new { login = next ? "organization-2" : "organization-1" }], !next) } } };
+        if (query.Contains("RegistrationRepositories")) return new { data = new { repositoryOwner = new { repositories = Page([Repo(next ? "second" : "first")], !next) } } };
+        if (query.Contains("RegistrationResolve"))
+        {
+            var number = variables.GetProperty("number").GetInt32();
+            return new { data = new { user = new { projectV2 = Choice(number) } } };
+        }
+        if (query.Contains("RegistrationProjects"))
+        {
+            if (variables.TryGetProperty("name", out _)) return new { data = new { repository = new { projectsV2 = Page([Choice(1)]) } } };
+            return new { data = new { repositoryOwner = new { projectsV2 = Page([Choice(next ? 2 : 1)], !next) } } };
+        }
+        if (!variables.TryGetProperty("id", out var idProperty)) return null;
+        var id = idProperty.GetString()!;
+        if (query.Contains("RegistrationLinks")) return new { data = new { node = new { repositories = Page(id == "P1" ? [Repo("first"), Repo("second")] : []) } } };
+        if (query.Contains("ProjectFields")) return new { data = new { node = new { __typename = "ProjectV2", id, number = id == "P1" ? 1 : 2,
+            title = "Project " + (id == "P1" ? "1" : "2"), url = $"https://{host}/users/sample-user/projects/{(id == "P1" ? 1 : 2)}", owner = new { id = "O1", __typename = "User" },
+            fields = Page([ProjectReaderTests.Field(id, id + "-status"), ProjectReaderTests.Field(id, id + "-text", "Other", "TEXT")]) } } };
+        if (query.Contains("ProjectItems"))
+        {
+            object Item(int number)
+            {
+                var repo = number % 2 == 0 ? "second" : "first";
+                return ProjectReaderTests.Item(id, id + "-T" + number,
+                    Page([ProjectReaderTests.Value(id, id + "-status", id: id + "-V" + number)]),
+                    new { __typename = "Issue", id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
+                        url = $"https://{host}/sample-user/{repo}/issues/{number}", repository = Repo(repo) });
+            }
+            return new { data = new { node = new { __typename = "ProjectV2", id,
+                items = next ? Page([Item(101)], total: 101) : Page(Enumerable.Range(1, 100).Select(Item).ToArray(), true, 101) } } };
+        }
+        return null;
+    }
+}

@@ -78,6 +78,13 @@ internal static class FakeGhProgram
             WriteHttp(new { id, login = "fixture-user" });
             return 0;
         }
+        if (query is not null && input is not null && settings.TryGetProperty("registration", out var registration) && registration.GetBoolean())
+        {
+            using var payload = JsonDocument.Parse(input);
+            if (query.Contains("ProjectFields") && settings.TryGetProperty("readDelayMs", out var readDelay)) await Task.Delay(readDelay.GetInt32());
+            var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host);
+            if (response is not null) { WriteHttp(response); return 0; }
+        }
         if (query?.Contains("projectV2", StringComparison.Ordinal) == true)
         {
             var ownerType = query.Contains("organization(", StringComparison.Ordinal) ? "organization" : "user";

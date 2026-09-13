@@ -13,7 +13,7 @@ $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString
 $results = Join-Path $repoRoot "TestResults/e2e/$runId"
 New-Item -ItemType Directory -Path $results | Out-Null
 $previous = @{}
-foreach ($name in @('GHPB_RUN_E2E', 'GHPB_E2E_APP_PATH', 'GHPB_E2E_ARTIFACTS', 'GHPB_E2E_FAKE_GH_PATH')) {
+foreach ($name in @('GHPB_DATA_ROOT', 'GHPB_RUN_E2E', 'GHPB_E2E_APP_PATH', 'GHPB_E2E_ARTIFACTS', 'GHPB_E2E_FAKE_GH_PATH')) {
     $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 
@@ -28,13 +28,14 @@ try {
         dotnetSdk = (dotnet --version | Out-String).Trim(); powershell = $PSVersionTable.PSVersion.ToString()
         buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration"
         testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', 'TestCategory=E2E',
-            '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=120000')
+            '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=180000')
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'source-environment.json') -Encoding utf8
     dotnet --info | Set-Content -LiteralPath (Join-Path $results 'dotnet-info.txt') -Encoding utf8
     git diff --binary HEAD --output="$results/source.patch"
     dotnet build GhProjectsBoards.sln --configuration $Configuration 2>&1 | Tee-Object -FilePath (Join-Path $results 'build.log')
     if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE. E2E was not run." }
     $env:GHPB_RUN_E2E = '1'
+    $env:GHPB_DATA_ROOT = Join-Path $results 'isolated-default-data'
     $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe"
     $env:GHPB_E2E_FAKE_GH_PATH = Join-Path $repoRoot "tests/GhProjectsBoards.Tests/bin/$Configuration/net10.0-windows/GhProjectsBoards.Tests.exe"
     $env:GHPB_E2E_ARTIFACTS = $results
@@ -83,7 +84,7 @@ try {
     dotnet test $testProject --configuration $Configuration --no-build `
         --filter 'TestCategory=E2E' --logger 'trx;LogFileName=e2e.trx' `
         --results-directory $results -- `
-        NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=120000 2>&1 | Tee-Object -FilePath (Join-Path $results 'test.log')
+        NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=180000 2>&1 | Tee-Object -FilePath (Join-Path $results 'test.log')
     if ($LASTEXITCODE -ne 0) { throw "E2E failed with exit code $LASTEXITCODE. Results: $results" }
     $trxPath = Join-Path $results 'e2e.trx'
     if (-not (Test-Path -LiteralPath $trxPath)) { throw "No TRX report was produced. E2E is unverified: $results" }
@@ -102,6 +103,10 @@ try {
         CloseWithTextBoxFocusedExitsNormally = 4
         ChromeCloseDuringGhStopsOwnedProcess = 2
         NativePickerSelectsExecutableAndCancelPreservesIt = 1
+        RegisterTwoProjectsRestartRestoreAndUnregisterLocally = 1
+        CancelFirstRetrievalDoesNotRegister = 1
+        NormalCloseDuringProjectRetrievalStopsOwnedWork = 1
+        ChangingConnectionInputsClearsPrivateDiscoveryAndDisablesReads = 1
     }
     foreach ($name in $required.Keys) {
         $cases = @($report.TestRun.Results.UnitTestResult | Where-Object { $_.testName -eq $name -or $_.testName.StartsWith($name + '(') })

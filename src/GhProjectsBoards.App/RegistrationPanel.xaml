@@ -1,0 +1,62 @@
+<UserControl
+    x:Class="GhProjectsBoards.App.RegistrationPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid ColumnSpacing="24" Padding="24">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Grid RowSpacing="12">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <ComboBox x:Name="Profiles" Header="保存済みプロフィール（未認証）" HorizontalAlignment="Stretch" SelectionChanged="ProfileChanged" AutomationProperties.AutomationId="SavedProfiles"/>
+            <TextBlock Grid.Row="1" Text="登録済みProject" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <TreeView x:Name="Navigation" Grid.Row="2" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
+        </Grid>
+        <Grid Grid.Column="1" RowSpacing="12">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <StackPanel Spacing="8">
+                <TextBlock x:Name="Identity" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkspaceIdentity"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="Add" Content="Projectを追加" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
+                    <Button x:Name="Cancel" Content="取得・検索をキャンセル" Click="CancelWork" AutomationProperties.AutomationId="CancelProjectButton"/>
+                </StackPanel>
+            </StackPanel>
+            <TextBlock x:Name="Status" Grid.Row="1" TextWrapping="Wrap" AutomationProperties.AutomationId="RegistrationStatus"/>
+            <ProgressBar x:Name="Progress" Grid.Row="2" IsIndeterminate="True" Visibility="Collapsed"/>
+            <ScrollViewer x:Name="DiscoveryForm" Grid.Row="3" Visibility="Collapsed">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Projectを探す" Style="{StaticResource TitleTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ComboBox x:Name="Owners" Header="接続アカウントの所有者候補" Width="240" SelectionChanged="OwnerSelected" AutomationProperties.AutomationId="DiscoveryOwners"/>
+                        <Button Content="所有者候補を取得" Click="LoadOwners" AutomationProperties.AutomationId="LoadOwnersButton"/>
+                    </StackPanel>
+                    <TextBox x:Name="Owner" Header="所有者・Organization（直接入力も可）" AutomationProperties.AutomationId="DiscoveryOwner"/>
+                    <Button Content="所有者のRepositoryを取得" Click="LoadRepositories" AutomationProperties.AutomationId="LoadRepositoriesButton"/>
+                    <ComboBox x:Name="Repositories" Header="Repository（未選択なら所有者の全Project）" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="DiscoveryRepositories"/>
+                    <TextBox x:Name="Search" Header="Project検索語（任意）" AutomationProperties.AutomationId="DiscoverySearch"/>
+                    <Button Content="Projectを検索" Click="SearchProjects" AutomationProperties.AutomationId="SearchProjectsButton"/>
+                    <TextBox x:Name="Url" Header="または user / organization のProject URL" AutomationProperties.AutomationId="RegistrationUrl"/>
+                    <Button Content="URLを確認" Click="ResolveUrl" AutomationProperties.AutomationId="ResolveProjectButton"/>
+                    <ListView x:Name="Candidates" Height="120" SelectionChanged="CandidateSelected" AutomationProperties.AutomationId="ProjectCandidates"/>
+                    <TextBlock x:Name="Confirmation" TextWrapping="Wrap" AutomationProperties.AutomationId="ProjectConfirmation"/>
+                    <TextBox x:Name="InitialRepository" Header="将来の新規Issueの既定Repository（任意、owner/repo）" AutomationProperties.AutomationId="InitialDefaultRepository"/>
+                    <TextBlock Text="取得対象：Project識別情報・フィールド定義・全項目、IssueのタイトルとOpen/Closed、Project単一選択値。その他の型・閲覧不可は区別して保持します。編集・下書き機能は未実装です。" TextWrapping="Wrap"/>
+                    <Button x:Name="Register" Content="取得してローカル登録" Click="RegisterProject" AutomationProperties.AutomationId="RegisterProjectButton"/>
+                </StackPanel>
+            </ScrollViewer>
+            <Grid x:Name="Preview" Grid.Row="3" RowSpacing="12">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <TextBlock x:Name="Summary" TextWrapping="Wrap" AutomationProperties.AutomationId="ProjectSummary"/>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="Refresh" Content="最新を取得" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
+                    <Button x:Name="Remove" Content="ローカル登録を解除…" Click="RemoveProject" AutomationProperties.AutomationId="UnregisterProjectButton"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                    <TextBox x:Name="DefaultRepository" Header="既定Repository（取得範囲には影響しません）" Width="380" AutomationProperties.AutomationId="DefaultRepository"/>
+                    <Button x:Name="SaveSetting" Content="設定を保存" Click="SaveDefault" AutomationProperties.AutomationId="SaveProjectSettingButton"/>
+                </StackPanel>
+                <ListView x:Name="Items" Grid.Row="3" SelectionMode="None" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectItems">
+                    <ListView.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"/></DataTemplate></ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
