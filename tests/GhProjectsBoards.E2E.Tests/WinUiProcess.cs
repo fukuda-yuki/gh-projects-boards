@@ -15,7 +15,8 @@ internal static class WinUiProcess
             string.Equals(module.ModuleName, "Microsoft.UI.Xaml.dll", StringComparison.OrdinalIgnoreCase));
         Assert.That(module, Is.Not.Null, "Desktop acceptance must execute the WinUI 3 application, not a substitute executable.");
         var artifacts = Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")
-            ?? Environment.GetEnvironmentVariable("GHPB_LIVE_ARTIFACTS");
+            ?? Environment.GetEnvironmentVariable("GHPB_LIVE_ARTIFACTS")
+            ?? Environment.GetEnvironmentVariable("GHPB_READY_ARTIFACTS");
         if (artifacts is not null)
         {
             using var stream = File.OpenRead(module!.FileName);

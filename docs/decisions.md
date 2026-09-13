@@ -18,6 +18,12 @@ Core tests exercise real application collaborators. The fake gh executable contr
 
 Keep deterministic CI, interactive desktop E2E, physical-key IME automation, human IME acceptance, performance and live GitHub validation separate. Discovery and compilation do not establish runtime acceptance. See [test policy](../tests/README.md).
 
+## Native table-input lifecycle
+
+Use an input-ready native WinUI TextBox for the cell editor, preparing focus and replacement selection during cell selection. Keep application Selected/Editing state and committed values separate from native editability. Start application editing on actual composition/text changes or F2, rather than changing read-only state on the first character. This lets the native IME own composition without replaying input or using private APIs.
+
+Retain the method in the ordinary app's explicit input-check window. Its behavioral contract includes direct and F2 input, range selection, separate draft/committed values, IME confirmation versus cell commit, cancellation and reconversion. Full grid layout, virtualization, paste/Undo and keyboard edge policies still require their own implementation and validation. The selected method does not introduce a TableView dependency.
+
 ## Authentication and process ownership
 
 Use stored gh authentication. Exclude all four gh token environment overrides from children, expose only safe authentication metadata and require recognized keyring storage before writes. Plaintext and unknown storage remain diagnosable without permitting writes.

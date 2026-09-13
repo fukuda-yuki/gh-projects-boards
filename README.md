@@ -35,6 +35,18 @@ Recognized Windows credential-store (`keyring`) authentication permits guarded a
 
 Each gh process has a default 30-second timeout. Authentication failures, resource permissions, rate limits, network errors, cancellation and uncertain write outcomes are distinct. An uncertain write is never automatically resent. Diagnostics omit request bodies and raw process streams.
 
+## Check native table input
+
+The ordinary app includes a bounded, three-row/two-column input check using synthetic values:
+
+```powershell
+.\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe --input-check
+```
+
+Click a cell once and type Japanese directly, or use F2. The line below each editor shows the committed value: IME confirmation must leave it unchanged, and the following Enter commits the cell and moves down once. Arrow and Shift navigation select cells/ranges without changing values. The standard TextBox is a reference control. Data is discarded on exit; this screen does not connect to GitHub.
+
+This keeps the native input method available for verification while full table editing, paste, Undo and 100-row behavior are implemented under [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7). Launch without the option for the connection screen. See [tests](tests/README.md) for automated and human input checks.
+
 ## Test
 
 ```powershell
@@ -43,6 +55,9 @@ dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configu
 
 # Ordinary WinUI executable with isolated fake gh; unlocked desktop required:
 .\scripts\Test-E2E.ps1
+
+# Physical-key Japanese IME in the ordinary app's input-check window:
+.\scripts\Test-ReadyInput.ps1
 
 # Authorized real-GitHub validation; read the sandbox scope first:
 .\scripts\Test-LiveGitHub.ps1
