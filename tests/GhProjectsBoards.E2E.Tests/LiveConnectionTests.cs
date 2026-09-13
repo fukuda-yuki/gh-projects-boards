@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Capturing;
 using FlaUI.Core.Tools;
 using FlaUI.UIA3;
 using NUnit.Framework;
@@ -21,6 +20,7 @@ public sealed class LiveConnectionTests
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_LIVE_GITHUB") != "1")
             Assert.Ignore("Run scripts/Test-LiveGitHub.ps1 on an interactive Windows desktop.");
+        Assert.That(Environment.UserInteractive, Is.True, "An interactive desktop is required.");
         using var dpi = new DesktopDpiScope();
         var executable = Environment.GetEnvironmentVariable("GHPB_E2E_APP_PATH")!;
         var gh = Environment.GetEnvironmentVariable("GHPB_LIVE_GH_PATH")!;
@@ -37,6 +37,7 @@ public sealed class LiveConnectionTests
         {
             window = application.GetMainWindow(automation, TimeSpan.FromSeconds(20));
             Assert.That(window, Is.Not.Null);
+            WinUiProcess.AssertRuntime(process);
             Element("ExecutablePath").AsTextBox().Text = gh;
             Element("HostInput").AsTextBox().Text = "github.com";
             Element("IssueUrlInput").AsTextBox().Text = "https://github.com/fukuda-yuki/codex-sandbox/issues/1";
@@ -68,10 +69,14 @@ public sealed class LiveConnectionTests
             => window!.FindFirstDescendant(cf => cf.ByAutomationId(id)) ?? throw new AssertionException($"Missing control: {id}");
         void Capture(string name)
         {
-            var path = Path.Combine(artifacts, $"{name}.png");
-            using var capture = FlaUI.Core.Capturing.Capture.Element(window!);
-            capture.ToFile(path);
-            TestContext.AddTestAttachment(path, "Ordinary application using real gh and the authorized sandbox");
+            try
+            {
+                var path = Path.Combine(artifacts, $"{name}.png");
+                using var capture = FlaUI.Core.Capturing.Capture.Element(window!);
+                capture.ToFile(path);
+                TestContext.AddTestAttachment(path, "Ordinary application using real gh and the authorized sandbox");
+            }
+            catch (Exception exception) { TestContext.Progress.WriteLine($"Capture unavailable: {exception.GetType().Name}"); }
         }
     }
 }

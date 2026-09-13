@@ -1,36 +1,39 @@
 # Architecture
 
-Source: [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2). This is a responsibility outline, not a commitment to separate assemblies or a completed design.
+## Production projects
 
-## Current structure
-
-`GhProjectsBoards.sln` contains one .NET 10 WPF application and two test projects. All production connection logic remains internal to `src/GhProjectsBoards.App`; no public API or additional application assembly is introduced.
-
-| Implemented component | Responsibility |
+| Project | Responsibility |
 | --- | --- |
-| `MainWindow` / `ConnectionViewModel` | Ordinary connection screen, manual checks, copyable login guidance, cancellation and shutdown |
-| `GhConnectionService` / `ConnectionContext` | Authentication metadata, stable viewer identity, serialized preflight and target dispatch, credential-store write guard |
-| `TargetDiagnostics` / `GitHubAddress` | Explicit same-host URL parsing and separate Issue/Project access and scope reports |
-| `GhApiTransport` / `ApiRequest` / `ApiResult` | REST/GraphQL request construction and structured response/error classification |
-| `GhProcessRunner` | Shell-free process execution, child environment control, JSON stdin, concurrent stream drains, timeout and process cleanup |
+| `GhProjectsBoards.Core` (`net10.0`) | Connection orchestration, identity, authorization checks, URL parsing, structured API results and gh process ownership |
+| `GhProjectsBoards.App` (WinUI 3, .NET 10, Windows x64) | Presentation, native controls, window lifetime, dialogs, clipboard and public UI Automation |
 
-UI diagnostics reach GitHub through the connection service. The low-level transport has no user-facing entry point; future features must use the guarded service with their bound context. The service serializes its own work but cannot lock external changes to gh authentication. It exposes no automatic retry or persistence.
+The app references Core. Core does not reference a UI framework or the app. Keep the internal logic surface limited to its app and test consumers. Do not add empty Domain/Application/Infrastructure projects or general-purpose frameworks.
 
-`GhProjectsBoards.Tests` exercises production collaborators and provides a synthetic gh process at the nondeterministic boundary. `GhProjectsBoards.E2E.Tests` has build-only references and drives the ordinary executable through UI Automation. Opt-in live cases use the real adapter and CLI against exact sandbox identifiers. See [test boundaries](../tests/README.md).
+## Connection boundary
 
-Project registration, grid editing, draft storage, and apply queues have not been implemented.
+| Component | Responsibility |
+| --- | --- |
+| `MainWindow` | Render connection state, collect user input, invoke operations, handle native dialogs/clipboard and keep the UI alive until owned work stops |
+| `ConnectionViewModel` | Observable connection state, explicit checking/rebinding, cancellation and safe user-facing diagnostics |
+| `GhConnectionService` / `ConnectionContext` | Stable viewer identity, serialized preflight/dispatch and credential-store write guards |
+| `TargetDiagnostics` / `GitHubAddress` | Same-host URL validation and independent Issue/Project permission and scope reports |
+| `GhApiTransport` / `ApiRequest` / `ApiResult` | REST/GraphQL construction and structured outcome/error classification |
+| `GhProcessRunner` | Shell-free execution, child environment isolation, JSON stdin, stream drains, timeout and process cleanup |
 
-## Responsibility boundaries
+UI code uses connection orchestration rather than duplicating authentication or dispatch rules. Feature code must use the guarded service with its bound context. Service serialization cannot lock external changes to gh authentication. There is no automatic write retry.
 
-| Responsibility | Purpose | Owning Issues |
-| --- | --- | --- |
-| Windows UI | Project navigation, table editing, and review of changes | [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4), [#5](https://github.com/fukuda-yuki/gh-projects-boards/issues/5), [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7) |
-| Application logic | Identity, validation, field differences, conflicts, and operation state | [#6](https://github.com/fukuda-yuki/gh-projects-boards/issues/6), [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8), [#9](https://github.com/fukuda-yuki/gh-projects-boards/issues/9), [#10](https://github.com/fukuda-yuki/gh-projects-boards/issues/10), [#11](https://github.com/fukuda-yuki/gh-projects-boards/issues/11) |
-| Local storage | Registered Projects, baselines, drafts, and recoverable operation history | [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4), [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8) |
-| GitHub CLI adapter | Authentication diagnostics and structured `gh api` calls | [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3) |
+Presentation notifications are handled on the WinUI dispatcher. The UI owns any window-bound API; Core receives no Window, DispatcherQueue, visual tree or clipboard object.
 
-Introduce code boundaries when an implementing Issue needs them. Do not create empty layer projects or speculative interfaces for this table.
+Text controls own in-progress input. Diagnostic rendering does not write model snapshots back into editable fields: deferred native text notifications must not erase newer input in another control. The check action reads all current inputs before starting the Core operation. Native executable selection updates the path control through the same input boundary.
 
-## Data and process design
+## Test boundary
 
-Connection and API result contracts are defined in [specification](spec.md). Project/Issue editing data contracts, storage schema, and recoverable apply lifecycle remain pending. Preserve their distinct responsibilities and record resolved technologies in [decisions](decisions.md).
+`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime.
+
+`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3. App and fake-gh project references are build-only. Tests drive the ordinary executable, verify that its process loads WinUI, and assert observable journeys. Deterministic cases use isolated synthetic data; live cases are separately authorized. See [tests](../tests/README.md).
+
+## Feature responsibilities
+
+Project registration/navigation, grid editing, draft storage and apply lifecycle are specified in [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4) through [#11](https://github.com/fukuda-yuki/gh-projects-boards/issues/11). Add real code boundaries when those features need them. Keep Issue identity, Project-item identity and local work state distinct.
+
+The editable-grid input gate does not block independent shell, tooling or test-infrastructure work. A rejected component is not a reason to duplicate core logic. Accepted behavior belongs in [specification](spec.md); unresolved work and evidence belong in Issues.

@@ -29,7 +29,8 @@ try {
     $env:GHPB_RUN_LIVE_GITHUB = '1'
     $env:GHPB_LIVE_GH_PATH = (Resolve-Path -LiteralPath $GhPath).Path
     $env:GHPB_LIVE_ARTIFACTS = $results
-    $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows/GhProjectsBoards.App.exe"
+    $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe"
+    if (-not (Test-Path -LiteralPath $env:GHPB_E2E_APP_PATH -PathType Leaf)) { throw 'The ordinary WinUI executable was not built.' }
 
     $suites = if ($DiagnosticsOnly) { @('GhProjectsBoards.E2E.Tests') } else { @('GhProjectsBoards.Tests', 'GhProjectsBoards.E2E.Tests') }
     foreach ($suite in $suites) {
@@ -41,15 +42,15 @@ try {
         if (-not (Test-Path -LiteralPath $trxPath)) { throw "No live execution report: $trxPath" }
         [xml]$report = Get-Content -LiteralPath $trxPath -Raw
         $counters = $report.TestRun.ResultSummary.Counters
-        if ($null -eq $counters -or [int]$counters.executed -lt 1 -or [int]$counters.notExecuted -gt 0) {
-            throw "Live validation did not execute a complete, nonempty suite: $trxPath"
+        if ($null -eq $counters -or [int]$counters.executed -lt 1 -or
+            [int]$counters.total -ne [int]$counters.executed -or
+            [int]$counters.passed -ne [int]$counters.executed -or [int]$counters.notExecuted -gt 0) {
+            throw "Live validation did not pass a complete, nonempty suite: $trxPath"
         }
     }
     Write-Host "Live results (DiagnosticsOnly=$DiagnosticsOnly): $results"
 }
 finally {
-    foreach ($name in $previous.Keys) {
-        [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
-    }
+    foreach ($name in $previous.Keys) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
     Pop-Location
 }

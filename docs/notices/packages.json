@@ -1,0 +1,86 @@
+[
+  {
+    "id": "Microsoft.Web.WebView2",
+    "version": "1.0.3179.45",
+    "sha512": "3pokSH5CnN0G6rGhGFo1y87inxYhNxBQ2Vdf0wlvBj99KHxQJormjDACmqRnFeUsmuNFIhWwfAL1ztq7wD5qRA==",
+    "source": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3179.45"
+  },
+  {
+    "id": "Microsoft.Windows.SDK.BuildTools",
+    "version": "10.0.26100.4654",
+    "sha512": "2mgcOlj/t2RfSyyw+pVESfO+Tk1RkfQzto9Vrq42M1lUQIfQEwbi8QLha9GXWIOj+TFzeHIEJckIoF25mgiM8A==",
+    "source": "https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools/10.0.26100.4654"
+  },
+  {
+    "id": "Microsoft.Windows.SDK.BuildTools.MSIX",
+    "version": "1.7.20250829.1",
+    "sha512": "IMdvRmCIZnBS5GkYnv0po1bcx6U1OF39pqA4TphQ9evDzpCRoSE19/PkDvlUNNrBavTsLIEJgd/TAIFner75ow==",
+    "source": "https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools.MSIX/1.7.20250829.1"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK",
+    "version": "1.8.260804001",
+    "sha512": "99gbTFsdLfyve/k3BW7EUaW9sxbX4dbDyE91gkzYy/z32qYhvODvPwwB+MPrW2qvdC1RgLJMPQYjSgGgXaxGEA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK/1.8.260804001"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.AI",
+    "version": "1.8.79",
+    "sha512": "28lVLUoYd51EFddxC1REA0NmbrUDYaDgWVV/jQ4Dohz2qArRhXpyYCuggfvQW0D29vWzWFdMjQgNI0qP9CwYyw==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.AI/1.8.79"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.Base",
+    "version": "1.8.251216001",
+    "sha512": "PS1wriuFknz3W2F2P/e6RvOTM35w89Lsj/f0QmUEPrJjKnc+jM0JLX1vfdytI14y1gNRUTm9uclwP0aH/SVU5w==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Base/1.8.251216001"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.DWrite",
+    "version": "1.8.25122902",
+    "sha512": "zFNn07i7Cyz62Y8FnPQAyzeZK7ww3m9t42i9pzy4C04pNbyUDQ4fG7pB6VSh6n4EyFuYtuFQuDzt4mKmXFrkrg==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.DWrite/1.8.25122902"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.Foundation",
+    "version": "1.8.260803002",
+    "sha512": "V2Mhddgyljl6jULPGbJ/J/kn6Y4D98Nckpr3Y27uK/CfbSnjcGTC6M+3aMJkyjNwoekyGAwEIRdBEYJBUCRRfA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Foundation/1.8.260803002"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.InteractiveExperiences",
+    "version": "1.8.260708001",
+    "sha512": "lKvL9ArPGRhzbQwXUg7Spc8dgB7N2NnMoC6BKD9sn0Mzx9FxcJC55rohV9x52eBCfviHzrn5ZtujwORZthsqbA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.InteractiveExperiences/1.8.260708001"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.ML",
+    "version": "1.8.2197",
+    "sha512": "6Bc1SOLd5HicY3GbF+zr76YBfH4iZOKeEGxTK/lHKAK2ExZTWavOADxB2CKSi/irF4dWSngUdRFopWPmckJ6fA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.ML/1.8.2197"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.Runtime",
+    "version": "1.8.260804001",
+    "sha512": "LNIpPbPle/f0rbxFDFQY3cUaggcaTMhrOmFZuMynaRyvCKsvQrSqr8pzfhy/hvViGdweu58K7DRirrGfRcNURQ==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Runtime/1.8.260804001"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.Widgets",
+    "version": "1.8.251231004",
+    "sha512": "bIWqQYR8DCoB1SoPOMil5AtgtkTn438wJTdpsHgyO/6o7Eh7PMP5BzrR0KbDsFqy+4LhPWQ4vtwko5k93fECcA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Widgets/1.8.251231004"
+  },
+  {
+    "id": "Microsoft.WindowsAppSDK.WinUI",
+    "version": "1.8.260803003",
+    "sha512": "yQFFlQ6IQj4dpDqGvMghRUQMAYlnu+hhf1unvkf4ymtdWDww+UotPi+MPTJyDc7x+xEyBXfXnlXZVk0NG0eMrA==",
+    "source": "https://www.nuget.org/packages/Microsoft.WindowsAppSDK.WinUI/1.8.260803003"
+  },
+  {
+    "id": "System.Numerics.Tensors",
+    "version": "9.0.0",
+    "sha512": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A==",
+    "source": "https://www.nuget.org/packages/System.Numerics.Tensors/9.0.0"
+  }
+]
