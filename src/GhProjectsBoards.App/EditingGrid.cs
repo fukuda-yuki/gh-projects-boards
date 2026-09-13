@@ -16,7 +16,9 @@ internal sealed class EditingGrid : Grid
     private readonly List<FrameworkElement[]> controls = [];
     private readonly List<TextBlock[]> markers = [];
     private readonly DraftSession session;
-    private readonly EditRow[] rows;
+    private EditRow[] rows;
+    private readonly ProjectRegistration registration;
+    private readonly Func<Task<bool>> prepareLocalRows;
     private readonly string projectId;
     private int currentRow, currentColumn, anchorRow, anchorColumn;
     private bool active;
@@ -33,9 +35,9 @@ internal sealed class EditingGrid : Grid
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
         if (c >= 0) Select(r, c, false, false);
     }
-    internal EditingGrid(ProjectRegistration registration, DraftSession session)
+    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows)
     {
-        this.session = session; projectId = registration.Snapshot.Id.NodeId;
+        this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         rows = session.Workspace.Open(registration);
@@ -44,6 +46,25 @@ internal sealed class EditingGrid : Grid
         var editCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var recoveryCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         toolbar.Children.Add(editCommands); toolbar.Children.Add(recoveryCommands);
+        var rowCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        toolbar.Children.Add(rowCommands);
+        void RowCommand(string text, string id, Func<EditRow[], string[]?> action)
+        {
+            var button = new Button { Content = text }; AutomationProperties.SetAutomationId(button, id);
+            button.Click += async (_, _) =>
+            {
+                var request = generation;
+                var targets = active ? SelectedRows() : [];
+                if (!CanRefresh || !await prepareLocalRows() || request != generation || !IsLoaded) return;
+                Run(() => { var added = action(targets); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
+            };
+            rowCommands.Children.Add(button);
+        }
+        RowCommand("新規行を追加", "GridAddRow", _ => [session.Workspace.AddRow(registration)]);
+        RowCommand("選択行を複製", "GridDuplicateRows", targets => session.Workspace.DuplicateRows(registration, targets));
+        RowCommand("新規行を削除", "GridRemoveRows", targets => { session.Workspace.RemoveRows(projectId, targets); return null; });
+        var append = new Button { Content = "新規行として貼り付け" }; AutomationProperties.SetAutomationId(append, "GridAppendRows");
+        append.Click += async (_, _) => await AppendAsync(); rowCommands.Children.Add(append);
         void Command(string text, string id, Action action)
         {
             var b = new Button { Content = text }; AutomationProperties.SetAutomationId(b, id);
@@ -63,8 +84,27 @@ internal sealed class EditingGrid : Grid
         AutomationProperties.SetAutomationId(status, "DraftStatus"); AutomationProperties.SetAutomationId(selection, "GridSelection");
         SetRow(info, 1); Children.Add(info);
         AutomationProperties.SetAutomationId(list, "ProjectItems"); SetRow(list, 2); Children.Add(list);
-        var columns = registration.Snapshot.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.DataType == "SINGLE_SELECT").Select(f => f.Name);
-        list.Header = "タイトル | " + string.Join(" | ", columns) + " | Repository / 番号 / Open-Closed（参照専用）";
+        BuildRows();
+        session.Changed += SessionChanged;
+        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; };
+        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; Update(); };
+        Update(); _ = session.FlushAsync();
+    }
+    private EditRow[] SelectedRows()
+    {
+        if (!active) throw new InvalidOperationException("セルを選択してください。Shift＋上下で複数行を選択できます。");
+        return rows[Math.Min(anchorRow, currentRow)..(Math.Max(anchorRow, currentRow) + 1)];
+    }
+    private void RebuildRows()
+    {
+        var identity = SelectionIdentity; generation++; active = false;
+        rows = session.Workspace.Open(registration); list.Items.Clear(); controls.Clear(); markers.Clear();
+        BuildRows(); RestoreSelection(identity);
+    }
+    private void BuildRows()
+    {
+        var columns = session.Workspace.LocalColumns(registration).Select(f => f.Name);
+        list.Header = "タイトル | " + string.Join(" | ", columns) + " | 既存: Repository / 番号 / 状態（参照）・新規: 宛先（編集可）";
         for (var r = 0; r < rows.Length; r++)
         {
             var line = new Grid { ColumnSpacing = 8 }; var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>();
@@ -72,9 +112,9 @@ internal sealed class EditingGrid : Grid
             {
                 var rr = r; var cc = c; var cell = rows[r].Cells[c];
                 line.ColumnDefinitions.Add(new() { Width = new GridLength(c == 0 ? 320 : 200) });
-                var container = new StackPanel { Spacing = 4 }; var marker = new TextBlock(); rowMarkers.Add(marker); container.Children.Add(marker);
+                var container = new StackPanel { Spacing = 4 }; var marker = new TextBlock { TextWrapping = TextWrapping.Wrap }; rowMarkers.Add(marker); container.Children.Add(marker);
                 FrameworkElement editor;
-                if (cell.Key?.Kind == "Select" && cell.Editable)
+                if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable)
                 {
                     var combo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = cell.Options, DisplayMemberPath = "Name" };
                     combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
@@ -102,10 +142,6 @@ internal sealed class EditingGrid : Grid
             var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(item, rows[r].Cells[^1].Display); list.Items.Add(item);
         }
-        session.Changed += SessionChanged;
-        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; Update(); };
-        Update(); _ = session.FlushAsync();
     }
     private async Task CompareAsync()
     {
@@ -167,11 +203,13 @@ internal sealed class EditingGrid : Grid
     private void SessionChanged() { if (DispatcherQueue.HasThreadAccess) Update(); else DispatcherQueue.TryEnqueue(Update); }
     private void Update()
     {
+        if (!rows.Where(r => r.IsLocal).Select(r => r.ItemId).SequenceEqual(session.Workspace.LocalRows.Where(r => r.ProjectId == projectId).Select(r => r.Id))) RebuildRows();
         updating = true;
         try
         {
             status.Text = $"このProject {rows.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
             status.Text += $" / 競合 {session.Workspace.Fields.Count(f => f.Conflict)} / 未確認 {session.Workspace.Fields.Count(f => f.Observation?.Reason is not null)}";
+            status.Text += $" / 新規行 {rows.Count(r => r.IsLocal)}（リモート作成未対応・Apply対象外・宛先と作成権限未確認）";
             status.Text += $"\n構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
             selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
             for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
@@ -179,6 +217,9 @@ internal sealed class EditingGrid : Grid
                 var cell = rows[r].Cells[c];
                 var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
                 markers[r][c].Text = (selected ? "選択 " : "") + (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
+                if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
+                if (cell.Key?.Kind == "LocalSelect" && session.Workspace.Value(cell) is { } savedId && !cell.Options.Any(o => o.Id == savedId))
+                    markers[r][c].Text += " 保存値: " + session.Workspace.LocalRows.Single(row => row.Id == rows[r].ItemId).Selects.Single(s => s.FieldId == cell.Key.FieldId).OptionName + " [" + savedId + "]（要確認）";
                 var field = session.Workspace.Field(cell);
                 markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
                 if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
@@ -258,10 +299,10 @@ internal sealed class EditingGrid : Grid
             for (var c = Math.Min(anchorColumn, currentColumn); c <= Math.Max(anchorColumn, currentColumn); c++)
             {
                 var cell = rows[r].Cells[c]; var value = session.Workspace.Value(cell);
-                if (cell.Key?.Kind == "Select" && value is not null && !cell.Options.Any(o => o.Id == value)) throw new InvalidOperationException("保存された選択肢IDを確認できません。コピーを中止しました。");
+                if (cell.Key?.Kind is "Select" or "LocalSelect" && value is not null && !cell.Options.Any(o => o.Id == value)) throw new InvalidOperationException("保存された選択肢IDを確認できません。コピーを中止しました。");
                 if (cell.Key is not null && cell.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                     throw new InvalidOperationException("未取得・非対応の値を空欄としてコピーできません。");
-                values.Add(cell.Key is null ? cell.Display : cell.Key.Kind == "Select" ? cell.Options.SingleOrDefault(o => o.Id == value)?.Name ?? "" : value ?? "");
+                values.Add(cell.Key is null ? cell.Display : cell.Key.Kind is "Select" or "LocalSelect" ? cell.Options.SingleOrDefault(o => o.Id == value)?.Name ?? "" : value ?? "");
                 if (values[^1].IndexOfAny(['\r','\n','\t']) >= 0) throw new InvalidOperationException($"行 {r + 1} 列 {c + 1}: タブ・改行を含む値はこのTSV形式でコピーできません。");
             }
             lines.Add(string.Join('\t', values));
@@ -280,6 +321,18 @@ internal sealed class EditingGrid : Grid
             Run(() => { if (!selected) throw new InvalidOperationException("セルを選択してください。"); session.Workspace.Paste(projectId, rows, r, c, text); });
         }
         catch (Exception) { status.Text = "クリップボードを読み取れません。"; }
+    }
+    private async Task AppendAsync()
+    {
+        var request = generation; var revision = session.Workspace.Revision;
+        try
+        {
+            var text = await Clipboard.GetContent().GetTextAsync();
+            if (request != generation || !IsLoaded || revision != session.Workspace.Revision || !CanRefresh) return;
+            if (!await prepareLocalRows() || request != generation || !IsLoaded) return;
+            Run(() => { var added = session.Workspace.AppendRows(registration, text); RebuildRows(); Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
+        }
+        catch (Exception) { status.Text = "クリップボードを読み取れません。追加していません。"; }
     }
     private sealed class TitleCell : TextBox
     {
@@ -306,7 +359,7 @@ internal sealed class EditingGrid : Grid
             IsReadOnly = !cell.Editable || field?.Conflict == true || field?.Observation?.Reason is { } reason && !reason.StartsWith("未確定文字");
             var buffer = owner.session.Workspace.Buffer(cell);
             var committed = owner.session.Workspace.Value(cell);
-            var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind == "Select"
+            var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind is "Select" or "LocalSelect"
                 ? cell.Options.SingleOrDefault(o => o.Id == committed)?.Name ?? (committed is not null ? "保存された選択肢IDを確認できません（要照合）" : EditingWorkspace.AvailabilityText(cell.Availability))
                 : committed ?? cell.Reason ?? "閲覧不可");
             if (Text != value) { restoring = true; Text = value; restoring = false; }

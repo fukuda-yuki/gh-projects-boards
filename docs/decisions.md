@@ -8,9 +8,13 @@ Use `updateIssue` with only `id/title`, `updateProjectV2ItemFieldValue` with Pro
 
 Use sequential dispatch with at least one second between mutation starts, revalidating after the wait. Honor Retry-After and primary reset headers; absent timing defaults to one minute with exponential increases. Rescheduling is bounded to three waits per execution and always revalidates. Only a known rate-limit rejection permits automatic mutation rescheduling. Ambiguous writes require explicit reconciliation. Transport never retries mutations. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
-Keep execution records in version 3 of the existing profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
+Keep execution records in version 4 of the existing profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
 
-## Platform
+## Local preparation identity and recovery
+
+Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 4 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
+
+## Native platform
 
 Use **C# + .NET 10 + WinUI 3 / Windows App SDK** for the native Windows desktop app. Native controls and public Windows APIs provide the UI boundary; application rules remain in one UI-independent Core library. Implement screens from their behavioral contracts, not from another framework's visual tree.
 

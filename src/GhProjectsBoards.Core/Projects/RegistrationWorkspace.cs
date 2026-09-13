@@ -14,6 +14,13 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
     public Func<bool>? CanRefresh { get; set; }
     public void CancelPendingEdits() => Transitioning?.Invoke();
     public DraftSession? Drafts => Profile is { } scope ? drafts.GetValueOrDefault(scope) : null;
+    public async Task<bool> PrepareLocalRowsAsync()
+    {
+        if (Selected is not { } selected || Drafts is not { } session) return false;
+        if (session.Workspace.HasCheckpoint) return true;
+        return await session.CommitAsync(w => { w.SetRegistrations(registrations); return w; },
+            () => Selected == selected && store.MatchesLegacy(selected.Snapshot.Id.Scope, registrations));
+    }
     public bool HasDraftWork(ProjectReadModel project) => blockedDrafts.Contains(project.Id.Scope) || drafts.TryGetValue(project.Id.Scope, out var d) && d.Workspace.HasWork(project);
     public async Task<bool> FlushDraftsAsync()
     {

@@ -72,7 +72,7 @@ internal sealed partial class EditingWorkspace
                 bool InvalidPreviousOption(FieldChange c) => old.Key.Kind == "Select" && c.Key == old.Key
                     && new[] { c.Before, c.After }.Any(state => (state.Change is { } change ? change.Value : state.Baseline) is { } value && !observation.Options.Any(o => o.Id == value));
                 if (transaction.Changes.Any(c => c.Key == old.Key) && (!SameUndoState(old, next) || transaction.Changes.Any(InvalidPreviousOption)))
-                    history[history.IndexOf(transaction)] = transaction with { InvalidReason = $"再取得により {old.Key.Kind}/{old.Key.NodeId} の以前の操作Undoを無効化しました。" };
+                    InvalidateRemoteUndo(history.IndexOf(transaction), $"再取得により {old.Key.Kind}/{old.Key.NodeId} の以前の操作Undoを無効化しました。");
             }
             fields[old.Key] = next;
         }
