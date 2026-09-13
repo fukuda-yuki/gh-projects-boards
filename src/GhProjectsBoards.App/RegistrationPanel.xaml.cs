@@ -47,6 +47,7 @@ public sealed partial class RegistrationPanel : UserControl
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
             Remove.IsEnabled = workspace.Selected is not null;
             SaveSetting.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
+            DefaultRepository.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
             var profiles = workspace.Registrations.Select(r => r.Snapshot.Id.Scope).Distinct().ToArray();
             Profiles.ItemsSource = profiles.Select(p => $"{p.Host} / ID {p.ViewerId}").ToArray();
             Profiles.SelectedIndex = Array.IndexOf(profiles, workspace.Profile);
@@ -77,6 +78,7 @@ public sealed partial class RegistrationPanel : UserControl
             }
             else
             {
+                DefaultRepository.Text = "";
                 rendered = null; Items.ItemsSource = workspace.Incomplete is { } partial ? PreviewRows(partial).ToArray() : Array.Empty<string>();
                 Summary.Text = workspace.Incomplete is { } p ? $"未登録・一部取得のプレビュー：{p.Title} / 項目 {p.Items.Count}。完全な保存ではありません。" : "左の登録済みProjectを選択してください。選択だけでは通信しません。";
             }

@@ -83,6 +83,8 @@ public sealed class RegistrationTests
             var confirm = Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByAutomationId("PrimaryButton")), TimeSpan.FromSeconds(5)).Result;
             Assert.That(confirm, Is.Not.Null); confirm!.AsButton().Invoke();
             Wait(() => Text(w, "RegistrationStatus").Contains("解除しました"));
+            Assert.That(Element(w, "DefaultRepository").AsTextBox().Text, Is.Empty);
+            Assert.That(Element(w, "DefaultRepository").IsEnabled, Is.False);
             Assert.That(Directory.GetFiles(f.Data, "*.json"), Has.Length.EqualTo(1));
             Assert.That(f.Calls(), Has.Length.EqualTo(calls));
             Capture(w, f.Root, "local-removal");
