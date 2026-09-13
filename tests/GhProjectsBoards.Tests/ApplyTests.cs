@@ -234,6 +234,7 @@ internal sealed class ApplyTests
         Assert.That(h.Writes.Count, Is.EqualTo(stage == "acknowledgement" ? 1 : 0));
         if (stage == "acknowledgement")
         {
+            Assert.That(h.Workspace.Status, Does.Contain("GitHubの読み戻しは一致"));
             var record = await new DraftStore(h.Root).LoadAsync(s.Workspace.Scope);
             Assert.That(record!.Journal!.Single().Operations.Single().State, Is.EqualTo(ApplyState.Running));
             Assert.That(record.Fields.Single(f => f.Key.Kind == "Title" && f.Key.NodeId == "I1").Change!.Value, Is.EqualTo("B"));
