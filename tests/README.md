@@ -25,6 +25,10 @@ Core tests do not validate XAML, native focus, the visual tree or clipboard. E2E
 
 ## Logic and integration
 
+The editing/recovery suite exercises real scoped workspaces and isolated filesystem stores: exact title differences, whole-batch rejection, explicit clear, prior-state Undo, shared title versus independent selects, invalid pending buffers, interrupted replacement, corrupted schema/scope/history, competing writers, late changes during saving and old registration compatibility. Cache replacement has a final synchronous draft/generation predicate directly before atomic file replacement.
+
+Additional ordinary-executable journeys cover scrolled editing, shared drafts across Projects, actual normal process restart with pending text, rectangular clipboard operations, save-failure cancellation of navigation/close, edit-during-refresh protection and explicit unregistration with surviving shared work. Run all deterministic desktop journeys with `scripts/Test-E2E.ps1`. Use `-Filter 'TestCategory=GridIme'` for the separate physical Japanese IME direct/F2, cancellation and reconversion cases in real registered-Project title cells. `scripts/Test-ReadyInput.ps1` remains the complete independent input-check regression suite. Filtered runs require nonzero executed and zero failed/skipped tests; the default desktop run additionally checks every original required journey by name. No filtered run replaces full regression or human grid acceptance.
+
 `GhProjectsBoards.Tests` references Core, not the UI application. It supplies an isolated fake gh executable with synthetic scenarios and no network fallback. Test dependency versions are pinned in its project file.
 
 ```powershell

@@ -19,6 +19,7 @@ public sealed partial class RegistrationPanel : UserControl
     {
         workspace = value;
         workspace.Changed += Update;
+        workspace.Transitioning += () => { foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.CancelPending(); };
         Owner.TextChanged += (_, _) => { Repositories.ItemsSource = null; };
         Update();
     }
@@ -71,15 +72,17 @@ public sealed partial class RegistrationPanel : UserControl
                 if (!ReferenceEquals(rendered, selected))
                 {
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
-                    Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray();
+                    EditorHost.Children.Clear();
+                    if (workspace.Drafts is { } drafts) { EditorHost.Children.Add(new EditingGrid(selected, drafts)); Items.Visibility = Visibility.Collapsed; }
+                    else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;
-                Summary.Text = $"{p.Title} / {selected.OwnerLogin} / {p.Id.NodeId}\nキャッシュ：最終成功 {selected.RetrievedAt.LocalDateTime:g} / 最新の試行：{RegistrationWorkspace.AttemptText(workspace.LatestAttempt)}\n項目 {p.Items.Count} / Issue {p.Issues.Count} / 非対応フィールド {p.Fields.Count(f => f.Availability == ValueAvailability.Unsupported)} / 閲覧不可 {p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable)}\n登録確認用プレビュー（編集機能は未実装）";
+                Summary.Text = $"{p.Title} / {selected.OwnerLogin} / {p.Id.NodeId}\nキャッシュ：最終成功 {selected.RetrievedAt.LocalDateTime:g} / 最新の試行：{RegistrationWorkspace.AttemptText(workspace.LatestAttempt)}\n項目 {p.Items.Count} / Issue {p.Issues.Count} / 非対応フィールド {p.Fields.Count(f => f.Availability == ValueAvailability.Unsupported)} / 閲覧不可 {p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable)}\nローカル編集（GitHub未反映）";
             }
             else
             {
                 DefaultRepository.Text = "";
-                rendered = null; Items.ItemsSource = workspace.Incomplete is { } partial ? PreviewRows(partial).ToArray() : Array.Empty<string>();
+                EditorHost.Children.Clear(); Items.Visibility = Visibility.Visible; rendered = null; Items.ItemsSource = workspace.Incomplete is { } partial ? PreviewRows(partial).ToArray() : Array.Empty<string>();
                 Summary.Text = workspace.Incomplete is { } p ? $"未登録・一部取得のプレビュー：{p.Title} / 項目 {p.Items.Count}。完全な保存ではありません。" : "左の登録済みProjectを選択してください。選択だけでは通信しません。";
             }
         }
@@ -161,10 +164,12 @@ public sealed partial class RegistrationPanel : UserControl
         if (Workspace.Selected is not { } r) return;
         await Workspace.StopAsync();
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "ローカル登録を解除",
-            Content = $"{r.Snapshot.Title}\nこのプロフィールの登録設定とキャッシュを削除します。GitHubのProject・Issue・項目は変更しません。下書き機能は未実装です。",
-            PrimaryButtonText = "ローカル登録を解除", CloseButtonText = "キャンセル", DefaultButton = ContentDialogButton.Close };
+            Content = $"{r.Snapshot.Title}\nこのプロフィールの登録設定とキャッシュを削除します。GitHubのProject・Issue・項目は変更しません。下書きがある場合は保持・破棄を選択してください。他の登録で共有するIssueの下書きは保持します。",
+            PrimaryButtonText = Workspace.HasDraftWork(r.Snapshot) ? "下書きを保持して解除" : "ローカル登録を解除", SecondaryButtonText = Workspace.HasDraftWork(r.Snapshot) ? "専用下書きを破棄して解除" : "", CloseButtonText = "キャンセル", DefaultButton = ContentDialogButton.Close };
         AutomationProperties.SetAutomationId(dialog, "LocalUnregisterConfirmation");
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await Workspace.UnregisterAsync();
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary) await Workspace.UnregisterAsync(retainDrafts: true);
+        if (result == ContentDialogResult.Secondary) await Workspace.UnregisterAsync(discardDrafts: true);
     }
     private sealed record NavigationEntry(ProjectRegistration Registration)
     {

@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,7 +28,7 @@ try {
         os = [Environment]::OSVersion.VersionString; architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
         dotnetSdk = (dotnet --version | Out-String).Trim(); powershell = $PSVersionTable.PSVersion.ToString()
         buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration"
-        testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', 'TestCategory=E2E',
+        testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', $Filter,
             '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=180000')
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'source-environment.json') -Encoding utf8
     dotnet --info | Set-Content -LiteralPath (Join-Path $results 'dotnet-info.txt') -Encoding utf8
@@ -58,7 +59,7 @@ try {
         appSha256 = (Get-FileHash -LiteralPath $env:GHPB_E2E_APP_PATH -Algorithm SHA256).Hash
         fakeGhSha256 = (Get-FileHash -LiteralPath $env:GHPB_E2E_FAKE_GH_PATH -Algorithm SHA256).Hash
         testAssemblySha256 = (Get-FileHash -LiteralPath (Join-Path $repoRoot "tests/GhProjectsBoards.E2E.Tests/bin/$Configuration/net10.0-windows10.0.26100.0/GhProjectsBoards.E2E.Tests.dll") -Algorithm SHA256).Hash
-        driver = 'FlaUI.UIA3 5.0.0'; suite = 'TestCategory=E2E'
+        driver = 'FlaUI.UIA3 5.0.0'; suite = $Filter
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'metadata.json') -Encoding utf8
 
     $appDirectory = Split-Path -Parent $env:GHPB_E2E_APP_PATH
@@ -82,7 +83,7 @@ try {
     }
 
     dotnet test $testProject --configuration $Configuration --no-build `
-        --filter 'TestCategory=E2E' --logger 'trx;LogFileName=e2e.trx' `
+        --filter $Filter --logger 'trx;LogFileName=e2e.trx' `
         --results-directory $results -- `
         NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=180000 2>&1 | Tee-Object -FilePath (Join-Path $results 'test.log')
     if ($LASTEXITCODE -ne 0) { throw "E2E failed with exit code $LASTEXITCODE. Results: $results" }
@@ -90,7 +91,7 @@ try {
     if (-not (Test-Path -LiteralPath $trxPath)) { throw "No TRX report was produced. E2E is unverified: $results" }
     [xml]$report = Get-Content -LiteralPath $trxPath -Raw
     $counters = $report.TestRun.ResultSummary.Counters
-    if ($null -eq $counters -or [int]$counters.executed -lt 11 -or
+    if ($null -eq $counters -or [int]$counters.executed -lt 1 -or
         [int]$counters.total -ne [int]$counters.executed -or
         [int]$counters.passed -ne [int]$counters.executed -or [int]$counters.notExecuted -gt 0) {
         throw "E2E did not pass the complete connection suite without skips. Inspect: $trxPath"
@@ -107,7 +108,15 @@ try {
         CancelFirstRetrievalDoesNotRegister = 1
         NormalCloseDuringProjectRetrievalStopsOwnedWork = 1
         ChangingConnectionInputsClearsPrivateDiscoveryAndDisablesReads = 1
+        GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo = 1
+        GridRectangleCopyPasteValidationClearAndOperationUndo = 1
+        FailedDraftSaveCancelsNavigationAndCloseUntilRetry = 1
+        RefreshCannotReplaceCacheWhenEditingStartsDuringRetrieval = 1
+        UnregistrationRequiresDecisionAndPreservesSurvivingSharedDraft = 1
+        DeliberateProcessInterruptionRecoversAcknowledgedTransactionAndUndo = 1
     }
+    if ($Filter -ne 'TestCategory=E2E&TestCategory!=GridIme') { $required = @{} }
+    if ($Filter -eq 'TestCategory=GridIme') { $required = @{ RegisteredGridPhysicalJapaneseIme = 6 } }
     foreach ($name in $required.Keys) {
         $cases = @($report.TestRun.Results.UnitTestResult | Where-Object { $_.testName -eq $name -or $_.testName.StartsWith($name + '(') })
         if ($cases.Count -ne $required[$name] -or @($cases | Where-Object outcome -ne 'Passed').Count -gt 0) {

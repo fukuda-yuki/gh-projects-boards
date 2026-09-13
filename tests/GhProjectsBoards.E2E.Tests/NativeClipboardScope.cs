@@ -62,13 +62,13 @@ internal sealed class NativeClipboardScope : IDisposable
     internal static string? ReadTestFormat() => ReadStringFormat(TestFormat());
 
     // Synthetic formats exercise preservation independently of the user's clipboard.
-    internal static void WriteTestFormats()
+    internal static void WriteTestFormats(string text = "Clipboard regression — 日本語")
     {
         var iid = typeof(IDataObject).GUID;
         Marshal.ThrowExceptionForHR(SHCreateDataObject(IntPtr.Zero, 0, IntPtr.Zero, IntPtr.Zero, ref iid, out var data));
         try
         {
-            Add(13, "Clipboard regression — 日本語");
+            Add(13, text);
             Add(TestFormat(), "Synthetic custom-format payload");
             Retry(() => OleSetClipboard(data));
             Retry(OleFlushClipboard);

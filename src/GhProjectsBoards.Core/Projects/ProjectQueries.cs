@@ -23,7 +23,7 @@ internal static class ProjectQueries
           node(id: $id) {
             __typename
             ... on ProjectV2 {
-              id number url title owner { __typename id }
+              id number url title viewerCanUpdate owner { __typename id }
               fields(first: 100, after: $after) {
                 PAGE_INFO
                 nodes {
@@ -50,7 +50,7 @@ internal static class ProjectQueries
                     __typename
                     ... on Node { id }
                     ... on Issue {
-                      number url title state
+                      number url title state viewerCanUpdate
                       repository { id nameWithOwner owner { id } }
                     }
                   }

@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
     private bool pickerOpen;
     private bool closingRequested;
     private bool closed;
+    private bool closeReady;
     private bool checking;
     private RegistrationWorkspace? workspace;
 
@@ -159,7 +160,7 @@ public sealed partial class MainWindow : Window
 
     private async void Closing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (operation is not { IsCompleted: false } && workspace?.IsBusy != true)
+        if (closeReady)
         {
             closingRequested = true;
             return;
@@ -167,11 +168,16 @@ public sealed partial class MainWindow : Window
         args.Cancel = true;
         if (closingRequested) return;
         closingRequested = true;
+        workspace?.CancelPendingEdits();
+        ProjectsPage.IsEnabled = false;
+        ConnectionTab.Focus(FocusState.Programmatic);
         Render();
         model.Cancel();
         if (workspace is not null) await workspace.StopAsync();
         // Keep the UI dispatcher alive until the owned gh operation has stopped.
         if (operation is not null) await operation;
+        if (workspace is not null && !await workspace.FlushDraftsAsync()) { closingRequested = false; ProjectsPage.IsEnabled = true; Render(); return; }
+        closeReady = true;
         DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
     }
 }
