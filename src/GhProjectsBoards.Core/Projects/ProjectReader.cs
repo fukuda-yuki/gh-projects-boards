@@ -7,11 +7,11 @@ namespace GhProjectsBoards.Core.Projects;
 internal sealed class ProjectReader(GhConnectionService service)
 {
     public Task<ProjectReadResult> ReadAsync(ConnectionContext context, ScopedId project,
-        CancellationToken cancellationToken = default)
-        => new ReadSession(service, context, project, cancellationToken).RunAsync();
+        CancellationToken cancellationToken = default, Action<ProjectReadProgress>? progress = null)
+        => new ReadSession(service, context, project, cancellationToken, progress).RunAsync();
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken)
+        ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -225,6 +225,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                     if (page.ValueKind == JsonValueKind.Undefined)
                     {
                         if (stopped) return false;
+                        progress?.Invoke(new(stage, fields.Count, items.Count, issues.Count));
                         var result = await service.SendAsync(context, ApiRequest.GraphQl(query, new { id, after }), cancellationToken);
                         trusted = result.IsSuccess;
                         if (!trusted)

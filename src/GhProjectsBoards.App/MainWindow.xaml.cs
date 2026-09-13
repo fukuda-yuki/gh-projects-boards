@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
+using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.App;
 
@@ -15,17 +16,26 @@ public sealed partial class MainWindow : Window
     private bool pickerOpen;
     private bool closingRequested;
     private bool closed;
+    private bool checking;
+    private RegistrationWorkspace? workspace;
 
     public MainWindow()
     {
         InitializeComponent();
+        try
+        {
+            workspace = new RegistrationWorkspace(RegistrationStore.ForUser());
+            ProjectsPage.Initialize(workspace);
+            operation = RestoreAsync();
+        }
+        catch (Exception) { UiMessage.Text = "保存先を利用できません。GHPB_DATA_ROOTは絶対パスを指定してください。実データへの代替保存はしません。"; }
         AppWindow.Resize(new SizeInt32(1080, 960));
         ExecutableInput.Text = model.ExecutablePath;
         HostInput.Text = model.Host;
         IssueInput.Text = model.IssueUrl;
         ProjectInput.Text = model.ProjectUrl;
-        ExecutableInput.TextChanged += (_, _) => { if (!rendering) model.ExecutablePath = ExecutableInput.Text; };
-        HostInput.TextChanged += (_, _) => { if (!rendering) model.Host = HostInput.Text; };
+        ExecutableInput.TextChanged += (_, _) => { if (!rendering && model.ExecutablePath != ExecutableInput.Text) { workspace?.InvalidateConnection(); model.ExecutablePath = ExecutableInput.Text; } };
+        HostInput.TextChanged += (_, _) => { if (!rendering && model.Host != HostInput.Text) { workspace?.InvalidateConnection(); model.Host = HostInput.Text; } };
         IssueInput.TextChanged += (_, _) => { if (!rendering) model.IssueUrl = IssueInput.Text; };
         ProjectInput.TextChanged += (_, _) => { if (!rendering) model.ProjectUrl = ProjectInput.Text; };
         model.PropertyChanged += ModelChanged;
@@ -37,6 +47,18 @@ public sealed partial class MainWindow : Window
             model.PropertyChanged -= ModelChanged;
         };
         Render();
+    }
+
+    private async Task RestoreAsync()
+    {
+        try { await workspace!.RestoreAsync(); }
+        catch (Exception) { UiMessage.Text = "保存データを読み込めません。保存先を確認してください。自動削除はしていません。"; }
+    }
+    private void ShowConnection(object sender, RoutedEventArgs args) { ConnectionPage.Visibility = Visibility.Visible; ProjectsPage.Visibility = Visibility.Collapsed; }
+    private void ShowProjects(object sender, RoutedEventArgs args)
+    {
+        if (workspace is null) return;
+        ConnectionPage.Visibility = Visibility.Collapsed; ProjectsPage.Visibility = Visibility.Visible; ProjectsPage.Update();
     }
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs args)
@@ -54,7 +76,7 @@ public sealed partial class MainWindow : Window
         {
             // TextChanged can arrive after another control's notification. Never write
             // model snapshots back over newer input while rendering diagnostic state.
-            var enabled = model.CanCheck && !closingRequested && !pickerOpen;
+            var enabled = model.CanCheck && !checking && !closingRequested && !pickerOpen;
             ExecutableInput.IsEnabled = HostInput.IsEnabled = IssueInput.IsEnabled = ProjectInput.IsEnabled = enabled;
             DetectButton.IsEnabled = BrowseButton.IsEnabled = CheckButton.IsEnabled = enabled;
             SwitchButton.IsEnabled = enabled && model.CanSwitch;
@@ -77,14 +99,26 @@ public sealed partial class MainWindow : Window
     private async void Switch_Click(object sender, RoutedEventArgs args) => await CheckAsync(true);
     private async Task CheckAsync(bool newConnection)
     {
-        if (closingRequested || operation is { IsCompleted: false }) return;
+        if (closingRequested || checking || operation is { IsCompleted: false }) return;
+        checking = true;
+        operation = CheckTransitionAsync(newConnection);
+        Render();
+        try { await operation; }
+        finally { checking = false; Render(); }
+    }
+    private async Task CheckTransitionAsync(bool newConnection)
+    {
+        await Task.Yield();
+        if (workspace is not null) await workspace.BindAsync(null);
+        if (closingRequested) return;
         UiMessage.Text = "";
         model.ExecutablePath = ExecutableInput.Text;
         model.Host = HostInput.Text;
         model.IssueUrl = IssueInput.Text;
         model.ProjectUrl = ProjectInput.Text;
-        operation = model.CheckAsync(newConnection);
-        await operation;
+        await model.CheckAsync(newConnection);
+        if (workspace is not null && !closingRequested)
+            await workspace.BindAsync(model.Connection is { IsConnected: true } connected ? connected.Context : null);
     }
     private void Cancel_Click(object sender, RoutedEventArgs args) => model.Cancel();
     private void Detect_Click(object sender, RoutedEventArgs args) => ExecutableInput.Text = ConnectionViewModel.FindGh();
@@ -125,7 +159,7 @@ public sealed partial class MainWindow : Window
 
     private async void Closing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (operation is not { IsCompleted: false })
+        if (operation is not { IsCompleted: false } && workspace?.IsBusy != true)
         {
             closingRequested = true;
             return;
@@ -135,8 +169,9 @@ public sealed partial class MainWindow : Window
         closingRequested = true;
         Render();
         model.Cancel();
+        if (workspace is not null) await workspace.StopAsync();
         // Keep the UI dispatcher alive until the owned gh operation has stopped.
-        await operation;
+        if (operation is not null) await operation;
         DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
     }
 }

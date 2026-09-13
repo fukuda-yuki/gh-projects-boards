@@ -31,7 +31,8 @@ public sealed class SmokeTests
         using var automation = new UIA3Automation();
         using var process = Process.Start(new ProcessStartInfo(executable)
         {
-            UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!
+            UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!,
+            Environment = { ["GHPB_DATA_ROOT"] = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, "smoke-data-" + Guid.NewGuid().ToString("N")) }
         })!;
         // Preserve the original launch handle for the post-close exit-code assertion.
         using var application = Application.Attach(process.Id);

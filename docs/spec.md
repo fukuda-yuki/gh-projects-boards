@@ -1,6 +1,6 @@
 # Specification
 
-This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics and the internal API boundary are implemented; the editing, persistence, and apply sections describe future work in their owning Issues.
+This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Connection diagnostics, bounded retrieval and Project registration/cache are implemented; editing, draft persistence and apply remain future work in their owning Issues.
 
 ## Connection and API access
 
@@ -18,6 +18,19 @@ Source: [#3](https://github.com/fukuda-yuki/gh-projects-boards/issues/3).
 Preflight cannot atomically lock gh authentication against changes made by another process between the identity check and API dispatch. Do not switch external gh authentication during an operation. Eliminating that race would require a different credential/session mechanism; token extraction is outside this design.
 
 GHEC + EMU IdP/browser authentication, enterprise host behavior, organization policy, required scopes, proxy/TLS connectivity, credential-store availability, and executable restrictions remain unverified until tested in the company environment under [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
+
+## Project registration and cache
+
+Source: [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4), with bounded navigation from [#5](https://github.com/fukuda-yuki/gh-projects-boards/issues/5).
+
+- The ordinary window exposes owner/repository-linked discovery, owner search and direct user/organization Project URLs after normal connection checking. Discovery queries use READ permission, existing URL validation and guarded preflight; they never require update permission or keyring storage merely to read. All discovery connections traverse to a terminal cursor; errors prevent a complete-list result.
+- Repository association is read from GitHub's repository/Project connections, never inferred from contained Issues. Initial retrieval uses the production ProjectReader for the whole Project. Identity confirmation displays title, owner, host, bound viewer and duplicate-registration status before retrieval.
+- Registration identity is normalized host + stable viewer ID + Project node ID. Multiple repository navigation entries select the same saved record. Left navigation groups the explicitly selected profile by owner and actual repository links, with a separate unlinked group.
+- Only a Complete reader result plus successful durable local save publishes registration success. Unsupported field types and unavailable content do not negate a completed traversal. Partial first attempts are not registrations. Cancelled/failed refreshes preserve the previous saved snapshot. Stage/count progress has no invented percentage.
+- Startup and navigation are local. Saved profiles require explicit selection and are marked cached/unverified; they do not restore authentication. A checked matching connection is required for server operations. Switching profile/context cancels and settles owned work. Obsolete results cannot publish into another profile or save after cancellation.
+- The preview displays all retrieved items, Issue repository/number/title/Open-Closed and single-select values. Other item kinds, archived items and unsupported/unavailable/empty/not-loaded values remain distinct. This read preview does not implement #7 editing, drafts, Apply or Undo.
+- Default repository is an optional local `owner/repo` setting for future Issue creation and does not filter retrieval. Unregistration confirms removal of only the selected scoped registration and its owned cache/backup/temp data, after settling retrieval. No GitHub data is mutated. No drafts store exists; #8 retention/discard/shared-draft acceptance remains open.
+- Version 1 registration JSON is an atomic settings/snapshot record with schema and nested identity validation. Saves flush and verify temporary data before replacement, retain the previous file as a backup and reject concurrent writers. Corruption, unsupported schema, access/save failures and interrupted files are diagnosed without automatic data reset. See [storage and recovery instructions](../README.md#local-registration-storage).
 
 ## Editing and drafts
 

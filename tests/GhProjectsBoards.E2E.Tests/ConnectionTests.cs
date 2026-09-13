@@ -226,6 +226,7 @@ public sealed class ConnectionTests
         fixture.Write();
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)! };
         start.Environment["GH_CONFIG_DIR"] = fixture.Directory;
+        start.Environment["GHPB_DATA_ROOT"] = Path.Combine(fixture.Directory, "registration-data");
         start.Environment["GH_TOKEN"] = "synthetic-ignored-token";
         using var process = Process.Start(start)!;
         using var automation = new UIA3Automation();

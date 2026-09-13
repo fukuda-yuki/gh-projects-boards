@@ -1,0 +1,204 @@
+using GhProjectsBoards.App;
+using GhProjectsBoards.App.GitHub;
+
+namespace GhProjectsBoards.Core.Projects;
+
+internal enum RegistrationAttempt { None, Retrieving, Complete, Partial, Cancelled, Failed, SaveFailed }
+
+internal sealed class RegistrationWorkspace(RegistrationStore store)
+{
+    private CancellationTokenSource? cancellation;
+    private Task? owned;
+    private int generation;
+    private ConnectionContext? context;
+    private GhConnectionService? service;
+    private readonly List<ProjectRegistration> registrations = [];
+    private readonly Dictionary<ScopedId, RegistrationAttempt> attempts = [];
+    private ScopedId? attemptedId;
+    public event Action? Changed;
+    public IReadOnlyList<ProjectRegistration> Registrations => registrations;
+    public ConnectionScope? Profile { get; private set; }
+    public int ConnectionRevision { get; private set; }
+    public string ProfileLogin => CanRead ? context!.Login : registrations.FirstOrDefault(r => r.Snapshot.Id.Scope == Profile)?.ViewerLogin ?? "未選択";
+    public ProjectRegistration? Selected { get; private set; }
+    public ProjectReadModel? Incomplete { get; private set; }
+    public string Status { get; private set; } = "保存済みプロフィールを選択するか、接続を確認してください。";
+    public bool IsBusy { get; private set; }
+    public bool CanRead => context is { IsInvalidated: false } && Profile == ConnectionScope.From(context);
+    public RegistrationAttempt LatestAttempt => Selected is { } r ? attempts.GetValueOrDefault(r.Snapshot.Id)
+        : attemptedId is { } id && id.Scope == Profile ? attempts.GetValueOrDefault(id) : RegistrationAttempt.None;
+
+    public async Task RestoreAsync()
+    {
+        var loaded = await store.LoadAsync();
+        registrations.Clear(); registrations.AddRange(loaded.Registrations);
+        Status = loaded.Problems.Count == 0 ? "ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。"
+            : "保存データに問題があります。自動修復・削除はしていません：" + string.Join(" / ", loaded.Problems.Select(p => $"{p.File}: {p.Kind}"));
+        Changed?.Invoke();
+    }
+    public async Task BindAsync(ConnectionContext? next, GhConnectionService? nextService = null)
+    {
+        await StopAsync();
+        context = next; service = next is null ? null : nextService ?? new(next.Executable, next.Host);
+        Profile = next is null ? null : ConnectionScope.From(next);
+        Selected = null; Incomplete = null;
+        ConnectionRevision++;
+        Changed?.Invoke();
+    }
+    public void InvalidateConnection()
+    {
+        generation++; cancellation?.Cancel(); context = null; service = null;
+        Profile = null; Selected = null; Incomplete = null; ConnectionRevision++; Changed?.Invoke();
+    }
+    public async Task SelectProfileAsync(ConnectionScope? profile)
+    {
+        await StopAsync();
+        Profile = profile; Selected = null; Incomplete = null;
+        Changed?.Invoke();
+    }
+    public async Task SelectAsync(ScopedId id)
+    {
+        await StopAsync();
+        Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == id && id.Scope == Profile);
+        Incomplete = null;
+        Changed?.Invoke();
+    }
+    public async Task StopAsync()
+    {
+        generation++;
+        cancellation?.Cancel();
+        if (owned is { } task) await task;
+    }
+    public void Cancel() => cancellation?.Cancel();
+    public Task DiscoverAsync(Func<ProjectDiscovery, ConnectionContext, CancellationToken, Task> action)
+        => RunAsync(async token =>
+        {
+            RequireConnection();
+            Status = "Projectの候補を検索しています…"; Changed?.Invoke();
+            await action(new(service!), context!, token);
+            token.ThrowIfCancellationRequested();
+            Status = "検索が完了しました。候補を選択して内容を確認してください。";
+        });
+
+    public Task RegisterAsync(ProjectChoice choice, string? defaultRepository, bool refresh = false)
+        => RunAsync(async token =>
+        {
+            RequireConnection();
+            if (choice.Id.Scope != Profile) throw new DiscoveryException(FailureKind.IdentityChanged);
+            defaultRepository = ValidateRepository(defaultRepository);
+            var existing = registrations.SingleOrDefault(r => r.Snapshot.Id == choice.Id);
+            if (existing is not null && !refresh) { Selected = existing; Status = "既に登録されています。同じ保存データを開きました。"; return; }
+            var requestGeneration = generation;
+            var bound = context!;
+            var readerService = service!;
+            attemptedId = choice.Id;
+            attempts[choice.Id] = RegistrationAttempt.Retrieving;
+            Status = "取得中：Repositoryの関連付けを確認しています…"; Changed?.Invoke();
+            var links = await new ProjectDiscovery(readerService).LinksAsync(bound, choice.Id, token);
+            token.ThrowIfCancellationRequested();
+            var result = await new ProjectReader(readerService).ReadAsync(bound, choice.Id, token, p =>
+            {
+                if (generation != requestGeneration) return;
+                Status = $"取得中：{p.Stage} / フィールド {p.Fields} / 項目 {p.Items} / Issue {p.Issues}";
+                Changed?.Invoke();
+            });
+            token.ThrowIfCancellationRequested();
+            if (requestGeneration != generation || context != bound || bound.IsInvalidated) throw new OperationCanceledException();
+            if (result.Outcome != ProjectReadOutcome.Complete || result.Project is null)
+            {
+                attempts[choice.Id] = result.Outcome == ProjectReadOutcome.Partial ? RegistrationAttempt.Partial
+                    : result.Outcome == ProjectReadOutcome.Cancelled ? RegistrationAttempt.Cancelled : RegistrationAttempt.Failed;
+                Incomplete = result.Project;
+                Status = $"{AttemptText(attempts[choice.Id])}：{string.Join(" / ", result.Problems.Select(p => $"{p.Stage}: {p.Kind} {p.Failure}"))}。前回の保存データを維持します。";
+                return;
+            }
+            if (result.Project.OwnerId != choice.OwnerId || result.Project.Number != choice.Number) throw new DiscoveryException(FailureKind.InvalidResponse);
+            var saved = new ProjectRegistration(bound.Login, choice.OwnerLogin, links, defaultRepository,
+                DateTimeOffset.UtcNow, result.Project);
+            Status = "取得完了。ローカル保存中…"; Changed?.Invoke();
+            try { await store.SaveAsync(saved, token); }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
+            {
+                attempts[choice.Id] = RegistrationAttempt.SaveFailed;
+                Status = "ローカル保存失敗：保存先の権限・空き容量・他の起動中アプリを確認してください。登録成功にはしていません。";
+                return;
+            }
+            registrations.RemoveAll(r => r.Snapshot.Id == choice.Id); registrations.Add(saved);
+            attempts[choice.Id] = RegistrationAttempt.Complete;
+            if (generation == requestGeneration) { Selected = saved; Incomplete = null; }
+            Status = "登録完了：取得結果と設定をローカルに保存しました。";
+        }, choice.Id);
+
+    public async Task SetDefaultAsync(string? repository)
+    {
+        await StopAsync();
+        if (Selected is not { } r) return;
+        await RunAsync(async token =>
+        {
+            var replacement = r with { DefaultRepository = ValidateRepository(repository) };
+            await store.SaveAsync(replacement, token);
+            registrations[registrations.IndexOf(r)] = replacement; Selected = replacement;
+            Status = "既定Repositoryをローカル保存しました。取得範囲は変わりません。";
+        });
+    }
+    public async Task UnregisterAsync()
+    {
+        var selected = Selected;
+        await StopAsync();
+        if (selected is null || selected.Snapshot.Id.Scope != Profile) return;
+        await RunAsync(async token =>
+        {
+            await store.RemoveAsync(selected.Snapshot.Id, token);
+            registrations.Remove(selected); attempts.Remove(selected.Snapshot.Id); Selected = null; Incomplete = null;
+            Status = "ローカル登録とキャッシュを解除しました。GitHubのデータは変更していません。";
+        });
+    }
+    private void RequireConnection()
+    {
+        if (!CanRead || service is null) throw new DiscoveryException(FailureKind.IdentityChanged);
+    }
+    private static string? ValidateRepository(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        value = value.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"\A[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+\z")) throw new DiscoveryException(FailureKind.InvalidInput);
+        return value;
+    }
+    private Task RunAsync(Func<CancellationToken, Task> action, ScopedId? attempted = null)
+    {
+        if (IsBusy) return Task.CompletedTask;
+        var source = new CancellationTokenSource(); cancellation = source;
+        IsBusy = true;
+        owned = ExecuteAsync(action, source, attempted);
+        Changed?.Invoke();
+        return owned;
+    }
+    private async Task ExecuteAsync(Func<CancellationToken, Task> action, CancellationTokenSource source, ScopedId? attempted)
+    {
+        // Ensure owned is assigned before synchronous collaborators can notify the UI.
+        await Task.Yield();
+        try { await action(source.Token); }
+        catch (OperationCanceledException)
+        {
+            if (attempted is not null) attempts[attempted] = RegistrationAttempt.Cancelled;
+            Status = "キャンセルしました。前回の保存データを維持します。";
+        }
+        catch (DiscoveryException ex)
+        {
+            if (attempted is not null) attempts[attempted] = ex.Failure == FailureKind.Cancelled ? RegistrationAttempt.Cancelled : RegistrationAttempt.Failed;
+            Status = ConnectionViewModel.FailureText(ex.Failure);
+        }
+        catch (Exception)
+        {
+            if (attempted is not null) attempts[attempted] = RegistrationAttempt.Failed;
+            Status = "処理に失敗しました。保存先・接続状態を確認してください。既存データは自動削除しません。";
+        }
+        finally { cancellation = null; source.Dispose(); IsBusy = false; Changed?.Invoke(); }
+    }
+    public static string AttemptText(RegistrationAttempt value) => value switch
+    {
+        RegistrationAttempt.None => "今回の起動では未取得", RegistrationAttempt.Retrieving => "取得中", RegistrationAttempt.Complete => "完了",
+        RegistrationAttempt.Partial => "一部取得", RegistrationAttempt.Cancelled => "キャンセル", RegistrationAttempt.SaveFailed => "ローカル保存失敗", _ => "取得失敗"
+    };
+}

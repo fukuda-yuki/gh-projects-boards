@@ -2,8 +2,15 @@
     x:Class="GhProjectsBoards.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GhProjectsBoards.App"
     Title="GitHub Projects Boards">
-    <ScrollViewer AutomationProperties.AutomationId="ConnectionScreen"
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="24,12">
+            <Button Content="接続設定" Click="ShowConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
+            <Button Content="登録済みProject / Projectを追加" Click="ShowProjects" AutomationProperties.AutomationId="ProjectsPageButton"/>
+        </StackPanel>
+    <ScrollViewer x:Name="ConnectionPage" Grid.Row="1" AutomationProperties.AutomationId="ConnectionScreen"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="28" Spacing="16" MaxWidth="1000" HorizontalAlignment="Stretch">
             <TextBlock Text="GitHub 接続" Style="{StaticResource TitleTextBlockStyle}" />
@@ -65,4 +72,6 @@
             </Expander>
         </StackPanel>
     </ScrollViewer>
+        <local:RegistrationPanel x:Name="ProjectsPage" Grid.Row="1" Visibility="Collapsed"/>
+    </Grid>
 </Window>

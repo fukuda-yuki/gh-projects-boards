@@ -27,6 +27,29 @@ The **ログイン・権限追加の手順** section supplies PowerShell command
 
 After an intentional account, host or executable change, review the destination and select **新しい接続として確認**. Rechecking never silently adopts another identity. Cancel stops the check; closing the window waits for the owned gh operation to stop. Connection inputs and state are in memory.
 
+## Register and reopen a Project
+
+After checking a connection, open **登録済みProject / Projectを追加**, then **Projectを追加**. Select or enter an owner, optionally select one of its repositories, and search Projects. Repository results are actual GitHub Project links. Alternatively enter a same-host user/organization Project URL, including a Project without repository links. Discovery traverses all pages before presenting a complete list.
+
+Review the identity, account and supported retrieval scope, then choose **取得してローカル登録**. Only a completed traversal durably saved locally becomes a registration. Duplicate URLs/routes open the same host/viewer/Project workspace. **最新を取得** explicitly refreshes it. The preview retains all retrieved items and unsupported/unavailable states; it is not the editable grid from #7.
+
+On restart, open the Project page and explicitly choose a saved profile to view its cached Projects without network access. Cached account metadata is not authentication. Check the connection before new server operations. Changing connection host/executable clears the active workspace binding and discovery results.
+
+The per-Project default repository is only a local setting for future Issue creation. **ローカル登録を解除…** confirms local registration/cache removal; it does not modify GitHub. Drafts and their retention/recovery are not implemented (#8).
+
+### Local registration storage
+
+The default directory is `%LOCALAPPDATA%\GhProjectsBoards\Registrations`. Version 1 JSON contains Project names, repository names, Issue titles/states, supported field values, stable identities and retrieval timestamps. **It is not encrypted** and may contain private work data. Protect the Windows user profile and backups according to your organization policy. Tokens, authenticated connection objects and raw API/process streams are never persisted.
+
+Use an absolute process-local override for isolated verification; invalid overrides fail without falling back to real data:
+
+```powershell
+$env:GHPB_DATA_ROOT = 'C:\Temp\ghpb-registration-check'
+.\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
+```
+
+Each scoped Project has one hash-named JSON file containing both settings and cache. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. This format does not decide #8's draft/Undo/apply-history storage.
+
 ## Credentials and failures
 
 Child gh processes use stored authentication. The app removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN` from those children without changing the parent environment. It reports variable names, never their values, and never extracts, displays or stores a token.

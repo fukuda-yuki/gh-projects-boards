@@ -13,6 +13,7 @@ internal enum IssueState { Open, Closed }
 internal enum ProjectItemKind { Issue, PullRequest, Draft, Unavailable, Unsupported }
 internal enum ProjectReadOutcome { Complete, Partial, Failed, Cancelled, TimedOut }
 internal enum ReadProblemKind { Api, InvalidResponse, DuplicateIdentity, RepeatedCursor, IncompleteTraversal, ScopeMismatch }
+internal sealed record ProjectReadProgress(string Stage, int Fields, int Items, int Issues);
 
 internal sealed record ReadValue<T>(ValueAvailability Availability, T? Value = default);
 internal sealed record RepositoryReadModel(ScopedId Id, ScopedId OwnerId, string NameWithOwner);

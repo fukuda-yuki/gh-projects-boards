@@ -54,7 +54,7 @@ internal sealed class TargetDiagnostics(GhConnectionService service)
     private static TargetReport Failure(FailureKind failure)
         => new(failure is FailureKind.PermissionDenied or FailureKind.NotFoundOrInaccessible ? false : null, Failure: failure);
 
-    private static Match? MatchUrl(ConnectionContext context, string value, string pattern)
+    internal static Match? MatchUrl(ConnectionContext context, string value, string pattern)
     {
         if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) || uri.Scheme != "https"
             || !uri.IsDefaultPort || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Host != context.Host)
@@ -63,7 +63,7 @@ internal sealed class TargetDiagnostics(GhConnectionService service)
         return match.Success ? match : null;
     }
 
-    private static bool PositiveNumber(string text, out int number)
+    internal static bool PositiveNumber(string text, out int number)
         => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out number) && number > 0;
 
     private static FailureKind ObjectAt(JsonElement? root, out JsonElement value, params string[] names)
