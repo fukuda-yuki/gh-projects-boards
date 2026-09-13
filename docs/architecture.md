@@ -26,6 +26,12 @@ Presentation notifications are handled on the WinUI dispatcher. The UI owns any 
 
 Text controls own in-progress input. Diagnostic rendering does not write model snapshots back into editable fields: deferred native text notifications must not erase newer input in another control. The check action reads all current inputs before starting the Core operation. Native executable selection updates the path control through the same input boundary.
 
+## Native input boundary
+
+`InputCheckWindow` hosts a bounded three-row/two-column input surface within the app. The explicit `--input-check` launch option opens it; ordinary startup opens `MainWindow`. The input surface has no connection or storage collaborator and uses discard-on-exit synthetic values.
+
+Each native TextBox keeps its committed value separate from the editor text. Cell selection prepares native focus and replacement selection before typing. Actual composition/text changes or F2 begin application editing. The window owns cell/range navigation; IME confirmation and cell commit remain separate transactions. Normal close releases text focus through the public window-closing event before native teardown. This is the executable input boundary, not a complete grid model or a general input framework.
+
 ## Test boundary
 
 `GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime.

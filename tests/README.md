@@ -71,6 +71,21 @@ Unicode insertion is not IME evidence. The application must not replay keys/text
 
 Independent shell and test-infrastructure work does not wait for a grid component to pass. Table acceptance does.
 
+## Native input execution
+
+```powershell
+.\scripts\Test-ReadyInput.ps1
+.\scripts\Test-ReadyInput.ps1 -Scenario reconvert-direct
+```
+
+The `ReadyInput` suite runs the ordinary `GhProjectsBoards.App.exe --input-check` with Microsoft Japanese IME on an unlocked Windows desktop. It builds the current solution and retains all twelve scenarios: selection, draft, reference, F2, mouse/keyboard direct input, both preenabled variants, direct/F2 cancellation and direct/F2 reconversion. The runner validates case names as well as executed/passed/skipped counts; a focused run must execute exactly its selected case. It is separate from the eleven deterministic connection/close/picker cases in `Test-E2E.ps1`.
+
+Each case owns a fresh product process, verifies its loaded WinUI module, reads real editor/committed values and focus, and requires ordinary close with exit code zero. Selection/range checks inspect all six values. Exact commit-event counts supplement the observable assertions. The test-only foreground modifier never starts editing; direct input must use ordinary mouse/key selection without internal-editor UIA focus or F2 injection.
+
+Unique `TestResults/ready-input/run-*` directories retain source/environment, build/test commands and logs, product/Core/WinUI/test DLL hashes, resolved package assets, TRX, scenario results, optional private screenshots and process-lifetime records. `GHPB_IME_TRACE` is a process-local, opt-in diagnostic file path used by this runner; it contains input values and must remain private until reviewed. Failed attempts remain separate. Existing prototype results are historical evidence and cannot substitute for execution of the integrated app.
+
+For human confirmation, launch with `--input-check`. Use the standard TextBox as a positive control, then try direct typing after cell selection with IME enabled before and after selection. Compare F2; test conversion candidates and both Enter boundaries, cancellation/reconversion, arrows and Shift ranges. Editor text may change during composition, but the committed line must remain unchanged until cell commit. Check normal title-bar close while text focus remains. Record human observations separately in #24; automation and source review are not human acceptance. Full-grid/Tab/last-row/accessibility/performance acceptance remains outside this bounded check.
+
 ## Live sandbox
 
 Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before running. Targets are exactly `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; verify API IDs before mutation. Use designated stored keyring authentication with the required scopes. Never extract tokens or alter authentication configuration in tests.
