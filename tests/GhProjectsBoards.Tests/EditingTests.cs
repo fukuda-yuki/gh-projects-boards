@@ -6,24 +6,25 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class EditingTests
 {
-    internal static ProjectRegistration Registration(string projectId = "P1", long viewer = 42, string titlePrefix = "Issue ")
+    internal static ProjectRegistration Registration(string projectId = "P1", long viewer = 42, string titlePrefix = "Issue ", int count = 101)
     {
         var scope = new ConnectionScope("github.com", viewer);
         ScopedId Id(string value) => new(scope, value);
         var capability = new CapabilityObservation(true, DateTimeOffset.UtcNow);
-        var issues = Enumerable.Range(1, 101).Select(n => new IssueReadModel(Id("I" + n), new(Id("R1"), Id("O1"), "owner/repo"), n,
+        var issues = Enumerable.Range(1, count).Select(n => new IssueReadModel(Id("I" + n), new(Id("R1"), Id("O1"), "owner/repo"), n,
             $"https://github.com/owner/repo/issues/{n}", new(ValueAvailability.Present, titlePrefix + n), new(ValueAvailability.Present, IssueState.Open), capability)).ToDictionary(i => i.Id);
         var field = new ProjectFieldDefinition(Id(projectId + "-status"), Id(projectId), "Renamed workflow", "ProjectV2SingleSelectField", "SINGLE_SELECT", FieldOwner.ProjectItem,
             [new("todo", "Todo"), new("done", "Done"), new("dup1", "Duplicate"), new("dup2", "Duplicate")], ValueAvailability.Present);
-        var items = Enumerable.Range(1, 101).Select(n => new ProjectItemReadModel(Id(projectId + "T" + n), ProjectItemKind.Issue, "ISSUE", Id("I" + n), false,
+        var items = Enumerable.Range(1, count).Select(n => new ProjectItemReadModel(Id(projectId + "T" + n), ProjectItemKind.Issue, "ISSUE", Id("I" + n), false,
             [new(field.Id, "V" + n, "ProjectV2ItemFieldSingleSelectValue", ValueAvailability.Present, "todo")], true)).ToArray();
         return new("viewer", "owner", [], null, DateTimeOffset.UtcNow, new(Id(projectId), Id("O1"), "User", projectId == "P1" ? 1 : 2,
-            "https://github.com/users/owner/projects/1", projectId, [field], issues, items, true, true, capability));
+            $"https://github.com/users/owner/projects/{(projectId == "P1" ? 1 : 2)}", projectId, [field], issues, items, true, true, capability));
     }
     [Test]
     public void TenTitlesAndReturnToBaselineProduceExactDifferences()
     {
-        var w = new EditingWorkspace(new("github.com", 42)); var rows = w.Open(Registration());
+        var w = new EditingWorkspace(new("github.com", 42)); var rows = w.Open(Registration(count: 100));
+        Assert.That(rows, Has.Length.EqualTo(100));
         for (var i = 0; i < 10; i++) w.Commit("P1", rows[i * 10].Cells[0], "Changed " + i);
         Assert.That(w.DifferenceCount, Is.EqualTo(10));
         Assert.That(w.Fields.Where(f => f.Change != null).All(f => f.Key.Kind == "Title"), Is.True);
