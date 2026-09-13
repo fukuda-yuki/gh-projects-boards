@@ -45,6 +45,10 @@ public sealed class LiveApplyTests
             var initialOption = VerifyRemote(marker + " A", null, false);
             titleCell.Click(); titleCell.AsTextBox().Text = marker + " B"; Keyboard.Type(VirtualKeyShort.RETURN);
             Wait(() => E("DraftStatus").Name.Contains("変更フィールド 1"));
+            VerifyRemote(marker + " A", initialOption);
+            Click("RefreshProjectButton"); Wait(() => E("RegistrationStatus").Name.Contains("照合をローカル保存"));
+            VerifyRemote(marker + " A", initialOption);
+            Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.Zero);
             RunApply();
             VerifyRemote(marker + " B", initialOption);
             var combo = E($"GridCell{row}_1").AsComboBox(); combo.Select(combo.SelectedItem?.Text == combo.Items[0].Text ? 1 : 0);
@@ -59,6 +63,20 @@ public sealed class LiveApplyTests
             Assert.That(operations.All(o => o.GetProperty("Attempts").GetArrayLength() == 1 && o.GetProperty("State").GetInt32() == 2), Is.True);
             File.WriteAllText(Path.Combine(root, "product-evidence.json"), JsonSerializer.Serialize(new { issueId, itemId, productMutations = 3, fixtureSetupMutations = 2, verified = true }));
             w.Close(); Wait(() => process.HasExited); Assert.That(process.ExitCode, Is.Zero);
+            using var reopened = Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)!, Environment = { ["GHPB_DATA_ROOT"] = data } })!;
+            using var reopenedApp = Application.Attach(reopened.Id);
+            try
+            {
+                w = reopenedApp.GetMainWindow(automation, TimeSpan.FromSeconds(20)) ?? throw new AssertionException("Missing reopened window");
+                WinUiProcess.AssertRuntime(reopened); Keyboard.TypeVirtualKeyCode(0x12); w.SetForeground(); Click("ProjectsPageButton");
+                E("SavedProfiles").AsComboBox().Select(0);
+                var projectTitle = Checkpoint().GetProperty("Registrations")[0].GetProperty("Snapshot").GetProperty("Title").GetString()!;
+                Wait(() => w.FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null); w.FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
+                Wait(() => E($"GridCell{row}_0").AsTextBox().Text == marker + " B"); VerifyRemote(marker + " B", null);
+                Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.EqualTo(3));
+                w.Close(); Wait(() => reopened.HasExited); Assert.That(reopened.ExitCode, Is.Zero);
+            }
+            finally { if (!reopened.HasExited) { reopened.Kill(true); reopened.WaitForExit(10000); } }
         }
         finally { if (!process.HasExited) { process.Kill(true); process.WaitForExit(10000); } }
         AutomationElement E(string id) => Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByAutomationId(id)), TimeSpan.FromSeconds(10)).Result ?? throw new AssertionException("Missing " + id);
