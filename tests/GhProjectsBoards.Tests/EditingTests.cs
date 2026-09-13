@@ -123,6 +123,9 @@ internal sealed class EditingTests
         Assert.That(store.HasInterruptedSave(w.Scope), Is.True);
         var restored = EditingWorkspace.Restore((await new DraftStore(root).LoadAsync(w.Scope))!);
         Assert.That(restored.DifferenceCount, Is.EqualTo(4));
+        var session = new DraftSession(store, restored, restored.Revision);
+        Assert.That(await session.FlushAsync(), Is.True);
+        Assert.That(session.Status, Does.Contain("中断保存ファイル"), "A successful no-op flush must not hide recovery diagnostics.");
         restored.Undo("P1"); Assert.That(restored.DifferenceCount, Is.Zero);
         Assert.That(await File.ReadAllBytesAsync(file), Is.EqualTo(before));
         Assert.That(File.Exists(file + ".interrupted.tmp"), Is.True);

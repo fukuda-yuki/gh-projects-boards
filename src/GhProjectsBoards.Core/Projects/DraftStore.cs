@@ -90,6 +90,7 @@ internal sealed class DraftStore(string registrationRoot)
 internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace, long durableRevision)
 {
     private readonly SemaphoreSlim gate = new(1);
+    private readonly string recoveryNotice = store.HasInterruptedSave(workspace.Scope) ? " / 中断保存ファイルを保持しています（要確認）" : "";
     public EditingWorkspace Workspace { get; } = workspace;
     public long DurableRevision { get; private set; } = durableRevision;
     public string Status { get; private set; } = store.HasInterruptedSave(workspace.Scope) ? "中断保存ファイルを保持しています。最後の確定済みデータを復元しました。" : "ローカル保存済み（GitHub未反映）";
@@ -106,7 +107,7 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
                 await store.SaveAsync(snapshot, DurableRevision);
                 DurableRevision = snapshot.Revision;
             }
-            Status = "ローカル保存済み（GitHub未反映）";
+            Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
