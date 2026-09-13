@@ -31,7 +31,10 @@ public sealed partial class RegistrationTests
     private static JsonElement Durable(Fixture f)
     {
         var file = Directory.GetFiles(Path.Combine(f.Data, "Drafts"), "*.json").Single();
-        return JsonDocument.Parse(File.ReadAllText(file)).RootElement.Clone();
+        // Observe the old or new atomic checkpoint without blocking its replacement.
+        using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.Clone();
     }
     [Test]
     public void GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo()
