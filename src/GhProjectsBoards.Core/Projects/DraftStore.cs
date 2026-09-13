@@ -75,6 +75,7 @@ internal sealed class DraftStore(string registrationRoot)
             && (f.Change is null || f.Change.Value != f.Baseline && (f.Change.Clear ? f.Key.Kind == "Select" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
         if (r.Fields.Any(f => !Field(f)) || r.Fields.Select(f => f.Key).Distinct().Count() != r.Fields.Length
             || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0
+                || t.Changes.Any(c => c is null || c.Before is null || c.After is null)
                 || t.Changes.Select(c => c?.Key).Distinct().Count() != t.Changes.Length
                 || t.Changes.Any(c => c is null || !Key(c.Key) || !Field(c.Before) || !Field(c.After) || c.Key != c.Before.Key || c.Key != c.After.Key
                     || c.Key.Kind == "Select" && c.Key.ProjectId != t.ProjectId

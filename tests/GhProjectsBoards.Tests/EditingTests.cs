@@ -127,7 +127,7 @@ internal sealed class EditingTests
         Assert.That(await File.ReadAllBytesAsync(file), Is.EqualTo(before));
         Assert.That(File.Exists(file + ".interrupted.tmp"), Is.True);
     }
-    [TestCase("schema"), TestCase("scope"), TestCase("select-owner"), TestCase("history-owner"), TestCase("json")]
+    [TestCase("schema"), TestCase("scope"), TestCase("select-owner"), TestCase("history-owner"), TestCase("json"), TestCase("null-history-change")]
     public async Task CorruptionBlocksLoadAndOverwriteWithoutReset(string corruption)
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-draft-" + Guid.NewGuid()); var store = new DraftStore(root);
@@ -138,6 +138,7 @@ internal sealed class EditingTests
         if (corruption == "scope") node["Scope"]!["ViewerId"] = 43;
         if (corruption == "select-owner") node["Fields"]![1]!["SourceProject"]!["NodeId"] = "P2";
         if (corruption == "history-owner") node["History"]![0]!["ProjectId"] = "P2";
+        if (corruption == "null-history-change") node["History"]![0]!["Changes"]!.AsArray().Add((System.Text.Json.Nodes.JsonNode?)null);
         await File.WriteAllTextAsync(file, corruption == "json" ? "{" : node.ToJsonString()); var bytes = await File.ReadAllBytesAsync(file);
         Assert.That(async () => await store.LoadAsync(w.Scope), Throws.Exception);
         Assert.That(await new DraftSession(store, w, 0).FlushAsync(), Is.False);
