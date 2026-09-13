@@ -100,6 +100,18 @@ The default run creates a disposable Issue with Unicode/newlines/quotes, indepen
 
 `-DiagnosticsOnly` runs the real-CLI UI diagnostics without mutation and is not adapter-write acceptance. The `LiveGitHub` category is separately gated. Unique `TestResults/live/` evidence includes structured results, resource IDs, timestamps, process timings and cleanup status, not payloads or credentials. An uncertain create is not retried. After failure/interruption, reconcile the run marker/IDs and clean up only that run before another scenario. Review live screenshots for account metadata before sharing.
 
+## Read-only Project retrieval smoke
+
+After reading [sandbox scope Issue #1](https://github.com/fukuda-yuki/codex-sandbox/issues/1), run:
+
+```powershell
+.\scripts\Test-ProjectRead.ps1
+```
+
+This separate opt-in test runs the production Core reader through the real guarded connection/CLI against existing user Project `fukuda-yuki/3`. It verifies the explicit repository/Project IDs, retrieves existing data and independently compares Issue title/state and single-select IDs/values. Its process wrapper rejects mutation documents and non-GET REST requests. It creates no data and does not invoke the mixed mutation suite. Missing representative data is a smoke limitation, not permission to create fixtures.
+
+Unique `TestResults/project-read/` directories retain source/environment, command, TRX and counts/classifications without payloads or credentials. The script requires exactly one executed/passed case with no failures/skips. Deterministic `ProjectReaderTests` substitute only the external process response boundary and exercise real reader/connection/transport collaborators, including over-100 and nested pagination, partial/error/empty/type distinctions, duplicates/cursors, cancellation and identity isolation. Existing Core, connection/native-window and physical-key IME regression suites remain separate.
+
 ## CI and reporting
 
 Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and lists desktop tests without launching them. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session.
