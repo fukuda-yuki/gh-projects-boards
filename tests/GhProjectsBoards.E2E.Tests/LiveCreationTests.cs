@@ -126,7 +126,7 @@ public sealed class LiveCreationTests
         }
         void Close() { window!.Close(); Wait(() => process!.HasExited); Assert.That(process!.ExitCode, Is.Zero); app!.Dispose(); process.Dispose(); process = null; app = null; }
         AutomationElement E(string id) => Retry.WhileNull(() => window!.FindFirstDescendant(cf => cf.ByAutomationId(id)), TimeSpan.FromSeconds(10)).Result ?? throw new AssertionException("Missing " + id);
-        void Click(string id) => E(id).AsButton().Invoke();
+        void Click(string id) { Wait(() => E(id).IsEnabled); E(id).AsButton().Invoke(); }
         void Wait(Func<bool> condition) => Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(120), TimeSpan.FromMilliseconds(200)).Result, Is.True);
         JsonElement Checkpoint() { using var doc = JsonDocument.Parse(File.ReadAllText(Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single())); return doc.RootElement.Clone(); }
         void Add(int row, string title, bool clear)
