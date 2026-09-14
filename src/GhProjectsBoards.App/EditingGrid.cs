@@ -30,6 +30,9 @@ internal sealed class EditingGrid : Grid
     internal void RestoreSelection((string Item, FieldKey? Field)? identity)
     {
         if (identity is not { } target) return;
+        var created = session.Workspace.Creations.LastOrDefault(c => c.LocalId == target.Item && c.Completed);
+        if (created?.ItemId is { } item && created.Verified is { } issue)
+            target = (item, target.Field?.Kind switch { "LocalTitle" => new("Title", issue.Id), "LocalSelect" => new("Select", item, projectId, target.Field.FieldId), _ => null });
         var r = Array.FindIndex(rows, row => row.ItemId == target.Item);
         if (r < 0) { selection.Text = "選択していた項目はProjectで未観測です。別の行には移動していません。"; return; }
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
@@ -203,13 +206,14 @@ internal sealed class EditingGrid : Grid
     private void SessionChanged() { if (DispatcherQueue.HasThreadAccess) Update(); else DispatcherQueue.TryEnqueue(Update); }
     private void Update()
     {
+        if (!CanRefresh) return;
         if (!rows.Where(r => r.IsLocal).Select(r => r.ItemId).SequenceEqual(session.Workspace.LocalRows.Where(r => r.ProjectId == projectId).Select(r => r.Id))) RebuildRows();
         updating = true;
         try
         {
             status.Text = $"このProject {rows.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
             status.Text += $" / 競合 {session.Workspace.Fields.Count(f => f.Conflict)} / 未確認 {session.Workspace.Fields.Count(f => f.Observation?.Reason is not null)}";
-            status.Text += $" / 新規行 {rows.Count(r => r.IsLocal)}（リモート作成未対応・Apply対象外・宛先と作成権限未確認）";
+            status.Text += $" / ローカル行 {rows.Count(r => r.IsLocal)}（選択・照合・明示的Applyで作成）";
             status.Text += $"\n構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
             selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
             for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
@@ -218,6 +222,9 @@ internal sealed class EditingGrid : Grid
                 var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
                 markers[r][c].Text = (selected ? "選択 " : "") + (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
                 if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
+                if (rows[r].IsLocal && c == 0 && session.Workspace.Creations.LastOrDefault(x => x.LocalId == rows[r].ItemId) is { } creation)
+                    markers[r][c].Text += " / " + creation.Reason + " " + creation.Verified?.Url;
+                if (cell.Key?.Kind == "LocalSelect") markers[r][c].Text += " / " + session.Workspace.LocalRows.Single(x => x.Id == rows[r].ItemId).Selects.SingleOrDefault(s => s.FieldId == cell.Key.FieldId)?.Intent;
                 if (cell.Key?.Kind == "LocalSelect" && session.Workspace.Value(cell) is { } savedId && !cell.Options.Any(o => o.Id == savedId))
                     markers[r][c].Text += " 保存値: " + session.Workspace.LocalRows.Single(row => row.Id == rows[r].ItemId).Selects.Single(s => s.FieldId == cell.Key.FieldId).OptionName + " [" + savedId + "]（要確認）";
                 var field = session.Workspace.Field(cell);

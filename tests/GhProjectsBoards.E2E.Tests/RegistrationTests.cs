@@ -176,7 +176,13 @@ public sealed partial class RegistrationTests
                 File.WriteAllText(Path.Combine(Root, "lifetime-" + process.Id + ".json"), JsonSerializer.Serialize(new { normal, deliberateInterruption = interrupt, code = process.ExitCode, pid = process.Id }));
             }
         }
-        private static bool Running(int pid) { try { using var p = Process.GetProcessById(pid); return !p.HasExited; } catch (ArgumentException) { return false; } }
+        private static bool Running(int pid)
+        {
+            // Recorded short-lived gh PIDs can be reused by unrelated/protected processes on restart.
+            var candidates = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!));
+            try { return candidates.Any(p => p.Id == pid && !p.HasExited); }
+            finally { foreach (var p in candidates) p.Dispose(); }
+        }
         public void Dispose() => dpi.Dispose();
     }
     [System.Runtime.InteropServices.DllImport("user32.dll")]

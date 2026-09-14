@@ -11,6 +11,7 @@ public sealed partial class RegistrationPanel : UserControl
     private ProjectChoice? choice;
     private ProjectRegistration? rendered;
     private bool updating;
+    private DispatcherTimer? deferredRendering;
     private int revision = -1;
     private ConnectionScope? displayedProfile;
     internal RegistrationWorkspace Workspace => workspace!;
@@ -74,6 +75,16 @@ public sealed partial class RegistrationPanel : UserControl
             {
                 if (!ReferenceEquals(rendered, selected))
                 {
+                    if (EditorHost.Children.OfType<EditingGrid>().Any(g => !g.CanRefresh))
+                    {
+                        if (deferredRendering is null)
+                        {
+                            deferredRendering = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+                            deferredRendering.Tick += (_, _) => { if (EditorHost.Children.OfType<EditingGrid>().All(g => g.CanRefresh)) { deferredRendering.Stop(); deferredRendering = null; Update(); } };
+                            deferredRendering.Start();
+                        }
+                        return;
+                    }
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();

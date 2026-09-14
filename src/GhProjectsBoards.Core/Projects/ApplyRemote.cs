@@ -3,7 +3,7 @@ using GhProjectsBoards.App.GitHub;
 
 namespace GhProjectsBoards.Core.Projects;
 
-internal sealed class ApplyRemote(GhConnectionService service, ConnectionContext context)
+internal sealed partial class ApplyRemote(GhConnectionService service, ConnectionContext context)
 {
     public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveAsync(ApplyBatch batch, ApplyOperation operation, CancellationToken token)
     {

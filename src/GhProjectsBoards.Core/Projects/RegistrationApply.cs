@@ -21,7 +21,14 @@ internal sealed partial class RegistrationWorkspace
             && (session.Workspace.HasCheckpoint || store.MatchesLegacy(selected.Snapshot.Id.Scope, registrations))))
         { Status = session.Status; return; }
         registrations[registrations.IndexOf(selected)] = fetched; Selected = fetched;
-        ApplyReview = session.Workspace.ReviewApply(fetched, items);
+        var destinations = new Dictionary<string, CreationRepository>();
+        var remote = new ApplyRemote(service!, context!);
+        foreach (var row in session.Workspace.LocalRows.Where(r => items.Contains(r.Id) && r.ProjectId == fetched.Snapshot.Id.NodeId))
+        {
+            var destination = await remote.ResolveCreationRepositoryAsync(fetched.Snapshot.Id, row.Repository, token);
+            if (destination is not null) destinations[row.Id] = destination;
+        }
+        ApplyReview = session.Workspace.ReviewApply(fetched, items, destinations);
         Status = ApplyReview.Blocked.Length == 0 ? "フィールド差分を確認し、明示的にApplyしてください。未確定文字は送信対象外です。" : string.Join(" / ", ApplyReview.Blocked);
     });
     public Task ConfirmApplyAsync(ApplyReview review) => RunAsync(async token =>
@@ -49,7 +56,7 @@ internal sealed partial class RegistrationWorkspace
     }
     private async Task ExecuteApplyAsync(DraftSession session, string batchId, CancellationToken token)
     {
-        var executor = new ApplyExecutor(draftStore, session, new(service!, context!));
+        var executor = new ApplyExecutor(draftStore, session, new(service!, context!), CanRefresh);
         executor.Progress += message => { Status = message; Changed?.Invoke(); };
         try { await executor.ExecuteAsync(batchId, token); }
         catch (InvalidOperationException ex) { Status = ex.Message; return; }
