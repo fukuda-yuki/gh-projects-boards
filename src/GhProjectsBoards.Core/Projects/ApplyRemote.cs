@@ -7,6 +7,7 @@ internal sealed partial class ApplyRemote(GhConnectionService service, Connectio
 {
     public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveAsync(ApplyBatch batch, ApplyOperation operation, CancellationToken token)
     {
+        using var measured = PerformanceTrace.Span("operation-observation");
         if (batch.Project.Scope != ConnectionScope.From(context)) return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
         var check = await service.RecheckAsync(context, token);
         if (!check.IsConnected) return (null, check.Result);

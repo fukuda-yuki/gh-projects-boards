@@ -5,7 +5,7 @@ namespace GhProjectsBoards.Tests;
 // Synthetic data shared only by tests and the external fake-gh executable.
 internal static class RegistrationResponses
 {
-    public static object? Query(string query, JsonElement variables, string host = "github.com")
+    public static object? Query(string query, JsonElement variables, string host = "github.com", int itemCount = 101)
     {
         var next = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
         object Page(object[] nodes, bool more = false, int? total = null) => new { nodes, totalCount = total ?? nodes.Length, pageInfo = new { hasNextPage = more, endCursor = more ? "next" : null } };
@@ -39,8 +39,9 @@ internal static class RegistrationResponses
                     new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
                         url = $"https://{host}/sample-user/{repo}/issues/{number}", repository = Repo(repo) });
             }
+            var offset = next ? int.Parse(after.GetString() == "next" ? "100" : after.GetString()!) : 0;
             return new { data = new { node = new { __typename = "ProjectV2", id,
-                items = next ? Page([Item(101)], total: 101) : Page(Enumerable.Range(1, 100).Select(Item).ToArray(), true, 101) } } };
+                items = new { nodes = Enumerable.Range(offset + 1, Math.Min(100, itemCount - offset)).Select(Item).ToArray(), totalCount = itemCount, pageInfo = new { hasNextPage = offset + 100 < itemCount, endCursor = offset + 100 < itemCount ? (offset + 100).ToString() : null } } } } };
         }
         return null;
     }

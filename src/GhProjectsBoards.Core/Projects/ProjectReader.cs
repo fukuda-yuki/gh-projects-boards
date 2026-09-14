@@ -24,6 +24,7 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         public async Task<ProjectReadResult> RunAsync()
         {
+            using var measured = PerformanceTrace.Span("full-project-traversal");
             if (projectId.Scope != ConnectionScope.From(context) || string.IsNullOrWhiteSpace(projectId.NodeId))
                 return new(ProjectReadOutcome.Failed, null,
                     [new(ReadProblemKind.ScopeMismatch, "project", FailureKind.IdentityChanged)]);
@@ -104,6 +105,7 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         private async Task AddItemAsync(JsonElement node)
         {
+            PerformanceTrace.Count("returned-items");
             MatchProject(node);
             var id = Id(node);
             if (items.ContainsKey(id)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
@@ -143,6 +145,7 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         private void AddValue(ItemBuilder item, JsonElement node)
         {
+            PerformanceTrace.Count("returned-values");
             var type = Text(node, "__typename");
             var valueId = OptionalText(node, "id");
             if (valueId is not null && !valueIds.Add(valueId)) throw new ReadException(ReadProblemKind.DuplicateIdentity);

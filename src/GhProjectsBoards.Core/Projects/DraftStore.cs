@@ -60,6 +60,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     public async Task SaveAsync(DraftRecord record, long expectedRevision, Func<bool>? canCommit = null)
     {
+        using var measured = PerformanceTrace.Span("checkpoint-save");
         Validate(record);
         await saves.WaitAsync();
         try
@@ -76,10 +77,13 @@ internal sealed class DraftStore(string registrationRoot)
             {
                 await JsonSerializer.SerializeAsync(stream, record, Json);
                 await stream.FlushAsync(); stream.Flush(true);
+                PerformanceTrace.Count("checkpoint-bytes", stream.Position);
             }
             _ = await ReadAsync(temp);
             if (canCommit is not null && !canCommit()) throw new InvalidDataException("Checkpoint changed before commit.");
             if (File.Exists(file)) File.Replace(temp, file, file + ".bak"); else File.Move(temp, file);
+            PerformanceTrace.Count("checkpoint-commits");
+
         }
         finally { saves.Release(); }
     }

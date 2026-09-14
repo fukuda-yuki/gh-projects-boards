@@ -242,7 +242,7 @@ internal sealed class ApplyTests
     }
     internal sealed class Harness
     {
-        public readonly string Root = Path.Combine(Path.GetTempPath(), "ghpb-apply-" + Guid.NewGuid());
+        public string Root = Path.Combine(Path.GetTempPath(), "ghpb-apply-" + Guid.NewGuid());
         public readonly Dictionary<string, string> Titles = [];
         public readonly Dictionary<string, string?> Selects = [];
         public readonly List<JsonElement> Writes = [];
@@ -254,9 +254,9 @@ internal sealed class ApplyTests
         public RegistrationWorkspace Workspace = null!;
         public GhConnectionService Service = null!;
         public ConnectionContext Context = null!;
-        public static async Task<Harness> Create()
+        public static async Task<Harness> Create(int itemCount = 100, string? root = null)
         {
-            var h = new Harness(); var boundary = h.Boundary = new ProjectReaderTests.ProjectBoundary();
+            var h = new Harness(); if (root is not null) h.Root = root; var boundary = h.Boundary = new ProjectReaderTests.ProjectBoundary();
             boundary.Override = (q, v) =>
             {
                 if (q.StartsWith("mutation"))
@@ -277,12 +277,12 @@ internal sealed class ApplyTests
                     return h.LoseResponse ? new(ProcessCompletion.TimedOut, true, null) : ScriptedRunner.Http(JsonSerializer.Serialize(response));
                 }
                 if (h.Unreadable && q.Contains("ProjectItems")) return ScriptedRunner.Http("{}", 503);
-                var source = RegistrationResponses.Query(q, v); if (source is null) return null;
+                var source = RegistrationResponses.Query(q, v, itemCount: itemCount); if (source is null) return null;
                 var data = JsonNode.Parse(JsonSerializer.Serialize(source))!;
                 if (q.Contains("ProjectItems"))
                 {
                     var page = data["data"]!["node"]!["items"]!;
-                    page["totalCount"] = 100; page["pageInfo"]!["hasNextPage"] = false; page["pageInfo"]!["endCursor"] = null;
+
                     foreach (var item in page["nodes"]!.AsArray())
                     {
                         if (h.Titles.TryGetValue(item!["content"]!["id"]!.ToString(), out var title)) item["content"]!["title"] = title;

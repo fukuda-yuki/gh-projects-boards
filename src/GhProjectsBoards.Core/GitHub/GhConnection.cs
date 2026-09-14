@@ -30,7 +30,7 @@ internal sealed record ConnectionReport(ApiResult Result, string? Version = null
 
 internal sealed class GhConnectionService(string executable, string host, IGhProcessRunner? processRunner = null, TimeSpan? timeout = null)
 {
-    private readonly IGhProcessRunner runner = processRunner ?? new GhProcessRunner();
+    private readonly IGhProcessRunner runner = new GhProjectsBoards.Core.Projects.PerformanceTrace.Runner(processRunner ?? new GhProcessRunner());
     private readonly SemaphoreSlim gate = new(1, 1);
 
     public async Task<ConnectionReport> ConnectAsync(CancellationToken cancellationToken = default)
