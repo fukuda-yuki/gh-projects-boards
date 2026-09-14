@@ -10,10 +10,6 @@ internal sealed class ProjectReader(GhConnectionService service)
         CancellationToken cancellationToken = default, Action<ProjectReadProgress>? progress = null)
         => new ReadSession(service, context, project, cancellationToken, progress).RunAsync();
 
-    public Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ConnectionContext context,
-        ApplyBatch batch, ApplyOperation operation, CancellationToken token)
-        => new ReadSession(service, context, batch.Project, token, null).ObserveFieldAsync(operation);
-
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
         ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress)
     {
@@ -25,62 +21,6 @@ internal sealed class ProjectReader(GhConnectionService service)
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
         private ApiOutcome? interruption;
-
-        public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ApplyOperation operation)
-        {
-            using var measured = PerformanceTrace.Span("scoped-item-observation");
-            var key = operation.Key;
-            if (projectId.Scope != ConnectionScope.From(context)
-                || (key.Kind == "Title" ? key.NodeId != operation.IssueId || key.ProjectId is not null || key.FieldId is not null
-                    : key.Kind != "Select" || key.NodeId != operation.ItemId || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
-                return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
-            try
-            {
-                // Complete definitions retain the reader's field ownership and unknown-value guards.
-                // Their cost depends on fields/options, never unrelated Project item count.
-                fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
-                    ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
-                if (!fieldsComplete || project is null) return Failure();
-                var result = await service.SendAsync(context, ApiRequest.GraphQl(ProjectQueries.ApplyItem, new { id = operation.ItemId }), cancellationToken);
-                if (!result.IsSuccess) return (null, result);
-                var node = Property(Property(result.Data ?? default, "data"), "node");
-                MatchNode(node, operation.ItemId, "ProjectV2Item");
-                await AddItemAsync(node);
-                if (problems.Count != 0 || !items.TryGetValue(new(projectId.Scope, operation.ItemId), out var builder) || !builder.Complete)
-                    return Failure();
-                var item = BuildItem(builder, true);
-                if (item.Kind != ProjectItemKind.Issue || item.ContentId?.NodeId != operation.IssueId || item.IsArchived)
-                    return (null, new(ApiOutcome.Failed, FailureKind.NotFoundOrInaccessible));
-                string? value;
-                ValueAvailability availability;
-                IReadOnlyList<SelectOption> options = [];
-                if (key.Kind == "Title")
-                {
-                    var issue = issues[item.ContentId];
-                    if (issue.Capability?.CanUpdate != true) return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    value = issue.Title.Value; availability = issue.Title.Availability;
-                }
-                else
-                {
-                    if (project.Capability?.CanUpdate != true || !fields.TryGetValue(new(projectId.Scope, key.FieldId!), out var field)
-                        || field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
-                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    options = field.Options;
-                    if (!operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value))
-                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    var observed = item.Values.Single(v => v.FieldId == field.Id);
-                    value = observed.OptionId; availability = observed.Availability;
-                }
-                if (availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return Failure();
-                // This is evidence for one field only. No complete Project snapshot is published.
-                return (new(Guid.NewGuid().ToString("N"), projectId, DateTimeOffset.UtcNow, value, availability, null, options.ToArray()), new(ApiOutcome.Success));
-            }
-            catch (ReadException) { return Failure(); }
-            catch (OperationCanceledException) { return (null, new(ApiOutcome.Failed, FailureKind.Cancelled)); }
-
-            (FieldObservation?, ApiResult) Failure() => (null, new(ApiOutcome.Failed,
-                problems.FirstOrDefault()?.Failure ?? FailureKind.InvalidResponse, retryAfter: problems.FirstOrDefault()?.RetryAfter));
-        }
 
         public async Task<ProjectReadResult> RunAsync()
         {
