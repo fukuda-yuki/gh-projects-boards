@@ -29,9 +29,10 @@ internal sealed partial class ApplyExecutor(DraftStore store, DraftSession sessi
             var waits = 0;
         Revalidate:
             var pacing = lastDispatch + TimeSpan.FromSeconds(1) - DateTimeOffset.UtcNow;
-            if (pacing > TimeSpan.Zero) await Task.Delay(pacing, token);
+            if (pacing > TimeSpan.Zero) { using var wait = PerformanceTrace.Span("mandatory-wait"); await Task.Delay(pacing, token); }
             if (o.NotBefore is { } until && until > DateTimeOffset.UtcNow)
             {
+                using var wait = PerformanceTrace.Span("mandatory-wait");
                 Progress?.Invoke($"レート制限待機: {until.LocalDateTime:g} まで（キャンセル可能）");
                 while (until > DateTimeOffset.UtcNow)
                     await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, Math.Min(30, (until - DateTimeOffset.UtcNow).TotalSeconds))), token);

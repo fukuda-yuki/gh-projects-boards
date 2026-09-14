@@ -9,6 +9,7 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.FirstOrDefault() == "--performance" && args.Length == 9) return await PerformanceRun.Run(args[1], int.Parse(args[2]), int.Parse(args[3]), bool.Parse(args[4]), int.Parse(args[5]), bool.Parse(args[6]), args[7], args[8]);
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
         if (Environment.GetEnvironmentVariable("GHPB_CREATION_PROXY") is { } proxyRoot)
@@ -132,13 +133,14 @@ internal static class FakeGhProgram
             if (query.Contains("ProjectItems") && payload.RootElement.GetProperty("variables").TryGetProperty("after", out var cursor)
                 && cursor.ValueKind == JsonValueKind.String && settings.TryGetProperty("partial", out var partial) && partial.GetBoolean())
             { Console.Write("HTTP/2.0 403 Forbidden\r\nContent-Type: application/json\r\n\r\n{}"); return 1; }
-            var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host);
+            var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host, settings.TryGetProperty("itemCount", out var itemCount) ? itemCount.GetInt32() : 101);
             if (response is not null)
             {
-                if (query.Contains("ProjectItems"))
+                if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))
                 {
                     var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
-                    foreach (var item in node["data"]!["node"]!["items"]!["nodes"]!.AsArray().Where(i => i!["content"]?["id"]?.ToString() == "I1"))
+                    var items = query.Contains("ApplyItem") ? new[] { node["data"]!["node"]! } : node["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
+                    foreach (var item in items.Where(i => i!["content"]?["id"]?.ToString() == "I1"))
                     {
                         if (settings.TryGetProperty("remoteTitle", out var title) && title.ValueKind == JsonValueKind.String) item!["content"]!["title"] = title.GetString();
                         if (settings.TryGetProperty("remoteOption", out var option) && option.ValueKind == JsonValueKind.String)
@@ -155,7 +157,7 @@ internal static class FakeGhProgram
                             }
                         }
                     }
-                    response = settings.TryGetProperty("creation", out var enabledCreation) && enabledCreation.GetBoolean() ? FakeCreation.Augment(node, directory, host) : node;
+                    response = query.Contains("ProjectItems") && settings.TryGetProperty("creation", out var enabledCreation) && enabledCreation.GetBoolean() ? FakeCreation.Augment(node, directory, host) : node;
                 }
                 WriteHttp(response); return 0;
             }

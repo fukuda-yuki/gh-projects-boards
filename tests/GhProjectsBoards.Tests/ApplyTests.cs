@@ -215,7 +215,7 @@ internal sealed class ApplyTests
         h.ChangeResponse = (q, data) => {
             if (q.Contains("ProjectFields") && mode == "permission") data["data"]!["node"]!["viewerCanUpdate"] = false;
             if (q.Contains("ProjectFields") && mode == "option") data["data"]!["node"]!["fields"]!["nodes"]![0]!["options"] = new JsonArray();
-            if (q.Contains("ProjectItems") && mode == "item") data["data"]!["node"]!["items"]!["nodes"]![0]!["content"]!["id"] = "other";
+            if (q.Contains("ApplyItem") && mode == "item") data["data"]!["node"]!["content"]!["id"] = "other";
         };
         await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
         Assert.That(h.Writes, Is.Empty);
@@ -227,7 +227,7 @@ internal sealed class ApplyTests
         s.Workspace.Commit("P1", rows[0].Cells[0], "B"); await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
         FileStream? locked = null;
         if (stage == "dispatch") locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        else if (stage == "dispatch-intent") h.ChangeResponse = (q, _) => { if (q.Contains("ProjectItems") && locked is null) locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); };
+        else if (stage == "dispatch-intent") h.ChangeResponse = (q, _) => { if (q.Contains("ApplyItem") && locked is null) locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); };
         else h.OnMutation = () => locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         try { await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!); }
         finally { locked?.Dispose(); }
@@ -242,7 +242,7 @@ internal sealed class ApplyTests
     }
     internal sealed class Harness
     {
-        public readonly string Root = Path.Combine(Path.GetTempPath(), "ghpb-apply-" + Guid.NewGuid());
+        public string Root = Path.Combine(Path.GetTempPath(), "ghpb-apply-" + Guid.NewGuid());
         public readonly Dictionary<string, string> Titles = [];
         public readonly Dictionary<string, string?> Selects = [];
         public readonly List<JsonElement> Writes = [];
@@ -254,9 +254,9 @@ internal sealed class ApplyTests
         public RegistrationWorkspace Workspace = null!;
         public GhConnectionService Service = null!;
         public ConnectionContext Context = null!;
-        public static async Task<Harness> Create()
+        public static async Task<Harness> Create(int itemCount = 100, string? root = null)
         {
-            var h = new Harness(); var boundary = h.Boundary = new ProjectReaderTests.ProjectBoundary();
+            var h = new Harness(); if (root is not null) h.Root = root; var boundary = h.Boundary = new ProjectReaderTests.ProjectBoundary();
             boundary.Override = (q, v) =>
             {
                 if (q.StartsWith("mutation"))
@@ -276,14 +276,14 @@ internal sealed class ApplyTests
                     }
                     return h.LoseResponse ? new(ProcessCompletion.TimedOut, true, null) : ScriptedRunner.Http(JsonSerializer.Serialize(response));
                 }
-                if (h.Unreadable && q.Contains("ProjectItems")) return ScriptedRunner.Http("{}", 503);
-                var source = RegistrationResponses.Query(q, v); if (source is null) return null;
+                if (h.Unreadable && (q.Contains("ProjectItems") || q.Contains("ApplyItem"))) return ScriptedRunner.Http("{}", 503);
+                var source = RegistrationResponses.Query(q, v, itemCount: itemCount); if (source is null) return null;
                 var data = JsonNode.Parse(JsonSerializer.Serialize(source))!;
-                if (q.Contains("ProjectItems"))
+                if (q.Contains("ProjectItems") || q.Contains("ApplyItem"))
                 {
-                    var page = data["data"]!["node"]!["items"]!;
-                    page["totalCount"] = 100; page["pageInfo"]!["hasNextPage"] = false; page["pageInfo"]!["endCursor"] = null;
-                    foreach (var item in page["nodes"]!.AsArray())
+                    var nodes = q.Contains("ApplyItem") ? new[] { data["data"]!["node"]! } : data["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
+
+                    foreach (var item in nodes)
                     {
                         if (h.Titles.TryGetValue(item!["content"]!["id"]!.ToString(), out var title)) item["content"]!["title"] = title;
                         if (h.Selects.TryGetValue(item!["id"]!.ToString(), out var option))

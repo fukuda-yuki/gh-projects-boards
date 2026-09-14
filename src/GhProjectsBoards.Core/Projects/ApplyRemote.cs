@@ -7,25 +7,14 @@ internal sealed partial class ApplyRemote(GhConnectionService service, Connectio
 {
     public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveAsync(ApplyBatch batch, ApplyOperation operation, CancellationToken token)
     {
+        using var measured = PerformanceTrace.Span("operation-observation");
         if (batch.Project.Scope != ConnectionScope.From(context)) return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
         var check = await service.RecheckAsync(context, token);
         if (!check.IsConnected) return (null, check.Result);
         if (check.Authentication?.Store != CredentialStore.Keyring) return (null, new(ApiOutcome.Failed, FailureKind.UnknownCredentialStore));
         if (check.Authentication.HasScope(operation.Key.Kind == "Title" ? "repo" : "project") != true)
             return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-        var read = await new ProjectReader(service).ReadAsync(context, batch.Project, token);
-        if (read.Outcome != ProjectReadOutcome.Complete || read.Project is not { } p)
-            return (null, new(ApiOutcome.Failed, read.Problems.FirstOrDefault()?.Failure ?? FailureKind.InvalidResponse, retryAfter: read.Problems.FirstOrDefault()?.RetryAfter));
-        var item = p.Items.SingleOrDefault(i => i.Id.NodeId == operation.ItemId);
-        if (item is null || item.Kind != ProjectItemKind.Issue || item.ContentId?.NodeId != operation.IssueId || item.IsArchived)
-            return (null, new(ApiOutcome.Failed, FailureKind.NotFoundOrInaccessible));
-        var registration = new ProjectRegistration(context.Login, "", [], null, DateTimeOffset.UtcNow, p);
-        var cell = new EditingWorkspace(batch.Project.Scope).Open(registration).Single(r => r.ItemId == operation.ItemId)
-            .Cells.SingleOrDefault(c => c.Key == operation.Key);
-        if (cell is null || !cell.Editable || cell.Availability is not (ValueAvailability.Present or ValueAvailability.Empty)
-            || operation.Key.Kind == "Select" && !operation.Intended.Clear && !cell.Options.Any(o => o.Id == operation.Intended.Value))
-            return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-        return (new(Guid.NewGuid().ToString("N"), batch.Project, DateTimeOffset.UtcNow, cell.Baseline, cell.Availability, null, cell.Options), new(ApiOutcome.Success));
+        return await new ProjectReader(service).ObserveFieldAsync(context, batch, operation, token);
     }
     public async Task<ApiResult> MutateAsync(ApplyBatch batch, ApplyOperation o, CancellationToken token)
     {

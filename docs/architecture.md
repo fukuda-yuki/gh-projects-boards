@@ -2,7 +2,7 @@
 
 ## Existing-field execution boundary
 
-`RegistrationWorkspace` owns preparation and lifecycle of Apply. `EditingWorkspace` produces revision-bound immutable field plans and keeps the journal separate from Undo. `ApplyRemote` uses the existing `GhConnectionService`, guarded transport and complete `ProjectReader` for preflight and independent verification. It does not own credentials or launch processes directly.
+`RegistrationWorkspace` owns preparation and lifecycle of Apply. `EditingWorkspace` produces revision-bound immutable field plans and keeps the journal separate from Undo. Preparation uses a complete `ProjectReader` result. `ApplyRemote` uses the existing `GhConnectionService`, guarded transport and the reader's operation-scoped field observation for dispatch validation and independent verification. It traverses field definitions and the exact target item's values, returning no complete Project snapshot. It does not own credentials or launch processes directly. See the [predicate and completeness mapping](performance.md#scoped-observation-safety-mapping).
 
 `ApplyExecutor` holds a per-profile filesystem execution lease throughout reads, waits, dispatch and acknowledgement, and checks the durable revision before proceeding. The writer lock remains a separate short critical section. Version 5 of the authoritative `DraftRecord` contains execution history and local rows; v1–4 remain readable. Each journal transition passes through the same validated, flushed, atomic checkpoint boundary as local work. Failed acknowledgement stops further dispatch and leaves durable Running as recovery evidence. `.execution.lock` contains no authoritative queue data; OS ownership is released on process termination.
 

@@ -61,6 +61,14 @@ internal sealed class CreationHarness
                         id = "item-" + id, project = new { id = "P1" }, content = new { __typename = "Issue", id } } } } }));
                 }
             }
+            if (q.Contains("ApplyItem") && v.GetProperty("id").GetString() is { } itemId && itemId.StartsWith("item-created"))
+            {
+                var id = itemId[5..];
+                if (h.Incomplete || !h.Members.Contains(id)) return ScriptedRunner.Http("{}", 503);
+                var option = h.Existing.Selects.GetValueOrDefault(itemId, "todo");
+                return ProjectReaderTests.Response(ProjectReaderTests.Item("P1", itemId,
+                    ProjectReaderTests.Page(option is null ? [] : [ProjectReaderTests.Value("P1", "P1-status", option)], option is null ? 0 : 1), h.Issue(id)));
+            }
             var result = prior(q, v);
             if (!q.Contains("ProjectItems") || result is null) return result;
             if (h.Incomplete) return ScriptedRunner.Http("{}", 503);

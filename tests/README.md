@@ -12,6 +12,8 @@ Retain logic/adapter assertions during UI work. UI-specific selectors, focus and
 
 ## Boundaries
 
+The opt-in [performance runner](../docs/performance.md) separates synthetic Core timing, ordinary-app interaction and bounded live schema validation. Use `scripts/Test-Performance.ps1`; routine CI checks structural work counts and safety, never machine timing thresholds. Results and remaining acceptance belong to #12.
+
 | Level | Scope | Execution |
 | --- | --- | --- |
 | Logic/integration | Core rules, connection orchestration and real gh process handling with a synthetic executable | Deterministic CI; no UI or live GitHub |
