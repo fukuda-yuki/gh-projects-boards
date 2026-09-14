@@ -15,6 +15,13 @@ internal static class FakeCreation
     public static (bool Handled, object? Response) Handle(string query, JsonElement v, string root, string host)
     {
         var rows = Read(root);
+        if (query.Contains("ApplyItem") && v.GetProperty("id").GetString() is { } observedItemId && observedItemId.StartsWith("item-created"))
+        {
+            var row = rows.SingleOrDefault(r => "item-" + r!["id"] == observedItemId && r["member"]!.GetValue<bool>());
+            var option = row?["option"]?.ToString();
+            return (true, new { data = new { node = row is null ? null : ProjectReaderTests.Item("P1", observedItemId,
+                ProjectReaderTests.Page(option is null ? [] : [ProjectReaderTests.Value("P1", "P1-status", option)], option is null ? 0 : 1), Issue(row, host)) } });
+        }
         if (query.Contains("CreationRepository")) return (true, new { data = new { repository = new {
             id = "R-" + v.GetProperty("name").GetString(), nameWithOwner = v.GetProperty("owner").GetString() + "/" + v.GetProperty("name").GetString(),
             hasIssuesEnabled = true, isArchived = false, viewerCanCreateIssues = true } } });

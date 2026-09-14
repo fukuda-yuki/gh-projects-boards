@@ -215,7 +215,7 @@ internal sealed class ApplyTests
         h.ChangeResponse = (q, data) => {
             if (q.Contains("ProjectFields") && mode == "permission") data["data"]!["node"]!["viewerCanUpdate"] = false;
             if (q.Contains("ProjectFields") && mode == "option") data["data"]!["node"]!["fields"]!["nodes"]![0]!["options"] = new JsonArray();
-            if (q.Contains("ProjectItems") && mode == "item") data["data"]!["node"]!["items"]!["nodes"]![0]!["content"]!["id"] = "other";
+            if (q.Contains("ApplyItem") && mode == "item") data["data"]!["node"]!["content"]!["id"] = "other";
         };
         await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
         Assert.That(h.Writes, Is.Empty);
@@ -227,7 +227,7 @@ internal sealed class ApplyTests
         s.Workspace.Commit("P1", rows[0].Cells[0], "B"); await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
         FileStream? locked = null;
         if (stage == "dispatch") locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        else if (stage == "dispatch-intent") h.ChangeResponse = (q, _) => { if (q.Contains("ProjectItems") && locked is null) locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); };
+        else if (stage == "dispatch-intent") h.ChangeResponse = (q, _) => { if (q.Contains("ApplyItem") && locked is null) locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); };
         else h.OnMutation = () => locked = new(Path.Combine(h.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         try { await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!); }
         finally { locked?.Dispose(); }
@@ -276,14 +276,14 @@ internal sealed class ApplyTests
                     }
                     return h.LoseResponse ? new(ProcessCompletion.TimedOut, true, null) : ScriptedRunner.Http(JsonSerializer.Serialize(response));
                 }
-                if (h.Unreadable && q.Contains("ProjectItems")) return ScriptedRunner.Http("{}", 503);
+                if (h.Unreadable && (q.Contains("ProjectItems") || q.Contains("ApplyItem"))) return ScriptedRunner.Http("{}", 503);
                 var source = RegistrationResponses.Query(q, v, itemCount: itemCount); if (source is null) return null;
                 var data = JsonNode.Parse(JsonSerializer.Serialize(source))!;
-                if (q.Contains("ProjectItems"))
+                if (q.Contains("ProjectItems") || q.Contains("ApplyItem"))
                 {
-                    var page = data["data"]!["node"]!["items"]!;
+                    var nodes = q.Contains("ApplyItem") ? new[] { data["data"]!["node"]! } : data["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
 
-                    foreach (var item in page["nodes"]!.AsArray())
+                    foreach (var item in nodes)
                     {
                         if (h.Titles.TryGetValue(item!["content"]!["id"]!.ToString(), out var title)) item["content"]!["title"] = title;
                         if (h.Selects.TryGetValue(item!["id"]!.ToString(), out var option))

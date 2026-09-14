@@ -26,11 +26,12 @@ internal sealed class PerformanceTrace : IDisposable
     {
         public async Task<GhProcessResult> RunAsync(GhCommand command, CancellationToken cancellationToken = default)
         {
+            if (current.Value is null) return await inner.RunAsync(command, cancellationToken);
             // Classify only fixed protocol markers; do not retain command text or streams.
             var kind = command.Arguments.Contains("--version") ? "process-version" : command.Arguments.Contains("auth") ? "process-auth"
                 : command.Arguments.Contains("user") ? "process-identity" : command.StandardInput?.Contains("mutation ", StringComparison.Ordinal) == true ? "process-mutation" : "process-query";
-            using var span = Span(kind);
-            var result = await inner.RunAsync(command, cancellationToken);
+            GhProcessResult result;
+            using (Span(kind)) result = await inner.RunAsync(command, cancellationToken);
             Count("returned-utf8-bytes", System.Text.Encoding.UTF8.GetByteCount(result.StandardOutput));
             return result;
         }

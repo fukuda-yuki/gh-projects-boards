@@ -29,16 +29,18 @@ internal static class RegistrationResponses
         if (query.Contains("ProjectFields")) return new { data = new { node = new { __typename = "ProjectV2", viewerCanUpdate = true, id, number = id == "P1" ? 1 : 2,
             title = "Project " + (id == "P1" ? "1" : "2"), url = $"https://{host}/users/sample-user/projects/{(id == "P1" ? 1 : 2)}", owner = new { id = "O1", __typename = "User" },
             fields = Page([ProjectReaderTests.Field(id, id + "-status"), ProjectReaderTests.Field(id, id + "-text", "Other", "TEXT")]) } } };
-        if (query.Contains("ProjectItems"))
+        if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))
         {
+            var projectId = query.Contains("ApplyItem") ? id.Split("-T")[0] : id;
             object Item(int number)
             {
                 var repo = number % 2 == 0 ? "second" : "first";
-                return ProjectReaderTests.Item(id, id + "-T" + number,
-                    Page([ProjectReaderTests.Value(id, id + "-status", id: id + "-V" + number)]),
+                return ProjectReaderTests.Item(projectId, projectId + "-T" + number,
+                    Page([ProjectReaderTests.Value(projectId, projectId + "-status", id: projectId + "-V" + number)]),
                     new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
                         url = $"https://{host}/sample-user/{repo}/issues/{number}", repository = Repo(repo) });
             }
+            if (query.Contains("ApplyItem")) return new { data = new { node = Item(int.Parse(id.Split("-T")[1])) } };
             var offset = next ? int.Parse(after.GetString() == "next" ? "100" : after.GetString()!) : 0;
             return new { data = new { node = new { __typename = "ProjectV2", id,
                 items = new { nodes = Enumerable.Range(offset + 1, Math.Min(100, itemCount - offset)).Select(Item).ToArray(), totalCount = itemCount, pageInfo = new { hasNextPage = offset + 100 < itemCount, endCursor = offset + 100 < itemCount ? (offset + 100).ToString() : null } } } } };
