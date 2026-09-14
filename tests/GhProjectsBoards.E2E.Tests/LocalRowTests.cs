@@ -97,6 +97,7 @@ public sealed partial class RegistrationTests
             Invoke(w, "GridAddRow"); LocalCount(f, 1); Scroll(w, 100); Set(w, "GridCell101_0", "Pending new");
             Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "Pending new");
             saved = Durable(f).GetProperty("LocalRows").GetRawText(); Invoke(w, "ReviewApplyButton");
+            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyTargetRows")) is not null);
             Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("作成未対応")), Is.True);
             Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("既存Issue 101 件")), Is.True);
             var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select(); Invoke(w, "PrimaryButton");
