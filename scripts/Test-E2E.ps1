@@ -2,7 +2,7 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
-    [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme'
+    [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -119,7 +119,7 @@ try {
         UnregistrationRequiresDecisionAndPreservesSurvivingSharedDraft = 1
         DeliberateProcessInterruptionRecoversAcknowledgedTransactionAndUndo = 1
     }
-    if ($Filter -ne 'TestCategory=E2E&TestCategory!=GridIme') { $required = @{} }
+    if ($Filter -ne 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance') { $required = @{} }
     if ($Filter -eq 'TestCategory=GridIme') { $required = @{ RegisteredGridPhysicalJapaneseIme = 6 } }
     foreach ($name in $required.Keys) {
         $cases = @($report.TestRun.Results.UnitTestResult | Where-Object { $_.testName -eq $name -or $_.testName.StartsWith($name + '(') })

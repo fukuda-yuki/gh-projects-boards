@@ -9,7 +9,7 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
-        if (args.FirstOrDefault() == "--performance" && args.Length == 8) return await PerformanceRun.Run(args[1], int.Parse(args[2]), int.Parse(args[3]), bool.Parse(args[4]), int.Parse(args[5]), bool.Parse(args[6]), args[7]);
+        if (args.FirstOrDefault() == "--performance" && args.Length == 9) return await PerformanceRun.Run(args[1], int.Parse(args[2]), int.Parse(args[3]), bool.Parse(args[4]), int.Parse(args[5]), bool.Parse(args[6]), args[7], args[8]);
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
         if (Environment.GetEnvironmentVariable("GHPB_CREATION_PROXY") is { } proxyRoot)

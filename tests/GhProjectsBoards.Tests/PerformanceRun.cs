@@ -6,7 +6,7 @@ namespace GhProjectsBoards.Tests;
 
 internal static class PerformanceRun
 {
-    public static async Task<int> Run(string root, int count, int changes, bool mixed, int samples, bool instrument, string field = "Title")
+    public static async Task<int> Run(string root, int count, int changes, bool mixed, int samples, bool instrument, string field, string referenceRoot)
     {
         if (!Path.IsPathFullyQualified(root) || Directory.Exists(root)) return 2;
         Directory.CreateDirectory(root);
@@ -14,6 +14,15 @@ internal static class PerformanceRun
             boundary = "Core with in-process synthetic gh responses; production waits and actual checkpoint I/O", runtime = Environment.Version.ToString(),
             processorCount = Environment.ProcessorCount, os = Environment.OSVersion.ToString() };
         await File.WriteAllTextAsync(Path.Combine(root, "plan.json"), JsonSerializer.Serialize(plan));
+        var calibration = new List<double>();
+        for (var i = -1; i < 5; i++)
+        {
+            var process = await new GhProjectsBoards.App.GitHub.GhProcessRunner().RunAsync(new(Environment.ProcessPath!, ["--version"]));
+            if (process.ExitCode != 0) throw new InvalidOperationException("Synthetic process calibration failed");
+            if (i >= 0) calibration.Add(process.Elapsed.TotalMilliseconds);
+        }
+        await File.WriteAllTextAsync(Path.Combine(root, "process-calibration.json"), JsonSerializer.Serialize(new {
+            boundary = "separate synthetic executable --version startup/exit estimate; never subtracted from product spans", warmup = 1, samplesMs = calibration }));
         for (int sample = -1; sample < samples; sample++)
         {
             var data = Path.Combine(root, sample < 0 ? "warmup" : "sample-" + sample);
@@ -40,6 +49,23 @@ internal static class PerformanceRun
                 if (field == "Select") { if (i % 2 == 0) w.Commit("P1", rows[i].Cells[1], "done", true); else w.Clear("P1", [rows[i].Cells[1]]); }
                 else w.Commit("P1", rows[i].Cells[0], "Measured " + i.ToString("D4"));
             await h.Workspace.Drafts!.FlushAsync();
+            var checkpoint = new DraftStore(data).FileFor(w.Scope);
+            var seedName = sample < 0 ? "warmup-seed.json" : $"sample-{sample}-seed.json";
+            var remoteName = sample < 0 ? "warmup-remote.json" : $"sample-{sample}-remote.json";
+            if (referenceRoot != "none")
+            {
+                // Exact immutable initial profile from the baseline, including IDs, timestamps and retained attempts.
+                File.Copy(Path.Combine(referenceRoot, seedName), checkpoint, true);
+                var remoteState = JsonSerializer.Deserialize<RemoteState>(await File.ReadAllTextAsync(Path.Combine(referenceRoot, remoteName)))!;
+                h.Titles.Clear(); foreach (var pair in remoteState.Titles) h.Titles.Add(pair.Key, pair.Value);
+                h.Selects.Clear(); foreach (var pair in remoteState.Selects) h.Selects.Add(pair.Key, pair.Value);
+                h.Workspace = new(new(h.Root)); await h.Workspace.RestoreAsync();
+                await h.Workspace.BindAsync(h.Context, h.Service); await h.Workspace.SelectAsync(new(w.Scope, "P1"));
+                w = h.Workspace.Drafts!.Workspace; rows = w.Open(h.Workspace.Selected!);
+            }
+            File.Copy(checkpoint, Path.Combine(root, seedName));
+            await File.WriteAllTextAsync(Path.Combine(root, remoteName), JsonSerializer.Serialize(new RemoteState(h.Titles, h.Selects)));
+            var initialSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(checkpoint)));
             var durable = (await new DraftStore(data).LoadAsync(w.Scope))!;
             if (mixed && (durable.LocalRows!.Length != 1 || durable.Fields.Count(f => f.Buffer is not null) != 1
                 || !durable.Journal!.Any(b => b.Operations.Any(o => o.State == ApplyState.Succeeded))
@@ -59,11 +85,12 @@ internal static class PerformanceRun
             var journal = h.Workspace.Drafts!.Workspace.Journal.SingleOrDefault(b => b.Id == review.Batch.Id);
             var success = h.Writes.Count == changes && journal is not null && journal.Operations.All(o => o.State == ApplyState.Succeeded);
             var result = new { sample, prepareMs = prepare, executeMs = execute, endToEndMs = prepare + execute, success,
-                mutations = h.Writes.Count, spans = trace?.Samples, journalOperations = journal?.Operations.Length };
+                initialSha256, mutations = h.Writes.Count, spans = trace?.Samples, journalOperations = journal?.Operations.Length };
             await File.WriteAllTextAsync(Path.Combine(root, sample < 0 ? "warmup.json" : $"sample-{sample}.json"), JsonSerializer.Serialize(result));
             Console.WriteLine($"sample={sample} items={count} changes={changes} prepare={prepare:F1} execute={execute:F1} success={success}");
             if (!success) return 1;
         }
         return 0;
     }
+    private sealed record RemoteState(Dictionary<string, string> Titles, Dictionary<string, string?> Selects);
 }

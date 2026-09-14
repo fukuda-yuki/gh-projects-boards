@@ -72,4 +72,23 @@ internal static class ProjectQueries
           }
         }
         """.Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
+    public static readonly string ApplyItem = """
+        query ApplyItem($id: ID!) {
+          node(id: $id) {
+            __typename
+            ... on ProjectV2Item {
+              id type isArchived project { id }
+              content {
+                __typename
+                ... on Node { id }
+                ... on Issue {
+                  number url title state viewerCanUpdate
+                  repository { id nameWithOwner owner { id } }
+                }
+              }
+              fieldValues(first: 100) { PAGE_INFO VALUES }
+            }
+          }
+        }
+        """.Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
 }
