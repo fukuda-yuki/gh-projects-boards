@@ -6,7 +6,7 @@
 
 `ApplyExecutor` holds a per-profile filesystem execution lease throughout reads, waits, dispatch and acknowledgement, and checks the durable revision before proceeding. The writer lock remains a separate short critical section. Version 5 of the authoritative `DraftRecord` contains execution history and local rows; v1–4 remain readable. Each journal transition passes through the same validated, flushed, atomic checkpoint boundary as local work. Failed acknowledgement stops further dispatch and leaves durable Running as recovery evidence. `.execution.lock` contains no authoritative queue data; OS ownership is released on process termination.
 
-The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. UI Automation uses stable Apply control IDs; tests substitute only gh responses or use the authorized live fixture.
+The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. Stable Apply control IDs support UI automation at both scoped UI integration and whole-application boundaries. Test rules in Core and presentation collaboration at the UI integration boundary; use whole-app journeys and authorized live checks for their distinct remaining risks.
 
 ## Production projects
 
@@ -72,9 +72,15 @@ Each native TextBox keeps its committed value separate from the editor text. Cel
 
 ## Test boundary
 
-`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime.
+The design priority is **logic-layer unit tests > UI-layer integration tests > E2E tests**. Keep rules and orchestration independently testable so the ordinary application's UI is not the primary way to exercise them. Preserve real adapter/process/storage integration alongside logic unit coverage.
 
-`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3. App and fake-gh project references are build-only. Tests drive the ordinary executable, verify that its process loads WinUI, and assert observable journeys. Deterministic cases use isolated synthetic data; live cases are separately authorized. See [tests](../tests/README.md).
+`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime. Its unit and integration cases are classified by the exercised boundary, not merely the assembly name.
+
+UI integration owns bounded collaboration among views/controls, events/commands, presentation state and rendered results. Tests claiming binding/control behavior exercise the actual relevant view/control and its wiring with the necessary WinUI runtime, UI thread and dispatcher/lifetime handling. ViewModel-only checks do not establish that wiring. An existing app/test runtime or a dedicated host can provide execution, driven directly or through UI Automation. A separate host or project is not part of the definition.
+
+Inspect actual cases, fixtures and dependencies before identifying UI coverage gaps. Reuse suitable existing mechanisms; add a minimal test seam/host only for a concrete uncovered behavior. Do not infer that UI integration exists or is absent from project names, and do not make Core depend on WinUI or add speculative production layers.
+
+`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3 with build-only app/fake-gh references. Its runner drives the ordinary executable and verifies the WinUI module. Classify cases by their actual scope, not that mechanism or assembly name: bounded UI collaboration can be UI integration; workflows through the app's principal layers to the declared endpoint are app-level E2E. Fake gh is a disclosed external substitution, not proof of either classification; live access is a separate environment dimension. Preserve real native focus, physical IME, picker/clipboard and restart/close observations wherever the asserted contract needs them. Audit, selection and coverage migration follow the [test policy](../tests/README.md).
 
 ## Feature responsibilities
 
