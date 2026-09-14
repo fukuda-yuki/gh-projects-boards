@@ -30,7 +30,11 @@ public sealed partial class RegistrationTests
     private static void Scroll(Window w, double percent) { Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(-1, percent); Thread.Sleep(200); }
     private static JsonElement Durable(Fixture f)
     {
-        var file = Directory.GetFiles(Path.Combine(f.Data, "Drafts"), "*.json").Single();
+        var directory = Path.Combine(f.Data, "Drafts");
+        var file = FlaUI.Core.Tools.Retry.WhileNull(() => Directory.Exists(directory)
+            ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null,
+            TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
+        Assert.That(file, Is.Not.Null, "A committed checkpoint must exist.");
         // Observe the old or new atomic checkpoint without blocking its replacement.
         using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var document = JsonDocument.Parse(stream);
