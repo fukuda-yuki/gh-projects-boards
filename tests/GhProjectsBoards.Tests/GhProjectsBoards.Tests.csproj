@@ -12,6 +12,7 @@
     <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" PrivateAssets="all" />
     <PackageReference Include="NUnit" Version="4.6.1" PrivateAssets="all" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" PrivateAssets="all" />

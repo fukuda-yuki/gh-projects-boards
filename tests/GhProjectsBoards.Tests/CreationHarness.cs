@@ -24,9 +24,9 @@ internal sealed class CreationHarness
             title = value.Title, state = "OPEN", viewerCanUpdate = true,
             repository = new { id = "R-" + value.Repository, nameWithOwner = "sample-user/" + value.Repository, owner = new { id = "O1" } } };
     }
-    public static async Task<CreationHarness> Create()
+    public static async Task<CreationHarness> Create(int itemCount = 100)
     {
-        var h = new CreationHarness { Existing = await ApplyTests.Harness.Create() };
+        var h = new CreationHarness { Existing = await ApplyTests.Harness.Create(itemCount) };
         var prior = h.Existing.Boundary.Override!;
         h.Existing.Boundary.Override = (q, v) =>
         {

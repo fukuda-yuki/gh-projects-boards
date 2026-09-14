@@ -79,7 +79,7 @@ internal sealed class EditingGrid : Grid
         Command("値をクリア", "GridClear", ClearSelected);
         Command("操作を元に戻す", "GridUndo", () => session.Workspace.Undo(projectId));
         var save = new Button { Content = "ローカル保存を再試行" }; AutomationProperties.SetAutomationId(save, "GridSave");
-        save.Click += async (_, _) => { await session.FlushAsync(); Update(); }; recoveryCommands.Children.Add(save);
+        save.Click += async (_, _) => { var request = generation; await session.FlushAsync(); if (IsLoaded && request == generation) Update(); }; recoveryCommands.Children.Add(save);
         var compare = new Button { Content = "競合・未確認を比較" }; AutomationProperties.SetAutomationId(compare, "GridConflicts");
         compare.Click += async (_, _) => await CompareAsync(); recoveryCommands.Children.Add(compare);
         Children.Add(toolbar);
@@ -88,7 +88,6 @@ internal sealed class EditingGrid : Grid
         SetRow(info, 1); Children.Add(info);
         AutomationProperties.SetAutomationId(list, "ProjectItems"); SetRow(list, 2); Children.Add(list);
         BuildRows();
-        session.Changed += SessionChanged;
         Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; };
         Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; Update(); };
         Update(); _ = session.FlushAsync();
@@ -203,7 +202,13 @@ internal sealed class EditingGrid : Grid
         Select(r, c, false, false);
         if (controls[r][c] is TitleCell text && !text.Editing) text.SelectAll();
     }
-    private void SessionChanged() { if (DispatcherQueue.HasThreadAccess) Update(); else DispatcherQueue.TryEnqueue(Update); }
+    private void SessionChanged()
+    {
+        var request = generation;
+        if (DispatcherQueue.HasThreadAccess) { if (IsLoaded) Update(); }
+        else if (!DispatcherQueue.TryEnqueue(() => { if (IsLoaded && request == generation) Update(); }))
+            throw new InvalidOperationException("The editing UI dispatcher is unavailable.");
+    }
     private void Update()
     {
         if (!CanRefresh) return;

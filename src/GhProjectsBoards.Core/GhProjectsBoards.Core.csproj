@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="GhProjectsBoards.App" />
+    <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <InternalsVisibleTo Include="GhProjectsBoards.Tests" />
   </ItemGroup>
 </Project>
