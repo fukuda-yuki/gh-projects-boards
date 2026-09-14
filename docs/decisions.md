@@ -24,11 +24,17 @@ No grid library, MVVM framework or persistence technology is selected by the pla
 
 ## Testing
 
-Use NUnit for logic, integration and desktop tests, and FlaUI UIA3 for the ordinary WinUI executable. No separate driver server or second permanent UI driver is required by this design. Exact test dependency versions live in the project files.
+Adopt **logic-layer unit tests > UI-layer integration tests > E2E tests** as the testing priority. Put rule combinations and failure branches in the lowest reliable boundary, then verify presentation wiring with real UI integration. Keep E2E for representative whole-application workflows. This makes lower-layer behavior the primary proof rather than relying on a whole-app journey to diagnose every rule or state. It is not a numerical quota or a prohibition on E2E, physical IME, full regression or live validation.
 
-Core tests exercise real application collaborators. The fake gh executable controls the external process boundary and has no network fallback. E2E uses stable AutomationIds, user operations and condition-based waits rather than private application calls or an assumed grid peer shape.
+Classify by tested scope rather than automation technology or process layout. UI integration checks a bounded collaboration of real UI components, events/commands, presentation state and rendered results; E2E checks a representative workflow through the application's principal layers to an explicit endpoint. Neither UI Automation nor fake gh decides that classification. Record actual collaborators, substitutions and assertions; do not call a broad workflow UI integration merely because it ends at a fake service.
 
-Keep deterministic CI, interactive desktop E2E, physical-key IME automation, human IME acceptance, performance and live GitHub validation separate. Discovery and compilation do not establish runtime acceptance. See [test policy](../tests/README.md).
+Use NUnit for the existing logic, adapter integration and desktop suites, and FlaUI UIA3 for desktop automation. Exact versions live in the project files. A dedicated UI test host and a direct or external driver are execution choices, not test levels. Inspect existing cases and reuse adequate mechanisms before introducing a host or another project for a concrete coverage gap. This avoids unnecessary infrastructure without treating project names as evidence of coverage or its absence.
+
+Core tests exercise real application collaborators. A unit of behavior need not mean one class surrounded by mocks. The fake gh executable controls the external process boundary and has no network fallback; actual adapter/process and isolated-storage integration remain covered. UI integration keeps the asserted view/event/presentation/binding collaboration real, using controlled dependencies outside that scope. ViewModel-only assertions do not establish control wiring. Whole-application desktop journeys retain the ordinary executable and public UI Automation contract.
+
+Keep test scope, driver/runtime mechanics and environment/evidence requirements distinct. Physical IME, native focus, clipboard/picker, process lifetime and live GitHub may require real facilities but do not automatically make a test E2E. App-level E2E with fake gh is not real-GitHub acceptance, and focused live adapter verification is not necessarily application E2E. Preserve performance and human acceptance separately.
+
+Select execution for a stated risk or acceptance need; permission and historical suite inventories are not blanket execution requirements. Reclassification requires case-level scope evidence; moving coverage down requires observed replacement assertions before retiring redundant checks. Discovery and compilation do not establish runtime acceptance. The [test policy](../tests/README.md) owns selection, reporting and migration rules.
 
 ## Native table-input lifecycle
 
@@ -64,7 +70,7 @@ For the bounded #7/#8 editing slice, use separate versioned JSON draft records w
 | Few-row Japanese input contract | #24 |
 | Table editing, selection, paste and Undo | #7 |
 | Local persistence and recovery | #8 |
-| Cross-feature E2E and performance | #12 |
+| Cross-feature validation and performance under the layered test policy | #12 |
 | Distribution, component notices, signing, update/rollback and enterprise validation | #13 |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
