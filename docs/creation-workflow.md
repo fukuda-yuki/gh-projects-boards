@@ -11,11 +11,11 @@ Open a registered Project with a checked connection. Add local rows, commit titl
 
 An uncertain request stays on hold. An Issue ID from a partial response is retained as evidence and independently observed before dependent work. A missing verified identity never triggers an automatic create retry.
 
-In **作成の不確定結果を解決**, choose **保留を続ける**, or enter a same-host Issue URL and choose **URLのIssueを独立確認**. Review the actual title, URL, Repository ID and Issue ID, then explicitly bind it. Binding is a reconciliation decision, not proof the original request succeeded, and does not mutate GitHub. Wrong host/repository/type and identities already claimed by another lineage are rejected. Existing shared pending title work must be resolved before binding.
+In **作成の不確定結果を解決**, choose **保留を続ける**, or enter a same-host Issue URL and choose **URLを独立確認**. Review the actual title, URL, Repository ID and Issue ID, then explicitly bind it. Binding is a reconciliation decision, not proof the original request succeeded, and does not mutate GitHub. Wrong host/repository/type and identities already claimed by another lineage are rejected. Existing shared pending title work must be resolved before binding.
 
 Alternatively choose the separate new-attempt review. It displays the earlier attempt, frozen payload and resolved destination. Check the duplicate-risk acknowledgement before approving a new creation. Every earlier result remains in the checkpoint. A successful new attempt does not establish that the earlier attempt created nothing.
 
-For known Issues, use the relevant batch's **照合・再開**. Membership is checked using the exact Issue and Project; incomplete reads never prove absence. **既知Issueの設定を再比較** explicitly reviews current local select choices against current server values when stale values or changed options require a new authorization. Removed fields are explicitly listed for withdrawal, with their earlier intent retained in history.
+For known Issues, use the relevant batch's **この実行を照合・再開**. Membership is checked using the exact Issue and Project; incomplete reads never prove absence. **既知Issueの設定を再比較** explicitly reviews current local select choices against current server values when stale values or changed options require a new authorization. Removed fields are explicitly listed for withdrawal, with their earlier intent retained in history.
 
 ## Retained local editing
 

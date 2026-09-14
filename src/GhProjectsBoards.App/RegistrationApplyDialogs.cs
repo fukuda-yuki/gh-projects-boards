@@ -11,7 +11,7 @@ public sealed partial class RegistrationPanel
     private async void ReviewApply(object sender, RoutedEventArgs e)
     {
         if (applyDialog || Workspace.Selected is not { } selected) return;
-        applyDialog = true;
+        applyDialog = true; ApplyHistory.IsEnabled = false;
         try
         {
             var list = new ListView { SelectionMode = ListViewSelectionMode.Multiple, Height = 280 };
@@ -48,7 +48,7 @@ public sealed partial class RegistrationPanel
     private async void ShowApplyHistory(object sender, RoutedEventArgs e)
     {
         if (applyDialog || Workspace.Drafts is not { } session) return;
-        applyDialog = true;
+        applyDialog = true; ApplyHistory.IsEnabled = false;
         try
         {
             var batch = session.Workspace.Journal.LastOrDefault();
