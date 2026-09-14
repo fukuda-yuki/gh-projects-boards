@@ -38,7 +38,7 @@ foreach ($case in Get-ChildItem -LiteralPath $Baseline -Directory | Where-Object
         if ((Get-FileHash (Join-Path $case.FullName ($sample.BaseName + '-remote.json'))).Hash -ne (Get-FileHash (Join-Path $candidateCase ($sample.BaseName + '-remote.json'))).Hash) { throw 'Remote fixture mismatch' }
         foreach ($entry in @(@('baseline',$before), @('candidate',$after))) {
             $data = $entry[1]
-            function Count-Kind($kind) { if (!$plan.instrument) { return $null }; ($data.spans | Where-Object Kind -eq $kind | Measure-Object Count -Sum).Sum }
+            function Count-Kind($kind) { if (!$plan.instrument) { return $null }; [double]($data.spans | Where-Object Kind -eq $kind | Measure-Object Count -Sum).Sum }
             function Time-Kind($kind) { if (!$plan.instrument) { return $null }; (($data.spans | Where-Object Kind -eq $kind | ForEach-Object { $_.End - $_.Start } | Measure-Object -Sum).Sum) * 1000.0 / $plan.frequency }
             $rows += [pscustomobject]@{ case = $case.Name; source = $entry[0]; sample = $data.sample; items = $plan.count; changes = $plan.changes; field = $plan.field; mixed = $plan.mixed; instrument = $plan.instrument;
                 prepareMs = $data.prepareMs; executeMs = $data.executeMs; endToEndMs = $data.endToEndMs;

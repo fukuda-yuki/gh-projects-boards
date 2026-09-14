@@ -24,7 +24,7 @@ The fixed matrix covers no-change, ten titles, all 100 titles; ten titles and te
 
 ## Timing and counters
 
-Fixture creation, remote seed changes, initial connection/registration, history preparation and user review are outside timing. `prepare` measures flush, complete retrieval/reconciliation and review generation. `execute` measures confirmation through durable acknowledgement/settlement. Their sum is product execution end-to-end, excluding review. Ordinary-app local editing is recorded separately from both. Checkpoint setup and calibration are outside the measured phases.
+Fixture creation, remote seed changes, initial connection/registration, history preparation and user review are outside timing. `prepare` measures flush, complete retrieval/reconciliation and review generation. `execute` measures confirmation through durable acknowledgement/settlement. Their sum is product execution end-to-end, excluding review. Ordinary-app local editing is recorded separately from both. Desktop measurements include UI Automation polling and the edit helper's fixed 100 ms key-settling delay; they are not pure rendering or input latency. Checkpoint setup and calibration are outside the measured phases.
 
 All trace spans use monotonic Stopwatch ticks and record frequency. Span kinds and counters contain no request, title, token, raw response or content-bearing payload. The trace is an explicit in-memory diagnostic scope, not a file observer or recovery authority; it neither opens checkpoint files nor delays replacement. Disabled tracing bypasses byte counting. Checkpoint byte counts are the bytes actually serialized to temporary files; commits count only completed atomic replacement. No saves or attempt records are removed.
 
