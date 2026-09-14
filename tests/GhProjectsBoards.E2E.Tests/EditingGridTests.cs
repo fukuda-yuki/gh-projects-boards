@@ -36,7 +36,7 @@ public sealed partial class RegistrationTests
             TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
         Assert.That(file, Is.Not.Null, "A committed checkpoint must exist.");
         // Observe the old or new atomic checkpoint without blocking its replacement.
-        using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var stream = new FileStream(file!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var document = JsonDocument.Parse(stream);
         return document.RootElement.Clone();
     }
