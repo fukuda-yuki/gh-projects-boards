@@ -202,9 +202,9 @@ public sealed partial class RegistrationTests
             Assert.That(Element(w, "GridCell1_0").Properties.HasKeyboardFocus.Value, Is.True);
             if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
             {
-                cell.Click();
+                Scroll(w, 0); cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.Value);
                 if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
-                Keyboard.TypeVirtualKeyCode(0x1C); Key(VirtualKeyShort.SPACE);
+                Keyboard.TypeVirtualKeyCode(0x1C); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Key(VirtualKeyShort.SPACE);
                 var alternative = cell.Text; Assert.That(alternative, Is.Not.Empty.And.Not.EqualTo("日本語"));
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Text, Is.EqualTo(alternative));
