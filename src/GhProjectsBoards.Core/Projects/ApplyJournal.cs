@@ -8,7 +8,7 @@ internal sealed record ApplyOperation(string Id, FieldKey Key, string ItemId, st
     string FieldName, string? Expected, LocalValue Intended, long Stamp, ApplyState State,
     ImmutableArray<ApplyAttempt> Attempts, string Reason, FieldObservation? Verification = null, DateTimeOffset? NotBefore = null);
 internal sealed record ApplyBatch(string Id, ScopedId Project, string ProjectName, long ReviewedRevision,
-    DateTimeOffset ReviewedAt, ImmutableArray<ApplyOperation> Operations);
+    DateTimeOffset ReviewedAt, ImmutableArray<ApplyOperation> Operations, CreationOperation[]? Creations = null);
 internal sealed record ApplyReview(ApplyBatch Batch, string[] Blocked, int SelectedRows, int PendingBuffers);
 
 internal static class ApplyJournal
@@ -17,6 +17,7 @@ internal static class ApplyJournal
     {
         if (record.Version < 3 && record.Journal is { Length: > 0 }) throw new InvalidDataException("Unversioned execution history.");
         var batches = record.Journal ?? [];
+        CreationJournal.Validate(record);
         if (batches.Any(b => b is null || string.IsNullOrWhiteSpace(b.Id) || b.Project is null || b.Project.Scope != record.Scope
             || b.ReviewedRevision < 0 || b.ReviewedRevision > record.Revision || b.ReviewedAt == default || b.Operations.IsDefault)
             || batches.Select(b => b.Id).Distinct().Count() != batches.Length) throw new InvalidDataException("Invalid Apply batch.");
@@ -53,24 +54,27 @@ internal sealed partial class EditingWorkspace
 {
     private readonly List<ApplyBatch> journal = [];
     public IReadOnlyList<ApplyBatch> Journal => journal;
-    public bool HasUnresolvedApply => journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded)));
+    public bool HasUnresolvedApply => journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded)))
+        || Creations.Any(c => !c.Completed && (c.Authorized || c.Dispatched) || c.EarlierUncertain);
     public IEnumerable<ProjectRegistration> CheckpointRegistrations => (registrations ?? []).Select(RegistrationStore.FromRecord);
     public void SupersedeApply(string batchId)
     {
         var index = journal.FindIndex(b => b.Id == batchId);
         if (index < 0) throw new InvalidOperationException("Unknown batch.");
-        journal[index] = journal[index] with { Operations = journal[index].Operations.Select(o => o.State == ApplyState.Succeeded ? o :
+        journal[index] = journal[index] with { Creations = (journal[index].Creations ?? []).Select(c => c with { Authorized = false }).ToArray(), Operations = journal[index].Operations.Select(o => o.State == ApplyState.Succeeded ? o :
             o with { State = ApplyState.Superseded, Reason = "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。" }).ToImmutableArray() };
         Revision++;
     }
 
-    public ApplyReview ReviewApply(ProjectRegistration project, IReadOnlySet<string> selectedItems)
+    public ApplyReview ReviewApply(ProjectRegistration project, IReadOnlySet<string> selectedItems, IReadOnlyDictionary<string, CreationRepository>? destinations = null)
     {
         if (project.Snapshot.Id.Scope != Scope || !HasCheckpoint) throw new InvalidOperationException("保存済み同一プロフィールが必要です。");
         var p = project.Snapshot;
         var blocked = new List<string>(); var operations = new List<ApplyOperation>();
         var rows = new EditingWorkspace(Scope).Open(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
-        if (rows.Length != selectedItems.Count) blocked.Add("選択した項目を現在のProjectで確認できません。");
+        var locals = localRows.Where(r => r.ProjectId == p.Id.NodeId && selectedItems.Contains(r.Id)).ToArray();
+        if (rows.Length + locals.Length != selectedItems.Count) blocked.Add("選択した項目を現在のProjectで確認できません。");
+        var creations = ReviewCreations(project, locals, destinations, blocked);
         foreach (var row in rows)
         foreach (var cell in row.Cells.Where(c => c.Key is not null))
         {
@@ -85,14 +89,19 @@ internal sealed partial class EditingWorkspace
                 $"{issue.Repository.NameWithOwner} #{issue.Number} / {issue.Id.NodeId}", f.Key.Kind == "Title" ? "Issue title（全Projectで共有）" : cell.Display,
                 f.Baseline, f.Change, f.Stamp, ApplyState.Pending, [], "未送信"));
         }
-        return new(new(Guid.NewGuid().ToString("N"), p.Id, p.Title, Revision, DateTimeOffset.UtcNow, operations.ToImmutableArray()),
-            blocked.ToArray(), rows.Length, fields.Values.Count(f => f.Buffer is not null && Belongs(f.Key, p)));
+        return new(new(Guid.NewGuid().ToString("N"), p.Id, p.Title, Revision, DateTimeOffset.UtcNow, operations.ToImmutableArray(), creations),
+            blocked.ToArray(), rows.Length + locals.Length, fields.Values.Count(f => f.Buffer is not null && rows.Any(r => r.Cells.Any(c => c.Key == f.Key)))
+                + locals.Count(r => r.TitleBuffer is not null) + locals.Count(r => r.RepositoryBuffer is not null));
     }
     public void ConfirmApply(ApplyReview review)
     {
         if (review.Batch.Project.Scope != Scope || review.Batch.ReviewedRevision != Revision || review.Blocked.Length != 0)
             throw new InvalidOperationException("比較後に変更がありました。再レビューしてください。");
-        if (HasUnresolvedApply) throw new InvalidOperationException("未解決の実行履歴を先に確認してください。");
+        if (journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))))
+            throw new InvalidOperationException("未解決の既存更新履歴を先に確認してください。");
+        foreach (var c in review.Batch.Creations ?? [])
+            if (CreationLocked(c.LocalId) || !localRows.Any(r => r.Id == c.LocalId && r.Stamp == c.Stamp && r.Repository == c.Repository.Name))
+                throw new InvalidOperationException("作成履歴・宛先が変わっています。");
         journal.Add(review.Batch); Revision++;
     }
     public void RecordApply(string batchId, ApplyOperation operation, bool acknowledge = false)

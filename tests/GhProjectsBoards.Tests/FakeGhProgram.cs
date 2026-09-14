@@ -11,6 +11,8 @@ internal static class FakeGhProgram
     {
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
+        if (Environment.GetEnvironmentVariable("GHPB_CREATION_PROXY") is { } proxyRoot)
+            return await LiveCreationProxy.Run(args, proxyRoot);
         if (args.FirstOrDefault() == "--seed-editing" && args.Length == 2)
         {
             var root = args[1];
@@ -80,6 +82,18 @@ internal static class FakeGhProgram
             Console.Write(JsonSerializer.Serialize(new[] { new { host, login = "fixture-user", active = true, state, tokenSource = source, scopes = "repo,project,read:org" } }));
             return 0;
         }
+        if (query is not null && input is not null && settings.TryGetProperty("creation", out var creation) && creation.GetBoolean())
+        {
+            using var creationPayload = JsonDocument.Parse(input);
+            var handled = FakeCreation.Handle(query, creationPayload.RootElement.GetProperty("variables"), directory, host);
+            if (handled.Handled)
+            {
+                if (query.Contains("CreateWorkspaceIssue") && settings.TryGetProperty("creationResponseDelayMs", out var creationDelay)) await Task.Delay(creationDelay.GetInt32());
+                if (query.Contains("CreateWorkspaceIssue") && settings.TryGetProperty("loseCreationResponse", out var lost) && lost.GetBoolean())
+                { await Task.Delay(TimeSpan.FromSeconds(60)); return 1; }
+                WriteHttp(handled.Response!); return 0;
+            }
+        }
         if (mutation && query is not null && input is not null && settings.TryGetProperty("apply", out var allowApply) && allowApply.GetBoolean())
         {
             using var payload = JsonDocument.Parse(input);
@@ -141,7 +155,7 @@ internal static class FakeGhProgram
                             }
                         }
                     }
-                    response = node;
+                    response = settings.TryGetProperty("creation", out var enabledCreation) && enabledCreation.GetBoolean() ? FakeCreation.Augment(node, directory, host) : node;
                 }
                 WriteHttp(response); return 0;
             }

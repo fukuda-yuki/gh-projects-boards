@@ -91,7 +91,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     private static void ValidateLocalRows(DraftRecord r)
     {
-        if (r.Version == 4 && r.LocalRows is null) throw new InvalidDataException("Missing local row payload.");
+        if (r.Version >= 4 && r.LocalRows is null) throw new InvalidDataException("Missing local row payload.");
         if (r.Version < 4 && (r.LocalRows is { Length: > 0 } || r.History.Any(t => t?.Rows is { Length: > 0 })))
             throw new InvalidDataException("Unversioned local rows.");
         bool Valid(LocalRow? row) => row is not null && row.Id.StartsWith("local-", StringComparison.Ordinal)
@@ -125,7 +125,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);

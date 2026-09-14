@@ -62,7 +62,7 @@ public sealed partial class RegistrationTests
         });
         var calls = f.Calls().Length;
         f.Run(w => { OpenSaved(w, profile: true); Scroll(w, 100); Assert.That(CellText(w, 101), Is.EqualTo("Pending local"));
-            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("新規行 2").And.Contain("Apply対象外")); });
+            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("ローカル行 2").And.Contain("明示的Apply")); });
         Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
         Assert.That(f.Calls().Length, Is.EqualTo(calls)); Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }
@@ -86,7 +86,7 @@ public sealed partial class RegistrationTests
         Assert.That(f.Calls().Length, Is.EqualTo(calls)); Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }
     [Test]
-    public void LocalRowsSurviveOrdinaryExistingApplyAndExplicitExclusion()
+    public void LocalRowsSurviveOrdinaryExistingApplyAndExplicitSelection()
     {
         using var f = new Fixture();
         File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true }));
@@ -98,11 +98,11 @@ public sealed partial class RegistrationTests
             Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "Pending new");
             saved = Durable(f).GetProperty("LocalRows").GetRawText(); Invoke(w, "ReviewApplyButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyTargetRows")) is not null);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("作成未対応")), Is.True);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("既存Issue 101 件")), Is.True);
+            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("未選択の未完成行")), Is.True);
+            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("選択候補 102 件")), Is.True);
             var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select(); Invoke(w, "PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("作成未対応")), Is.True); Invoke(w, "PrimaryButton");
+            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("未選択の未完成行")), Is.True); Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
             Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")); Assert.That(writes, Has.Length.EqualTo(1));

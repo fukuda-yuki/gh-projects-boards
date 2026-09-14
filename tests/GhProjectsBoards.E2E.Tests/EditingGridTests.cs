@@ -27,7 +27,16 @@ public sealed partial class RegistrationTests
     private static string CellText(Window w, int row, int col = 0) => Element(w, $"GridCell{row}_{col}").AsTextBox().Text;
     private static void Edit(Window w, int row, string text)
     { var c = Element(w, $"GridCell{row}_0").AsTextBox(); c.Click(); c.Text = text; Key(VirtualKeyShort.RETURN); }
-    private static void Scroll(Window w, double percent) { Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(-1, percent); Thread.Sleep(200); }
+    private static void Scroll(Window w, double percent)
+    {
+        // Selection/flyout focus can finish after UIA returns. Wait for the requested public scroll position.
+        Wait(() =>
+        {
+            var scroll = Element(w, "ProjectItems").Patterns.Scroll.Pattern;
+            scroll.SetScrollPercent(-1, percent); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
+            return Math.Abs(scroll.VerticalScrollPercent.Value - percent) < 1;
+        });
+    }
     private static JsonElement Durable(Fixture f)
     {
         var directory = Path.Combine(f.Data, "Drafts");

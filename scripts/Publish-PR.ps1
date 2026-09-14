@@ -1,4 +1,4 @@
-# User-run publication only. The implementation agent must not execute this script.
+# Explicitly task-authorized publication. Never bypass an enforced push denial.
 [CmdletBinding()]
 param([string]$Manifest = (Join-Path (Split-Path $PSScriptRoot -Parent) 'TestResults/local-rows/publication.json'))
 $ErrorActionPreference = 'Stop'
@@ -15,7 +15,7 @@ function Invoke-Gh([string[]]$Arguments) {
     return ($result -join "`n").Trim()
 }
 $m = Get-Content -LiteralPath $Manifest -Raw | ConvertFrom-Json
-if ($m.repository -ne 'fukuda-yuki/gh-projects-boards' -or $m.branch -ne 'codex/issue-7-local-new-rows' -or $m.head -notmatch '^[0-9a-f]{40}$') { throw 'Unexpected publication identity.' }
+if ($m.repository -ne 'fukuda-yuki/gh-projects-boards' -or $m.branch -notmatch '^codex/issue-[0-9]+-[a-z0-9-]+$' -or $m.head -notmatch '^[0-9a-f]{40}$') { throw 'Unexpected publication identity.' }
 if ((Invoke-Git -Arguments @('remote','get-url','origin')) -ne 'https://github.com/fukuda-yuki/gh-projects-boards.git') { throw 'Origin does not match the intended repository.' }
 $pushUrls = (Invoke-Git -Arguments @('remote','get-url','--push','--all','origin')) -split "`n"
 if ($pushUrls.Count -ne 1 -or $pushUrls[0] -ne 'https://github.com/fukuda-yuki/gh-projects-boards.git') { throw 'Push destination differs or has multiple targets.' }

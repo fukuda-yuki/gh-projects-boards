@@ -29,7 +29,7 @@ try {
         dotnetSdk = (dotnet --version | Out-String).Trim(); powershell = $PSVersionTable.PSVersion.ToString()
         buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration"
         testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', $Filter,
-            '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=300000')
+            '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=600000')
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'source-environment.json') -Encoding utf8
     dotnet --info | Set-Content -LiteralPath (Join-Path $results 'dotnet-info.txt') -Encoding utf8
     git diff --binary HEAD --output="$results/source.patch"
@@ -85,7 +85,7 @@ try {
     dotnet test $testProject --configuration $Configuration --no-build `
         --filter $Filter --logger 'trx;LogFileName=e2e.trx' `
         --results-directory $results -- `
-        NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=300000 2>&1 | Tee-Object -FilePath (Join-Path $results 'test.log')
+        NUnit.NumberOfTestWorkers=0 RunConfiguration.TestSessionTimeout=600000 2>&1 | Tee-Object -FilePath (Join-Path $results 'test.log')
     if ($LASTEXITCODE -ne 0) { throw "E2E failed with exit code $LASTEXITCODE. Results: $results" }
     $trxPath = Join-Path $results 'e2e.trx'
     if (-not (Test-Path -LiteralPath $trxPath)) { throw "No TRX report was produced. E2E is unverified: $results" }

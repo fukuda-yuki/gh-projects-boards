@@ -3,7 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace GhProjectsBoards.Core.Projects;
 
-internal sealed record LocalSelect(string FieldId, string FieldName, string? OptionId, string? OptionName);
+internal sealed record LocalSelect(string FieldId, string FieldName, string? OptionId, string? OptionName, bool ExplicitClear = false)
+{
+    public string Intent => OptionId is not null ? "Set" : ExplicitClear ? "ExplicitClear" : "Unspecified";
+}
 internal sealed record LocalRow(string Id, string ProjectId, string Title, string Repository,
     string? TitleBuffer, string? RepositoryBuffer, ImmutableArray<LocalSelect> Selects, long Stamp, long CreatedRevision, int Ordinal);
 internal sealed record LocalRowChange(string Id, LocalRow? Before, LocalRow? After, int Position);
@@ -58,7 +61,8 @@ internal sealed partial class EditingWorkspace
             foreach (var f in columns)
                 cells.Add(Cell("LocalSelect", f.Name, row.Selects.SingleOrDefault(s => s.FieldId == f.Id.NodeId)?.OptionId,
                     f.Availability == ValueAvailability.Present ? null : "フィールド未確認（保存したIDと表示を保持）", f.Options.ToArray(), f.Id.NodeId));
-            cells.Add(Cell("LocalRepository", "新規行の宛先 owner/repository", row.Repository));
+            cells.Add(Cell("LocalRepository", "新規行の宛先 owner/repository", row.Repository,
+                CreationLocked(row.Id) ? "作成承認・履歴に固定された宛先です" : null));
             yield return new(row.Id, cells.ToArray(), true);
         }
     }
@@ -157,6 +161,7 @@ internal sealed partial class EditingWorkspace
     }
     public void RemoveRows(string projectId, IReadOnlyList<EditRow> selected)
     {
+        if (selected.Any(r => CreationLocked(r.ItemId))) throw new InvalidOperationException("作成承認・結果のある行は削除できません。実行履歴で解決してください。");
         if (selected.Count == 0 || selected.Any(r => !r.IsLocal || r.Cells.Any(c => c.Scope != Scope)
             || !localRows.Any(l => l.Id == r.ItemId && l.ProjectId == projectId)))
             throw new InvalidOperationException("削除は選択した新規ローカル行だけに適用できます。既存行との混在選択は解除してください。");
@@ -170,6 +175,7 @@ internal sealed partial class EditingWorkspace
     {
         var old = Local(cell);
         if (old.ProjectId != projectId) throw new InvalidOperationException("別Projectの新規行です。");
+        if (cell.Key?.Kind == "LocalRepository" && CreationLocked(old.Id)) throw new InvalidOperationException("作成の宛先は固定されています。");
         var prior = changes.GetValueOrDefault(old.Id); var next = prior?.After ?? old;
         if (cell.Key!.Kind == "LocalTitle") next = next with { Title = clear ? "" : text, TitleBuffer = null };
         else if (cell.Key.Kind == "LocalRepository") next = next with { Repository = clear ? "" : text, RepositoryBuffer = null };
@@ -178,7 +184,7 @@ internal sealed partial class EditingWorkspace
             var options = cell.Options.Where(o => optionId ? o.Id == text : o.Name == text).ToArray();
             if (!clear && options.Length != 1) throw new InvalidOperationException("選択肢が不明・曖昧です。");
             var values = next.Selects.Where(s => s.FieldId != cell.Key.FieldId).ToList();
-            values.Add(new(cell.Key.FieldId!, cell.Display, clear ? null : options[0].Id, clear ? null : options[0].Name));
+            values.Add(new(cell.Key.FieldId!, cell.Display, clear ? null : options[0].Id, clear ? null : options[0].Name, clear));
             next = next with { Selects = values.ToImmutableArray() };
         }
         changes[old.Id] = new(old.Id, prior?.Before ?? old, next with { Stamp = Revision + 1 }, localRows.FindIndex(r => r.Id == old.Id));
@@ -190,9 +196,23 @@ internal sealed partial class EditingWorkspace
     {
         foreach (var c in transaction.Rows ?? [])
         {
+            if (CreationLocked(c.Id)) throw new InvalidOperationException("作成履歴に関連する行のUndoは実行できません。履歴と入力を保持しています。");
             var current = localRows.SingleOrDefault(r => r.Id == c.Id);
             if (c.After is null ? current is not null : current is null || !SameLocal(current, c.After))
                 throw new InvalidOperationException("後続の新規行編集・未確定文字があるため、この操作は元に戻せません。");
+        }
+    }
+    private void SplitLockedCreationUndo(string projectId)
+    {
+        foreach (var t in history.Where(t => t.ProjectId == projectId && t.InvalidReason is null && (t.Rows ?? []).Any(r => CreationLocked(r.Id))).ToArray())
+        {
+            var locked = t.Rows!.Where(r => CreationLocked(r.Id)).ToArray();
+            var remaining = t.Rows!.Where(r => !CreationLocked(r.Id)).ToArray();
+            var index = history.IndexOf(t);
+            if (remaining.Length == 0 && t.Changes.Length == 0) continue;
+            history[index] = t with { Changes = [], Rows = locked, InvalidReason = "作成履歴のある行を保持しました。無関係なUndo部分は有効です。" };
+            history.Insert(index + 1, new(t.Id + "-unlocked", t.ProjectId, t.Changes, Rows: remaining));
+            Revision++;
         }
     }
     private void UndoLocal(EditTransaction transaction)

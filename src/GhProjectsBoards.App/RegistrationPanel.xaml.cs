@@ -11,6 +11,7 @@ public sealed partial class RegistrationPanel : UserControl
     private ProjectChoice? choice;
     private ProjectRegistration? rendered;
     private bool updating;
+    private DispatcherTimer? deferredRendering;
     private int revision = -1;
     private ConnectionScope? displayedProfile;
     internal RegistrationWorkspace Workspace => workspace!;
@@ -48,7 +49,7 @@ public sealed partial class RegistrationPanel : UserControl
             DiscoveryForm.IsEnabled = !workspace.IsBusy;
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
             Apply.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
-            ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy;
+            ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
             Remove.IsEnabled = workspace.Selected is not null;
             SaveSetting.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
             DefaultRepository.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
@@ -74,6 +75,16 @@ public sealed partial class RegistrationPanel : UserControl
             {
                 if (!ReferenceEquals(rendered, selected))
                 {
+                    if (EditorHost.Children.OfType<EditingGrid>().Any(g => !g.CanRefresh))
+                    {
+                        if (deferredRendering is null)
+                        {
+                            deferredRendering = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+                            deferredRendering.Tick += (_, _) => { if (EditorHost.Children.OfType<EditingGrid>().All(g => g.CanRefresh)) { deferredRendering.Stop(); deferredRendering = null; Update(); } };
+                            deferredRendering.Start();
+                        }
+                        return;
+                    }
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();

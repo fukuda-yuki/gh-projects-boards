@@ -76,6 +76,7 @@ internal sealed partial class EditingWorkspace
             }
             fields[old.Key] = next;
         }
+        PromoteCreatedRows(current);
         Open(current); structuralChanges = changes.ToArray(); Revision++;
     }
 

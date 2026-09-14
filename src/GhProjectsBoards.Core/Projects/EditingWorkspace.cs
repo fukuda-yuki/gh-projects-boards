@@ -27,7 +27,7 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(4, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray());
+    public DraftRecord Snapshot() => new(5, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray());
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -49,7 +49,8 @@ internal sealed partial class EditingWorkspace
         if (p.Id.Scope != Scope) throw new InvalidOperationException("Scope mismatch");
         var columns = LocalColumns(registration);
         string? Permission(CapabilityObservation? c) => c?.CanUpdate switch { true when c.ObservedAt != default => null, false => "更新権限なし（取得時の観測）", _ => "更新権限未確認" };
-        return p.Items.Select(item =>
+        return p.Items.Where(item => !Creations.Any(c => c.Verified is not null && c.Verified.Id == item.ContentId?.NodeId
+            && localRows.Any(r => r.Id == c.LocalId && r.ProjectId == p.Id.NodeId))).Select(item =>
         {
             var cells = new List<EditCell>();
             var issue = item.Kind == ProjectItemKind.Issue && item.ContentId is { } id ? p.Issues.GetValueOrDefault(id) : null;
@@ -169,6 +170,7 @@ internal sealed partial class EditingWorkspace
     }
     public void Undo(string projectId)
     {
+        SplitLockedCreationUndo(projectId);
         var transaction = history.LastOrDefault(t => t.ProjectId == projectId && t.InvalidReason is null);
         if (transaction is null) return;
         GuardLocalUndo(transaction);
@@ -184,6 +186,7 @@ internal sealed partial class EditingWorkspace
         || localRows.Any(r => r.ProjectId == p.Id.NodeId);
     public void Discard(ProjectReadModel project, IEnumerable<ProjectReadModel> surviving)
     {
+        if (localRows.Any(r => r.ProjectId == project.Id.NodeId && CreationLocked(r.Id))) throw new InvalidOperationException("作成履歴のある行は破棄できません。");
         var remaining = surviving.Where(p => p.Id.Scope == Scope).ToArray();
         localRows.RemoveAll(r => r.ProjectId == project.Id.NodeId);
         history.RemoveAll(t => t.ProjectId == project.Id.NodeId && t.Rows is { Length: > 0 } && t.Changes.Length == 0);

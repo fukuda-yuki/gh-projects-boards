@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.Projects;
 
 // Ownership spans observation, dispatch and durable acknowledgement, not just file replacement.
-internal sealed class ApplyExecutor(DraftStore store, DraftSession session, ApplyRemote remote)
+internal sealed partial class ApplyExecutor(DraftStore store, DraftSession session, ApplyRemote remote, Func<bool>? canPromote = null)
 {
     public event Action<string>? Progress;
     public async Task ExecuteAsync(string batchId, CancellationToken token)
@@ -16,6 +16,11 @@ internal sealed class ApplyExecutor(DraftStore store, DraftSession session, Appl
         var lastDispatch = DateTimeOffset.MinValue;
         try
         {
+        foreach (var creation in batch.Creations ?? [])
+        {
+            if (token.IsCancellationRequested) break;
+            await ExecuteCreationAsync(batch, creation, token);
+        }
         foreach (var original in batch.Operations)
         {
             var o = original;
