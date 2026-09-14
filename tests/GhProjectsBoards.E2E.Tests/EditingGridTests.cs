@@ -30,8 +30,15 @@ public sealed partial class RegistrationTests
     private static void Scroll(Window w, double percent) { Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(-1, percent); Thread.Sleep(200); }
     private static JsonElement Durable(Fixture f)
     {
-        var file = Directory.GetFiles(Path.Combine(f.Data, "Drafts"), "*.json").Single();
-        return JsonDocument.Parse(File.ReadAllText(file)).RootElement.Clone();
+        var directory = Path.Combine(f.Data, "Drafts");
+        var file = FlaUI.Core.Tools.Retry.WhileNull(() => Directory.Exists(directory)
+            ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null,
+            TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
+        Assert.That(file, Is.Not.Null, "A committed checkpoint must exist.");
+        // Observe the old or new atomic checkpoint without blocking its replacement.
+        using var stream = new FileStream(file!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.Clone();
     }
     [Test]
     public void GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo()
@@ -199,9 +206,9 @@ public sealed partial class RegistrationTests
             Assert.That(Element(w, "GridCell1_0").Properties.HasKeyboardFocus.Value, Is.True);
             if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
             {
-                cell.Click();
+                Scroll(w, 0); cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.Value);
                 if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
-                Keyboard.TypeVirtualKeyCode(0x1C); Key(VirtualKeyShort.SPACE);
+                Keyboard.TypeVirtualKeyCode(0x1C); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Key(VirtualKeyShort.SPACE);
                 var alternative = cell.Text; Assert.That(alternative, Is.Not.Empty.And.Not.EqualTo("日本語"));
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
                 Key(VirtualKeyShort.RETURN); Assert.That(cell.Text, Is.EqualTo(alternative));

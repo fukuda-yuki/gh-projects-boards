@@ -89,12 +89,47 @@ internal sealed class DraftStore(string registrationRoot)
         var record = await JsonSerializer.DeserializeAsync<DraftRecord>(stream, Json) ?? throw new InvalidDataException("Missing draft record.");
         Validate(record); return record;
     }
+    private static void ValidateLocalRows(DraftRecord r)
+    {
+        if (r.Version == 4 && r.LocalRows is null) throw new InvalidDataException("Missing local row payload.");
+        if (r.Version < 4 && (r.LocalRows is { Length: > 0 } || r.History.Any(t => t?.Rows is { Length: > 0 })))
+            throw new InvalidDataException("Unversioned local rows.");
+        bool Valid(LocalRow? row) => row is not null && row.Id.StartsWith("local-", StringComparison.Ordinal)
+            && Guid.TryParseExact(row.Id[6..], "N", out _) && !string.IsNullOrWhiteSpace(row.ProjectId)
+            && row.Title is not null && row.Repository is not null && row.Stamp >= 0 && row.Stamp <= r.Revision
+            && row.CreatedRevision > 0 && row.CreatedRevision <= row.Stamp && row.Ordinal >= 0
+            && !row.Selects.IsDefault && row.Selects.All(s => s is not null && !string.IsNullOrWhiteSpace(s.FieldId)
+                && s.FieldName is not null && (s.OptionId is null ? s.OptionName is null : !string.IsNullOrWhiteSpace(s.OptionId) && s.OptionName is not null))
+            && row.Selects.Select(s => s.FieldId).Distinct().Count() == row.Selects.Length;
+        var rows = r.LocalRows ?? [];
+        if (rows.Any(row => !Valid(row)) || rows.Select(row => row.Id).Distinct().Count() != rows.Length)
+            throw new InvalidDataException("Invalid local rows.");
+        foreach (var t in r.History.Where(t => t is not null))
+        {
+            var changes = t.Rows ?? [];
+            if (changes.Select(c => c?.Id).Distinct().Count() != changes.Length || changes.Any(c => c is null
+                || c.Position < 0 || c.Before is null && c.After is null
+                || c.Before is not null && (!Valid(c.Before) || c.Before.Id != c.Id || c.Before.ProjectId != t.ProjectId)
+                || c.After is not null && (!Valid(c.After) || c.After.Id != c.Id || c.After.ProjectId != t.ProjectId)
+                || c.Before is not null && c.After is not null && (c.Before.Stamp >= c.After.Stamp
+                    || c.Before.CreatedRevision != c.After.CreatedRevision || c.Before.Ordinal != c.After.Ordinal))
+                || t.Resolution && changes.Length > 0)
+                throw new InvalidDataException("Invalid local row transaction.");
+        }
+        var all = rows.Concat(r.History.Where(t => t is not null).SelectMany(t => t.Rows ?? [])
+            .SelectMany(c => new[] { c.Before, c.After }).OfType<LocalRow>()).ToArray();
+        if (!rows.SequenceEqual(rows.OrderBy(row => row.CreatedRevision).ThenBy(row => row.Ordinal))
+            || all.GroupBy(row => row.Id).Any(g => g.Select(row => (row.CreatedRevision, row.Ordinal, row.ProjectId)).Distinct().Count() != 1)
+            || all.GroupBy(row => (row.CreatedRevision, row.Ordinal)).Any(g => g.Select(row => row.Id).Distinct().Count() != 1))
+            throw new InvalidDataException("Inconsistent local row placement.");
+    }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
+        ValidateLocalRows(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
             && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind == "Select" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
         bool Field(DraftField? f) => f is not null && Key(f.Key) && f.SourceProject is not null && f.SourceProject.Scope == r.Scope
@@ -104,7 +139,7 @@ internal sealed class DraftStore(string registrationRoot)
             && (f.Key.Kind != "Title" || f.Change?.Value is not { } title || title.IndexOfAny(['\r','\n','\t']) < 0)
             && (f.Change is null || f.Change.Value != f.Baseline && (f.Change.Clear ? f.Key.Kind == "Select" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
         if (r.Fields.Any(f => !Field(f)) || r.Fields.Select(f => f.Key).Distinct().Count() != r.Fields.Length
-            || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0
+            || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0 && t.Rows is not { Length: > 0 }
                 || t.Changes.Any(c => c is null || c.Before is null || c.After is null)
                 || t.Changes.Select(c => c?.Key).Distinct().Count() != t.Changes.Length
                 || t.Changes.Any(c => c is null || !Key(c.Key) || !Field(c.Before) || !Field(c.After) || c.Key != c.Before.Key || c.Key != c.After.Key

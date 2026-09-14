@@ -9,6 +9,51 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class RefreshWorkflowTests
 {
+    [TestCase("complete"), TestCase("partial"), TestCase("failed"), TestCase("cancel"), TestCase("concurrent"), TestCase("options")]
+    public async Task LocalRowsSurviveEveryRefreshOutcomeWithoutRemoteIdentity(string mode)
+    {
+        var boundary = new ProjectReaderTests.ProjectBoundary(); var refreshing = false; RegistrationWorkspace? workspace = null;
+        var addedDuringRead = false;
+        boundary.Override = (q, v) => {
+            if (refreshing && q.Contains("ProjectItems"))
+            {
+                if (mode == "failed" || mode == "partial" && v.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String)
+                    return ScriptedRunner.Http("{}", 503);
+                if (mode == "cancel") workspace!.Cancel();
+                if (mode == "concurrent" && !addedDuringRead)
+                {
+                    addedDuringRead = true; var local = workspace!.Drafts!.Workspace;
+                    var id = local.AddRow(workspace.Selected!); local.SetBuffer(local.Open(workspace.Selected!).Single(r => r.ItemId == id).Cells[0], "During retrieval");
+                }
+            }
+            var response = RegistrationResponses.Query(q, v); if (response is null) return null;
+            var data = JsonNode.Parse(JsonSerializer.Serialize(response))!;
+            if (refreshing && mode == "options" && q.Contains("ProjectFields"))
+            {
+                var options = data["data"]!["node"]!["fields"]!["nodes"]![0]!["options"]!.AsArray();
+                options.Remove(options.Single(o => o!["id"]!.ToString() == "done"));
+            }
+            return ScriptedRunner.Http(data.ToJsonString());
+        };
+        var service = new GhConnectionService("gh.exe", "github.com", boundary.Runner); var context = (await service.ConnectAsync()).Context!;
+        var store = new RegistrationStore(Path.Combine(Path.GetTempPath(), "ghpb-local-refresh-" + Guid.NewGuid()));
+        workspace = new(store); await workspace.BindAsync(context, service);
+        var choice = await new ProjectDiscovery(service).ResolveAsync(context, "https://github.com/users/sample-user/projects/1", default);
+        await workspace.RegisterAsync(choice, null); Assert.That(await workspace.PrepareLocalRowsAsync(), Is.True);
+        var session = workspace.Drafts!; var id = session.Workspace.AppendRows(workspace.Selected!, "Issue 1\tDone").Single();
+        session.Workspace.SetBuffer(session.Workspace.Open(workspace.Selected!).Single(r => r.ItemId == id).Cells[0], "pending日本語");
+        var expected = JsonSerializer.Serialize(session.Workspace.LocalRows[0]); var initial = workspace.Selected;
+        refreshing = true; await workspace.RegisterAsync(choice, null, true);
+        Assert.That(JsonSerializer.Serialize(session.Workspace.LocalRows[0]), Is.EqualTo(expected));
+        if (mode is "partial" or "failed" or "cancel") Assert.That(workspace.Selected, Is.SameAs(initial));
+        if (mode == "options") Assert.That(session.Workspace.LocalProblems(workspace.Selected!, id).Any(e => e.StartsWith("選択肢")), Is.True,
+            workspace.Status + " / " + JsonSerializer.Serialize(workspace.Selected!.Snapshot.Fields));
+        if (mode == "concurrent") Assert.That(session.Workspace.LocalRows[1].TitleBuffer, Is.EqualTo("During retrieval"));
+        Assert.That(await session.FlushAsync(), Is.True);
+        var restart = new RegistrationWorkspace(store); await restart.RestoreAsync(); await restart.SelectProfileAsync(ConnectionScope.From(context)); await restart.SelectAsync(choice.Id);
+        Assert.That(JsonSerializer.Serialize(restart.Drafts!.Workspace.LocalRows), Is.EqualTo(JsonSerializer.Serialize(session.Workspace.LocalRows)));
+        Assert.That(restart.Selected!.Snapshot.Items.Any(i => i.Id.NodeId == id), Is.False); boundary.AssertQueriesOnly();
+    }
     [TestCase("partial"), TestCase("complete"), TestCase("composition"), TestCase("concurrent"), TestCase("legacy-writer")]
     public async Task GuardedRefreshPreservesCurrentWorkAndRejectsUnverifiedOrStaleCommits(string mode)
     {

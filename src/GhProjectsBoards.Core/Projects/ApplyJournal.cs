@@ -112,7 +112,7 @@ internal sealed partial class EditingWorkspace
                 Change = value == operation.Intended.Value ? null : new(value, old.Key.Kind == "Select" && value is null),
                 Observation = operation.Verification, Conflict = false, RetrievedAt = operation.Verification!.At };
             for (var i = 0; i < history.Count; i++)
-                if (history[i].Changes.Any(c => c.Key == old.Key)) history[i] = history[i] with { InvalidReason = "Applyの観測後は以前の基準値を復元できません。" };
+                if (history[i].Changes.Any(c => c.Key == old.Key)) InvalidateRemoteUndo(i, "Applyの観測後は以前の基準値を復元できません。");
             registrations = CheckpointRegistrations.Select(r =>
             {
                 var p = r.Snapshot;

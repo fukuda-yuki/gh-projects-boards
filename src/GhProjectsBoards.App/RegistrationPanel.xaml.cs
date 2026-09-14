@@ -77,7 +77,7 @@ public sealed partial class RegistrationPanel : UserControl
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();
-                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
+                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;
