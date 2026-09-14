@@ -8,7 +8,9 @@ namespace GhProjectsBoards.E2E.Tests;
 
 public sealed partial class RegistrationTests
 {
-    private static void LocalCount(Fixture f, int count) => Wait(() => Durable(f).TryGetProperty("LocalRows", out var rows) && rows.GetArrayLength() == count);
+    private static void LocalCount(Fixture f, int count) => Wait(() => Directory.Exists(Path.Combine(f.Data, "Drafts"))
+        && Directory.GetFiles(Path.Combine(f.Data, "Drafts"), "*.json").Length == 1
+        && Durable(f).TryGetProperty("LocalRows", out var rows) && rows.GetArrayLength() == count);
     [Test]
     public void LocalRowsSaveFailureAndInterruptionRecoverIdentitiesAndUndo()
     {
