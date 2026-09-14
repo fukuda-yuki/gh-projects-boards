@@ -94,29 +94,45 @@ This keeps the native input method available for verification while full table e
 
 ## Test
 
+**Testing priority: logic-layer unit tests > UI-layer integration tests > E2E tests.** Put most behavioral coverage in lower layers; E2E and live validation supplement them for relevant integration/native/external risks. This does not ban those executions or impose a numerical ratio. The [test policy](tests/README.md) defines boundary selection, evidence and coverage migration.
+
 ### Apply existing fields
 
 In a connected registered Project, choose **Apply…**, select rows, and review field differences. Resolve any displayed conflicts locally before reviewing again. **明示的にApply** sends existing title and single-select changes only. Pending text is excluded. **実行履歴…** shows field outcomes and provides explicit revalidation/resume; reopening never resumes writes. Uncertain work may require withdrawing the old approval and preparing a fresh review. Already verified success is not resent. Cancellation does not roll back completed changes.
 
 Execution history is stored in version 5 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1–4 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
 
-```powershell
-# Core logic and adapter integration; no live GitHub:
-dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
+### Routine logic and adapter checks
 
-# Ordinary WinUI executable with isolated fake gh; unlocked desktop required:
+```powershell
+# Core logic and real adapter integration with synthetic external boundaries; no live GitHub:
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
+```
+
+Use relevant focused logic and adapter tests during implementation.
+
+### UI integration
+
+Verify bounded collaboration of actual UI components, event/command wiring, presentation state and displayed results, with dependencies outside that scope controlled. Read the [UI integration policy](tests/README.md#ui-integration) for examples and case-level classification. Either an existing runtime with UI Automation or a dedicated test host may be suitable; neither defines the test level. Inspect existing cases before declaring missing coverage or introducing new infrastructure. ViewModel-only assertions do not establish view/control wiring.
+
+### Supplementary boundary checks
+
+Select these for the changed boundary or an explicit acceptance need; this is a command reference, not a checklist to run in full for every change. Runner/project names do not classify every contained case. Full regression remains available when warranted. Use the documented desktop filters for a scoped run and report the collaboration, real/replaced dependencies and entry/result boundary actually exercised.
+
+```powershell
+# Full ordinary-executable desktop regression with isolated fake gh, when selected:
 .\scripts\Test-E2E.ps1
 
-# Physical-key Japanese IME in the ordinary app's input-check window:
+# Physical-key Japanese IME for relevant native-input changes or acceptance:
 .\scripts\Test-ReadyInput.ps1
 
-# Authorized real-GitHub validation; read the sandbox scope first:
+# Real-GitHub validation for relevant external-contract risks or acceptance:
 .\scripts\Test-LiveGitHub.ps1
 ```
 
-Read the [test policy](tests/README.md) before running. Live tests target only [the designated sandbox repository](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3). They create and clean up disposable data. Inspect retained failures and uncertain outcomes before another live run.
+Read the [test policy](tests/README.md) before running. Desktop execution requires an unlocked controlled session. Live tests target only [the designated sandbox repository](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3). They create and clean up disposable data. Inspect retained failures and uncertain outcomes before another live run. Sandbox permission does not require live execution for every task.
 
-CI runs deterministic tests and discovers desktop tests without launching UI. It does not establish desktop, IME, live-system or company GHEC + EMU acceptance. Current execution evidence and incomplete feature scope belong to the owning Issues, not this README.
+CI runs deterministic Core tests and discovers desktop tests without launching UI. Those results do not establish view/control interaction, physical IME, real-GitHub or company GHEC + EMU acceptance. Current execution evidence and incomplete feature scope belong to the owning Issues, not this README.
 
 ## Structure
 
