@@ -4,30 +4,36 @@ Derive acceptance from the relevant Issue and [specification](../docs/spec.md). 
 
 ## Test policy
 
-Start with a short test list covering normal behavior, boundaries, failures and prohibited side effects. Use short Red-Green-Refactor cycles. Confirm a test's intended failure before implementing the behavior; unrelated build/environment failure is not a behavioral Red. Bug fixes start with a reproducer.
+**Primary testing order: logic-layer unit tests > UI-layer integration tests > E2E tests.** Logic tests carry the main behavioral coverage and development feedback; UI integration tests verify presentation wiring and states; E2E provides representative whole-application and native-boundary confidence. The goal is not merely to run E2E less often: do not leave rules or UI-state combinations covered only by E2E when a lower layer can verify them. This is a design and coverage priority, not a test-count ratio, a per-class mocking requirement or a prohibition on E2E/live validation.
 
-Prefer real in-process collaborators and observable results. A test may exercise several collaborating classes. Substitute external or nondeterministic boundaries when control is needed; do not mock the behavior under test or calculate expected values with the same production logic. Validate real adapters separately. Persistence tests must use the actual implementation and isolated storage.
+Start with a short test list covering normal behavior, boundaries, failures and prohibited side effects. Assign each behavior to the lowest reliable boundary and identify the remaining UI/native/external integration risks. Use short Red-Green-Refactor cycles there. Confirm a test's intended failure before implementing the behavior; unrelated build/environment failure is not a behavioral Red. Bug fixes start with a reproducer. A native or live reproducer is valid when necessary; add a lower-layer regression for the underlying defect wherever it can detect the failure.
 
-Retain logic/adapter assertions during UI work. UI-specific selectors, focus and lifetime mechanics may change when justified by the specified user contract. Never remove, weaken, skip or relabel failures merely to obtain a pass. Document-only changes need no new behavior test; behavior-preserving refactoring uses the existing regression suite. Report unavailable execution honestly.
+Prefer real in-process collaborators and observable results. A unit of behavior may exercise several collaborating classes. Substitute external or nondeterministic boundaries when control is needed; do not mock the behavior under test or calculate expected values with the same production logic. Validate real adapters separately. Persistence tests must use the actual implementation and isolated storage. Adapter/process/storage integration remains necessary; the priority order does not replace it with mocks or mislabel it as unit testing.
+
+Retain logic/adapter assertions during UI work. UI-specific selectors, focus and lifetime mechanics may change when justified by the specified user contract. Never remove, weaken, skip or relabel failures merely to obtain a pass. Moving redundant E2E coverage down requires an explicit mapping of contractual behaviors and observed replacement coverage before retiring those higher-layer checks. Retain representative native/end-to-end assertions that the replacement cannot establish. Record the mapping and evidence in the owning Issue/PR. Keeping a suite available does not require running it on every iteration.
+
+Select executions by changed behavior, affected boundaries and explicit acceptance needs, not by copying a previous delivery's command list. Prefer focused logic tests during implementation, then affected UI integration and adapter tests. Run selected E2E, physical IME or live checks when they establish a relevant risk not covered below; full regression remains appropriate for broad changes, shared-boundary risks or an explicit acceptance gate. There is no fixed execution quota or blanket all-suite requirement per edit, commit or UI task. Explain the higher-boundary risk, not just that a script exists. Do not debug ordinary UI waits or deterministic rules primarily through live GitHub when they can be reproduced with synthetic boundaries. Repository policy takes precedence over generic skill-generated batch-UI checklists.
+
+Document-only changes need no product behavior execution; review their consistency and links. Behavior-preserving refactoring uses relevant existing regression tests at the affected boundaries. A targeted run can satisfy its declared scope without being described as full regression. Distinguish tests outside the selected scope, unavailable relevant coverage, and selected tests that failed or were skipped. Report unavailable execution honestly; never turn missing coverage into a pass.
 
 ## Boundaries
 
 | Level | Scope | Execution |
 | --- | --- | --- |
-| Logic/integration | Core rules, connection orchestration and real gh process handling with a synthetic executable | Deterministic CI; no UI or live GitHub |
-| Desktop E2E | Ordinary WinUI 3 executable, real public UI Automation and isolated fake gh | Unlocked Windows desktop, serial execution |
-| Physical-key IME | Real Japanese IME, composition/focus/value and confirmation boundaries | Controlled Windows desktop; separate evidence |
+| Logic unit | UI-independent rules, validation, differences, Undo, planning and state transitions with real in-process collaborators | Primary development loop and deterministic CI; no UI or live GitHub |
+| Adapter/storage integration | Real connection orchestration, gh process handling with a synthetic executable, and actual persistence with isolated storage | Deterministic CI; preserve alongside logic unit coverage |
+| UI integration | Presentation collaborators and actual views/controls for binding, commands, enabled/error states and UI-to-Core wiring | Secondary development boundary; suitable WinUI UI-thread host, isolated data and controlled external boundaries |
+| Desktop E2E | Representative cross-screen, launch/close, process and native interactions through the ordinary executable and public UI Automation | Supplementary, risk-selected; unlocked Windows desktop, serial execution and isolated fake gh |
+| Physical-key IME | Real Japanese IME, composition/focus/value and confirmation boundaries | Relevant native-input changes or acceptance; controlled Windows desktop and separate evidence |
 | Human IME acceptance | Natural typing, candidates, cancellation/reconversion and selection/editing usability | Explicit human confirmation |
-| Live GitHub | Production adapter and real CLI against exact sandbox resources | Opt-in, authorized and independently read back |
+| Live GitHub | Production adapter and real CLI against exact sandbox resources | Relevant external-contract risk or acceptance; opt-in, authorized and independently read back |
 | Performance | Defined workload, warmup, sample counts and environment | Separate raw measurements; #12 owns acceptance |
 
-Core tests do not validate XAML, native focus, the visual tree or clipboard. E2E must run the product executable, not a probe or placeholder. It verifies the launched process loads `Microsoft.UI.Xaml.dll`; a successful substitute executable is not product evidence.
+Classify a test by the boundary it actually exercises, not by its project name or framework. Core tests do not validate XAML, native focus, the visual tree or clipboard. UI-host results establish only the hosted UI behavior, not ordinary-process or OS input acceptance. E2E must run the product executable, not a probe or placeholder. It verifies the launched process loads `Microsoft.UI.Xaml.dll`; a successful substitute executable is not ordinary-product E2E evidence.
 
 ## Logic and integration
 
 The editing/recovery suite exercises real scoped workspaces and isolated filesystem stores: exact title differences, whole-batch rejection, explicit clear, prior-state Undo, shared title versus independent selects, invalid pending buffers, interrupted replacement, corrupted schema/scope/history, competing writers, late changes during saving and old registration compatibility. Cache replacement has a final synchronous draft/generation predicate directly before atomic file replacement.
-
-Additional ordinary-executable journeys cover scrolled editing, shared drafts across Projects, actual normal process restart with pending text, rectangular clipboard operations, save-failure cancellation of navigation/close, edit-during-refresh protection and explicit unregistration with surviving shared work. Run all deterministic desktop journeys with `scripts/Test-E2E.ps1`. Use `-Filter 'TestCategory=GridIme'` for the separate physical Japanese IME direct/F2, cancellation and reconversion cases in real registered-Project title cells. `scripts/Test-ReadyInput.ps1` remains the complete independent input-check regression suite. Filtered runs require nonzero executed and zero failed/skipped tests; the default desktop run additionally checks every original required journey by name. No filtered run replaces full regression or human grid acceptance.
 
 `GhProjectsBoards.Tests` references Core, not the UI application. Its routine fake gh scenarios have no network fallback. The separately gated creation-live proxy forwards explicitly scoped product requests to real gh, verifies run-owned identities, and can suppress a create response for recovery testing. Test dependency versions are pinned in its project file.
 
@@ -37,13 +43,27 @@ dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configu
 
 Preserve coverage of Unicode/quotes/stdin, invalid executables, child environment isolation, timeout/cancellation, safe errors, HTTP/GraphQL outcomes, authentication/storage guards, stable identity, host changes, scopes, resource permissions and orchestration. No new UI acceptance is inferred from these results.
 
+## UI integration
+
+Test presentation behavior through real cooperating presentation/Core objects and observable states. For XAML bindings, control events, command wiring, enabled/disabled states, validation/error display and asynchronous rendering, host the actual relevant WinUI view/control on a suitable UI thread with dispatcher and lifetime management. Drive that bounded surface without navigating the whole ordinary application for every combination. Control external services and data; do not replace the presentation behavior being verified with a mock.
+
+ViewModel-only tests can verify presentation logic but cannot prove that XAML is bound correctly or a native control behaves correctly. Likewise, calling an event handler directly does not prove that the control event is wired. Keep actual OS focus, physical IME, clipboard/picker and ordinary-process lifetime evidence at the boundary required to observe them; do not claim the UI host establishes those properties automatically.
+
+The current solution has Core and external-driver E2E test projects, but no dedicated UI integration host or supported runner. This is a test-infrastructure gap, not completed UI coverage. When a UI task needs this boundary, add only the smallest coherent host/seam needed for the actual view and document its execution command; do not create speculative production layers or relabel FlaUI journeys as UI integration. If infrastructure work is outside the authorized task, record the gap in the owning Issue and use bounded E2E evidence as an explicit interim measure, not as a permanent substitute for the intended test hierarchy.
+
 ## Desktop E2E
 
 `GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3 with build-only app/fake-gh references. Tests may not call product internals. Launch the ordinary exe, use stable AutomationIds on real controls, wait for observable conditions and verify both UI close and the original process's exit status. Do not assume a top-level native window has the same AutomationId as its XAML content or that every table exposes GridPattern.
 
+Additional ordinary-executable journeys cover scrolled editing, shared drafts across Projects, actual normal process restart with pending text, rectangular clipboard operations, save-failure cancellation of navigation/close, edit-during-refresh protection and explicit unregistration with surviving shared work. The complete deterministic desktop suite is available through `scripts/Test-E2E.ps1`; select its scope under the test policy rather than treating the inventory as an instruction to run everything. Use `-Filter 'TestCategory=GridIme'` for separate physical Japanese IME direct/F2, cancellation and reconversion cases in real registered-Project title cells. `scripts/Test-ReadyInput.ps1` remains the independent input-check regression suite. Filtered runs require nonzero executed and zero failed/skipped tests within the selected scope; the default desktop run additionally checks every original required journey by name. A filtered pass is scoped evidence, not a full-suite pass or human grid acceptance. Run full regression when the selected risk/acceptance scope requires it.
+
 ```powershell
+# Complete deterministic desktop regression when selected:
 .\scripts\Test-E2E.ps1
 .\scripts\Test-E2E.ps1 -Configuration Debug
+
+# Example of a focused ordinary-process smoke, not full regression:
+.\scripts\Test-E2E.ps1 -Filter 'TestCategory=E2E&FullyQualifiedName~OrdinaryExecutable_OpensAndCloses'
 ```
 
 Use Windows x64 with the build prerequisites from [README](../README.md). Keep the interactive desktop unlocked, run serially and match app/test elevation. The script does not alter security policy, machine environment, lock settings or install a driver server. A disconnected/locked session is not valid UI evidence.
@@ -63,7 +83,7 @@ Additional cases cover native picker selection/cancellation and both title-bar C
 
 Results go to unique `TestResults/e2e/<run-id>/` directories. Keep TRX and metadata for the source/build/environment. Failure capture is limited to the app rectangle; overlapping windows may still contain private content, so use a clean desktop and review before sharing. Capture failure must not hide a test failure. Cleanup may terminate only owned processes and must not turn a failed normal-close assertion into a pass.
 
-The runner retains build/test logs, source state, resolved package assets, runtime versions, file hashes for the app executable/DLL, Core DLL, WinUI DLLs and both test assemblies. It checks the required journey names as well as counts, so replacing a connection journey with an unrelated passing case cannot satisfy the gate. Connection fixtures record owned process IDs, normal versus forced exit and remaining recorded children. Raw screen/log/clipboard evidence stays local until reviewed for publication.
+The runner retains build/test logs, source state, resolved package assets, runtime versions, file hashes for the app executable/DLL, Core DLL, WinUI DLLs and both test assemblies. Its full-suite required-journey checks and execution counters remain intact; policy-based selection does not weaken a selected suite's success criteria. Replacing a connection journey with an unrelated passing case cannot satisfy that gate. Connection fixtures record owned process IDs, normal versus forced exit and remaining recorded children. Raw screen/log/clipboard evidence stays local until reviewed for publication.
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
 
@@ -89,6 +109,8 @@ Independent shell and test-infrastructure work does not wait for a grid componen
 
 ## Native input execution
 
+Select physical-key scenarios for changes affecting native editing, composition, focus, editor lifetime or explicit input acceptance. The input suite remains available and its full contract is preserved; unrelated logic/presentation changes do not automatically require every IME scenario.
+
 ```powershell
 .\scripts\Test-ReadyInput.ps1
 .\scripts\Test-ReadyInput.ps1 -Scenario reconvert-direct
@@ -103,6 +125,8 @@ Unique `TestResults/ready-input/run-*` directories retain source/environment, bu
 For human confirmation, launch with `--input-check`. Use the standard TextBox as a positive control, then try direct typing after cell selection with IME enabled before and after selection. Compare F2; test conversion candidates and both Enter boundaries, cancellation/reconversion, arrows and Shift ranges. Editor text may change during composition, but the committed line must remain unchanged until cell commit. Check normal title-bar close while text focus remains. Record human observations separately in #24; automation and source review are not human acceptance. Full-grid/Tab/last-row/accessibility/performance acceptance remains outside this bounded check.
 
 ## Live sandbox
+
+Use live checks for relevant production CLI/API, authentication/permission or service-contract risks and explicit acceptance. Sandbox authorization permits these checks; it does not require them for every implementation or commit. Prefer deterministic adapter and UI tests for cases they can establish, then use a bounded live scenario for the remaining external risk. Keep live execution available and preserve its independent readback and cleanup requirements.
 
 Read the [authorized scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before running. Targets are exactly `fukuda-yuki/codex-sandbox` and user Project `fukuda-yuki/3`; verify API IDs before mutation. Use designated stored keyring authentication with the required scopes. Never extract tokens or alter authentication configuration in tests.
 
@@ -134,7 +158,7 @@ Unique `TestResults/project-read/` directories retain source/environment, comman
 
 `ReconciliationTests` exercises all known B/L/R branches, repeated conflict/resolution, explicit clear, pending text, scoped shared titles with older caches, structural/permission loss, stale choices and safe Undo. Real isolated stores exercise v1 migration/backups, partial candidate writes, stale revisions, competing writers, orphan/corrupt checkpoints and independent profile recovery. `RefreshWorkflowTests` uses the guarded reader/discovery/workspace with fake gh at the external process boundary for partial paging, edits during I/O, composition deferral and stale legacy writers.
 
-The ordinary executable E2E suite includes three resolution choices with B/L/R readback and restart, independent title/select changes, partial results preserving the complete checkpoint, pending input during refresh, cancellation/close and interruption recovery. The prior refresh-prohibition journey is replaced by equivalent input-retention assertions under the authorized reconciliation contract. Keep all original connection, registration, editing, physical-key IME and input-check scenarios. Run desktop scenarios serially; never equate test discovery or Unicode text injection with physical IME evidence.
+The ordinary executable E2E suite includes three resolution choices with B/L/R readback and restart, independent title/select changes, partial results preserving the complete checkpoint, pending input during refresh, cancellation/close and interruption recovery. The prior refresh-prohibition journey is replaced by equivalent input-retention assertions under the authorized reconciliation contract. Preserve the connection, registration, editing, physical-key IME and input-check contracts under the coverage-migration policy above; their inventory is not a per-change execution checklist. Run selected desktop scenarios serially; never equate test discovery or Unicode text injection with physical IME evidence.
 
 `scripts/Test-RefreshLive.ps1` opts into an isolated production registration/refresh/resolution scenario with a separate sandbox fixture service. It verifies exact sandbox identities before creation, records returned IDs before further writes, compares A/B/C, verifies GitHub remains C after local resolution, and removes only the disposable item/Issue with independent absence and existing-data checks. Product requests pass through a query-only process guard; fixture writes are explicitly separate. Unknown creation is not retried. The manual utility/workflow is in [refresh manual check](../docs/refresh-manual-check.md); do not create its fixture before the user starts the check.
 
@@ -142,6 +166,6 @@ The ordinary executable E2E suite includes three resolution choices with B/L/R r
 
 The existing-field Apply tests exercise the actual planner, session, store, executor, guarded connection and reader with synthetic gh responses. They inspect mutation payloads and coherent recovered records, keeping query-only refresh/edit guards unchanged. The ordinary Apply desktop case reviews and applies a title, then reopens its history without dispatch. `scripts/Test-ApplyLive.ps1` runs the ordinary app with real stored authentication against only the designated sandbox, through title/set/clear and independent readback. Its fixture setup/cleanup counts are separate from product operations; interrupted manifests must be reconciled before another setup.
 
-Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and lists desktop tests without launching them. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session.
+Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and lists desktop tests without launching them. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session. UI integration CI must be reported as unavailable until an appropriate host/runner is implemented and validated; existing Core or discovery results do not fill that gap.
 
-Report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, a narrow probe, sandbox success and human acceptance are distinct claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.
+Report changed behaviors and their test boundaries, the reason for selected E2E/IME/live execution, and relevant coverage that was outside scope or unavailable. For executed checks, report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, a narrow probe, UI-host execution, ordinary-product E2E, sandbox success and human acceptance are distinct claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.

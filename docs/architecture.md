@@ -6,7 +6,7 @@
 
 `ApplyExecutor` holds a per-profile filesystem execution lease throughout reads, waits, dispatch and acknowledgement, and checks the durable revision before proceeding. The writer lock remains a separate short critical section. Version 5 of the authoritative `DraftRecord` contains execution history and local rows; v1–4 remain readable. Each journal transition passes through the same validated, flushed, atomic checkpoint boundary as local work. Failed acknowledgement stops further dispatch and leaves durable Running as recovery evidence. `.execution.lock` contains no authoritative queue data; OS ownership is released on process termination.
 
-The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. UI Automation uses stable Apply control IDs; tests substitute only gh responses or use the authorized live fixture.
+The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. Stable Apply control IDs support supplementary UI Automation journeys. Test rules in Core and presentation wiring at the UI integration boundary; use ordinary-app or authorized live checks for the remaining end-to-end or external-contract risks.
 
 ## Production projects
 
@@ -72,9 +72,13 @@ Each native TextBox keeps its committed value separate from the editor text. Cel
 
 ## Test boundary
 
-`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime.
+The design priority is **logic-layer unit tests > UI-layer integration tests > E2E tests**. Keep rules and orchestration independently testable so the ordinary application's UI is not the primary way to exercise them. Preserve real adapter/process/storage integration alongside logic unit coverage.
 
-`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3. App and fake-gh project references are build-only. Tests drive the ordinary executable, verify that its process loads WinUI, and assert observable journeys. Deterministic cases use isolated synthetic data; live cases are separately authorized. See [tests](../tests/README.md).
+`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime. Its unit and integration cases are classified by the exercised boundary, not merely the assembly name.
+
+UI integration owns bounded presentation-state, command/event and binding checks. Tests for bindings or native controls must host the actual relevant WinUI view/control on a suitable UI thread with dispatcher/lifetime management and controlled external boundaries. ViewModel-only checks do not establish XAML correctness. Add a test-only host or narrow seam only for a concrete UI testing need; it does not justify another production layer or making Core depend on WinUI. The current solution has no dedicated UI integration host/runner, so this boundary must not be reported as implemented or passing until it exists and executes.
+
+`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3. App and fake-gh project references are build-only. Tests drive the ordinary executable, verify that its process loads WinUI, and assert representative end-to-end or native/process journeys that lower layers cannot establish. Deterministic cases use isolated synthetic data; live cases are separately authorized. These external-driver journeys remain E2E, not UI integration, even when gh is fake. Preserve native focus, physical IME, picker/clipboard and actual restart/close checks at their appropriate boundaries. Selection and coverage migration follow the [test policy](../tests/README.md).
 
 ## Feature responsibilities
 
