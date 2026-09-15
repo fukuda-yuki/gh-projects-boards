@@ -125,6 +125,13 @@ Use relevant focused logic and adapter tests during implementation.
 
 Verify bounded collaboration of actual UI components, event/command wiring, presentation state and displayed results, with dependencies outside that scope controlled. Read the [UI integration policy](tests/README.md#ui-integration) for examples and case-level classification. Either an existing runtime with UI Automation or a dedicated test host may be suitable; neither defines the test level. Inspect existing cases before declaring missing coverage or introducing new infrastructure. ViewModel-only assertions do not establish view/control wiring.
 
+```powershell
+# Hosted UI integration: real WinUI views/controls with isolated collaborators
+.\scripts\Test-UiIntegration.ps1
+```
+
+The current mechanism is the [production-sharing host](tests/GhProjectsBoards.UiIntegration.Tests/README.md), which is a mechanism rather than the definition of this level.
+
 ### Supplementary boundary checks
 
 Select these for the changed boundary or an explicit acceptance need; this is a command reference, not a checklist to run in full for every change. Runner/project names do not classify every contained case. Full regression remains available when warranted. Use the documented desktop filters for a scoped run and report the collaboration, real/replaced dependencies and entry/result boundary actually exercised.
