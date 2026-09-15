@@ -176,9 +176,14 @@ internal sealed partial class EditingGrid : Grid
     private void Undo()
     {
         if (!CanRefresh) throw new InvalidOperationException("IME変換中です。自然に確定・取消してからUndoしてください。");
+        var before = session.Workspace.LocalRows.Select(row => row.Id).ToHashSet();
         session.Workspace.Undo(projectId);
+        // A reopened projection never saw rows removed before restart. Make only
+        // newly restored local identities reachable until explicit reapplication.
+        var canonical = session.Workspace.Open(registration);
+        projection.IncludeNew(canonical, canonical.Where(row => row.IsLocal && !before.Contains(row.ItemId)).Select(row => row.ItemId));
         // Undo restores original keys, including rows absent from the current projection.
-        if (!canonicalRows.Select(r => r.ItemId).SequenceEqual(session.Workspace.Open(registration).Select(r => r.ItemId))) RebuildRows();
+        if (!canonicalRows.Select(r => r.ItemId).SequenceEqual(canonical.Select(r => r.ItemId))) RebuildRows();
     }
     private void RebuildRows()
     {

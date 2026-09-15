@@ -293,7 +293,15 @@ public sealed partial class RegistrationPanel : UserControl
     private async void Navigate(TreeView sender, TreeViewItemInvokedEventArgs e)
     {
         var owner = Workspace; var expected = lifetime;
-        if (e.InvokedItem is TreeViewNode { Content: NavigationEntry entry }) { await owner.SelectAsync(entry.Id); if (IsCurrent(owner, expected)) ShowPreview(); }
+        if (e.InvokedItem is not TreeViewNode { Content: NavigationEntry entry }) return;
+        if (!await owner.SelectAsync(entry.Id) || !IsCurrent(owner, expected) || owner.Selected?.Snapshot.Id != entry.Id) return;
+        ShowPreview();
+        if (WorkspaceSplitView.DisplayMode == SplitViewDisplayMode.Overlay)
+        {
+            WorkspaceSplitView.IsPaneOpen = false;
+            AutomationProperties.SetName(NavigationToggle, "Project一覧を表示");
+            NavigationToggle.Focus(FocusState.Programmatic);
+        }
     }
     private void OwnerSelected(object sender, SelectionChangedEventArgs e)
     {

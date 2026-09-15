@@ -19,6 +19,36 @@ internal sealed class RegistrationWorkflowTests
     private static async Task<ProjectChoice> Choice(GhConnectionService service, ConnectionContext context, int number = 1)
         => await new ProjectDiscovery(service).ResolveAsync(context, $"https://github.com/users/sample-user/projects/{number}", default);
 
+    [Test]
+    public async Task ProjectReselectionReportsFailedSaveAndPreservesWorkUntilRetry()
+    {
+        var (boundary, service) = Boundary(); var context = (await service.ConnectAsync()).Context!;
+        var store = Store(); var workspace = new RegistrationWorkspace(store);
+        await workspace.BindAsync(context, service);
+        await workspace.RegisterAsync(await Choice(service, context), null);
+        var selected = workspace.Selected!; var session = workspace.Drafts!;
+        var cell = session.Workspace.Open(selected)[0].Cells[0];
+        Assert.That(await workspace.FlushDraftsAsync(), Is.True);
+        var draftStore = new DraftStore(store.Root);
+        var checkpoint = await File.ReadAllBytesAsync(draftStore.FileFor(selected.Snapshot.Id.Scope));
+        session.Workspace.SetBuffer(cell, "pending work before navigation");
+
+        using (var competing = new FileStream(Path.Combine(store.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            Assert.That(await workspace.SelectAsync(selected.Snapshot.Id), Is.False);
+            Assert.That(workspace.Selected, Is.SameAs(selected));
+            Assert.That(session.Workspace.Buffer(cell), Is.EqualTo("pending work before navigation"));
+            Assert.That(workspace.Status, Does.StartWith("ローカル保存失敗"));
+            Assert.That(await File.ReadAllBytesAsync(draftStore.FileFor(selected.Snapshot.Id.Scope)), Is.EqualTo(checkpoint));
+        }
+
+        Assert.That(await workspace.SelectAsync(selected.Snapshot.Id), Is.True);
+        Assert.That(workspace.Selected?.Snapshot.Id, Is.EqualTo(selected.Snapshot.Id));
+        var saved = await draftStore.LoadAsync(selected.Snapshot.Id.Scope);
+        Assert.That(saved!.Fields.Single(field => field.Key == cell.Key).Buffer, Is.EqualTo("pending work before navigation"));
+        boundary.AssertQueriesOnly();
+    }
+
     [TestCase("permission")]
     [TestCase("cursor")]
     public async Task DiscoveryErrorsNeverPublishACompleteList(string mode)
