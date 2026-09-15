@@ -362,6 +362,32 @@ public sealed class HostedTests
     }
 
     [Test]
+    public async Task ColumnHiddenDifferencesRemainInExistingAndCreationReview()
+    {
+        await Ui.Run(async () =>
+        {
+            var p = Workspace.Selected!; Work.Commit("P1", Work.Open(p)[0].Cells[1], "Done");
+            var id = h.Add("Hidden creation"); Work.Commit("P1", Work.Open(p).Single(r => r.ItemId == id).Cells[1], "Done");
+            await Workspace.FlushDraftsAsync();
+        });
+        await Ui.Run(() => Ui.Click("GridColumns")); await Ui.DialogReady("ColumnSettingsDialog");
+        await Ui.Run(() => { Ui.Find<CheckBox>("ColumnVisible-P1-status", Ui.Dialog("ColumnSettingsDialog")).IsChecked = false; Ui.DialogButton("ColumnSettingsDialog", "PrimaryButton"); });
+        await Ui.Until(() => Ui.Dialog("ColumnSettingsDialog") is null);
+        await Ui.Run(() => Ui.Click("ReviewApplyButton")); await Ui.DialogReady("ApplySelectionDialog");
+        await Ui.Run(() => { var list = Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplySelectionDialog")); Ui.Select(list, 0); Ui.Select(list, 2); Ui.DialogButton("ApplySelectionDialog", "PrimaryButton"); });
+        await Ui.DialogReady("ApplyReviewDialog");
+        await Ui.Run(() =>
+        {
+            var text = Ui.DialogText("ApplyReviewDialog");
+            Assert.That(text, Does.Contain("グリッドでは非表示").And.Contain("P1-status").And.Contain("Set Done [done]").And.Contain("適用値: done"));
+            Assert.That(Workspace.ApplyReview!.Batch.Operations.Single().Key.FieldId, Is.EqualTo("P1-status"));
+            Assert.That(Workspace.ApplyReview.Batch.Creations!.Single().Selects.Single().FieldId, Is.EqualTo("P1-status"));
+            Assert.That(h.Writes, Is.Empty); Ui.DialogButton("ApplyReviewDialog", "CloseButton");
+        });
+        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+    }
+
+    [Test]
     public async Task SelectionCancellationDoesNotDispatch()
     {
         await Ui.Run(() => Ui.Click("ReviewApplyButton"));

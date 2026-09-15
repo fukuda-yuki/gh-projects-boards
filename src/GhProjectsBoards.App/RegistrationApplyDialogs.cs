@@ -47,7 +47,7 @@ public sealed partial class RegistrationPanel
             if (Workspace.ApplyReview is not { } review) return;
             var text = $"{review.Batch.Project.Scope.Host} / {Workspace.ProfileLogin} / ID {review.Batch.Project.Scope.ViewerId}\n{review.Batch.ProjectName} / {review.Batch.Project.NodeId}\n選択行 {review.SelectedRows} / 更新 {review.Batch.Operations.Length} / 作成 {review.Batch.Creations?.Length ?? 0}\n未確定文字 {review.PendingBuffers} 件は除外（自動確定しません）\n";
             text += string.Join("\n\n", (review.Batch.Creations ?? []).Select(CreationReviewText)) + "\n";
-            text += string.Join("\n\n", review.Batch.Operations.Select(o => $"{o.Identity}\n{o.FieldName} / 項目 {o.ItemId} / フィールド {o.Key.FieldId ?? "Issue title"}\nGitHub: {o.Expected ?? "明示的な空値"}\n適用値: {(o.Intended.Clear ? "明示的にクリア" : o.Intended.Value)}"));
+            text += string.Join("\n\n", review.Batch.Operations.Select(o => $"{o.Identity}\n{o.FieldName}{HiddenColumnNote(o.Key.FieldId)} / 項目 {o.ItemId} / フィールド {o.Key.FieldId ?? "Issue title"}\nGitHub: {o.Expected ?? "明示的な空値"}\n適用値: {(o.Intended.Clear ? "明示的にクリア" : o.Intended.Value)}"));
             text += "\n" + string.Join("\n", review.Blocked);
             text += "\n" + Excluded();
             text += "\n直前に再照合します。APIに条件付き更新ロックはなく、照合と更新の間の競合は完全には排除できません。";
@@ -106,8 +106,9 @@ public sealed partial class RegistrationPanel
         }
         finally { applyDialog = false; if (IsLoaded) { if (expected == lifetime) rendered = null; Update(); } }
     }
-    private static string CreationReviewText(CreationOperation c) => $"新規Issue作成 / {c.LocalId}\n宛先 {c.Repository.Name} / Repository ID {c.Repository.Id}\nタイトル: {c.Title}\n"
-        + string.Join("\n", c.Selects.Select(s => $"{s.FieldName} [{s.FieldId}]: {s.Intent} {s.OptionName} [{s.OptionId}]"));
+    private string HiddenColumnNote(string? fieldId) => Workspace.Selected is { } p && Workspace.Drafts?.Workspace.Columns(p).Hidden(fieldId) == true ? "（グリッドでは非表示）" : "";
+    private string CreationReviewText(CreationOperation c) => $"新規Issue作成 / {c.LocalId}\n宛先 {c.Repository.Name} / Repository ID {c.Repository.Id}\nタイトル: {c.Title}\n"
+        + string.Join("\n", c.Selects.Select(s => $"{s.FieldName}{HiddenColumnNote(s.FieldId)} [{s.FieldId}]: {s.Intent} {s.OptionName} [{s.OptionId}]"));
     private async Task ReviewCreationSetupAsync(string batchId, string id)
     {
         var owner = Workspace; var expected = lifetime;

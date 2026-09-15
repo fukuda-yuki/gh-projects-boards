@@ -35,6 +35,12 @@ The first migration is intentionally one coherent group of redundant Apply prese
 
 CI builds this executable and discovers its cases without starting XAML. UI execution on `windows-latest` has not been established and is not enabled. Local hosted execution is required for delivery. The moved group measures development feedback/setup work, not product latency; #12's performance attribution, field breadth and human acceptance remain open.
 
+## Project columns
+
+`ColumnHostedTests` mounts the same production grid with three same-named single-select fields, two scoped Projects, local rows and isolated real checkpoints. It exercises actual settings buttons/checkboxes/NumberBox events for Save/Cancel/Reset, invalid width retry, stale definitions, identity-preserving selection, hidden selection clearing, original-key Undo, retained native pending text and ignored late text from a replaced editor. Alignment assertions compare actual transformed X positions as well as widths. `HostedTests.ColumnHiddenDifferencesRemainInExistingAndCreationReview` uses the ordinary settings and Apply dialogs to verify hidden IDs and intents remain reviewable.
+
+Core `ColumnTests` owns canonical/visible mapping, mixed-row atomic transactions, hidden-field append/duplication, malformed schema, v1–5 migration and real-storage failure/restart/history preservation. Ordinary `ProjectColumnsClipboardOriginalUndoAndActualRestart` covers native clipboard, range retention on width change and two-Project process restart. `ProjectColumnsPhysicalDirectAndF2PendingTransition` separately covers physical direct/F2 Japanese input and natural composition/focus boundaries. Public Text assignments in this host are never IME evidence.
+
 ## Runner fault verification
 
 These intentionally failing infrastructure probes are excluded from the normal product suite. Run each in a separate process; an expected failure must have a nonzero runner exit, not just matching text in a log.
