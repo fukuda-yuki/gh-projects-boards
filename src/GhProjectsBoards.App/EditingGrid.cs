@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
@@ -10,12 +11,24 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid : Grid
 {
-    private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.None, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.None, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0) };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock selection = new();
     private readonly TextBlock columnNotice = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly List<FrameworkElement[]> controls = [];
     private readonly List<TextBlock[]> markers = [];
+    private readonly List<Border[]> cellBorders = [];
+    private readonly Style cellStyle;
+    private readonly Style selectedCellStyle;
+    private readonly Grid headerGrid = new() { HorizontalAlignment = HorizontalAlignment.Left };
+    private readonly ScrollViewer headerScroll = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled, IsTabStop = false, IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left };
+    private readonly TextBlock selectedDetails = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
+    private readonly TextBlock selectionMode = new();
+    private readonly Border detailsPane = new() { Visibility = Visibility.Collapsed, Padding = new(12, 8, 12, 8), BorderThickness = new(0, 1, 0, 0) };
+    private readonly TextBlock emptyView = new() { Text = "表示する行はありません。行の表示設定で条件を変更・リセットできます。", TextWrapping = TextWrapping.Wrap, Margin = new(20), Visibility = Visibility.Collapsed };
+    private ScrollViewer? listScroll;
+    private Button reapplyButton = null!;
+    private Button detailsButton = null!;
     private readonly DraftSession session;
     private EditRow[] rows;
     private EditRow[] canonicalRows;
@@ -45,6 +58,10 @@ internal sealed partial class EditingGrid : Grid
     internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null)
     {
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
+        cellStyle = (Style)Application.Current.Resources["SheetCellStyle"];
+        selectedCellStyle = (Style)Application.Current.Resources["SheetSelectedCellStyle"];
+        headerGrid.Style = (Style)Application.Current.Resources["SheetHeaderStyle"];
+        detailsPane.Style = (Style)Application.Current.Resources["SheetDetailsStyle"];
         this.readClipboard = readClipboard ?? (async () => await Clipboard.GetContent().GetTextAsync());
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
@@ -53,22 +70,25 @@ internal sealed partial class EditingGrid : Grid
         if (previousProjection is null) projection.Reapply(session.Workspace, registration);
         else projection.Promote(session.Workspace);
         canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows));
-        RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new());
-        var toolbar = new StackPanel { Spacing = 8 };
-        var editCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        var recoveryCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        toolbar.Children.Add(editCommands); toolbar.Children.Add(recoveryCommands);
-        var rowCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        toolbar.Children.Add(rowCommands);
-        var columnSettings = new Button { Content = "列の設定" }; AutomationProperties.SetAutomationId(columnSettings, "GridColumns");
-        columnSettings.Click += async (_, _) => await ConfigureColumnsAsync(columnSettings); recoveryCommands.Children.Add(columnSettings);
-        var viewSettings = new Button { Content = "行の表示設定" }; AutomationProperties.SetAutomationId(viewSettings, "GridRowSettings");
-        viewSettings.Click += async (_, _) => await ConfigureRowsAsync(viewSettings); recoveryCommands.Children.Add(viewSettings);
-        var reapply = new Button { Content = "行表示を再適用" }; AutomationProperties.SetAutomationId(reapply, "GridReapply");
-        reapply.Click += (_, _) => ReapplyRows(reapply); recoveryCommands.Children.Add(reapply);
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
+        RowDefinitions.Add(new());
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
+        var toolbar = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true, HorizontalAlignment = HorizontalAlignment.Left };
+        AutomationProperties.SetAutomationId(toolbar, "GridCommandBar");
+        AppBarButton Tool(string label, string id, Symbol icon, bool secondary = false)
+        {
+            var button = new AppBarButton { Label = label, Icon = new SymbolIcon(icon) };
+            AutomationProperties.SetAutomationId(button, id); AutomationProperties.SetName(button, label);
+            ToolTipService.SetToolTip(button, label);
+            if (secondary) toolbar.SecondaryCommands.Add(button); else toolbar.PrimaryCommands.Add(button);
+            return button;
+        }
         void RowCommand(string text, string id, Func<EditRow[], string[]?> action)
         {
-            var button = new Button { Content = text }; AutomationProperties.SetAutomationId(button, id);
+            var button = Tool(text, id, id == "GridAddRow" ? Symbol.Add : id == "GridRemoveRows" ? Symbol.Delete : Symbol.Copy, id != "GridAddRow");
             button.Click += async (_, _) =>
             {
                 var request = generation;
@@ -76,38 +96,76 @@ internal sealed partial class EditingGrid : Grid
                 if (!CanRefresh || !await prepareLocalRows() || request != generation || !IsLoaded) return;
                 Run(() => { var added = action(targets); projection.IncludeNew(session.Workspace.Open(registration), added ?? []); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
             };
-            rowCommands.Children.Add(button);
         }
         RowCommand("新規行を追加", "GridAddRow", _ => [session.Workspace.AddRow(registration)]);
         RowCommand("選択行を複製", "GridDuplicateRows", targets => session.Workspace.DuplicateRows(registration, targets));
         RowCommand("新規行を削除", "GridRemoveRows", targets => { session.Workspace.RemoveRows(projectId, targets); return null; });
-        var append = new Button { Content = "新規行として貼り付け" }; AutomationProperties.SetAutomationId(append, "GridAppendRows");
-        append.Click += async (_, _) => await AppendAsync(); rowCommands.Children.Add(append);
-        void Command(string text, string id, Action action)
+        var append = Tool("新規行として貼り付け", "GridAppendRows", Symbol.Paste, true);
+        append.Click += async (_, _) => await AppendAsync();
+        void Command(string text, string id, Symbol icon, Action action, bool secondary = false)
         {
-            var b = new Button { Content = text }; AutomationProperties.SetAutomationId(b, id);
-            b.Click += (_, _) => Run(action); editCommands.Children.Add(b);
+            var b = Tool(text, id, icon, secondary); b.Click += (_, _) => Run(action);
         }
-        Command("コピー", "GridCopy", Copy);
-        var paste = new Button { Content = "貼り付け" }; AutomationProperties.SetAutomationId(paste, "GridPaste");
-        paste.Click += async (_, _) => await PasteAsync(); editCommands.Children.Add(paste);
-        Command("値をクリア", "GridClear", ClearSelected);
-        Command("操作を元に戻す", "GridUndo", Undo);
-        var save = new Button { Content = "ローカル保存を再試行" }; AutomationProperties.SetAutomationId(save, "GridSave");
-        save.Click += async (_, _) => { var request = generation; await session.FlushAsync(); if (IsLoaded && request == generation) Update(); }; recoveryCommands.Children.Add(save);
-        var compare = new Button { Content = "競合・未確認を比較" }; AutomationProperties.SetAutomationId(compare, "GridConflicts");
-        compare.Click += async (_, _) => await CompareAsync(); recoveryCommands.Children.Add(compare);
+        var paste = Tool("貼り付け", "GridPaste", Symbol.Paste);
+        paste.Click += async (_, _) => await PasteAsync();
+        Command("コピー", "GridCopy", Symbol.Copy, Copy);
+        Command("元に戻す", "GridUndo", Symbol.Undo, Undo);
+        Command("値をクリア", "GridClear", Symbol.Clear, ClearSelected, true);
+        var columnSettings = Tool("列", "GridColumns", Symbol.ViewAll);
+        columnSettings.Click += async (_, _) => await ConfigureColumnsAsync(columnSettings);
+        var viewSettings = Tool("並べ替え・フィルター", "GridRowSettings", Symbol.Filter);
+        viewSettings.Click += async (_, _) => await ConfigureRowsAsync(viewSettings);
+        var compare = Tool("競合・未確認を比較", "GridConflicts", Symbol.TwoPage, true);
+        compare.Click += async (_, _) => await CompareAsync();
+        var save = Tool("ローカル保存を再試行", "GridSave", Symbol.Save, true);
+        save.Click += async (_, _) => { var request = generation; await session.FlushAsync(); if (IsLoaded && request == generation) Update(); };
         Children.Add(toolbar);
-        var info = new StackPanel { Spacing = 4 }; info.Children.Add(status); info.Children.Add(selection); info.Children.Add(columnNotice);
-        info.Children.Add(new ScrollViewer { Content = viewNotice, MaxHeight = 40, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        var viewStrip = new Grid { Padding = new(8, 2, 8, 2), ColumnSpacing = 8 };
+        viewStrip.ColumnDefinitions.Add(new()); viewStrip.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        viewNotice.TextWrapping = TextWrapping.NoWrap; viewNotice.TextTrimming = TextTrimming.CharacterEllipsis; viewNotice.VerticalAlignment = VerticalAlignment.Center;
+        viewStrip.Children.Add(viewNotice);
+        reapplyButton = new Button { Content = "再適用", Padding = new(8, 4, 8, 4), MinHeight = 28 };
+        AutomationProperties.SetAutomationId(reapplyButton, "GridReapply"); reapplyButton.Click += (_, _) => ReapplyRows(reapplyButton);
+        SetColumn(reapplyButton, 1); viewStrip.Children.Add(reapplyButton); SetRow(viewStrip, 1); Children.Add(viewStrip);
         AutomationProperties.SetAutomationId(viewNotice, "RowViewStatus");
         AutomationProperties.SetAutomationId(columnNotice, "ColumnTransitionStatus");
         AutomationProperties.SetAutomationId(status, "DraftStatus"); AutomationProperties.SetAutomationId(selection, "GridSelection");
-        SetRow(info, 1); Children.Add(info);
-        AutomationProperties.SetAutomationId(list, "ProjectItems"); SetRow(list, 2); Children.Add(list);
+        AutomationProperties.SetAutomationId(headerGrid, "SheetHeader"); headerScroll.Content = headerGrid; SetRow(headerScroll, 2); Children.Add(headerScroll);
+        AutomationProperties.SetAutomationId(list, "ProjectItems"); SetRow(list, 3); Children.Add(list);
+        SetRow(emptyView, 3); Children.Add(emptyView);
+        AutomationProperties.SetAutomationId(selectedDetails, "SelectedCellDetails");
+        detailsPane.Child = new ScrollViewer { Content = selectedDetails, MaxHeight = 156, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        SetRow(detailsPane, 4); Children.Add(detailsPane);
+        var footer = new StackPanel { Spacing = 2, Padding = new(8, 4, 8, 4) };
+        var selectionBar = new Grid { ColumnSpacing = 12 };
+        selectionBar.ColumnDefinitions.Add(new()); selectionBar.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); selectionBar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        selection.TextTrimming = TextTrimming.CharacterEllipsis; selectionBar.Children.Add(selection);
+        SetColumn(selectionMode, 1); selectionBar.Children.Add(selectionMode);
+        var detailButton = detailsButton = new Button { Content = "選択内容の詳細", Padding = new(8, 2, 8, 2), MinHeight = 26 };
+        AutomationProperties.SetAutomationId(detailButton, "GridDetails"); detailButton.Click += (_, _) => { detailsPane.Visibility = detailsPane.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; UpdateSelectedDetails(); };
+        SetColumn(detailButton, 2); selectionBar.Children.Add(detailButton);
+        footer.Children.Add(selectionBar); footer.Children.Add(new ScrollViewer { Content = status, MaxHeight = 36, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }); footer.Children.Add(columnNotice);
+        SetRow(footer, 5); Children.Add(footer);
+        ToolTipService.SetToolTip(detailButton, "F6で表・コマンド・詳細に移動。Shift+F6で逆順。");
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != VirtualKey.F6 || !CanRefresh) return;
+            var focused = FocusManager.GetFocusedElement(XamlRoot);
+            var region = ReferenceEquals(focused, reapplyButton) ? 1 : ReferenceEquals(focused, detailsButton) ? 2 : 0;
+            var next = (region + (Down(VirtualKey.Shift) ? 2 : 1)) % 3;
+            if (next == 0 && rows.Length > 0)
+            {
+                if (active) RestoreWorkspaceFocus();
+                else Select(0, 0, false);
+            }
+            else if (next == 2) detailsButton.Focus(FocusState.Keyboard);
+            else reapplyButton.Focus(FocusState.Keyboard);
+            e.Handled = true;
+        };
         BuildRows();
-        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; Update(); };
+        ActualThemeChanged += (_, _) => Update();
+        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; };
+        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; listScroll = Descendants(list).OfType<ScrollViewer>().FirstOrDefault(); if (listScroll is not null) { listScroll.ViewChanged += ScrollChanged; listScroll.SizeChanged += ScrollSizeChanged; SyncHeader(); } Update(); };
         Update(); _ = session.FlushAsync();
     }
     private EditRow[] SelectedRows()
@@ -126,31 +184,41 @@ internal sealed partial class EditingGrid : Grid
     {
         var identity = SelectionIdentity; generation++; active = false;
         projection.Promote(session.Workspace);
-        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear();
+        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear();
         BuildRows(); RestoreSelection(identity);
     }
     private void BuildRows()
     {
-        var header = new Grid { ColumnSpacing = 8 };
+        headerGrid.Children.Clear(); headerGrid.ColumnDefinitions.Clear();
+        headerGrid.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
+        headerGrid.Children.Add(new TextBlock { Text = "行", Margin = new(8, 8, 0, 8) });
         for (var c = 0; c < layout.Visible.Length; c++)
         {
-            header.ColumnDefinitions.Add(new() { Width = new GridLength(layout.Visible[c].Preference.Width) });
-            var label = new TextBlock { Text = layout.Visible[c].Name, TextWrapping = TextWrapping.Wrap };
-            AutomationProperties.SetAutomationId(label, $"GridHeader{c}"); SetColumn(label, c); header.Children.Add(label);
+            headerGrid.ColumnDefinitions.Add(new() { Width = new GridLength(layout.Visible[c].Preference.Width) });
+            var name = layout.Visible[c].Name;
+            if (layout.Visible.Count(v => v.Name == name) > 1) name += $" [{layout.Visible[c].Id.FieldId ?? layout.Visible[c].Id.Role}]";
+            var label = new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Margin = new(8, 4, 8, 4) };
+            AutomationProperties.SetAutomationId(label, $"GridHeader{c}");
+            ToolTipService.SetToolTip(label, name);
+            SetColumn(label, c + 1); headerGrid.Children.Add(label);
         }
-        list.Header = header;
         for (var r = 0; r < rows.Length; r++)
         {
-            var line = new Grid { ColumnSpacing = 8 }; var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>();
+            var line = new Grid(); var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
+            line.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
+            var number = new TextBlock { Text = (r + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 8, 0) };
+            AutomationProperties.SetAutomationId(number, $"GridRowNumber{r}"); line.Children.Add(number);
             for (var c = 0; c < rows[r].Cells.Length; c++)
             {
                 var rr = r; var cc = c; var cell = rows[r].Cells[c];
                 line.ColumnDefinitions.Add(new() { Width = new GridLength(layout.Visible[c].Preference.Width) });
-                var container = new StackPanel { Spacing = 4 }; var marker = new TextBlock { TextWrapping = TextWrapping.Wrap }; rowMarkers.Add(marker); container.Children.Add(marker);
+                var container = new Grid(); container.ColumnDefinitions.Add(new()); container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+                var marker = new TextBlock { FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), Visibility = Visibility.Collapsed }; rowMarkers.Add(marker);
+                SetColumn(marker, 1); container.Children.Add(marker);
                 FrameworkElement editor;
                 if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable)
                 {
-                    var combo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = cell.Options, DisplayMemberPath = "Name" };
+                    var combo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = cell.Options, DisplayMemberPath = "Name", MinHeight = 26, Padding = new(8, 2, 4, 2), BorderThickness = new(0), CornerRadius = new(0), PlaceholderText = "（空値）" };
                     combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
                     combo.GotFocus += (_, _) => { if (CurrentEditor(rr, cc, combo)) FocusedCell(rr, cc); };
                     combo.SelectionChanged += (_, _) =>
@@ -167,66 +235,58 @@ internal sealed partial class EditingGrid : Grid
                     editor = text;
                 }
                 AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
-                AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {cell.Display} {cell.Reason}");
-                ToolTipService.SetToolTip(editor, cell.Reason ?? "取得時の権限観測に基づくローカル編集。GitHubへの反映はありません。");
-                container.Children.Add(editor); rowControls.Add(editor); SetColumn(container, c); line.Children.Add(container);
+                AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
+                ToolTipService.SetToolTip(editor, cell.Reason ?? "選択して入力、F2で編集。Enter / Tabでセル確定。GitHubへの反映は明示的Applyのみ。");
+                container.Children.Add(editor); rowControls.Add(editor);
+                var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
+                SetColumn(border, c + 1); line.Children.Add(border);
             }
-            controls.Add(rowControls.ToArray()); markers.Add(rowMarkers.ToArray());
+            controls.Add(rowControls.ToArray()); markers.Add(rowMarkers.ToArray()); cellBorders.Add(borders.ToArray());
             // Each container owns stable keys for its lifetime; scrolling never retargets a live editor.
-            var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new(0), Margin = new(0), BorderThickness = new(0) };
+            var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0), Margin = new(0), BorderThickness = new(0), MinHeight = 30, IsTabStop = false };
             AutomationProperties.SetName(item, rows[r].Cells[^1].Display); list.Items.Add(item);
         }
+        ResizeSheetColumns();
     }
-    private async Task CompareAsync()
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {
-        if (!CanRefresh) { status.Text = "IME変換を自然な操作で確定・取消してから比較してください。"; return; }
-        CancelPending();
-        var fields = session.Workspace.Fields.Where(f => f.Conflict || f.Observation?.Reason is not null).ToArray();
-        var diagnostics = string.Join("\n", session.Workspace.StructuralChanges.Concat(session.Workspace.UndoWarnings)
-            .Concat(layout.Columns.Where(c => !c.Available).Select(c => $"未確認の列設定を保持: {c.Id.FieldId}")));
-        if (fields.Length == 0) {
-            var summary = new ContentDialog { XamlRoot = XamlRoot, Title = "構成変更とUndo", CloseButtonText = "閉じる",
-                Content = new ScrollViewer { MaxHeight = 340, Content = new TextBlock { TextWrapping = TextWrapping.Wrap, Text = "競合・未確認の保存フィールドはありません。\n" + diagnostics } } };
-            await summary.ShowAsync(); return;
-        }
-        var picker = new ComboBox { Header = "保存フィールド（IDで識別）", ItemsSource = fields.Select(f => $"{(f.Key.Kind == "Title" ? "タイトル" : "単一選択")} / {f.Key.NodeId} / {f.Key.FieldId}").ToArray(), SelectedIndex = 0 };
-        AutomationProperties.SetAutomationId(picker, "ConflictField");
-        var detail = new TextBlock { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
-        AutomationProperties.SetAutomationId(detail, "ConflictComparison");
-        var text = new TextBox { Header = "別のタイトル" }; AutomationProperties.SetAutomationId(text, "ConflictAlternativeTitle");
-        var options = new ComboBox { Header = "別の選択肢", DisplayMemberPath = "Name" }; AutomationProperties.SetAutomationId(options, "ConflictAlternativeOption");
-        var clear = new CheckBox { Content = "明示的にクリア" }; AutomationProperties.SetAutomationId(clear, "ConflictAlternativeClear");
-        var other = new Button { Content = "別の値をローカル採用" }; AutomationProperties.SetAutomationId(other, "ConflictUseAlternative");
-        var content = new StackPanel { Spacing = 8 }; foreach (var element in new FrameworkElement[] { picker, new ScrollViewer { MaxHeight = 260, Content = detail }, text, options, clear, other }) content.Children.Add(element);
-        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "競合・未確認の比較（ローカルのみ）", Content = content,
-            PrimaryButtonText = "GitHub値を採用", SecondaryButtonText = "ローカル値を保持", CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
-        AutomationProperties.SetAutomationId(dialog, "ConflictDialog");
-        DraftField selected = fields[0]; ResolutionDecision? decision = null; LocalValue? alternative = null;
-        void Show()
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {
-            selected = session.Workspace.Fields.Single(f => f.Key == fields[picker.SelectedIndex].Key); var remote = selected.Observation!;
-            string Display(string? v) => v is null ? "（明示的な空値）" : selected.Key.Kind == "Title" ? v : $"{remote.Options.SingleOrDefault(o => o.Id == v)?.Name ?? "選択肢不明"} [ID: {v}]";
-            detail.Text = $"所有: {(selected.Key.Kind == "Title" ? "Issue（同じアカウント内で共有）" : "Project項目")}\nProject: {remote.Project.NodeId}\n観測: {remote.At.LocalDateTime:yyyy-MM-dd HH:mm:ss}\nB 基準: {Display(selected.Baseline)}\nL ローカル: {Display(selected.Change is { } local ? local.Value : selected.Baseline)}\nR GitHub: {(remote.Availability is ValueAvailability.Present or ValueAvailability.Empty ? Display(remote.Value) : EditingWorkspace.AvailabilityText(remote.Availability))}\n{remote.Reason ?? "有効な値競合。選択はローカル保存のみです。"}\n未確定文字: {selected.Buffer ?? "なし"}";
-            decision = selected.Conflict && remote.Reason is null ? session.Workspace.Decision(selected.Key) : null;
-            if (diagnostics.Length > 0) detail.Text += "\n\n構成変更・Undo:\n" + diagnostics;
-            dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = other.IsEnabled = decision is not null;
-            text.Visibility = selected.Key.Kind == "Title" ? Visibility.Visible : Visibility.Collapsed;
-            options.Visibility = clear.Visibility = selected.Key.Kind == "Select" ? Visibility.Visible : Visibility.Collapsed;
-            text.Text = selected.Change?.Value ?? selected.Baseline ?? ""; options.ItemsSource = remote.Options; options.SelectedIndex = -1; clear.IsChecked = false;
+            var child = VisualTreeHelper.GetChild(root, i); yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
         }
-        picker.SelectionChanged += (_, _) => Show();
-        other.Click += (_, _) =>
+    }
+    private void ScrollChanged(object? sender, ScrollViewerViewChangedEventArgs args)
+        => SyncHeader();
+    private void ScrollSizeChanged(object sender, SizeChangedEventArgs args) => SyncHeader();
+    private void SyncHeader()
+    {
+        if (listScroll is not { ViewportWidth: > 0 }) return;
+        // Match the data viewport, including its scrollbar space, so the last column stays aligned.
+        headerScroll.Width = listScroll.ViewportWidth;
+        headerScroll.ChangeView(listScroll.HorizontalOffset, null, null, true);
+    }
+    private void FocusViewCommand() => reapplyButton.Focus(FocusState.Programmatic);
+    private void RestoreWorkspaceFocus()
+    {
+        if (active)
         {
-            alternative = selected.Key.Kind == "Title" ? new(text.Text) : clear.IsChecked == true ? new(null, true)
-                : options.SelectedItem is SelectOption option ? new(option.Id) : null;
-            if (alternative is not null) dialog.Hide();
-        };
-        Show(); var result = await dialog.ShowAsync();
-        if (decision is null || result == ContentDialogResult.None && alternative is null) return;
-        var value = alternative ?? (result == ContentDialogResult.Primary ? selected.Observation!.Value : selected.Change is { } local ? local.Value : selected.Baseline) switch
-        { null => new LocalValue(null, true), var chosen => new LocalValue(chosen) };
-        await session.CommitAsync(candidate => { candidate.Resolve(selected.Observation!.Project.NodeId, decision, value); return candidate; }, () => IsLoaded && CanRefresh);
-        Update();
+            list.ScrollIntoView(list.Items[currentRow]);
+            var editor = (Control)controls[currentRow][currentColumn];
+            if (!editor.Focus(FocusState.Keyboard)) { reapplyButton.Focus(FocusState.Keyboard); return; }
+            // Focus returns to the same active identity without resetting the range.
+            // Rebuilt unedited titles still need native replacement selection.
+            if (editor is TitleCell text && !text.Editing) text.SelectAll();
+        }
+        else reapplyButton.Focus(FocusState.Keyboard);
+    }
+    private void ResizeSheetColumns()
+    {
+        foreach (var line in list.Items.Cast<ListViewItem>().Select(i => (Grid)i.Content).Prepend(headerGrid))
+        {
+            for (var c = 0; c < layout.Visible.Length; c++) line.ColumnDefinitions[c + 1].Width = new(layout.Visible[c].Preference.Width);
+            line.Width = 44 + layout.Visible.Sum(c => c.Preference.Width);
+        }
     }
     private bool updating;
     private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count
@@ -258,10 +318,24 @@ internal sealed partial class EditingGrid : Grid
         {
             var canonical = canonicalRows;
             var definition = session.Workspace.RowView(registration);
-            viewNotice.Text = $"全行 {canonical.Length} / 表示 {rows.Length} / 非表示の作業 {canonical.Count(r => !DisplayedRowIds.Contains(r.ItemId) && session.Workspace.RowHasWork(r))} / 一時表示 {rows.Count(r => projection.Temporary.Contains(r.ItemId))}\n条件: {definition.Sort} {(definition.Descending ? "降順" : "昇順")} [{definition.FieldId}] / タイトル: {definition.Title} / " + string.Join("; ", (definition.Filters ?? []).Select(f => $"[{f.FieldId}] {string.Join(",", f.OptionIds.Concat(f.States))}")) + " / 行の表示設定で解除・リセット";
+            var displayed = DisplayedRowIds.ToHashSet();
+            var sortName = definition.Sort switch { "Title" => "タイトル", "Field" => registration.Snapshot.Fields.SingleOrDefault(f => f.Id.NodeId == definition.FieldId)?.Name ?? "未確認の列", _ => "取得順" };
+            var criteria = new List<string> { sortName + (definition.Descending ? " 降順" : " 昇順") };
+            if (!string.IsNullOrEmpty(definition.Title)) criteria.Add($"タイトル「{definition.Title}」を含む");
+            foreach (var filter in definition.Filters ?? [])
+            {
+                var field = registration.Snapshot.Fields.SingleOrDefault(f => f.Id.NodeId == filter.FieldId);
+                criteria.Add($"{field?.Name ?? "未確認の列"}: " + string.Join("・", filter.OptionIds.Select(id => field?.Options.SingleOrDefault(o => o.Id == id)?.Name ?? "未確認の選択肢")
+                    .Concat(filter.States.Select(s => s switch { "Empty" => "空値", "Unspecified" => "新規の未指定", _ => "不明・未取得" }))));
+            }
+            viewNotice.Text = $"全行 {canonical.Length} / 表示 {rows.Length} / 非表示の作業 {canonical.Count(r => !displayed.Contains(r.ItemId) && session.Workspace.RowHasWork(r))} / 一時表示 {rows.Count(r => projection.Temporary.Contains(r.ItemId))}  —  " + string.Join(" / ", criteria);
             if (projection.Problem is { } problem) viewNotice.Text += " / " + problem;
             if (deferredViewNotice is not null) viewNotice.Text = deferredViewNotice + "\n" + viewNotice.Text;
-            if (projection.NeedsReapply(session.Workspace, registration)) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
+            var needsReapply = projection.NeedsReapply(session.Workspace, registration);
+            reapplyButton.Content = needsReapply ? "変更した値で再適用" : "再適用";
+            if (needsReapply) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
+            ToolTipService.SetToolTip(viewNotice, viewNotice.Text);
+            emptyView.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
             status.Text = $"このProject {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
             var hiddenChanges = hidden.Count(session.Workspace.Changed); var hiddenPending = hidden.Count(c => session.Workspace.Buffer(c) is not null);
@@ -270,8 +344,9 @@ internal sealed partial class EditingGrid : Grid
             if (hiddenChanges + hiddenPending + hiddenConflicts + hiddenLocal > 0)
                 status.Text += $" / 非表示列: 変更 {hiddenChanges}・未確定 {hiddenPending}・競合 {hiddenConflicts}・新規設定 {hiddenLocal}";
             status.Text += $" / 競合 {session.Workspace.Fields.Count(f => f.Conflict)} / 未確認 {session.Workspace.Fields.Count(f => f.Observation?.Reason is not null)}";
-            status.Text += $" / ローカル行 {rows.Count(r => r.IsLocal)}（選択・照合・明示的Applyで作成）";
-            status.Text += $"\n構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
+            status.Text += $" / ローカル行 {canonical.Count(r => r.IsLocal)}";
+            if (session.Workspace.StructuralChanges.Count + session.Workspace.UndoWarnings.Count() > 0)
+                status.Text += $" / 構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
             selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
             for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
             {
@@ -289,11 +364,54 @@ internal sealed partial class EditingGrid : Grid
                 var field = session.Workspace.Field(cell);
                 markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
                 if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
+                var explanation = markers[r][c].Text;
+                markers[r][c].Tag = explanation;
+                var label = field?.Conflict == true ? "競合" : field?.Observation?.Reason is not null ? "確認"
+                    : session.Workspace.Buffer(cell) is not null ? "入力" : session.Workspace.Changed(cell) ? "変更"
+                    : rows[r].IsLocal && c == 0 ? (session.Workspace.LocalProblems(registration, rows[r].ItemId).Any() ? "要確認" : "新規")
+                    : cell.Reason is not null && cell.Reason != "参照専用" ? "確認" : "";
+                markers[r][c].Text = label; markers[r][c].Visibility = label.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+                AutomationProperties.SetHelpText(controls[r][c], explanation);
+                ToolTipService.SetToolTip(markers[r][c], explanation);
+                cellBorders[r][c].Style = selected ? selectedCellStyle : cellStyle;
+                cellBorders[r][c].BorderThickness = new(active && r == currentRow && c == currentColumn ? 2 : 1);
                 if (controls[r][c] is TitleCell text) text.Refresh();
-                if (controls[r][c] is ComboBox combo) { combo.IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null; combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell)); }
+                if (controls[r][c] is ComboBox combo)
+                {
+                    combo.IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null;
+                    combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
+                    combo.PlaceholderText = SelectDisplay(cell, session.Workspace.Value(cell));
+                }
             }
+            UpdateSelectedDetails();
         }
         finally { updating = false; }
+    }
+    private string SelectDisplay(EditCell cell, string? value)
+    {
+        if (value is not null) return cell.Options.SingleOrDefault(o => o.Id == value)?.Name ?? $"未確認 [{value}]";
+        if (cell.Key?.Kind == "LocalSelect")
+            return session.Workspace.LocalRows.Single(r => r.Id == cell.Key.NodeId).Selects.SingleOrDefault(s => s.FieldId == cell.Key.FieldId)?.ExplicitClear == true ? "明示的にクリア" : "未指定（送信しない）";
+        if (session.Workspace.Field(cell)?.Change?.Clear == true) return "明示的にクリア";
+        return cell.Availability == ValueAvailability.Empty ? "（空値）" : EditingWorkspace.AvailabilityText(cell.Availability);
+    }
+    private void UpdateSelectedDetails()
+    {
+        if (!active || currentRow >= rows.Length) { selectedDetails.Text = "セルを選択すると、値・入力状態・Issueの識別情報を表示します。"; selectionMode.Text = "選択モード"; return; }
+        var row = rows[currentRow]; var cell = row.Cells[currentColumn]; var field = session.Workspace.Field(cell);
+        var pending = session.Workspace.Buffer(cell);
+        selectionMode.Text = controls[currentRow][currentColumn] is TitleCell { Composing: true } ? "IME変換中" : pending is not null ? "編集中・未確定" : cell.Editable ? "選択モード" : "参照専用";
+        string Display(string? value) => cell.Key?.Kind is "Select" or "LocalSelect" ? SelectDisplay(cell, value) : value ?? "（空値）";
+        string ObservedDisplay(string? value) => value is null ? "（空値）" : cell.Key?.Kind is "Select" or "LocalSelect"
+            ? cell.Options.SingleOrDefault(o => o.Id == value)?.Name ?? $"未確認 [{value}]" : value;
+        var lines = new List<string> { $"行 {currentRow + 1} / {layout.Visible[currentColumn].Name}  —  {selectionMode.Text}",
+            $"値: {(cell.Key is null ? cell.Display : Display(session.Workspace.Value(cell)))}" };
+        if (pending is not null) lines.Add($"未確定文字: {pending}\nEnter / Tabでセル確定、Escで未確定文字を取り消します。IMEの確定とセル確定は別です。");
+        if (markers[currentRow][currentColumn].Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
+        if (field?.Observation is { } observed)
+            lines.Add($"B 基準: {ObservedDisplay(field.Baseline)}\nL ローカル: {Display(field.Change is { } local ? local.Value : field.Baseline)}\nR GitHub: {(observed.Availability is ValueAvailability.Present or ValueAvailability.Empty ? ObservedDisplay(observed.Value) : EditingWorkspace.AvailabilityText(observed.Availability))}\n観測: {observed.At.LocalDateTime:g}");
+        lines.Add($"{row.Cells[^1].Display}\nProject: {projectId} / 項目: {row.ItemId} / 所有: {cell.Key?.Kind ?? "参照"} / ID: {cell.Key?.NodeId} / フィールド: {cell.Key?.FieldId}");
+        selectedDetails.Text = string.Join("\n", lines);
     }
     private IEnumerable<EditCell> Range()
     {
@@ -416,14 +534,15 @@ internal sealed partial class EditingGrid : Grid
         public TitleCell(EditingGrid owner, int row, int column, EditCell cell)
         {
             this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             IsReadOnly = !cell.Editable; Refresh();
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
-            TextCompositionStarted += (_, _) => { composing = true; Editing = true; };
-            TextCompositionEnded += (_, _) => composing = false;
+            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.selectionMode.Text = "IME変換中"; };
+            TextCompositionEnded += (_, _) => { composing = false; owner.UpdateSelectedDetails(); };
             TextChanging += (_, _) =>
             {
                 if (restoring || !cell.Editable || !owner.CurrentEditor(row, column, this)) return;
-                Editing = true; owner.session.Workspace.SetBuffer(cell, Text); _ = owner.session.FlushAsync();
+                Editing = true; owner.session.Workspace.SetBuffer(cell, Text); owner.UpdateSelectedDetails(); _ = owner.session.FlushAsync();
             };
         }
         public void Refresh()

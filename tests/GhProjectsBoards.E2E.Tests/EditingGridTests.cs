@@ -11,10 +11,12 @@ public sealed partial class RegistrationTests
     private static void OpenSaved(Window w, string project = "Project 1", bool profile = false)
     {
         Invoke(w, "ProjectsPageButton");
+        var openedNavigation = WorkspaceUi.OpenProjectNavigation(w);
         if (profile) { Wait(() => Element(w, "SavedProfiles").AsComboBox().Items.Length > 0); Element(w, "SavedProfiles").AsComboBox().Select(0); }
-        Wait(() => w.FindFirstDescendant(cf => cf.ByName(project)) is not null);
-        w.FindFirstDescendant(cf => cf.ByName(project))!.Click();
+        Wait(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(project)) is { } entry && !entry.Properties.IsOffscreen.Value);
+        WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(project))!.Click();
         Wait(() => Text(w, "ProjectSummary").StartsWith(project));
+        if (openedNavigation) WorkspaceUi.CloseProjectNavigation(w);
         Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("GridCell0_0")) is not null);
     }
     private static void Register(Window w, int number)

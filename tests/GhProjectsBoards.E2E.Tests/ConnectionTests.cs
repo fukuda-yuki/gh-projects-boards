@@ -282,10 +282,7 @@ public sealed class ConnectionTests
         }
     }
 
-    private static AutomationElement Element(Window window, string id)
-        => Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByAutomationId(id)),
-            TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100)).Result
-            ?? throw new AssertionException($"Missing control: {id}");
+    private static AutomationElement Element(Window window, string id) => WorkspaceUi.Element(window, id);
     private static Button Button(Window window, string id) => Element(window, id).AsButton();
     private static string Text(Window window, string id) => Element(window, id).Name;
     private static void SetText(Window window, string id, string value) => Element(window, id).AsTextBox().Text = value;

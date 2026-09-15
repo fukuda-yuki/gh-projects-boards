@@ -83,8 +83,8 @@ public sealed partial class RegistrationTests
             var confirm = Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByAutomationId("PrimaryButton")), TimeSpan.FromSeconds(5)).Result;
             Assert.That(confirm, Is.Not.Null); confirm!.AsButton().Invoke();
             Wait(() => Text(w, "RegistrationStatus").Contains("解除しました"));
-            Assert.That(Element(w, "DefaultRepository").AsTextBox().Text, Is.Empty);
-            Assert.That(Element(w, "DefaultRepository").IsEnabled, Is.False);
+            Assert.That(Element(w, "ProjectSettingsButton").IsEnabled, Is.False,
+                "With no selected Project, its settings and destination editor must be unavailable.");
             Assert.That(Directory.GetFiles(f.Data, "*.json"), Has.Length.EqualTo(1));
             Assert.That(f.Calls(), Has.Length.EqualTo(calls));
             Capture(w, f.Root, "local-removal");
@@ -128,10 +128,9 @@ public sealed partial class RegistrationTests
         Set(w, "HostInput", "example.test"); Invoke(w, "CheckConnectionButton");
         Wait(() => Text(w, "ConnectionStatus").Contains("接続を確認しました"));
     }
-    private static AutomationElement Element(Window w, string id) => Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByAutomationId(id)), TimeSpan.FromSeconds(5)).Result
-        ?? throw new AssertionException("Missing " + id);
+    private static AutomationElement Element(Window w, string id) => WorkspaceUi.Element(w, id);
     private static string Text(Window w, string id) => Element(w, id).Name;
-    private static void Invoke(Window w, string id) { Wait(() => Element(w, id).IsEnabled); Element(w, id).AsButton().Invoke(); }
+    private static void Invoke(Window w, string id) => WorkspaceUi.Invoke(w, id);
     private static void Set(Window w, string id, string value) => Element(w, id).AsTextBox().Text = value;
     private static void Wait(Func<bool> condition) => Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result, Is.True);
     private static void Capture(Window w, string root, string name) { Thread.Sleep(350); using var capture = FlaUI.Core.Capturing.Capture.Element(w); capture.ToFile(Path.Combine(root, name + ".png")); }

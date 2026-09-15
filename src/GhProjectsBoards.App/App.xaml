@@ -8,6 +8,18 @@
             <ResourceDictionary.MergedDictionaries>
                 <controls:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="SheetHeaderStyle" TargetType="Grid">
+                <Setter Property="Background" Value="{ThemeResource LayerFillColorAltBrush}"/>
+            </Style>
+            <Style x:Key="SheetCellStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+            </Style>
+            <Style x:Key="SheetSelectedCellStyle" TargetType="Border" BasedOn="{StaticResource SheetCellStyle}">
+                <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}"/>
+            </Style>
+            <Style x:Key="SheetDetailsStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

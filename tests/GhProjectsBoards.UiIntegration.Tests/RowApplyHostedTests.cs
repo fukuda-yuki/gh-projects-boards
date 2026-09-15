@@ -52,6 +52,7 @@ public sealed partial class HostedTests
         });
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().DisplayedRowIds.Contains("item-created1"));
         await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Ready<Button>("GridReapply");
         await Ui.Run(() => {
             var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
             Assert.That(grid.DisplayedRowIds, Is.EqualTo(new[] { "item-created1" }));
