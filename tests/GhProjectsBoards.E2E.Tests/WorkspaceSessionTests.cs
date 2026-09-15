@@ -128,19 +128,16 @@ public sealed partial class RegistrationTests
             Scroll(window, 100);
             var scroller = Element(window, "ProjectItems").Patterns.Scroll.Pattern;
             Assert.That(scroller.HorizontallyScrollable.Value, Is.True, "This small-window workload must exercise horizontal scrolling.");
-            Wait(() =>
-            {
-                scroller.SetScrollPercent(100, 100);
-                FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
-                return Math.Abs(scroller.HorizontalScrollPercent.Value - 100) < 1
+            ScrollEndpoint(window, 100, horizontal: true);
+            Wait(() => Math.Abs(scroller.HorizontalScrollPercent.Value - 100) < 1
                     && Math.Abs(scroller.VerticalScrollPercent.Value - 100) < 1
-                    && window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell100_1")) is not null;
-            });
+                    && window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell100_1")) is { } lastCell
+                    && !lastCell.Properties.IsOffscreen.Value);
             Wait(() => Math.Abs(Element(window, "GridHeader1").BoundingRectangle.Left
                 - Element(window, "GridCell100_1").BoundingRectangle.Left - headerOffset) < 2);
             Assert.That(Element(window, "GridHeader1").BoundingRectangle.Top, Is.EqualTo(header.Top).Within(1));
             Screenshot(window, "04-small-window-scrolled-header");
-            scroller.SetScrollPercent(0, -1); Scroll(window, 0);
+            ScrollEndpoint(window, 0, horizontal: true); Scroll(window, 0);
 
             ReorderColumns(window);
             Assert.That(Preferences(fixture, "P1")[1].GetProperty("Id").GetProperty("FieldId").GetString(), Is.EqualTo("P1C"));
@@ -218,6 +215,8 @@ public sealed partial class RegistrationTests
         void Screenshot(Window window, string phase)
         {
             var name = "workspace-" + phase + "-" + assemblyHash[..12];
+            var titleBar = window.BoundingRectangle;
+            Mouse.MoveTo(new System.Drawing.Point((int)titleBar.Left + 120, (int)titleBar.Top + 16));
             Capture(window, fixture.Root, name);
             var bounds = window.BoundingRectangle;
             File.WriteAllText(Path.Combine(fixture.Root, name + ".json"), JsonSerializer.Serialize(new {
@@ -234,6 +233,8 @@ public sealed partial class RegistrationTests
         {
             window.Patterns.Transform.Pattern.Resize(width, height); window.Move(24, 24);
             Wait(() => Math.Abs(window.BoundingRectangle.Width - width) <= 2 && Math.Abs(window.BoundingRectangle.Height - height) <= 2);
+            // The native window rectangle precedes the XAML responsive-pane update.
+            FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(350);
         }
     }
 

@@ -64,8 +64,17 @@ public sealed partial class RegistrationTests
             foreach (var target in list.Items.Where(i => i.Name.Contains("新規作成 / sample-user/first / Same title"))) target.AddToSelection();
             Invoke(w, "PrimaryButton"); Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
-            Capture(w, f.Root, "creation-mixed-review"); Invoke(w, "PrimaryButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
+            Capture(w, f.Root, "creation-mixed-review");
+            // Two creations, initial setup and an existing update each require
+            // paced dispatches, independent read-back and the final UI handoff.
+            var completionClock = System.Diagnostics.Stopwatch.StartNew();
+            Invoke(w, "PrimaryButton");
+            var completed = FlaUI.Core.Tools.Retry.WhileFalse(
+                () => Text(w, "RegistrationStatus").Contains("Apply処理を停止"),
+                TimeSpan.FromSeconds(60), TimeSpan.FromMilliseconds(100)).Result;
+            completionClock.Stop();
+            TestContext.WriteLine($"Mixed Apply approval-to-visible-stop: observed={completed}, elapsedMs={completionClock.Elapsed.TotalMilliseconds:F1}");
+            Assert.That(completed, Is.True, "The mixed batch must finish and publish its result in the ordinary workspace.");
             var creations = Durable(f).GetProperty("Journal")[0].GetProperty("Creations");
             Assert.That(creations.GetArrayLength(), Is.EqualTo(2));
             Assert.That(creations.EnumerateArray().All(c => c.GetProperty("Completed").GetBoolean()), Is.True, Text(w, "RegistrationStatus"));

@@ -55,7 +55,7 @@ public sealed partial class RegistrationTests
             var rows = Element(w, "ProjectItems").AsListBox().Items;
             Assert.That(rows[0].Name, Does.Contain("sample-user/first"));
             Assert.That(rows[1].Name, Does.Contain("sample-user/second"));
-            Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Scroll(w, 100);
             Wait(() => Element(w, "ProjectItems").AsListBox().Items.Any(i => i.Name.Contains("#101")));
             Capture(w, f.Root, "registered");
             AddUrl(w, 1);
