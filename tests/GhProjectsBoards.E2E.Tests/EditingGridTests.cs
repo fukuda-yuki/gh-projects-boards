@@ -65,14 +65,21 @@ public sealed partial class RegistrationTests
     private static JsonElement Durable(Fixture f)
     {
         var directory = Path.Combine(f.Data, "Drafts");
-        var file = FlaUI.Core.Tools.Retry.WhileNull(() => Directory.Exists(directory)
-            ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null,
-            TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
-        Assert.That(file, Is.Not.Null, "A committed checkpoint must exist.");
-        // Observe the old or new atomic checkpoint without blocking its replacement.
-        using var stream = new FileStream(file!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var document = JsonDocument.Parse(stream);
-        return document.RootElement.Clone();
+        using var document = FlaUI.Core.Tools.Retry.WhileNull(() =>
+        {
+            try
+            {
+                var file = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null;
+                if (file is null) return null;
+                // Observe the old or new checkpoint without blocking replacement;
+                // the file can be replaced between enumeration and opening it.
+                using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                return JsonDocument.Parse(stream);
+            }
+            catch (FileNotFoundException) { return null; }
+        }, TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
+        Assert.That(document, Is.Not.Null, "A committed checkpoint must exist.");
+        return document!.RootElement.Clone();
     }
     [Test]
     public void GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo()

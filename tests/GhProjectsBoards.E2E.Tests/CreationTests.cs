@@ -172,7 +172,7 @@ public sealed partial class RegistrationTests
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / " + title)));
             list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / " + title)).Select(); Invoke(w, "PrimaryButton");
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null); Invoke(w, "PrimaryButton");
+            Element(w, "ApplyReviewDialog"); Invoke(w, "PrimaryButton");
         }
     }
 }
