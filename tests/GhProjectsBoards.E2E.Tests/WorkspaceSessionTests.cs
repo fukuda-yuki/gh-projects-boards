@@ -216,7 +216,10 @@ public sealed partial class RegistrationTests
         {
             var name = "workspace-" + phase + "-" + assemblyHash[..12];
             var titleBar = window.BoundingRectangle;
-            Mouse.MoveTo(new System.Drawing.Point((int)titleBar.Left + 120, (int)titleBar.Top + 16));
+            Mouse.Position = new System.Drawing.Point((int)titleBar.Left + 120, (int)titleBar.Top + 16);
+            // Let native help popups fade after leaving the table. Captures are
+            // outside the measured interaction boundary.
+            FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(500);
             Capture(window, fixture.Root, name);
             var bounds = window.BoundingRectangle;
             File.WriteAllText(Path.Combine(fixture.Root, name + ".json"), JsonSerializer.Serialize(new {

@@ -298,6 +298,7 @@ public sealed partial class HostedTests
     {
         await Ui.Run(() => Ui.Click("ProjectSettingsButton"));
         await Ui.Until(() => SettingsContent() is not null);
+        await Ui.Until(() => Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!) is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!).StartBringIntoView());
         await Ui.Idle();
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!)));
