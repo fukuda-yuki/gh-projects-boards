@@ -29,20 +29,27 @@ public sealed partial class RegistrationPanel
         {
             var list = new ListView { SelectionMode = ListViewSelectionMode.Multiple, Height = 280 };
             AutomationProperties.SetAutomationId(list, "ApplyTargetRows");
+            var canonicalIds = Workspace.Drafts!.Workspace.Open(selected).Select(r => r.ItemId).ToHashSet();
             var targets = selected.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null)
                 .Select(i => new ApplyTarget(i.Id.NodeId, selected.Snapshot.Issues[i.ContentId!].Repository.NameWithOwner + " #" + selected.Snapshot.Issues[i.ContentId!].Number + " / " + selected.Snapshot.Issues[i.ContentId!].Title.Value))
                 .Concat((Workspace.Drafts?.Workspace.LocalRows ?? []).Where(r => r.ProjectId == selected.Snapshot.Id.NodeId)
-                    .Select(r => new ApplyTarget(r.Id, $"新規作成 / {r.Repository} / {r.Title}"))).ToArray();
-            list.ItemsSource = targets;
+                    .Select(r => new ApplyTarget(r.Id, $"新規作成 / {r.Repository} / {r.Title}"))).Where(t => canonicalIds.Contains(t.Id)).ToArray();
+            var visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
+            var includeHidden = new CheckBox { Content = "非表示行も候補に含める", IsChecked = false }; AutomationProperties.SetAutomationId(includeHidden, "ApplyIncludeHidden");
+            var counts = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(counts, "ApplyTargetCounts");
+            void Counts() => counts.Text = $"全候補 {targets.Length} / 表示 {targets.Count(t => visible.Contains(t.Id))} / 選択 {list.SelectedItems.Count} / 非表示の作業 {Workspace.Drafts!.Workspace.Open(selected).Count(r => !visible.Contains(r.ItemId) && Workspace.Drafts.Workspace.RowHasWork(r))}";
+            void Populate() { list.ItemsSource = targets.Where(t => includeHidden.IsChecked == true || visible.Contains(t.Id)).ToArray(); Counts(); }
+            includeHidden.Checked += (_, _) => Populate(); includeHidden.Unchecked += (_, _) => Populate(); list.SelectionChanged += (_, _) => Counts(); Populate();
             string Excluded() => "選択行だけを検証します。未選択の未完成行は送信しません。新規作成と既存更新は別操作です。";
             var pickContent = new StackPanel { Spacing = 8 };
-            pickContent.Children.Add(new TextBlock { Text = $"選択候補 {targets.Length} 件（既存Issue・新規作成）。\n" + Excluded(), TextWrapping = TextWrapping.Wrap }); pickContent.Children.Add(list);
+            pickContent.Children.Add(new TextBlock { Text = $"選択候補 {targets.Length} 件（既存Issue・新規作成）。\n" + Excluded(), TextWrapping = TextWrapping.Wrap }); pickContent.Children.Add(counts); pickContent.Children.Add(includeHidden); pickContent.Children.Add(list);
             var pick = new ContentDialog { XamlRoot = XamlRoot, Title = $"{selected.Snapshot.Title} のApply対象を選択", Content = pickContent,
                 PrimaryButtonText = "選択行を照合", CloseButtonText = "キャンセル", DefaultButton = ContentDialogButton.Close };
             AutomationProperties.SetAutomationId(pick, "ApplySelectionDialog");
             if (await ShowDialogAsync(pick) != ContentDialogResult.Primary || list.SelectedItems.Count == 0) return;
             if (owner.Selected != selected) return;
-            await owner.PrepareApplyAsync(list.SelectedItems.Cast<ApplyTarget>().Select(t => t.Id).ToHashSet());
+            var selectedIds = list.SelectedItems.Cast<ApplyTarget>().Select(t => t.Id).ToArray();
+            await owner.PrepareApplyAsync(selectedIds.ToHashSet(), new(selected.Snapshot.Id, visible, selectedIds, includeHidden.IsChecked == true));
             if (!IsCurrent(owner, expected)) return;
             if (Workspace.ApplyReview is not { } review) return;
             var text = $"{review.Batch.Project.Scope.Host} / {Workspace.ProfileLogin} / ID {review.Batch.Project.Scope.ViewerId}\n{review.Batch.ProjectName} / {review.Batch.Project.NodeId}\n選択行 {review.SelectedRows} / 更新 {review.Batch.Operations.Length} / 作成 {review.Batch.Creations?.Length ?? 0}\n未確定文字 {review.PendingBuffers} 件は除外（自動確定しません）\n";

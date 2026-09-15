@@ -10,6 +10,7 @@ public sealed partial class RegistrationPanel : UserControl
     private RegistrationWorkspace? workspace;
     private ProjectChoice? choice;
     private ProjectRegistration? rendered;
+    private long renderedRefreshGeneration;
     private bool updating;
     private DispatcherTimer? deferredRendering;
     private int revision = -1;
@@ -131,10 +132,13 @@ public sealed partial class RegistrationPanel : UserControl
                         }
                         return;
                     }
+                    var previousGrid = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault();
+                    var previousProjection = previousGrid?.RowProjection.Project == selected.Snapshot.Id && renderedRefreshGeneration == workspace.AcceptedRefreshGeneration ? previousGrid?.RowProjection : null;
+                    renderedRefreshGeneration = workspace.AcceptedRefreshGeneration;
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();
-                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
+                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;

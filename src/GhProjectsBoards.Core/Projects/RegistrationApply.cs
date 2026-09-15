@@ -3,7 +3,7 @@ namespace GhProjectsBoards.Core.Projects;
 internal sealed partial class RegistrationWorkspace
 {
     public ApplyReview? ApplyReview { get; private set; }
-    public Task PrepareApplyAsync(IReadOnlySet<string> items) => RunAsync(async token =>
+    public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null) => RunAsync(async token =>
     {
         ApplyReview = null; RequireConnection();
         if (Selected is not { } selected || Drafts is not { } session) return;
@@ -20,7 +20,16 @@ internal sealed partial class RegistrationWorkspace
         }, () => Selected == selected && CanRead && !token.IsCancellationRequested
             && (session.Workspace.HasCheckpoint || store.MatchesLegacy(selected.Snapshot.Id.Scope, registrations))))
         { Status = session.Status; return; }
-        registrations[registrations.IndexOf(selected)] = fetched; Selected = fetched;
+        registrations[registrations.IndexOf(selected)] = fetched; Selected = fetched; AcceptedRefreshGeneration++;
+        if (viewSelection is not null)
+        {
+            var viewProblem = session.Workspace.ViewProblem(fetched, session.Workspace.RowView(fetched));
+            if (viewSelection.Project != fetched.Snapshot.Id || !items.SetEquals(viewSelection.Selected)
+                || viewProblem is not null || viewSelection.NeedsConfirmation(session.Workspace.EvaluateRows(fetched).Select(r => r.ItemId)))
+            { Status = "再取得で表示対象が変わりました。Apply対象を再選択・確認してください。"; return; }
+            if (!viewSelection.IncludeHidden && items.Any(id => !viewSelection.Visible.Contains(id)))
+            { Status = "非表示行を含める明示選択が必要です。Apply対象を再選択してください。"; return; }
+        }
         var destinations = new Dictionary<string, CreationRepository>();
         var remote = new ApplyRemote(service!, context!);
         foreach (var row in session.Workspace.LocalRows.Where(r => items.Contains(r.Id) && r.ProjectId == fetched.Snapshot.Id.NodeId))

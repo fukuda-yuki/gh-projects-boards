@@ -12,6 +12,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
     private readonly HashSet<ConnectionScope> blockedDrafts = [];
     public event Action? Transitioning;
     public Func<bool>? CanRefresh { get; set; }
+    public long AcceptedRefreshGeneration { get; private set; }
     public void CancelPendingEdits() => Transitioning?.Invoke();
     public DraftSession? Drafts => Profile is { } scope ? drafts.GetValueOrDefault(scope) : null;
     public async Task<bool> PrepareLocalRowsAsync()
@@ -195,7 +196,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
             }
             registrations.RemoveAll(r => r.Snapshot.Id == choice.Id); registrations.Add(saved);
             attempts[choice.Id] = RegistrationAttempt.Complete;
-            if (generation == requestGeneration) { Selected = saved; Incomplete = null; }
+            if (generation == requestGeneration) { Selected = saved; Incomplete = null; if (refresh) AcceptedRefreshGeneration++; }
             Status = refresh ? "最新取得とフィールド照合をローカル保存しました。競合・未確認欄を確認してください。GitHubは変更していません。" : "登録完了：取得結果と設定をローカルに保存しました。";
         }, choice.Id);
 
