@@ -69,10 +69,12 @@ public sealed class LiveApplyTests
             {
                 w = reopenedApp.GetMainWindow(automation, TimeSpan.FromSeconds(20)) ?? throw new AssertionException("Missing reopened window");
                 WinUiProcess.AssertRuntime(reopened); Keyboard.TypeVirtualKeyCode(0x12); w.SetForeground(); Click("ProjectsPageButton");
-                Wait(() => E("SavedProfiles").AsComboBox().Items.Length == 1);
-                E("SavedProfiles").AsComboBox().Select(0);
+                WorkspaceUi.OpenProjectNavigation(w);
+                WorkspaceUi.SelectCombo(w, "SavedProfiles", 0);
                 var projectTitle = Checkpoint().GetProperty("Registrations")[0].GetProperty("Snapshot").GetProperty("Title").GetString()!;
-                Wait(() => w.FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null); w.FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
+                WorkspaceUi.OpenProjectNavigation(w);
+                Wait(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null);
+                WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
                 Wait(() => E($"GridCell{row}_0").AsTextBox().Text == marker + " B"); VerifyRemote(marker + " B", null);
                 Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.EqualTo(3));
                 w.Close(); Wait(() => reopened.HasExited); Assert.That(reopened.ExitCode, Is.Zero);

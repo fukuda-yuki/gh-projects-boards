@@ -37,10 +37,14 @@ public sealed partial class RegistrationTests
     private static void AddCreationRow(Fixture f, Window w, int index, string title, int? expectedLocalCount = null)
     {
         Invoke(w, "GridAddRow"); LocalCount(f, expectedLocalCount ?? index - 100); Scroll(w, 100); Edit(w, index, title);
-        Element(w, $"GridCell{index}_0").Click(); Key(VirtualKeyShort.TAB, VirtualKeyShort.TAB);
+        // Enter commits the last row and keeps its title selected. Continue from
+        // that native focus after layout settles instead of clicking stale bounds.
+        Wait(() => Element(w, $"GridCell{index}_0").Properties.HasKeyboardFocus.Value);
+        Key(VirtualKeyShort.TAB, VirtualKeyShort.TAB);
         Wait(() => Element(w, $"GridCell{index}_2").Properties.HasKeyboardFocus.Value);
         Set(w, $"GridCell{index}_2", "sample-user/first"); Key(VirtualKeyShort.RETURN);
-        Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(0, -1);
+        var scroll = Element(w, "ProjectItems").Patterns.Scroll.Pattern;
+        if (scroll.HorizontallyScrollable.Value) scroll.SetScrollPercent(0, -1);
     }
     [Test]
     public void OrdinaryCreationMixedApplyCreatesTwoAndReopensWithoutReplay()
@@ -50,7 +54,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Edit(w, 0, "Existing update");
-            AddCreationRow(f, w, 101, "Same title"); Element(w, "GridCell101_1").AsComboBox().Select("Done");
+            AddCreationRow(f, w, 101, "Same title"); WorkspaceUi.SelectCombo(w, "GridCell101_1", "Done");
             AddCreationRow(f, w, 102, "Same title");
             Invoke(w, "GridAddRow"); LocalCount(f, 3);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);

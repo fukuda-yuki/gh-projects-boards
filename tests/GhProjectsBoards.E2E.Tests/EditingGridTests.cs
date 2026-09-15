@@ -12,7 +12,11 @@ public sealed partial class RegistrationTests
     {
         Invoke(w, "ProjectsPageButton");
         var openedNavigation = WorkspaceUi.OpenProjectNavigation(w);
-        if (profile) { Wait(() => Element(w, "SavedProfiles").AsComboBox().Items.Length > 0); Element(w, "SavedProfiles").AsComboBox().Select(0); }
+        if (profile)
+        {
+            WorkspaceUi.SelectCombo(w, "SavedProfiles", 0);
+            WorkspaceUi.OpenProjectNavigation(w);
+        }
         Wait(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(project)) is { } entry && !entry.Properties.IsOffscreen.Value);
         WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(project))!.Click();
         Wait(() => Text(w, "ProjectSummary").StartsWith(project));
@@ -31,6 +35,8 @@ public sealed partial class RegistrationTests
     { var c = Element(w, $"GridCell{row}_0").AsTextBox(); c.Click(); c.Text = text; Key(VirtualKeyShort.RETURN); }
     private static void Scroll(Window w, double percent)
     {
+        Element(w, "GridReapply").Focus();
+        Wait(() => Element(w, "GridReapply").Properties.HasKeyboardFocus.Value);
         // Selection/flyout focus can finish after UIA returns. Wait for the requested public scroll position.
         Wait(() =>
         {
@@ -58,9 +64,9 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
-            Edit(w, 0, "Shared local"); Element(w, "GridCell0_1").AsComboBox().Select("Done");
+            Edit(w, 0, "Shared local"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Scroll(w, 100); Edit(w, 100, "Last row");
-            Element(w, "GridCell100_1").AsComboBox().Select("Done");
+            WorkspaceUi.SelectCombo(w, "GridCell100_1", "Done");
             Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 4"));
             OpenSaved(w, "Project 2");
             Assert.That(CellText(w, 0), Is.EqualTo("Shared local"));
@@ -158,7 +164,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
-            Edit(w, 0, "Shared survives"); Element(w, "GridCell0_1").AsComboBox().Select("Done");
+            Edit(w, 0, "Shared survives"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Invoke(w, "UnregisterProjectButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("LocalUnregisterConfirmation")) is not null);
             Element(w, "CloseButton").AsButton().Invoke();

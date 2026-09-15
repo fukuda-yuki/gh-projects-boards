@@ -50,10 +50,36 @@ internal static class WorkspaceUi
         InvokeRoute(window, "ToggleProjectNavigation");
         Wait(() => !Visible(Find(window, "SavedProfiles")), "Project navigation must dismiss before returning to the sheet.");
     }
-    internal static AutomationElement ProjectNavigation(Window window) => Retry.WhileNull(
-        () => window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Tree)).SingleOrDefault(Visible),
-        TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100)).Result
-        ?? throw new AssertionException("The visible Project tree did not finish loading.");
+    internal static AutomationElement ProjectNavigation(Window window)
+    {
+        var candidates = Array.Empty<AutomationElement>();
+        var result = Retry.WhileNull(() =>
+        {
+            candidates = window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Tree)).Where(Visible).ToArray();
+            return candidates.Length == 1 ? candidates[0] : null;
+        }, TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100)).Result;
+        if (result is not null) return result;
+        var description = string.Join("; ", candidates.Select(e => $"id={e.AutomationId}, class={e.ClassName}, runtime={string.Join(',', e.Properties.RuntimeId.Value)}, bounds={e.BoundingRectangle}, parent={e.Parent?.ClassName}"));
+        throw new AssertionException("The visible Project tree did not become unique: " + description);
+    }
+    internal static void SelectCombo(Window window, string id, int index) => SelectCombo(window, id,
+        items => items.Length > index ? items[index] : null);
+    internal static void SelectCombo(Window window, string id, string name) => SelectCombo(window, id,
+        items => items.FirstOrDefault(item => item.Name == name));
+    private static void SelectCombo(Window window, string id, Func<ComboBoxItem[], ComboBoxItem?> choose)
+    {
+        var combo = Element(window, id).AsComboBox();
+        // FlaUI Items expands the popup. Select through its public item pattern,
+        // then explicitly finish that popup before querying the underlying view.
+        var item = Retry.WhileNull(() => choose(combo.Items), TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result
+            ?? throw new AssertionException("The requested option did not load: " + id);
+        var name = item.Name;
+        item.Select();
+        Wait(() => combo.Patterns.Selection.Pattern.Selection.Value.Any(selected => selected.Name == name), "The option must be selected: " + id);
+        combo.Patterns.ExpandCollapse.Pattern.Collapse();
+        Wait(() => combo.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == FlaUI.Core.Definitions.ExpandCollapseState.Collapsed,
+            "The options popup must close: " + id);
+    }
     internal static void CloseProjectSettings(Window window)
     {
         if (!Visible(Find(window, "DefaultRepository"))) return;
@@ -74,8 +100,11 @@ internal static class WorkspaceUi
             InvokeRoute(window, "ProjectSettingsButton");
         if (DiscoveryControls.Contains(id))
         {
-            var group = Find(window, "ProjectDiscoverySearchExpander");
-            if (group is not null) group.Patterns.ExpandCollapse.Pattern.Expand();
+            Wait(() => Visible(Find(window, "ProjectDiscoverySearchExpander")), "The discovery form must load before expanding its search route.");
+            var group = Find(window, "ProjectDiscoverySearchExpander")!;
+            group.Patterns.ExpandCollapse.Pattern.Expand();
+            Wait(() => group.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == FlaUI.Core.Definitions.ExpandCollapseState.Expanded,
+                "Project discovery search must expand.");
         }
         if (id.StartsWith("RowFilter-", StringComparison.Ordinal))
         {

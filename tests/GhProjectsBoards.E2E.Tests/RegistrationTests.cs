@@ -44,7 +44,7 @@ public sealed partial class RegistrationTests
             Invoke(w, "ProjectsPageButton"); Invoke(w, "AddProjectButton");
             Set(w, "DiscoveryOwner", "sample-user"); Invoke(w, "LoadRepositoriesButton");
             Wait(() => Element(w, "DiscoveryRepositories").AsComboBox().Items.Length == 3);
-            Element(w, "DiscoveryRepositories").AsComboBox().Select(1);
+            WorkspaceUi.SelectCombo(w, "DiscoveryRepositories", 1);
             Invoke(w, "SearchProjectsButton");
             Wait(() => Element(w, "ProjectCandidates").AsListBox().Items.Length == 1);
             Element(w, "ProjectCandidates").AsListBox().Select(0);
@@ -68,11 +68,14 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Invoke(w, "ProjectsPageButton");
+            var openedNavigation = WorkspaceUi.OpenProjectNavigation(w);
             Wait(() => Element(w, "SavedProfiles").AsComboBox().Items.Length == 1);
-            Element(w, "SavedProfiles").AsComboBox().Select(0);
-            var entry = Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByName("Project 1")), TimeSpan.FromSeconds(5)).Result;
+            WorkspaceUi.SelectCombo(w, "SavedProfiles", 0);
+            WorkspaceUi.OpenProjectNavigation(w);
+            var entry = Retry.WhileNull(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName("Project 1")), TimeSpan.FromSeconds(5)).Result;
             Assert.That(entry, Is.Not.Null); entry!.Click();
             Wait(() => Text(w, "ProjectSummary").Contains("項目 101"));
+            if (openedNavigation) WorkspaceUi.CloseProjectNavigation(w);
             Assert.That(Element(w, "DefaultRepository").AsTextBox().Text, Is.EqualTo("sample-user/first"));
             Assert.That(Text(w, "WorkspaceIdentity"), Does.Contain("未認証"));
             Assert.That(Element(w, "RefreshProjectButton").IsEnabled, Is.False);

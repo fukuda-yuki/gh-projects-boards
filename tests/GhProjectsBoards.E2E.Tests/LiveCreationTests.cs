@@ -91,10 +91,11 @@ public sealed class LiveCreationTests
             var fieldWrites = completed.SelectMany(c => c.GetProperty("Fields").EnumerateArray()).Sum(f => f.GetProperty("Attempts").GetArrayLength());
             Assert.That(mutationLines.Length, Is.EqualTo(3 + projectAdds + fieldWrites));
             Close(); var intentsBefore = File.ReadAllLines(Path.Combine(root!, "product-intents.jsonl")).Length;
-            Launch(); Click("ProjectsPageButton"); Wait(() => E("SavedProfiles").AsComboBox().Items.Length == 1);
-            E("SavedProfiles").AsComboBox().Select(0);
-            Wait(() => window!.FindFirstDescendant(cf => cf.ByName(savedTitle)) is not null);
-            window!.FindFirstDescendant(cf => cf.ByName(savedTitle))!.Click();
+            Launch(); Click("ProjectsPageButton"); WorkspaceUi.OpenProjectNavigation(window!);
+            WorkspaceUi.SelectCombo(window!, "SavedProfiles", 0);
+            WorkspaceUi.OpenProjectNavigation(window!);
+            Wait(() => WorkspaceUi.ProjectNavigation(window!).FindFirstDescendant(cf => cf.ByName(savedTitle)) is not null);
+            WorkspaceUi.ProjectNavigation(window!).FindFirstDescendant(cf => cf.ByName(savedTitle))!.Click();
             Wait(() => WorkspaceUi.ProjectInformation(w).Contains(Project)); Click("ApplyHistoryButton");
             Wait(() => window!.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null);
             Click("CloseButton"); Close();

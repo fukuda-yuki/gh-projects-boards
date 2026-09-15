@@ -69,7 +69,7 @@ public sealed partial class RegistrationTests
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
             Key(VirtualKeyShort.KEY_P, VirtualKeyShort.KEY_L, VirtualKeyShort.KEY_A, VirtualKeyShort.KEY_N, VirtualKeyShort.RETURN);
             Assert.That(CellText(window, 0), Is.EqualTo("plan"));
-            Element(window, "GridCell0_1").AsComboBox().Select("Done");
+            WorkspaceUi.SelectCombo(window, "GridCell0_1", "Done");
             Invoke(window, "GridUndo"); Wait(() => Element(window, "GridCell0_1").AsComboBox().SelectedItem!.Text == "Todo");
             Screenshot(window, "03-direct-and-f2-editing");
 
@@ -149,7 +149,7 @@ public sealed partial class RegistrationTests
             Assert.That(CellText(window, 101, 3), Is.EqualTo("sample-user/first"));
             Screenshot(window, "05-local-row-and-column-order");
             Invoke(window, "GridRowSettings");
-            Element(window, "RowSort").AsComboBox().Select(1);
+            WorkspaceUi.SelectCombo(window, "RowSort", 1);
             Set(window, "RowTitleFilter", "plan"); Screenshot(window, "06-view-configuration"); SaveRows(window);
             Wait(() => Text(window, "RowViewStatus").Contains("表示 2"));
             Assert.That(CellText(window, 0), Is.EqualTo("plan")); Assert.That(CellText(window, 1), Is.EqualTo("plan follow-up"));
