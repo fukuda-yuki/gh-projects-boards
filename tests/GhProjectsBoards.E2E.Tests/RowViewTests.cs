@@ -22,7 +22,10 @@ public sealed partial class RegistrationTests
             w.Patterns.Window.Pattern.SetWindowVisualState(FlaUI.Core.Definitions.WindowVisualState.Maximized);
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
             // The ordinary editor prepares R1/R3 for a noncontiguous filtered view.
-            Edit(w, 0, "keep Z"); Scroll(w, 100); Edit(w, 2, "keep A"); Scroll(w, 0);
+            Edit(w, 0, "keep Z");
+            if (Element(w, "ProjectItems").Patterns.Scroll.Pattern.VerticallyScrollable.Value) Scroll(w, 100);
+            Edit(w, 2, "keep A");
+            if (Element(w, "ProjectItems").Patterns.Scroll.Pattern.VerticallyScrollable.Value) Scroll(w, 0);
             ReorderColumns(w); Invoke(w, "GridRowSettings");
             Element(w, "RowSort").AsComboBox().Select(1); Element(w, "RowTitleFilter").AsTextBox().Text = "keep"; SaveRows(w);
             Assert.That(CellText(w, 0), Is.EqualTo("keep A")); Assert.That(CellText(w, 1), Is.EqualTo("keep Z"));
