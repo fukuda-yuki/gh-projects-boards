@@ -22,6 +22,7 @@ Write agent-facing and shared development documents in English. Respond to the u
 ## Execution
 
 - Inspect the branch, worktree and existing changes before editing; preserve the user's work. Work on an Issue-linked branch unless explicitly instructed otherwise.
+- When creating a feature branch from `origin/main`, use `git switch --no-track -c <branch> origin/main`. Its upstream must never be `origin/main`. Before handing off publication, check `branch.<branch>.remote` and `branch.<branch>.merge`: an existing upstream must name the intended same-name remote branch. For an unpublished branch, use repository-local `branch.autoSetupMerge=simple`, `push.default=simple` and `push.autoSetupRemote=true` so an ordinary first push establishes the same-name upstream. Do not change global Git configuration or push to main to work around an upstream mismatch.
 - Make the smallest coherent change. Do not prebuild later Issues or treat a skeleton as a completed feature. Do not merge unrelated experimental branches to obtain reusable code.
 - Pin required dependencies and review their exact artifacts and terms. Dependency changes require authority for the current outcome. Required commercial use must not depend on paid or company-size/revenue eligibility.
 - For WinUI work, load the relevant installed development-workflow, UI-testing and code-review skills; load design guidance when authoring XAML. Use the setup skill only for an explicit setup request. Repository requirements take precedence. Loading a skill does not authorize machine configuration changes.
