@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <UseWinUI>true</UseWinUI>
@@ -9,13 +9,17 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PlatformTarget>x64</PlatformTarget>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationManifest>../../src/GhProjectsBoards.App/app.manifest</ApplicationManifest>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <StartupObject>GhProjectsBoards.UiIntegration.Tests.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[1.8.260804001]" />
-    <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
+    <PackageReference Include="NUnitLite" Version="[4.6.1]" PrivateAssets="all" />
+    <ProjectReference Include="../../src/GhProjectsBoards.App/GhProjectsBoards.App.csproj" />
+    <ProjectReference Include="../GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj" />
   </ItemGroup>
 </Project>

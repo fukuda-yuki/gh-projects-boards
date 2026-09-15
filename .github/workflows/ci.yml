@@ -19,3 +19,5 @@ jobs:
         run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci
       - name: Discover desktop tests (not desktop or IME acceptance)
         run: dotnet test tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj --configuration Release --no-build --list-tests
+      - name: Discover hosted WinUI tests (no UI execution on this runner)
+        run: ./scripts/Test-UiIntegration.ps1 -Discover -NoBuild

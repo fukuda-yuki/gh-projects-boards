@@ -14,20 +14,66 @@ public sealed partial class RegistrationPanel : UserControl
     private DispatcherTimer? deferredRendering;
     private int revision = -1;
     private ConnectionScope? displayedProfile;
+    private bool subscribed;
+    private int lifetime;
+    private ContentDialog? activeDialog;
     internal RegistrationWorkspace Workspace => workspace!;
-    public RegistrationPanel() => InitializeComponent();
+    public RegistrationPanel()
+    {
+        InitializeComponent();
+        Owner.TextChanged += (_, _) => Repositories.ItemsSource = null;
+        Loaded += (_, _) => { Attach(); Update(); };
+        Unloaded += (_, _) => Detach();
+    }
     internal void Initialize(RegistrationWorkspace value)
     {
+        Detach();
         workspace = value;
-        workspace.Changed += Update;
-        workspace.Transitioning += () => { foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.CancelPending(); };
-        workspace.CanRefresh = () => EditorHost.Children.OfType<EditingGrid>().All(grid => grid.CanRefresh);
-        Owner.TextChanged += (_, _) => { Repositories.ItemsSource = null; };
+        rendered = null; revision = -1; displayedProfile = null;
+        if (IsLoaded) Attach();
         Update();
+    }
+    private void Attach()
+    {
+        if (workspace is null || subscribed) return;
+        subscribed = true;
+        workspace.Changed += Update;
+        workspace.Transitioning += CancelGridWork;
+        workspace.CanRefresh = CanRefreshEditors;
+    }
+    private bool CanRefreshEditors() => EditorHost.Children.OfType<EditingGrid>().All(grid => grid.CanRefresh);
+    private void CancelGridWork()
+    {
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            var expected = lifetime;
+            if (!DispatcherQueue.TryEnqueue(() => { if (expected == lifetime && IsLoaded) CancelGridWork(); }))
+                throw new InvalidOperationException("The registration UI dispatcher is unavailable.");
+            return;
+        }
+        foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.CancelPending();
+    }
+    private void Detach()
+    {
+        lifetime++;
+        deferredRendering?.Stop(); deferredRendering = null;
+        activeDialog?.Hide();
+        CancelGridWork();
+        if (workspace is null || !subscribed) return;
+        workspace.Changed -= Update;
+        workspace.Transitioning -= CancelGridWork;
+        if (workspace.CanRefresh == CanRefreshEditors) workspace.CanRefresh = null;
+        subscribed = false;
     }
     internal void Update()
     {
-        if (!DispatcherQueue.HasThreadAccess) { DispatcherQueue.TryEnqueue(Update); return; }
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            var expected = lifetime;
+            if (!DispatcherQueue.TryEnqueue(() => { if (expected == lifetime && IsLoaded) Update(); }))
+                throw new InvalidOperationException("The registration UI dispatcher is unavailable.");
+            return;
+        }
         if (workspace is null) return;
         updating = true;
         try
@@ -133,34 +179,46 @@ public sealed partial class RegistrationPanel : UserControl
     private async void ProfileChanged(object sender, SelectionChangedEventArgs e)
     {
         if (updating || Profiles.SelectedIndex < 0) return;
-        var profiles = Workspace.Registrations.Select(r => r.Snapshot.Id.Scope).Distinct().ToArray();
-        await Workspace.SelectProfileAsync(profiles[Profiles.SelectedIndex]); choice = null; ShowPreview();
+        var owner = Workspace; var expected = lifetime;
+        var profiles = owner.Registrations.Select(r => r.Snapshot.Id.Scope).Distinct().ToArray();
+        await owner.SelectProfileAsync(profiles[Profiles.SelectedIndex]);
+        if (!IsCurrent(owner, expected)) return;
+        choice = null; ShowPreview();
     }
     private async void Navigate(TreeView sender, TreeViewItemInvokedEventArgs e)
     {
-        if (e.InvokedItem is TreeViewNode { Content: NavigationEntry entry }) { await Workspace.SelectAsync(entry.Registration.Snapshot.Id); ShowPreview(); }
+        var owner = Workspace; var expected = lifetime;
+        if (e.InvokedItem is TreeViewNode { Content: NavigationEntry entry }) { await owner.SelectAsync(entry.Registration.Snapshot.Id); if (IsCurrent(owner, expected)) ShowPreview(); }
     }
     private void OwnerSelected(object sender, SelectionChangedEventArgs e)
     {
         if (Owners.SelectedItem is OwnerChoice owner) { Owner.Text = owner.Login; Repositories.ItemsSource = null; }
     }
-    private async void LoadOwners(object sender, RoutedEventArgs e) => await Workspace.DiscoverAsync(async (d, c, t) =>
-    { var result = await d.OwnersAsync(c, t); t.ThrowIfCancellationRequested(); Owners.ItemsSource = result; });
+    private bool IsCurrent(RegistrationWorkspace owner, int expected) => IsLoaded && expected == lifetime && ReferenceEquals(workspace, owner);
+    private async void LoadOwners(object sender, RoutedEventArgs e)
+    {
+        var owner = Workspace; var expected = lifetime;
+        await owner.DiscoverAsync(async (d, c, t) =>
+        { var result = await d.OwnersAsync(c, t); t.ThrowIfCancellationRequested(); if (IsCurrent(owner, expected)) Owners.ItemsSource = result; });
+    }
     private async void LoadRepositories(object sender, RoutedEventArgs e)
     {
         var owner = Owner.Text.Trim();
-        await Workspace.DiscoverAsync(async (d, c, t) => { var result = await d.RepositoriesAsync(c, owner, t); t.ThrowIfCancellationRequested(); Repositories.ItemsSource = new[] { "所有者の全Project" }.Concat(result.Select(r => r.NameWithOwner)).ToArray(); Repositories.SelectedIndex = 0; });
+        var source = Workspace; var expected = lifetime;
+        await source.DiscoverAsync(async (d, c, t) => { var result = await d.RepositoriesAsync(c, owner, t); t.ThrowIfCancellationRequested(); if (!IsCurrent(source, expected)) return; Repositories.ItemsSource = new[] { "所有者の全Project" }.Concat(result.Select(r => r.NameWithOwner)).ToArray(); Repositories.SelectedIndex = 0; });
     }
     private async void SearchProjects(object sender, RoutedEventArgs e)
     {
         var owner = Owner.Text.Trim(); var search = Search.Text;
         var repository = Repositories.SelectedIndex > 0 ? (Repositories.SelectedItem as string)?.Split('/').Last() : null;
-        await Workspace.DiscoverAsync(async (d, c, t) => { var result = await d.ProjectsAsync(c, owner, repository, search, t); t.ThrowIfCancellationRequested(); Candidates.ItemsSource = result; choice = null; Confirmation.Text = $"{result.Count} 件（全ページ取得済み）"; });
+        var source = Workspace; var expected = lifetime;
+        await source.DiscoverAsync(async (d, c, t) => { var result = await d.ProjectsAsync(c, owner, repository, search, t); t.ThrowIfCancellationRequested(); if (!IsCurrent(source, expected)) return; Candidates.ItemsSource = result; choice = null; Confirmation.Text = $"{result.Count} 件（全ページ取得済み）"; });
     }
     private async void ResolveUrl(object sender, RoutedEventArgs e)
     {
         var url = Url.Text;
-        await Workspace.DiscoverAsync(async (d, c, t) => { var result = await d.ResolveAsync(c, url, t); t.ThrowIfCancellationRequested(); Candidates.ItemsSource = new[] { result }; Candidates.SelectedIndex = 0; });
+        var source = Workspace; var expected = lifetime;
+        await source.DiscoverAsync(async (d, c, t) => { var result = await d.ResolveAsync(c, url, t); t.ThrowIfCancellationRequested(); if (!IsCurrent(source, expected)) return; Candidates.ItemsSource = new[] { result }; Candidates.SelectedIndex = 0; });
     }
     private void CandidateSelected(object sender, SelectionChangedEventArgs e)
     {
@@ -172,7 +230,9 @@ public sealed partial class RegistrationPanel : UserControl
     private async void RegisterProject(object sender, RoutedEventArgs e)
     {
         if (choice is null) return;
-        await Workspace.RegisterAsync(choice, InitialRepository.Text); if (Workspace.Selected is not null || Workspace.Incomplete is not null) ShowPreview();
+        var owner = Workspace; var expected = lifetime;
+        await owner.RegisterAsync(choice, InitialRepository.Text);
+        if (IsCurrent(owner, expected) && (owner.Selected is not null || owner.Incomplete is not null)) ShowPreview();
     }
     private async void RefreshProject(object sender, RoutedEventArgs e)
     {
@@ -184,14 +244,17 @@ public sealed partial class RegistrationPanel : UserControl
     private async void RemoveProject(object sender, RoutedEventArgs e)
     {
         if (Workspace.Selected is not { } r) return;
-        await Workspace.StopAsync();
+        var owner = Workspace; var expected = lifetime;
+        await owner.StopAsync();
+        if (!IsCurrent(owner, expected) || owner.Selected != r) return;
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "ローカル登録を解除",
             Content = $"{r.Snapshot.Title}\nこのプロフィールの登録設定とキャッシュを削除します。GitHubのProject・Issue・項目は変更しません。下書きがある場合は保持・破棄を選択してください。他の登録で共有するIssueの下書きは保持します。",
             PrimaryButtonText = Workspace.HasDraftWork(r.Snapshot) ? "下書きを保持して解除" : "ローカル登録を解除", SecondaryButtonText = Workspace.HasDraftWork(r.Snapshot) ? "専用下書きを破棄して解除" : "", CloseButtonText = "キャンセル", DefaultButton = ContentDialogButton.Close };
         AutomationProperties.SetAutomationId(dialog, "LocalUnregisterConfirmation");
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary) await Workspace.UnregisterAsync(retainDrafts: true);
-        if (result == ContentDialogResult.Secondary) await Workspace.UnregisterAsync(discardDrafts: true);
+        var result = await ShowDialogAsync(dialog);
+        if (!IsCurrent(owner, expected) || owner.Selected != r) return;
+        if (result == ContentDialogResult.Primary) await owner.UnregisterAsync(retainDrafts: true);
+        if (result == ContentDialogResult.Secondary) await owner.UnregisterAsync(discardDrafts: true);
     }
     private sealed record NavigationEntry(ProjectRegistration Registration)
     {
