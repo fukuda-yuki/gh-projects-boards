@@ -22,6 +22,7 @@ internal sealed partial class EditingGrid : Grid
     private ColumnLayout layout;
     private readonly ProjectRegistration registration;
     private readonly Func<Task<bool>> prepareLocalRows;
+    private readonly Func<Task<string>> readClipboard;
     private readonly string projectId;
     private int currentRow, currentColumn, anchorRow, anchorColumn;
     private bool active;
@@ -34,20 +35,24 @@ internal sealed partial class EditingGrid : Grid
     {
         if (identity is not { } target) return;
         var created = session.Workspace.Creations.LastOrDefault(c => c.LocalId == target.Item && c.Completed);
-        if (created?.ItemId is { } item && created.Verified is { } issue)
+        if (created?.ItemId is { } item && created.Verified is { } issue && !session.Workspace.LocalRows.Any(r => r.Id == target.Item))
             target = (item, target.Field?.Kind switch { "LocalTitle" => new("Title", issue.Id), "LocalSelect" => new("Select", item, projectId, target.Field.FieldId), _ => null });
         var r = Array.FindIndex(rows, row => row.ItemId == target.Item);
         if (r < 0) { selection.Text = "選択していた項目はProjectで未観測です。別の行には移動していません。"; return; }
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
         if (c >= 0) Select(r, c, false, false);
     }
-    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows)
+    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null)
     {
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
+        this.readClipboard = readClipboard ?? (async () => await Clipboard.GetContent().GetTextAsync());
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         layout = session.Workspace.Columns(registration);
-        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(canonicalRows);
+        projection = previousProjection ?? new(registration.Snapshot.Id);
+        if (previousProjection is null) projection.Reapply(session.Workspace, registration);
+        else projection.Promote(session.Workspace);
+        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows));
         RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new() { Height = GridLength.Auto }); RowDefinitions.Add(new());
         var toolbar = new StackPanel { Spacing = 8 };
         var editCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -57,6 +62,10 @@ internal sealed partial class EditingGrid : Grid
         toolbar.Children.Add(rowCommands);
         var columnSettings = new Button { Content = "列の設定" }; AutomationProperties.SetAutomationId(columnSettings, "GridColumns");
         columnSettings.Click += async (_, _) => await ConfigureColumnsAsync(columnSettings); recoveryCommands.Children.Add(columnSettings);
+        var viewSettings = new Button { Content = "行の表示設定" }; AutomationProperties.SetAutomationId(viewSettings, "GridRowSettings");
+        viewSettings.Click += async (_, _) => await ConfigureRowsAsync(viewSettings); recoveryCommands.Children.Add(viewSettings);
+        var reapply = new Button { Content = "行表示を再適用" }; AutomationProperties.SetAutomationId(reapply, "GridReapply");
+        reapply.Click += (_, _) => ReapplyRows(reapply); recoveryCommands.Children.Add(reapply);
         void RowCommand(string text, string id, Func<EditRow[], string[]?> action)
         {
             var button = new Button { Content = text }; AutomationProperties.SetAutomationId(button, id);
@@ -65,7 +74,7 @@ internal sealed partial class EditingGrid : Grid
                 var request = generation;
                 var targets = active ? SelectedRows() : [];
                 if (!CanRefresh || !await prepareLocalRows() || request != generation || !IsLoaded) return;
-                Run(() => { var added = action(targets); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
+                Run(() => { var added = action(targets); projection.IncludeNew(session.Workspace.Open(registration), added ?? []); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
             };
             rowCommands.Children.Add(button);
         }
@@ -83,13 +92,15 @@ internal sealed partial class EditingGrid : Grid
         var paste = new Button { Content = "貼り付け" }; AutomationProperties.SetAutomationId(paste, "GridPaste");
         paste.Click += async (_, _) => await PasteAsync(); editCommands.Children.Add(paste);
         Command("値をクリア", "GridClear", ClearSelected);
-        Command("操作を元に戻す", "GridUndo", () => session.Workspace.Undo(projectId));
+        Command("操作を元に戻す", "GridUndo", Undo);
         var save = new Button { Content = "ローカル保存を再試行" }; AutomationProperties.SetAutomationId(save, "GridSave");
         save.Click += async (_, _) => { var request = generation; await session.FlushAsync(); if (IsLoaded && request == generation) Update(); }; recoveryCommands.Children.Add(save);
         var compare = new Button { Content = "競合・未確認を比較" }; AutomationProperties.SetAutomationId(compare, "GridConflicts");
         compare.Click += async (_, _) => await CompareAsync(); recoveryCommands.Children.Add(compare);
         Children.Add(toolbar);
         var info = new StackPanel { Spacing = 4 }; info.Children.Add(status); info.Children.Add(selection); info.Children.Add(columnNotice);
+        info.Children.Add(new ScrollViewer { Content = viewNotice, MaxHeight = 40, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        AutomationProperties.SetAutomationId(viewNotice, "RowViewStatus");
         AutomationProperties.SetAutomationId(columnNotice, "ColumnTransitionStatus");
         AutomationProperties.SetAutomationId(status, "DraftStatus"); AutomationProperties.SetAutomationId(selection, "GridSelection");
         SetRow(info, 1); Children.Add(info);
@@ -104,10 +115,18 @@ internal sealed partial class EditingGrid : Grid
         if (!active) throw new InvalidOperationException("セルを選択してください。Shift＋上下で複数行を選択できます。");
         return rows[Math.Min(anchorRow, currentRow)..(Math.Max(anchorRow, currentRow) + 1)];
     }
+    private void Undo()
+    {
+        if (!CanRefresh) throw new InvalidOperationException("IME変換中です。自然に確定・取消してからUndoしてください。");
+        session.Workspace.Undo(projectId);
+        // Undo restores original keys, including rows absent from the current projection.
+        if (!canonicalRows.Select(r => r.ItemId).SequenceEqual(session.Workspace.Open(registration).Select(r => r.ItemId))) RebuildRows();
+    }
     private void RebuildRows()
     {
         var identity = SelectionIdentity; generation++; active = false;
-        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(canonicalRows); list.Items.Clear(); controls.Clear(); markers.Clear();
+        projection.Promote(session.Workspace);
+        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear();
         BuildRows(); RestoreSelection(identity);
     }
     private void BuildRows()
@@ -228,11 +247,21 @@ internal sealed partial class EditingGrid : Grid
     private void Update()
     {
         if (!CanRefresh) return;
-        if (!rows.Where(r => r.IsLocal).Select(r => r.ItemId).SequenceEqual(session.Workspace.LocalRows.Where(r => r.ProjectId == projectId).Select(r => r.Id))) RebuildRows();
+        // The durable acknowledgement arrives before RegistrationWorkspace publishes the matching
+        // complete snapshot. Keep the existing selection/editor identity until that panel handoff.
+        if (canonicalRows.Any(row => row.IsLocal && !session.Workspace.LocalRows.Any(r => r.Id == row.ItemId)
+            && session.Workspace.Creations.Any(c => c.LocalId == row.ItemId && c.Completed && c.ItemId is { } id
+                && !registration.Snapshot.Items.Any(i => i.Id.NodeId == id)))) return;
+        if (!canonicalRows.Where(r => r.IsLocal).Select(r => r.ItemId).SequenceEqual(session.Workspace.LocalRows.Where(r => r.ProjectId == projectId).Select(r => r.Id))) { projection.IncludeNew(session.Workspace.Open(registration), session.Workspace.LocalRows.Where(r => r.ProjectId == projectId && !canonicalRows.Any(old => old.ItemId == r.Id)).Select(r => r.Id)); RebuildRows(); }
         updating = true;
         try
         {
             var canonical = canonicalRows;
+            var definition = session.Workspace.RowView(registration);
+            viewNotice.Text = $"全行 {canonical.Length} / 表示 {rows.Length} / 非表示の作業 {canonical.Count(r => !DisplayedRowIds.Contains(r.ItemId) && session.Workspace.RowHasWork(r))} / 一時表示 {rows.Count(r => projection.Temporary.Contains(r.ItemId))}\n条件: {definition.Sort} {(definition.Descending ? "降順" : "昇順")} [{definition.FieldId}] / タイトル: {definition.Title} / " + string.Join("; ", (definition.Filters ?? []).Select(f => $"[{f.FieldId}] {string.Join(",", f.OptionIds.Concat(f.States))}")) + " / 行の表示設定で解除・リセット";
+            if (projection.Problem is { } problem) viewNotice.Text += " / " + problem;
+            if (deferredViewNotice is not null) viewNotice.Text = deferredViewNotice + "\n" + viewNotice.Text;
+            if (projection.NeedsReapply(session.Workspace, registration)) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
             status.Text = $"このProject {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
             var hiddenChanges = hidden.Count(session.Workspace.Changed); var hiddenPending = hidden.Count(c => session.Workspace.Buffer(c) is not null);
@@ -304,7 +333,7 @@ internal sealed partial class EditingGrid : Grid
         {
             if (e.Key == VirtualKey.C) { Run(Copy); e.Handled = true; }
             if (e.Key == VirtualKey.V) { _ = PasteAsync(); e.Handled = true; }
-            if (e.Key == VirtualKey.Z) { Run(() => session.Workspace.Undo(projectId)); e.Handled = true; }
+            if (e.Key == VirtualKey.Z) { Run(Undo); e.Handled = true; }
             return;
         }
         var shift = Down(VirtualKey.Shift);
@@ -354,8 +383,8 @@ internal sealed partial class EditingGrid : Grid
         var destinations = rows.Select(row => row with { Cells = row.Cells.ToArray() }).ToArray();
         try
         {
-            var text = await Clipboard.GetContent().GetTextAsync();
-            if (generation != requestGeneration || !IsLoaded) return;
+            var text = await readClipboard();
+            if (generation != requestGeneration || !IsLoaded) { status.Text = "表示対象が変わったため、遅れて届いた貼り付けを中止しました。"; return; }
             Run(() => { if (!selected) throw new InvalidOperationException("セルを選択してください。"); session.Workspace.Paste(projectId, destinations, r, c, text); });
         }
         catch (Exception) { status.Text = "クリップボードを読み取れません。"; }
@@ -367,14 +396,14 @@ internal sealed partial class EditingGrid : Grid
         var destination = registration;
         try
         {
-            var text = await Clipboard.GetContent().GetTextAsync();
+            var text = await readClipboard();
             if (request != generation || !IsLoaded || revision != session.Workspace.Revision || !CanRefresh) return;
             if (!await prepareLocalRows() || request != generation || !IsLoaded) return;
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "新規行の入力列を確認", PrimaryButtonText = "行を追加", CloseButtonText = "キャンセル",
                 Content = new TextBlock { TextWrapping = TextWrapping.Wrap, Text = "TSV列順:\n" + string.Join("\n", inputMapping.Select((col, i) => $"{i + 1}: {col.Name} [{col.Id.FieldId ?? "Title"}]")) + $"\n宛先: {destination.DefaultRepository ?? "未指定"}\n非表示フィールドは未指定です。" } };
             AutomationProperties.SetAutomationId(dialog, "AppendColumnsDialog");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary || request != generation || !IsLoaded || !CanRefresh) return;
-            Run(() => { var added = session.Workspace.AppendRows(destination, text, inputMapping.Select(c => c.Id).ToArray()); RebuildRows(); Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
+            Run(() => { var added = session.Workspace.AppendRows(destination, text, inputMapping.Select(c => c.Id).ToArray()); projection.IncludeNew(session.Workspace.Open(registration), added); RebuildRows(); Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
         }
         catch (Exception) { status.Text = "クリップボードを読み取れません。追加していません。"; }
     }

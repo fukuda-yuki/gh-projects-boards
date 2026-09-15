@@ -53,6 +53,15 @@ Evidence must match the claimed behavior. Core tests do not establish view/contr
 
 ## Hosted UI integration
 
+Project row views use `RowViewTests` for deterministic option/state ordering, literal ID-based filtering, R3/R1 by C/A exact-key paste/Undo, coherent v7 storage/migration, invalid retained criteria, fresh Apply membership and immutable approved payloads, and completed/retained creation promotion. `RowViewHostedTests` and `RowApplyHostedTests` drive production settings, pending-buffer retention, zero matches/reset, delayed clipboard invalidation, visible/hidden Apply selection and the session-to-panel promotion handoff. The clipboard task is substituted only to control its delivery time; actual clipboard transport and native direct/F2 composition remain in ordinary-app `RowViewClipboardEditingAndRealRestart` and `RowViewPhysicalDirectAndF2PendingTransition` cases. Those cases verify normal process exit and the restart case opens the real saved checkpoint. They do not establish human acceptance or the full workload matrix.
+
+```powershell
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~RowViewTests'
+./scripts/Test-UiIntegration.ps1
+./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~RowViewClipboardEditingAndRealRestart'
+./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~RowViewPhysicalDirectAndF2PendingTransition'
+```
+
 Use the [production-sharing host and coverage map](GhProjectsBoards.UiIntegration.Tests/README.md) through `scripts/Test-UiIntegration.ps1`. It loads real WinUI views and invokes production controls with isolated collaborators. CI builds/discovers; local Windows UI execution is a separate gate. The mapped Apply presentation assertions live primarily here, while the same E2E journeys retain their process/native assertions.
 
 ## Logic and integration

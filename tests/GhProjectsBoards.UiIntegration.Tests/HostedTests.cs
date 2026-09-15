@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 [TestFixture, NonParallelizable, FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public sealed class HostedTests
+public sealed partial class HostedTests
 {
     private CreationHarness h = null!;
     private RegistrationPanel panel = null!;
