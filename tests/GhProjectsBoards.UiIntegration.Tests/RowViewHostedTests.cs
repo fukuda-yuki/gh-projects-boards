@@ -32,6 +32,30 @@ public sealed class RowViewHostedTests
     private static T Setting<T>(string id) where T : FrameworkElement => Ui.Find<T>(id, Ui.Dialog("RowSettingsDialog")!);
     private async Task Close(string button) { await Ui.Run(() => Ui.DialogButton("RowSettingsDialog", button)); await Ui.Until(() => Ui.Dialog("RowSettingsDialog") is null); await Ui.Idle(); }
     [Test]
+    public async Task CandidateSummaryExplainsCombinedFiltersAndResetWithoutChangingSavedView()
+    {
+        await Open();
+        await Ui.Run(() => {
+            Setting<ComboBox>("RowSort").SelectedIndex = 1;
+            Setting<CheckBox>("RowDescending").IsChecked = true;
+            Setting<TextBox>("RowTitleFilter").Text = "Issue";
+            Setting<Expander>("RowFilterGroup-P1A").IsExpanded = true;
+        });
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("RowSettingsDialog")!).OfType<CheckBox>()
+            .Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "RowFilter-P1A-A1" && c.IsLoaded));
+        await Ui.Run(() => {
+            Setting<CheckBox>("RowFilter-P1A-A1").IsChecked = true;
+            Setting<CheckBox>("RowFilter-P1A-Empty").IsChecked = true;
+            var summary = Setting<TextBlock>("RowCriteriaPreview").Text;
+            Assert.That(summary, Does.Contain("タイトル / 降順").And.Contain("Issue").And.Contain("Done").And.Contain("空値").And.Contain("P1A"));
+            Assert.That(session.Workspace.RowView(p), Is.EqualTo(new RowViewDefinition()));
+            Ui.Click(Setting<Button>("RowsReset"));
+            Assert.That(Setting<TextBlock>("RowCriteriaPreview").Text, Does.Contain("取得順").And.Contain("絞り込みなし"));
+            Assert.That(Setting<TextBox>("RowTitleFilter").Text, Is.Empty);
+        });
+        await Close("CloseButton");
+    }
+    [Test]
     public async Task SavedFilterZeroMatchesResetAndColumnCoexistence()
     {
         await Open(); await Ui.Run(() => Setting<TextBox>("RowTitleFilter").Text = "no matches"); await Close("CloseButton");

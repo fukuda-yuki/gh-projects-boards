@@ -18,7 +18,7 @@ if ($Resume) {
     Set-Content -LiteralPath $marker 'Synthetic registered Projects; no live authentication.'
 }
 Write-Host "Synthetic data: $DataRoot"
-Write-Host 'Open 登録済みProject, select github.com / ID 42, then P1 or P2. No connection check is needed.'
+Write-Host 'Open the Project navigation menu, select github.com / ID 42, then P1 or P2. No connection check is needed.'
 if (-not $PrepareOnly) {
     $start = [Diagnostics.ProcessStartInfo]::new($app)
     $start.UseShellExecute = $false

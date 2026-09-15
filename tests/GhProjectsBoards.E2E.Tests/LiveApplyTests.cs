@@ -39,7 +39,7 @@ public sealed class LiveApplyTests
             Click("ProjectsPageButton"); Click("AddProjectButton");
             E("RegistrationUrl").AsTextBox().Text = "https://github.com/users/fukuda-yuki/projects/3";
             Click("ResolveProjectButton"); Wait(() => E("RegisterProjectButton").IsEnabled); Click("RegisterProjectButton");
-            Wait(() => E("ProjectSummary").Name.Contains("PVT_kwHOBGPKL84BjFYc"));
+            Wait(() => WorkspaceUi.ProjectInformation(w).Contains("PVT_kwHOBGPKL84BjFYc"));
             var titleCell = w.FindAllDescendants().Single(e => Regex.IsMatch(e.Properties.AutomationId.ValueOrDefault ?? "", "^GridCell[0-9]+_0$") && e.AsTextBox().Text == marker + " A");
             var row = int.Parse(Regex.Match(titleCell.AutomationId, "[0-9]+").Value);
             var initialOption = VerifyRemote(marker + " A", null, false);
@@ -69,10 +69,12 @@ public sealed class LiveApplyTests
             {
                 w = reopenedApp.GetMainWindow(automation, TimeSpan.FromSeconds(20)) ?? throw new AssertionException("Missing reopened window");
                 WinUiProcess.AssertRuntime(reopened); Keyboard.TypeVirtualKeyCode(0x12); w.SetForeground(); Click("ProjectsPageButton");
-                Wait(() => E("SavedProfiles").AsComboBox().Items.Length == 1);
-                E("SavedProfiles").AsComboBox().Select(0);
+                WorkspaceUi.OpenProjectNavigation(w);
+                WorkspaceUi.SelectCombo(w, "SavedProfiles", 0);
                 var projectTitle = Checkpoint().GetProperty("Registrations")[0].GetProperty("Snapshot").GetProperty("Title").GetString()!;
-                Wait(() => w.FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null); w.FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
+                WorkspaceUi.OpenProjectNavigation(w);
+                Wait(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null);
+                WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
                 Wait(() => E($"GridCell{row}_0").AsTextBox().Text == marker + " B"); VerifyRemote(marker + " B", null);
                 Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.EqualTo(3));
                 w.Close(); Wait(() => reopened.HasExited); Assert.That(reopened.ExitCode, Is.Zero);
@@ -80,8 +82,8 @@ public sealed class LiveApplyTests
             finally { if (!reopened.HasExited) { reopened.Kill(true); reopened.WaitForExit(10000); } }
         }
         finally { if (!process.HasExited) { process.Kill(true); process.WaitForExit(10000); } }
-        AutomationElement E(string id) => Retry.WhileNull(() => w.FindFirstDescendant(cf => cf.ByAutomationId(id)), TimeSpan.FromSeconds(10)).Result ?? throw new AssertionException("Missing " + id);
-        void Click(string id) => E(id).AsButton().Invoke();
+        AutomationElement E(string id) => WorkspaceUi.Element(w, id);
+        void Click(string id) => WorkspaceUi.Invoke(w, id);
         void Wait(Func<bool> check) => Assert.That(Retry.WhileFalse(check, TimeSpan.FromSeconds(90), TimeSpan.FromMilliseconds(200)).Result, Is.True);
         JsonElement Checkpoint() => JsonDocument.Parse(File.ReadAllText(Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single())).RootElement.Clone();
         void RunApply()

@@ -54,7 +54,7 @@ public sealed class LiveCreationTests
             E("RegistrationUrl").AsTextBox().Text = "https://github.com/users/fukuda-yuki/projects/3";
             Click("ResolveProjectButton"); Wait(() => E("RegisterProjectButton").IsEnabled);
             E("InitialDefaultRepository").AsTextBox().Text = "fukuda-yuki/codex-sandbox"; Click("RegisterProjectButton");
-            Wait(() => E("ProjectSummary").Name.Contains(Project));
+            Wait(() => WorkspaceUi.ProjectInformation(w).Contains(Project));
             var initialCount = baseline["user"]!["projectV2"]!["items"]!["nodes"]!.AsArray().Count;
             Add(initialCount, marker + " First", false); Add(initialCount + 1, marker + " Second", true);
             RunApply();
@@ -70,7 +70,7 @@ public sealed class LiveCreationTests
             Click("ProjectsPageButton"); var projectTitle = baseline["user"]!["projectV2"]!["id"]!.ToString();
             var savedTitle = Checkpoint().GetProperty("Registrations")[0].GetProperty("Snapshot").GetProperty("Title").GetString()!;
             Wait(() => w.FindFirstDescendant(cf => cf.ByName(savedTitle)) is not null); w.FindFirstDescendant(cf => cf.ByName(savedTitle))!.Click();
-            Wait(() => E("ProjectSummary").Name.Contains(Project));
+            Wait(() => WorkspaceUi.ProjectInformation(w).Contains(Project));
             var independent = Snapshot()["repository"]!["issues"]!["nodes"]!.AsArray().Single(i => i!["title"]!.ToString() == marker + " Interrupted")!;
             Click("ApplyHistoryButton"); Click("ResolveCreation-" + interrupted.GetProperty("Id").GetString());
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("CreationResolutionDialog")) is not null);
@@ -91,11 +91,12 @@ public sealed class LiveCreationTests
             var fieldWrites = completed.SelectMany(c => c.GetProperty("Fields").EnumerateArray()).Sum(f => f.GetProperty("Attempts").GetArrayLength());
             Assert.That(mutationLines.Length, Is.EqualTo(3 + projectAdds + fieldWrites));
             Close(); var intentsBefore = File.ReadAllLines(Path.Combine(root!, "product-intents.jsonl")).Length;
-            Launch(); Click("ProjectsPageButton"); Wait(() => E("SavedProfiles").AsComboBox().Items.Length == 1);
-            E("SavedProfiles").AsComboBox().Select(0);
-            Wait(() => window!.FindFirstDescendant(cf => cf.ByName(savedTitle)) is not null);
-            window!.FindFirstDescendant(cf => cf.ByName(savedTitle))!.Click();
-            Wait(() => E("ProjectSummary").Name.Contains(Project)); Click("ApplyHistoryButton");
+            Launch(); Click("ProjectsPageButton"); WorkspaceUi.OpenProjectNavigation(window!);
+            WorkspaceUi.SelectCombo(window!, "SavedProfiles", 0);
+            WorkspaceUi.OpenProjectNavigation(window!);
+            Wait(() => WorkspaceUi.ProjectNavigation(window!).FindFirstDescendant(cf => cf.ByName(savedTitle)) is not null);
+            WorkspaceUi.ProjectNavigation(window!).FindFirstDescendant(cf => cf.ByName(savedTitle))!.Click();
+            Wait(() => WorkspaceUi.ProjectInformation(w).Contains(Project)); Click("ApplyHistoryButton");
             Wait(() => window!.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null);
             Click("CloseButton"); Close();
             Assert.That(File.ReadAllLines(Path.Combine(root!, "product-intents.jsonl")).Length, Is.EqualTo(intentsBefore));
@@ -125,8 +126,8 @@ public sealed class LiveCreationTests
             WinUiProcess.AssertRuntime(process); Keyboard.TypeVirtualKeyCode(0x12); window.SetForeground();
         }
         void Close() { window!.Close(); Wait(() => process!.HasExited); Assert.That(process!.ExitCode, Is.Zero); app!.Dispose(); process.Dispose(); process = null; app = null; }
-        AutomationElement E(string id) => Retry.WhileNull(() => window!.FindFirstDescendant(cf => cf.ByAutomationId(id)), TimeSpan.FromSeconds(10)).Result ?? throw new AssertionException("Missing " + id);
-        void Click(string id) { Wait(() => E(id).IsEnabled); E(id).AsButton().Invoke(); }
+        AutomationElement E(string id) => WorkspaceUi.Element(window!, id);
+        void Click(string id) => WorkspaceUi.Invoke(window!, id, TimeSpan.FromSeconds(120));
         void Wait(Func<bool> condition) => Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(120), TimeSpan.FromMilliseconds(200)).Result, Is.True);
         JsonElement Checkpoint() { using var doc = JsonDocument.Parse(File.ReadAllText(Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single())); return doc.RootElement.Clone(); }
         void Add(int row, string title, bool clear)

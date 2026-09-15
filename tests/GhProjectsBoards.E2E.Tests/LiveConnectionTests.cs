@@ -66,8 +66,7 @@ public sealed class LiveConnectionTests
             if (!process.HasExited) { process.Kill(entireProcessTree: true); process.WaitForExit(5000); }
         }
 
-        AutomationElement Element(string id)
-            => window!.FindFirstDescendant(cf => cf.ByAutomationId(id)) ?? throw new AssertionException($"Missing control: {id}");
+        AutomationElement Element(string id) => WorkspaceUi.Element(window!, id);
         void Capture(string name)
         {
             try

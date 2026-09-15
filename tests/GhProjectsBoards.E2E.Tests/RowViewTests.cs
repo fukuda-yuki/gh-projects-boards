@@ -27,7 +27,7 @@ public sealed partial class RegistrationTests
             Edit(w, 2, "keep A");
             if (Element(w, "ProjectItems").Patterns.Scroll.Pattern.VerticallyScrollable.Value) Scroll(w, 0);
             ReorderColumns(w); Invoke(w, "GridRowSettings");
-            Element(w, "RowSort").AsComboBox().Select(1); Element(w, "RowTitleFilter").AsTextBox().Text = "keep"; SaveRows(w);
+            WorkspaceUi.SelectCombo(w, "RowSort", 1); Element(w, "RowTitleFilter").AsTextBox().Text = "keep"; SaveRows(w);
             Assert.That(CellText(w, 0), Is.EqualTo("keep A")); Assert.That(CellText(w, 1), Is.EqualTo("keep Z"));
             Element(w, "GridCell0_1").Click(); Key(VirtualKeyShort.ESCAPE);
             NativeClipboardScope.WriteTestFormats("Done\tDone\nDone\tDone"); Invoke(w, "GridPaste");

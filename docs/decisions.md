@@ -2,17 +2,27 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
+## Table-centered workspace
+
+Microsoft Project's [sheet-oriented views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d) and [optional lower detail view](https://support.microsoft.com/en-gb/project/split-a-view-in-project-desktop) inform the workspace: keep rows and configurable columns central, with details tied to the selected item. Here the fields represent GitHub work, while explicit review and Apply remain the boundary for remote changes.
+
+Use one compact account/connection strip, collapsible repository navigation and optional bottom details around a table that fills the remaining workspace. This preserves horizontal space for fields and keeps frequent editing operations accessible. The current command set does not justify the height of a large ribbon, and permanent side details would compete with the widest columns. Cache time and the default new-row destination remain visible below the Project title and commands; exact diagnostics and infrequent Project settings use contextual surfaces. Scale initial window bounds to the display and limit them to its work area so the shell does not assume one desktop configuration.
+
+Use native command overflow, responsive Project commands and a full-message status route so density does not remove access to operations or safety information. Retain native input controls and public focus APIs. Dialog completion restores a visible active cell or neutral view command rather than relying on a potentially hidden overflow launcher.
+
+Keep row/column definitions in the existing scoped profile checkpoint and preserve canonical row/field identities beneath presentation changes. Transient pane visibility, selection and scrolling do not acquire a separate persistence owner. Reuse the established draft, conflict and Apply engines; this presentation decision adds no dependency or storage schema. Human visual/usability acceptance remains owned by #31.
+
 ## Existing-field mutation and journal
 
 Use `updateIssue` with only `id/title`, `updateProjectV2ItemFieldValue` with Project/item/field IDs and `singleSelectOptionId`, and `clearProjectV2ItemFieldValue` for explicit clear. Their documented inputs expose no expected-value/revision conditional update. `clientMutationId` is not a lock or a proven idempotency key. Verify the returned identity (and title) plus a separate authoritative field read; unknown or mismatching outcomes remain unapplied. Sources: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects).
 
 Use sequential dispatch with at least one second between mutation starts, revalidating after the wait. Honor Retry-After and primary reset headers; absent timing defaults to one minute with exponential increases. Rescheduling is bounded to three waits per execution and always revalidates. Only a known rate-limit rejection permits automatic mutation rescheduling. Ambiguous writes require explicit reconciliation. Transport never retries mutations. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
-Keep execution records in version 4 of the existing profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
+Keep execution records in the existing version 7 profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
 
 ## Local preparation identity and recovery
 
-Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 4 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
+Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 7 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
 
 ## Native platform
 
@@ -64,7 +74,7 @@ Discovery uses the current official [Repository.projectsV2](https://docs.github.
 
 ## Decision ownership
 
-For the bounded #7/#8 editing slice, use separate versioned JSON draft records with existing .NET libraries. One record per host/stable viewer makes cross-field operations and shared Issue-title history atomic without coordinating per-Project draft files. Registration caches remain independent. Reuse checked temporary writes, write-through flush, same-directory replacement and locking; add session save serialization and optimistic durable-revision checks. This is not a multi-device store, database, remote reconciliation engine or Apply journal. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
+Use one versioned JSON draft/checkpoint record per host/stable viewer with existing .NET libraries. Cross-field operations, shared Issue-title work, local rows, Project preferences and Apply history commit coherently without coordinating per-Project draft files. Before checkpoint migration, registration caches are independent records; after migration, retained legacy files are recovery material and the checkpoint is authoritative. Reuse checked temporary writes, write-through flush, same-directory replacement and locking, with session save serialization and optimistic durable-revision checks. This is a local store, not multi-device synchronization. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
 
 | Topic | Owner |
 | --- | --- |

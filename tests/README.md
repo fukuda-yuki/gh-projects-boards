@@ -55,6 +55,8 @@ Evidence must match the claimed behavior. Core tests do not establish view/contr
 
 Project row views use `RowViewTests` for deterministic option/state ordering, literal ID-based filtering, R3/R1 by C/A exact-key paste/Undo, coherent v7 storage/migration, invalid retained criteria, fresh Apply membership and immutable approved payloads, and completed/retained creation promotion. `RowViewHostedTests` and `RowApplyHostedTests` drive production settings, pending-buffer retention, zero matches/reset, delayed clipboard invalidation, visible/hidden Apply selection and the session-to-panel promotion handoff. The clipboard task is substituted only to control its delivery time; actual clipboard transport and native direct/F2 composition remain in ordinary-app `RowViewClipboardEditingAndRealRestart` and `RowViewPhysicalDirectAndF2PendingTransition` cases. Those cases verify normal process exit and the restart case opens the real saved checkpoint. They do not establish human acceptance or the full workload matrix.
 
+`HostedTests.ReopenedViewUndoRestoresRemovedLocalRowTemporarilyWithoutRevealingOtherHiddenWork` reloads a real checkpoint and invokes the production Undo/Reapply controls. It verifies that the restored local row absent from the reopened projection appears temporarily at the end, retaining pending text and saved preferences without exposing other hidden work or reordering existing rows. Core local-row tests retain ownership of identity/Undo/storage rules; `LocalRowsSaveFailureAndInterruptionRecoverIdentitiesAndUndo` retains ordinary-process recovery and native scrolling. `SheetViewportHostedTests` separately checks the real sheet between its header/footer and last-row visibility without a focus change; it does not establish the external UIA scroll-setter or physical-wheel route.
+
 ```powershell
 dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~RowViewTests'
 ./scripts/Test-UiIntegration.ps1
@@ -131,6 +133,20 @@ Results go to unique `TestResults/e2e/<run-id>/` directories. Keep TRX and metad
 The runner retains build/test logs, source state, resolved package assets, runtime versions, file hashes for the app executable/DLL, Core DLL, WinUI DLLs and both test assemblies. Its full-suite required-journey checks and execution counters remain intact; policy-based selection does not weaken a selected suite's success criteria. Replacing a connection journey with an unrelated passing case cannot satisfy that gate. Connection fixtures record owned process IDs, normal versus forced exit and remaining recorded children. Raw screen/log/clipboard evidence stays local until reviewed for publication.
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
+
+## Ordinary workspace session
+
+`RegistrationTests.WorkspaceReconstructionSession` is a representative E2E journey through the ordinary executable, public FlaUI UIA3/input routes, real application orchestration and isolated checkpoint storage. It registers two synthetic Projects through an external fake gh process, with 101 items and multiple single-select columns. This endpoint has no network fallback; the case is not real-GitHub evidence.
+
+```powershell
+./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~WorkspaceReconstructionSession'
+```
+
+The journey covers workspace/connection navigation, Project destination settings, direct/F2 physical ASCII input, select editing, F6 focus-region movement retaining a copied rectangle, native clipboard paste/Undo, column order, row filtering/reapplication, a local row, pending text across Project switches, explicitly selected existing-title Apply/history and actual process restart without replay. It captures the ordinary window at 1400×900 and 1080×760 physical pixels, including vertical/horizontal header alignment. Screenshots carry source/binary identity and actual bounds/DPI. They support visual review; geometric assertions do not replace that review.
+
+One warmup and three measured samples per selected local action are written to `workspace-action-samples.jsonl`; the plan and image sidecars define the workload and source. Timings run from public UIA action through the declared visible result, including polling, command/navigation routes and input settling. Clipboard preparation, screenshots and durable follow-up assertions are outside these timing boundaries. Undo-title completion means the prior committed difference is removed while its preceding buffer remains visible; the test explicitly cancels that restored buffer before the next sample. Retain failed samples and attempts. These measurements do not isolate rendering/storage latency, compare equivalent baseline/candidate sources or establish a speedup.
+
+Focused hosted [workspace cases](GhProjectsBoards.UiIntegration.Tests/README.md#workspace-presentation-and-view-collaboration) own deterministic view/event combinations. Existing mixed creation and uncertain-result journeys remain separate; this representative session does not duplicate their creation/retry matrix. Run physical Japanese `GridIme` cases independently for relevant native-input risk: ASCII keystrokes and native TextBox assignments are not composition evidence. OS High Contrast, other DPI conditions, live-service behavior and human usability/natural-input acceptance require separate observations. The [ordinary workspace walkthrough](../docs/workspace.md) describes the product flow for direct evaluation.
 
 ## Registration verification
 

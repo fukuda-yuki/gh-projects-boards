@@ -45,8 +45,11 @@ public sealed class SmokeTests
             Assert.That(window!.Title, Is.EqualTo("GitHub Projects Boards"));
             Assert.That(Retry.WhileFalse(() => !window.Properties.IsOffscreen.Value,
                 TimeSpan.FromSeconds(5)).Result, Is.True, "The main window did not become visible.");
-            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("ConnectionScreen")), Is.Not.Null,
-                "The WinUI content must expose the connection screen.");
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("WorkspaceIdentity")), Is.Not.Null,
+                "The ordinary executable opens the workspace.");
+            WorkspaceUi.Invoke(window, "ConnectionPageButton");
+            Assert.That(WorkspaceUi.Element(window, "ConnectionScreen"), Is.Not.Null,
+                "The connection screen remains reachable from the workspace.");
             Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("CheckConnectionButton")), Is.Not.Null,
                 "The ordinary executable must expose the connection workflow.");
             window.Close();
