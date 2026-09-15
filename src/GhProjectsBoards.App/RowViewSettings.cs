@@ -9,17 +9,20 @@ internal sealed partial class EditingGrid
 {
     private readonly RowProjection projection;
     private readonly TextBlock viewNotice = new() { TextWrapping = TextWrapping.Wrap };
+    private string? deferredViewNotice;
     internal string[] DisplayedRowIds => rows.Select(r => r.ItemId).ToArray();
     internal RowProjection RowProjection => projection;
     private void ReapplyRows(Button launcher)
     {
-        if (!CanRefresh) { viewNotice.Text = "IME変換中です。自然に確定・取消してから再適用してください。"; return; }
+        if (!CanRefresh) { viewNotice.Text = deferredViewNotice = "IME変換中です。自然に確定・取消してから再適用してください。"; return; }
+        deferredViewNotice = null;
         layout = session.Workspace.Columns(registration); projection.Reapply(session.Workspace, registration); RebuildRows(); Update();
         if (!active) launcher.Focus(FocusState.Programmatic);
     }
     private async Task ConfigureRowsAsync(Button launcher)
     {
-        if (!CanRefresh) { viewNotice.Text = "IME変換中です。自然に確定・取消してから表示設定を開いてください。"; return; }
+        if (!CanRefresh) { viewNotice.Text = deferredViewNotice = "IME変換中です。自然に確定・取消してから表示設定を開いてください。"; return; }
+        deferredViewNotice = null;
         var request = generation;
         if (!await prepareLocalRows() || request != generation || !IsLoaded) return;
         var candidate = session.Workspace.PrepareRowView(registration);

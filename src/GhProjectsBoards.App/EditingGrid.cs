@@ -260,6 +260,7 @@ internal sealed partial class EditingGrid : Grid
             var definition = session.Workspace.RowView(registration);
             viewNotice.Text = $"全行 {canonical.Length} / 表示 {rows.Length} / 非表示の作業 {canonical.Count(r => !DisplayedRowIds.Contains(r.ItemId) && session.Workspace.RowHasWork(r))} / 一時表示 {rows.Count(r => projection.Temporary.Contains(r.ItemId))}\n条件: {definition.Sort} {(definition.Descending ? "降順" : "昇順")} [{definition.FieldId}] / タイトル: {definition.Title} / " + string.Join("; ", (definition.Filters ?? []).Select(f => $"[{f.FieldId}] {string.Join(",", f.OptionIds.Concat(f.States))}")) + " / 行の表示設定で解除・リセット";
             if (projection.Problem is { } problem) viewNotice.Text += " / " + problem;
+            if (deferredViewNotice is not null) viewNotice.Text = deferredViewNotice + "\n" + viewNotice.Text;
             if (projection.NeedsReapply(session.Workspace, registration)) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
             status.Text = $"このProject {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
