@@ -132,6 +132,20 @@ The runner retains build/test logs, source state, resolved package assets, runti
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
 
+## Ordinary workspace session
+
+`RegistrationTests.WorkspaceReconstructionSession` is a representative E2E journey through the ordinary executable, public FlaUI UIA3/input routes, real application orchestration and isolated checkpoint storage. It registers two synthetic Projects through an external fake gh process, with 101 items and multiple single-select columns. This endpoint has no network fallback; the case is not real-GitHub evidence.
+
+```powershell
+./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~WorkspaceReconstructionSession'
+```
+
+The journey covers workspace/connection navigation, Project destination settings, direct/F2 physical ASCII input, select editing, F6 focus-region movement retaining a copied rectangle, native clipboard paste/Undo, column order, row filtering/reapplication, a local row, pending text across Project switches, explicitly selected existing-title Apply/history and actual process restart without replay. It captures the ordinary window at 1400×900 and 1080×760 physical pixels, including vertical/horizontal header alignment. Screenshots carry source/binary identity and actual bounds/DPI. They support visual review; geometric assertions do not replace that review.
+
+One warmup and three measured samples per selected local action are written to `workspace-action-samples.jsonl`; the plan and image sidecars define the workload and source. Timings run from public UIA action through the declared visible result, including polling, command/navigation routes and input settling. Clipboard preparation, screenshots and durable follow-up assertions are outside these timing boundaries. Undo-title completion means the prior committed difference is removed while its preceding buffer remains visible; the test explicitly cancels that restored buffer before the next sample. Retain failed samples and attempts. These measurements do not isolate rendering/storage latency, compare equivalent baseline/candidate sources or establish a speedup.
+
+Focused hosted [workspace cases](GhProjectsBoards.UiIntegration.Tests/README.md#workspace-presentation-and-view-collaboration) own deterministic view/event combinations. Existing mixed creation and uncertain-result journeys remain separate; this representative session does not duplicate their creation/retry matrix. Run physical Japanese `GridIme` cases independently for relevant native-input risk: ASCII keystrokes and native TextBox assignments are not composition evidence. OS High Contrast, other DPI conditions, live-service behavior and human usability/natural-input acceptance require separate observations. The [ordinary workspace walkthrough](../docs/workspace.md) describes the product flow for direct evaluation.
+
 ## Registration verification
 
 The deterministic registration cases exercise production discovery, workspace and reader collaborators with external process responses, plus the real JSON store in unique temporary directories. They cover paging/errors, duplicate routes, 101 items/two repositories/two Projects, scoped identity, late cancelled results, partial/failed/cancelled attempts, file replacement failure, writer contention, corrupt/versioned data, restart and local removal. The original reader and connection regression tests remain intact.

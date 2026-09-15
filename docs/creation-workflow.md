@@ -2,7 +2,7 @@
 
 Open a registered Project with a checked connection. Add local rows, commit titles, set each actual destination (`owner/repository`) and select supported Project values. Empty preparation rows are allowed. Edits and local saves perform no mutation.
 
-1. Choose **Apply…** and select creation rows alongside existing updates. Leave incomplete unrelated rows unselected.
+1. Choose **GitHubへ反映…** and select creation rows alongside existing updates. Leave incomplete unrelated rows unselected.
 2. Review the Project, stable destination Repository ID, committed title, selected fields and pending-text count. Repository Issue enablement, archive state and creation capability are checked independently of Project permission.
 3. Choose **明示的にApply**. Each row proceeds through Issue creation, received identity, independent Issue verification, exact Project membership, initial-value observation, supported field setup and readback. Only verified completion is reported as completion.
 4. Open **実行履歴…** to inspect each stage. Close and reopen the app: history restores without starting writes.
