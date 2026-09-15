@@ -104,7 +104,7 @@ This keeps the native input method available for verification while full table e
 
 ## Test
 
-**Testing priority: logic-layer unit tests > UI-layer integration tests > E2E tests.** Put most behavioral coverage in lower layers; E2E and live validation supplement them for relevant integration/native/external risks. This does not ban those executions or impose a numerical ratio. The [test policy](tests/README.md) defines boundary selection, evidence and coverage migration.
+**Testing priority: logic-layer unit tests > UI-layer integration tests > E2E tests.** Put most behavioral coverage in lower layers; E2E and live validation supplement them for relevant integration/native/external risks. This does not ban those executions or impose a numerical ratio. The [test policy](tests/README.md) defines boundary selection, behavior-over-interaction test design, evidence and coverage migration.
 
 ### Apply existing fields
 

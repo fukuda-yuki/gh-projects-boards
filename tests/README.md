@@ -4,7 +4,7 @@ Derive acceptance from the relevant Issue and [specification](../docs/spec.md). 
 
 ## Test policy
 
-**Primary testing order: logic-layer unit tests > UI-layer integration tests > E2E tests.** Logic tests carry the main behavioral coverage and development feedback; UI integration tests verify presentation wiring and states; E2E provides representative whole-application and native-boundary confidence. The goal is not merely to run E2E less often: do not leave rules or UI-state combinations covered only by E2E when a lower layer can verify them. This is a design and coverage priority, not a test-count ratio, a per-class mocking requirement or a prohibition on E2E/live validation.
+**Primary testing order: logic-layer unit tests > UI-layer integration tests > E2E tests.** Logic tests carry the main behavioral coverage and development feedback; UI integration tests verify presentation wiring and states; E2E provides representative whole-application and native-boundary confidence. The goal is not merely to run E2E less often: do not leave rules or UI-state combinations covered only by E2E when a lower layer can verify them. This is a priority for where behavior is verified, not a test-count ratio, a per-class mocking requirement or a prohibition on E2E/live validation.
 
 Start with a short test list covering normal behavior, boundaries, failures and prohibited side effects. Assign each behavior to the lowest reliable boundary and identify the remaining UI/native/external integration risks. Use short Red-Green-Refactor cycles there. Confirm a test's intended failure before implementing the behavior; unrelated build/environment failure is not a behavioral Red. Bug fixes start with a reproducer. A native or live reproducer is valid when necessary; add a lower-layer regression for the underlying defect wherever it can detect the failure.
 
@@ -15,6 +15,20 @@ Retain logic/adapter assertions during UI work. UI-specific selectors, focus and
 Select executions by changed behavior, affected boundaries and explicit acceptance needs, not by copying a previous delivery's command list. Prefer focused logic tests during implementation, then affected UI integration and adapter tests. Run selected E2E, physical IME or live checks when they establish a relevant risk not covered below; full regression remains appropriate for broad changes, shared-boundary risks or an explicit acceptance gate. There is no fixed execution quota or blanket all-suite requirement per edit, commit or UI task. Explain the higher-boundary risk, not just that a script exists. Do not debug ordinary UI waits or deterministic rules primarily through live GitHub when they can be reproduced with synthetic boundaries. Repository policy takes precedence over generic skill-generated batch-UI checklists.
 
 Document-only changes need no product behavior execution; review their consistency and links. Behavior-preserving refactoring uses relevant existing regression tests at the affected boundaries. A targeted run can satisfy its declared scope without being described as full regression. Distinguish tests outside the selected scope, unavailable relevant coverage, and selected tests that failed or were skipped. Report unavailable execution honestly; never turn missing coverage into a pass.
+
+### Test design
+
+Assert behavior, not interactions. Exercise the real in-process collaboration and assert its observable result, state change, error or persisted output. Do not prove the same behavior through call counts, call order, internal method invocation or private state: interaction assertions multiply the observation surface and fail on behavior-preserving refactoring without establishing acceptance.
+
+Do not restate a caller's behavior in its collaborator's test. Assert a collaborator directly only for its own contract that the caller's behavior test cannot isolate — invariants, boundary values, ordering, rounding, normalization and error mapping. Re-asserting the caller's viewpoint at the collaborator level is duplicate coverage: it adds no acceptance and turns an internal change in the collaborator into a false failure. When a behavior-preserving refactor fails a test, the test is the defect; fix or remove it rather than mocking the behavior under test to obtain a pass.
+
+"Coverage" in this policy means the agreed behaviors that have a case, not a line or branch percentage. Do not pursue a coverage percentage, a case count or a suite-size target; add the cases the agreed behavior requires and none that repeats another. A large generated suite is not coverage.
+
+Thin behavior — plain create/read/update/delete and pass-through mapping — is covered once at the integration boundary that exercises the real storage or adapter, without a parallel unit case per operation. Add logic-unit cases where branching, validation, ordering, identity, conflict or failure rules actually exist.
+
+Name each case for the behavior it establishes — the condition and the expected outcome — not for the method under test. Structure a case as arrange/act/assert so its given, when and then are explicit, and use table-driven cases for input/output or branch matrices instead of near-identical copies.
+
+Test design stays with the user. Propose a short behavior list for the change, state which behavior each case establishes and which boundary it belongs to, and flag cases you could not verify or place confidently. Do not widen the suite to satisfy a metric.
 
 ## Boundaries
 
