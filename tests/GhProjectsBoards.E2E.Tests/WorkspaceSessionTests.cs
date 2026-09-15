@@ -128,8 +128,14 @@ public sealed partial class RegistrationTests
             Scroll(window, 100);
             var scroller = Element(window, "ProjectItems").Patterns.Scroll.Pattern;
             Assert.That(scroller.HorizontallyScrollable.Value, Is.True, "This small-window workload must exercise horizontal scrolling.");
-            scroller.SetScrollPercent(100, -1);
-            Wait(() => Math.Abs(scroller.HorizontalScrollPercent.Value - 100) < 1);
+            Wait(() =>
+            {
+                scroller.SetScrollPercent(100, 100);
+                FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
+                return Math.Abs(scroller.HorizontalScrollPercent.Value - 100) < 1
+                    && Math.Abs(scroller.VerticalScrollPercent.Value - 100) < 1
+                    && window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell100_1")) is not null;
+            });
             Wait(() => Math.Abs(Element(window, "GridHeader1").BoundingRectangle.Left
                 - Element(window, "GridCell100_1").BoundingRectangle.Left - headerOffset) < 2);
             Assert.That(Element(window, "GridHeader1").BoundingRectangle.Top, Is.EqualTo(header.Top).Within(1));

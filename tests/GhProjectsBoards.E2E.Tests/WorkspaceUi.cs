@@ -50,7 +50,10 @@ internal static class WorkspaceUi
         InvokeRoute(window, "ToggleProjectNavigation");
         Wait(() => !Visible(Find(window, "SavedProfiles")), "Project navigation must dismiss before returning to the sheet.");
     }
-    internal static AutomationElement ProjectNavigation(Window window) => window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Tree)).Single(Visible);
+    internal static AutomationElement ProjectNavigation(Window window) => Retry.WhileNull(
+        () => window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Tree)).SingleOrDefault(Visible),
+        TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100)).Result
+        ?? throw new AssertionException("The visible Project tree did not finish loading.");
     internal static void CloseProjectSettings(Window window)
     {
         if (!Visible(Find(window, "DefaultRepository"))) return;
