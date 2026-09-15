@@ -241,7 +241,7 @@ internal sealed partial class EditingGrid : Grid
                 }
                 AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
                 AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
-                ToolTipService.SetToolTip(editor, cell.Reason ?? "選択して入力、F2で編集。Enter / Tabでセル確定。GitHubへの反映は明示的Applyのみ。");
+                if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
                 container.Children.Add(editor); rowControls.Add(editor);
                 var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
                 SetColumn(border, c + 1); line.Children.Add(border);
