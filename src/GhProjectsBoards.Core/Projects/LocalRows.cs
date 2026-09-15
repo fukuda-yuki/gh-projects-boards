@@ -138,9 +138,12 @@ internal sealed partial class EditingWorkspace
         }
         AddLocals(project, added.ToArray()); return added.Select(r => r.Id).ToArray();
     }
-    public string[] AppendRows(ProjectRegistration project, string tsv)
+    public string[] AppendRows(ProjectRegistration project, string tsv, ColumnIdentity[]? capturedColumns = null)
     {
-        var matrix = ParseTsv(tsv); var columns = LocalColumns(project);
+        var inputColumns = Columns(project).Visible.Where(c => c.Id.Role != "Reference").Select(c => c.Id).ToArray();
+        if (capturedColumns is not null && !inputColumns.SequenceEqual(capturedColumns)) throw new InvalidOperationException("入力列が変わりました。貼り付けをやり直してください。");
+        var matrix = ParseTsv(tsv); var columns = Columns(project).Visible.Where(c => c.Id.Role == "Field")
+            .Select(c => SupportedColumns(project).Single(f => f.Id.NodeId == c.Id.FieldId)).ToArray();
         if (matrix[0].Length > columns.Length + 1) throw new InvalidOperationException("新規行のTSVはタイトルと表示順の単一選択列だけです。");
         var added = new List<LocalRow>();
         foreach (var line in matrix)

@@ -129,10 +129,12 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
+        if (r.Version >= 6 && r.ColumnPreferences is null || r.Version < 6 && r.ColumnPreferences is { Length: > 0 }) throw new InvalidDataException("Invalid column schema version.");
+        EditingWorkspace.ValidateColumns(r.ColumnPreferences ?? []);
         ValidateLocalRows(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
             && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind == "Select" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));

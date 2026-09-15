@@ -14,7 +14,14 @@ internal sealed partial class EditingWorkspace
     public DraftField? Field(EditCell cell) => cell.Key is { } key ? fields.GetValueOrDefault(key) : null;
     public void SetRegistrations(IEnumerable<ProjectRegistration> values)
     {
-        registrations = values.Where(r => r.Snapshot.Id.Scope == Scope).Select(RegistrationStore.ToRecord).ToArray(); Revision++;
+        var current = values.Where(r => r.Snapshot.Id.Scope == Scope).ToArray();
+        // Accepted definitions materialize defaults before a later observation can remove them.
+        foreach (var p in current)
+        {
+            var index = columnPreferences.FindIndex(c => c.ProjectId == p.Snapshot.Id.NodeId);
+            if (index >= 0) columnPreferences[index] = new(p.Snapshot.Id.NodeId, Columns(p).Columns.Select(c => c.Preference).ToArray());
+        }
+        registrations = current.Select(RegistrationStore.ToRecord).ToArray(); Revision++;
     }
     private static bool SameUndoState(DraftField a, DraftField b) => a.Baseline == b.Baseline && a.Change == b.Change
         && a.Buffer == b.Buffer && a.Stamp == b.Stamp && a.Conflict == b.Conflict

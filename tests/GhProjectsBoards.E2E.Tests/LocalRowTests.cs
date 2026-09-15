@@ -76,8 +76,9 @@ public sealed partial class RegistrationTests
         {
             OpenSaved(w, profile: true); Edit(w, 0, "Existing pending work");
             NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\tMissing"); Invoke(w, "GridAppendRows");
+            Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "DraftStatus").Contains("追加していません")); LocalCount(f, 0);
-            NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\t"); Invoke(w, "GridAppendRows"); LocalCount(f, 2);
+            NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\t"); Invoke(w, "GridAppendRows"); Invoke(w, "PrimaryButton"); LocalCount(f, 2);
             Scroll(w, 100); Element(w, "GridCell101_0").Click(); using (Keyboard.Pressing(VirtualKeyShort.SHIFT)) Key(VirtualKeyShort.RIGHT);
             Invoke(w, "GridCopy"); Assert.That(NativeClipboardScope.ReadText(), Is.EqualTo("One\tDone"));
             Invoke(w, "GridUndo"); LocalCount(f, 0); Scroll(w, 0); Assert.That(CellText(w, 0), Is.EqualTo("Existing pending work"));
