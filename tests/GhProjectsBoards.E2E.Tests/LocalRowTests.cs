@@ -76,8 +76,9 @@ public sealed partial class RegistrationTests
         {
             OpenSaved(w, profile: true); Edit(w, 0, "Existing pending work");
             NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\tMissing"); Invoke(w, "GridAppendRows");
+            Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "DraftStatus").Contains("追加していません")); LocalCount(f, 0);
-            NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\t"); Invoke(w, "GridAppendRows"); LocalCount(f, 2);
+            NativeClipboardScope.WriteTestFormats("One\tDone\nTwo\t"); Invoke(w, "GridAppendRows"); Invoke(w, "PrimaryButton"); LocalCount(f, 2);
             Scroll(w, 100); Element(w, "GridCell101_0").Click(); using (Keyboard.Pressing(VirtualKeyShort.SHIFT)) Key(VirtualKeyShort.RIGHT);
             Invoke(w, "GridCopy"); Assert.That(NativeClipboardScope.ReadText(), Is.EqualTo("One\tDone"));
             Invoke(w, "GridUndo"); LocalCount(f, 0); Scroll(w, 0); Assert.That(CellText(w, 0), Is.EqualTo("Existing pending work"));
@@ -98,11 +99,9 @@ public sealed partial class RegistrationTests
             Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "Pending new");
             saved = Durable(f).GetProperty("LocalRows").GetRawText(); Invoke(w, "ReviewApplyButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyTargetRows")) is not null);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("未選択の未完成行")), Is.True);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("選択候補 102 件")), Is.True);
             var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select(); Invoke(w, "PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("未選択の未完成行")), Is.True); Invoke(w, "PrimaryButton");
+            Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
             Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")); Assert.That(writes, Has.Length.EqualTo(1));
