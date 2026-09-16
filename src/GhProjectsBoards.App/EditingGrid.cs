@@ -204,6 +204,7 @@ internal sealed partial class EditingGrid : Grid
         var identity = SelectionIdentity; generation++; active = false;
         projection.Promote(session.Workspace);
         canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear();
+        paintedSelection.Clear(); paintedCurrent = null;
         BuildRows(); RestoreSelection(identity);
     }
     private void BuildRows()
@@ -319,6 +320,12 @@ internal sealed partial class EditingGrid : Grid
         }
     }
     private bool updating;
+    private long presentedRevision = -1;
+    private int presentedGeneration = -1;
+    private EditingWorkspace? presentedWorkspace;
+    private string statusBeforeSave = "", statusAfterSave = "";
+    private readonly HashSet<(int Row, int Column)> paintedSelection = [];
+    private (int Row, int Column)? paintedCurrent;
     private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count
         && c >= 0 && c < controls[r].Length && ReferenceEquals(controls[r][c], editor);
     private static string? DiagnosticId(DependencyObject? element) => element is null ? null : AutomationProperties.GetAutomationId(element);
@@ -432,6 +439,16 @@ internal sealed partial class EditingGrid : Grid
         using var measured = diagnostics?.Span("update", updateReason);
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) return;
+        // A selection or a durable-save acknowledgement does not change cell values.
+        // Keep native editors untouched unless the workspace or its projection changed.
+        if (presentedWorkspace == session.Workspace && presentedRevision == session.Workspace.Revision
+            && presentedGeneration == generation && updateReason != "theme")
+        {
+            status.Text = statusBeforeSave + session.Status + statusAfterSave;
+            UpdateSelection();
+            UpdateSelectedDetails();
+            return;
+        }
         // The durable acknowledgement arrives before RegistrationWorkspace publishes the matching
         // complete snapshot. Keep the existing selection/editor identity until that panel handoff.
         if (canonicalRows.Any(row => row.IsLocal && !session.Workspace.LocalRows.Any(r => r.Id == row.ItemId)
@@ -465,7 +482,8 @@ internal sealed partial class EditingGrid : Grid
             ToolTipService.SetToolTip(viewNotice, viewNotice.Text);
             emptyView.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
-            status.Text = $"このProject {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / {session.Status}";
+            statusBeforeSave = $"このProject {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()} / プロフィール変更フィールド {session.Workspace.DifferenceCount} / ";
+            status.Text = "";
             var hiddenChanges = hidden.Count(session.Workspace.Changed); var hiddenPending = hidden.Count(c => session.Workspace.Buffer(c) is not null);
             var hiddenConflicts = hidden.Count(c => session.Workspace.Field(c)?.Conflict == true);
             var hiddenLocal = session.Workspace.LocalRows.Where(r => r.ProjectId == projectId).SelectMany(r => r.Selects).Count(s => layout.Hidden(s.FieldId) && s.Intent != "Unspecified");
@@ -475,14 +493,15 @@ internal sealed partial class EditingGrid : Grid
             status.Text += $" / ローカル行 {canonical.Count(r => r.IsLocal)}";
             if (session.Workspace.StructuralChanges.Count + session.Workspace.UndoWarnings.Count() > 0)
                 status.Text += $" / 構成変更 {session.Workspace.StructuralChanges.Count} / 無効化したUndo {session.Workspace.UndoWarnings.Count()}（比較画面に詳細）";
-            selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
+            statusAfterSave = status.Text;
+            status.Text = statusBeforeSave + session.Status + statusAfterSave;
             }
             using (diagnostics?.Span("update-cell-presentation"))
             for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
             {
                 var cell = rows[r].Cells[c];
                 var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
-                markers[r][c].Text = (selected ? "選択 " : "") + (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
+                markers[r][c].Text = (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
                 if (cell.Key?.Kind is "Select" or "LocalSelect" && session.Workspace.Buffer(cell) is { } pending)
                     markers[r][c].Text += " / 未確定文字: " + pending;
                 if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
@@ -514,8 +533,29 @@ internal sealed partial class EditingGrid : Grid
                 }
             }
             using (diagnostics?.Span("update-selected-details")) UpdateSelectedDetails();
+            UpdateSelection();
+            presentedWorkspace = session.Workspace; presentedRevision = session.Workspace.Revision; presentedGeneration = generation;
         }
         finally { updating = false; }
+    }
+    private void UpdateSelection()
+    {
+        var next = new HashSet<(int Row, int Column)>();
+        if (active)
+            for (var r = Math.Min(anchorRow, currentRow); r <= Math.Max(anchorRow, currentRow); r++)
+                for (var c = Math.Min(anchorColumn, currentColumn); c <= Math.Max(anchorColumn, currentColumn); c++) next.Add((r, c));
+        var changed = paintedSelection.Union(next).Where(cell => paintedSelection.Contains(cell) != next.Contains(cell)).ToHashSet();
+        if (paintedCurrent is { } previous) changed.Add(previous);
+        if (active) changed.Add((currentRow, currentColumn));
+        foreach (var (r, c) in changed)
+        {
+            if (r >= cellBorders.Count || c >= cellBorders[r].Length) continue;
+            cellBorders[r][c].Style = next.Contains((r, c)) ? selectedCellStyle : cellStyle;
+            cellBorders[r][c].BorderThickness = new(active && r == currentRow && c == currentColumn ? 2 : 1);
+        }
+        paintedSelection.Clear(); paintedSelection.UnionWith(next);
+        paintedCurrent = active ? (currentRow, currentColumn) : null;
+        selection.Text = active ? $"行 {anchorRow + 1} 列 {anchorColumn + 1} ～ 行 {currentRow + 1} 列 {currentColumn + 1}" : "セルを選択してください。Shift＋矢印で範囲選択。F2で編集。";
     }
     private string SelectDisplay(EditCell cell, string? value)
     {
