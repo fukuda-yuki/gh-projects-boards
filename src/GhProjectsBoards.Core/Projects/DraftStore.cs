@@ -61,27 +61,32 @@ internal sealed class DraftStore(string registrationRoot)
     public async Task SaveAsync(DraftRecord record, long expectedRevision, Func<bool>? canCommit = null)
     {
         using var measured = PerformanceTrace.Span("checkpoint-save");
-        Validate(record);
-        await saves.WaitAsync();
+        using (PerformanceTrace.Span("checkpoint-validation-sync")) Validate(record);
+        using (PerformanceTrace.Span("checkpoint-store-gate-wall")) await saves.WaitAsync();
         try
         {
             Directory.CreateDirectory(root);
             using var profileGate = new FileStream(Path.Combine(registrationRoot, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             using var gate = new FileStream(Path.Combine(root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             var file = FileFor(record.Scope);
-            var current = await LoadAsync(record.Scope);
+            DraftRecord? current;
+            using (PerformanceTrace.Span("checkpoint-current-load-wall")) current = await LoadAsync(record.Scope);
             if ((current?.Revision ?? 0) != expectedRevision || record.Revision < expectedRevision)
                 throw new InvalidDataException("Stale draft revision; reopen after preserving local work.");
             var temp = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await JsonSerializer.SerializeAsync(stream, record, Json);
-                await stream.FlushAsync(); stream.Flush(true);
+                using (PerformanceTrace.Span("checkpoint-serialize-write-wall")) await JsonSerializer.SerializeAsync(stream, record, Json);
+                using (PerformanceTrace.Span("checkpoint-stream-flush-wall")) await stream.FlushAsync();
+                using (PerformanceTrace.Span("checkpoint-durable-flush-sync")) stream.Flush(true);
                 PerformanceTrace.Count("checkpoint-bytes", stream.Position);
             }
-            _ = await ReadAsync(temp);
+            using (PerformanceTrace.Span("checkpoint-temp-readback-wall")) _ = await ReadAsync(temp);
             if (canCommit is not null && !canCommit()) throw new InvalidDataException("Checkpoint changed before commit.");
-            if (File.Exists(file)) File.Replace(temp, file, file + ".bak"); else File.Move(temp, file);
+            using (PerformanceTrace.Span("checkpoint-replace-sync"))
+            {
+                if (File.Exists(file)) File.Replace(temp, file, file + ".bak"); else File.Move(temp, file);
+            }
             PerformanceTrace.Count("checkpoint-commits");
 
         }
@@ -90,8 +95,11 @@ internal sealed class DraftStore(string registrationRoot)
     private static async Task<DraftRecord> ReadAsync(string file)
     {
         await using var stream = File.OpenRead(file);
-        var record = await JsonSerializer.DeserializeAsync<DraftRecord>(stream, Json) ?? throw new InvalidDataException("Missing draft record.");
-        Validate(record); return record;
+        DraftRecord record;
+        using (PerformanceTrace.Span("checkpoint-deserialize-read-wall"))
+            record = await JsonSerializer.DeserializeAsync<DraftRecord>(stream, Json) ?? throw new InvalidDataException("Missing draft record.");
+        using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
+        return record;
     }
     private static void ValidateLocalRows(DraftRecord r)
     {
@@ -188,12 +196,15 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
     public event Action? Changed;
     public async Task<bool> CommitAsync(Func<EditingWorkspace, EditingWorkspace> prepare, Func<bool> canCommit)
     {
-        await gate.WaitAsync();
+        using (PerformanceTrace.Span("draft-commit-gate-wall")) await gate.WaitAsync();
         try
         {
             var original = Workspace; var revision = original.Revision;
-            var candidate = prepare(EditingWorkspace.Restore(original.Snapshot()));
-            await store.SaveAsync(candidate.Snapshot(), DurableRevision, () => canCommit() && Workspace == original && original.Revision == revision);
+            EditingWorkspace candidate;
+            using (PerformanceTrace.Span("draft-candidate-prepare-sync")) candidate = prepare(EditingWorkspace.Restore(original.Snapshot()));
+            DraftRecord snapshot;
+            using (PerformanceTrace.Span("draft-candidate-snapshot-sync")) snapshot = candidate.Snapshot();
+            await store.SaveAsync(snapshot, DurableRevision, () => canCommit() && Workspace == original && original.Revision == revision);
             Workspace = candidate; DurableRevision = candidate.Revision;
             Status = "照合結果をローカル保存しました（GitHub未反映）";
             return true;
@@ -204,13 +215,17 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
     }
     public async Task<bool> FlushAsync()
     {
-        await gate.WaitAsync();
+        PerformanceTrace.Count("draft-flush-requests");
+        using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
         try
         {
             while (DurableRevision != Workspace.Revision)
             {
-                Status = "ローカル保存中…"; Changed?.Invoke();
-                var snapshot = Workspace.Snapshot();
+                PerformanceTrace.Count("draft-flush-iterations");
+                Status = "ローカル保存中…";
+                using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
+                DraftRecord snapshot;
+                using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
                 await store.SaveAsync(snapshot, DurableRevision);
                 DurableRevision = snapshot.Revision;
             }
@@ -219,6 +234,10 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
         { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; return false; }
-        finally { gate.Release(); Changed?.Invoke(); }
+        finally
+        {
+            gate.Release();
+            using (PerformanceTrace.Span("draft-settled-notification-sync")) Changed?.Invoke();
+        }
     }
 }
