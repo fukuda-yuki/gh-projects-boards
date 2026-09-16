@@ -18,6 +18,7 @@ internal sealed partial class EditingGrid : Grid
     private readonly TextBlock selection = new();
     private readonly TextBlock columnNotice = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly List<FrameworkElement[]> controls = [];
+    private readonly List<Grid> rowLines = [];
     private readonly List<TextBlock[]> markers = [];
     private readonly List<Border[]> cellBorders = [];
     private readonly SheetDiagnostics? diagnostics;
@@ -203,7 +204,7 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("rebuild-start", new { generation, retainedRows = controls.Count, retainedCells = controls.Sum(row => row.Length) });
         var identity = SelectionIdentity; generation++; active = false;
         projection.Promote(session.Workspace);
-        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear();
+        canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear(); rowLines.Clear();
         paintedSelection.Clear(); paintedCurrent = null;
         BuildRows(); RestoreSelection(identity);
     }
@@ -225,7 +226,28 @@ internal sealed partial class EditingGrid : Grid
         }
         for (var r = 0; r < rows.Length; r++)
         {
-            var line = new Grid(); var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
+            var index = r;
+            var line = new Grid { MinHeight = 30 };
+            rowLines.Add(line); controls.Add([]); markers.Add([]); cellBorders.Add([]);
+            line.Loading += (_, _) => { if (CurrentLine(index, line)) EnsureRow(index); };
+            line.Unloaded += (_, _) => { if (CurrentLine(index, line)) ReleaseRow(index); };
+            var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new(0), Margin = new(0), BorderThickness = new(0), MinHeight = 30, IsTabStop = false };
+            AutomationProperties.SetName(item, rows[r].Cells[^1].Display); list.Items.Add(item);
+        }
+        ResizeSheetColumns();
+        diagnostics?.Record("objects-created", new { rows = rows.Length, cells = controls.Sum(row => row.Length),
+            titleCells = controls.Sum(row => row.Count(cell => cell is TitleCell)), comboBoxes = controls.Sum(row => row.Count(cell => cell is ComboBox)),
+            rowContainers = list.Items.Count, borders = cellBorders.Sum(row => row.Length) });
+        diagnostics?.RequestVisualCounts();
+    }
+    private bool CurrentLine(int row, Grid line) => row < rowLines.Count && ReferenceEquals(rowLines[row], line);
+    private void EnsureRow(int r)
+    {
+        if (controls[r].Length != 0) return;
+        using var measured = diagnostics?.Span("realize-row");
+        var line = rowLines[r];
+        var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
             line.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
             var number = new TextBlock { Text = (r + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 8, 0) };
             AutomationProperties.SetAutomationId(number, $"GridRowNumber{r}"); line.Children.Add(number);
@@ -262,16 +284,18 @@ internal sealed partial class EditingGrid : Grid
                 var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
                 SetColumn(border, c + 1); line.Children.Add(border);
             }
-            controls.Add(rowControls.ToArray()); markers.Add(rowMarkers.ToArray()); cellBorders.Add(borders.ToArray());
-            // Each container owns stable keys for its lifetime; scrolling never retargets a live editor.
-            var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0), Margin = new(0), BorderThickness = new(0), MinHeight = 30, IsTabStop = false };
-            AutomationProperties.SetName(item, rows[r].Cells[^1].Display); list.Items.Add(item);
-        }
-        ResizeSheetColumns();
-        diagnostics?.Record("objects-created", new { rows = rows.Length, cells = controls.Sum(row => row.Length),
-            titleCells = controls.Sum(row => row.Count(cell => cell is TitleCell)), comboBoxes = controls.Sum(row => row.Count(cell => cell is ComboBox)),
-            rowContainers = list.Items.Count, borders = cellBorders.Sum(row => row.Length) });
-        diagnostics?.RequestVisualCounts();
+        controls[r] = rowControls.ToArray(); markers[r] = rowMarkers.ToArray(); cellBorders[r] = borders.ToArray();
+        var wasUpdating = updating; updating = true;
+        try { for (var c = 0; c < controls[r].Length; c++) UpdateCell(r, c); }
+        finally { updating = wasUpdating; }
+    }
+    private void ReleaseRow(int r)
+    {
+        // A focused or pending native editor keeps its identity and caret even offscreen.
+        // Inactive controls are discarded, never rebound to a different row or field.
+        if (active && r == currentRow || controls[r].OfType<TitleCell>().Any(cell => cell.Editing || cell.Composing)) return;
+        controls[r] = []; markers[r] = []; cellBorders[r] = [];
+        rowLines[r].Children.Clear(); rowLines[r].ColumnDefinitions.Clear();
     }
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {
@@ -302,6 +326,7 @@ internal sealed partial class EditingGrid : Grid
     {
         if (active)
         {
+            EnsureRow(currentRow);
             list.ScrollIntoView(list.Items[currentRow]);
             var editor = (Control)controls[currentRow][currentColumn];
             if (!editor.Focus(FocusState.Keyboard)) { reapplyButton.Focus(FocusState.Keyboard); return; }
@@ -315,7 +340,7 @@ internal sealed partial class EditingGrid : Grid
     {
         foreach (var line in list.Items.Cast<ListViewItem>().Select(i => (Grid)i.Content).Prepend(headerGrid))
         {
-            for (var c = 0; c < layout.Visible.Length; c++) line.ColumnDefinitions[c + 1].Width = new(layout.Visible[c].Preference.Width);
+            for (var c = 0; c + 1 < line.ColumnDefinitions.Count; c++) line.ColumnDefinitions[c + 1].Width = new(layout.Visible[c].Preference.Width);
             line.Width = 44 + layout.Visible.Sum(c => c.Preference.Width);
         }
     }
@@ -497,8 +522,15 @@ internal sealed partial class EditingGrid : Grid
             status.Text = statusBeforeSave + session.Status + statusAfterSave;
             }
             using (diagnostics?.Span("update-cell-presentation"))
-            for (var r = 0; r < rows.Length; r++) for (var c = 0; c < rows[r].Cells.Length; c++)
-            {
+            for (var r = 0; r < controls.Count; r++) for (var c = 0; c < controls[r].Length; c++) UpdateCell(r, c);
+            using (diagnostics?.Span("update-selected-details")) UpdateSelectedDetails();
+            UpdateSelection();
+            presentedWorkspace = session.Workspace; presentedRevision = session.Workspace.Revision; presentedGeneration = generation;
+        }
+        finally { updating = false; }
+    }
+    private void UpdateCell(int r, int c)
+    {
                 var cell = rows[r].Cells[c];
                 var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
                 markers[r][c].Text = (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
@@ -524,19 +556,13 @@ internal sealed partial class EditingGrid : Grid
                 ToolTipService.SetToolTip(markers[r][c], explanation);
                 cellBorders[r][c].Style = selected ? selectedCellStyle : cellStyle;
                 cellBorders[r][c].BorderThickness = new(active && r == currentRow && c == currentColumn ? 2 : 1);
-                if (controls[r][c] is TitleCell text) text.Refresh();
+                if (controls[r][c] is TitleCell { Composing: false } text) text.Refresh();
                 if (controls[r][c] is ComboBox combo)
                 {
                     combo.IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null;
                     combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
                     combo.PlaceholderText = SelectDisplay(cell, session.Workspace.Value(cell));
                 }
-            }
-            using (diagnostics?.Span("update-selected-details")) UpdateSelectedDetails();
-            UpdateSelection();
-            presentedWorkspace = session.Workspace; presentedRevision = session.Workspace.Revision; presentedGeneration = generation;
-        }
-        finally { updating = false; }
     }
     private void UpdateSelection()
     {
@@ -593,6 +619,7 @@ internal sealed partial class EditingGrid : Grid
     {
         using var measured = diagnostics?.Span("select");
         diagnostics?.Record("select-request", new { row = r, column = c, extend, focus, item = rows[r].ItemId, key = rows[r].Cells[c].Key });
+        EnsureRow(r);
         currentRow = r; currentColumn = c; active = true;
         if (!extend) { anchorRow = r; anchorColumn = c; }
         if (focus)
