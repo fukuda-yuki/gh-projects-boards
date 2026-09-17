@@ -25,14 +25,18 @@ public sealed class SheetHostedTests
         {
             await Ui.Ready<TextBox>("GridCell0_0");
             double headerY = 0;
+            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Programmatic));
+            await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.StartsWith("タイトル：1行・1セル"));
             await Ui.Run(() =>
             {
-                var editor = Ui.Find<TextBox>("GridCell0_0"); editor.Focus(FocusState.Programmatic); editor.Text = "未確定の作業";
+                var editor = Ui.Find<TextBox>("GridCell0_0"); editor.Text = "未確定の作業";
                 Ui.Find<Button>("GridDetails").Focus(FocusState.Keyboard);
                 Ui.Click("GridDetails");
             });
             await Ui.Ready<TextBlock>("SelectedCellDetails");
             await Ui.Until(() => Ui.Find<TextBlock>("SelectedCellDetails").Text.Contains("未確定の作業"));
+            await Ui.Until(() => ReferenceEquals(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Ui.Find<Button>("GridDetails")));
+            await SheetNativeInput.Rendered();
             await Ui.Run(() =>
             {
                 var header = Ui.Find<TextBlock>("GridHeader0");
