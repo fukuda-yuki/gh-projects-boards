@@ -12,6 +12,25 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed partial class HostedTests
 {
     [Test]
+    public async Task BlockedNativeInputWarningRemainsVisibleAndRoutineStatusIsAccessibleFromProjectDetails()
+    {
+        await Ui.Run(() => {
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<Button>("ProjectSettingsButton")), Is.EqualTo(Workspace.Status).And.Not.Empty);
+            // The native composition boundary is controlled here; ordinary
+            // physical-IME cases separately exercise its real signal.
+            Workspace.CanRefresh = () => false;
+            Ui.Click("RefreshProjectButton");
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("RegistrationStatus").Text.Contains("IME変換中"));
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBlock>("RegistrationStatus")).IsOffscreen(), Is.False);
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<Button>("ProjectSettingsButton")), Is.EqualTo(Workspace.Status));
+            Assert.That(h.Writes, Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task InvokingAnotherProjectDuringFillCancelsBeforeChangingEitherProject()
     {
         var first = Workspace.Selected!;

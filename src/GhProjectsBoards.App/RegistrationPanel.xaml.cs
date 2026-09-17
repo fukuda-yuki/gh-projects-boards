@@ -101,7 +101,9 @@ public sealed partial class RegistrationPanel : UserControl
             Status.Text = workspace.Status;
             WorkspaceStatusBar.Visibility = workspace.Selected is null || workspace.IsBusy || workspace.Status.Contains("失敗")
                 || workspace.Status.Contains("中断") || workspace.Status.Contains("保持") || workspace.Status.Contains("不明")
+                || workspace.Status.Contains("IME変換中")
                 ? Visibility.Visible : Visibility.Collapsed;
+            AutomationProperties.SetHelpText(ProjectSettings, workspace.Status);
             StatusDetailsText.Text = workspace.Status;
             ToolTipService.SetToolTip(Status, workspace.Status);
             Identity.Text = workspace.Profile is { } profile

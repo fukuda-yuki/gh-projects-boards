@@ -125,7 +125,7 @@ public sealed partial class RegistrationTests
             Assert.That(cell.Text, Is.EqualTo("にほんご")); Key(VirtualKeyShort.SPACE); Assert.That(cell.Text, Is.EqualTo("日本語"));
             Key(VirtualKeyShort.RETURN);
             Wait(() => Text(w, "DraftStatus").Contains("保存済み") && Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "日本語");
-            Assert.That(w.FindFirstDescendant(cf => cf.ByName("編集中・未確定")), Is.Not.Null);
+            Assert.That(cell.Properties.HelpText.Value, Does.Contain("編集中（未確定）"));
             Assert.That(Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString(), Is.EqualTo(duplicate ? "Issue 1" : ""));
             Key(VirtualKeyShort.RETURN); Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString() == "日本語");
             cell.Click(); if (f2) Key(VirtualKeyShort.F2);

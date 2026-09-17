@@ -46,7 +46,7 @@ public sealed class LiveApplyTests
             titleCell.Click(); titleCell.AsTextBox().Text = marker + " B"; Keyboard.Type(VirtualKeyShort.RETURN);
             Wait(() => E("DraftStatus").Name.Contains("GitHub未反映 1セル"));
             VerifyRemote(marker + " A", initialOption);
-            Click("RefreshProjectButton"); Wait(() => E("RegistrationStatus").Name.Contains("照合をローカル保存"));
+            Click("RefreshProjectButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("照合をローカル保存"));
             VerifyRemote(marker + " A", initialOption);
             Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.Zero);
             RunApply();
@@ -91,7 +91,7 @@ public sealed class LiveApplyTests
             Click("ReviewApplyButton"); var targets = E("ApplyTargetRows").AsListBox();
             targets.Items.Single(i => i.Name.Contains(itemId)).Select(); Click("PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
-            Click("PrimaryButton"); Wait(() => E("RegistrationStatus").Name.Contains("Apply処理を停止"));
+            Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("Apply処理を停止"));
             Assert.That(E("DraftStatus").Name, Does.Contain("GitHub未反映 0セル"));
         }
         string? VerifyRemote(string title, string? option, bool compare = true)

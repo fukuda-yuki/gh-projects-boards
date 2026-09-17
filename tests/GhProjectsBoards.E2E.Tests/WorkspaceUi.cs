@@ -130,6 +130,14 @@ internal static class WorkspaceUi
         CloseProjectSettings(window);
         return information;
     }
+    internal static string RegistrationStatusText(Window window)
+    {
+        var visibleStatus = Find(window, "RegistrationStatus");
+        if (Visible(visibleStatus)) return visibleStatus!.Name;
+        // Routine status remains in the public accessible description of the
+        // Project details entry without moving focus out of native input.
+        return Element(window, "ProjectSettingsButton").Properties.HelpText.Value;
+    }
     internal static AutomationElement Element(Window window, string id)
     {
         if (ConnectionControls.Contains(id) && !Visible(Find(window, "ConnectionScreen")))
