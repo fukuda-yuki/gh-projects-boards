@@ -4,14 +4,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:GhProjectsBoards.App"
     Title="GitHub Projects Boards">
-    <Grid>
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Spacing="8" Margin="24,12">
-            <Button x:Name="ConnectionTab" Content="接続設定" Click="ShowConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
-            <Button Content="登録済みProject / Projectを追加" Click="ShowProjects" AutomationProperties.AutomationId="ProjectsPageButton"/>
-        </StackPanel>
+        <Border x:Name="GlobalNavigation" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+            <Grid Padding="12,4" ColumnSpacing="16">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="GitHub Projects Boards" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="WorkspaceTab" Content="ワークスペース" MinHeight="28" Padding="10,4" Click="ShowProjects" AutomationProperties.AutomationId="ProjectsPageButton"/>
+                    <Button x:Name="ConnectionTab" Content="接続設定" MinHeight="28" Padding="10,4" Click="ShowConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     <ScrollViewer x:Name="ConnectionPage" Grid.Row="1" AutomationProperties.AutomationId="ConnectionScreen"
-                  HorizontalScrollBarVisibility="Disabled">
+                  HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
         <StackPanel Margin="28" Spacing="16" MaxWidth="1000" HorizontalAlignment="Stretch">
             <TextBlock Text="GitHub 接続" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="接続先と権限を確認します。この画面から Issue や Project は更新されません。"
@@ -72,6 +78,6 @@
             </Expander>
         </StackPanel>
     </ScrollViewer>
-        <local:RegistrationPanel x:Name="ProjectsPage" Grid.Row="1" Visibility="Collapsed"/>
+        <local:RegistrationPanel x:Name="ProjectsPage" Grid.Row="1"/>
     </Grid>
 </Window>

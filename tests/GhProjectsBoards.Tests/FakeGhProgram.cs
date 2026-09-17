@@ -14,13 +14,67 @@ internal static class FakeGhProgram
         Console.OutputEncoding = new UTF8Encoding(false);
         if (Environment.GetEnvironmentVariable("GHPB_CREATION_PROXY") is { } proxyRoot)
             return await LiveCreationProxy.Run(args, proxyRoot);
-        if (args.FirstOrDefault() == "--seed-editing" && args.Length == 2)
+        if (args.FirstOrDefault() == "--seed-editing")
         {
+            if (args.Length is not (2 or 4)) return 2;
+            var count = 101; var fieldCount = 1;
+            if (args.Length == 4 && (!int.TryParse(args[2], out count) || count is < 1 or > 1000
+                || !int.TryParse(args[3], out fieldCount) || fieldCount is < 1 or > 12)) return 2;
             var root = args[1];
             if (!Path.IsPathFullyQualified(root) || Directory.Exists(root) || File.Exists(root)) return 2;
             var store = new GhProjectsBoards.Core.Projects.RegistrationStore(root);
-            await store.SaveAsync(EditingTests.Registration());
-            await store.SaveAsync(EditingTests.Registration("P2"));
+            var expected = new[] { "P1", "P2" }.Select(projectId =>
+            {
+                var registration = EditingTests.Registration(projectId, count: count);
+                if (fieldCount == 1) return registration;
+                var original = registration.Snapshot.Fields[0];
+                var fields = Enumerable.Range(0, fieldCount).Select(index => index == 0 ? original : original with
+                {
+                    Id = new(original.Id.Scope, projectId + "-diagnostic-" + index),
+                    Name = "Diagnostic field " + (index + 1).ToString("D2"),
+                    Options = [new("todo-" + index, "Todo"), new("done-" + index, "Done")]
+                }).ToArray();
+                return registration with { Snapshot = registration.Snapshot with { Fields = fields,
+                    Items = registration.Snapshot.Items.Select(item => item with
+                    {
+                        Values = fields.Select(field => item.Values[0] with
+                        {
+                            FieldId = field.Id, OptionId = field.Options[0].Id,
+                            ValueId = item.Id.NodeId + "/" + field.Id.NodeId
+                        }).ToArray()
+                    }).ToArray() } };
+            }).ToArray();
+            foreach (var seededRegistration in expected) await store.SaveAsync(seededRegistration);
+            var reloaded = await store.LoadAsync();
+            if (reloaded.Problems.Count != 0 || reloaded.Registrations.Count != 2)
+                throw new InvalidDataException("Synthetic registration readback failed.");
+            foreach (var wanted in expected)
+            {
+                var actual = reloaded.Registrations.Single(r => r.Snapshot.Id == wanted.Snapshot.Id).Snapshot;
+                if (actual.Items.Count != count || actual.Fields.Count != fieldCount || actual.Issues.Count != count
+                    || !actual.Items.Select(i => i.Id).SequenceEqual(wanted.Snapshot.Items.Select(i => i.Id))
+                    || !actual.Items.Select(i => i.ContentId).SequenceEqual(wanted.Snapshot.Items.Select(i => i.ContentId))
+                    || !actual.Issues.Keys.OrderBy(id => id.NodeId).SequenceEqual(wanted.Snapshot.Issues.Keys.OrderBy(id => id.NodeId))
+                    || !actual.Fields.Select(f => f.Id).SequenceEqual(wanted.Snapshot.Fields.Select(f => f.Id))
+                    || actual.Items.Any(item => item.Values.Count != fieldCount
+                        || item.Values.Select(v => v.FieldId).Distinct().Count() != fieldCount
+                        || item.Values.Any(value => actual.Fields.Single(f => f.Id == value.FieldId).Options[0].Id != value.OptionId)))
+                    throw new InvalidDataException("Synthetic row/field identity readback failed.");
+            }
+            var evidence = Path.Combine(root, "diagnostics"); Directory.CreateDirectory(evidence);
+            string Hash(string file) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(file)));
+            var assembly = typeof(FakeGhProgram).Assembly.Location;
+            await File.WriteAllTextAsync(Path.Combine(evidence, "editing-seed.json"), JsonSerializer.Serialize(new
+            {
+                schemaVersion = 1, count, selectFieldCount = fieldCount, totalColumns = fieldCount + 2,
+                scope = "Isolated synthetic cached Projects; no authentication or GitHub requests.",
+                seedAssembly = assembly, seedAssemblySha256 = Hash(assembly), validatedReadback = true,
+                projects = expected.Select(p => new { projectId = p.Snapshot.Id.NodeId,
+                    firstItem = p.Snapshot.Items[0].Id.NodeId, lastItem = p.Snapshot.Items[^1].Id.NodeId,
+                    firstIssue = p.Snapshot.Items[0].ContentId?.NodeId, lastIssue = p.Snapshot.Items[^1].ContentId?.NodeId,
+                    fields = p.Snapshot.Fields.Select(f => f.Id.NodeId),
+                    file = store.FileFor(p.Snapshot.Id), sha256 = Hash(store.FileFor(p.Snapshot.Id)) })
+            }, new JsonSerializerOptions { WriteIndented = true }));
             return 0;
         }
         if (args.FirstOrDefault() == "environment")

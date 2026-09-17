@@ -40,14 +40,15 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
-            Edit(w, 0, "Committed original"); Element(w, "GridCell0_1").AsComboBox().Select("Done");
+            Edit(w, 0, "Committed original"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Element(w, "GridCell0_0").Click(); Invoke(w, "GridDuplicateRows"); LocalCount(f, 1);
             Scroll(w, 100); Assert.That(CellText(w, 101), Is.EqualTo("Committed original"));
-            Assert.That(Element(w, "GridCell101_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Done"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell101_1"), Is.EqualTo("Done"));
             Element(w, "GridCell101_0").Click(); Key(VirtualKeyShort.TAB, VirtualKeyShort.TAB);
             Wait(() => Element(w, "GridCell101_2").Properties.HasKeyboardFocus.Value);
             Set(w, "GridCell101_2", "chosen/repo"); Key(VirtualKeyShort.RETURN);
-            Element(w, "ProjectItems").Patterns.Scroll.Pattern.SetScrollPercent(0, -1);
+            var scroll = Element(w, "ProjectItems").Patterns.Scroll.Pattern;
+            if (scroll.HorizontallyScrollable.Value) scroll.SetScrollPercent(0, -1);
             Invoke(w, "GridAddRow"); LocalCount(f, 2); Scroll(w, 100); Edit(w, 102, "Second local");
             Element(w, "GridCell101_0").Click(); Set(w, "GridCell101_0", "Pending local");
             Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "Pending local");
@@ -62,7 +63,7 @@ public sealed partial class RegistrationTests
         });
         var calls = f.Calls().Length;
         f.Run(w => { OpenSaved(w, profile: true); Scroll(w, 100); Assert.That(CellText(w, 101), Is.EqualTo("Pending local"));
-            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("ローカル行 2").And.Contain("明示的Apply")); });
+            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("ローカル行 2").And.Contain("GitHub未反映")); });
         Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
         Assert.That(f.Calls().Length, Is.EqualTo(calls)); Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }
@@ -124,7 +125,7 @@ public sealed partial class RegistrationTests
             Assert.That(cell.Text, Is.EqualTo("にほんご")); Key(VirtualKeyShort.SPACE); Assert.That(cell.Text, Is.EqualTo("日本語"));
             Key(VirtualKeyShort.RETURN);
             Wait(() => Text(w, "DraftStatus").Contains("保存済み") && Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "日本語");
-            Assert.That(w.FindAllDescendants().Any(e => e.Properties.Name.TryGetValue(out var name) && name.Contains("編集中（未確定）")), Is.True);
+            Assert.That(w.FindFirstDescendant(cf => cf.ByName("編集中・未確定")), Is.Not.Null);
             Assert.That(Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString(), Is.EqualTo(duplicate ? "Issue 1" : ""));
             Key(VirtualKeyShort.RETURN); Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString() == "日本語");
             cell.Click(); if (f2) Key(VirtualKeyShort.F2);

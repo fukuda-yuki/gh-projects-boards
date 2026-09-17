@@ -107,14 +107,15 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
         Profile = profile; Selected = null; Incomplete = null;
         Changed?.Invoke();
     }
-    public async Task SelectAsync(ScopedId id)
+    public async Task<bool> SelectAsync(ScopedId id)
     {
         Transitioning?.Invoke();
-        if (!await FlushDraftsAsync()) return;
+        if (!await FlushDraftsAsync()) return false;
         await StopAsync();
         Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == id && id.Scope == Profile);
         Incomplete = null;
         Changed?.Invoke();
+        return Selected is not null;
     }
     public async Task StopAsync()
     {

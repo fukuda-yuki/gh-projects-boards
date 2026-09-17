@@ -86,7 +86,7 @@ public sealed partial class RegistrationTests
             f.Write(remoteOption: "done"); Invoke(w, "RefreshProjectButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("照合をローカル保存"));
             Assert.That(CellText(w, 0), Is.EqualTo("Local title"));
-            Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Done"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Done"));
             var saved = Durable(f).GetProperty("Registrations").GetRawText();
             f.Write(remoteTitle: "Partial must not win", partial: true); Invoke(w, "RefreshProjectButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("一部取得"));

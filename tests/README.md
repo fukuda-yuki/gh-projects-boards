@@ -55,6 +55,16 @@ Evidence must match the claimed behavior. Core tests do not establish view/contr
 
 Project row views use `RowViewTests` for deterministic option/state ordering, literal ID-based filtering, R3/R1 by C/A exact-key paste/Undo, coherent v7 storage/migration, invalid retained criteria, fresh Apply membership and immutable approved payloads, and completed/retained creation promotion. `RowViewHostedTests` and `RowApplyHostedTests` drive production settings, pending-buffer retention, zero matches/reset, delayed clipboard invalidation, visible/hidden Apply selection and the session-to-panel promotion handoff. The clipboard task is substituted only to control its delivery time; actual clipboard transport and native direct/F2 composition remain in ordinary-app `RowViewClipboardEditingAndRealRestart` and `RowViewPhysicalDirectAndF2PendingTransition` cases. Those cases verify normal process exit and the restart case opens the real saved checkpoint. They do not establish human acceptance or the full workload matrix.
 
+`HostedTests.ReopenedViewUndoRestoresRemovedLocalRowTemporarilyWithoutRevealingOtherHiddenWork` reloads a real checkpoint and invokes the production Undo/Reapply controls. It verifies that the restored local row absent from the reopened projection appears temporarily at the end, retaining pending text and saved preferences without exposing other hidden work or reordering existing rows. Core local-row tests retain ownership of identity/Undo/storage rules; `LocalRowsSaveFailureAndInterruptionRecoverIdentitiesAndUndo` retains ordinary-process recovery and native scrolling. `SheetViewportHostedTests` separately checks the real sheet between its header/footer and last-row visibility while deliberately retaining focus on the Reapply command; it does not establish focused-editor scrolling, the external UIA scroll-setter or physical-wheel route.
+
+`SheetFocusedScrollHostedTests.FocusedTitleScrollRoundtripRetainsPendingIdentityAndCaret` has two bounded UI integration cases: a selected committed title and a pending title with an interior caret. Real `EditingGrid`, native controls, `DraftSession` and `DraftStore` collaborate through public `ScrollViewer.ChangeView` roundtrips without moving focus to a command. Assertions cover offsets, retained focus/caret/text, stable item/field keys, header alignment and a subsequent edit to the second title with exact durable buffer keys. RenderTargetBitmap PNGs and observations are attached for pixel review; the cases do not simulate physical wheel/keys or prove displayed-pixel readability.
+
+`SheetContextHostedTests` exercises the corresponding fixed-identity, direct header/filter and visible scrollbar collaboration. The opt-in `Test-SheetDiagnostic.ps1 -ItemCount 1000 -SelectFieldCount 12 -Trace -Frames -Ime` uses the ordinary product with isolated synthetic cached Projects. `-Frames` captures independent timestamped screen sequences around native large-wheel, ordinary-wheel and available scrollbar-drag input; `-Ime` uses physical Japanese keys and can run at the same 1,000-row size. Preserve input/capture timestamps, source and executed-binary hashes, failed attempts and unavailable gestures. Diagnostic completion alone is not readable-pixel or human acceptance. A complete-blank pixel detector is only a finding aid; inspect the actual images for overlap, clipping and identity.
+
+```powershell
+./scripts/Test-UiIntegration.ps1 -Where 'class == GhProjectsBoards.UiIntegration.Tests.SheetFocusedScrollHostedTests'
+```
+
 ```powershell
 dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~RowViewTests'
 ./scripts/Test-UiIntegration.ps1
@@ -131,6 +141,37 @@ Results go to unique `TestResults/e2e/<run-id>/` directories. Keep TRX and metad
 The runner retains build/test logs, source state, resolved package assets, runtime versions, file hashes for the app executable/DLL, Core DLL, WinUI DLLs and both test assemblies. Its full-suite required-journey checks and execution counters remain intact; policy-based selection does not weaken a selected suite's success criteria. Replacing a connection journey with an unrelated passing case cannot satisfy that gate. Connection fixtures record owned process IDs, normal versus forced exit and remaining recorded children. Raw screen/log/clipboard evidence stays local until reviewed for publication.
 
 Desktop tests are opt-in (`GHPB_RUN_E2E=1`); use the script as the supported entry point. It sets child-process paths and artifact variables, restores prior process environment, and rejects zero execution, incomplete/skipped outcomes and failed tests. A plain discovery or skipped run is not successful E2E.
+
+## Ordinary workspace session
+
+`RegistrationTests.WorkspaceReconstructionSession` is a representative E2E journey through the ordinary executable, public FlaUI UIA3/input routes, real application orchestration and isolated checkpoint storage. It registers two synthetic Projects through an external fake gh process, with 101 items and multiple single-select columns. This endpoint has no network fallback; the case is not real-GitHub evidence.
+
+```powershell
+./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~WorkspaceReconstructionSession'
+```
+
+The journey covers workspace/connection navigation, Project destination settings, direct/F2 physical ASCII input, select editing, F6 focus-region movement retaining a copied rectangle, native clipboard paste/Undo, column order, row filtering/reapplication, a local row, pending text across Project switches, explicitly selected existing-title Apply/history and actual process restart without replay. It captures the ordinary window at 1400×900 and 1080×760 physical pixels, including vertical/horizontal header alignment. Screenshots carry source/binary identity and actual bounds/DPI. They support visual review; geometric assertions do not replace that review.
+
+One warmup and three measured samples per selected local action are written to `workspace-action-samples.jsonl`; the plan and image sidecars define the workload and source. Timings run from public UIA action through the declared visible result, including polling, command/navigation routes and input settling. Clipboard preparation, screenshots and durable follow-up assertions are outside these timing boundaries. Undo-title completion means the prior committed difference is removed while its preceding buffer remains visible; the test explicitly cancels that restored buffer before the next sample. Retain failed samples and attempts. These measurements do not isolate rendering/storage latency, compare equivalent baseline/candidate sources or establish a speedup.
+
+Focused hosted [workspace cases](GhProjectsBoards.UiIntegration.Tests/README.md#workspace-presentation-and-view-collaboration) own deterministic view/event combinations. Existing mixed creation and uncertain-result journeys remain separate; this representative session does not duplicate their creation/retry matrix. Run physical Japanese `GridIme` cases independently for relevant native-input risk: ASCII keystrokes and native TextBox assignments are not composition evidence. OS High Contrast, other DPI conditions, live-service behavior and human usability/natural-input acceptance require separate observations. The [ordinary workspace walkthrough](../docs/workspace.md) describes the product flow for direct evaluation.
+
+## Cached local-sheet diagnostic
+
+`LocalSheetDiagnosticTests.CachedSheetFocusedNativeScrollAndLocalActions` is a whole-local-session diagnostic through the ordinary cached UI, real workspace orchestration and real isolated checkpoint store. Its declared endpoint is local persistence: the collaboration is end-to-end, although its explicit opt-in category is `LocalSheetDiagnostic`, outside the default E2E suite. Synthetic registered Projects are prepared through the real store; the diagnostic does not connect, refresh, Apply or fall back to live gh.
+
+```powershell
+./scripts/Test-SheetDiagnostic.ps1 -RunId local-sheet-101 -Trace
+./scripts/Test-SheetDiagnostic.ps1 -RunId local-sheet-1000 -ItemCount 1000 -Trace
+./scripts/Test-SheetDiagnostic.ps1 -RunId local-sheet-columns -SelectFieldCount 12 -Trace
+./scripts/Test-SheetDiagnostic.ps1 -RunId local-sheet-ime -Ime -Trace
+```
+
+The runner selects exactly that case, creates a new seed/output, and retains source/binary/seed hashes, dirty and untracked source, TRX/logs, screenshots, typed-target/checkpoint observations and process lifetime. `-NoBuild`, an absolute immutable `-Executable` and optional caller-declared `-SourceRevision` support separate baseline artifacts; none proves binary/source equivalence. See [measurement boundaries and override commands](../docs/performance.md#cached-local-sheet-diagnosis).
+
+Choose 101–1,000 rows and 1–12 select fields for the question being investigated, not every combination. Native wheel/drag, focused pending input, commit/Undo and Project switching are observed at ordinary/wide sizes. Only selection/arrows have one warmup plus five samples; other actions are single observations. `-Ime` adds a 101-row physical Japanese composition/wheel/confirmation probe; default runs omit it and existing broader IME coverage remains separate.
+
+Raw UIA/driver waits are not product latency. App spans include managed probe allocations but exclude native XAML allocation; rendering callbacks are not presented pixels. Completion requires separate review of omissions, reached scroll endpoints, actual typed IDs, durable Buffer/Change conditions, screenshots and process outcome. Preserve failures and `wheel-endpoint-not-reached` observations. This diagnostic does not establish live-service behavior, timing thresholds or human usability acceptance; the existing test-selection and live policies are unchanged.
 
 ## Registration verification
 

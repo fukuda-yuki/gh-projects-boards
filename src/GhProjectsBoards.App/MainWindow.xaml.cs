@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Windows.ApplicationModel.DataTransfer;
@@ -10,6 +11,9 @@ namespace GhProjectsBoards.App;
 
 public sealed partial class MainWindow : Window
 {
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr window);
+
     private readonly ConnectionViewModel model = new();
     private Task? operation;
     private bool rendering;
@@ -23,14 +27,20 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ProjectsPage.ConnectionRequested += (_, _) => SetPage(false);
+        SetPage(true);
         try
         {
             workspace = new RegistrationWorkspace(RegistrationStore.ForUser());
             ProjectsPage.Initialize(workspace);
             operation = RestoreAsync();
         }
-        catch (Exception) { UiMessage.Text = "保存先を利用できません。GHPB_DATA_ROOTは絶対パスを指定してください。実データへの代替保存はしません。"; }
-        AppWindow.Resize(new SizeInt32(1080, 960));
+        catch (Exception)
+        {
+            UiMessage.Text = "保存先を利用できません。GHPB_DATA_ROOTは絶対パスを指定してください。実データへの代替保存はしません。";
+            SetPage(false);
+        }
+        SizeWorkspaceWindow();
         ExecutableInput.Text = model.ExecutablePath;
         HostInput.Text = model.Host;
         IssueInput.Text = model.IssueUrl;
@@ -50,16 +60,46 @@ public sealed partial class MainWindow : Window
         Render();
     }
 
+    private void SizeWorkspaceWindow()
+    {
+        var display = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest);
+        var workArea = display.WorkArea;
+        // AppWindow uses physical pixels; XamlRoot is not available during construction.
+        var dpi = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        var scale = dpi == 0 ? 1d : dpi / 96d;
+        var width = Math.Min((int)Math.Round(1280 * scale), workArea.Width);
+        var height = Math.Min((int)Math.Round(800 * scale), workArea.Height);
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.PreferredMinimumWidth = Math.Min(900, workArea.Width);
+            presenter.PreferredMinimumHeight = Math.Min(620, workArea.Height);
+        }
+        AppWindow.MoveAndResize(new RectInt32(workArea.X + (workArea.Width - width) / 2,
+            workArea.Y + (workArea.Height - height) / 2, width, height));
+    }
+
     private async Task RestoreAsync()
     {
         try { await workspace!.RestoreAsync(); }
-        catch (Exception) { UiMessage.Text = "保存データを読み込めません。保存先を確認してください。自動削除はしていません。"; }
+        catch (Exception)
+        {
+            UiMessage.Text = "保存データを読み込めません。保存先を確認してください。自動削除はしていません。";
+            SetPage(false);
+        }
     }
-    private void ShowConnection(object sender, RoutedEventArgs args) { ConnectionPage.Visibility = Visibility.Visible; ProjectsPage.Visibility = Visibility.Collapsed; }
+    private void SetPage(bool projects)
+    {
+        GlobalNavigation.Visibility = projects ? Visibility.Collapsed : Visibility.Visible;
+        ConnectionPage.Visibility = projects ? Visibility.Collapsed : Visibility.Visible;
+        ProjectsPage.Visibility = projects ? Visibility.Visible : Visibility.Collapsed;
+        WorkspaceTab.Style = projects ? (Style)Application.Current.Resources["AccentButtonStyle"] : null;
+        ConnectionTab.Style = projects ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
+    }
+    private void ShowConnection(object sender, RoutedEventArgs args) => SetPage(false);
     private void ShowProjects(object sender, RoutedEventArgs args)
     {
         if (workspace is null) return;
-        ConnectionPage.Visibility = Visibility.Collapsed; ProjectsPage.Visibility = Visibility.Visible; ProjectsPage.Update();
+        SetPage(true); ProjectsPage.Update();
     }
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs args)
@@ -169,8 +209,9 @@ public sealed partial class MainWindow : Window
         if (closingRequested) return;
         closingRequested = true;
         workspace?.CancelPendingEdits();
+        if (ProjectsPage.Visibility == Visibility.Visible) ProjectsPage.FocusHeader();
+        else ConnectionTab.Focus(FocusState.Programmatic);
         ProjectsPage.IsEnabled = false;
-        ConnectionTab.Focus(FocusState.Programmatic);
         Render();
         model.Cancel();
         if (workspace is not null) await workspace.StopAsync();

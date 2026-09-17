@@ -89,7 +89,12 @@ internal static class Ui
     public static ContentDialog? Dialog(string id) => VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot)
         .SelectMany(p => Tree(p.Child)).OfType<ContentDialog>().SingleOrDefault(d => AutomationProperties.GetAutomationId(d) == id);
     public static Task DialogReady(string id) => Until(() => Dialog(id)?.IsLoaded == true);
-    public static void DialogButton(string id, string name) => Click(Tree(Dialog(id)!).OfType<Button>().Single(b => b.Name == name));
+    public static void DialogButton(string id, string name)
+    {
+        var dialog = Dialog(id)!;
+        var content = dialog.Content is DependencyObject root ? Tree(root).ToHashSet() : [];
+        Click(Tree(dialog).OfType<Button>().Single(b => b.Name == name && !content.Contains(b)));
+    }
     public static string DialogText(string id) => string.Join("\n", Tree(Dialog(id)!).OfType<TextBlock>().Select(t => t.Text));
     public static void Select(ListView list, int index)
     {
@@ -99,7 +104,30 @@ internal static class Ui
         // The confirmation is still invoked through its production automation peer.
         list.SelectedItems.Add(list.Items[index]);
     }
+    public static async Task ClickCommand(string id, bool focus = false)
+    {
+        Button button = null!;
+        await Run(() =>
+        {
+            var bar = Tree(Root).OfType<CommandBar>().Single(c => c.PrimaryCommands.Concat(c.SecondaryCommands)
+                .OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == id));
+            button = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<Button>().Single(b => AutomationProperties.GetAutomationId(b) == id);
+            if (!button.IsLoaded || button is AppBarButton { IsInOverflow: true }) bar.IsOpen = true;
+        });
+        await Until(() => button.IsLoaded && button.IsEnabled);
+        await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
+    }
     public static void Click(string id) => Click(Find<Button>(id));
+    public static async Task ChooseCell(string id, string optionId)
+    {
+        await Ready<Button>(id);
+        await Run(() => { Find<Button>(id).Focus(FocusState.Keyboard); Click(id); });
+        MenuFlyoutItem? item = null;
+        await Until(() => (item = VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child)).OfType<MenuFlyoutItem>()
+            .SingleOrDefault(i => AutomationProperties.GetAutomationId(i) == "ChoiceOption-" + optionId)) is { IsLoaded: true });
+        await Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(item!).GetPattern(PatternInterface.Invoke)).Invoke());
+        await Until(() => !item!.IsLoaded);
+    }
     public static void Click(Button button)
     {
         Assert.That(button.IsLoaded && button.IsEnabled, Is.True, "The bound button must be loaded and enabled");

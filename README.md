@@ -4,6 +4,8 @@ A native Windows desktop application built with **C#, .NET 10 and WinUI 3 / Wind
 
 GitHub remains the source of truth. Editing is local; only an explicit apply operation publishes changes. Product requirements and acceptance belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
 
+Follow [Working in the workspace](docs/workspace.md) for an isolated local quickstart and a complete edit, view, compare, Apply and restart session.
+
 ## Build and run
 
 Use Windows x64, the .NET 10 SDK and Windows SDK 10.0.26100.0. Run from the repository root:
@@ -13,13 +15,13 @@ dotnet build GhProjectsBoards.sln --configuration Release
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
 
-The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Launching the connection screen requires no GitHub login and performs no network request. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
+The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Ordinary startup opens **ワークスペース**, requires no GitHub login and performs no network request. Use **接続設定** for an explicit connection check. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
 
 The [dependency terms and source inventory](docs/dependencies.md) distinguishes Windows development use from binary redistribution. DWrite/Widgets redistribution applicability remains an unresolved #13 distribution blocker.
 
 ## Check a connection
 
-Install [GitHub CLI](https://cli.github.com/). Use automatic detection, browse, or enter the path to `gh.exe`. Enter the GitHub hostname and optionally an Issue URL and a user/organization Project URL on that host.
+Install [GitHub CLI](https://cli.github.com/). Open **接続設定** from the workspace's account strip. The connection page's **ワークスペース** button returns to the editor. Use automatic detection, browse, or enter the path to `gh.exe`. Enter the GitHub hostname and optionally an Issue URL and a user/organization Project URL on that host.
 
 Select **接続を確認 / 再確認** to inspect the CLI version, account and stable ID, credential storage, scopes, and separate Issue/Project permissions. `不明` means unverified; successful login does not by itself establish write access.
 
@@ -29,13 +31,15 @@ After an intentional account, host or executable change, review the destination 
 
 ## Register and reopen a Project
 
-After checking a connection, open **登録済みProject / Projectを追加**, then **Projectを追加**. Select or enter an owner, optionally select one of its repositories, and search Projects. Repository results are actual GitHub Project links. Alternatively enter a same-host user/organization Project URL, including a Project without repository links. Discovery traverses all pages before presenting a complete list.
+After checking a connection, open **ワークスペース**, then **Projectを追加…** in the navigation pane. Enter a same-host user/organization Project URL and choose **URLを確認**, including for a Project without repository links. To browse instead, expand **所有者・Repositoryから探す**, select or enter an owner, optionally select one of its repositories, and search Projects. Repository results are actual GitHub Project links. Discovery traverses all pages before presenting a complete list.
 
 Review the identity, account and supported retrieval scope, then choose **取得してローカル登録**. Only a completed traversal durably saved locally becomes a registration. Duplicate URLs/routes open the same host/viewer/Project workspace. **最新を取得** explicitly refreshes it. The registered workspace edits existing Issue titles and Project single-select values locally, while retaining item classifications and read-only metadata.
 
-On restart, open the Project page and explicitly choose a saved profile to view its cached Projects without network access. Cached account metadata is not authentication. Check the connection before new server operations. Changing connection host/executable clears the active workspace binding and discovery results.
+On restart, explicitly choose **保存済みアカウント** in the workspace navigation pane and open a cached Project without network access. Use the top-left Project-list button if the pane is collapsed. Cached account metadata is not authentication. Check the connection before new server operations. Changing connection host/executable clears the active workspace binding and discovery results.
 
-The per-Project default repository is only a local setting for future Issue creation. **ローカル登録を解除…** confirms local registration/cache removal; it does not modify GitHub. When local work exists, cancellation is the default; explicitly retain it or discard only work not shared by another registration.
+The Project heading shows the cached retrieval time and default destination for new rows. Open the gear-shaped **Projectの情報と設定** button for exact identities, retrieval details and **新しいローカル行の既定Repository**. This default only seeds subsequent rows. The same settings surface contains **ローカル登録を解除…**, which confirms local registration/cache removal without modifying GitHub. When local work exists, cancellation is the default; explicitly retain it or discard only work not shared by another registration.
+
+The sheet keeps column headings visible while scrolling. Frequent operations appear in its command bar; **…** exposes additional commands when space is limited. **選択内容の詳細** opens the bottom pane for the active cell's values, pending input, validation and identity. F6/Shift+F6 move between the table, **再適用** and the details command without committing pending text; active IME composition holds this movement. **状況の詳細…** in the workspace footer exposes the complete selectable status message, including when no Project is open.
 
 ### Local registration storage
 
@@ -52,9 +56,9 @@ Before checkpoint migration, each scoped Project has one hash-named JSON file co
 
 ## Project column settings
 
-In an ordinary registered Project, open **列の設定**. Toggle single-select columns, use **上へ / 下へ**, and enter widths from 80 to 1200 logical units. Title stays first and the reference/new-row destination stays last. **ローカル保存** accepts the change only after checkpoint saving succeeds. **キャンセル** discards the candidate; **既定値に戻す** changes the candidate and requires Save. Defaults are 320 for Title and 200 for other columns.
+In an ordinary registered Project, choose **列** in the sheet command bar to open **列の設定**. Toggle single-select columns, use **↑ / ↓** to move them left/right in the sheet, and enter widths from 80 to 1200 logical units. The preview shows the resulting column order. Title stays first and the reference/new-row destination stays last. **ローカル保存** accepts the change only after checkpoint saving succeeds. **キャンセル** discards the candidate; **既定値に戻す** changes the candidate and requires Save. Defaults are 320 for Title and 200 for other columns.
 
-Copy, paste and clear follow visible order. For example, with Title/C/A/Reference visible, a two-cell paste into C/A never targets hidden B. Reordering clears the old rectangle but retains a visible active cell by identity; hiding it clears selection. Width changes retain selection and native editors. **操作を元に戻す** continues to address the original fields after a view change. If IME composition is active, finish or cancel it naturally and retry settings; pending text is preserved, not committed.
+Copy, paste and clear follow visible order. For example, with Title/C/A/Reference visible, a two-cell paste into C/A never targets hidden B. Reordering clears the old rectangle but retains a visible active cell by identity; hiding it clears selection. After the dialog closes, focus returns to the visible cell or neutral **再適用** command. Width changes retain selection and native editors. **元に戻す** continues to address the original fields after a view change. If IME composition is active, finish or cancel it naturally and retry settings; pending text is preserved, not committed.
 
 **新規行として貼り付け** first shows the TSV input columns: Title followed by visible single-select columns. Review the IDs/order and captured destination, then add or cancel. Hidden fields start as Unspecified. Whole-row duplication still copies supported committed hidden values. Apply review includes hidden differences/setup and labels them **グリッドでは非表示**; hiding a field never withdraws a planned mutation.
 
@@ -62,20 +66,20 @@ Preferences are separate for each host/account/Project and restore offline after
 
 ## Project row sorting and filtering
 
-Open **行の表示設定** in a registered Project. Choose source order, Title, or a single-select field and direction. Enter a literal Title substring; select option IDs or Empty/Unspecified/Unknown choices per field. Choices within a field are alternatives, and different fields are combined. Hidden columns can still have active filters. **ローカル保存・適用** saves and evaluates; **キャンセル** discards the candidate; **行設定をリセット** clears row conditions without changing columns and requires Save.
+Choose **並べ替え・フィルター** in a registered Project. Choose source order, Title, or a single-select field and direction. Enter a literal Title substring; expand a field to select options or **空値 / 新規行の未指定 / 不明・未取得**. The criteria preview uses readable names; duplicate or unavailable names retain identifying IDs. Choices within a field are alternatives, and different fields are combined. Hidden columns can still have active filters. **ローカル保存・適用** saves and evaluates; **キャンセル** discards the candidate; **並べ替え・絞り込みをリセット** clears row conditions without changing columns and requires Save.
 
-Edit or paste while the rows remain in their current arrangement. Committed changes show **再適用が必要**; unfinished text does not drive the view. **行表示を再適用** evaluates committed values explicitly. Add/duplicate/append keeps new rows temporarily visible at the end. Native composition defers view changes; finish or cancel it naturally. Hiding an active row clears data selection but retains its buffer. Undo can affect hidden rows without removing the filter.
+Edit or paste while the rows remain in their current arrangement. Committed changes show **再適用が必要**; unfinished text does not drive the view. **再適用** (or **変更した値で再適用**) evaluates committed values explicitly. Add/duplicate/append keeps new rows temporarily visible at the end. Native composition defers view changes; finish or cancel it naturally. Hiding an active row clears data selection but retains its buffer. Undo can affect hidden rows without removing the filter.
 
-The status shows active criteria, total/displayed rows, hidden work and temporary inclusion. **Apply…** starts with displayed candidates and requires row selection. **非表示行も候補に含める** is off by default. A changed visibility set after pre-Apply refresh requires selection again. Review includes hidden column differences of selected rows; **実行履歴…** remains available for hidden rows. Approved operations keep their identities across later filtering.
+The status shows active criteria, total/displayed rows, hidden work and temporary inclusion. **GitHubへ反映…** starts with displayed candidates and requires row selection. **非表示行も候補に含める** is off by default. A changed visibility set after pre-Apply refresh requires selection again. Review includes hidden column differences of selected rows; **実行履歴…** remains available for hidden rows. Approved operations keep their identities across later filtering.
 
-Switch Projects or close/restart normally to restore saved definitions. A missing field/option reports its ID and shows no data rows until you repair the condition or explicitly reset. All underlying rows and recovery work remain stored. Save failure keeps the dialog candidate for retry. These controls are a functional adapter; #31 owns the replacement design and human usability acceptance.
+Switch Projects or close/restart normally to restore saved definitions. A missing field/option reports its ID and shows no data rows until you repair the condition or explicitly reset. All underlying rows and recovery work remain stored. Save failure keeps the dialog candidate for retry. View definitions are saved; pane visibility, cell selection and viewport position remain transient. #31 owns visual design and human usability acceptance.
 ## Credentials and failures
 
 ### Local editing and recovery
 
 Use **新規行を追加** to prepare an incomplete local row below the fetched Issues. Enter its title, choose supported single-select values, and edit the last column's actual destination (`owner/repository`; horizontal scrolling or Tab reaches it). Select a cell and use Shift+up/down for multiple rows, then **選択行を複製** to copy committed values or **新規行を削除** to remove local rows. Mixed existing/local removal is rejected. **新規行として貼り付け** appends TSV in title/single-select order, validates the entire batch and creates one Undo unit. Empty titles are allowed during manual preparation but rejected by append. Clearing values never deletes a row.
 
-Preparation works in an explicitly selected saved profile without authentication. New-row validation is separate from existing-field differences. In **Apply…**, select existing updates and/or local creation rows; only selected rows are validated. Review each resolved Repository ID, committed title and single-select intent, then choose **明示的にApply**. Unspecified preserves initial server values; Set and ExplicitClear request initial Project setup. Pending text is never implicitly committed. Save, switch Projects, refresh and restart retain work in the authoritative version 7 checkpoint; versions 1–6 remain readable.
+Preparation works in an explicitly selected saved profile without authentication. New-row validation is separate from existing-field differences. In **GitHubへ反映…**, select existing updates and/or local creation rows; only selected rows are validated. Review each resolved Repository ID, committed title and single-select intent, then choose **明示的にApply**. Unspecified preserves initial server values; Set and ExplicitClear request initial Project setup. Pending text is never implicitly committed. Save, switch Projects, refresh and restart retain work in the authoritative version 7 checkpoint; versions 1–6 remain readable.
 
 **実行履歴…** distinguishes received identity, verified Issue existence, pending Project setup, verified completion and earlier uncertain attempts. Resume observes exact identities and never resends uncertain Issue creation. For an unknown creation, **作成の不確定結果を解決** offers hold, independently verified Issue URL binding, or a separately reviewed new attempt with explicit duplicate-risk acknowledgement. Binding performs no GitHub mutation. Successful later work does not prove an earlier attempt created nothing. Use the per-batch Resume buttons for older work. For a known Issue, **既知Issueの設定を再比較** reviews current local select choices and fresh observations; it also explicitly identifies withdrawal of retired fields. Complete identity evidence remains in history after promotion to an existing row. Creation-related removal, destination changes and Undo are guarded; unrelated mixed Undo remains available.
 
@@ -91,7 +95,7 @@ Unaffected operation Undo remains usable; affected obsolete operations are expli
 
 `scripts/Test-RefreshLive.ps1` is an explicit automated sandbox test with separate disposable fixture writes and owned cleanup. For a human live check use [the manual workflow](docs/refresh-manual-check.md); it creates its fixture only when you invoke setup. No live fixture is created by ordinary startup or synthetic checks.
 
-For an isolated manual check, build Release and run `scripts/Start-EditingCheck.ps1`. It creates a new synthetic data directory and launches the ordinary executable with process-local `GHPB_DATA_ROOT`. Open the Project page, select `github.com / ID 42`, then `P1`/`P2`; no connection check is needed. Each contains 101 shared Issues with independent single-select values. Reuse that exact directory with `-DataRoot <absolute-path> -Resume` to check process restart; the default always creates new data. `-PrepareOnly` creates the setup without launching. Existing directories are never overwritten.
+For an isolated manual check, build Release and run `scripts/Start-EditingCheck.ps1`. It creates a new synthetic data directory and launches the ordinary executable with process-local `GHPB_DATA_ROOT`. In **ワークスペース**, select the saved `viewer · github.com · ID 42` account, then `P1`/`P2`; no connection check is needed. Each contains 101 shared Issues with independent single-select values. Reuse that exact directory with `-DataRoot <absolute-path> -Resume` to check process restart; the default always creates new data. `-PrepareOnly` creates the setup without launching. Existing directories are never overwritten.
 
 Child gh processes use stored authentication. The app removes `GH_TOKEN`, `GITHUB_TOKEN`, `GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN` from those children without changing the parent environment. It reports variable names, never their values, and never extracts, displays or stores a token.
 
@@ -109,7 +113,7 @@ The ordinary app includes a bounded, three-row/two-column input check using synt
 
 Click a cell once and type Japanese directly, or use F2. The line below each editor shows the committed value: IME confirmation must leave it unchanged, and the following Enter commits the cell and moves down once. Arrow and Shift navigation select cells/ranges without changing values. The standard TextBox is a reference control. Data is discarded on exit; this screen does not connect to GitHub.
 
-This keeps the native input method available for verification while full table editing, paste, Undo and 100-row behavior are implemented under [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7). Launch without the option for the connection screen. See [tests](tests/README.md) for automated and human input checks.
+This keeps the bounded native input method available alongside ordinary table editing, paste, Undo and row-view behavior owned by [#7](https://github.com/fukuda-yuki/gh-projects-boards/issues/7). Launch without the option for **ワークスペース**. See [tests](tests/README.md) for automated and human input checks.
 
 ## Test
 

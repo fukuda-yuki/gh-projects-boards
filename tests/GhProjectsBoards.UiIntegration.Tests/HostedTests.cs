@@ -55,32 +55,32 @@ public sealed partial class HostedTests
         await Ui.Run(() => Ui.Click("GridAddRow"));
         await Ui.Until(() => Work.LocalRows.Count == 1);
         var id = Work.LocalRows.Single().Id;
-        await Ui.Ready<ComboBox>("GridCell2_1");
+        await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             var row = Work.Open(Workspace.Selected!).Single(r => r.ItemId == id);
             Assert.That(row.Cells[1].Key, Is.EqualTo(new FieldKey("LocalSelect", id, "P1", "P1-status")));
-            var choice = Ui.Find<ComboBox>("GridCell2_1");
-            choice.Focus(FocusState.Programmatic);
-            choice.SelectedItem = choice.Items.OfType<SelectOption>().Single(o => o.Id == "done");
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("未指定（送信しない）"));
         });
+        await Ui.ChooseCell("GridCell2_1", "done");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Any(s => s.OptionId == "done"));
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().SelectionIdentity?.Field == new FieldKey("LocalSelect", id, "P1", "P1-status"));
         await Ui.Run(() =>
         {
-            Assert.That(((SelectOption)Ui.Find<ComboBox>("GridCell2_1").SelectedItem).Id, Is.EqualTo("done"));
-            Ui.Click("GridClear");
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("Done"));
         });
+        await Ui.ClickCommand("GridClear");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Single().Intent.ToString() == "ExplicitClear");
-        await Ui.Run(() => { Assert.That(Ui.Find<ComboBox>("GridCell2_1").SelectedItem, Is.Null); Ui.Click("GridRemoveRows"); });
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア")));
+        await Ui.ClickCommand("GridRemoveRows");
         await Ui.Until(() => Work.LocalRows.Count == 0);
         await Ui.Run(() => Ui.Click("GridUndo"));
         await Ui.Until(() => Work.LocalRows.Count == 1);
-        await Ui.Ready<ComboBox>("GridCell2_1");
+        await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             Assert.That(Work.LocalRows.Single().Id, Is.EqualTo(id));
-            Assert.That(Ui.Find<ComboBox>("GridCell2_1").SelectedItem, Is.Null);
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア"));
             Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル行 1"));
         });
     }
@@ -90,7 +90,7 @@ public sealed partial class HostedTests
     {
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "未確定 pending");
         await Ui.Until(() => Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer == "未確定 pending");
-        await Ui.Run(() => Ui.Click("GridSave"));
+        await Ui.ClickCommand("GridSave");
         await Ui.Idle();
         await Ui.Run(() =>
         {
@@ -102,7 +102,8 @@ public sealed partial class HostedTests
     [Test]
     public async Task RejectedExistingRowRemovalShowsErrorAndPreservesWork()
     {
-        await Ui.Run(() => { Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Programmatic); Ui.Click("GridRemoveRows"); });
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Programmatic));
+        await Ui.ClickCommand("GridRemoveRows");
         await Ui.Until(() => Ui.Find<TextBlock>("DraftStatus").Text.Contains("削除は選択した新規ローカル行だけ"));
         await Ui.Run(() =>
         {
@@ -150,6 +151,7 @@ public sealed partial class HostedTests
         var service = new GhConnectionService("synthetic-only.exe", "github.com", gate);
         var context = (await service.ConnectAsync()).Context!;
         await Ui.Run(async () => { await Workspace.BindAsync(context, service); await Workspace.SelectAsync(new(new("github.com", 42), "P1")); });
+        await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Any(g => g.IsLoaded));
         await Ui.Ready<TextBox>("GridCell0_0");
         gate.Armed = true;
     }
@@ -186,6 +188,7 @@ public sealed partial class HostedTests
     {
         await ControlExternal("ProjectFields");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "retained pending");
+        await Ui.Until(() => Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer == "retained pending");
         var oldSession = Workspace.Drafts!;
         await Ui.Run(() => Ui.Click("RefreshProjectButton"));
         await gate!.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -234,6 +237,8 @@ public sealed partial class HostedTests
     {
         await ControlExternal("RegistrationOwners");
         await Ui.Run(() => Ui.Click("AddProjectButton"));
+        await Ui.Ready<Expander>("ProjectDiscoverySearchExpander");
+        await Ui.Run(() => Ui.Find<Expander>("ProjectDiscoverySearchExpander").IsExpanded = true);
         await Ui.Ready<Button>("LoadOwnersButton");
         await Ui.Run(() => Ui.Click("LoadOwnersButton"));
         await gate!.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -244,6 +249,9 @@ public sealed partial class HostedTests
             await Ui.Run(() => panel.Initialize(replacement.Workspace));
             await Ui.Mount(panel);
             await Ui.Run(() => Ui.Click("AddProjectButton"));
+            await Ui.Ready<Expander>("ProjectDiscoverySearchExpander");
+            await Ui.Run(() => Ui.Find<Expander>("ProjectDiscoverySearchExpander").IsExpanded = true);
+            await Ui.Ready<ComboBox>("DiscoveryOwners");
             gate.Release.TrySetResult();
             await Ui.Until(() => !Workspace.IsBusy);
             await Ui.Idle();
@@ -286,7 +294,12 @@ public sealed partial class HostedTests
     [Test]
     public async Task UnregisterDialogCannotFollowPanelIntoAnotherWorkspace()
     {
-        await Ui.Run(() => Ui.Click("UnregisterProjectButton"));
+        await Ui.Run(() => Ui.Click("ProjectSettingsButton"));
+        await Ui.Until(() => SettingsContent() is not null);
+        await Ui.Until(() => Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!).StartBringIntoView());
+        await Ui.Idle();
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("UnregisterProjectButton", SettingsContent()!)));
         await Ui.DialogReady("LocalUnregisterConfirmation");
         var replacement = await ApplyTests.Harness.Create(2);
         try
@@ -324,6 +337,7 @@ public sealed partial class HostedTests
         {
             Assert.That(Ui.DialogText("ApplySelectionDialog"), Does.Contain("選択候補 4 件").And.Contain("未選択の未完成行"));
             var list = Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplySelectionDialog"));
+            Assert.That(list.Items[0].ToString(), Does.Contain("Existing update").And.Contain("#1").And.Contain("P1-T1").And.Not.Contain("pending excluded"));
             Assert.That(list.Items[2].ToString(), Does.Contain(local).And.Contain("sample-user/first"));
             Assert.That(list.Items[3].ToString(), Does.Contain(incomplete));
             Ui.Select(list, 0); Ui.Select(list, 2);

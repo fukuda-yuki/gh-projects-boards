@@ -32,6 +32,34 @@ Spans are **inclusive and nested**: process requests occur within observations, 
 
 Publish each sample plus median/min/max. Do not infer tail percentiles from these sample sizes. Retain an optimization only for a repeatable reduction in work counts or elapsed time beyond sample variation and passing correctness gates. Pacing remains enabled. Where mandatory waits dominate, report the work reduction without inventing an end-to-end speedup. CI runs deterministic safety and structural count assertions, not machine-specific timing thresholds. Benchmark repetition does not change the ordinary correctness timeout policy.
 
+## Cached local-sheet diagnosis
+
+`Test-SheetDiagnostic.ps1` selects one opt-in `LocalSheetDiagnostic` case, outside the default E2E suite. It exercises an ordinary application's cached local session through public input/UI, real workspace orchestration and isolated checkpoint storage: this is end-to-end collaboration to a local-store endpoint. The seed is synthetic; connection, refresh, Apply and live GitHub are outside this diagnostic.
+
+```powershell
+# Each invocation creates a new isolated seed and evidence directory.
+./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-101 -Trace
+./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-1000 -ItemCount 1000 -Trace
+./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-columns -SelectFieldCount 12 -Trace
+# Optional physical Japanese composition probe, restricted to 101 rows:
+./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-ime -Ime -Trace
+# Use a previously copied complete app output; retain its source evidence separately.
+./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-baseline -NoBuild `
+    -Executable 'C:\evidence\baseline\GhProjectsBoards.App.exe' -SourceRevision '<40-character-source-SHA>'
+```
+
+Rows accept 101–1,000 and single-select fields 1–12, with two additional ordinary columns. Start at 101 rows, then vary row count or column count independently; run 1,000×12 only for a relevant scaling question. These examples are selectable workloads, not a required Cartesian suite. Run serially on an unlocked desktop. The optional IME phase requires the existing Microsoft Japanese IME; it sends physical keys, keeps composition active across native wheel input, and checks IME confirmation separately from cell commit. It does not replace the broader IME suite or human typing acceptance.
+
+The runner builds Release unless `-NoBuild` is supplied, then uses `Start-EditingCheck.ps1 -PrepareOnly` for a fresh, reread-validated seed. `-NoBuild` requires existing app, seed and driver outputs. An absolute `-Executable` selects an immutable copied app, independently of the current seed/driver binaries. `-SourceRevision` is optional caller-declared provenance, not verification that a binary matches current HEAD. Preserve the copied output's original build record. The runner records current HEAD, dirty patch, untracked source copies/hashes, binary hashes and before/after source hashes; builds do not silently establish provenance for older outputs.
+
+Evidence lives in `TestResults/sheet-diagnostic/<RunId>/`: source/seed/binary manifests, commands and process state, TRX/logs, screenshots with UIA observations, checkpoints and app lifetime. `-Trace` requests a new `app-trace.jsonl` through `GHPB_SHEET_DIAGNOSTICS`; an older immutable app may not implement that probe. Missing, dropped or incomplete trace records are unavailable evidence, never zero work. The runner restores its process environment and working directory and refuses an existing run directory.
+
+Only visible-title selection and the up/down arrow pair have one warmup plus five measured samples. Cached Project readiness, commit, Undo and Project roundtrip are single observations; wheel/drag phases have their own raw observations. Driver timings include input, UIA calls, readiness polling and recorded waits. They are not product input or rendering milliseconds. Different driver pacing, workload, binaries or tracing configurations must not be compared as equivalent samples.
+
+App `ui-span` records measure synchronous method work with nested inclusive spans and per-thread managed allocation deltas. These include managed probe overhead and exclude native XAML allocations. Core checkpoint records distinguish synchronous work from asynchronous wall spans; they are not isolated disk time or per-span thread attribution. Rendering callbacks occur before presentation: callback gaps and post-span callbacks do not prove displayed pixels or the duration of a blank screen. Correlate raw timestamps with screenshots, stable row/field identities, actual typed text and durable Buffer/Change state. Do not add nested spans together.
+
+A successful driver result means the selected diagnostic completed. Inspect `run.json` omissions and raw observations, including unavailable scrollbar thumbs and `wheel-endpoint-not-reached`; a screenshot then shows the attained viewport, not the requested endpoint. Review the typed target IDs, durable conditions and normal process exit before drawing conclusions. Geometry, UIA focus and nonempty PNGs alone do not establish readable, stable content. Keep failures and omitted phases visible; do not infer a speedup, supported maximum size or human acceptance from completion.
+
 ## Scoped observation safety mapping
 
 The operation reader traverses complete Project field definitions, then directly fetches the exact target item and all its value pages. This deliberately reuses `ReadSession` identity, ownership, option, pagination and error parsing. Field traversal depends on fields/options, not unrelated items. It returns only `FieldObservation`; it cannot satisfy registration, reconciliation or creation-promotion complete-snapshot requirements. Initial review and creation promotion retain `ReadAsync` full traversal.

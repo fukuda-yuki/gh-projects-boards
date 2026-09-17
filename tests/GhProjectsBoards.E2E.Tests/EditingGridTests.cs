@@ -11,11 +11,21 @@ public sealed partial class RegistrationTests
     private static void OpenSaved(Window w, string project = "Project 1", bool profile = false)
     {
         Invoke(w, "ProjectsPageButton");
-        if (profile) { Wait(() => Element(w, "SavedProfiles").AsComboBox().Items.Length > 0); Element(w, "SavedProfiles").AsComboBox().Select(0); }
-        Wait(() => w.FindFirstDescendant(cf => cf.ByName(project)) is not null);
-        w.FindFirstDescendant(cf => cf.ByName(project))!.Click();
+        WorkspaceUi.OpenProjectNavigation(w);
+        if (profile)
+        {
+            WorkspaceUi.SelectCombo(w, "SavedProfiles", 0);
+            WorkspaceUi.OpenProjectNavigation(w);
+        }
+        AutomationElement? entry = null;
+        Wait(() => (entry = WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(project)
+            .And(cf.ByControlType(FlaUI.Core.Definitions.ControlType.TreeItem)))) is { } item && !item.Properties.IsOffscreen.Value);
+        entry!.Patterns.Invoke.Pattern.Invoke();
         Wait(() => Text(w, "ProjectSummary").StartsWith(project));
-        Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("GridCell0_0")) is not null);
+        Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell0_0"));
+        // The ordinary selection route dismisses overlay navigation. Do not toggle
+        // it again while that native completion is returning from the tree event.
+        FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
     }
     private static void Register(Window w, int number)
     {
@@ -27,27 +37,49 @@ public sealed partial class RegistrationTests
     private static string CellText(Window w, int row, int col = 0) => Element(w, $"GridCell{row}_{col}").AsTextBox().Text;
     private static void Edit(Window w, int row, string text)
     { var c = Element(w, $"GridCell{row}_0").AsTextBox(); c.Click(); c.Text = text; Key(VirtualKeyShort.RETURN); }
-    private static void Scroll(Window w, double percent)
+    private static void Scroll(Window w, double percent) => ScrollEndpoint(w, percent, horizontal: false);
+    private static void ScrollEndpoint(Window w, double percent, bool horizontal)
     {
-        // Selection/flyout focus can finish after UIA returns. Wait for the requested public scroll position.
+        Assert.That(percent, Is.AnyOf(0d, 100d), "The ordinary journey scrolls to an endpoint.");
+        Element(w, "GridReapply").Focus();
+        Wait(() => Element(w, "GridReapply").Properties.HasKeyboardFocus.Value);
+        var viewport = Element(w, "ProjectItems");
+        var scroll = viewport.Patterns.Scroll.Pattern;
+        Assert.That(horizontal ? scroll.HorizontallyScrollable.Value : scroll.VerticallyScrollable.Value, Is.True);
+        // The ListView's provider rectangle can include clipped layout space below the
+        // window. Send wheel input inside the rendered sheet, between header and footer.
+        var top = Element(w, "GridHeader0").BoundingRectangle.Bottom;
+        var footer = Element(w, "GridSelection").BoundingRectangle;
+        var bottom = footer.Top;
+        Assert.That(bottom, Is.GreaterThan(top));
+        Mouse.Position = new System.Drawing.Point((int)footer.Left + 12, (int)((top + bottom) / 2));
+        // Exercise the user's wheel route; observe the native scroll position independently.
         Wait(() =>
         {
-            var scroll = Element(w, "ProjectItems").Patterns.Scroll.Pattern;
-            scroll.SetScrollPercent(-1, percent); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
-            return Math.Abs(scroll.VerticalScrollPercent.Value - percent) < 1;
+            if (horizontal) Mouse.HorizontalScroll(percent == 100 ? 120 : -120);
+            else Mouse.Scroll(percent == 100 ? -120 : 120);
+            FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
+            return Math.Abs((horizontal ? scroll.HorizontalScrollPercent.Value : scroll.VerticalScrollPercent.Value) - percent) < 1;
         });
     }
     private static JsonElement Durable(Fixture f)
     {
         var directory = Path.Combine(f.Data, "Drafts");
-        var file = FlaUI.Core.Tools.Retry.WhileNull(() => Directory.Exists(directory)
-            ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null,
-            TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
-        Assert.That(file, Is.Not.Null, "A committed checkpoint must exist.");
-        // Observe the old or new atomic checkpoint without blocking its replacement.
-        using var stream = new FileStream(file!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var document = JsonDocument.Parse(stream);
-        return document.RootElement.Clone();
+        using var document = FlaUI.Core.Tools.Retry.WhileNull(() =>
+        {
+            try
+            {
+                var file = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.json").SingleOrDefault() : null;
+                if (file is null) return null;
+                // Observe the old or new checkpoint without blocking replacement;
+                // the file can be replaced between enumeration and opening it.
+                using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                return JsonDocument.Parse(stream);
+            }
+            catch (FileNotFoundException) { return null; }
+        }, TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(20)).Result;
+        Assert.That(document, Is.Not.Null, "A committed checkpoint must exist.");
+        return document!.RootElement.Clone();
     }
     [Test]
     public void GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo()
@@ -56,15 +88,16 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
-            Edit(w, 0, "Shared local"); Element(w, "GridCell0_1").AsComboBox().Select("Done");
+            Edit(w, 0, "Shared local"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Scroll(w, 100); Edit(w, 100, "Last row");
-            Element(w, "GridCell100_1").AsComboBox().Select("Done");
+            WorkspaceUi.SelectCombo(w, "GridCell100_1", "Done");
             Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 4"));
             OpenSaved(w, "Project 2");
             Assert.That(CellText(w, 0), Is.EqualTo("Shared local"));
-            Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
-            Scroll(w, 100); Assert.That(CellText(w, 100), Is.EqualTo("Last row"));
-            Assert.That(Element(w, "GridCell100_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Todo"));
+            Scroll(w, 100);
+            Assert.That(CellText(w, 100), Is.EqualTo("Last row"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell100_1"), Is.EqualTo("Todo"));
             Element(w, "GridCell100_0").Click(); Set(w, "GridCell100_0", "");
             Wait(() => Text(w, "DraftStatus").Contains("保存済み"));
         });
@@ -156,7 +189,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Register(w, 2); OpenSaved(w);
-            Edit(w, 0, "Shared survives"); Element(w, "GridCell0_1").AsComboBox().Select("Done");
+            Edit(w, 0, "Shared survives"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Invoke(w, "UnregisterProjectButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("LocalUnregisterConfirmation")) is not null);
             Element(w, "CloseButton").AsButton().Invoke();
@@ -166,7 +199,7 @@ public sealed partial class RegistrationTests
             Element(w, "SecondaryButton").AsButton().Invoke();
             Wait(() => Durable(f).GetProperty("Registrations") is { ValueKind: JsonValueKind.Array } registrations && registrations.GetArrayLength() == 1);
             OpenSaved(w, "Project 2"); Assert.That(CellText(w, 0), Is.EqualTo("Shared survives"));
-            Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Todo"));
         });
         f.Run(w => { OpenSaved(w, "Project 2", profile: true); Assert.That(CellText(w, 0), Is.EqualTo("Shared survives")); });
         Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
