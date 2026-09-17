@@ -96,6 +96,7 @@ public sealed class LocalSheetDiagnosticTests
         using var automation = new UIA3Automation();
         using var application = Application.Attach(process.Id);
         Window? window = null;
+        nint nativeWindow = 0;
         var completed = false;
         var closeRequested = false;
         var normal = false;
@@ -104,6 +105,7 @@ public sealed class LocalSheetDiagnosticTests
         {
             window = application.GetMainWindow(automation, TimeSpan.FromSeconds(20));
             Assert.That(window, Is.Not.Null); WinUiProcess.AssertRuntime(process);
+            nativeWindow = window!.Properties.NativeWindowHandle.Value;
             // Match the existing native-input fixture's foreground acquisition before any cell input.
             Keyboard.TypeVirtualKeyCode(0x12);
             window!.SetForeground(); Wait(() => GetForegroundWindow() == window.Properties.NativeWindowHandle.Value, "Diagnostic window must be foreground.");
@@ -395,7 +397,7 @@ public sealed class LocalSheetDiagnosticTests
         }
         void CaptureFrames(string phase, Action stimulus, string input)
         {
-            var bounds = window!.BoundingRectangle;
+            var bounds = CaptureBounds();
             var directory = Path.Combine(output, phase); Directory.CreateDirectory(directory);
             using var firstFrame = new ManualResetEventSlim();
             var captured = new List<object>();
@@ -475,8 +477,9 @@ public sealed class LocalSheetDiagnosticTests
         void Snapshot(string phase, string? expectedIssue = null)
         {
             var prefix = (++captureNumber).ToString("D2") + "-" + phase;
+            var bounds = CaptureBounds();
             var captureTicks = Stopwatch.GetTimestamp();
-            using (var capture = Capture.Element(window!)) capture.ToFile(Path.Combine(output, prefix + ".png"));
+            using (var capture = Capture.Rectangle(bounds)) capture.ToFile(Path.Combine(output, prefix + ".png"));
             var observationStart = Stopwatch.GetTimestamp();
             object observed;
             try
@@ -498,8 +501,15 @@ public sealed class LocalSheetDiagnosticTests
             Write(prefix + ".json", new { phase, expectedIssue, expectedItem = expectedIssue is null ? null : "P1T" + expectedIssue[1..],
                 captureTicks, observationStart, observationEnd = Stopwatch.GetTimestamp(), utc = DateTimeOffset.UtcNow,
                 processWorkingSetBytes = process.WorkingSet64, processPrivateBytes = process.PrivateMemorySize64,
-                bounds = window!.BoundingRectangle, dpi = GetDpiForWindow(window.Properties.NativeWindowHandle.Value), observed });
+                bounds, dpi = GetDpiForWindow(nativeWindow), observed });
             Record("snapshot", new { phase, prefix });
+        }
+        Rectangle CaptureBounds()
+        {
+            // Pixel collection must remain independent of WinUI's UIA provider.
+            Assert.That(process.HasExited, Is.False);
+            Assert.That(GetWindowRect(nativeWindow, out var bounds), Is.True);
+            return Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
         }
         JsonElement ReadCheckpoint()
         {
@@ -531,4 +541,8 @@ public sealed class LocalSheetDiagnosticTests
 
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(nint window);
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(nint window, out NativeRect bounds);
 }
