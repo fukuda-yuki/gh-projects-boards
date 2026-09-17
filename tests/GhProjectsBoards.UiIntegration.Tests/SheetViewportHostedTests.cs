@@ -28,7 +28,7 @@ public sealed class SheetViewportHostedTests
         try
         {
             await Ui.Ready<TextBox>("GridCell0_0");
-            foreach (var size in new[] { new Size(1100, 700), new Size(860, 560) })
+            foreach (var size in new[] { new Size(1280, 720), new Size(960, 600) })
             {
                 await Ui.Run(async () =>
                 {
@@ -36,9 +36,9 @@ public sealed class SheetViewportHostedTests
                     panel.UpdateLayout(); await RenderFrames();
                     var split = Ui.Tree(panel).OfType<SplitView>().Single();
                     if (split.DisplayMode == SplitViewDisplayMode.Overlay && split.IsPaneOpen) Ui.Click("ToggleProjectNavigation");
-                    Assert.That(Ui.Find<Button>("GridReapply").Focus(FocusState.Keyboard), Is.True);
+                    Assert.That(Ui.Find<Button>("GridDetails").Focus(FocusState.Keyboard), Is.True);
                 });
-                await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(panel.XamlRoot), Ui.Find<Button>("GridReapply")));
+                await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(panel.XamlRoot), Ui.Find<Button>("GridDetails")));
                 ScrollViewer scroll = null!;
                 await Ui.Run(() =>
                 {
@@ -56,6 +56,9 @@ public sealed class SheetViewportHostedTests
                     Assert.That(scrollBounds.Top, Is.GreaterThanOrEqualTo(listBounds.Top - 1));
                     Assert.That(scrollBounds.Bottom, Is.LessThanOrEqualTo(listBounds.Bottom + 1));
                     Assert.That(scroll.ViewportHeight, Is.InRange(1d, listBounds.Height + 1));
+                    if (size.Width == 1280)
+                        Assert.That(listBounds.Height / panel.ActualHeight, Is.GreaterThanOrEqualTo(.70),
+                            "At a 1280x720 logical client the data viewport alone must occupy at least 70%.");
                     Assert.That(scroll.ScrollableHeight, Is.GreaterThan(0));
                     scroll.ChangeView(0, scroll.ScrollableHeight, null, true);
                 });
@@ -72,7 +75,7 @@ public sealed class SheetViewportHostedTests
                     Assert.That(lastBounds.Top, Is.GreaterThanOrEqualTo(viewport.Top - 1));
                     Assert.That(lastBounds.Bottom, Is.LessThanOrEqualTo(viewport.Top + scroll.ViewportHeight + 1), "At the bottom, the last row must be fully inside the actual data viewport.");
                     Assert.That(scroll.VerticalOffset, Is.EqualTo(scroll.ScrollableHeight).Within(1));
-                    Assert.That(FocusManager.GetFocusedElement(panel.XamlRoot), Is.SameAs(Ui.Find<Button>("GridReapply")));
+                    Assert.That(FocusManager.GetFocusedElement(panel.XamlRoot), Is.SameAs(Ui.Find<Button>("GridDetails")));
                     Assert.That(harness.Workspace.Drafts!.Workspace.DifferenceCount, Is.Zero);
                     Assert.That(harness.Writes, Is.Empty);
                 });

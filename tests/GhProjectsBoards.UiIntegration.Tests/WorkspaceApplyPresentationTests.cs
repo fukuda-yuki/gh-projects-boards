@@ -21,8 +21,8 @@ public sealed partial class HostedTests
             h.LoseCreate = true;
             await h.Apply(local);
             attempt = Work.Creations.Single().Id;
-            Ui.Click("ApplyHistoryButton");
         });
+        await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() =>
         {
@@ -38,7 +38,7 @@ public sealed partial class HostedTests
             Assert.That(Ui.DialogText("CreationResolutionDialog"), Does.Contain("作成済みの可能性があります"));
             Ui.DialogButton("CreationResolutionDialog", "CloseButton");
         });
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         Assert.That(Work.Creations.Single().Verified, Is.Null);
         Assert.That(Work.Creations.Single().Dispatched, Is.True);

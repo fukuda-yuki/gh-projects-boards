@@ -69,6 +69,12 @@ Command-bar cases wait for the actual overflow button to load before invoking it
 
 Use [the ordinary workspace walkthrough](../../docs/workspace.md) for complete sessions. A focused hosted pass establishes only its selected collaboration; it does not establish whole-application, physical-IME, live-service or human acceptance.
 
+## Bulk editing and cell states
+
+`BulkEditingTests` in the logic suite owns paste shapes, typed option identity, all-target validation, stable row/field resolution, transaction Undo and real checkpoint restoration. `BulkEditingHostedTests` mounts the production sheet and exercises body/Shift selection, pointer capture and cancellation, upward/downward fill including offscreen targets, Ctrl+D, choice-menu keys, delayed clipboard rejection and fixed marker geometry. `SheetNativeInput` sends native input to currently rendered controls; its rendering waits coordinate subsequent actions and are not latency measurements. The native clipboard case preserves the system clipboard through the existing OLE scope and verifies duplicate-label option IDs after actual copy/paste.
+
+`ThemeHostedTests.StateMarkersRangeAndPendingEditorRemainDistinctAcrossTheme` captures normal, selected, changed, combined, pending, conflict and read-only states. Its output records actual scale and OS High Contrast. Run the same selection after changing the OS display conditions; requested Light/Dark alone does not establish High Contrast or a different DPI. Inspect the attached images separately. `ChangedRangeKeepsIdsAndMarkersAcrossScrollBoundaryResizeAndTheme` retains exact target IDs while exercising scroll, native column-boundary drag and theme changes. Ordinary `BulkEditingJourney` retains the distinct application route through durable restart and explicit review, while physical IME and separately measured presented-pixel performance remain their own execution boundaries.
+
 ## Runner fault verification
 
 These intentionally failing infrastructure probes are excluded from the normal product suite. Run each in a separate process; an expected failure must have a nonzero runner exit, not just matching text in a log.

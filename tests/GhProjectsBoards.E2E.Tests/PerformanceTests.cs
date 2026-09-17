@@ -31,7 +31,7 @@ public sealed partial class RegistrationTests
                 timer.Restart(); Invoke(w, "PrimaryButton");
                 Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
                 var executeMs = timer.Elapsed.TotalMilliseconds;
-                Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
+                Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
                 Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(1));
                 File.WriteAllText(Path.Combine(output, sample < 0 ? "warmup.json" : $"sample-{sample}.json"),
                     JsonSerializer.Serialize(new { sample, localMs, prepareMs, executeMs, fixture = f.Root }));

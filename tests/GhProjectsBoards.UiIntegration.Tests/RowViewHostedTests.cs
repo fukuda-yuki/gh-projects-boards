@@ -28,7 +28,7 @@ public sealed class RowViewHostedTests
         await Ui.Run(() => { clipboard.TrySetResult("Done"); Ui.Dialog("RowSettingsDialog")?.Hide(); });
         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle();
     }
-    private async Task Open() { await Ui.Run(() => Ui.Click("GridRowSettings")); await Ui.Until(() => Ui.Dialog("RowSettingsDialog") is { IsLoaded: true }); }
+    private async Task Open() { await Ui.ClickCommand("GridRowSettings"); await Ui.Until(() => Ui.Dialog("RowSettingsDialog") is { IsLoaded: true }); }
     private static T Setting<T>(string id) where T : FrameworkElement => Ui.Find<T>(id, Ui.Dialog("RowSettingsDialog")!);
     private async Task Close(string button) { await Ui.Run(() => Ui.DialogButton("RowSettingsDialog", button)); await Ui.Until(() => Ui.Dialog("RowSettingsDialog") is null); await Ui.Idle(); }
     [Test]

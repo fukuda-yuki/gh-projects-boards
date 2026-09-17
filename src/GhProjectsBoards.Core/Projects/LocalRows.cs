@@ -186,8 +186,10 @@ internal sealed partial class EditingWorkspace
         {
             var options = cell.Options.Where(o => optionId ? o.Id == text : o.Name == text).ToArray();
             if (!clear && options.Length != 1) throw new InvalidOperationException("選択肢が不明・曖昧です。");
-            var values = next.Selects.Where(s => s.FieldId != cell.Key.FieldId).ToList();
-            values.Add(new(cell.Key.FieldId!, cell.Display, clear ? null : options[0].Id, clear ? null : options[0].Name, clear));
+            var values = next.Selects.ToList();
+            var value = new LocalSelect(cell.Key.FieldId!, cell.Display, clear ? null : options[0].Id, clear ? null : options[0].Name, clear);
+            var index = values.FindIndex(s => s.FieldId == cell.Key.FieldId);
+            if (index >= 0) values[index] = value; else values.Add(value);
             next = next with { Selects = values.ToImmutableArray() };
         }
         changes[old.Id] = new(old.Id, prior?.Before ?? old, next with { Stamp = Revision + 1 }, localRows.FindIndex(r => r.Id == old.Id));

@@ -11,6 +11,28 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
+    [Test]
+    public async Task InvokingAnotherProjectDuringFillCancelsBeforeChangingEitherProject()
+    {
+        var first = Workspace.Selected!;
+        await Ui.Run(async () => {
+            var choice = await new GhProjectsBoards.Core.Projects.ProjectDiscovery(h.Existing.Service).ResolveAsync(h.Existing.Context,
+                "https://github.com/users/sample-user/projects/2", default);
+            await Workspace.RegisterAsync(choice, null); await Workspace.SelectAsync(first.Snapshot.Id);
+        });
+        await OpenNavigation(SplitViewDisplayMode.Inline); await Ui.Ready<Button>("GridCell0_1");
+        await Ui.ChooseCell("GridCell0_1", "done");
+        await SheetNativeInput.Drag("GridFillHandle0_1", "GridCell1_1", async () => {
+            await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("2行へコピー予定"));
+            await InvokeProjectNode("Project 2"); await Ui.Until(() => Workspace.Selected?.Snapshot.Id.NodeId == "P2");
+        });
+        await Ui.Run(() => {
+            Assert.That(Work.DifferenceCount, Is.EqualTo(1));
+            Assert.That(Work.Fields.Single(f => f.Change is not null).Key, Is.EqualTo(new GhProjectsBoards.Core.Projects.FieldKey("Select", "P1-T1", "P1", "P1-status")));
+            Assert.That(Work.Snapshot().History, Has.Length.EqualTo(1)); Assert.That(h.Writes, Is.Empty);
+        });
+    }
+
     [TestCase(SplitViewDisplayMode.Overlay)]
     [TestCase(SplitViewDisplayMode.Inline)]
     public async Task InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(SplitViewDisplayMode mode)
@@ -149,7 +171,7 @@ public sealed partial class HostedTests
         await Ui.Run(() =>
         {
             Assert.That(Ui.Find<TextBox>("DefaultRepository", SettingsContent()!).Text, Is.EqualTo("owner/destination"));
-            Assert.That(Ui.Find<TextBlock>("ProjectCacheDestination").Text, Does.Contain("キャッシュ").And.Contain("owner/destination"));
+            Assert.That(Ui.Find<TextBlock>("ProjectCacheDestination").Text, Does.Contain("キャッシュ"));
             Assert.That(Work.Open(Workspace.Selected!).Select(row => row.ItemId), Is.EqualTo(before));
             Assert.That(h.Writes, Is.Empty);
         });

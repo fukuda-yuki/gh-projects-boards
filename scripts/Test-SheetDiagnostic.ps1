@@ -1,7 +1,7 @@
 # Opt-in local diagnosis. A completed driver is evidence collection, not product acceptance.
 [CmdletBinding()]
 param(
-    [ValidateRange(101, 1000)][int]$ItemCount = 101,
+    [ValidateRange(100, 1000)][int]$ItemCount = 101,
     [ValidateRange(1, 12)][int]$SelectFieldCount = 1,
     [ValidatePattern('^[A-Za-z0-9_-]+$')][string]$RunId = ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')),
     [switch]$NoBuild,
@@ -9,10 +9,13 @@ param(
     [ValidatePattern('^[0-9a-fA-F]{40}$')][string]$SourceRevision,
     [switch]$Trace,
     [switch]$Ime,
-    [switch]$Frames
+    [switch]$Frames,
+    [switch]$BulkPerformance
 )
 
 $ErrorActionPreference = 'Stop'
+if ($BulkPerformance -and $SelectFieldCount -ne 12) { throw 'Bulk performance requires twelve single-select fields.' }
+if (!$BulkPerformance -and $ItemCount -lt 101) { throw 'The existing local diagnostic requires at least 101 rows.' }
 if ($env:OS -ne 'Windows_NT') { throw 'This diagnostic requires Windows and an unlocked interactive desktop.' }
 foreach ($command in @('dotnet', 'git')) {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $command" }
@@ -27,12 +30,13 @@ if ($Executable -and -not (Test-Path -LiteralPath $app -PathType Leaf)) { throw 
 $data = Join-Path $run 'data'
 $observations = Join-Path $run 'observations'
 $testProject = 'tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj'
-$testName = 'CachedSheetFocusedNativeScrollAndLocalActions'
-$filter = "FullyQualifiedName=GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests.$testName"
+$testName = if ($BulkPerformance) { 'CachedSheetPixelMeasurements' } else { 'CachedSheetFocusedNativeScrollAndLocalActions' }
+$testClass = if ($BulkPerformance) { 'BulkPerformanceTests' } else { 'LocalSheetDiagnosticTests' }
+$filter = "FullyQualifiedName=GhProjectsBoards.E2E.Tests.$testClass.$testName"
 $buildArguments = @('build', 'GhProjectsBoards.sln', '--configuration', 'Release')
 $testArguments = @('test', $testProject, '--configuration', 'Release', '--no-build', '--filter', $filter,
     '--logger', 'trx;LogFileName=sheet-diagnostic.trx', '--results-directory', $run, '--',
-    'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=240000')
+    'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=600000')
 $environmentNames = @('APP', 'DATA_ROOT', 'OUTPUT', 'TRACE', 'ROWS', 'FIELDS', 'IME', 'FRAMES') | ForEach-Object { "GHPB_DIAGNOSTIC_$_" }
 $previous = @{}
 foreach ($name in $environmentNames) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
@@ -42,7 +46,7 @@ $state = [ordered]@{
     runnerPid = $PID; worktree = $repo; rows = $ItemCount; selectFields = $SelectFieldCount; totalColumns = $SelectFieldCount + 2
     app = $app; immutableOverride = [bool]$Executable; declaredAppSourceRevision = $SourceRevision
     sourceClaim = 'SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.'
-    noBuild = [bool]$NoBuild; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; timedFramesRequested = [bool]$Frames; buildExitCode = $null; testExitCode = $null
+    noBuild = [bool]$NoBuild; bulkPerformance = [bool]$BulkPerformance; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; timedFramesRequested = [bool]$Frames; buildExitCode = $null; testExitCode = $null
     commands = @(
         @{ executable = 'dotnet'; arguments = $buildArguments; selected = !$NoBuild },
         @{ executable = (Join-Path $PSScriptRoot 'Start-EditingCheck.ps1'); arguments = @('-DataRoot', $data, '-ItemCount', "$ItemCount", '-SelectFieldCount', "$SelectFieldCount", '-PrepareOnly') },
@@ -124,7 +128,7 @@ try {
     @($binaries | Sort-Object -Unique | ForEach-Object { File-Evidence $_ }) | ConvertTo-Json -Depth 5 |
         Set-Content -LiteralPath (Join-Path $run 'binaries.json') -Encoding utf8
     $state.phase = 'seeding'; Save-State
-    & (Join-Path $PSScriptRoot 'Start-EditingCheck.ps1') -DataRoot $data -ItemCount $ItemCount -SelectFieldCount $SelectFieldCount -PrepareOnly *>&1 |
+    & (Join-Path $PSScriptRoot 'Start-EditingCheck.ps1') -DataRoot $data -ItemCount $ItemCount -SelectFieldCount $SelectFieldCount -PrepareOnly -BulkScenario:$BulkPerformance *>&1 |
         Tee-Object -FilePath (Join-Path $run 'seed.log')
     $seedManifestPath = Join-Path $data 'diagnostics/editing-seed.json'
     $seedManifest = Get-Content -LiteralPath $seedManifestPath -Raw | ConvertFrom-Json

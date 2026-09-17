@@ -31,7 +31,7 @@ public sealed class ColumnHostedTests
         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle();
     }
     private Task Open() => OpenDialog();
-    private async Task OpenDialog() { await Ui.Run(() => Ui.Click("GridColumns")); await Ui.DialogReady("ColumnSettingsDialog"); }
+    private async Task OpenDialog() { await Ui.ClickCommand("GridColumns"); await Ui.DialogReady("ColumnSettingsDialog"); }
     private static T Setting<T>(string id) where T : DependencyObject => Ui.Find<T>(id, Ui.Dialog("ColumnSettingsDialog"));
     private static async Task Close(string name)
     {
@@ -69,7 +69,7 @@ public sealed class ColumnHostedTests
         await Ui.Run(() => { Assert.That(session.Workspace.Columns(p).Visible.Length, Is.EqualTo(5)); Assert.That(Ui.Find<TextBox>("GridCell0_0"), Is.SameAs(original)); });
         await Open();
         await Ui.Run(() => { Setting<NumberBox>("ColumnWidth-Title").Value = 480; Ui.Click(Setting<Button>("ColumnsReset")); });
-        await Ui.Run(() => Assert.That(Setting<NumberBox>("ColumnWidth-Title").Value, Is.EqualTo(320)));
+        await Ui.Run(() => Assert.That(Setting<NumberBox>("ColumnWidth-Title").Value, Is.EqualTo(360)));
         await Ui.Run(() => Setting<NumberBox>("ColumnWidth-Title").Value = 440);
         await Close("PrimaryButton");
         await Ui.Run(() =>
@@ -96,11 +96,11 @@ public sealed class ColumnHostedTests
         await Ui.Run(() => Ui.Click(Setting<Button>("ColumnUp-P1C")));
         await Close("PrimaryButton");
         await Ui.Ready<Button>("GridCell0_1");
-        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Find<Button>("GridReapply")));
+        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Find<Button>("GridDetails")));
         await Ui.Run(() =>
         {
             Assert.That(grid.SelectionIdentity, Is.Null);
-            Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(Ui.Find<Button>("GridReapply")));
+            Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(Ui.Find<Button>("GridDetails")));
             Assert.That(session.Workspace.Columns(p).Visible.Select(c => c.Id.FieldId), Is.EqualTo(new string?[] { null, "P1C", "P1A", null }));
         });
         await Ui.ChooseCell("GridCell0_1", "C1");
@@ -120,9 +120,21 @@ public sealed class ColumnHostedTests
         await Open(); await Ui.Run(() => Setting<NumberBox>("ColumnWidth-Title").Value = 79);
         await Ui.Run(() => Ui.DialogButton("ColumnSettingsDialog", "PrimaryButton"));
         await Ui.Until(() => Setting<TextBlock>("ColumnSettingsStatus").Text.Contains("保存できません"));
-        await Ui.Run(() => { Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(320)); Setting<NumberBox>("ColumnWidth-Title").Value = 500; });
+        await Ui.Run(() => { Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(360)); Setting<NumberBox>("ColumnWidth-Title").Value = 500; });
         await Close("PrimaryButton");
         await Ui.Run(() => Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(500)));
+    }
+    [Test]
+    public async Task CommittedLocalOptionKeepsUnappliedMarkerAfterSaveAndUndoReturnsToUnspecified()
+    {
+        await Ui.ChooseCell("GridCell2_1", "A1");
+        await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Text, Is.EqualTo("◆"));
+            Assert.That(session.Workspace.LocalRows.Single().Selects.Single(s => s.FieldId == "P1A").OptionId, Is.EqualTo("A1"));
+        });
+        await Ui.ClickCommand("GridUndo");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Visibility, Is.EqualTo(Visibility.Collapsed)));
     }
     [Test]
     public async Task ColumnObsoleteDefinitionsCannotSilentlySaveCandidate()
@@ -136,7 +148,7 @@ public sealed class ColumnHostedTests
             Ui.DialogButton("ColumnSettingsDialog", "PrimaryButton");
         });
         await Ui.Until(() => Setting<TextBlock>("ColumnSettingsStatus").Text.Contains("保存できません"));
-        await Ui.Run(() => { Assert.That(Setting<NumberBox>("ColumnWidth-Title").Value, Is.EqualTo(450)); Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(320)); });
+        await Ui.Run(() => { Assert.That(Setting<NumberBox>("ColumnWidth-Title").Value, Is.EqualTo(450)); Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(360)); });
         await Close("CloseButton");
     }
     [Test]
@@ -154,17 +166,21 @@ public sealed class ColumnHostedTests
             Assert.That(session.Workspace.Buffer(session.Workspace.Open(p)[0].Cells[0]), Is.Null);
         });
     }
-    [Test]
-    public async Task ColumnHiddenPendingBufferReappearsWithoutCommit()
+    [TestCase(false), TestCase(true)]
+    public async Task ColumnHiddenPendingBufferReappearsWithoutCommit(bool alreadyChanged)
     {
-        await Ui.Run(async () => { session.Workspace.SetBuffer(session.Workspace.Open(p)[0].Cells[2], "recoverable pending select"); await session.FlushAsync(); });
+        await Ui.Run(async () => {
+            var cell = session.Workspace.Open(p)[0].Cells[2];
+            if (alreadyChanged) session.Workspace.Commit("P1", cell, "B1", true);
+            session.Workspace.SetBuffer(cell, "recoverable pending select"); await session.FlushAsync();
+        });
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = false); await Close("PrimaryButton");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("未確定 1")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("非表示列の作業 1セル")));
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = true); await Close("PrimaryButton");
         await Ui.Ready<Button>("GridCell0_2");
         await Ui.Run(() => { Ui.Find<Button>("GridCell0_2").Focus(FocusState.Programmatic); Ui.Click("GridDetails"); });
         await Ui.Ready<TextBlock>("SelectedCellDetails");
         await Ui.Until(() => Ui.Find<TextBlock>("SelectedCellDetails").Text.Contains("recoverable pending select"));
-        await Ui.Run(() => { var cell = session.Workspace.Open(p)[0].Cells[2]; Assert.That(session.Workspace.Value(cell), Is.EqualTo("B0")); Assert.That(session.Workspace.Buffer(cell), Is.EqualTo("recoverable pending select")); });
+        await Ui.Run(() => { var cell = session.Workspace.Open(p)[0].Cells[2]; Assert.That(session.Workspace.Value(cell), Is.EqualTo(alreadyChanged ? "B1" : "B0")); Assert.That(session.Workspace.Buffer(cell), Is.EqualTo("recoverable pending select")); });
     }
 }

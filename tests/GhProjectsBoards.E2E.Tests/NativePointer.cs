@@ -8,7 +8,7 @@ namespace GhProjectsBoards.E2E.Tests;
 
 internal static class NativePointer
 {
-    internal static void Drag(Window window, Point from, Point to)
+    internal static void Drag(Window window, Point from, Point to, Action? beforeRelease = null)
     {
         Assert.That(GetForegroundWindow(), Is.EqualTo(window.Properties.NativeWindowHandle.Value));
         Move(from); FlaUI.Core.Input.Wait.UntilInputIsProcessed();
@@ -19,6 +19,7 @@ internal static class NativePointer
             // SetCursorPos relocates the cursor but did not deliver WinUI Thumb's
             // drag delta in this host. SendInput supplies an actual mouse move.
             Move(to); FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+            beforeRelease?.Invoke();
         }
         finally { Mouse.Up(MouseButton.Left); }
         FlaUI.Core.Input.Wait.UntilInputIsProcessed();

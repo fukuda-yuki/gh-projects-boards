@@ -42,7 +42,7 @@ public sealed partial class RegistrationTests
             Element(w, "ApplyTargetRows").AsListBox().Items[0].Select(); Invoke(w, "PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null || Text(w, "RegistrationStatus").Contains("IME変換中"));
             if (w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null) Invoke(w, "CloseButton");
-            Assert.That(CellText(w, 0), Is.EqualTo("に")); Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
+            Assert.That(CellText(w, 0), Is.EqualTo("に")); Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
         });
     }
@@ -62,7 +62,7 @@ public sealed partial class RegistrationTests
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Capture(w, f.Root, "apply-review"); Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl"));
             Assert.That(writes.Length, Is.EqualTo(1));
             using var request = JsonDocument.Parse(writes[0]);

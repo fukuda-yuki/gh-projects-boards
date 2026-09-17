@@ -88,7 +88,7 @@ internal sealed class ColumnTests
         w.SetRegistrations([added]);
         Assert.That(w.Columns(added).Visible.Any(c => c.Id.FieldId == "D"), Is.True);
         w.SetRegistrations([p]); w = EditingWorkspace.Restore(w.Snapshot());
-        Assert.That(w.Columns(p).Columns.Any(c => c.Id.FieldId == "D" && !c.Available && c.Preference.Visible && c.Preference.Width == 200), Is.True);
+        Assert.That(w.Columns(p).Columns.Any(c => c.Id.FieldId == "D" && !c.Available && c.Preference.Visible && c.Preference.Width == 144), Is.True);
     }
     [TestCase(79), TestCase(1201), TestCase(double.NaN), TestCase(double.PositiveInfinity)]
     public void InvalidWidthsRejectWholeCandidate(double width)

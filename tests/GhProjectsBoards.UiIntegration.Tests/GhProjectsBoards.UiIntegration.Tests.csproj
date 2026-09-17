@@ -17,6 +17,7 @@
     <StartupObject>GhProjectsBoards.UiIntegration.Tests.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../GhProjectsBoards.E2E.Tests/NativeClipboardScope.cs" Link="NativeClipboardScope.cs" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[1.8.260804001]" />
     <PackageReference Include="NUnitLite" Version="[4.6.1]" PrivateAssets="all" />
     <ProjectReference Include="../../src/GhProjectsBoards.App/GhProjectsBoards.App.csproj" />

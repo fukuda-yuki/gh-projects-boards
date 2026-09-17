@@ -60,8 +60,8 @@ public sealed partial class HostedTests
             Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("pending"));
             Assert.That(Work.Creations.Single().Completed, Is.True);
             Ui.Click("GridReapply"); Assert.That(grid.DisplayedRowIds, Is.Empty);
-            Ui.Click("ApplyHistoryButton");
         });
+        await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain(local)); Ui.DialogButton("ApplyHistoryDialog", "CloseButton"); });
     }
