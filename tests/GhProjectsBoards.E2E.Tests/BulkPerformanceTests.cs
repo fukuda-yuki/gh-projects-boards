@@ -123,15 +123,30 @@ public sealed class BulkPerformanceTests
                 using (Keyboard.Pressing(VirtualKeyShort.SHIFT))
                     for (var i = 1; i < 100; i++) { Key(VirtualKeyShort.DOWN); var count = i + 1; Wait(() => E("GridSelection").Name.Contains($"{count}行・{count}セル")); }
                 Wait(() => E("GridSelection").Name.Contains("100行・100セル"));
-                var last = E("GridCell99_1"); var preceding = E("GridCell98_1");
-                var fillBounds = Rectangle.Union(last.BoundingRectangle, preceding.BoundingRectangle); fillBounds.Inflate(1, 0);
-                Chord(VirtualKeyShort.KEY_D); Wait(() => Changes() == 100); var filled = Stable(fillBounds, "copy-down-filled");
-                WorkspaceUi.Invoke(window, "GridUndo"); Wait(() => Changes() == 1); E("GridCell99_1").Focus();
-                var unfilled = Stable(fillBounds, "copy-down-unfilled");
+                // Prepare the changed state before recording the pixel oracle.
+                Chord(VirtualKeyShort.KEY_D); Wait(() => Changes() == 100);
+                Wait(() => WorkspaceUi.ChoiceText(window, "GridCell99_1") == "Ready");
+                Wait(() => E("GridCell99_1").Properties.HasKeyboardFocus.Value);
+                // The viewport and column stay fixed while row containers move.
+                // Reuse the established column region, excluding its bottom
+                // quarter where the active-row focus frame and auto-hiding
+                // horizontal scrollbar can change independently of the values.
+                // This observes multiple visible destinations; the checkpoint
+                // observer independently verifies all 100 changes.
+                var fillBounds = bulkBounds; fillBounds.Height = (int)(fillBounds.Height * .75);
+                Write("copy-down-bounds.json", fillBounds);
+                Assert.That(fillBounds.Width, Is.InRange(100, 300)); Assert.That(fillBounds.Height, Is.InRange(200, 700));
+                var filled = Stable(fillBounds, "copy-down-filled");
+                // Keyboard Undo keeps the existing native focus and scroll
+                // position. Repeated UIA SetFocus can request a new viewport.
+                Chord(VirtualKeyShort.KEY_Z); Wait(() => Changes() == 1);
+                Wait(() => WorkspaceUi.ChoiceText(window, "GridCell99_1") == "Backlog");
+                var unfilled = Stable(fillBounds, "copy-down-unfilled", filled);
+                Assert.That(filled, Is.Not.EqualTo(unfilled));
                 for (var i = -5; i < 10; i++)
                 {
                     samples.Add(Bulk("copy-down-100", i, fillBounds, filled, () => Chord(VirtualKeyShort.KEY_D)));
-                    WorkspaceUi.Invoke(window, "GridUndo"); Wait(() => Changes() == 1); E("GridCell99_1").Focus(); AwaitPixels(fillBounds, unfilled);
+                    Chord(VirtualKeyShort.KEY_Z); Wait(() => Changes() == 1); AwaitPixels(fillBounds, unfilled);
                 }
             }
             using (var after = Capture.Rectangle(window.BoundingRectangle)) after.ToFile(Path.Combine(output, "after.png"));
@@ -183,10 +198,14 @@ public sealed class BulkPerformanceTests
         }
         string Stable(Rectangle bounds, string name, string? differentFrom = null)
         {
+            // Oracle preparation is outside every measured input interval. A
+            // short plateau can still contain the pre-input frame. Require an
+            // unchanged sequence beyond the observed presentation delay,
+            // distinct states, and retain the oracle PNGs.
             var timer = Stopwatch.StartNew(); string? previous = null; var unchangedSince = Stopwatch.GetTimestamp();
             while (timer.Elapsed < TimeSpan.FromSeconds(10)) { using var image = Capture.Rectangle(bounds); var hash = Pixels(image.Bitmap);
                 if (hash != previous || hash == differentFrom) unchangedSince = Stopwatch.GetTimestamp(); previous = hash;
-                if (Stopwatch.GetElapsedTime(unchangedSince).TotalMilliseconds >= 150) { image.ToFile(Path.Combine(output, name + ".png")); return hash; } }
+                if (Stopwatch.GetElapsedTime(unchangedSince).TotalMilliseconds >= 500) { image.ToFile(Path.Combine(output, name + ".png")); return hash; } }
             throw new TimeoutException("Stable composited ROI was not observed: " + name);
         }
         PixelSample Measure(string action, int index, Rectangle bounds, string expected, Action input)
@@ -207,6 +226,8 @@ public sealed class BulkPerformanceTests
                 previous = end;
             }
             Write(action + "-" + index + "-failed-captures.json", captures);
+            Write(action + "-" + index + "-failed-bounds.json", bounds);
+            using (var failed = Capture.Rectangle(bounds)) failed.ToFile(Path.Combine(output, action + "-" + index + "-failed.png"));
             throw new TimeoutException("Matching composited ROI not observed: " + action);
             }
             finally
