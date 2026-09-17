@@ -69,8 +69,14 @@ public sealed partial class RegistrationTests
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
             Key(VirtualKeyShort.KEY_P, VirtualKeyShort.KEY_L, VirtualKeyShort.KEY_A, VirtualKeyShort.KEY_N, VirtualKeyShort.RETURN);
             Assert.That(CellText(window, 0), Is.EqualTo("plan"));
+            var initialWidth = 320d; // The specified default; no preference record exists before the first save.
+            var resize = Element(window, "GridColumnResize0").BoundingRectangle;
+            NativePointer.Drag(window, new System.Drawing.Point(resize.Left + resize.Width / 2, resize.Top + resize.Height / 2),
+                new System.Drawing.Point(resize.Left + resize.Width / 2 + 40, resize.Top + resize.Height / 2));
+            Wait(() => Durable(fixture).GetProperty("ColumnPreferences").EnumerateArray().Any(p => p.GetProperty("ProjectId").GetString() == "P1"
+                && p.GetProperty("Columns")[0].GetProperty("Width").GetDouble() > initialWidth + 10));
             WorkspaceUi.SelectCombo(window, "GridCell0_1", "Done");
-            Invoke(window, "GridUndo"); Wait(() => Element(window, "GridCell0_1").AsComboBox().SelectedItem!.Text == "Todo");
+            Invoke(window, "GridUndo"); Wait(() => WorkspaceUi.ChoiceText(window, "GridCell0_1") == "Todo");
             Screenshot(window, "03-direct-and-f2-editing");
 
             for (var sample = -1; sample < 3; sample++)
@@ -103,12 +109,12 @@ public sealed partial class RegistrationTests
                 Measure("paste-two-by-two", sample, () => {
                     Invoke(window, "GridPaste");
                     Wait(() => CellText(window, 3) == pasted + " A" && CellText(window, 4) == pasted + " B"
-                        && Element(window, "GridCell4_1").AsComboBox().SelectedItem!.Text == "Done");
+                        && WorkspaceUi.ChoiceText(window, "GridCell4_1") == "Done");
                 });
                 Measure("undo-paste", sample, () => {
                     Invoke(window, "GridUndo");
                     Wait(() => CellText(window, 3) == "Issue 4" && CellText(window, 4) == "Issue 5"
-                        && Element(window, "GridCell4_1").AsComboBox().SelectedItem!.Text == "Todo");
+                        && WorkspaceUi.ChoiceText(window, "GridCell4_1") == "Todo");
                 });
                 Measure("switch-project-roundtrip", sample, () => {
                     OpenSaved(window, "Project 2"); Assert.That(CellText(window, 0), Is.EqualTo("plan"));
@@ -119,8 +125,8 @@ public sealed partial class RegistrationTests
             // Compare observed alignment before and after scrolling; no density or
             // aesthetic threshold is substituted for review of the screenshots.
             Resize(window, 1080, 760);
-            var header = Element(window, "GridHeader1").BoundingRectangle;
-            var headerOffset = header.Left - Element(window, "GridCell0_1").BoundingRectangle.Left;
+            var header = Element(window, "GridHeader3").BoundingRectangle;
+            var headerOffset = header.Left - Element(window, "GridCell0_3").BoundingRectangle.Left;
             Assert.That(Element(window, "GridHeader0").BoundingRectangle.Bottom,
                 Is.LessThanOrEqualTo(Element(window, "GridCell0_0").BoundingRectangle.Top), "The header must not overlap the first row.");
             Element(window, "GridReapply").Focus();
@@ -131,24 +137,27 @@ public sealed partial class RegistrationTests
             ScrollEndpoint(window, 100, horizontal: true);
             Wait(() => Math.Abs(scroller.HorizontalScrollPercent.Value - 100) < 1
                     && Math.Abs(scroller.VerticalScrollPercent.Value - 100) < 1
-                    && window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell100_1")) is { } lastCell
+                    && window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell100_3")) is { } lastCell
                     && !lastCell.Properties.IsOffscreen.Value);
-            Wait(() => Math.Abs(Element(window, "GridHeader1").BoundingRectangle.Left
-                - Element(window, "GridCell100_1").BoundingRectangle.Left - headerOffset) < 2);
-            Assert.That(Element(window, "GridHeader1").BoundingRectangle.Top, Is.EqualTo(header.Top).Within(1));
+            Wait(() => Math.Abs(Element(window, "GridHeader3").BoundingRectangle.Left
+                - Element(window, "GridCell100_3").BoundingRectangle.Left - headerOffset) < 2);
+            Assert.That(Element(window, "GridHeader3").BoundingRectangle.Top, Is.EqualTo(header.Top).Within(1));
             Screenshot(window, "04-small-window-scrolled-header");
             ScrollEndpoint(window, 0, horizontal: true); Scroll(window, 0);
 
-            ReorderColumns(window);
+            WorkspaceUi.HeaderCommand(window, 2, "HeaderHide");
+            Wait(() => Preferences(fixture, "P1").Single(c => c.GetProperty("Id").GetProperty("FieldId").GetString() == "P1B").GetProperty("Visible").GetBoolean() == false);
+            WorkspaceUi.HeaderCommand(window, 2, "HeaderMoveLeft");
+            Wait(() => Preferences(fixture, "P1")[1].GetProperty("Id").GetProperty("FieldId").GetString() == "P1C");
             Assert.That(Preferences(fixture, "P1")[1].GetProperty("Id").GetProperty("FieldId").GetString(), Is.EqualTo("P1C"));
             Invoke(window, "GridAddRow"); LocalCount(fixture, 1); Scroll(window, 100);
             Edit(window, 101, "plan follow-up");
             Assert.That(CellText(window, 101, 3), Is.EqualTo("sample-user/first"));
             Screenshot(window, "05-local-row-and-column-order");
-            Invoke(window, "GridRowSettings");
-            WorkspaceUi.SelectCombo(window, "RowSort", 1);
-            Set(window, "RowTitleFilter", "plan"); Screenshot(window, "06-view-configuration"); SaveRows(window);
+            WorkspaceUi.HeaderCommand(window, 0, "HeaderSortAscending");
+            Set(window, "GridQuickTitleFilter", "plan"); Invoke(window, "GridQuickFilterApply");
             Wait(() => Text(window, "RowViewStatus").Contains("表示 2"));
+            Screenshot(window, "06-header-and-inline-view-configuration");
             Assert.That(CellText(window, 0), Is.EqualTo("plan")); Assert.That(CellText(window, 1), Is.EqualTo("plan follow-up"));
             Edit(window, 1, "plan follow-up revised"); Invoke(window, "GridReapply");
             Wait(() => CellText(window, 1) == "plan follow-up revised");

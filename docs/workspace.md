@@ -59,9 +59,11 @@ Paste follows visible column order and must fit existing rows. Empty cells mean 
 
 Choose **元に戻す** once to restore the preceding block operation. Undo restores the prior draft state, including any earlier pending buffer. For example, undoing a committed title can remove its committed difference while its earlier typed buffer remains visible; Escape explicitly cancels that buffer. During native text editing, Ctrl+Z belongs to the text editor; use the grid command for operation-level Undo. Undo can reject an operation whose fields have since changed elsewhere, and it does not roll back GitHub.
 
-Scroll to the last rows and horizontally across the fields. Column headings stay above the sheet and follow horizontal movement. Use row numbers, references and selected details to locate work again. The **…** menu exposes commands moved out of the command bar at narrower widths.
+Scroll to the last rows and horizontally across the fields. Row numbers, titles and repository/Issue numbers stay visible beside later fields. Column headings stay above the sheet and follow horizontal movement. The visible vertical scrollbar and mouse wheel move the same viewport while retaining pending input. Shift+wheel moves horizontally. The **…** menu exposes commands moved out of the command bar at narrower widths.
 
 ## Arrange the view without losing work
+
+For common changes, click a column heading to sort, filter, move or hide that column. Drag its right boundary to resize; the accepted width is saved when released. Type a title substring in the inline filter and choose **絞り込み** or Enter; **解除** clears only the title condition. Click a single-select value, or use Space/F4, to open its native options menu. Full column and compound filter settings remain available below.
 
 1. Open **列**. Change the title width, reorder supported single-select columns with **↑ / ↓**, or hide one. Check the preview and choose **ローカル保存**. Title remains first; reference/new-row destination remains last. **キャンセル** leaves saved settings unchanged, and **既定値に戻す** changes the candidate until saved.
 2. Open **並べ替え・フィルター**. Choose Title or a single-select order and direction. Enter a literal title substring, or expand a field's options and **空値 / 新規行の未指定 / 不明・未取得** states. Options within one field are alternatives; separate fields and the title condition combine. Read identifying details when field/option names repeat.

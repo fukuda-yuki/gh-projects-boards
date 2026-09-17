@@ -30,6 +30,7 @@ internal static class WorkspaceUi
         catch (System.Runtime.InteropServices.COMException error) when (error.HResult == unchecked((int)0x80131505)) { return null; }
     }
     private static bool Visible(AutomationElement? element) => element is not null && !element.Properties.IsOffscreen.Value;
+    internal static bool HasVisibleElement(Window window, string id) => Visible(Find(window, id));
     private static void Wait(Func<bool> condition, string message, TimeSpan? timeout = null) => Assert.That(
         Retry.WhileFalse(condition, timeout ?? TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result, Is.True, message);
     private static void InvokeRoute(Window window, string id)
@@ -62,10 +63,40 @@ internal static class WorkspaceUi
         var description = string.Join("; ", candidates.Select(e => $"id={e.AutomationId}, class={e.ClassName}, runtime={string.Join(',', e.Properties.RuntimeId.Value)}, bounds={e.BoundingRectangle}, parent={e.Parent?.ClassName}"));
         throw new AssertionException("The visible Project tree did not become unique: " + description);
     }
-    internal static void SelectCombo(Window window, string id, int index) => SelectCombo(window, id,
-        items => items.Length > index ? items[index] : null);
-    internal static void SelectCombo(Window window, string id, string name) => SelectCombo(window, id,
-        items => items.FirstOrDefault(item => item.Name == name));
+    internal static string ChoiceText(Window window, string id) => Element(window, id + "Value").Name;
+    internal static void HeaderCommand(Window window, int column, string id)
+    {
+        Element(window, "GridHeaderMenu" + column).AsButton().Invoke();
+        Wait(() => Visible(Find(window, id)), "The header menu action must be visible: " + id);
+        Element(window, id).Patterns.Invoke.Pattern.Invoke();
+        Wait(() => !Visible(Find(window, id)), "The header menu must finish: " + id);
+    }
+    internal static void SelectCombo(Window window, string id, int index)
+    {
+        if (id.StartsWith("GridCell")) SelectChoice(window, id, items => items.ElementAtOrDefault(index));
+        else SelectCombo(window, id, items => items.Length > index ? items[index] : null);
+    }
+    internal static void SelectCombo(Window window, string id, string name)
+    {
+        if (id.StartsWith("GridCell")) SelectChoice(window, id, items => items.SingleOrDefault(item => item.Name == name));
+        else SelectCombo(window, id, items => items.FirstOrDefault(item => item.Name == name));
+    }
+    internal static void SelectLastChoice(Window window, string id) => SelectChoice(window, id, items => items.LastOrDefault());
+    internal static void ToggleChoice(Window window, string id)
+    {
+        var current = ChoiceText(window, id);
+        SelectChoice(window, id, items => items.FirstOrDefault(item => item.Properties.HelpText.ValueOrDefault != current));
+    }
+    private static void SelectChoice(Window window, string id, Func<AutomationElement[], AutomationElement?> choose)
+    {
+        Element(window, id).AsButton().Invoke();
+        AutomationElement? choice = null;
+        Wait(() => (choice = choose(window.FindAllDescendants().Where(e => (e.Properties.AutomationId.ValueOrDefault ?? "").StartsWith("ChoiceOption-") && Visible(e)).ToArray())) is not null,
+            "The requested native choice must be visible: " + id);
+        var expected = choice!.Properties.HelpText.Value;
+        choice.Patterns.Invoke.Pattern.Invoke();
+        Wait(() => ChoiceText(window, id) == expected, "The chosen cell value must be rendered: " + id);
+    }
     private static void SelectCombo(Window window, string id, Func<ComboBoxItem[], ComboBoxItem?> choose)
     {
         var combo = Element(window, id).AsComboBox();

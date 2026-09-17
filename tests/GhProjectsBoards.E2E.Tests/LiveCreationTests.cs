@@ -134,8 +134,7 @@ public sealed class LiveCreationTests
         {
             Click("GridAddRow"); Wait(() => window!.FindFirstDescendant(cf => cf.ByAutomationId($"GridCell{row}_0")) is not null);
             var cell = E($"GridCell{row}_0").AsTextBox(); cell.Click(); cell.Text = title; Keyboard.Type(VirtualKeyShort.RETURN);
-            var combo = E($"GridCell{row}_1").AsComboBox();
-            if (clear) { combo.Focus(); Click("GridClear"); } else combo.Select(combo.Items.Last().Text);
+            if (clear) { E($"GridCell{row}_1").Focus(); Click("GridClear"); } else WorkspaceUi.SelectLastChoice(window!, $"GridCell{row}_1");
         }
         void RunApply()
         {

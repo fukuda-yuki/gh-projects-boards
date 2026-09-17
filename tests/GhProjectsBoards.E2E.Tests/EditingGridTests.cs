@@ -22,7 +22,7 @@ public sealed partial class RegistrationTests
             .And(cf.ByControlType(FlaUI.Core.Definitions.ControlType.TreeItem)))) is { } item && !item.Properties.IsOffscreen.Value);
         entry!.Patterns.Invoke.Pattern.Invoke();
         Wait(() => Text(w, "ProjectSummary").StartsWith(project));
-        Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("GridCell0_0")) is not null);
+        Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell0_0"));
         // The ordinary selection route dismisses overlay navigation. Do not toggle
         // it again while that native completion is returning from the tree event.
         FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(200);
@@ -94,10 +94,10 @@ public sealed partial class RegistrationTests
             Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 4"));
             OpenSaved(w, "Project 2");
             Assert.That(CellText(w, 0), Is.EqualTo("Shared local"));
-            Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Todo"));
             Scroll(w, 100);
             Assert.That(CellText(w, 100), Is.EqualTo("Last row"));
-            Assert.That(Element(w, "GridCell100_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell100_1"), Is.EqualTo("Todo"));
             Element(w, "GridCell100_0").Click(); Set(w, "GridCell100_0", "");
             Wait(() => Text(w, "DraftStatus").Contains("保存済み"));
         });
@@ -199,7 +199,7 @@ public sealed partial class RegistrationTests
             Element(w, "SecondaryButton").AsButton().Invoke();
             Wait(() => Durable(f).GetProperty("Registrations") is { ValueKind: JsonValueKind.Array } registrations && registrations.GetArrayLength() == 1);
             OpenSaved(w, "Project 2"); Assert.That(CellText(w, 0), Is.EqualTo("Shared survives"));
-            Assert.That(Element(w, "GridCell0_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Todo"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Todo"));
         });
         f.Run(w => { OpenSaved(w, "Project 2", profile: true); Assert.That(CellText(w, 0), Is.EqualTo("Shared survives")); });
         Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);

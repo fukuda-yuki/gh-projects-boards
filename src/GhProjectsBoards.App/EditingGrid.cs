@@ -26,7 +26,7 @@ internal sealed partial class EditingGrid : Grid
     private readonly Style cellStyle;
     private readonly Style selectedCellStyle;
     private readonly Grid headerGrid = new() { HorizontalAlignment = HorizontalAlignment.Left };
-    private readonly ScrollViewer headerScroll = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled, IsTabStop = false, IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left };
+    private readonly ScrollViewer headerScroll = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled, IsTabStop = false, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left };
     private readonly TextBlock selectedDetails = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly TextBlock selectionMode = new();
     private readonly Border detailsPane = new() { Visibility = Visibility.Collapsed, Padding = new(12, 8, 12, 8), BorderThickness = new(0, 1, 0, 0) };
@@ -72,6 +72,7 @@ internal sealed partial class EditingGrid : Grid
         this.readClipboard = readClipboard ?? (async () => await Clipboard.GetContent().GetTextAsync());
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
+        ScrollViewer.SetVerticalScrollBarVisibility(list, ScrollBarVisibility.Hidden);
         layout = session.Workspace.Columns(registration);
         projection = previousProjection ?? new(registration.Snapshot.Id);
         if (previousProjection is null) projection.Reapply(session.Workspace, registration);
@@ -126,7 +127,11 @@ internal sealed partial class EditingGrid : Grid
         compare.Click += async (_, _) => await CompareAsync();
         var save = Tool("ローカル保存を再試行", "GridSave", Symbol.Save, true);
         save.Click += async (_, _) => { var request = generation; await FlushDraftsAsync("save-command"); if (IsLoaded && request == generation) Update("save-command"); };
-        Children.Add(toolbar);
+        var commandRow = new Grid { ColumnSpacing = 8, Padding = new(0, 0, 8, 0) };
+        commandRow.ColumnDefinitions.Add(new()); commandRow.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        commandRow.Children.Add(toolbar);
+        var quickFilter = CreateQuickFilter(); SetColumn(quickFilter, 1); commandRow.Children.Add(quickFilter);
+        Children.Add(commandRow);
         var viewStrip = new Grid { Padding = new(8, 2, 8, 2), ColumnSpacing = 8 };
         viewStrip.ColumnDefinitions.Add(new()); viewStrip.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         viewNotice.TextWrapping = TextWrapping.NoWrap; viewNotice.TextTrimming = TextTrimming.CharacterEllipsis; viewNotice.VerticalAlignment = VerticalAlignment.Center;
@@ -138,7 +143,8 @@ internal sealed partial class EditingGrid : Grid
         AutomationProperties.SetAutomationId(columnNotice, "ColumnTransitionStatus");
         AutomationProperties.SetAutomationId(status, "DraftStatus"); AutomationProperties.SetAutomationId(selection, "GridSelection");
         AutomationProperties.SetAutomationId(headerGrid, "SheetHeader"); headerScroll.Content = headerGrid; SetRow(headerScroll, 2); Children.Add(headerScroll);
-        AutomationProperties.SetAutomationId(list, "ProjectItems"); SetRow(list, 3); Children.Add(list);
+        AutomationProperties.SetAutomationId(list, "ProjectItems");
+        var sheetViewport = CreateSheetViewport(); SetRow(sheetViewport, 3); Children.Add(sheetViewport);
         SetRow(emptyView, 3); Children.Add(emptyView);
         AutomationProperties.SetAutomationId(selectedDetails, "SelectedCellDetails");
         detailsPane.Child = new ScrollViewer { Content = selectedDetails, MaxHeight = 156, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -171,8 +177,8 @@ internal sealed partial class EditingGrid : Grid
         };
         BuildRows();
         ActualThemeChanged += (_, _) => Update("theme");
-        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; diagnostics?.Detach(); };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; listScroll = Descendants(list).OfType<ScrollViewer>().FirstOrDefault(); if (listScroll is not null) { listScroll.ViewChanged += ScrollChanged; listScroll.SizeChanged += ScrollSizeChanged; SyncHeader(); } diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
+        Unloaded += (_, _) => { generation++; session.Changed -= SessionChanged; DetachWheel(); if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; diagnostics?.Detach(); };
+        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; listScroll = Descendants(list).OfType<ScrollViewer>().FirstOrDefault(); if (listScroll is not null) { listScroll.ViewChanged += ScrollChanged; listScroll.SizeChanged += ScrollSizeChanged; AttachWheel(); ResizeSheetColumns(); } diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
@@ -213,24 +219,35 @@ internal sealed partial class EditingGrid : Grid
         using var measured = diagnostics?.Span("build");
         headerGrid.Children.Clear(); headerGrid.ColumnDefinitions.Clear();
         headerGrid.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
-        headerGrid.Children.Add(new TextBlock { Text = "行", Margin = new(8, 8, 0, 8) });
+        var corner = new Grid { Style = (Style)Application.Current.Resources["SheetHeaderStyle"] };
+        corner.Children.Add(new TextBlock { Text = "行", Margin = new(8, 8, 0, 8) }); headerGrid.Children.Add(corner);
         for (var c = 0; c < layout.Visible.Length; c++)
         {
-            headerGrid.ColumnDefinitions.Add(new() { Width = new GridLength(layout.Visible[c].Preference.Width) });
+            headerGrid.ColumnDefinitions.Add(new() { Width = new GridLength(ColumnWidth(c)) });
             var name = layout.Visible[c].Name;
             if (layout.Visible.Count(v => v.Name == name) > 1) name += $" [{layout.Visible[c].Id.FieldId ?? layout.Visible[c].Id.Role}]";
-            var label = new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Margin = new(8, 4, 8, 4) };
+            var label = new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
             AutomationProperties.SetAutomationId(label, $"GridHeader{c}");
             ToolTipService.SetToolTip(label, name);
-            SetColumn(label, c + 1); headerGrid.Children.Add(label);
+            var heading = CreateColumnHeader(layout.Visible[c], c, label, name);
+            SetColumn(heading, c + 1); headerGrid.Children.Add(heading);
         }
         for (var r = 0; r < rows.Length; r++)
         {
             var index = r;
+            var rowGeneration = generation;
             var line = new Grid { MinHeight = 30 };
             rowLines.Add(line); controls.Add([]); markers.Add([]); cellBorders.Add([]);
             line.Loading += (_, _) => { if (CurrentLine(index, line)) EnsureRow(index); };
-            line.Unloaded += (_, _) => { if (CurrentLine(index, line)) ReleaseRow(index); };
+            line.Unloaded += (_, _) =>
+            {
+                // Finish destination layout before dismantling the previous rendered rows.
+                // Unloaded can run while the compositor still presents that viewport.
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                {
+                    if (rowGeneration == generation && IsLoaded && CurrentLine(index, line) && !line.IsLoaded) ReleaseRow(index);
+                });
+            };
             var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Left,
                 Padding = new(0), Margin = new(0), BorderThickness = new(0), MinHeight = 30, IsTabStop = false };
             AutomationProperties.SetName(item, rows[r].Cells[^1].Display); list.Items.Add(item);
@@ -248,46 +265,50 @@ internal sealed partial class EditingGrid : Grid
         using var measured = diagnostics?.Span("realize-row");
         var line = rowLines[r];
         var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
-            line.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
-            var number = new TextBlock { Text = (r + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 8, 0) };
-            AutomationProperties.SetAutomationId(number, $"GridRowNumber{r}"); line.Children.Add(number);
-            for (var c = 0; c < rows[r].Cells.Length; c++)
+        line.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
+        var number = new TextBlock { Text = (r + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 8, 0) };
+        AutomationProperties.SetAutomationId(number, $"GridRowNumber{r}");
+        var gutter = new Grid { Style = (Style)Application.Current.Resources["SheetHeaderStyle"] };
+        gutter.Children.Add(number); line.Children.Add(gutter);
+        for (var c = 0; c < rows[r].Cells.Length; c++)
+        {
+            var rr = r; var cc = c; var cell = rows[r].Cells[c];
+            line.ColumnDefinitions.Add(new() { Width = new GridLength(ColumnWidth(c)) });
+            var container = new Grid(); container.ColumnDefinitions.Add(new()); container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            var marker = new TextBlock { FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), Visibility = Visibility.Collapsed }; rowMarkers.Add(marker);
+            SetColumn(marker, 1); container.Children.Add(marker);
+            FrameworkElement editor;
+            if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable)
             {
-                var rr = r; var cc = c; var cell = rows[r].Cells[c];
-                line.ColumnDefinitions.Add(new() { Width = new GridLength(layout.Visible[c].Preference.Width) });
-                var container = new Grid(); container.ColumnDefinitions.Add(new()); container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-                var marker = new TextBlock { FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 4, 0), Visibility = Visibility.Collapsed }; rowMarkers.Add(marker);
-                SetColumn(marker, 1); container.Children.Add(marker);
-                FrameworkElement editor;
-                if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable)
-                {
-                    var combo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = cell.Options, DisplayMemberPath = "Name", MinHeight = 26, Padding = new(8, 2, 4, 2), BorderThickness = new(0), CornerRadius = new(0), PlaceholderText = "（空値）" };
-                    combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
-                    combo.GotFocus += (_, _) => { if (CurrentEditor(rr, cc, combo)) FocusedCell(rr, cc); };
-                    combo.SelectionChanged += (_, _) =>
-                    {
-                        if (updating || !CurrentEditor(rr, cc, combo) || combo.SelectedItem is not SelectOption option) return;
-                        Run(() => session.Workspace.Commit(projectId, cell, option.Id, true));
-                    };
-                    combo.PreviewKeyDown += (_, e) => { if (CurrentEditor(rr, cc, combo) && !combo.IsDropDownOpen) NavigateKey(rr, cc, e); };
-                    editor = combo;
-                }
-                else
-                {
-                    var text = new TitleCell(this, rr, cc, cell);
-                    editor = text;
-                }
-                AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
-                AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
-                if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
-                container.Children.Add(editor); rowControls.Add(editor);
-                var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
-                SetColumn(border, c + 1); line.Children.Add(border);
+                editor = new ChoiceCell(this, rr, cc, cell);
             }
+            else
+            {
+                var text = new TitleCell(this, rr, cc, cell);
+                editor = text;
+            }
+            AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
+            AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
+            if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
+            container.Children.Add(editor); rowControls.Add(editor);
+            if (c == 0)
+            {
+                container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+                var identity = new TextBlock { Text = RowIdentity(rows[r]), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
+                    VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
+                AutomationProperties.SetAutomationId(identity, $"GridRowIdentity{r}");
+                ToolTipService.SetToolTip(identity, identity.Text);
+                SetColumn(identity, 2); container.Children.Add(identity);
+            }
+            var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
+            SetColumn(border, c + 1); line.Children.Add(border);
+        }
         controls[r] = rowControls.ToArray(); markers[r] = rowMarkers.ToArray(); cellBorders[r] = borders.ToArray();
         var wasUpdating = updating; updating = true;
         try { for (var c = 0; c < controls[r].Length; c++) UpdateCell(r, c); }
         finally { updating = wasUpdating; }
+        FreezeIdentity(line, listScroll?.HorizontalOffset ?? 0);
+        UpdateColumnVisibility(r);
     }
     private void ReleaseRow(int r)
     {
@@ -307,11 +328,12 @@ internal sealed partial class EditingGrid : Grid
     }
     private void ScrollChanged(object? sender, ScrollViewerViewChangedEventArgs args)
     {
+        if (!args.IsIntermediate) { wheelHorizontal = null; wheelVertical = null; }
         diagnostics?.Record("scroll-view-changed", new { args.IsIntermediate, state = CaptureDiagnosticState(false) });
         if (!args.IsIntermediate) diagnostics?.RequestVisualCounts();
         SyncHeader();
     }
-    private void ScrollSizeChanged(object sender, SizeChangedEventArgs args) => SyncHeader();
+    private void ScrollSizeChanged(object sender, SizeChangedEventArgs args) => ResizeSheetColumns();
     private void SyncHeader()
     {
         using var measured = diagnostics?.Span("header-sync");
@@ -320,6 +342,53 @@ internal sealed partial class EditingGrid : Grid
         // Match the data viewport, including its scrollbar space, so the last column stays aligned.
         headerScroll.Width = listScroll.ViewportWidth;
         headerScroll.ChangeView(listScroll.HorizontalOffset, null, null, true);
+        SyncScrollbar();
+        FreezeIdentity(headerGrid, listScroll.HorizontalOffset);
+        for (var r = 0; r < rowLines.Count; r++)
+            if (rowLines[r].IsLoaded) { FreezeIdentity(rowLines[r], listScroll.HorizontalOffset); UpdateColumnVisibility(r); }
+    }
+    private void UpdateColumnVisibility(int row)
+    {
+        var width = listScroll is { ViewportWidth: > 0 } ? listScroll.ViewportWidth : ActualWidth > 0 ? ActualWidth : 800;
+        var offset = listScroll?.HorizontalOffset ?? 0;
+        var left = 44d; var frozen = 44 + ColumnWidth(0);
+        for (var c = 0; c < cellBorders[row].Length; c++)
+        {
+            var right = left + ColumnWidth(c);
+            // Offscreen columns keep their layout slots without realizing native templates.
+            // The active/pending editor is never collapsed while it owns native input.
+            var retain = c == 0 || active && currentRow == row && currentColumn == c
+                || controls[row][c] is TitleCell { Editing: true };
+            cellBorders[row][c].Visibility = retain || right - offset > frozen && left - offset < width ? Visibility.Visible : Visibility.Collapsed;
+            left = right;
+        }
+    }
+    private void RevealColumn(int row, int column)
+    {
+        cellBorders[row][column].Visibility = Visibility.Visible;
+        if (column == 0 || listScroll is not { ViewportWidth: > 0 }) return;
+        var left = 44 + Enumerable.Range(0, column).Sum(ColumnWidth); var right = left + ColumnWidth(column);
+        var frozen = 44 + ColumnWidth(0);
+        var offset = listScroll.HorizontalOffset;
+        if (left - offset < frozen) offset = left - frozen;
+        else if (right - offset > listScroll.ViewportWidth) offset = right - listScroll.ViewportWidth;
+        listScroll.ChangeView(Math.Clamp(offset, 0, listScroll.ScrollableWidth), null, null, true);
+    }
+    private string RowIdentity(EditRow row)
+    {
+        if (row.IsLocal) return "新規（ローカル）";
+        var item = registration.Snapshot.Items.SingleOrDefault(item => item.Id.NodeId == row.ItemId);
+        var issue = item?.ContentId is { } id ? registration.Snapshot.Issues.GetValueOrDefault(id) : null;
+        return issue is null ? row.ItemId : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
+    }
+    private void FreezeIdentity(Grid line, double offset)
+    {
+        foreach (var child in line.Children.OfType<FrameworkElement>().Where(child => GetColumn(child) < 2))
+        {
+            Canvas.SetZIndex(child, 2);
+            if (child.RenderTransform is not TranslateTransform translate) child.RenderTransform = translate = new TranslateTransform();
+            translate.X = offset;
+        }
     }
     private void FocusViewCommand() => reapplyButton.Focus(FocusState.Programmatic);
     private void RestoreWorkspaceFocus()
@@ -327,6 +396,7 @@ internal sealed partial class EditingGrid : Grid
         if (active)
         {
             EnsureRow(currentRow);
+            RevealColumn(currentRow, currentColumn);
             list.ScrollIntoView(list.Items[currentRow]);
             var editor = (Control)controls[currentRow][currentColumn];
             if (!editor.Focus(FocusState.Keyboard)) { reapplyButton.Focus(FocusState.Keyboard); return; }
@@ -336,13 +406,26 @@ internal sealed partial class EditingGrid : Grid
         }
         else reapplyButton.Focus(FocusState.Keyboard);
     }
+    private double ColumnWidth(int index)
+    {
+        var preferred = layout.Visible[index].Preference.Width;
+        if (index != 0) return preferred;
+        var viewport = listScroll is { ViewportWidth: > 0 } ? listScroll.ViewportWidth : ActualWidth > 0 ? ActualWidth : 800;
+        // A saved wide title must not cover every editable field on a smaller window.
+        // Preserve the preference; only constrain its current rendered width.
+        return Math.Min(preferred, Math.Max(EditingWorkspace.MinimumColumnWidth, viewport - 44 - 160));
+    }
     private void ResizeSheetColumns()
     {
+        var widths = Enumerable.Range(0, layout.Visible.Length).Select(ColumnWidth).ToArray();
         foreach (var line in list.Items.Cast<ListViewItem>().Select(i => (Grid)i.Content).Prepend(headerGrid))
         {
-            for (var c = 0; c + 1 < line.ColumnDefinitions.Count; c++) line.ColumnDefinitions[c + 1].Width = new(layout.Visible[c].Preference.Width);
-            line.Width = 44 + layout.Visible.Sum(c => c.Preference.Width);
+            for (var c = 0; c + 1 < line.ColumnDefinitions.Count; c++) line.ColumnDefinitions[c + 1].Width = new(widths[c]);
+            line.Width = 44 + widths.Sum();
+            foreach (var identity in Descendants(line).OfType<TextBlock>().Where(t => AutomationProperties.GetAutomationId(t).StartsWith("GridRowIdentity")))
+                identity.MaxWidth = Math.Min(132, widths[0] * .4);
         }
+        SyncHeader();
     }
     private bool updating;
     private long presentedRevision = -1;
@@ -381,6 +464,7 @@ internal sealed partial class EditingGrid : Grid
                     loadedContainers = list.Items.Cast<ListViewItem>().Count(item => item.IsLoaded),
                     attachedContainers = list.Items.Cast<ListViewItem>().Count(tree.Contains),
                     nativeTextBoxesInTree = tree.OfType<TextBox>().Count(), nativeComboBoxesInTree = tree.OfType<ComboBox>().Count(),
+                    nativeChoiceButtonsInTree = tree.OfType<ChoiceCell>().Count(),
                     viewport, pendingCells = rows.SelectMany(row => row.Cells).Select(cell => session.Workspace.Buffer(cell)?.Length).Count(length => length is not null),
                     viewportCellsTruncated = Math.Max(0, inViewport.Length - 256),
                     viewportCells = inViewport.Take(256).Select(cell => new { row = cell.r, column = cell.c, item = rows[cell.r].ItemId,
@@ -531,38 +615,33 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateCell(int r, int c)
     {
-                var cell = rows[r].Cells[c];
-                var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
-                markers[r][c].Text = (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
-                if (cell.Key?.Kind is "Select" or "LocalSelect" && session.Workspace.Buffer(cell) is { } pending)
-                    markers[r][c].Text += " / 未確定文字: " + pending;
-                if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
-                if (rows[r].IsLocal && c == 0 && session.Workspace.Creations.LastOrDefault(x => x.LocalId == rows[r].ItemId) is { } creation)
-                    markers[r][c].Text += " / " + creation.Reason + " " + creation.Verified?.Url;
-                if (cell.Key?.Kind == "LocalSelect") markers[r][c].Text += " / " + session.Workspace.LocalRows.Single(x => x.Id == rows[r].ItemId).Selects.SingleOrDefault(s => s.FieldId == cell.Key.FieldId)?.Intent;
-                if (cell.Key?.Kind == "LocalSelect" && session.Workspace.Value(cell) is { } savedId && !cell.Options.Any(o => o.Id == savedId))
-                    markers[r][c].Text += " 保存値: " + session.Workspace.LocalRows.Single(row => row.Id == rows[r].ItemId).Selects.Single(s => s.FieldId == cell.Key.FieldId).OptionName + " [" + savedId + "]（要確認）";
-                var field = session.Workspace.Field(cell);
-                markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
-                if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
-                var explanation = markers[r][c].Text;
-                markers[r][c].Tag = explanation;
-                var label = field?.Conflict == true ? "競合" : field?.Observation?.Reason is not null ? "確認"
-                    : session.Workspace.Buffer(cell) is not null ? "入力" : session.Workspace.Changed(cell) ? "変更"
-                    : rows[r].IsLocal && c == 0 ? (session.Workspace.LocalProblems(registration, rows[r].ItemId).Any() ? "要確認" : "新規")
-                    : cell.Reason is not null && cell.Reason != "参照専用" ? "確認" : "";
-                markers[r][c].Text = label; markers[r][c].Visibility = label.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-                AutomationProperties.SetHelpText(controls[r][c], explanation);
-                ToolTipService.SetToolTip(markers[r][c], explanation);
-                cellBorders[r][c].Style = selected ? selectedCellStyle : cellStyle;
-                cellBorders[r][c].BorderThickness = new(active && r == currentRow && c == currentColumn ? 2 : 1);
-                if (controls[r][c] is TitleCell { Composing: false } text) text.Refresh();
-                if (controls[r][c] is ComboBox combo)
-                {
-                    combo.IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null;
-                    combo.SelectedItem = cell.Options.SingleOrDefault(o => o.Id == session.Workspace.Value(cell));
-                    combo.PlaceholderText = SelectDisplay(cell, session.Workspace.Value(cell));
-                }
+        var cell = rows[r].Cells[c];
+        var selected = active && r >= Math.Min(anchorRow, currentRow) && r <= Math.Max(anchorRow, currentRow) && c >= Math.Min(anchorColumn, currentColumn) && c <= Math.Max(anchorColumn, currentColumn);
+        markers[r][c].Text = (session.Workspace.Changed(cell) ? "変更あり " : "") + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
+        if (cell.Key?.Kind is "Select" or "LocalSelect" && session.Workspace.Buffer(cell) is { } pending)
+            markers[r][c].Text += " / 未確定文字: " + pending;
+        if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
+        if (rows[r].IsLocal && c == 0 && session.Workspace.Creations.LastOrDefault(x => x.LocalId == rows[r].ItemId) is { } creation)
+            markers[r][c].Text += " / " + creation.Reason + " " + creation.Verified?.Url;
+        if (cell.Key?.Kind == "LocalSelect") markers[r][c].Text += " / " + session.Workspace.LocalRows.Single(x => x.Id == rows[r].ItemId).Selects.SingleOrDefault(s => s.FieldId == cell.Key.FieldId)?.Intent;
+        if (cell.Key?.Kind == "LocalSelect" && session.Workspace.Value(cell) is { } savedId && !cell.Options.Any(o => o.Id == savedId))
+            markers[r][c].Text += " 保存値: " + session.Workspace.LocalRows.Single(row => row.Id == rows[r].ItemId).Selects.Single(s => s.FieldId == cell.Key.FieldId).OptionName + " [" + savedId + "]（要確認）";
+        var field = session.Workspace.Field(cell);
+        markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
+        if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
+        var explanation = markers[r][c].Text;
+        markers[r][c].Tag = explanation;
+        var label = field?.Conflict == true ? "競合" : field?.Observation?.Reason is not null ? "確認"
+            : session.Workspace.Buffer(cell) is not null ? "入力" : session.Workspace.Changed(cell) ? "変更"
+            : rows[r].IsLocal && c == 0 ? (session.Workspace.LocalProblems(registration, rows[r].ItemId).Any() ? "要確認" : "新規")
+            : cell.Reason is not null && cell.Reason != "参照専用" ? "確認" : "";
+        markers[r][c].Text = label; markers[r][c].Visibility = label.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetHelpText(controls[r][c], explanation);
+        ToolTipService.SetToolTip(markers[r][c], explanation);
+        cellBorders[r][c].Style = selected ? selectedCellStyle : cellStyle;
+        cellBorders[r][c].BorderThickness = new(active && r == currentRow && c == currentColumn ? 2 : 1);
+        if (controls[r][c] is TitleCell { Composing: false } text) text.Refresh();
+        if (controls[r][c] is ChoiceCell choice) choice.Refresh();
     }
     private void UpdateSelection()
     {
@@ -625,6 +704,7 @@ internal sealed partial class EditingGrid : Grid
         if (focus)
         {
             selecting = true;
+            RevealColumn(r, c);
             list.ScrollIntoView(list.Items[r]);
             ((Control)controls[r][c]).Focus(FocusState.Keyboard);
             if (controls[r][c] is TitleCell text && !text.Editing) text.SelectAll();
@@ -725,6 +805,59 @@ internal sealed partial class EditingGrid : Grid
             Run(() => { var added = session.Workspace.AppendRows(destination, text, inputMapping.Select(c => c.Id).ToArray()); projection.IncludeNew(session.Workspace.Open(registration), added); RebuildRows(); Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
         }
         catch (Exception) { status.Text = "クリップボードを読み取れません。追加していません。"; }
+    }
+    private sealed class ChoiceCell : Button
+    {
+        private readonly EditingGrid owner;
+        private readonly int row, column;
+        private readonly EditCell cell;
+        private readonly TextBlock value = new() { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        public ChoiceCell(EditingGrid owner, int row, int column, EditCell cell)
+        {
+            this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            HorizontalAlignment = HorizontalAlignment.Stretch; HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
+            var content = new Grid(); content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            AutomationProperties.SetAutomationId(value, $"GridCell{row}_{column}Value"); content.Children.Add(value);
+            var arrow = new FontIcon { Glyph = "\uE70D", FontSize = 10, Margin = new(8, 0, 0, 0) };
+            SetColumn(arrow, 1); content.Children.Add(arrow); Content = content;
+            GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
+            Click += (_, _) => OpenChoices();
+            PreviewKeyDown += (_, e) =>
+            {
+                if (!owner.CurrentEditor(row, column, this)) return;
+                if (e.Key == VirtualKey.F4) { OpenChoices(); e.Handled = true; }
+                else if (e.Key != VirtualKey.Space) owner.NavigateKey(row, column, e);
+            };
+        }
+        public void Refresh()
+        {
+            var field = owner.session.Workspace.Field(cell);
+            IsEnabled = field?.Conflict != true && field?.Observation?.Reason is null;
+            value.Text = owner.SelectDisplay(cell, owner.session.Workspace.Value(cell));
+            AutomationProperties.SetName(this, $"行 {row + 1} 列 {column + 1} {owner.layout.Visible[column].Name} {value.Text}");
+        }
+        private void OpenChoices()
+        {
+            if (!IsEnabled || !owner.CurrentEditor(row, column, this)) return;
+            owner.Select(row, column, Down(VirtualKey.Shift), false);
+            if (Down(VirtualKey.Shift)) return;
+            var menu = new MenuFlyout();
+            foreach (var option in cell.Options)
+            {
+                var label = option.Name + (cell.Options.Count(o => o.Name == option.Name) > 1 ? $" [{option.Id}]" : "");
+                var item = new MenuFlyoutItem { Text = label };
+                if (option.Id == owner.session.Workspace.Value(cell)) item.Icon = new SymbolIcon(Symbol.Accept);
+                AutomationProperties.SetAutomationId(item, "ChoiceOption-" + option.Id);
+                AutomationProperties.SetHelpText(item, option.Name);
+                item.Click += (_, _) =>
+                {
+                    if (owner.CurrentEditor(row, column, this)) owner.Run(() => owner.session.Workspace.Commit(owner.projectId, cell, option.Id, true));
+                };
+                menu.Items.Add(item);
+            }
+            menu.ShowAt(this);
+        }
     }
     private sealed class TitleCell : TextBox
     {

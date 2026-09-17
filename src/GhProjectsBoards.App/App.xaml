@@ -9,10 +9,11 @@
                 <controls:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="SheetHeaderStyle" TargetType="Grid">
-                <Setter Property="Background" Value="{ThemeResource LayerFillColorAltBrush}"/>
+                <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"/>
             </Style>
             <Style x:Key="SheetCellStyle" TargetType="Border">
                 <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+                <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}"/>
             </Style>
             <Style x:Key="SheetSelectedCellStyle" TargetType="Border" BasedOn="{StaticResource SheetCellStyle}">
                 <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}"/>

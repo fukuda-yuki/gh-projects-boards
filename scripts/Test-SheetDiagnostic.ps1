@@ -8,12 +8,12 @@ param(
     [string]$Executable,
     [ValidatePattern('^[0-9a-fA-F]{40}$')][string]$SourceRevision,
     [switch]$Trace,
-    [switch]$Ime
+    [switch]$Ime,
+    [switch]$Frames
 )
 
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'This diagnostic requires Windows and an unlocked interactive desktop.' }
-if ($Ime -and $ItemCount -ne 101) { throw 'The bounded physical IME phase is available for the 101-row workload only.' }
 foreach ($command in @('dotnet', 'git')) {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $command" }
 }
@@ -33,7 +33,7 @@ $buildArguments = @('build', 'GhProjectsBoards.sln', '--configuration', 'Release
 $testArguments = @('test', $testProject, '--configuration', 'Release', '--no-build', '--filter', $filter,
     '--logger', 'trx;LogFileName=sheet-diagnostic.trx', '--results-directory', $run, '--',
     'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=240000')
-$environmentNames = @('APP', 'DATA_ROOT', 'OUTPUT', 'TRACE', 'ROWS', 'FIELDS', 'IME') | ForEach-Object { "GHPB_DIAGNOSTIC_$_" }
+$environmentNames = @('APP', 'DATA_ROOT', 'OUTPUT', 'TRACE', 'ROWS', 'FIELDS', 'IME', 'FRAMES') | ForEach-Object { "GHPB_DIAGNOSTIC_$_" }
 $previous = @{}
 foreach ($name in $environmentNames) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 New-Item -ItemType Directory -Path $run | Out-Null
@@ -42,7 +42,7 @@ $state = [ordered]@{
     runnerPid = $PID; worktree = $repo; rows = $ItemCount; selectFields = $SelectFieldCount; totalColumns = $SelectFieldCount + 2
     app = $app; immutableOverride = [bool]$Executable; declaredAppSourceRevision = $SourceRevision
     sourceClaim = 'SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.'
-    noBuild = [bool]$NoBuild; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; buildExitCode = $null; testExitCode = $null
+    noBuild = [bool]$NoBuild; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; timedFramesRequested = [bool]$Frames; buildExitCode = $null; testExitCode = $null
     commands = @(
         @{ executable = 'dotnet'; arguments = $buildArguments; selected = !$NoBuild },
         @{ executable = (Join-Path $PSScriptRoot 'Start-EditingCheck.ps1'); arguments = @('-DataRoot', $data, '-ItemCount', "$ItemCount", '-SelectFieldCount', "$SelectFieldCount", '-PrepareOnly') },
@@ -139,6 +139,7 @@ try {
     $env:GHPB_DIAGNOSTIC_ROWS = "$ItemCount"
     $env:GHPB_DIAGNOSTIC_FIELDS = "$SelectFieldCount"
     [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_IME', $(if ($Ime) { '1' } else { $null }), 'Process')
+    [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_FRAMES', $(if ($Frames) { '1' } else { $null }), 'Process')
     $tracePath = Join-Path $run 'app-trace.jsonl'
     [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_TRACE', $(if ($Trace) { $tracePath } else { $null }), 'Process')
     $state.phase = 'executing-diagnostic'; $state.testStartedUtc = [DateTimeOffset]::UtcNow.ToString('o'); Save-State

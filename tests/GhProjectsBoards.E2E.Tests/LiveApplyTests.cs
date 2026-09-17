@@ -51,7 +51,7 @@ public sealed class LiveApplyTests
             Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.Zero);
             RunApply();
             VerifyRemote(marker + " B", initialOption);
-            var combo = E($"GridCell{row}_1").AsComboBox(); combo.Select(combo.SelectedItem?.Text == combo.Items[0].Text ? 1 : 0);
+            WorkspaceUi.ToggleChoice(w, $"GridCell{row}_1");
             Wait(() => E("DraftStatus").Name.Contains("変更フィールド 1")); RunApply();
             var journal = Checkpoint().GetProperty("Journal").EnumerateArray().Last().GetProperty("Operations")[0];
             var option = journal.GetProperty("Intended").GetProperty("Value").GetString();

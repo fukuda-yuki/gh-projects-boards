@@ -55,34 +55,32 @@ public sealed partial class HostedTests
         await Ui.Run(() => Ui.Click("GridAddRow"));
         await Ui.Until(() => Work.LocalRows.Count == 1);
         var id = Work.LocalRows.Single().Id;
-        await Ui.Ready<ComboBox>("GridCell2_1");
+        await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             var row = Work.Open(Workspace.Selected!).Single(r => r.ItemId == id);
             Assert.That(row.Cells[1].Key, Is.EqualTo(new FieldKey("LocalSelect", id, "P1", "P1-status")));
-            var choice = Ui.Find<ComboBox>("GridCell2_1");
-            Assert.That(choice.PlaceholderText, Is.EqualTo("未指定（送信しない）"));
-            choice.Focus(FocusState.Programmatic);
-            choice.SelectedItem = choice.Items.OfType<SelectOption>().Single(o => o.Id == "done");
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("未指定（送信しない）"));
         });
+        await Ui.ChooseCell("GridCell2_1", "done");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Any(s => s.OptionId == "done"));
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().SelectionIdentity?.Field == new FieldKey("LocalSelect", id, "P1", "P1-status"));
         await Ui.Run(() =>
         {
-            Assert.That(((SelectOption)Ui.Find<ComboBox>("GridCell2_1").SelectedItem).Id, Is.EqualTo("done"));
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("Done"));
         });
         await Ui.ClickCommand("GridClear");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Single().Intent.ToString() == "ExplicitClear");
-        await Ui.Run(() => { Assert.That(Ui.Find<ComboBox>("GridCell2_1").SelectedItem, Is.Null); Assert.That(Ui.Find<ComboBox>("GridCell2_1").PlaceholderText, Is.EqualTo("明示的にクリア")); });
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア")));
         await Ui.ClickCommand("GridRemoveRows");
         await Ui.Until(() => Work.LocalRows.Count == 0);
         await Ui.Run(() => Ui.Click("GridUndo"));
         await Ui.Until(() => Work.LocalRows.Count == 1);
-        await Ui.Ready<ComboBox>("GridCell2_1");
+        await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             Assert.That(Work.LocalRows.Single().Id, Is.EqualTo(id));
-            Assert.That(Ui.Find<ComboBox>("GridCell2_1").SelectedItem, Is.Null);
+            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア"));
             Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル行 1"));
         });
     }

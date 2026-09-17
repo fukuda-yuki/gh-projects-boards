@@ -59,6 +59,8 @@ Project row views use `RowViewTests` for deterministic option/state ordering, li
 
 `SheetFocusedScrollHostedTests.FocusedTitleScrollRoundtripRetainsPendingIdentityAndCaret` has two bounded UI integration cases: a selected committed title and a pending title with an interior caret. Real `EditingGrid`, native controls, `DraftSession` and `DraftStore` collaborate through public `ScrollViewer.ChangeView` roundtrips without moving focus to a command. Assertions cover offsets, retained focus/caret/text, stable item/field keys, header alignment and a subsequent edit to the second title with exact durable buffer keys. RenderTargetBitmap PNGs and observations are attached for pixel review; the cases do not simulate physical wheel/keys or prove displayed-pixel readability.
 
+`SheetContextHostedTests` exercises the corresponding fixed-identity, direct header/filter and visible scrollbar collaboration. The opt-in `Test-SheetDiagnostic.ps1 -ItemCount 1000 -SelectFieldCount 12 -Trace -Frames -Ime` uses the ordinary product with isolated synthetic cached Projects. `-Frames` captures independent timestamped screen sequences around native large-wheel, ordinary-wheel and available scrollbar-drag input; `-Ime` uses physical Japanese keys and can run at the same 1,000-row size. Preserve input/capture timestamps, source and executed-binary hashes, failed attempts and unavailable gestures. Diagnostic completion alone is not readable-pixel or human acceptance. A complete-blank pixel detector is only a finding aid; inspect the actual images for overlap, clipping and identity.
+
 ```powershell
 ./scripts/Test-UiIntegration.ps1 -Where 'class == GhProjectsBoards.UiIntegration.Tests.SheetFocusedScrollHostedTests'
 ```

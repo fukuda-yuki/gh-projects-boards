@@ -43,7 +43,7 @@ public sealed partial class RegistrationTests
             Edit(w, 0, "Committed original"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Element(w, "GridCell0_0").Click(); Invoke(w, "GridDuplicateRows"); LocalCount(f, 1);
             Scroll(w, 100); Assert.That(CellText(w, 101), Is.EqualTo("Committed original"));
-            Assert.That(Element(w, "GridCell101_1").AsComboBox().SelectedItem!.Text, Is.EqualTo("Done"));
+            Assert.That(WorkspaceUi.ChoiceText(w, "GridCell101_1"), Is.EqualTo("Done"));
             Element(w, "GridCell101_0").Click(); Key(VirtualKeyShort.TAB, VirtualKeyShort.TAB);
             Wait(() => Element(w, "GridCell101_2").Properties.HasKeyboardFocus.Value);
             Set(w, "GridCell101_2", "chosen/repo"); Key(VirtualKeyShort.RETURN);

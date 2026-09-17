@@ -28,6 +28,7 @@ public sealed class LocalSheetDiagnosticTests
         var output = Path.GetFullPath(Required("OUTPUT"));
         var trace = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_TRACE");
         var physicalIme = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_IME") == "1";
+        var timedFrames = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_FRAMES") == "1";
         var seedFile = Path.Combine(data, "diagnostics", "editing-seed.json");
         Assert.That(Environment.UserInteractive && File.Exists(executable), Is.True);
         Assert.That(File.ReadAllText(Path.Combine(data, "synthetic-editing-check.txt")).Trim(),
@@ -39,7 +40,6 @@ public sealed class LocalSheetDiagnosticTests
         var fields = seed.GetProperty("selectFieldCount").GetInt32();
         Assert.That(rows, Is.InRange(101, 1000));
         Assert.That(fields, Is.InRange(1, 12));
-        if (physicalIme) Assert.That(rows, Is.EqualTo(101), "The optional physical IME probe is bounded to 101 rows.");
         foreach (var (name, expected) in new[] { ("ROWS", rows), ("FIELDS", fields) })
             if (Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_" + name) is { } supplied)
                 Assert.That(int.Parse(supplied), Is.EqualTo(expected), "Requested workload must match validated seed metadata.");
@@ -62,7 +62,7 @@ public sealed class LocalSheetDiagnosticTests
         {
             executable, executableSha256 = Hash(executable), appDll, appDllSha256 = Hash(appDll),
             testAssemblySha256 = Hash(typeof(LocalSheetDiagnosticTests).Assembly.Location), data, rows, fields,
-            seedSha256 = Hash(seedFile), trace, physicalIme,
+            seedSha256 = Hash(seedFile), trace, physicalIme, timedFrames,
             repeatedActions = new { names = new[] { "select-visible-title", "arrows-up-down" }, warmup = 1, measured = 5 },
             singleObservationActions = new[] { "cached-project-ready", "commit-pending-title", "undo-title", "project-P2-P1" },
             driverRevision = "paced-selection-v2",
@@ -108,6 +108,8 @@ public sealed class LocalSheetDiagnosticTests
             Keyboard.TypeVirtualKeyCode(0x12);
             window!.SetForeground(); Wait(() => GetForegroundWindow() == window.Properties.NativeWindowHandle.Value, "Diagnostic window must be foreground.");
             Resize(1080, 760);
+            Wait(() => Element("ToggleProjectNavigation").Name == "Project一覧を表示",
+                "The narrow layout must finish folding navigation before opening its overlay.");
             WorkspaceUi.OpenProjectNavigation(window);
             WorkspaceUi.SelectCombo(window, "SavedProfiles", 0);
             Measure("cached-project-ready", 0, () => OpenProject("P1"));
@@ -133,6 +135,14 @@ public sealed class LocalSheetDiagnosticTests
             NativeKey(VirtualKeyShort.LEFT);
             Snapshot("pending-before-wheel", expectedIssue: "I1");
             Checkpoint("pending-before-wheel");
+            if (timedFrames)
+            {
+                Mouse.Position = SheetPoint();
+                CaptureFrames("burst-down", () => Mouse.Scroll(-10000), "native wheel -10000");
+                CaptureFrames("burst-return", () => Mouse.Scroll(10000), "native wheel +10000");
+                CaptureFrames("wheel-step", () => Mouse.Scroll(-3), "native wheel -3");
+                Snapshot("burst-returned-pending", expectedIssue: "I1");
+            }
             Wheel("vertical-down", 100, false);
             Snapshot("bottom-after-wheel", expectedIssue: "I1");
             Wheel("vertical-up", 0, false);
@@ -171,6 +181,7 @@ public sealed class LocalSheetDiagnosticTests
             Wheel("wide-up", 0, false);
             Measure("project-P2-P1", 0, () => { OpenProject("P2"); OpenProject("P1"); });
             Snapshot("returned-project"); Checkpoint("after-project-roundtrip");
+            if (timedFrames) { RapidNavigationInput(); RangeScrollRoundtrip(); }
             if (physicalIme) PhysicalImeRoundtrip();
             closeRequested = true; window.Close();
             Wait(() => process.HasExited, "Ordinary normal close must end the original process.", 15);
@@ -282,6 +293,36 @@ public sealed class LocalSheetDiagnosticTests
                 Record("native-ime-mode", new { virtualKey = "VK_IME_OFF", reason = "End optional probe" });
             }
         }
+        void RapidNavigationInput()
+        {
+            ClickCell(2); Keyboard.TypeVirtualKeyCode(0x1A);
+            Record("rapid-navigation-input-start", new { from = "I3", expected = "I4", keys = "DOWN,R", pacing = "No selection/focus wait between the native keys." });
+            Keyboard.Type(VirtualKeyShort.DOWN, VirtualKeyShort.KEY_R);
+            FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+            SelectedRow(3);
+            Wait(() => Element("GridCell3_0").AsTextBox().Text == "r", "Queued navigation and typing must target I4 exactly once.");
+            Wait(() => ReadCheckpoint().GetProperty("Fields").EnumerateArray().Any(f => f.GetProperty("Key").GetProperty("NodeId").GetString() == "I4"
+                && f.GetProperty("Buffer").GetString() == "r"), "Queued input must be durable on I4.");
+            var record = Checkpoint("rapid-navigation-input");
+            Assert.That(record.GetProperty("Fields").EnumerateArray().Where(f => f.GetProperty("Key").GetProperty("NodeId").GetString() == "I3")
+                .All(f => f.GetProperty("Buffer").ValueKind == JsonValueKind.Null && f.GetProperty("Change").ValueKind == JsonValueKind.Null), Is.True);
+            Snapshot("rapid-navigation-input", "I4");
+            NativeKey(VirtualKeyShort.ESCAPE); ClickCell(0);
+        }
+        void RangeScrollRoundtrip()
+        {
+            using var clipboard = new NativeClipboardScope();
+            ClickCell(2);
+            using (Keyboard.Pressing(VirtualKeyShort.SHIFT)) { NativeKey(VirtualKeyShort.RIGHT); NativeKey(VirtualKeyShort.DOWN); }
+            var selected = Element("GridSelection").Name;
+            Assert.That(selected, Does.Contain("行 3 列 1").And.Contain("行 4 列 2"));
+            Wheel("range-down", 100, false); Wheel("range-return", 0, false);
+            Assert.That(Element("GridSelection").Name, Is.EqualTo(selected));
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
+            Wait(() => NativeClipboardScope.ReadText() == "Issue 3\tTodo\r\nIssue 4\tTodo", "Offscreen range return must copy the original I3/I4 cells through the native shortcut.");
+            Assert.That(FirstTitle(Checkpoint("range-return")).GetProperty("Buffer").GetString(), Is.EqualTo("diagnostic"));
+            Snapshot("range-return"); ClickCell(0);
+        }
         JsonElement FirstTitle(JsonElement checkpoint) => checkpoint.GetProperty("Fields").EnumerateArray().Single(field =>
             field.GetProperty("Key").GetProperty("Kind").GetString() == "Title" && field.GetProperty("Key").GetProperty("NodeId").GetString() == "I1");
         string[] WorkKeys(JsonElement checkpoint) => checkpoint.GetProperty("Fields").EnumerateArray().Where(field =>
@@ -309,8 +350,9 @@ public sealed class LocalSheetDiagnosticTests
             var toggle = Element("ToggleProjectNavigation");
             if (toggle.Name == "Project一覧を表示") toggle.AsButton().Invoke();
             Wait(() => Element("ToggleProjectNavigation").Name == "Project一覧を折りたたむ", "The Project pane must be open before selection.");
-            var entry = window!.FindFirstDescendant(cf => cf.ByName(name).And(cf.ByControlType(ControlType.TreeItem)));
-            Assert.That(entry, Is.Not.Null, "Seeded Project must be reachable through navigation.");
+            AutomationElement? entry = null;
+            Wait(() => (entry = window!.FindFirstDescendant(cf => cf.ByName(name).And(cf.ByControlType(ControlType.TreeItem)))) is { } item
+                && !item.Properties.IsOffscreen.Value, "Seeded Project must be reachable through navigation.");
             entry!.Patterns.Invoke.Pattern.Invoke();
             Wait(() => Element("ProjectSummary").Name.StartsWith(name, StringComparison.Ordinal), "Selected Project context must update.");
             _ = Element("GridCell0_0");
@@ -351,25 +393,84 @@ public sealed class LocalSheetDiagnosticTests
             if (Math.Abs(attained - endpoint) >= 1)
                 Record("wheel-endpoint-not-reached", new { phase, requested = endpoint, attained, note = "The following screenshot is the attained viewport, not proof of the requested endpoint." });
         }
+        void CaptureFrames(string phase, Action stimulus, string input)
+        {
+            var bounds = window!.BoundingRectangle;
+            var directory = Path.Combine(output, phase); Directory.CreateDirectory(directory);
+            using var firstFrame = new ManualResetEventSlim();
+            var captured = new List<object>();
+            var camera = Task.Run(() =>
+            {
+                // Capture runs independently of UIA and the application's dispatcher.
+                // Actual timestamps, including capture/PNG cost, define the sampling resolution.
+                for (var frame = 0; frame < 40; frame++)
+                {
+                    var begin = Stopwatch.GetTimestamp();
+                    using var image = Capture.Rectangle(bounds);
+                    var end = Stopwatch.GetTimestamp();
+                    var file = Path.Combine(directory, frame.ToString("D3") + ".png"); image.ToFile(file);
+                    captured.Add(new { frame, begin, end, file });
+                    firstFrame.Set(); Thread.Sleep(33);
+                }
+            });
+            Assert.That(firstFrame.Wait(TimeSpan.FromSeconds(5)), Is.True, "The independent frame sampler must start before input.");
+            Assert.That(GetForegroundWindow(), Is.EqualTo(window.Properties.NativeWindowHandle.Value));
+            var inputStart = Stopwatch.GetTimestamp(); stimulus(); var inputEnd = Stopwatch.GetTimestamp();
+            camera.GetAwaiter().GetResult();
+            Write(phase + "-frames.json", new { phase, bounds, inputStart, inputEnd, frequency = Stopwatch.Frequency,
+                input, captured });
+        }
         void DragScrollbar()
         {
             var viewport = Element("ProjectItems");
             var headerBottom = Element("GridHeader0").BoundingRectangle.Bottom;
             var footerTop = Element("GridSelection").BoundingRectangle.Top;
-            var bar = viewport.FindAllDescendants(cf => cf.ByControlType(ControlType.ScrollBar))
-                .FirstOrDefault(item => !item.Properties.IsOffscreen.Value && item.BoundingRectangle.Height > item.BoundingRectangle.Width);
-            var thumb = bar?.FindFirstDescendant(cf => cf.ByControlType(ControlType.Thumb));
-            if (thumb is null || thumb.Properties.IsOffscreen.Value)
+            var bar = window!.FindFirstDescendant(cf => cf.ByAutomationId("SheetVerticalScroll"))
+                ?? window.FindAllDescendants(cf => cf.ByControlType(ControlType.ScrollBar))
+                    .FirstOrDefault(item => !item.Properties.IsOffscreen.Value && item.BoundingRectangle.Height > item.BoundingRectangle.Width);
+            if (bar is not null)
             {
-                Record("drag-not-executed", new { reason = "No visible public scrollbar thumb; do not guess a drag target." });
+                var bounds = bar.BoundingRectangle;
+                Mouse.MoveTo(new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2));
+            }
+            var thumb = bar?.FindFirstDescendant(cf => cf.ByControlType(ControlType.Thumb));
+            if (thumb is null && bar is not null) thumb = Retry.WhileNull(() => bar.FindFirstDescendant(cf => cf.ByControlType(ControlType.Thumb)),
+                TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(50)).Result;
+            var rect = thumb is not null && !thumb.Properties.IsOffscreen.Value ? thumb.BoundingRectangle : Rectangle.Empty;
+            var targetSource = "public Thumb";
+            if (rect.IsEmpty && bar is { ClassName: "ScrollBar" })
+            {
+                // WinUI's standard peer exposes its track buttons but omits Thumb.
+                // Their current rendered rectangles bound the thumb, without a
+                // guessed row position, thumb size, or fixed screen coordinate.
+                Rectangle Bounds(string id) => bar.FindFirstDescendant(cf => cf.ByAutomationId(id))?.BoundingRectangle ?? Rectangle.Empty;
+                var before = Bounds("VerticalLargeDecrease"); var after = Bounds("VerticalLargeIncrease");
+                var smallBefore = Bounds("VerticalSmallDecrease"); var smallAfter = Bounds("VerticalSmallIncrease");
+                if (!smallBefore.IsEmpty && !smallAfter.IsEmpty)
+                {
+                    var top = before.Height > 0 ? before.Bottom : smallBefore.Bottom;
+                    var bottom = after.Height > 0 ? after.Top : smallAfter.Top;
+                    if (bottom > top && top >= bar.BoundingRectangle.Top && bottom <= bar.BoundingRectangle.Bottom)
+                        rect = Rectangle.FromLTRB(bar.BoundingRectangle.Left, top, bar.BoundingRectangle.Right, bottom);
+                }
+                targetSource = "gap between the observed standard native track buttons";
+            }
+            if (rect.IsEmpty)
+            {
+                Record("drag-not-executed", new { reason = "No visible public scrollbar thumb after native hover; do not guess a drag target.",
+                    knownBar = bar is null ? null : new { bar.AutomationId, bar.ClassName, type = bar.ControlType.ToString(), bar.BoundingRectangle,
+                        children = bar.FindAllDescendants().Select(c => new { c.AutomationId, c.ClassName, type = c.ControlType.ToString(), c.BoundingRectangle }).ToArray() },
+                    bars = viewport.FindAllDescendants(cf => cf.ByControlType(ControlType.ScrollBar)).Select(e => new { e.AutomationId, e.ClassName, e.BoundingRectangle, offscreen = e.Properties.IsOffscreen.Value,
+                        children = e.FindAllDescendants().Select(c => new { c.AutomationId, c.ClassName, type = c.ControlType.ToString(), c.BoundingRectangle }).ToArray() }).ToArray() });
                 Snapshot("scrollbar-thumb-unavailable"); return;
             }
-            var rect = thumb.BoundingRectangle;
             var from = new Point(rect.Left + rect.Width / 2, rect.Top + rect.Height / 2);
             Assert.That(window!.BoundingRectangle.Contains(from) && from.Y >= headerBottom && from.Y <= footerTop, Is.True);
             var to = new Point(from.X, footerTop - Math.Max(20, rect.Height / 2));
-            Record("native-drag-start", new { from, to, note = "Native scrollbar press may change focus; no forced editor focus." });
-            Mouse.Drag(from, to, MouseButton.Left); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); DriverWait(150); Snapshot("scrollbar-dragged");
+            Record("native-drag-start", new { from, to, rect, targetSource, note = "Native scrollbar press may change focus; no forced editor focus." });
+            if (timedFrames) CaptureFrames("scrollbar-drag", () => NativePointer.Drag(window!, from, to), "SendInput vertical scrollbar drag");
+            else NativePointer.Drag(window!, from, to);
+            FlaUI.Core.Input.Wait.UntilInputIsProcessed(); DriverWait(150); Snapshot("scrollbar-dragged");
         }
         void Snapshot(string phase, string? expectedIssue = null)
         {

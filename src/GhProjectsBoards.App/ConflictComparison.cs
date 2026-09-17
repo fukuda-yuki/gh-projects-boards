@@ -30,12 +30,13 @@ internal sealed partial class EditingGrid
         var projects = session.Workspace.CheckpointRegistrations.ToArray();
         string Label(DraftField field)
         {
-            var project = projects.SingleOrDefault(p => p.Snapshot.Id == field.Observation!.Project)?.Snapshot;
+            var observedProject = field.Observation?.Project;
+            var project = projects.SingleOrDefault(p => p.Snapshot.Id == observedProject)?.Snapshot;
             var item = project?.Items.SingleOrDefault(i => i.Id.NodeId == field.Key.NodeId);
             var issue = project?.Issues.Values.SingleOrDefault(i => i.Id.NodeId == (field.Key.Kind == "Title" ? field.Key.NodeId : item?.ContentId?.NodeId));
             var identity = issue is null ? field.Key.NodeId : $"{issue.Repository.NameWithOwner} #{issue.Number}";
             var name = field.Key.Kind == "Title" ? "タイトル" : project?.Fields.SingleOrDefault(f => f.Id.NodeId == field.Key.FieldId)?.Name ?? "単一選択";
-            return $"{identity} / {name}";
+            return $"{identity} / {name} [{field.Key.FieldId ?? "Title"}] / {project?.Title ?? observedProject?.NodeId ?? "未確認のProject"} [{observedProject?.NodeId ?? "?"}]";
         }
         var picker = new ComboBox { Header = "比較するフィールド", ItemsSource = fields.Select(Label).ToArray(), SelectedIndex = 0,
             HorizontalAlignment = HorizontalAlignment.Stretch };

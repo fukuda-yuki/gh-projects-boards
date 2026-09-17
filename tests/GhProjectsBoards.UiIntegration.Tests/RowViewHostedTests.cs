@@ -101,7 +101,7 @@ public sealed class RowViewHostedTests
     [Test]
     public async Task LateClipboardRejectsChangedDestinationMapping()
     {
-        await Ui.Run(() => { Ui.Find<ComboBox>("GridCell0_1").Focus(FocusState.Programmatic); Ui.Click("GridPaste"); });
+        await Ui.Run(() => { Ui.Find<Button>("GridCell0_1").Focus(FocusState.Programmatic); Ui.Click("GridPaste"); });
         await Open(); await Ui.Run(() => { Setting<ComboBox>("RowSort").SelectedIndex = 1; Setting<CheckBox>("RowDescending").IsChecked = true; });
         await Ui.Run(() => Ui.DialogButton("RowSettingsDialog", "PrimaryButton")); await Ui.Until(() => Ui.Dialog("RowSettingsDialog") is null);
         await Ui.Run(() => clipboard.SetResult("Done"));

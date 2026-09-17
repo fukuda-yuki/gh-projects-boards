@@ -118,6 +118,16 @@ internal static class Ui
         await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
     }
     public static void Click(string id) => Click(Find<Button>(id));
+    public static async Task ChooseCell(string id, string optionId)
+    {
+        await Ready<Button>(id);
+        await Run(() => { Find<Button>(id).Focus(FocusState.Keyboard); Click(id); });
+        MenuFlyoutItem? item = null;
+        await Until(() => (item = VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child)).OfType<MenuFlyoutItem>()
+            .SingleOrDefault(i => AutomationProperties.GetAutomationId(i) == "ChoiceOption-" + optionId)) is { IsLoaded: true });
+        await Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(item!).GetPattern(PatternInterface.Invoke)).Invoke());
+        await Until(() => !item!.IsLoaded);
+    }
     public static void Click(Button button)
     {
         Assert.That(button.IsLoaded && button.IsEnabled, Is.True, "The bound button must be loaded and enabled");

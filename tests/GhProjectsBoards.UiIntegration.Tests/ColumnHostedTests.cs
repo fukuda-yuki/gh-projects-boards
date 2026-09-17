@@ -89,21 +89,21 @@ public sealed class ColumnHostedTests
     [Test]
     public async Task ColumnReorderHideSelectionAndEditUsesFieldIds()
     {
-        await Ui.Run(() => Ui.Find<ComboBox>("GridCell0_2").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<Button>("GridCell0_2").Focus(FocusState.Programmatic));
         await Open();
         await Ui.Run(() => { Setting<CheckBox>("ColumnVisible-P1B").IsChecked = false; Ui.Click(Setting<Button>("ColumnUp-P1C")); });
         await Ui.Until(() => Setting<Button>("ColumnUp-P1C").IsLoaded);
         await Ui.Run(() => Ui.Click(Setting<Button>("ColumnUp-P1C")));
         await Close("PrimaryButton");
-        await Ui.Ready<ComboBox>("GridCell0_1");
+        await Ui.Ready<Button>("GridCell0_1");
         await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Find<Button>("GridReapply")));
         await Ui.Run(() =>
         {
             Assert.That(grid.SelectionIdentity, Is.Null);
             Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(Ui.Find<Button>("GridReapply")));
             Assert.That(session.Workspace.Columns(p).Visible.Select(c => c.Id.FieldId), Is.EqualTo(new string?[] { null, "P1C", "P1A", null }));
-            var combo = Ui.Find<ComboBox>("GridCell0_1"); combo.Focus(FocusState.Programmatic); combo.SelectedIndex = 1;
         });
+        await Ui.ChooseCell("GridCell0_1", "C1");
         await Ui.Until(() => session.Workspace.Fields.Any(f => f.Key.FieldId == "P1C" && f.Change?.Value == "C1"));
         await Open(); await Ui.Run(() => Ui.Click(Setting<Button>("ColumnsReset"))); await Close("PrimaryButton");
         await Ui.Run(() =>
@@ -161,8 +161,8 @@ public sealed class ColumnHostedTests
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = false); await Close("PrimaryButton");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("未確定 1")));
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = true); await Close("PrimaryButton");
-        await Ui.Ready<ComboBox>("GridCell0_2");
-        await Ui.Run(() => { Ui.Find<ComboBox>("GridCell0_2").Focus(FocusState.Programmatic); Ui.Click("GridDetails"); });
+        await Ui.Ready<Button>("GridCell0_2");
+        await Ui.Run(() => { Ui.Find<Button>("GridCell0_2").Focus(FocusState.Programmatic); Ui.Click("GridDetails"); });
         await Ui.Ready<TextBlock>("SelectedCellDetails");
         await Ui.Until(() => Ui.Find<TextBlock>("SelectedCellDetails").Text.Contains("recoverable pending select"));
         await Ui.Run(() => { var cell = session.Workspace.Open(p)[0].Cells[2]; Assert.That(session.Workspace.Value(cell), Is.EqualTo("B0")); Assert.That(session.Workspace.Buffer(cell), Is.EqualTo("recoverable pending select")); });
