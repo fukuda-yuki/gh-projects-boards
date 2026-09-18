@@ -1,0 +1,9 @@
+# Repository configuration for the GitHub Copilot app.
+# The run button builds the Release app and launches the desktop executable.
+scripts:
+  - name: 起動
+    command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Start-App.ps1
+
+# This project is a native desktop application, not a web server, so a run script never
+# produces a URL to open.
+auto_open_in_browser: false
