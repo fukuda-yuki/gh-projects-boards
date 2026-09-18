@@ -17,19 +17,22 @@ public sealed partial class HostedTests
             Assert.That(await Workspace.Drafts!.CommitAsync(w => { w.SaveRowView(w.PrepareRowView(p) with { Definition = new(Title: "Issue 1") }); return w; }, () => true), Is.True);
             Ui.Click("GridReapply"); Ui.Click("ReviewApplyButton");
         });
-        await Ui.DialogReady("ApplySelectionDialog");
+        await Ui.DialogReady("ApplyReviewDialog");
+        await Ui.Until(() => !Workspace.IsBusy);
         await Ui.Run(() => {
-            var dialog = Ui.Dialog("ApplySelectionDialog")!; var list = Ui.Find<ListView>("ApplyTargetRows", dialog);
-            Assert.That(list.Items.Count, Is.EqualTo(1)); Assert.That(list.SelectedItems, Is.Empty);
+            var dialog = Ui.Dialog("ApplyReviewDialog")!; var list = Ui.Find<ListView>("ApplyTargetRows", dialog);
+            Assert.That(list.Items.Count, Is.Zero); Assert.That(list.SelectedItems, Is.Empty);
             Assert.That(Ui.Find<TextBlock>("ApplyTargetCounts", dialog).Text, Does.Contain("非表示の作業 1"));
             var hidden = Ui.Find<CheckBox>("ApplyIncludeHidden", dialog); Assert.That(hidden.IsChecked, Is.False); hidden.IsChecked = true;
-            Assert.That(list.Items.Count, Is.EqualTo(2));
+            Assert.That(list.Items.Count, Is.EqualTo(1));
+            Assert.That(list.SelectedItems, Is.Empty);
         });
-        await Ui.Until(() => Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplySelectionDialog")).ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
-        await Ui.Run(() => { Ui.Select(Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplySelectionDialog")), 1); Ui.DialogButton("ApplySelectionDialog", "PrimaryButton"); });
-        await Ui.DialogReady("ApplyReviewDialog");
-        await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("選択行 1 / 更新 1")); Ui.DialogButton("ApplyReviewDialog", "PrimaryButton"); });
-        await Ui.Until(() => !Workspace.IsBusy && h.Writes.Count == 1); await Ui.Idle();
+        await Ui.Until(() => !Workspace.IsBusy);
+        await Ui.Run(() => { var list = Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplyReviewDialog")); list.SelectedItems.Add(list.Items[0]); });
+        await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
+        await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("選択 1行").And.Contain("更新 1件")); Ui.DialogButton("ApplyReviewDialog", "PrimaryButton"); });
+        await Ui.Until(() => !Workspace.IsBusy && h.Writes.Count == 1);
+        await Ui.DialogReady("ApplyHistoryDialog"); await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton")); await Ui.Idle();
         await Ui.Run(() => Assert.That(h.Writes.Single().Input.GetProperty("itemId").GetString(), Is.EqualTo("P1-T2")));
     }
     [Test]
@@ -63,6 +66,8 @@ public sealed partial class HostedTests
         });
         await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.Find<Expander>("CreationHistoryDetails-" + Work.Creations.Single().Id, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
+        await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(local));
         await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain(local)); Ui.DialogButton("ApplyHistoryDialog", "CloseButton"); });
     }
 }

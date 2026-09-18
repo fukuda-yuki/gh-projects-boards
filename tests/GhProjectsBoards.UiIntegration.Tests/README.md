@@ -45,6 +45,8 @@ Core `ColumnTests` owns canonical/visible mapping, mixed-row atomic transactions
 
 ## Workspace presentation and view collaboration
 
+The #31 Apply workflow uses one production `ApplyReviewDialog`: candidates, explicit selection, automatic checking, inline differences/conflicts, final approval and direct history. `ApplyIaHostedTests.cs` extends the existing `HostedTests` runtime with same/different-account recovery through the actual `ConnectionPanel`, retained pending text, separate Project registration, and failed/incomplete reads with retry. `HistoryRemainsDisabledUntilOutstandingContinuationSettles` also checks the visible per-field execution progress and stop action. Internal identities remain available through the actual details expanders. These tests substitute the external GitHub process response, not the production views/events or durable workspace.
+
 These cases use the real production grid/panel/dialogs and their public control/event paths. `ColumnTests.Project`, `EditingTests.Registration` and the existing creation harness provide scoped synthetic setup; sessions and checkpoint stores are real. The history case prepares uncertainty through the real executor with the external response controlled, then verifies the presentation and keep-on-hold action. It does not claim to reproduce a whole user session.
 
 | Observable behavior | Hosted cases / assertions | Other boundary retained |

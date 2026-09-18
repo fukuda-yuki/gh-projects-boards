@@ -100,10 +100,10 @@ public sealed partial class RegistrationTests
             Wait(() => Durable(f).GetProperty("LocalRows")[0].GetProperty("TitleBuffer").GetString() == "Pending new");
             saved = Durable(f).GetProperty("LocalRows").GetRawText(); Invoke(w, "ReviewApplyButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyTargetRows")) is not null);
-            var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select(); Invoke(w, "PrimaryButton");
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
+            var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select();
+            WorkspaceUi.WaitForApplyReady(w);
             Invoke(w, "PrimaryButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
             Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")); Assert.That(writes, Has.Length.EqualTo(1));
             Assert.That(JsonDocument.Parse(writes[0]).RootElement.GetProperty("id").GetString(), Is.EqualTo("I1"));

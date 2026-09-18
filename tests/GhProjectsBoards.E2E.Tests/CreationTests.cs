@@ -16,14 +16,14 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "A");
-            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / A")));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / A")).Select(); Invoke(w, "PrimaryButton");
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null); Invoke(w, "PrimaryButton");
+            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / A")).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Invoke(w, "PrimaryButton");
             Wait(() => File.Exists(Path.Combine(f.Root, "creation-requests.jsonl"))); Scroll(w, 100); Edit(w, 101, "B");
             var cell = Element(w, "GridCell101_0").AsTextBox(); cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.Value);
             Keyboard.TypeVirtualKeyCode(0x16); Key(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I);
-            Assert.That(cell.Text, Is.EqualTo("に")); Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
+            Assert.That(cell.Text, Is.EqualTo("に")); Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
             Assert.That(cell.Text, Is.EqualTo("に")); Assert.That(Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString(), Is.EqualTo("B"));
             Key(VirtualKeyShort.RETURN); Invoke(w, "RefreshProjectButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("照合をローカル保存"));
@@ -59,10 +59,10 @@ public sealed partial class RegistrationTests
             Invoke(w, "GridAddRow"); LocalCount(f, 3);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox();
-            list.Items[0].Select(); list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            list.Items[0].Select(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Wait(() => list.Items.Count(i => i.Name.Contains("新規作成 / sample-user/first / Same title")) == 2);
-            foreach (var target in list.Items.Where(i => i.Name.Contains("新規作成 / sample-user/first / Same title"))) target.AddToSelection();
-            Invoke(w, "PrimaryButton"); Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
+            for (var i = 0; i < 2; i++) { Element(w, "ApplyTargetRows").AsListBox().Items.Where(row => row.Name.Contains("新規作成 / sample-user/first / Same title")).ElementAt(i).AddToSelection(); WorkspaceUi.WaitForApplyReady(w); }
+            WorkspaceUi.WaitForApplyReady(w);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Capture(w, f.Root, "creation-mixed-review");
             // Two creations, initial setup and an existing update each require
@@ -70,7 +70,7 @@ public sealed partial class RegistrationTests
             var completionClock = System.Diagnostics.Stopwatch.StartNew();
             Invoke(w, "PrimaryButton");
             var completed = FlaUI.Core.Tools.Retry.WhileFalse(
-                () => Text(w, "RegistrationStatus").Contains("Apply処理を停止"),
+                () => Text(w, "RegistrationStatus").Contains("反映処理が終了"),
                 TimeSpan.FromSeconds(60), TimeSpan.FromMilliseconds(100)).Result;
             completionClock.Stop();
             TestContext.WriteLine($"Mixed Apply approval-to-visible-stop: observed={completed}, elapsedMs={completionClock.Elapsed.TotalMilliseconds:F1}");
@@ -94,10 +94,10 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "Ambiguous title");
-            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / Ambiguous title")));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / Ambiguous title")).Select(); Invoke(w, "PrimaryButton");
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null); Invoke(w, "PrimaryButton");
+            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / Ambiguous title")).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Invoke(w, "PrimaryButton");
             Wait(() => File.Exists(Path.Combine(f.Root, "creation-requests.jsonl")));
         }, interrupt: true);
         File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true, creation = true }));
@@ -132,7 +132,7 @@ public sealed partial class RegistrationTests
                 Wait(() => Text(w, "RegistrationStatus").Contains("関連付けを保存"));
                 Invoke(w, "ApplyHistoryButton"); Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null); Invoke(w, "PrimaryButton");
             }
-            Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
             var batches = Durable(f).GetProperty("Journal"); var current = batches[batches.GetArrayLength() - 1].GetProperty("Creations")[0];
             Assert.That(current.GetProperty("Completed").GetBoolean(), Is.True, Text(w, "RegistrationStatus"));
             Assert.That(current.GetProperty("EarlierUncertain").GetBoolean(), Is.True);
@@ -150,7 +150,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "Known"); Approve(w, "Known");
-            Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止")); LocalCount(f, 0);
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了")); Invoke(w, "ApplyHistoryButton"); Invoke(w, "CloseButton"); LocalCount(f, 0);
             File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true, creation = true, loseCreationResponse = true }));
             AddCreationRow(f, w, 102, "Ambiguous second", 1); Approve(w, "Ambiguous second");
             Wait(() => File.ReadAllLines(Path.Combine(f.Root, "creation-requests.jsonl")).Count(l => l.Contains("CreateWorkspaceIssue")) == 2);
@@ -169,10 +169,10 @@ public sealed partial class RegistrationTests
         Assert.That(File.ReadAllLines(Path.Combine(f.Root, "creation-requests.jsonl")).Length, Is.EqualTo(before));
         void Approve(Window w, string title)
         {
-            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / " + title)));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / " + title)).Select(); Invoke(w, "PrimaryButton");
-            Element(w, "ApplyReviewDialog"); Invoke(w, "PrimaryButton");
+            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / " + title)).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Invoke(w, "PrimaryButton");
         }
     }
 }

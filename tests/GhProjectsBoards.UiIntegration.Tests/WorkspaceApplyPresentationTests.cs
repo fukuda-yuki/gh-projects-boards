@@ -24,6 +24,8 @@ public sealed partial class HostedTests
         });
         await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.Find<Expander>("CreationHistoryDetails-" + attempt, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
+        await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(local));
         await Ui.Run(() =>
         {
             var dialog = Ui.Dialog("ApplyHistoryDialog")!;

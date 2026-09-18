@@ -24,12 +24,12 @@ public sealed partial class RegistrationTests
                 Edit(w, 0, "Measured title");
                 Assert.That(CellText(w, 0), Is.EqualTo("Measured title"));
                 var localMs = timer.Elapsed.TotalMilliseconds;
-                Invoke(w, "ReviewApplyButton"); Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
-                timer.Restart(); Invoke(w, "PrimaryButton");
-                Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
+                Invoke(w, "ReviewApplyButton"); timer.Restart();
+                Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
+                WorkspaceUi.WaitForApplyReady(w);
                 var prepareMs = timer.Elapsed.TotalMilliseconds;
                 timer.Restart(); Invoke(w, "PrimaryButton");
-                Wait(() => Text(w, "RegistrationStatus").Contains("Apply処理を停止"));
+                Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
                 var executeMs = timer.Elapsed.TotalMilliseconds;
                 Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
                 Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(1));

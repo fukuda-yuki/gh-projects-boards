@@ -41,17 +41,21 @@ public sealed class LiveConnectionTests
             WinUiProcess.AssertRuntime(process);
             Element("ExecutablePath").AsTextBox().Text = gh;
             Element("HostInput").AsTextBox().Text = "github.com";
-            Element("IssueUrlInput").AsTextBox().Text = "https://github.com/fukuda-yuki/codex-sandbox/issues/1";
-            Element("ProjectUrlInput").AsTextBox().Text = "https://github.com/users/fukuda-yuki/projects/3";
             Element("CheckConnectionButton").AsButton().Invoke();
             Assert.That(Retry.WhileFalse(() => Element("CheckConnectionButton").IsEnabled
                 && Element("ConnectionStatus").Name.Contains("接続を確認しました", StringComparison.Ordinal),
                 TimeSpan.FromSeconds(60), TimeSpan.FromMilliseconds(200)).Result, Is.True);
             Assert.That(Element("AccountValue").Name, Does.Contain("fukuda-yuki").And.Contain("github.com"));
             Assert.That(Element("StorageValue").Name, Does.Contain("keyring"));
-            Assert.That(Element("IssueResult").Name, Does.Contain("読み取り：あり").And.Contain("更新権限：あり").And.Contain("repo：あり"));
-            Assert.That(Element("ProjectResult").Name, Does.Contain("読み取り：あり").And.Contain("更新権限：あり").And.Contain("project：あり"));
+            WorkspaceUi.OpenTargetDiagnostics(window!);
+            Element("IssueUrlInput").AsTextBox().Text = "https://github.com/fukuda-yuki/codex-sandbox/issues/1";
+            Element("ProjectUrlInput").AsTextBox().Text = "https://github.com/users/fukuda-yuki/projects/3";
+            WorkspaceUi.Invoke(window!, "PrimaryButton");
+            Assert.That(Retry.WhileFalse(() => Element("ProjectResult").Name.Contains("読み取り あり"), TimeSpan.FromSeconds(60)).Result, Is.True);
+            Assert.That(Element("IssueResult").Name, Does.Contain("読み取り あり").And.Contain("更新 あり").And.Contain("repo: あり"));
+            Assert.That(Element("ProjectResult").Name, Does.Contain("読み取り あり").And.Contain("更新 あり").And.Contain("project: あり"));
             Capture("live-connected");
+            WorkspaceUi.Invoke(window!, "CloseButton");
             window!.Close();
             Assert.That(Retry.WhileFalse(() => process.HasExited, TimeSpan.FromSeconds(10)).Result, Is.True);
             Assert.That(process.ExitCode, Is.Zero);

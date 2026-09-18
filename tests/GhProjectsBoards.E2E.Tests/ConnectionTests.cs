@@ -26,21 +26,26 @@ public sealed class ConnectionTests
     {
         WithApplication((window, process, fixture) =>
         {
+            Button(window, "CheckConnectionButton").Invoke();
+            WaitFor(() => Text(window, "ConnectionStatus").Contains("接続を確認しました", StringComparison.Ordinal));
+            Assert.That(Text(window, "AccountValue"), Does.Contain("fixture-user").And.Contain("42").And.Contain("example.test"));
+            CaptureWindow(window, "connected");
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("IssueUrlInput")), Is.Null);
+            WorkspaceUi.OpenTargetDiagnostics(window);
             SetText(window, "IssueUrlInput", "https://example.test/example/sandbox/issues/1");
             SetText(window, "ProjectUrlInput", "https://example.test/users/example/projects/3");
             Assert.That(Element(window, "ProjectUrlInput").AsTextBox().Text,
                 Is.EqualTo("https://example.test/users/example/projects/3"));
-            Button(window, "CheckConnectionButton").Invoke();
-            WaitFor(() => Text(window, "ConnectionStatus").Contains("接続を確認しました", StringComparison.Ordinal));
-            Assert.That(Text(window, "AccountValue"), Does.Contain("fixture-user").And.Contain("42").And.Contain("example.test"));
-            Assert.That(Text(window, "IssueResult"), Does.Contain("読み取り：あり").And.Contain("更新権限：あり"));
-            Assert.That(Text(window, "ProjectResult"), Does.Contain("読み取り：あり").And.Contain("更新権限：あり"));
-            CaptureWindow(window, "connected");
+            WorkspaceUi.Invoke(window, "PrimaryButton");
+            WaitFor(() => Text(window, "ProjectResult").Contains("読み取り あり"));
+            Assert.That(Text(window, "IssueResult"), Does.Contain("読み取り あり").And.Contain("更新 あり"));
+            Assert.That(Text(window, "ProjectResult"), Does.Contain("読み取り あり").And.Contain("更新 あり"));
+            CaptureWindow(window, "target-diagnostics"); WorkspaceUi.Invoke(window, "CloseButton");
 
             fixture.Write(id: 99);
             Button(window, "CheckConnectionButton").Invoke();
             WaitFor(() => Text(window, "ConnectionStatus").Contains("変更を検出", StringComparison.Ordinal));
-            Assert.That(Text(window, "IssueResult"), Does.Contain("読み取り：不明"));
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("IssueResult")), Is.Null);
             Button(window, "NewConnectionButton").Invoke();
             WaitFor(() => Text(window, "ConnectionStatus").Contains("接続を確認しました", StringComparison.Ordinal)
                 && Text(window, "AccountValue").Contains("99", StringComparison.Ordinal));
@@ -210,7 +215,7 @@ public sealed class ConnectionTests
             Button(window, "CheckConnectionButton").Invoke();
             WaitFor(() => Text(window, "ConnectionStatus").Contains("未ログイン", StringComparison.Ordinal));
             Assert.That(Text(window, "AccountValue"), Is.EqualTo("不明"));
-            Assert.That(Text(window, "IssueResult"), Does.Contain("読み取り：不明"));
+            Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("IssueResult")), Is.Null);
         });
     }
 

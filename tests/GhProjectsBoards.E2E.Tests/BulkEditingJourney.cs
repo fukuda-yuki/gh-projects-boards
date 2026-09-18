@@ -83,13 +83,11 @@ public sealed partial class RegistrationTests
             Connect(window); Invoke(window, "ProjectsPageButton"); OpenSaved(window);
             Invoke(window, "ReviewApplyButton");
             Wait(() => Element(window, "ApplyTargetRows").AsListBox().Items.Length >= 10);
-            var items = Element(window, "ApplyTargetRows").AsListBox().Items;
-            for (var i = 0; i < 10; i++) items[i].AddToSelection();
-            Invoke(window, "PrimaryButton");
-            Wait(() => window.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
+            Assert.That(Element(window, "ApplyTargetRows").AsListBox().Items.Length, Is.EqualTo(10));
+            Invoke(window, "ApplySelectAll"); WorkspaceUi.WaitForApplyReady(window);
             var review = Element(window, "ApplyReviewDialog");
             var text = string.Join("\n", review.FindAllDescendants().Select(e => e.Properties.Name.ValueOrDefault));
-            Assert.That(text, Does.Contain("選択行 10 / 更新 10 / 作成 0").And.Contain("Ready"));
+            Assert.That(text, Does.Contain("選択 10行").And.Contain("更新 10件・新規作成 0件").And.Contain("Ready"));
             Capture(window, fixture.Root, "review-ten-changes"); Invoke(window, "CloseButton");
         });
         Assert.That(fixture.Calls().Any(call => call.GetProperty("mutation").GetBoolean()), Is.False);

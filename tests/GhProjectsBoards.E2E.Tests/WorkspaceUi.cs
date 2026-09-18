@@ -10,11 +10,12 @@ namespace GhProjectsBoards.E2E.Tests;
 internal static class WorkspaceUi
 {
     private static readonly HashSet<string> ConnectionControls = [
-        "ConnectionScreen", "ExecutablePath", "HostInput", "IssueUrlInput", "ProjectUrlInput",
+        "ConnectionScreen", "ExecutablePath", "HostInput",
         "DetectGhButton", "BrowseGhButton", "CheckConnectionButton", "NewConnectionButton", "CancelConnectionButton",
-        "ConnectionStatus", "AccountValue", "StorageValue", "IssueResult", "ProjectResult", "LoginHelpExpander"
+        "ConnectionStatus", "AccountValue", "StorageValue", "LoginHelpExpander", "ConnectionDetails"
     ];
-    private static readonly HashSet<string> ProjectSettingsControls = ["ProjectInformation", "DefaultRepository", "SaveProjectSettingButton", "UnregisterProjectButton", "ApplyHistoryButton", "ProjectStatusDetailsButton"];
+    private static readonly HashSet<string> ConnectionDetailsControls = ["ExecutablePath", "DetectGhButton", "BrowseGhButton", "VersionValue", "StorageValue", "ScopeValue", "EnvironmentValue"];
+    private static readonly HashSet<string> ProjectSettingsControls = ["ProjectInformation", "DefaultRepository", "SaveProjectSettingButton", "UnregisterProjectButton", "ProjectStatusDetailsButton", "ProjectTargetDiagnostics"];
     private static readonly HashSet<string> DiscoveryControls = [
         "DiscoveryOwners", "LoadOwnersButton", "DiscoveryOwner", "LoadRepositoriesButton", "DiscoveryRepositories", "DiscoverySearch", "SearchProjectsButton"
     ];
@@ -140,8 +141,20 @@ internal static class WorkspaceUi
     }
     internal static AutomationElement Element(Window window, string id)
     {
-        if (ConnectionControls.Contains(id) && !Visible(Find(window, "ConnectionScreen")))
-            InvokeRoute(window, "ConnectionPageButton");
+        // The always-visible return button identifies the page even when a
+        // ScrollViewer peer is omitted or a system picker obscures its owner.
+        if (ConnectionControls.Contains(id) && Find(window, "ProjectsPageButton") is null)
+        {
+            Wait(() => Find(window, "ProjectsPageButton") is not null || Find(window, "ConnectionPageButton")?.IsEnabled == true,
+                "Connection settings or its entry must be available after the native dialog settles.");
+            if (Find(window, "ProjectsPageButton") is null) InvokeRoute(window, "ConnectionPageButton");
+        }
+        if (ConnectionDetailsControls.Contains(id))
+        {
+            Wait(() => Find(window, "ConnectionDetails") is not null, "Connection settings must load before opening CLI details.");
+            Find(window, "ConnectionDetails")!.Patterns.ExpandCollapse.Pattern.Expand();
+            Wait(() => Visible(Find(window, id)), "The connection detail must be visible: " + id);
+        }
         if (ProjectSettingsControls.Contains(id) && Find(window, id) is null)
             InvokeRoute(window, "ProjectSettingsButton");
         if (DiscoveryControls.Contains(id))
@@ -172,11 +185,22 @@ internal static class WorkspaceUi
     }
     internal static void Invoke(Window window, string id, TimeSpan? timeout = null)
     {
+        if (id == "ApplyHistoryButton" && Visible(Find(window, "ApplyHistoryDialog"))) return;
         if (!ProjectSettingsControls.Contains(id) && id != "ProjectSettingsButton") CloseProjectSettings(window);
         // The return command is only shown on the connection page.
         if (id == "ProjectsPageButton" && Visible(Find(window, "WorkspaceIdentity"))) return;
         var button = Element(window, id);
         Wait(() => button.IsEnabled, "The command must be enabled: " + id, timeout);
         button.AsButton().Invoke();
+    }
+    internal static void WaitForApplyReady(Window window) => Wait(() =>
+        Find(window, "ApplyReviewDialog") is not null && Find(window, "PrimaryButton")?.IsEnabled == true,
+        "The selected changes must finish their automatic latest-state check.");
+    internal static void OpenTargetDiagnostics(Window window)
+    {
+        Invoke(window, "ProjectsPageButton");
+        Invoke(window, "AddProjectButton");
+        Invoke(window, "RegistrationTargetDiagnostics");
+        Wait(() => Find(window, "TargetDiagnosticsDialog") is not null, "Target diagnostics must open separately from connection settings.");
     }
 }
