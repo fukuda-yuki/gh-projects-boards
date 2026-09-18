@@ -191,11 +191,17 @@ internal static class WorkspaceUi
         if (id == "ProjectsPageButton" && Visible(Find(window, "WorkspaceIdentity"))) return;
         var button = Element(window, id);
         Wait(() => button.IsEnabled, "The command must be enabled: " + id, timeout);
-        button.AsButton().Invoke();
+        if (button.Patterns.Toggle.IsSupported) button.Patterns.Toggle.Pattern.Toggle();
+        else button.AsButton().Invoke();
     }
     internal static void WaitForApplyReady(Window window) => Wait(() =>
         Find(window, "ApplyReviewDialog") is not null && Find(window, "PrimaryButton")?.IsEnabled == true,
         "The selected changes must finish their automatic latest-state check.");
+    internal static ListBoxItem[] ApplyRows(Window window)
+    {
+        var list = Element(window, "ApplyTargetRows");
+        return list.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.ListItem)).Select(e => e.AsListBoxItem()).ToArray();
+    }
     internal static void OpenTargetDiagnostics(Window window)
     {
         Invoke(window, "ProjectsPageButton");

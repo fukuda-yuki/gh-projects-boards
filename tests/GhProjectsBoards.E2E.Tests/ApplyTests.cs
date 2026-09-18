@@ -14,7 +14,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Edit(w, 0, "B");
-            Invoke(w, "ReviewApplyButton"); Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
+            Invoke(w, "ReviewApplyButton"); Wait(() => WorkspaceUi.ApplyRows(w).Length > 0); WorkspaceUi.ApplyRows(w)[0].Select();
             WorkspaceUi.WaitForApplyReady(w); Invoke(w, "PrimaryButton");
             Wait(() => File.Exists(Path.Combine(f.Root, "apply-requests.jsonl")));
             if (action == "cancel") { Invoke(w, "CancelProjectButton"); Wait(() => Element(w, "ReviewApplyButton").IsEnabled); }
@@ -46,7 +46,7 @@ public sealed partial class RegistrationTests
                 Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN); // Natural IME confirmation leaves the cell uncommitted.
                 Invoke(w, "ReviewApplyButton");
             }
-            Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
+            Wait(() => WorkspaceUi.ApplyRows(w).Length > 0); WorkspaceUi.ApplyRows(w)[0].Select();
             Wait(() => Element(w, "ApplyCheckStatus").Name.Contains("最新確認済み"));
             Assert.That(Element(w, "PrimaryButton").IsEnabled, Is.False);
             Assert.That(Element(w, "ApplyReviewDialog").FindAllDescendants().Select(e => e.Properties.Name.ValueOrDefault ?? ""), Has.Some.Contains("送らない未確定入力: に"));
@@ -80,10 +80,10 @@ public sealed partial class RegistrationTests
             Capture(w, f.Root, "ia-workspace-returned");
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Invoke(w, "ReviewApplyButton");
-            var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select();
+            Wait(() => WorkspaceUi.ApplyRows(w).Length > 0); WorkspaceUi.ApplyRows(w)[0].Select();
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null && Element(w, "PrimaryButton").IsEnabled);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
-            Assert.That(Element(w, "ApplyTargetRows").AsListBox().Items.Length, Is.EqualTo(1), "Unchanged Issues must not be ordinary candidates.");
+            Assert.That(WorkspaceUi.ApplyRows(w).Length, Is.EqualTo(1), "Unchanged Issues must not be ordinary candidates.");
             Assert.That(Element(w, "PrimaryButton").Name, Is.EqualTo("GitHubに反映（1件）"));
             Capture(w, f.Root, "apply-review"); Invoke(w, "PrimaryButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));

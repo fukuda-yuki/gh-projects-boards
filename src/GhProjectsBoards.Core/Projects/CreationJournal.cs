@@ -68,17 +68,17 @@ internal sealed partial class EditingWorkspace
     public IEnumerable<CreationOperation> Creations => journal.SelectMany(b => b.Creations ?? []);
     public bool CreationLocked(string localId) => Creations.Any(c => c.LocalId == localId && (c.Authorized || c.Dispatched || c.Verified is not null));
     private CreationOperation[] ReviewCreations(ProjectRegistration p, LocalRow[] rows,
-        IReadOnlyDictionary<string, CreationRepository>? destinations, List<string> blocked)
+        IReadOnlyDictionary<string, CreationRepository>? destinations, List<ApplyReviewProblem> blocked)
     {
         var result = new List<CreationOperation>();
         foreach (var r in rows)
         {
-            foreach (var error in LocalProblems(p, r.Id)) blocked.Add($"{r.Id}: {error}");
-            if (CreationLocked(r.Id)) blocked.Add($"{r.Id}: 以前の作成履歴があります。履歴から照合・解決してください。");
+            foreach (var error in LocalProblems(p, r.Id)) blocked.Add(new(r.Id, null, error));
+            if (CreationLocked(r.Id)) blocked.Add(new(r.Id, null, "以前の作成履歴があります。履歴から照合・解決してください。"));
             var repository = destinations?.GetValueOrDefault(r.Id);
             if (repository is null || !repository.Allowed || repository.Name != r.Repository)
-            { blocked.Add($"{r.Id}: 宛先Repository ID・Issue有効化・archive・作成権限を確認できません。"); continue; }
-            if (p.Snapshot.Capability?.CanUpdate != true) blocked.Add($"{r.Id}: Project更新権限を確認できません。");
+            { blocked.Add(new(r.Id, null, "宛先Repository ID・Issue有効化・archive・作成権限を確認できません。")); continue; }
+            if (p.Snapshot.Capability?.CanUpdate != true) blocked.Add(new(r.Id, null, "Project更新権限を確認できません。"));
             result.Add(new(Guid.NewGuid().ToString("N"), r.Id, r.Stamp, repository, r.Title, r.Selects));
         }
         return result.ToArray();

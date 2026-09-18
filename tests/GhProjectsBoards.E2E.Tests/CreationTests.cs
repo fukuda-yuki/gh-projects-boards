@@ -17,8 +17,8 @@ public sealed partial class RegistrationTests
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "A");
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-            Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / A")));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / A")).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Wait(() => WorkspaceUi.ApplyRows(w).Any(i => i.Name.Contains("sample-user/first 新規作成 / A")));
+            WorkspaceUi.ApplyRows(w).Single(i => i.Name.Contains("sample-user/first 新規作成 / A")).Select(); WorkspaceUi.WaitForApplyReady(w);
             Invoke(w, "PrimaryButton");
             Wait(() => File.Exists(Path.Combine(f.Root, "creation-requests.jsonl"))); Scroll(w, 100); Edit(w, 101, "B");
             var cell = Element(w, "GridCell101_0").AsTextBox(); cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.Value);
@@ -59,9 +59,9 @@ public sealed partial class RegistrationTests
             Invoke(w, "GridAddRow"); LocalCount(f, 3);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox();
-            list.Items[0].Select(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-            Wait(() => list.Items.Count(i => i.Name.Contains("新規作成 / sample-user/first / Same title")) == 2);
-            for (var i = 0; i < 2; i++) { Element(w, "ApplyTargetRows").AsListBox().Items.Where(row => row.Name.Contains("新規作成 / sample-user/first / Same title")).ElementAt(i).AddToSelection(); WorkspaceUi.WaitForApplyReady(w); }
+            WorkspaceUi.ApplyRows(w)[0].Select(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Wait(() => WorkspaceUi.ApplyRows(w).Count(i => i.Name.Contains("sample-user/first 新規作成 / Same title")) == 2);
+            for (var i = 0; i < 2; i++) { WorkspaceUi.ApplyRows(w).Where(row => row.Name.Contains("sample-user/first 新規作成 / Same title")).ElementAt(i).AddToSelection(); WorkspaceUi.WaitForApplyReady(w); }
             WorkspaceUi.WaitForApplyReady(w);
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
             Capture(w, f.Root, "creation-mixed-review");
@@ -95,8 +95,8 @@ public sealed partial class RegistrationTests
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "Ambiguous title");
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-            Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / Ambiguous title")));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / Ambiguous title")).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Wait(() => WorkspaceUi.ApplyRows(w).Any(i => i.Name.Contains("sample-user/first 新規作成 / Ambiguous title")));
+            WorkspaceUi.ApplyRows(w).Single(i => i.Name.Contains("sample-user/first 新規作成 / Ambiguous title")).Select(); WorkspaceUi.WaitForApplyReady(w);
             Invoke(w, "PrimaryButton");
             Wait(() => File.Exists(Path.Combine(f.Root, "creation-requests.jsonl")));
         }, interrupt: true);
@@ -170,8 +170,8 @@ public sealed partial class RegistrationTests
         void Approve(Window w, string title)
         {
             Invoke(w, "ReviewApplyButton"); var list = Element(w, "ApplyTargetRows").AsListBox(); if (list.Patterns.Scroll.Pattern.VerticallyScrollable.Value) list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-            Wait(() => list.Items.Any(i => i.Name.Contains("新規作成 / sample-user/first / " + title)));
-            list.Items.Single(i => i.Name.Contains("新規作成 / sample-user/first / " + title)).Select(); WorkspaceUi.WaitForApplyReady(w);
+            Wait(() => WorkspaceUi.ApplyRows(w).Any(i => i.Name.Contains("sample-user/first 新規作成 / " + title)));
+            WorkspaceUi.ApplyRows(w).Single(i => i.Name.Contains("sample-user/first 新規作成 / " + title)).Select(); WorkspaceUi.WaitForApplyReady(w);
             Invoke(w, "PrimaryButton");
         }
     }

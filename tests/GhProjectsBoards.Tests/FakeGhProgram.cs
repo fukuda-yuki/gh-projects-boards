@@ -191,7 +191,9 @@ internal static class FakeGhProgram
             { Console.Write("HTTP/2.0 403 Forbidden\r\nContent-Type: application/json\r\n\r\n{}"); return 1; }
             var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host, settings.TryGetProperty("itemCount", out var itemCount) ? itemCount.GetInt32() : 101,
                 settings.TryGetProperty("columns", out var columns) && columns.GetBoolean(),
-                settings.TryGetProperty("bulk", out var bulk) && bulk.GetBoolean());
+                settings.TryGetProperty("bulk", out var bulk) && bulk.GetBoolean(),
+                settings.TryGetProperty("reviewInformation", out var reviewInformation) && reviewInformation.GetBoolean(),
+                settings.TryGetProperty("reviewDetails", out var reviewDetails) && reviewDetails.GetBoolean());
             if (response is not null)
             {
                 if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))

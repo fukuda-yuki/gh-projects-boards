@@ -331,20 +331,21 @@ public sealed partial class HostedTests
         await Ui.Until(() => !Workspace.IsBusy);
         await Ui.Run(() =>
         {
-            Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("変更候補 3行").And.Contain("選択だけでは送信しません"));
+            Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("3件中0件を選択"));
             var list = Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplyReviewDialog"));
             Assert.That(list.SelectedItems, Is.Empty);
             Assert.That(list.Items[0].ToString(), Does.Contain("#1").And.Not.Contain("pending excluded"));
             Assert.That(list.Items[1].ToString(), Does.Contain("sample-user/first").And.Contain("Create title"));
-            Assert.That(list.Items[2].ToString(), Does.Contain("準備中"));
+            Assert.That(list.Items[2].ToString(), Does.Contain("宛先未指定"));
+            Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("タイトルが必要です"));
             list.SelectedItems.Add(list.Items[0]); list.SelectedItems.Add(list.Items[1]);
         });
         await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
         await Ui.Run(() =>
         {
             var text = Ui.DialogText("ApplyReviewDialog");
-            Assert.That(text, Does.Contain("選択 2行").And.Contain("更新 1件・新規作成 1件").And.Contain("未確定入力は送信しません"));
-            Assert.That(text, Does.Contain("Repository: sample-user/first").And.Contain("Create title").And.Contain("Existing update"));
+            Assert.That(text, Does.Contain("3件中2件を選択").And.Contain("更新1件・新規作成1件").And.Contain("未確定入力は送信対象外"));
+            Assert.That(text, Does.Contain("sample-user/first").And.Contain("Create title").And.Contain("Existing update"));
             Assert.That(text, Does.Contain("送らない未確定入力: pending excluded"));
             Assert.That(Ui.ProjectCommand("ApplyHistoryButton").IsEnabled, Is.False);
             Assert.That(h.Writes, Is.Empty);
@@ -387,12 +388,12 @@ public sealed partial class HostedTests
         await Ui.Run(() => Ui.Click("ReviewApplyButton"));
         await Ui.DialogReady("ApplyReviewDialog");
         await Ui.Until(() => !Workspace.IsBusy);
-        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ApplySelectAll", Ui.Dialog("ApplyReviewDialog"))));
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("ApplySelectAll", Ui.Dialog("ApplyReviewDialog"))));
         await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
         await Ui.Run(() =>
         {
             var text = Ui.DialogText("ApplyReviewDialog");
-            Assert.That(text, Does.Contain("グリッドでは非表示").And.Contain("Done に設定").And.Contain("反映する値: Done"));
+            Assert.That(text, Does.Contain("表では非表示").And.Contain("未作成 → Done").And.Contain("Todo → Done"));
             Assert.That(Workspace.ApplyReview!.Batch.Operations.Single().Key.FieldId, Is.EqualTo("P1-status"));
             Assert.That(Workspace.ApplyReview.Batch.Creations!.Single().Selects.Single().FieldId, Is.EqualTo("P1-status"));
             Assert.That(h.Writes, Is.Empty); Ui.DialogButton("ApplyReviewDialog", "CloseButton");

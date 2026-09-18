@@ -5,7 +5,7 @@ namespace GhProjectsBoards.Tests;
 // Synthetic data shared only by tests and the external fake-gh executable.
 internal static class RegistrationResponses
 {
-    public static object? Query(string query, JsonElement variables, string host = "github.com", int itemCount = 101, bool columns = false, bool bulk = false)
+    public static object? Query(string query, JsonElement variables, string host = "github.com", int itemCount = 101, bool columns = false, bool bulk = false, bool reviewInformation = false, bool reviewDetails = false)
     {
         var next = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
         object Page(object[] nodes, bool more = false, int? total = null) => new { nodes, totalCount = total ?? nodes.Length, pageInfo = new { hasNextPage = more, endCursor = more ? "next" : null } };
@@ -28,7 +28,9 @@ internal static class RegistrationResponses
         if (query.Contains("RegistrationLinks")) return new { data = new { node = new { repositories = Page(id == "P1" ? [Repo("first"), Repo("second")] : []) } } };
         if (query.Contains("ProjectFields")) return new { data = new { node = new { __typename = "ProjectV2", viewerCanUpdate = true, id, number = id == "P1" ? 1 : 2,
             title = "Project " + (id == "P1" ? "1" : "2"), url = $"https://{host}/users/sample-user/projects/{(id == "P1" ? 1 : 2)}", owner = new { id = "O1", __typename = "User" },
-            fields = Page(bulk ? Enumerable.Range(0, 12).Select(c => ProjectReaderTests.Field(id, id + (c == 0 ? "-status" : "-field-" + c), c == 0 ? "Status" : "Field " + (c + 1),
+            fields = Page(reviewInformation ? new[] { "Status", "Priority", "Size" }.Select((name, c) => ProjectReaderTests.Field(id, id + (c == 0 ? "-status" : "-field-" + c), reviewDetails && c > 0 ? "同名" : name,
+                options: [new { id = "todo", name = new[] { "Backlog", "P2", "S" }[c] }, new { id = "done", name = reviewDetails && c == 1 ? new string('長', 100) + "末尾の値" : new[] { "Ready", "P1", "M" }[c] }, new { id = "exception", name = "P0" }])).ToArray()
+                : bulk ? Enumerable.Range(0, 12).Select(c => ProjectReaderTests.Field(id, id + (c == 0 ? "-status" : "-field-" + c), c == 0 ? "Status" : "Field " + (c + 1),
                 options: [new { id = "todo", name = "Backlog" }, new { id = "done", name = "Ready" }])).ToArray()
                 : columns ? new[] { "A", "B", "C" }.Select(c => ProjectReaderTests.Field(id, id + c, "Same name")).ToArray()
                 : [ProjectReaderTests.Field(id, id + "-status"), ProjectReaderTests.Field(id, id + "-text", "Other", "TEXT")]) } } };
@@ -37,13 +39,14 @@ internal static class RegistrationResponses
             var projectId = query.Contains("ApplyItem") ? id.Split("-T")[0] : id;
             object Item(int number)
             {
-                var repo = number % 2 == 0 ? "second" : "first";
+                var repo = reviewInformation && !reviewDetails ? "first" : number % 2 == 0 ? "second" : "first";
                 return ProjectReaderTests.Item(projectId, projectId + "-T" + number,
-                    Page(bulk ? Enumerable.Range(0, 12).Select(c => ProjectReaderTests.Value(projectId, projectId + (c == 0 ? "-status" : "-field-" + c), id: projectId + "-V" + number + "-" + c)).ToArray()
+                    Page(bulk || reviewInformation ? Enumerable.Range(0, reviewInformation ? 3 : 12).Select(c => ProjectReaderTests.Value(projectId, projectId + (c == 0 ? "-status" : "-field-" + c), id: projectId + "-V" + number + "-" + c)).ToArray()
                         : columns ? new[] { "A", "B", "C" }.Select(c => ProjectReaderTests.Value(projectId, projectId + c, id: projectId + c + "-V" + number)).ToArray()
                         : [ProjectReaderTests.Value(projectId, projectId + "-status", id: projectId + "-V" + number)]),
-                    new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number, title = "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
-                        url = $"https://{host}/sample-user/{repo}/issues/{number}", repository = Repo(repo) });
+                    new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number = reviewDetails ? 1 : number,
+                        title = reviewDetails ? new string('題', 100) + "元の末尾 " + number : "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
+                        url = $"https://{host}/sample-user/{repo}/issues/{(reviewDetails ? 1 : number)}", repository = Repo(repo) });
             }
             if (query.Contains("ApplyItem")) return new { data = new { node = Item(int.Parse(id.Split("-T")[1])) } };
             var offset = next ? int.Parse(after.GetString() == "next" ? "100" : after.GetString()!) : 0;
