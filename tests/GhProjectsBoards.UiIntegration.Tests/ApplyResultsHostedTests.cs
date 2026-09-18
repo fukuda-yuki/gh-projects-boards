@@ -12,6 +12,41 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed partial class HostedTests
 {
     [Test]
+    public async Task WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover()
+    {
+        await Ui.Run(async () =>
+        {
+            Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[1], "done", true);
+            h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+            await h.Apply("P1-T1");
+        });
+        await Ui.Ready<Button>("NextApplyProblem");
+        await Ui.Run(() => Ui.Click("NextApplyProblem"));
+        ToolTip problem = null!;
+        await Ui.Until(() => ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")) is ToolTip { IsOpen: true });
+        await Ui.Run(async () =>
+        {
+            problem = (ToolTip)ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1"));
+            await ApplyInformationEvidence.Capture(panel, "problem-before-withdrawal");
+        });
+        await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("WithdrawApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.Until(() => Work.Journal.Single().Operations.Single().State == ApplyState.Superseded && Ui.Dialog("ApplyHistoryDialog") is null);
+        SheetNativeInput.Move(await SheetNativeInput.PointFor("GridCell1_1"));
+        await Task.Delay(200);
+        SheetNativeInput.Move(await SheetNativeInput.PointFor("GridCell0_1"));
+        await Task.Delay(1000);
+        await Ui.Run(async () =>
+        {
+            Assert.That(problem.IsOpen, Is.False, "A retired problem must not return when the user hovers its cell.");
+            Assert.That(Ui.Find<TextBlock>("GridMarker0_1").Text, Does.Not.Contain("!"));
+            Assert.That(Work.Journal.Single().Operations.Single().Attempts, Is.Not.Empty);
+            await ApplyInformationEvidence.Capture(panel, "problem-withdrawn-after-native-hover");
+        });
+        Assert.That(h.Writes.Count, Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task LateApplyOutcomeCannotNavigateAfterInvokingAnotherProject()
     {
         var first = Workspace.Selected!;
