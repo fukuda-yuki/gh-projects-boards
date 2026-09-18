@@ -64,10 +64,12 @@ public sealed partial class RegistrationPanel : UserControl
             return;
         }
         foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.CancelPending();
+        CancelApplyOutcome();
     }
     private void Detach()
     {
         lifetime++;
+        CancelApplyOutcome();
         deferredRendering?.Stop(); deferredRendering = null;
         activeDialog?.Hide();
         ProjectSettingsFlyout.Hide();
@@ -159,7 +161,9 @@ public sealed partial class RegistrationPanel : UserControl
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
                     EditorHost.Children.Clear();
-                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
+                    if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection,
+                        temporaryColumns: previousGrid?.RowProjection.Project == selected.Snapshot.Id ? previousGrid.TemporaryApplyColumns : null);
+                        grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;

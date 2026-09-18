@@ -16,6 +16,7 @@ internal sealed partial class EditingGrid
     {
         if (!CanRefresh) { viewNotice.Text = deferredViewNotice = "IME変換中です。自然に確定・取消してから再適用してください。"; return; }
         deferredViewNotice = null;
+        temporaryApplyColumns.Clear();
         quickTitleFilter.Text = session.Workspace.RowView(registration).Title;
         layout = session.Workspace.Columns(registration); projection.Reapply(session.Workspace, registration); RebuildRows(); Update();
         if (!active) FocusViewCommand();

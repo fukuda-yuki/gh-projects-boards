@@ -178,6 +178,7 @@ public sealed partial class RegistrationPanel
         owner.Changed += Changed; session.Changed += Changed;
         applyDialog = true; ApplyHistory.IsEnabled = false;
         bool applied = false;
+        var outcomeGeneration = applyViewGeneration;
         try
         {
             Populate();
@@ -198,6 +199,7 @@ public sealed partial class RegistrationPanel
                 }
                 if (result == ContentDialogResult.Primary && review is not null)
                 {
+                    outcomeGeneration = applyViewGeneration;
                     await owner.ConfirmApplyAsync(review);
                     applied = session.Workspace.Journal.Any(b => b.Id == review.Batch.Id);
                 }
@@ -210,7 +212,7 @@ public sealed partial class RegistrationPanel
             applyDialog = false;
             if (IsLoaded) Update();
         }
-        // A result must not move focus away from active native composition.
-        if ((applied || goHistory) && IsCurrent(owner, expected) && CanRefreshEditors()) ShowApplyHistory(this, new RoutedEventArgs());
+        if (goHistory && IsCurrent(owner, expected) && CanRefreshEditors()) ShowApplyHistory(this, new RoutedEventArgs());
+        else if (applied && IsCurrent(owner, expected) && outcomeGeneration == applyViewGeneration) QueueApplyOutcome(review!.Batch.Id);
     }
 }

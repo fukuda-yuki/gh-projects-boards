@@ -9,6 +9,17 @@ namespace GhProjectsBoards.E2E.Tests;
 // Follow the ordinary workspace routes before operating their public UIA controls.
 internal static class WorkspaceUi
 {
+    internal static void WaitForApplyStopped(Window window)
+    {
+        Wait(() => !Element(window, "CancelProjectButton").IsEnabled &&
+            (Find(window, "ApplyHistoryButton")?.IsEnabled == true || Visible(Find(window, "ApplyOutcomeWarning"))),
+            "The approved execution must settle.", TimeSpan.FromSeconds(60));
+        if (!RegistrationStatusText(window).Contains("反映完了"))
+        {
+            Wait(() => Visible(Find(window, "ApplyOutcomeWarning")), "Incomplete work must show its brief warning.");
+            Element(window, "CloseButton").AsButton().Invoke();
+        }
+    }
     private static readonly HashSet<string> ConnectionControls = [
         "ConnectionScreen", "ExecutablePath", "HostInput",
         "DetectGhButton", "BrowseGhButton", "CheckConnectionButton", "NewConnectionButton", "CancelConnectionButton",

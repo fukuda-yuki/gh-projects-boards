@@ -351,7 +351,7 @@ public sealed partial class HostedTests
             Assert.That(h.Writes, Is.Empty);
             Ui.DialogButton("ApplyReviewDialog", confirm ? "PrimaryButton" : "CloseButton");
         });
-        if (confirm) { await Ui.DialogReady("ApplyHistoryDialog"); await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton")); }
+        if (confirm) await Ui.Until(() => !Workspace.IsBusy && Work.Creations.Any(c => c.Completed));
         await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         await Ui.Run(() =>
@@ -426,7 +426,7 @@ public sealed partial class HostedTests
         await ControlExternal("ProjectFields");
         await Ui.OpenHistory() ;
         await Ui.DialogReady("ApplyHistoryDialog");
-        await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "PrimaryButton"));
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ResumeApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));
         await gate!.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await Ui.Run(() =>
         {

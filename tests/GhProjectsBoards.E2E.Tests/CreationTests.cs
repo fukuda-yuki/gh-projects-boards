@@ -23,7 +23,7 @@ public sealed partial class RegistrationTests
             Wait(() => File.Exists(Path.Combine(f.Root, "creation-requests.jsonl"))); Scroll(w, 100); Edit(w, 101, "B");
             var cell = Element(w, "GridCell101_0").AsTextBox(); cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.Value);
             Keyboard.TypeVirtualKeyCode(0x16); Key(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I);
-            Assert.That(cell.Text, Is.EqualTo("に")); Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
+            Assert.That(cell.Text, Is.EqualTo("に")); Wait(() => Text(w, "RegistrationStatus").Contains("反映完了"));
             Assert.That(cell.Text, Is.EqualTo("に")); Assert.That(Durable(f).GetProperty("LocalRows")[0].GetProperty("Title").GetString(), Is.EqualTo("B"));
             Key(VirtualKeyShort.RETURN); Invoke(w, "RefreshProjectButton");
             Wait(() => Text(w, "RegistrationStatus").Contains("照合をローカル保存"));
@@ -70,7 +70,7 @@ public sealed partial class RegistrationTests
             var completionClock = System.Diagnostics.Stopwatch.StartNew();
             Invoke(w, "PrimaryButton");
             var completed = FlaUI.Core.Tools.Retry.WhileFalse(
-                () => Text(w, "RegistrationStatus").Contains("反映処理が終了"),
+                () => Text(w, "RegistrationStatus").Contains("反映完了"),
                 TimeSpan.FromSeconds(60), TimeSpan.FromMilliseconds(100)).Result;
             completionClock.Stop();
             TestContext.WriteLine($"Mixed Apply approval-to-visible-stop: observed={completed}, elapsedMs={completionClock.Elapsed.TotalMilliseconds:F1}");
@@ -130,9 +130,10 @@ public sealed partial class RegistrationTests
                 Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("CreationBindingConfirmDialog")) is not null);
                 Capture(w, f.Root, "creation-binding-confirm"); Invoke(w, "PrimaryButton");
                 Wait(() => Text(w, "RegistrationStatus").Contains("関連付けを保存"));
-                Invoke(w, "ApplyHistoryButton"); Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null); Invoke(w, "PrimaryButton");
+                Invoke(w, "ApplyHistoryButton"); Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null);
+                Invoke(w, "ResumeCreationBatch-" + Durable(f).GetProperty("Journal")[0].GetProperty("Id").GetString());
             }
-            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
+            WorkspaceUi.WaitForApplyStopped(w);
             var batches = Durable(f).GetProperty("Journal"); var current = batches[batches.GetArrayLength() - 1].GetProperty("Creations")[0];
             Assert.That(current.GetProperty("Completed").GetBoolean(), Is.True, Text(w, "RegistrationStatus"));
             Assert.That(current.GetProperty("EarlierUncertain").GetBoolean(), Is.True);
@@ -150,7 +151,7 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); AddCreationRow(f, w, 101, "Known"); Approve(w, "Known");
-            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了")); Invoke(w, "ApplyHistoryButton"); Invoke(w, "CloseButton"); LocalCount(f, 0);
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映完了")); Invoke(w, "ApplyHistoryButton"); Invoke(w, "CloseButton"); LocalCount(f, 0);
             File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true, creation = true, loseCreationResponse = true }));
             AddCreationRow(f, w, 102, "Ambiguous second", 1); Approve(w, "Ambiguous second");
             Wait(() => File.ReadAllLines(Path.Combine(f.Root, "creation-requests.jsonl")).Count(l => l.Contains("CreateWorkspaceIssue")) == 2);

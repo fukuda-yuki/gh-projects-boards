@@ -103,7 +103,7 @@ public sealed partial class RegistrationTests
             var targets = Element(w, "ApplyTargetRows").AsListBox(); targets.Items[0].Select();
             WorkspaceUi.WaitForApplyReady(w);
             Invoke(w, "PrimaryButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映完了"));
             Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")); Assert.That(writes, Has.Length.EqualTo(1));
             Assert.That(JsonDocument.Parse(writes[0]).RootElement.GetProperty("id").GetString(), Is.EqualTo("I1"));

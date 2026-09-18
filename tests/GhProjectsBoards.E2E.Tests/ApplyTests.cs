@@ -6,6 +6,44 @@ namespace GhProjectsBoards.E2E.Tests;
 
 public sealed partial class RegistrationTests
 {
+    [TestCase(false), TestCase(true, Category = "GridIme")]
+    public void MixedApplyReturnsToProblemWithoutTakingNativeCompositionFocus(bool ime)
+    {
+        using var f = new Fixture();
+        File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new {
+            registration = true, apply = true, applyDelayMs = 2000, rejectApplyId = "I2" }));
+        f.Run(w =>
+        {
+            Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1);
+            Edit(w, 0, "verified first"); Edit(w, 1, "failed second");
+            Invoke(w, "ReviewApplyButton");
+            Element(w, "ApplySelectAll").AsCheckBox().IsChecked = true; WorkspaceUi.WaitForApplyReady(w);
+            Invoke(w, "PrimaryButton");
+            Wait(() => File.Exists(Path.Combine(f.Root, "apply-requests.jsonl")));
+            var cell = Element(w, "GridCell0_0").AsTextBox(); cell.Click();
+            Wait(() => cell.Properties.HasKeyboardFocus.Value);
+            if (ime) { FlaUI.Core.Input.Keyboard.TypeVirtualKeyCode(0x16); Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_N, FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_I); }
+            else cell.Text = "unsent buffer";
+            var pending = ime ? "に" : "unsent buffer";
+            Wait(() => Durable(f).GetProperty("Journal")[0].GetProperty("Operations")[1].GetProperty("State").GetInt32() == 3);
+            if (ime)
+            {
+                Assert.That(cell.Text, Is.EqualTo(pending));
+                Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
+                Assert.That(w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyOutcomeWarning")), Is.Null);
+                Capture(w, f.Root, "composition-retained-after-failure");
+                Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN);
+            }
+            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyOutcomeWarning")) is not null);
+            Capture(w, f.Root, "short-failure-warning"); Invoke(w, "CloseButton");
+            Wait(() => Element(w, "GridCell1_0").Properties.HasKeyboardFocus.Value);
+            Assert.That(CellText(w, 0), Is.EqualTo(pending));
+            Assert.That(Text(w, "ApplyProblemStatus"), Does.Contain("失敗"));
+            Capture(w, f.Root, "problem-cell-and-pending-input");
+            Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(2));
+            Assert.That(Durable(f).GetProperty("Journal")[0].GetProperty("Operations")[0].GetProperty("State").GetInt32(), Is.EqualTo(2));
+        });
+    }
     [TestCase("cancel"), TestCase("close"), TestCase("interrupt")]
     public void InterruptedApplyRetainsJournalAndNeverRestartsWrites(string action)
     {
@@ -86,8 +124,9 @@ public sealed partial class RegistrationTests
             Assert.That(WorkspaceUi.ApplyRows(w).Length, Is.EqualTo(1), "Unchanged Issues must not be ordinary candidates.");
             Assert.That(Element(w, "PrimaryButton").Name, Is.EqualTo("GitHubに反映（1件）"));
             Capture(w, f.Root, "apply-review"); Invoke(w, "PrimaryButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null); Invoke(w, "CloseButton");
+            Wait(() => Text(w, "RegistrationStatus").Contains("反映完了"));
+            Assert.That(w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")), Is.Null);
+            Assert.That(Element(w, "ApplyHistoryButton").IsEnabled, Is.True);
             Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             var writes = File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl"));
             Assert.That(writes.Length, Is.EqualTo(1));

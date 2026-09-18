@@ -122,6 +122,7 @@ internal sealed partial class EditingGrid
     }
     private void ApplyColumnLayout(ColumnLayout next, Button launcher)
     {
+        temporaryApplyColumns.Clear();
         var sameOrder = layout.Visible.Select(c => c.Id).SequenceEqual(next.Visible.Select(c => c.Id));
         layout = next; generation++;
         if (sameOrder)

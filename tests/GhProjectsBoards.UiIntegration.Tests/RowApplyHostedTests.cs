@@ -32,7 +32,7 @@ public sealed partial class HostedTests
         await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
         await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("1件中1件を選択")); Assert.That(Ui.Dialog("ApplyReviewDialog")!.PrimaryButtonText, Does.Contain("1件")); Ui.DialogButton("ApplyReviewDialog", "PrimaryButton"); });
         await Ui.Until(() => !Workspace.IsBusy && h.Writes.Count == 1);
-        await Ui.DialogReady("ApplyHistoryDialog"); await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton")); await Ui.Idle();
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled); await Ui.Idle();
         await Ui.Run(() => Assert.That(h.Writes.Single().Input.GetProperty("itemId").GetString(), Is.EqualTo("P1-T2")));
     }
     [Test]
@@ -66,6 +66,8 @@ public sealed partial class HostedTests
         });
         await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("ApplyShowAllHistory", Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("ApplyHistoryDialog")!).OfType<Expander>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "CreationHistoryDetails-" + Work.Creations.Single().Id));
         await Ui.Run(() => Ui.Find<Expander>("CreationHistoryDetails-" + Work.Creations.Single().Id, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(local));
         await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain(local)); Ui.DialogButton("ApplyHistoryDialog", "CloseButton"); });
