@@ -7,7 +7,7 @@ Write agent-facing and shared development documents in English. Respond to the u
 ## Authority
 
 - Develop from the relevant GitHub Issue and its comments. The user's current request defines the authorized scope and supersedes an outdated plan. Reconcile the owning Issue when the direction changes.
-- Issues own acceptance criteria, unresolved decisions, task status and execution evidence. Use [requirements](docs/requirements.md) for the product outline, [specification](docs/spec.md) for agreed behavior, [architecture](docs/architecture.md) for structure, and [decisions](docs/decisions.md) for accepted choices.
+- Issues own acceptance criteria, unresolved decisions, task status and execution evidence. Use [requirements](docs/requirements.md) for the product outline, [specification](docs/spec.md) for agreed behavior, [design](DESIGN.md) for UI/UX/IA judgment criteria, [architecture](docs/architecture.md) for structure, and [decisions](docs/decisions.md) for accepted choices.
 - Write shared documents as the current product contract. Keep implementation chronology, rejected experiments and progress reports in Git, Issues and PRs, not in product or agent documentation. Do not falsify execution results or rewrite Git history to simplify documentation.
 
 ## Product and implementation
@@ -18,6 +18,12 @@ Write agent-facing and shared development documents in English. Respond to the u
 - Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid candidate is not an accepted component merely because it compiles.
 - Develop the shell, agent instructions, build and test infrastructure independently of unresolved grid-input or release-packaging work. A blocker stops only the work that actually depends on it.
 - Preserve Project-scoped work, explicit GitHub apply, local drafts, account/host isolation, selection versus editing, IME confirmation versus cell commit, and operation-level Undo. Do not replace required editable behavior with a read-only demonstration.
+
+## UI design and review
+
+- Read [DESIGN.md](DESIGN.md) before designing, implementing or reviewing changes to appearance, wording, information presentation, navigation or interaction flows.
+- Define the user's task and decision for the affected surface, then apply the relevant design principles alongside the owning Issue and specification. Review the resulting presentation and behavior against those principles; record justified exceptions and unverified conditions in the Issue/PR.
+- Select validation through the [test policy](tests/README.md); use DESIGN.md's checks for design judgment without duplicating either document's rules here.
 
 ## Execution
 
