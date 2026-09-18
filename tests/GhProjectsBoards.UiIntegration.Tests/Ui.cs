@@ -121,6 +121,11 @@ internal static class Ui
         await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
     }
     public static void Click(string id) => Click(Find<Button>(id));
+    public static void Toggle(CheckBox checkbox)
+    {
+        Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
+        ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(checkbox).GetPattern(PatternInterface.Toggle)).Toggle();
+    }
     public static Button ProjectCommand(string id) => id == "ApplyHistoryButton" ? Find<Button>(id) : ((StackPanel)((ScrollViewer)
         ((Flyout)Find<Button>("ProjectSettingsButton").Flyout).Content).Content).Children.OfType<Button>()
         .Single(button => AutomationProperties.GetAutomationId(button) == id);

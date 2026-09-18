@@ -22,7 +22,7 @@ public sealed partial class HostedTests
         await Ui.Run(() => {
             var dialog = Ui.Dialog("ApplyReviewDialog")!; var list = Ui.Find<ListView>("ApplyTargetRows", dialog);
             Assert.That(list.Items.Count, Is.Zero); Assert.That(list.SelectedItems, Is.Empty);
-            Assert.That(Ui.Find<TextBlock>("ApplyTargetCounts", dialog).Text, Does.Contain("非表示の作業 1"));
+            Assert.That(Ui.Find<TextBlock>("ApplyHiddenSummary", dialog).Text, Does.Contain("非表示の変更1件は候補から除外中"));
             var hidden = Ui.Find<CheckBox>("ApplyIncludeHidden", dialog); Assert.That(hidden.IsChecked, Is.False); hidden.IsChecked = true;
             Assert.That(list.Items.Count, Is.EqualTo(1));
             Assert.That(list.SelectedItems, Is.Empty);
@@ -30,7 +30,7 @@ public sealed partial class HostedTests
         await Ui.Until(() => !Workspace.IsBusy);
         await Ui.Run(() => { var list = Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplyReviewDialog")); list.SelectedItems.Add(list.Items[0]); });
         await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
-        await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("選択 1行").And.Contain("更新 1件")); Ui.DialogButton("ApplyReviewDialog", "PrimaryButton"); });
+        await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyReviewDialog"), Does.Contain("1件中1件を選択")); Assert.That(Ui.Dialog("ApplyReviewDialog")!.PrimaryButtonText, Does.Contain("1件")); Ui.DialogButton("ApplyReviewDialog", "PrimaryButton"); });
         await Ui.Until(() => !Workspace.IsBusy && h.Writes.Count == 1);
         await Ui.DialogReady("ApplyHistoryDialog"); await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton")); await Ui.Idle();
         await Ui.Run(() => Assert.That(h.Writes.Single().Input.GetProperty("itemId").GetString(), Is.EqualTo("P1-T2")));

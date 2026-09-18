@@ -26,7 +26,7 @@ public sealed partial class HostedTests
             original = Ui.Dialog("ApplyReviewDialog")!;
             Assert.That(Ui.Find<ListView>("ApplyTargetRows", original).SelectedItems, Is.Empty);
             Assert.That(original.IsPrimaryButtonEnabled, Is.False);
-            Ui.Click(Ui.Find<Button>("ApplySelectAll", original));
+            Ui.Toggle(Ui.Find<CheckBox>("ApplySelectAll", original));
         });
         await Ui.Until(() => !Workspace.IsBusy && Ui.DialogText("ApplyReviewDialog").Contains("競合:"));
         if (resolve) await Ui.Until(() => Ui.Find<Button>("ApplyResolve-P1-T1-Title-Local", original).IsLoaded);
@@ -73,7 +73,7 @@ public sealed partial class HostedTests
         await Ui.Run(() => connection.Visibility = Visibility.Collapsed);
         await Ui.Run(() => Ui.Click("ReviewApplyButton"));
         await Ui.DialogReady("ApplyReviewDialog"); await Ui.Until(() => !Workspace.IsBusy);
-        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ApplySelectAll", Ui.Dialog("ApplyReviewDialog"))));
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("ApplySelectAll", Ui.Dialog("ApplyReviewDialog"))));
         await Ui.Until(() => Ui.Dialog("ApplyReviewDialog")!.IsPrimaryButtonEnabled);
         await Ui.Run(() =>
         {
@@ -149,7 +149,7 @@ public sealed partial class HostedTests
         await Ui.DialogReady("ApplyReviewDialog"); await Ui.Until(() => !Workspace.IsBusy);
         ContentDialog dialog = null!;
         await Ui.Run(() => dialog = Ui.Dialog("ApplyReviewDialog")!);
-        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ApplySelectAll", dialog)));
+        await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("ApplySelectAll", dialog)));
         await Ui.Until(() => !Workspace.IsBusy);
         await Ui.Run(() =>
         {

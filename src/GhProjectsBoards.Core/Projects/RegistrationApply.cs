@@ -1,8 +1,15 @@
+using GhProjectsBoards.App.GitHub;
+
 namespace GhProjectsBoards.Core.Projects;
 
 internal sealed partial class RegistrationWorkspace
 {
     public ApplyReview? ApplyReview { get; private set; }
+    public FailureKind[] ApplyCheckFailures { get; private set; } = [];
+    public bool ApplySelectionInvalidated { get; private set; }
+    public bool ApplyNeedsConnectionRecovery => !CanRead || ApplyCheckFailures.Any(f => f is
+        FailureKind.NotLoggedIn or FailureKind.AuthenticationExpired or FailureKind.IdentityChanged
+        or FailureKind.MissingExecutable or FailureKind.StartFailed);
     public string? ExecutingBatchId { get; private set; }
     private int applyConnectionRevision;
     public string? ApplyBlockReason(ApplyReview? review)
@@ -20,7 +27,7 @@ internal sealed partial class RegistrationWorkspace
     }
     public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null) => RunAsync(async token =>
     {
-        ApplyReview = null; RequireConnection();
+        ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false; RequireConnection();
         if (Selected is not { } selected || Drafts is not { } session) return;
         var connection = ConnectionRevision; var requestGeneration = generation;
         bool Current() => connection == ConnectionRevision && requestGeneration == generation && CanRead && !token.IsCancellationRequested;
@@ -30,7 +37,8 @@ internal sealed partial class RegistrationWorkspace
         var result = await new ProjectReader(service!).ReadAsync(context!, selected.Snapshot.Id, token);
         if (!Current()) return;
         if (result.Outcome != ProjectReadOutcome.Complete || result.Project is null)
-        { Status = $"最新状態を確認できません（{AttemptText(result.Outcome == ProjectReadOutcome.Partial ? RegistrationAttempt.Partial : RegistrationAttempt.Failed)}）。"
+        { ApplyCheckFailures = result.Problems.Select(p => p.Failure).Distinct().ToArray();
+            Status = $"最新状態を確認できません（{AttemptText(result.Outcome == ProjectReadOutcome.Partial ? RegistrationAttempt.Partial : RegistrationAttempt.Failed)}）。"
             + string.Join(" / ", result.Problems.Select(p => GhProjectsBoards.App.ConnectionViewModel.FailureText(p.Failure)))
             + $" 保存済み情報: {selected.RetrievedAt.LocalDateTime:g}。未確認のまま送信しません。"; return; }
         var fetched = selected with { Snapshot = result.Project, RetrievedAt = DateTimeOffset.UtcNow };
@@ -47,7 +55,7 @@ internal sealed partial class RegistrationWorkspace
             var viewProblem = session.Workspace.ViewProblem(fetched, session.Workspace.RowView(fetched));
             if (viewSelection.Project != fetched.Snapshot.Id || !items.SetEquals(viewSelection.Selected)
                 || viewProblem is not null || viewSelection.NeedsConfirmation(session.Workspace.EvaluateRows(fetched).Select(r => r.ItemId)))
-            { Status = "再取得で表示対象が変わりました。反映する行を選び直してください。"; return; }
+            { ApplySelectionInvalidated = true; Status = "再取得で表示対象が変わりました。反映する行を選び直してください。"; return; }
             if (!viewSelection.IncludeHidden && items.Any(id => !viewSelection.Visible.Contains(id)))
             { Status = "非表示行を候補に追加してから、反映する行を選び直してください。"; return; }
         }

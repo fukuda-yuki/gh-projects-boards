@@ -25,7 +25,7 @@ public sealed partial class RegistrationPanel
     {
         if (!IsLoaded) return ContentDialogResult.None;
         var expected = lifetime;
-        dialog.Resources["ContentDialogMaxWidth"] = 760d;
+        if (!dialog.Resources.ContainsKey("ContentDialogMaxWidth")) dialog.Resources["ContentDialogMaxWidth"] = 760d;
         activeDialog = dialog;
         try
         {
