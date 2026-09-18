@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Absolute path so VSTest and Visual Studio apply coverage.runsettings without a CLI settings argument. -->
+    <RunSettingsFilePath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)coverage.runsettings'))</RunSettingsFilePath>
+  </PropertyGroup>
+</Project>
