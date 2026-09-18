@@ -11,6 +11,10 @@
               <Include>
                 <ModulePath>.*GhProjectsBoards\.Core\.dll$</ModulePath>
               </Include>
+              <Exclude>
+                <!-- FlaUI driver assembly; line/branch rates here are not product coverage. -->
+                <ModulePath>.*GhProjectsBoards\.E2E\.Tests\.dll$</ModulePath>
+              </Exclude>
             </ModulePaths>
             <EnableStaticNativeInstrumentation>False</EnableStaticNativeInstrumentation>
             <EnableDynamicNativeInstrumentation>False</EnableDynamicNativeInstrumentation>

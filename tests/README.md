@@ -260,7 +260,7 @@ Public PR CI is credential-free. It builds the solution, executes deterministic 
 
 ### Line coverage report
 
-This is a diagnostic for `GhProjectsBoards.Core` exercised by `GhProjectsBoards.Tests`. It does not replace the behavioral coverage rules above and is not a percentage gate. Live GitHub cases, UI integration and desktop E2E are out of scope.
+This is a diagnostic for `GhProjectsBoards.Core` exercised by `GhProjectsBoards.Tests`. It does not replace the behavioral coverage rules above and is not a percentage gate. Live GitHub cases, UI integration and desktop E2E are out of scope. Microsoft Code Coverage excludes `GhProjectsBoards.E2E.Tests.dll`; that driver assembly is not product coverage.
 
 ```powershell
 .\scripts\Test-Coverage.ps1
