@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage" uri="datacollector://Microsoft/CodeCoverage/2.0">
+        <Configuration>
+          <Format>cobertura</Format>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <CodeCoverage>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*GhProjectsBoards\.Core\.dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <EnableStaticNativeInstrumentation>False</EnableStaticNativeInstrumentation>
+            <EnableDynamicNativeInstrumentation>False</EnableDynamicNativeInstrumentation>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

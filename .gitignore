@@ -3,5 +3,7 @@
 [Oo]bj/
 .vs/
 TestResults/
+coveragereport/
+coverage-history/
 *.user
 *.suo

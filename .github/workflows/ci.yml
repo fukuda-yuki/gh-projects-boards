@@ -13,11 +13,100 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
+      - name: Restore local tools
+        run: dotnet tool restore
+      - name: Restore coverage history
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force coverage-history | Out-Null
+          git fetch origin refs/heads/coverage-history:refs/remotes/origin/coverage-history --depth 1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host 'No coverage-history branch yet.'
+            exit 0
+          }
+          git archive origin/coverage-history | tar -x -C coverage-history
       - name: Build the WinUI application and test projects
         run: dotnet build GhProjectsBoards.sln --configuration Release
       - name: Run Core unit and integration tests (no live GitHub)
-        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci
+        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci --collect 'Code Coverage;Format=cobertura' --settings tests/coverage.runsettings
+      - name: Generate coverage HTML
+        shell: pwsh
+        run: |
+          $reports = @(Get-ChildItem -Path TestResults/ci -Recurse -Filter '*.cobertura.xml' | Where-Object { $_.FullName -notmatch '[\\/]In[\\/]' })
+          if ($reports.Count -eq 0) { throw 'No Cobertura coverage file was produced.' }
+          $reportArg = ($reports | ForEach-Object { $_.FullName }) -join ';'
+          dotnet tool run reportgenerator -- "-reports:$reportArg" "-targetdir:coveragereport" "-historydir:coverage-history" "-reporttypes:Html;TextSummary;MarkdownSummaryGithub" "-assemblyfilters:+GhProjectsBoards.Core" "-sourcedirs:src/GhProjectsBoards.Core" "-title:GhProjectsBoards.Core" "-tag:${{ github.sha }}"
+          if ($LASTEXITCODE -ne 0) { throw 'ReportGenerator failed' }
+          $htm = Join-Path 'coveragereport' 'index.htm'
+          if (Test-Path -LiteralPath $htm) {
+            Copy-Item -LiteralPath $htm (Join-Path 'coveragereport' 'index.html')
+          }
+          $summaryTxt = Join-Path 'coveragereport' 'Summary.txt'
+          if (Test-Path -LiteralPath $summaryTxt) { Get-Content -LiteralPath $summaryTxt }
+          $githubSummary = Get-ChildItem -LiteralPath 'coveragereport' -Filter '*Github*.md' | Select-Object -First 1
+          if ($githubSummary -and $env:GITHUB_STEP_SUMMARY) {
+            Get-Content -LiteralPath $githubSummary.FullName | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+          }
+      - name: Upload Cobertura results
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-cobertura
+          path: TestResults/ci/**/*.cobertura.xml
+          if-no-files-found: error
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-html
+          path: coveragereport
+          if-no-files-found: error
+      - name: Upload coverage history
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-history
+          path: coverage-history
+          if-no-files-found: error
+      - name: Upload GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: coveragereport
       - name: Discover desktop tests (not desktop or IME acceptance)
         run: dotnet test tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj --configuration Release --no-build --list-tests
       - name: Discover hosted WinUI tests (no UI execution on this runner)
         run: ./scripts/Test-UiIntegration.ps1 -Discover -NoBuild
+
+  coverage-pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: coverage-pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-coverage-history
+          path: coverage-history
+      - name: Publish coverage history
+        env:
+          HISTORY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p publish-history
+          cd publish-history
+          git init
+          git checkout -B coverage-history
+          cp -a ../coverage-history/. .
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --allow-empty -m "Coverage history ${GITHUB_SHA}"
+          git push --force "https://x-access-token:${HISTORY_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:coverage-history
