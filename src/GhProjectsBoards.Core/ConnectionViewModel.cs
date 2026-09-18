@@ -22,6 +22,7 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
     public bool CanCheck => !IsBusy;
     public bool CanSwitch => !IsBusy && binding is not null;
     public ConnectionReport? Connection { get; private set; }
+    internal GhConnectionService? Service { get; private set; }
     public TargetReport Issue { get; private set; } = new();
     public TargetReport Project { get; private set; } = new();
     public string StatusText { get; private set; } = "接続は未確認です。接続先とgh.exeを確認してください。";
@@ -73,6 +74,7 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
                 return;
             }
             var service = serviceFactory?.Invoke(path, selectedHost) ?? new GhConnectionService(path, selectedHost);
+            Service = service;
             Connection = binding is null ? await service.ConnectAsync(currentCancellation.Token)
                 : await service.RecheckAsync(binding, currentCancellation.Token);
             if (!Connection.IsConnected)
@@ -104,7 +106,7 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
                 StatusText = FailureText(Connection.Authentication.Store == CredentialStore.Plaintext ? FailureKind.PlaintextCredentials : FailureKind.UnknownCredentialStore);
             else
                 StatusText = Issue.Failure == FailureKind.None && Project.Failure == FailureKind.None
-                    ? "接続を確認しました。対象ごとの読み取り・更新権限とスコープを確認できます。"
+                    ? "接続を確認しました。個別のProject・Issueのアクセス権限は、その作業で確認します。"
                     : "接続を確認しました。対象の診断に取得できない項目があります。下の理由を確認してください。";
         }
         catch (OperationCanceledException)

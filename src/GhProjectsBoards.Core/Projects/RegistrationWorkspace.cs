@@ -73,6 +73,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
         Transitioning?.Invoke();
         if (!await FlushDraftsAsync()) return;
         await StopAsync();
+        var previous = Selected;
         context = next; service = next is null ? null : nextService ?? new(next.Executable, next.Host);
         Profile = next is null ? null : ConnectionScope.From(next);
         if (Profile is { } profile && !drafts.ContainsKey(profile) && !blockedDrafts.Contains(profile))
@@ -80,7 +81,8 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
             try { var record = await draftStore.LoadAsync(profile); RestoreSession(profile, record); }
             catch (Exception) { blockedDrafts.Add(profile); }
         }
-        Selected = null; Incomplete = null;
+        Selected = previous?.Snapshot.Id.Scope == Profile ? previous : null; Incomplete = null;
+        ApplyReview = null;
         ConnectionRevision++;
         Changed?.Invoke();
     }
@@ -88,7 +90,14 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
     {
         Transitioning?.Invoke();
         generation++; cancellation?.Cancel(); context = null; service = null;
-        Profile = null; Selected = null; Incomplete = null; ConnectionRevision++; Changed?.Invoke();
+        Profile = null; Selected = null; Incomplete = null; ApplyReview = null; ConnectionRevision++; Changed?.Invoke();
+    }
+    public void SuspendConnection()
+    {
+        // Settings retain the old identity's local workspace while its authentication is unavailable.
+        Transitioning?.Invoke();
+        generation++; cancellation?.Cancel(); context = null; service = null; ApplyReview = null;
+        ConnectionRevision++; Changed?.Invoke();
     }
     private void RestoreSession(ConnectionScope scope, DraftRecord? record)
     {
@@ -104,7 +113,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
         Transitioning?.Invoke();
         if (!await FlushDraftsAsync()) return;
         await StopAsync();
-        Profile = profile; Selected = null; Incomplete = null;
+        Profile = profile; Selected = null; Incomplete = null; ApplyReview = null;
         Changed?.Invoke();
     }
     public async Task<bool> SelectAsync(ScopedId id)
@@ -113,7 +122,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
         if (!await FlushDraftsAsync()) return false;
         await StopAsync();
         Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == id && id.Scope == Profile);
-        Incomplete = null;
+        Incomplete = null; ApplyReview = null;
         Changed?.Invoke();
         return Selected is not null;
     }
@@ -138,6 +147,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
         => RunAsync(async token =>
         {
             RequireConnection();
+            ApplyReview = null;
             if (choice.Id.Scope != Profile) throw new DiscoveryException(FailureKind.IdentityChanged);
             defaultRepository = ValidateRepository(defaultRepository);
             var existing = registrations.SingleOrDefault(r => r.Snapshot.Id == choice.Id);

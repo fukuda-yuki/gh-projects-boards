@@ -1,0 +1,53 @@
+<UserControl
+    x:Class="GhProjectsBoards.App.ConnectionPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Spacing="16" Margin="24,12">
+            <Button x:Name="BackButton" Content="元の作業へ戻る" Click="GoBack" AutomationProperties.AutomationId="ProjectsPageButton"/>
+            <TextBlock Text="接続設定" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="ConnectionScreen">
+            <StackPanel Margin="24,12,24,24" Spacing="16" MaxWidth="900" HorizontalAlignment="Stretch">
+                <TextBlock Text="接続先とアカウントを確認します。確認後は元の作業へ戻れます。Projectの取得や登録、GitHubへの反映はここでは行いません。" TextWrapping="Wrap"/>
+                <TextBox x:Name="HostInput" Header="GitHub ホスト" AutomationProperties.AutomationId="HostInput"/>
+                <TextBlock Text="アカウント" FontWeight="SemiBold"/>
+                <TextBlock x:Name="AccountValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AccountValue"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="CheckButton" Content="接続を確認 / 再確認" Click="Check_Click" Style="{StaticResource AccentButtonStyle}" AutomationProperties.AutomationId="CheckConnectionButton"/>
+                    <Button x:Name="SwitchButton" Content="新しい接続として確認" Click="Switch_Click" AutomationProperties.AutomationId="NewConnectionButton"/>
+                    <Button x:Name="CancelButton" Content="接続確認を中止" Click="Cancel_Click" AutomationProperties.AutomationId="CancelConnectionButton"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusValue" TextWrapping="Wrap" AutomationProperties.AutomationId="ConnectionStatus"/>
+                <TextBlock x:Name="UiMessage" TextWrapping="Wrap" AutomationProperties.AutomationId="UiMessage"/>
+                <TextBlock Text="接続の成功は、個別のProjectやIssueの更新権限を保証しません。対象の権限はProjectの追加・情報、反映内容の確認で確認します。" TextWrapping="Wrap"/>
+                <Expander Header="CLIと接続の詳細" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ConnectionDetails">
+                    <StackPanel Spacing="12">
+                        <TextBox x:Name="ExecutableInput" Header="GitHub CLI 実行ファイル" AutomationProperties.AutomationId="ExecutablePath"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="DetectButton" Content="自動検出" Click="Detect_Click" AutomationProperties.AutomationId="DetectGhButton"/>
+                            <Button x:Name="BrowseButton" Content="参照…" Click="Browse_Click" AutomationProperties.AutomationId="BrowseGhButton"/>
+                        </StackPanel>
+                        <TextBlock Text="CLI バージョン" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="VersionValue" TextWrapping="Wrap" AutomationProperties.AutomationId="VersionValue"/>
+                        <TextBlock Text="資格情報の保存先" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="StorageValue" TextWrapping="Wrap" AutomationProperties.AutomationId="StorageValue"/>
+                        <TextBlock Text="スコープ" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="ScopeValue" TextWrapping="Wrap" AutomationProperties.AutomationId="ScopeValue"/>
+                        <TextBlock x:Name="EnvironmentValue" TextWrapping="Wrap" AutomationProperties.AutomationId="EnvironmentValue"/>
+                    </StackPanel>
+                </Expander>
+                <Expander Header="ログイン・権限追加の手順" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="LoginHelpExpander">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="コマンドをコピーし、ご自身の PowerShell で実行してから再確認してください。" TextWrapping="Wrap"/>
+                        <TextBox x:Name="LoginCommandValue" IsReadOnly="True" TextWrapping="Wrap" Header="ログイン" AutomationProperties.AutomationId="LoginCommand"/>
+                        <Button Content="ログインコマンドをコピー" Click="CopyLogin_Click" AutomationProperties.AutomationId="CopyLoginButton"/>
+                        <TextBox x:Name="RefreshCommandValue" IsReadOnly="True" TextWrapping="Wrap" Header="権限追加" AutomationProperties.AutomationId="RefreshCommand"/>
+                        <Button Content="権限追加コマンドをコピー" Click="CopyRefresh_Click" AutomationProperties.AutomationId="CopyRefreshButton"/>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

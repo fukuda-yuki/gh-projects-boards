@@ -9,7 +9,12 @@ internal sealed record ApplyOperation(string Id, FieldKey Key, string ItemId, st
     ImmutableArray<ApplyAttempt> Attempts, string Reason, FieldObservation? Verification = null, DateTimeOffset? NotBefore = null);
 internal sealed record ApplyBatch(string Id, ScopedId Project, string ProjectName, long ReviewedRevision,
     DateTimeOffset ReviewedAt, ImmutableArray<ApplyOperation> Operations, CreationOperation[]? Creations = null);
-internal sealed record ApplyReview(ApplyBatch Batch, string[] Blocked, int SelectedRows, int PendingBuffers);
+internal sealed record ApplyReview(ApplyBatch Batch, string[] Blocked, int SelectedRows, int PendingBuffers)
+{
+    public int UpdatedIssues => Batch.Operations.Select(o => o.IssueId).Distinct().Count();
+    public int CreatedIssues => Batch.Creations?.Length ?? 0;
+    public int IssueCount => UpdatedIssues + CreatedIssues;
+}
 
 internal static class ApplyJournal
 {
@@ -76,6 +81,11 @@ internal sealed partial class EditingWorkspace
         if (rows.Length + locals.Length != selectedItems.Count) blocked.Add("選択した項目を現在のProjectで確認できません。");
         var creations = ReviewCreations(project, locals, destinations, blocked);
         foreach (var row in rows)
+        {
+        // A removed/unsupported field must not silently disappear from a selected row's payload.
+        foreach (var missing in fields.Values.Where(f => f.Change is not null && f.Key.Kind == "Select"
+            && f.Key.ProjectId == p.Id.NodeId && f.Key.NodeId == row.ItemId && !row.Cells.Any(c => c.Key == f.Key)))
+            blocked.Add($"{row.ItemId}/{missing.Key.FieldId}: 変更したフィールドを確認できません。行を対象外にするか、取得結果を確認してください。");
         foreach (var cell in row.Cells.Where(c => c.Key is not null))
         {
             if (!fields.TryGetValue(cell.Key!, out var f) || f.Change is null || operations.Any(o => o.Key == f.Key)) continue;
@@ -89,12 +99,14 @@ internal sealed partial class EditingWorkspace
                 $"{issue.Repository.NameWithOwner} #{issue.Number} / {issue.Id.NodeId}", f.Key.Kind == "Title" ? "Issue title（全Projectで共有）" : cell.Display,
                 f.Baseline, f.Change, f.Stamp, ApplyState.Pending, [], "未送信"));
         }
+        }
         return new(new(Guid.NewGuid().ToString("N"), p.Id, p.Title, Revision, DateTimeOffset.UtcNow, operations.ToImmutableArray(), creations),
             blocked.ToArray(), rows.Length + locals.Length, fields.Values.Count(f => f.Buffer is not null && rows.Any(r => r.Cells.Any(c => c.Key == f.Key)))
                 + locals.Count(r => r.TitleBuffer is not null) + locals.Count(r => r.RepositoryBuffer is not null));
     }
     public void ConfirmApply(ApplyReview review)
     {
+        if (review.IssueCount == 0) throw new InvalidOperationException("反映できる変更がありません。");
         if (review.Batch.Project.Scope != Scope || review.Batch.ReviewedRevision != Revision || review.Blocked.Length != 0)
             throw new InvalidOperationException("比較後に変更がありました。再レビューしてください。");
         if (journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))))

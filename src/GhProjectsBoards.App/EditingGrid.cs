@@ -619,6 +619,8 @@ internal sealed partial class EditingGrid : Grid
             emptyView.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
             statusBeforeSave = $"{rows.Length}/{canonical.Length}行 · GitHub未反映 {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()}セル · ";
+            var pending = canonical.SelectMany(r => r.Cells).Count(c => session.Workspace.Buffer(c) is not null);
+            if (pending > 0) statusBeforeSave += $"未確定入力 {pending}セル · ";
             status.Text = "";
             var hiddenWork = hidden.Count(cell => session.Workspace.Changed(cell) || session.Workspace.Buffer(cell) is not null
                 || session.Workspace.Field(cell)?.Conflict == true || cell.Key is { Kind: "LocalSelect" } local

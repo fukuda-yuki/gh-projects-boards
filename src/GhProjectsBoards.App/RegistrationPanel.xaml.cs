@@ -24,7 +24,10 @@ public sealed partial class RegistrationPanel : UserControl
     internal RegistrationWorkspace Workspace => workspace!;
     public event EventHandler? ConnectionRequested;
     internal bool FocusHeader() => ConnectionSettings.Focus(FocusState.Programmatic);
-    private void RequestConnection(object sender, RoutedEventArgs e) => ConnectionRequested?.Invoke(this, EventArgs.Empty);
+    private void RequestConnection(object sender, RoutedEventArgs e)
+    {
+        if (CanLeaveForConnection()) ConnectionRequested?.Invoke(this, EventArgs.Empty);
+    }
     public RegistrationPanel()
     {
         InitializeComponent();
@@ -89,7 +92,7 @@ public sealed partial class RegistrationPanel : UserControl
         updating = true;
         try
         {
-            if (revision != workspace.ConnectionRevision || displayedProfile != workspace.Profile)
+            if (displayedProfile != workspace.Profile)
             {
                 revision = workspace.ConnectionRevision; displayedProfile = workspace.Profile;
                 choice = null; Candidates.ItemsSource = null; Owners.ItemsSource = null; Repositories.ItemsSource = null;
@@ -97,6 +100,12 @@ public sealed partial class RegistrationPanel : UserControl
                 DefaultRepository.Text = ""; DiscoveryForm.Visibility = Visibility.Collapsed; Preview.Visibility = Visibility.Visible;
                 ProjectSettingsFlyout.Hide();
                 StatusDetailsFlyout.Hide();
+            }
+            else if (revision != workspace.ConnectionRevision)
+            {
+                revision = workspace.ConnectionRevision;
+                choice = null; Candidates.ItemsSource = null;
+                Confirmation.Text = "接続が変わりました。登録対象のURLまたは検索結果を再確認してください。";
             }
             Status.Text = workspace.Status;
             WorkspaceStatusBar.Visibility = workspace.Selected is null || workspace.IsBusy || workspace.Status.Contains("失敗")
@@ -109,14 +118,17 @@ public sealed partial class RegistrationPanel : UserControl
             Identity.Text = workspace.Profile is { } profile
                 ? $"{profile.Host}  /  {workspace.ProfileLogin}  /  {(workspace.CanRead ? "接続確認済み" : "未認証・キャッシュのみ")}" : "アカウント未選択 — 保存済みアカウントを選択、または接続設定で確認";
             ToolTipService.SetToolTip(Identity, workspace.Profile is { } identity ? $"{Identity.Text}\nアカウント ID {identity.ViewerId}" : Identity.Text);
-            Add.IsEnabled = workspace.CanRead && !workspace.IsBusy;
+            Add.IsEnabled = !workspace.IsBusy;
+            DiscoveryConnectionHint.Visibility = DiscoveryConnection.Visibility = workspace.CanRead ? Visibility.Collapsed : Visibility.Visible;
             Cancel.IsEnabled = workspace.IsBusy;
             Cancel.Visibility = workspace.IsBusy ? Visibility.Visible : Visibility.Collapsed;
+            Cancel.Content = workspace.ExecutingBatchId is null ? "処理をキャンセル" : "未送信の処理を止める";
+            UpdateApplyProgress();
             Progress.Visibility = workspace.IsBusy ? Visibility.Visible : Visibility.Collapsed;
             Register.IsEnabled = choice is not null && workspace.CanRead && choice.Id.Scope == workspace.Profile && !workspace.IsBusy;
             DiscoveryForm.IsEnabled = !workspace.IsBusy;
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
-            Apply.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
+            Apply.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
             ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
             Remove.IsEnabled = workspace.Selected is not null;
             ProjectSettings.IsEnabled = workspace.Selected is not null;
@@ -266,7 +278,9 @@ public sealed partial class RegistrationPanel : UserControl
         Grid.SetRow(ProjectContext, narrow ? 2 : 1);
         var compact = e.NewSize.Width < 420;
         ProjectCommands.RowSpacing = compact ? 4 : 0;
-        Grid.SetColumn(ProjectSettings, compact ? 0 : 2);
+        Grid.SetColumn(ApplyHistory, compact ? 0 : 2);
+        Grid.SetRow(ApplyHistory, compact ? 1 : 0);
+        Grid.SetColumn(ProjectSettings, compact ? 1 : 3);
         Grid.SetRow(ProjectSettings, compact ? 1 : 0);
     }
     private void BackToPreview(object sender, RoutedEventArgs e) => ShowPreview();
@@ -287,7 +301,11 @@ public sealed partial class RegistrationPanel : UserControl
     }
     private static string Kind(ProjectItemKind kind) => kind switch { ProjectItemKind.Issue => "Issue", ProjectItemKind.PullRequest => "Pull Request", ProjectItemKind.Draft => "GitHub Draft", ProjectItemKind.Unavailable => "閲覧不可", _ => "非対応" };
     private static string Availability(ValueAvailability state) => state switch { ValueAvailability.Empty => "明示的な空値", ValueAvailability.Unsupported => "非対応", ValueAvailability.Unavailable => "閲覧不可", ValueAvailability.NotLoaded => "未取得", _ => "取得済み" };
-    private void ShowAdd(object sender, RoutedEventArgs e) { choice = null; Confirmation.Text = ""; DiscoveryForm.Visibility = Visibility.Visible; Preview.Visibility = Visibility.Collapsed; Update(); }
+    private void ShowAdd(object sender, RoutedEventArgs e)
+    {
+        if (!CanLeaveForConnection()) return;
+        choice = null; Confirmation.Text = ""; DiscoveryForm.Visibility = Visibility.Visible; Preview.Visibility = Visibility.Collapsed; Update();
+    }
     private void ShowPreview() { DiscoveryForm.Visibility = Visibility.Collapsed; Preview.Visibility = Visibility.Visible; Update(); }
     private void CancelWork(object sender, RoutedEventArgs e) => Workspace.Cancel();
     private async void ProfileChanged(object sender, SelectionChangedEventArgs e)

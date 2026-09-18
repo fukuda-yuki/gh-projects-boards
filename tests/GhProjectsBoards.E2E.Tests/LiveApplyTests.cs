@@ -89,10 +89,11 @@ public sealed class LiveApplyTests
         void RunApply()
         {
             Click("ReviewApplyButton"); var targets = E("ApplyTargetRows").AsListBox();
-            targets.Items.Single(i => i.Name.Contains(itemId)).Select(); Click("PrimaryButton");
-            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
-            Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("Apply処理を停止"));
+            targets.Items.Single(i => i.Name.Contains("fukuda-yuki/codex-sandbox #") && i.Name.Contains(marker)).Select();
+            WorkspaceUi.WaitForApplyReady(w);
+            Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("反映処理が終了"));
             Assert.That(E("DraftStatus").Name, Does.Contain("GitHub未反映 0セル"));
+            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null); Click("CloseButton");
         }
         string? VerifyRemote(string title, string? option, bool compare = true)
         {
