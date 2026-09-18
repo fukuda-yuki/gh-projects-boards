@@ -256,6 +256,25 @@ The ordinary executable E2E suite includes three resolution choices with B/L/R r
 
 The existing-field Apply tests exercise the actual planner, session, store, executor, guarded connection and reader with synthetic gh responses. They inspect mutation payloads and coherent recovered records, keeping query-only refresh/edit guards unchanged. The ordinary Apply desktop case reviews and applies a title, then reopens its history without dispatch. `scripts/Test-ApplyLive.ps1` runs the ordinary app with real stored authentication against only the designated sandbox, through title/set/clear and independent readback. Its fixture setup/cleanup counts are separate from product operations; interrupted manifests must be reconciled before another setup.
 
-Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, and discovers desktop and hosted UI tests without starting their UI. Hosted UI execution on the selected CI environment has not been established; use the supported local runner for that evidence. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session. Current CI does not execute the views/controls in the desktop suite; discovery is not interaction evidence. Evaluate any UI integration CI path by the cases it actually executes, not by the presence or absence of a separately named host project.
+Public PR CI is credential-free. It builds the solution, executes deterministic logic/integration tests excluding live cases, collects Core line/branch coverage from that suite, and discovers desktop and hosted UI tests without starting their UI. Hosted UI execution on the selected CI environment has not been established; use the supported local runner for that evidence. Do not execute untrusted public PR code on a privileged/credentialed interactive runner. Desktop execution requires a controlled local or dedicated Windows session. Current CI does not execute the views/controls in the desktop suite; discovery is not interaction evidence. Evaluate any UI integration CI path by the cases it actually executes, not by the presence or absence of a separately named host project.
+
+### Line coverage report
+
+This is a diagnostic for `GhProjectsBoards.Core` exercised by `GhProjectsBoards.Tests`. It does not replace the behavioral coverage rules above and is not a percentage gate. Live GitHub cases, UI integration and desktop E2E are out of scope.
+
+```powershell
+.\scripts\Test-Coverage.ps1
+.\scripts\Test-Coverage.ps1 -Open
+```
+
+CI uses Microsoft Code Coverage (`--collect "Code Coverage;Format=cobertura"` with [coverage.runsettings](coverage.runsettings)) and [ReportGenerator](https://github.com/danielpalme/ReportGenerator) (`dotnet-reportgenerator-globaltool` 5.5.11). Pull requests upload the HTML as the `core-coverage-html` artifact. Pushes to `main` also deploy it to [GitHub Pages](https://fukuda-yuki.github.io/gh-projects-boards/) and persist ReportGenerator history on the `coverage-history` branch so the published report can show coverage history.
+
+GitHub repository settings the maintainer must set once (Actions cannot do this):
+
+1. **Settings → Pages**: Build and deployment **Source** = **GitHub Actions**. Leave the site as a project site (`https://fukuda-yuki.github.io/gh-projects-boards/`).
+2. After the first successful `coverage-pages` job, confirm **Settings → Environments → github-pages**. Remove **Required reviewers** if the job waits for approval; restrict deployment to `main` if a branch filter is offered.
+3. **Settings → Actions → General → Workflow permissions**: allow the default `GITHUB_TOKEN` to be granted job-level `pages: write`, `id-token: write` and `contents: write` (the Pages job needs this to deploy and to update `coverage-history`). Do not enable “Allow GitHub Actions to create and approve pull requests” for this.
+4. If Pages was previously bound to a branch, switch it to **GitHub Actions** so `actions/deploy-pages` is the publisher. The `coverage-history` branch is data for ReportGenerator, not the Pages source.
+5. If a ruleset blocks force pushes, exclude `coverage-history`. That branch only stores history XML and is replaced on each `main` deploy.
 
 Report changed behaviors and their test scopes, real/replaced dependencies and entry/result boundaries, separately from driver/process/environment details. State the reason for selected E2E/IME/live execution and relevant coverage that was outside scope or unavailable. For executed checks, report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, scoped UI integration, ordinary-product E2E, sandbox validation and human acceptance support different claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.

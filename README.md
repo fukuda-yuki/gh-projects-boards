@@ -134,9 +134,12 @@ Execution history is stored in version 7 of the authoritative profile checkpoint
 ```powershell
 # Core logic and real adapter integration with synthetic external boundaries; no live GitHub:
 dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --filter 'TestCategory!=LiveGitHub'
+
+# Same suite with a Core line/branch HTML report (diagnostic, not a pass/fail gate):
+.\scripts\Test-Coverage.ps1
 ```
 
-Use relevant focused logic and adapter tests during implementation.
+Use relevant focused logic and adapter tests during implementation. Merges to `main` publish the Core coverage HTML, including history, to [GitHub Pages](https://fukuda-yuki.github.io/gh-projects-boards/). See [test policy](tests/README.md#line-coverage-report).
 
 ### UI integration
 
@@ -166,7 +169,7 @@ Select these for the changed boundary or an explicit acceptance need; this is a 
 
 Read the [test policy](tests/README.md) before running. Desktop execution requires an unlocked controlled session. Live tests target only [the designated sandbox repository](https://github.com/fukuda-yuki/codex-sandbox) and [user Project 3](https://github.com/users/fukuda-yuki/projects/3). They create and clean up disposable data. Inspect retained failures and uncertain outcomes before another live run. Sandbox permission does not require live execution for every task.
 
-CI runs deterministic Core tests and discovers desktop tests without launching UI. Those results do not establish view/control interaction, physical IME, real-GitHub or company GHEC + EMU acceptance. Current execution evidence and incomplete feature scope belong to the owning Issues, not this README.
+CI runs deterministic Core tests with a Core line/branch HTML report and discovers desktop tests without launching UI. Those results do not establish view/control interaction, physical IME, real-GitHub or company GHEC + EMU acceptance. Current execution evidence and incomplete feature scope belong to the owning Issues, not this README.
 
 ## Structure
 
