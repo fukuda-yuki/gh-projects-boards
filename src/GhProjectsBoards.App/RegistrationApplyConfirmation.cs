@@ -47,8 +47,9 @@ public sealed partial class RegistrationPanel
         var connection = new Button { Content = "接続設定" }; AutomationProperties.SetAutomationId(connection, "ApplyConnectionSettings");
         var history = new Button { Content = "反映結果・履歴" }; AutomationProperties.SetAutomationId(history, "ApplyReviewHistory");
         var content = ApplyPanel();
+        content.Width = Math.Min(640, Math.Max(280, XamlRoot.Size.Width - 112));
         content.Children.Add(ApplyText($"{initial.Snapshot.Title} / {projectId.Scope.Host} / {owner.ProfileLogin}", true));
-        content.Children.Add(ApplyText("反映する行を選び、変更内容を確認してください。\n選択だけでは送信しません。未確定入力は送信しません。"));
+        content.Children.Add(ApplyText("反映する行を選んで確認してください。選択だけでは送信しません。"));
         content.Children.Add(status); content.Children.Add(counts);
         var selectionCommands = ApplyPanel(4); selectionCommands.Orientation = Orientation.Horizontal;
         selectionCommands.Children.Add(selectAll); selectionCommands.Children.Add(includeHidden); content.Children.Add(selectionCommands);
