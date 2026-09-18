@@ -173,4 +173,4 @@ CI runs deterministic Core tests and discovers desktop tests without launching U
 - `tests/`: NUnit logic/integration tests, isolated fake gh, and FlaUI UIA3 desktop journeys.
 - `scripts/`: deterministic desktop and live sandbox execution entry points.
 
-[Requirements](docs/requirements.md) · [Specification](docs/spec.md) · [Architecture](docs/architecture.md) · [Decisions](docs/decisions.md) · [AGENTS.md](AGENTS.md)
+[Requirements](docs/requirements.md) · [Specification](docs/spec.md) · [Design](DESIGN.md) · [Architecture](docs/architecture.md) · [Decisions](docs/decisions.md) · [AGENTS.md](AGENTS.md)
