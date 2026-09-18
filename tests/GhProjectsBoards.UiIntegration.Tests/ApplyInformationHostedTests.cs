@@ -171,10 +171,14 @@ public sealed partial class HostedTests
             Ui.Toggle(Ui.Find<CheckBox>("ApplyIncludeHidden", dialog));
         });
         await Ui.Until(() => !Workspace.IsBusy);
+        await Ui.Until(() => Ui.Find<ListView>("ApplyTargetRows", Ui.Dialog("ApplyReviewDialog")).ContainerFromIndex(3)
+            is FrameworkElement { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(async () =>
         {
             var dialog = Ui.Dialog("ApplyReviewDialog")!; var list = Ui.Find<ListView>("ApplyTargetRows", dialog);
             Assert.That(list.Items.Count, Is.EqualTo(4)); Assert.That(list.SelectedItems, Is.Empty);
+            var last = (FrameworkElement)list.ContainerFromIndex(3);
+            Assert.That(last.TransformToVisual(list).TransformPoint(new()).Y + last.ActualHeight, Is.LessThanOrEqualTo(list.ActualHeight));
             Assert.That(Ui.Find<TextBlock>("ApplyHiddenSummary", dialog).Text, Does.Contain("追加済み（0件を選択）"));
             await ApplyInformationEvidence.Capture(dialog, "three-hidden-added-unselected");
             list.SelectedItems.Add(list.Items[3]);

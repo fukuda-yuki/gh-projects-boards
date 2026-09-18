@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using NUnit.Framework;
 using Windows.Graphics.Imaging;
@@ -11,6 +12,15 @@ internal static class ApplyInformationEvidence
 {
     internal static async Task Capture(FrameworkElement view, string name)
     {
+        // Let native item entrance animations settle before pixel evidence is captured.
+        // This delay is not used to establish behavior; tests assert their state separately.
+        await Task.Delay(1000);
+        var rendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var frames = 0;
+        EventHandler<object> rendering = (_, _) => { if (++frames >= 2) rendered.TrySetResult(); };
+        CompositionTarget.Rendering += rendering;
+        try { await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+        finally { CompositionTarget.Rendering -= rendering; }
         var bitmap = new RenderTargetBitmap(); await bitmap.RenderAsync(view);
         Assert.That(bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0, Is.True);
         var buffer = await bitmap.GetPixelsAsync(); using var reader = DataReader.FromBuffer(buffer);
