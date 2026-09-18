@@ -54,7 +54,10 @@ internal static class Ui
             await Run(() => ready = predicate());
             if (ready) return;
             if (DateTime.UtcNow >= deadline) throw new TimeoutException("Observable UI condition did not complete");
-            await Task.Yield();
+            // Leave native input, dispatcher timers and layout time to run between
+            // observations. A continuously replenished normal-priority queue can
+            // otherwise starve the very scrolling operation being observed.
+            await Task.Delay(10);
         }
     }
     public static async Task Mount(FrameworkElement view)
@@ -118,10 +121,19 @@ internal static class Ui
         await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
     }
     public static void Click(string id) => Click(Find<Button>(id));
+    public static Button ProjectCommand(string id) => ((StackPanel)((ScrollViewer)
+        ((Flyout)Find<Button>("ProjectSettingsButton").Flyout).Content).Content).Children.OfType<Button>()
+        .Single(button => AutomationProperties.GetAutomationId(button) == id);
+    public static async Task OpenHistory()
+    {
+        await Run(() => Click("ProjectSettingsButton"));
+        await Until(() => ProjectCommand("ApplyHistoryButton").IsLoaded);
+        await Run(() => Click(ProjectCommand("ApplyHistoryButton")));
+    }
     public static async Task ChooseCell(string id, string optionId)
     {
         await Ready<Button>(id);
-        await Run(() => { Find<Button>(id).Focus(FocusState.Keyboard); Click(id); });
+        await Run(() => { Find<Button>(id).Focus(FocusState.Keyboard); Click(id.Replace("GridCell", "GridChoiceArrow")); });
         MenuFlyoutItem? item = null;
         await Until(() => (item = VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child)).OfType<MenuFlyoutItem>()
             .SingleOrDefault(i => AutomationProperties.GetAutomationId(i) == "ChoiceOption-" + optionId)) is { IsLoaded: true });

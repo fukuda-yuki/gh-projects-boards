@@ -25,7 +25,7 @@ This setup supports local editing, views, new rows, switching and restart. It do
 
 1. Open **接続設定** from the account strip. Detect or choose `gh.exe`, enter the hostname, and select **接続を確認 / 再確認**. Check the account and stable ID. Permission shown as unknown remains unverified. The connection page's **ワークスペース** button returns to the editor.
 2. Choose **Projectを追加…**. Enter a same-host Project URL, select **URLを確認**, review the target, then choose **取得してローカル登録**. Alternatively expand **所有者・Repositoryから探す** to discover linked Projects.
-3. Select the saved Project in the navigation tree. In a smaller window, successful selection closes the overlaid navigation pane and reveals the sheet; use the Project-list button to reopen it. In a wider window, navigation stays beside the sheet. The parent Repository organizes navigation; it does not filter the Issues contained in a multi-repository Project. The heading identifies the Project, cached retrieval time and default destination. A cached account can be opened offline and is distinct from an authenticated connection.
+3. Select the saved Project in the navigation tree. In a smaller window, successful selection closes the overlaid navigation pane and reveals the sheet; use the Project-list button to reopen it. In a wider window, navigation stays beside the sheet. The parent Repository organizes navigation; it does not filter the Issues contained in a multi-repository Project. The heading identifies the Project and cached retrieval time; Project settings contain the default destination. A cached account can be opened offline and is distinct from an authenticated connection.
 4. Open **Projectの情報と設定** to inspect exact identities and retrieval details. Set **新しいローカル行の既定Repository** to the intended `owner/repository` and choose **設定を保存**. This seeds later rows; it does not retarget existing rows.
 
 Use Issues and destinations you intend to change for connected editing and Apply. Connection/login details are in [README](../README.md#check-a-connection).
@@ -37,16 +37,19 @@ Select an Issue title once, then type to replace it, or press F2 to edit it. Try
 | Input | Result |
 | --- | --- |
 | Type after selecting an unedited title | Begin native replacement input |
-| F2 | Begin editing the selected title |
+| F2 | Edit the selected title, or open a single-select menu |
+| Cell body click; body drag / Shift+click | Select a cell; extend a contiguous range |
+| Choice arrow / F4 / Space | Open the selected single-select cell's options |
+| Ctrl+D / **下へコピー** | Copy the top value down a selected vertical range |
 | Enter during IME composition | Confirm the native composition; the cell is still uncommitted |
 | Enter after composition ends | Commit the cell and move down one row |
 | Tab / Shift+Tab | Commit an active editor and move to the next/previous cell |
 | Arrows while selected; Shift+arrows | Move the active cell; extend a rectangle |
 | Arrows while editing | Move the native caret or composition/candidate selection |
 | Escape outside composition | Cancel the active cell's pending buffer |
-| F6 / Shift+F6 | Cycle table → **再適用** → details command, or reverse, retaining the active rectangle and pending text |
+| F6 / Shift+F6 | Cycle table → visible **再適用** (when needed) → details command, or reverse, retaining the active rectangle and pending text |
 
-F6 waits while IME composition is active. Returning from view settings to an unedited title prepares replacement input; returning to pending input preserves editing. If a settings change hides the active cell, focus returns to **再適用**. Selection and editing remain separate; moving to another cell does not implicitly commit its pending buffer.
+F6 waits while IME composition is active. Returning from view settings to an unedited title prepares replacement input; returning to pending input preserves editing. If a settings change hides the active cell, focus returns to the available view/details command. Selection and editing remain separate; moving to another cell does not implicitly commit its pending buffer.
 
 Prepare two rows of tab-separated text, select a title cell, and use **貼り付け**. For a view whose next column offers `Done` and `Todo`, this example fills a two-by-two block:
 
@@ -55,7 +58,17 @@ Plan A	Done
 Plan B	Todo
 ```
 
-Paste follows visible column order and must fit existing rows. Empty cells mean no change. Invalid shapes, read-only destinations or ambiguous option labels reject the whole operation. Use **値をクリア** for an explicit clear where supported; required existing titles cannot be cleared. **コピー** copies the selected rectangle's committed effective values.
+Paste follows visible column order and must fit existing rows. With one selected cell, a rectangular TSV starts at that cell. With a larger selection, a multi-cell TSV must have exactly the same shape. Empty cells mean no change. Invalid shapes, read-only destinations or ambiguous external option labels reject the whole operation. Use **値をクリア** for explicit clear; required existing titles cannot be cleared. **コピー** uses committed effective values and preserves field/option identities for internal paste.
+
+To repeat one value over 10 or 100 rows, use any of these routes:
+
+1. Change and commit the source cell. Drag its lower-right handle upward or downward; the highlighted preview shows the intended range, and holding at the top/bottom edge scrolls to more rows. Release to copy. Escape or lost capture cancels without changing destinations.
+2. Select the source, **コピー**, select a vertical range in the same column, then **貼り付け**. One nonempty value fills the selected cells; selecting different columns is rejected.
+3. Select a vertical range with the source at the top and use **下へコピー (Ctrl+D)**.
+
+All targets are checked before any change. A conflicting, read-only or pending target rejects the whole batch and identifies the reason. Finish or cancel pending source/destination input yourself. Empty-source fill is unavailable; use explicit clear instead. Filtered-out rows are excluded, while matching rows beyond the viewport participate. Undo once restores the copied destinations and preserves the prior source edit; Undo again restores the source. These operations never communicate with GitHub or append rows.
+
+The upper-right diamond marks a committed local value that is still unreflected on GitHub. It stays visible alongside the selection border, without moving the value or arrow. The editing frame/caret identifies unfinished native input. The footer separates **ローカル保存済み** from **GitHub未反映**; use **選択内容の詳細** for baseline/local/fetched GitHub values and reasons.
 
 Choose **元に戻す** once to restore the preceding block operation. Undo restores the prior draft state, including any earlier pending buffer. For example, undoing a committed title can remove its committed difference while its earlier typed buffer remains visible; Escape explicitly cancels that buffer. During native text editing, Ctrl+Z belongs to the text editor; use the grid command for operation-level Undo. Undo can reject an operation whose fields have since changed elsewhere, and it does not roll back GitHub.
 
@@ -63,12 +76,12 @@ Scroll to the last rows and horizontally across the fields. Row numbers, titles 
 
 ## Arrange the view without losing work
 
-For common changes, click a column heading to sort, filter, move or hide that column. Drag its right boundary to resize; the accepted width is saved when released. Type a title substring in the inline filter and choose **絞り込み** or Enter; **解除** clears only the title condition. Click a single-select value, or use Space/F4, to open its native options menu. Full column and compound filter settings remain available below.
+For common changes, click a column heading to sort, filter, move or hide that column. Drag its right boundary to resize; the accepted width is saved when released. Type a title substring in the inline filter and choose **絞り込み** or Enter; **解除** clears only the title condition. Full column and compound filter settings remain available below.
 
-1. Open **列**. Change the title width, reorder supported single-select columns with **↑ / ↓**, or hide one. Check the preview and choose **ローカル保存**. Title remains first; reference/new-row destination remains last. **キャンセル** leaves saved settings unchanged, and **既定値に戻す** changes the candidate until saved.
+1. Open **列**. Change the title width, reorder supported single-select columns with **↑ / ↓**, or hide one. Check the preview and choose **ローカル保存**. Title remains first; Repository remains last. **キャンセル** leaves saved settings unchanged, and **既定値に戻す** changes the candidate until saved.
 2. Open **並べ替え・フィルター**. Choose Title or a single-select order and direction. Enter a literal title substring, or expand a field's options and **空値 / 新規行の未指定 / 不明・未取得** states. Options within one field are alternatives; separate fields and the title condition combine. Read identifying details when field/option names repeat.
 3. Choose **ローカル保存・適用**. Edit a matching row so its committed value would no longer match. The row stays in place until **変更した値で再適用**. Pending text does not determine sorting/filtering. New rows remain temporarily visible until explicit reapplication.
-4. Inspect total/displayed rows, hidden work and temporary rows in the view summary. Hidden columns can still filter rows. Undo preserves the settings and can affect work hidden by the current view. **並べ替え・絞り込みをリセット** clears row conditions after Save while preserving columns.
+4. Inspect displayed/total rows and hidden work in the compact footer. Temporary rows or a required reapplication reveal the view notice; full criteria remain reachable in **選択内容の詳細** and view settings. Hidden columns can still filter rows. Undo preserves settings and can restore work hidden by the current view. **並べ替え・絞り込みをリセット** clears row conditions after Save while preserving columns.
 
 Width changes retain the rectangle. Reordering or changing visibility retains a visible active cell by identity and clears the former rectangle. Hidden active cells lose data selection, while their drafts and pending text remain stored. Missing or incompatible saved criteria show a repair/reset explanation rather than silently broadening the view or deleting work. Finish native composition naturally before retrying a deferred view change.
 
@@ -82,7 +95,7 @@ Use **元に戻す** after removing a local row, including after closing and reo
 
 ## Refresh and compare B / L / R
 
-With a checked connection, choose **最新を取得**. The app saves local work and reconciles a complete fresh observation. Pending input remains pending; partial or failed retrieval does not replace the accepted complete cache. Open **状況の詳細…** for the full selectable explanation, including when no Project is selected.
+With a checked connection, choose **最新を取得**. The app saves local work and reconciles a complete fresh observation. Pending input remains pending; partial or failed retrieval does not replace the accepted complete cache. Open **Projectの情報と設定 → 処理状況・診断…** for the full selectable explanation. When no Project is selected, use **状況の詳細…** in the status area.
 
 If GitHub and local work have diverged, open **… → 競合・未確認を比較** and select the affected field:
 
@@ -94,10 +107,10 @@ Inspect the side-by-side values and expand **所有範囲・識別情報・構�
 
 ## Review and Apply selected work
 
-1. Choose **GitHubへ反映…**. Select the existing updates and complete local rows you intend to send. Leave unrelated preparation rows unselected. **非表示行も候補に含める** starts off; enable it explicitly to inspect hidden rows.
+1. Choose **変更を確認…**. Select the existing updates and complete local rows you intend to send. Leave unrelated preparation rows unselected. **非表示行も候補に含める** starts off; enable it explicitly to inspect hidden rows.
 2. Choose **選択行を照合**. The app checks fresh data. If visibility membership changes, select targets again. Review the exact Project, Repository destinations, existing changes versus new creation, current/intended values, and hidden-column differences. Pending text is retained and excluded from the payload.
 3. Cancel once if the selection is not ready; the local work remains. Prepare a new review when local work or remote observations change. **明示的にApply** approves the reviewed payload; later editing does not retarget that approval.
-4. Open **実行履歴…** to inspect field outcomes and creation stages: Issue creation/verification, Project membership, initial values, setup and readback. A later local edit or pending buffer survives acknowledgement of an earlier approved value. Unselected rows remain local work.
+4. Open **Projectの情報と設定 → 実行履歴…** to inspect field outcomes and creation stages: Issue creation/verification, Project membership, initial values, setup and readback. A later local edit or pending buffer survives acknowledgement of an earlier approved value. Unselected rows remain local work.
 
 Refresh, editing, local saving, view changes and Project switching do not themselves Apply. The supported creation/recovery details are in [Creation and recovery](creation-workflow.md).
 

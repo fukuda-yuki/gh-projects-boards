@@ -132,7 +132,7 @@ public sealed partial class RegistrationTests
         Wait(() => Text(w, "ConnectionStatus").Contains("接続を確認しました"));
     }
     private static AutomationElement Element(Window w, string id) => WorkspaceUi.Element(w, id);
-    private static string Text(Window w, string id) => Element(w, id).Name;
+    private static string Text(Window w, string id) => id == "RegistrationStatus" ? WorkspaceUi.RegistrationStatusText(w) : Element(w, id).Name;
     private static void Invoke(Window w, string id) => WorkspaceUi.Invoke(w, id);
     private static void Set(Window w, string id, string value) => Element(w, id).AsTextBox().Text = value;
     private static void Wait(Func<bool> condition) => Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result, Is.True);

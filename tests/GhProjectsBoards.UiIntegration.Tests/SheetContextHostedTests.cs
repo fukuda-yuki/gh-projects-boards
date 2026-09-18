@@ -81,7 +81,7 @@ public sealed class SheetContextHostedTests
             await Ui.Ready<TextBox>("GridCell0_0"); TextBox original = null!;
             await Ui.Run(() => { original = Ui.Find<TextBox>("GridCell0_0"); original.Focus(FocusState.Keyboard); original.Text = "未確定のタイトル"; });
             await HeaderCommand(0, "HeaderWiden");
-            await Ui.Until(() => session.Workspace.Columns(p).Visible[0].Preference.Width == 360);
+            await Ui.Until(() => session.Workspace.Columns(p).Visible[0].Preference.Width == 400);
             await Ui.Run(() => { Assert.That(Ui.Find<TextBox>("GridCell0_0"), Is.SameAs(original)); Assert.That(original.Text, Is.EqualTo("未確定のタイトル")); });
             await HeaderCommand(2, "HeaderHide");
             await Ui.Until(() => session.Workspace.Columns(p).Hidden("P1B"));
@@ -110,7 +110,7 @@ public sealed class SheetContextHostedTests
             var record = await store.LoadAsync(work.Scope);
             var restored = EditingWorkspace.Restore(record!);
             Assert.That(restored.Columns(p).Hidden("P1B"), Is.True);
-            Assert.That(restored.Columns(p).Visible[0].Preference.Width, Is.EqualTo(360));
+            Assert.That(restored.Columns(p).Visible[0].Preference.Width, Is.EqualTo(400));
             Assert.That(restored.RowView(p).Title, Is.Empty);
             Assert.That(restored.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("未確定のタイトル"));
         }
@@ -135,8 +135,8 @@ public sealed class SheetContextHostedTests
             await Ui.Until(() => Ui.Find<TextBlock>("ColumnTransitionStatus").Text.Contains("保存できません"));
             await Ui.Run(() =>
             {
-                Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(320));
-                Assert.That(Ui.Find<Grid>("SheetHeader").ColumnDefinitions[1].Width.Value, Is.EqualTo(320));
+                Assert.That(session.Workspace.Columns(p).Visible[0].Preference.Width, Is.EqualTo(360));
+                Assert.That(Ui.Find<Grid>("SheetHeader").ColumnDefinitions[1].Width.Value, Is.EqualTo(360));
                 Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("保持する入力"));
                 Assert.That(session.Workspace.DifferenceCount, Is.Zero);
             });

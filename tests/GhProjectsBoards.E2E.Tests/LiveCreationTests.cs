@@ -76,9 +76,9 @@ public sealed class LiveCreationTests
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("CreationResolutionDialog")) is not null);
             E("CreationBindUrl").AsTextBox().Text = independent["url"]!.ToString(); Click("PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("CreationBindingConfirmDialog")) is not null); Click("PrimaryButton");
-            Wait(() => E("RegistrationStatus").Name.Contains("関連付けを保存")); Click("ApplyHistoryButton");
+            Wait(() => WorkspaceUi.RegistrationStatusText(window!).Contains("関連付けを保存")); Click("ApplyHistoryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null); Click("PrimaryButton");
-            Wait(() => E("RegistrationStatus").Name.Contains("Apply処理を停止")); ReconcileMembership(); VerifySetup();
+            Wait(() => WorkspaceUi.RegistrationStatusText(window!).Contains("Apply処理を停止")); ReconcileMembership(); VerifySetup();
             Assert.That(Checkpoint().GetProperty("Journal")[1].GetProperty("Creations")[0].GetProperty("EarlierUncertain").GetBoolean(), Is.True);
             var completed = Checkpoint().GetProperty("Journal").EnumerateArray().SelectMany(b => b.GetProperty("Creations").EnumerateArray()).ToArray();
             Assert.That(completed.Length, Is.EqualTo(3)); Assert.That(completed.All(c => c.GetProperty("Completed").GetBoolean()), Is.True);
@@ -141,7 +141,7 @@ public sealed class LiveCreationTests
             Click("ReviewApplyButton"); var list = E("ApplyTargetRows").AsListBox();
             foreach (var target in list.Items.Where(i => i.Name.StartsWith("新規作成") && i.Name.Contains(marker))) target.AddToSelection();
             Click("PrimaryButton"); Wait(() => window!.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null);
-            Assert.That(E("PrimaryButton").IsEnabled, Is.True); Click("PrimaryButton"); Wait(() => E("RegistrationStatus").Name.Contains("Apply処理を停止"));
+            Assert.That(E("PrimaryButton").IsEnabled, Is.True); Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(window!).Contains("Apply処理を停止"));
             ReconcileMembership();
         }
         void ReconcileMembership()
@@ -151,7 +151,7 @@ public sealed class LiveCreationTests
                 var pending = Checkpoint().GetProperty("Journal").EnumerateArray().Last().GetProperty("Creations").EnumerateArray().Where(c => !c.GetProperty("Completed").GetBoolean()).ToArray();
                 if (pending.Length == 0 || pending.Any(c => c.GetProperty("Verified").ValueKind == JsonValueKind.Null || c.GetProperty("Fields").ValueKind != JsonValueKind.Null)) return;
                 Click("ApplyHistoryButton"); Wait(() => window!.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")) is not null);
-                Click("PrimaryButton"); Wait(() => E("RegistrationStatus").Name.Contains("Apply処理を停止"));
+                Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(window!).Contains("Apply処理を停止"));
             }
         }
         void VerifySetup()

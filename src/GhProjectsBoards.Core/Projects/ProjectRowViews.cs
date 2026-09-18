@@ -146,7 +146,15 @@ internal sealed partial class EditingWorkspace
         });
         return result;
     }
-    public string ViewFingerprint(ProjectRegistration p) => JsonSerializer.Serialize(new { Definition = RowView(p), Definitions = ColumnDefinitions(p),
-        Rows = Open(p).Select(r => new { r.ItemId, Values = r.Cells.Where(c => c.Key is not null && c.Key.Kind != "LocalRepository").Select(EffectiveRowValue) }) });
+    public string ViewFingerprint(ProjectRegistration p)
+    {
+        var definition = RowView(p);
+        var fieldIds = (definition.Filters ?? []).Select(f => f.FieldId).ToHashSet();
+        if (definition.Sort == "Field") fieldIds.Add(definition.FieldId!);
+        var title = definition.Sort == "Title" || definition.Title.Length > 0;
+        return JsonSerializer.Serialize(new { Definition = definition, Definitions = ColumnDefinitions(p),
+            Rows = Open(p).Select(r => new { r.ItemId, Values = r.Cells.Where(c => c.Key is not null
+                && (c.Key.Kind is "Title" or "LocalTitle" ? title : c.Key.FieldId is { } id && fieldIds.Contains(id))).Select(EffectiveRowValue) }) });
+    }
     public bool RowHasWork(EditRow row) => row.IsLocal || row.Cells.Any(c => Changed(c) || Buffer(c) is not null || Field(c)?.Conflict == true);
 }

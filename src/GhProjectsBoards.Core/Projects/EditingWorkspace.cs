@@ -104,25 +104,7 @@ internal sealed partial class EditingWorkspace
     public void Clear(string projectId, IEnumerable<EditCell> cells)
         => Apply(projectId, cells.Select(c => (c, "", true, false)).ToArray());
     public void Paste(string projectId, EditRow[] rows, int row, int column, string tsv)
-    {
-        var matrix = ParseTsv(tsv);
-        if (row < 0 || column < 0 || row + matrix.Length > rows.Length || matrix.Any(line => column + line.Length > rows[row].Cells.Length))
-            throw new InvalidOperationException("貼り付け範囲が表の端を超えています。");
-        var batch = new List<(EditCell, string, bool, bool)>();
-        for (var r = 0; r < matrix.Length; r++)
-            for (var c = 0; c < matrix[r].Length; c++)
-            {
-                var cell = rows[row + r].Cells[column + c];
-                if (!cell.Editable) throw new InvalidOperationException($"行 {row + r + 1} 列 {column + c + 1}: {cell.Reason}");
-                if (matrix[r][c] != "")
-                {
-                    try { ValidateText(cell, matrix[r][c]); }
-                    catch (InvalidOperationException ex) { throw new InvalidOperationException($"行 {row + r + 1} 列 {column + c + 1}: {ex.Message}"); }
-                    batch.Add((cell, matrix[r][c], false, false));
-                }
-            }
-        Apply(projectId, batch.ToArray());
-    }
+        => PasteSelection(projectId, rows, new(row, column), tsv);
     private static void ValidateText(EditCell cell, string text)
     {
         if (cell.Key?.Kind == "Title" && (string.IsNullOrWhiteSpace(text) || text.IndexOfAny(['\r','\n','\t']) >= 0)) throw new InvalidOperationException("タイトルは空欄・改行・タブにできません。");
@@ -162,8 +144,11 @@ internal sealed partial class EditingWorkspace
                 Observation = old.Observation?.Reason?.StartsWith("未確定文字") == true ? old.Observation with { Reason = null } : old.Observation };
             if (changes.TryGetValue(key, out var duplicate) && duplicate.After.Change != next.Change)
                 throw new InvalidOperationException("同じIssueへの値が競合しています。");
+            if (old == next with { Stamp = old.Stamp }) continue;
             changes[key] = new(key, old, next);
         }
+        foreach (var entry in rowChanges.Where(entry => SameLocal(entry.Value.Before!, entry.Value.After! with { Stamp = entry.Value.Before!.Stamp })).ToArray())
+            rowChanges.Remove(entry.Key);
         if (changes.Count == 0 && rowChanges.Count == 0) return;
         Revision++;
         foreach (var change in changes.Values) fields[change.Key] = change.After;

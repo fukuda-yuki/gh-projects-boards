@@ -99,6 +99,11 @@ public sealed partial class RegistrationPanel : UserControl
                 StatusDetailsFlyout.Hide();
             }
             Status.Text = workspace.Status;
+            WorkspaceStatusBar.Visibility = workspace.Selected is null || workspace.IsBusy || workspace.Status.Contains("失敗")
+                || workspace.Status.Contains("中断") || workspace.Status.Contains("保持") || workspace.Status.Contains("不明")
+                || workspace.Status.Contains("IME変換中")
+                ? Visibility.Visible : Visibility.Collapsed;
+            AutomationProperties.SetHelpText(ProjectSettings, workspace.Status);
             StatusDetailsText.Text = workspace.Status;
             ToolTipService.SetToolTip(Status, workspace.Status);
             Identity.Text = workspace.Profile is { } profile
@@ -146,8 +151,8 @@ public sealed partial class RegistrationPanel : UserControl
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;
-                Summary.Text = $"{p.Title}  ·  項目 {p.Items.Count} / Issue {p.Issues.Count}";
-                ProjectContext.Text = $"キャッシュ {selected.RetrievedAt.LocalDateTime:g}  ·  新規行の既定宛先: {selected.DefaultRepository ?? "未設定"}";
+                Summary.Text = p.Title;
+                ProjectContext.Text = $"キャッシュ {selected.RetrievedAt.LocalDateTime:g}";
                 ProjectContext.Visibility = Visibility.Visible;
                 ToolTipService.SetToolTip(ProjectContext, ProjectContext.Text);
                 ToolTipService.SetToolTip(Summary, Summary.Text);
@@ -238,9 +243,14 @@ public sealed partial class RegistrationPanel : UserControl
         WorkspaceSplitView.IsPaneOpen = !WorkspaceSplitView.IsPaneOpen;
         AutomationProperties.SetName(NavigationToggle, WorkspaceSplitView.IsPaneOpen ? "Project一覧を折りたたむ" : "Project一覧を表示");
     }
+    private void ShowStatusDetails(object sender, RoutedEventArgs e)
+    {
+        ProjectSettingsFlyout.Hide();
+        StatusDetailsFlyout.ShowAt(ProjectSettings);
+    }
     private void PanelSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var mode = e.NewSize.Width < 960 ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
+        var mode = e.NewSize.Width <= 960 ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
         if (WorkspaceSplitView.DisplayMode == mode) return;
         WorkspaceSplitView.DisplayMode = mode;
         WorkspaceSplitView.IsPaneOpen = mode == SplitViewDisplayMode.Inline;
@@ -256,9 +266,7 @@ public sealed partial class RegistrationPanel : UserControl
         Grid.SetRow(ProjectContext, narrow ? 2 : 1);
         var compact = e.NewSize.Width < 420;
         ProjectCommands.RowSpacing = compact ? 4 : 0;
-        Grid.SetColumn(ApplyHistory, compact ? 0 : 2);
-        Grid.SetRow(ApplyHistory, compact ? 1 : 0);
-        Grid.SetColumn(ProjectSettings, compact ? 1 : 3);
+        Grid.SetColumn(ProjectSettings, compact ? 0 : 2);
         Grid.SetRow(ProjectSettings, compact ? 1 : 0);
     }
     private void BackToPreview(object sender, RoutedEventArgs e) => ShowPreview();

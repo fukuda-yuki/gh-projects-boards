@@ -14,25 +14,27 @@ internal static class FakeGhProgram
         Console.OutputEncoding = new UTF8Encoding(false);
         if (Environment.GetEnvironmentVariable("GHPB_CREATION_PROXY") is { } proxyRoot)
             return await LiveCreationProxy.Run(args, proxyRoot);
-        if (args.FirstOrDefault() == "--seed-editing")
+        if (args.FirstOrDefault() is "--seed-editing" or "--seed-bulk")
         {
             if (args.Length is not (2 or 4)) return 2;
             var count = 101; var fieldCount = 1;
             if (args.Length == 4 && (!int.TryParse(args[2], out count) || count is < 1 or > 1000
                 || !int.TryParse(args[3], out fieldCount) || fieldCount is < 1 or > 12)) return 2;
             var root = args[1];
+            var bulkSeed = args[0] == "--seed-bulk";
             if (!Path.IsPathFullyQualified(root) || Directory.Exists(root) || File.Exists(root)) return 2;
             var store = new GhProjectsBoards.Core.Projects.RegistrationStore(root);
             var expected = new[] { "P1", "P2" }.Select(projectId =>
             {
                 var registration = EditingTests.Registration(projectId, count: count);
-                if (fieldCount == 1) return registration;
                 var original = registration.Snapshot.Fields[0];
+                if (bulkSeed) original = original with { Name = "Status", Options = [new("todo", "Backlog"), new("done", "Ready")] };
                 var fields = Enumerable.Range(0, fieldCount).Select(index => index == 0 ? original : original with
                 {
                     Id = new(original.Id.Scope, projectId + "-diagnostic-" + index),
                     Name = "Diagnostic field " + (index + 1).ToString("D2"),
-                    Options = [new("todo-" + index, "Todo"), new("done-" + index, "Done")]
+                    Options = bulkSeed ? [new("todo-" + index, "Backlog"), new("done-" + index, "Ready")]
+                        : [new("todo-" + index, "Todo"), new("done-" + index, "Done")]
                 }).ToArray();
                 return registration with { Snapshot = registration.Snapshot with { Fields = fields,
                     Items = registration.Snapshot.Items.Select(item => item with
@@ -66,7 +68,7 @@ internal static class FakeGhProgram
             var assembly = typeof(FakeGhProgram).Assembly.Location;
             await File.WriteAllTextAsync(Path.Combine(evidence, "editing-seed.json"), JsonSerializer.Serialize(new
             {
-                schemaVersion = 1, count, selectFieldCount = fieldCount, totalColumns = fieldCount + 2,
+                schemaVersion = 1, count, selectFieldCount = fieldCount, totalColumns = fieldCount + 2, bulkSeed,
                 scope = "Isolated synthetic cached Projects; no authentication or GitHub requests.",
                 seedAssembly = assembly, seedAssemblySha256 = Hash(assembly), validatedReadback = true,
                 projects = expected.Select(p => new { projectId = p.Snapshot.Id.NodeId,
@@ -188,7 +190,8 @@ internal static class FakeGhProgram
                 && cursor.ValueKind == JsonValueKind.String && settings.TryGetProperty("partial", out var partial) && partial.GetBoolean())
             { Console.Write("HTTP/2.0 403 Forbidden\r\nContent-Type: application/json\r\n\r\n{}"); return 1; }
             var response = RegistrationResponses.Query(query, payload.RootElement.GetProperty("variables"), host, settings.TryGetProperty("itemCount", out var itemCount) ? itemCount.GetInt32() : 101,
-                settings.TryGetProperty("columns", out var columns) && columns.GetBoolean());
+                settings.TryGetProperty("columns", out var columns) && columns.GetBoolean(),
+                settings.TryGetProperty("bulk", out var bulk) && bulk.GetBoolean());
             if (response is not null)
             {
                 if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))

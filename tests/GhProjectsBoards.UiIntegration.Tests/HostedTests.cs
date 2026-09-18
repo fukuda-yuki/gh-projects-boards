@@ -74,14 +74,14 @@ public sealed partial class HostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア")));
         await Ui.ClickCommand("GridRemoveRows");
         await Ui.Until(() => Work.LocalRows.Count == 0);
-        await Ui.Run(() => Ui.Click("GridUndo"));
+        await Ui.ClickCommand("GridUndo");
         await Ui.Until(() => Work.LocalRows.Count == 1);
         await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             Assert.That(Work.LocalRows.Single().Id, Is.EqualTo(id));
             Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア"));
-            Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル行 1"));
+            Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル新規 1行"));
         });
     }
 
@@ -284,9 +284,9 @@ public sealed partial class HostedTests
         });
         await gate!.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await Ui.Unmount(panel); await Ui.Mount(panel);
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("ApplyHistoryButton").IsEnabled, Is.False));
+        await Ui.Run(() => Assert.That(Ui.ProjectCommand("ApplyHistoryButton").IsEnabled, Is.False));
         gate.Release.TrySetResult();
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         await Ui.Run(() => { Assert.That(Ui.Dialog("ApplyReviewDialog"), Is.Null); Assert.That(h.Writes, Is.Empty); });
     }
@@ -350,11 +350,11 @@ public sealed partial class HostedTests
             Assert.That(text, Does.Contain("選択行 2 / 更新 1 / 作成 1").And.Contain("未確定文字 1 件は除外").And.Contain("未選択の未完成行"));
             Assert.That(text, Does.Contain("宛先 sample-user/first / Repository ID R-first").And.Contain("Create title").And.Contain("Existing update"));
             Assert.That(text, Does.Not.Contain("pending excluded"));
-            Assert.That(Ui.Find<Button>("ApplyHistoryButton").IsEnabled, Is.False);
+            Assert.That(Ui.ProjectCommand("ApplyHistoryButton").IsEnabled, Is.False);
             Assert.That(h.Writes, Is.Empty);
             Ui.DialogButton("ApplyReviewDialog", confirm ? "PrimaryButton" : "CloseButton");
         });
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         await Ui.Run(() =>
         {
@@ -362,15 +362,15 @@ public sealed partial class HostedTests
             Assert.That(h.Writes.Count(x => x.Query.Contains("ApplyTitle")), Is.EqualTo(confirm ? 1 : 0));
             Assert.That(Work.LocalRows.Any(r => r.Id == incomplete && r.Title == ""), Is.True);
             Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending excluded"));
-            Ui.Click("ApplyHistoryButton");
         });
+        await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() =>
         {
-            Assert.That(Ui.Find<Button>("ApplyHistoryButton").IsEnabled, Is.False);
+            Assert.That(Ui.ProjectCommand("ApplyHistoryButton").IsEnabled, Is.False);
             Ui.DialogButton("ApplyHistoryDialog", "CloseButton");
         });
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         Assert.That(h.Writes.Count(x => x.Query.Contains("CreateWorkspaceIssue")), Is.EqualTo(confirm ? 1 : 0));
     }
@@ -384,7 +384,7 @@ public sealed partial class HostedTests
             var id = h.Add("Hidden creation"); Work.Commit("P1", Work.Open(p).Single(r => r.ItemId == id).Cells[1], "Done");
             await Workspace.FlushDraftsAsync();
         });
-        await Ui.Run(() => Ui.Click("GridColumns")); await Ui.DialogReady("ColumnSettingsDialog");
+        await Ui.ClickCommand("GridColumns"); await Ui.DialogReady("ColumnSettingsDialog");
         await Ui.Run(() => { Ui.Find<CheckBox>("ColumnVisible-P1-status", Ui.Dialog("ColumnSettingsDialog")).IsChecked = false; Ui.DialogButton("ColumnSettingsDialog", "PrimaryButton"); });
         await Ui.Until(() => Ui.Dialog("ColumnSettingsDialog") is null);
         await Ui.Run(() => Ui.Click("ReviewApplyButton")); await Ui.DialogReady("ApplySelectionDialog");
@@ -398,7 +398,7 @@ public sealed partial class HostedTests
             Assert.That(Workspace.ApplyReview.Batch.Creations!.Single().Selects.Single().FieldId, Is.EqualTo("P1-status"));
             Assert.That(h.Writes, Is.Empty); Ui.DialogButton("ApplyReviewDialog", "CloseButton");
         });
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
     }
 
     [Test]
@@ -407,7 +407,7 @@ public sealed partial class HostedTests
         await Ui.Run(() => Ui.Click("ReviewApplyButton"));
         await Ui.DialogReady("ApplySelectionDialog");
         await Ui.Run(() => Ui.DialogButton("ApplySelectionDialog", "CloseButton"));
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         Assert.That(h.Writes, Is.Empty);
         Assert.That(Workspace.ApplyReview, Is.Null);
     }
@@ -424,21 +424,21 @@ public sealed partial class HostedTests
         });
         // Arrange a durably approved, undispatched batch, then use the history UI to resume.
         await ControlExternal("ProjectFields");
-        await Ui.Run(() => Ui.Click("ApplyHistoryButton"));
+        await Ui.OpenHistory() ;
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "PrimaryButton"));
         await gate!.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await Ui.Run(() =>
         {
             Assert.That(Ui.Dialog("ApplyHistoryDialog"), Is.Null);
-            Assert.That(Ui.Find<Button>("ApplyHistoryButton").IsEnabled, Is.False);
+            Assert.That(Ui.ProjectCommand("ApplyHistoryButton").IsEnabled, Is.False);
             Assert.That(h.Writes, Is.Empty);
         });
         gate.Release.TrySetResult();
-        await Ui.Until(() => Ui.Find<Button>("ApplyHistoryButton").IsEnabled);
+        await Ui.Until(() => Ui.ProjectCommand("ApplyHistoryButton").IsEnabled);
         await Ui.Idle();
         Assert.That(h.Writes.Count(x => x.Query.Contains("ApplyTitle")), Is.EqualTo(1));
-        await Ui.Run(() => Ui.Click("ApplyHistoryButton"));
+        await Ui.OpenHistory() ;
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton"));
         await Ui.Idle();

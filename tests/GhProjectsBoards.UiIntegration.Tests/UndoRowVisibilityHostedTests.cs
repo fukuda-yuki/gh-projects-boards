@@ -60,8 +60,8 @@ public sealed partial class HostedTests
         {
             Assert.That(Work.LocalRows.Select(r => r.Id), Is.EqualTo(new[] { hiddenId }));
             Assert.That(Ui.Tree(panel).OfType<EditingGrid>().Single().DisplayedRowIds, Is.EqualTo(expectedExisting));
-            Ui.Click("GridUndo");
         });
+        await Ui.ClickCommand("GridUndo");
         await Ui.Until(() => Work.LocalRows.Any(r => r.Id == restoredId));
         await Ui.Run(() =>
         {

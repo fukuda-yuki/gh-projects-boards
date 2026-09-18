@@ -41,8 +41,8 @@ public sealed partial class RegistrationTests
     private static void ScrollEndpoint(Window w, double percent, bool horizontal)
     {
         Assert.That(percent, Is.AnyOf(0d, 100d), "The ordinary journey scrolls to an endpoint.");
-        Element(w, "GridReapply").Focus();
-        Wait(() => Element(w, "GridReapply").Properties.HasKeyboardFocus.Value);
+        Element(w, "GridDetails").Focus();
+        Wait(() => Element(w, "GridDetails").Properties.HasKeyboardFocus.Value);
         var viewport = Element(w, "ProjectItems");
         var scroll = viewport.Patterns.Scroll.Pattern;
         Assert.That(horizontal ? scroll.HorizontallyScrollable.Value : scroll.VerticallyScrollable.Value, Is.True);
@@ -91,7 +91,7 @@ public sealed partial class RegistrationTests
             Edit(w, 0, "Shared local"); WorkspaceUi.SelectCombo(w, "GridCell0_1", "Done");
             Scroll(w, 100); Edit(w, 100, "Last row");
             WorkspaceUi.SelectCombo(w, "GridCell100_1", "Done");
-            Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 4"));
+            Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 4セル"));
             OpenSaved(w, "Project 2");
             Assert.That(CellText(w, 0), Is.EqualTo("Shared local"));
             Assert.That(WorkspaceUi.ChoiceText(w, "GridCell0_1"), Is.EqualTo("Todo"));
@@ -106,10 +106,10 @@ public sealed partial class RegistrationTests
         {
             OpenSaved(w, profile: true); Assert.That(CellText(w, 0), Is.EqualTo("Shared local"));
             Scroll(w, 100); Assert.That(CellText(w, 100), Is.Empty);
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 4"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 4セル"));
             Element(w, "GridCell100_0").Click(); Key(VirtualKeyShort.ESCAPE);
             Assert.That(CellText(w, 100), Is.EqualTo("Last row"));
-            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 3"));
+            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 3セル"));
             Assert.That(f.Calls().Length, Is.EqualTo(calls));
             Capture(w, f.Root, "editing-restart");
         });
@@ -124,18 +124,18 @@ public sealed partial class RegistrationTests
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1);
             Element(w, "GridCell0_0").Click();
             NativeClipboardScope.WriteTestFormats("First\tDone\r\nSecond\t\r\n"); Invoke(w, "GridPaste");
-            Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 3"));
+            Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 3セル"));
             Assert.That(CellText(w, 0), Is.EqualTo("First")); Assert.That(CellText(w, 1), Is.EqualTo("Second"));
-            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 0"));
+            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 0セル"));
             Element(w, "GridCell0_0").Click();
             using (Keyboard.Pressing(VirtualKeyShort.SHIFT)) Key(VirtualKeyShort.RIGHT, VirtualKeyShort.DOWN);
-            Assert.That(Text(w, "GridSelection"), Does.Contain("行 1 列 1 ～ 行 2 列 2"));
+            Assert.That(Text(w, "GridSelection"), Is.EqualTo("タイトル ～ Renamed workflow：2行・4セル"));
             Invoke(w, "GridCopy"); Assert.That(NativeClipboardScope.ReadText(), Is.EqualTo("Issue 1\tTodo\r\nIssue 2\tTodo"));
             NativeClipboardScope.WriteTestFormats("Changed\tMissing"); Invoke(w, "GridPaste");
             Wait(() => Text(w, "DraftStatus").Contains("行 1 列 2")); Assert.That(CellText(w, 0), Is.EqualTo("Issue 1"));
             Element(w, "GridCell0_1").Click(); Key(VirtualKeyShort.ESCAPE); Invoke(w, "GridClear");
-            Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 1"));
-            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 0"));
+            Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 1セル"));
+            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 0セル"));
         });
         Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }
@@ -212,13 +212,13 @@ public sealed partial class RegistrationTests
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1); Element(w, "GridCell0_0").Click();
             NativeClipboardScope.WriteTestFormats("Atomic A\tDone\nAtomic B\tDone"); Invoke(w, "GridPaste");
-            Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 4") && Text(w, "DraftStatus").Contains("保存済み"));
+            Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 4セル") && Text(w, "DraftStatus").Contains("保存済み"));
         }, interrupt: true);
         f.Run(w =>
         {
             OpenSaved(w, profile: true); Assert.That(CellText(w, 0), Is.EqualTo("Atomic A")); Assert.That(CellText(w, 1), Is.EqualTo("Atomic B"));
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 4"));
-            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 0"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 4セル"));
+            Invoke(w, "GridUndo"); Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 0セル"));
         });
     }
     [TestCase("direct"), TestCase("f2"), TestCase("cancel"), TestCase("cancel-f2"), TestCase("reconvert"), TestCase("reconvert-f2"), Category("GridIme")]
@@ -234,17 +234,17 @@ public sealed partial class RegistrationTests
             Keyboard.TypeVirtualKeyCode(0x16);
             Key(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O);
             Assert.That(cell.Text, Is.EqualTo("にほんご"), "Physical direct input must appear exactly once.");
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             Key(VirtualKeyShort.SPACE); Assert.That(cell.Text, Is.EqualTo("日本語"));
             if (scenario.StartsWith("cancel", StringComparison.Ordinal))
             {
                 Key(VirtualKeyShort.ESCAPE); Assert.That(cell.Text, Is.EqualTo("にほんご"));
                 Key(VirtualKeyShort.ESCAPE, VirtualKeyShort.ESCAPE); Assert.That(cell.Text, Is.EqualTo("Issue 1"));
-                Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0")); return;
+                Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル")); return;
             }
             Key(VirtualKeyShort.RETURN); Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
-            Key(VirtualKeyShort.RETURN); Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 1"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
+            Key(VirtualKeyShort.RETURN); Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 1セル"));
             Assert.That(Element(w, "GridCell1_0").Properties.HasKeyboardFocus.Value, Is.True);
             if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
             {

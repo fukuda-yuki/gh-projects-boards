@@ -71,9 +71,8 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                 <Button x:Name="Refresh" Content="最新を取得" MinHeight="28" Padding="10,4" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
-                                <Button x:Name="Apply" Grid.Column="1" Content="GitHubへ反映…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
-                                <Button x:Name="ApplyHistory" Grid.Column="2" Content="実行履歴…" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
-                                <Button x:Name="ProjectSettings" Grid.Column="3" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Projectの情報と設定" AutomationProperties.AutomationId="ProjectSettingsButton">
+                                <Button x:Name="Apply" Grid.Column="1" Content="変更を確認…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
+                                <Button x:Name="ProjectSettings" Grid.Column="2" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Projectの情報と設定" AutomationProperties.AutomationId="ProjectSettingsButton">
                                     <SymbolIcon Symbol="Setting"/>
                                     <Button.Flyout>
                                         <Flyout x:Name="ProjectSettingsFlyout" Placement="BottomEdgeAlignedRight">
@@ -81,6 +80,8 @@
                                                 <StackPanel Width="380" Spacing="12">
                                                     <TextBlock Text="Projectの情報と設定" Style="{StaticResource SubtitleTextBlockStyle}"/>
                                                     <TextBlock x:Name="ProjectInformation" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ProjectInformation"/>
+                                                    <Button x:Name="ApplyHistory" Content="実行履歴…" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
+                                                    <Button Content="処理状況・診断…" Click="ShowStatusDetails" AutomationProperties.AutomationId="ProjectStatusDetailsButton"/>
                                                     <TextBox x:Name="DefaultRepository" Header="新しいローカル行の既定Repository" PlaceholderText="owner/repo" AutomationProperties.AutomationId="DefaultRepository"/>
                                                     <TextBlock Text="今後追加する行の宛先です。既存行の宛先や取得範囲は変わりません。" TextWrapping="Wrap"/>
                                                     <Button x:Name="SaveSetting" Content="設定を保存" Click="SaveDefault" AutomationProperties.AutomationId="SaveProjectSettingButton"/>
@@ -110,7 +111,7 @@
                 </Grid>
             </Grid>
         </SplitView>
-        <Border Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+        <Border x:Name="WorkspaceStatusBar" Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

@@ -14,12 +14,12 @@ internal static class WorkspaceUi
         "DetectGhButton", "BrowseGhButton", "CheckConnectionButton", "NewConnectionButton", "CancelConnectionButton",
         "ConnectionStatus", "AccountValue", "StorageValue", "IssueResult", "ProjectResult", "LoginHelpExpander"
     ];
-    private static readonly HashSet<string> ProjectSettingsControls = ["ProjectInformation", "DefaultRepository", "SaveProjectSettingButton", "UnregisterProjectButton"];
+    private static readonly HashSet<string> ProjectSettingsControls = ["ProjectInformation", "DefaultRepository", "SaveProjectSettingButton", "UnregisterProjectButton", "ApplyHistoryButton", "ProjectStatusDetailsButton"];
     private static readonly HashSet<string> DiscoveryControls = [
         "DiscoveryOwners", "LoadOwnersButton", "DiscoveryOwner", "LoadRepositoriesButton", "DiscoveryRepositories", "DiscoverySearch", "SearchProjectsButton"
     ];
     private static readonly HashSet<string> GridCommands = [
-        "GridAddRow", "GridDuplicateRows", "GridRemoveRows", "GridAppendRows", "GridCopy", "GridPaste", "GridClear", "GridUndo",
+        "GridAddRow", "GridDuplicateRows", "GridRemoveRows", "GridAppendRows", "GridCopy", "GridPaste", "GridClear", "GridUndo", "GridFillDown",
         "GridColumns", "GridRowSettings", "GridSave", "GridConflicts"
     ];
     private static AutomationElement? Find(Window window, string id)
@@ -92,9 +92,13 @@ internal static class WorkspaceUi
     }
     private static void SelectChoice(Window window, string id, Func<AutomationElement[], AutomationElement?> choose)
     {
-        Element(window, id).AsButton().Invoke();
+        Element(window, id.Replace("GridCell", "GridChoiceArrow")).AsButton().Invoke();
         AutomationElement? choice = null;
-        Wait(() => (choice = choose(window.FindAllDescendants().Where(e => (e.Properties.AutomationId.ValueOrDefault ?? "").StartsWith("ChoiceOption-") && Visible(e)).ToArray())) is not null,
+        Wait(() => {
+            try { choice = choose(window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.MenuItem))
+                .Where(e => (e.Properties.AutomationId.ValueOrDefault ?? "").StartsWith("ChoiceOption-") && Visible(e)).ToArray()); return choice is not null; }
+            catch (System.Runtime.InteropServices.COMException) { return false; } // Retry only the read during native popup transition.
+        },
             "The requested native choice must be visible: " + id);
         var expected = choice!.Properties.HelpText.Value;
         choice.Patterns.Invoke.Pattern.Invoke();
@@ -125,6 +129,14 @@ internal static class WorkspaceUi
         var information = Element(window, "ProjectInformation").Name;
         CloseProjectSettings(window);
         return information;
+    }
+    internal static string RegistrationStatusText(Window window)
+    {
+        var visibleStatus = Find(window, "RegistrationStatus");
+        if (Visible(visibleStatus)) return visibleStatus!.Name;
+        // Routine status remains in the public accessible description of the
+        // Project details entry without moving focus out of native input.
+        return Element(window, "ProjectSettingsButton").Properties.HelpText.Value;
     }
     internal static AutomationElement Element(Window window, string id)
     {

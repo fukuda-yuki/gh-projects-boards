@@ -45,15 +45,15 @@ internal sealed partial class EditingWorkspace
         var supported = SupportedColumns(p);
         var result = new List<PresentationColumn>();
         ColumnPreference Fixed(ColumnIdentity id, double width) => configured.SingleOrDefault(c => c.Id == id) ?? new(id, true, width);
-        result.Add(new(Fixed(ColumnIdentity.Title, 320), "タイトル", true));
+        result.Add(new(Fixed(ColumnIdentity.Title, 360), "タイトル", true));
         foreach (var pref in configured.Where(c => c.Id.Role == "Field"))
         {
             var field = supported.SingleOrDefault(f => f.Id.NodeId == pref.Id.FieldId);
             result.Add(new(pref, field?.Name ?? "未確認フィールド", field is not null));
         }
         foreach (var field in supported.Where(f => !configured.Any(c => c.Id.FieldId == f.Id.NodeId)))
-            result.Add(new(new(new("Field", field.Id.NodeId), true, 200), field.Name, true));
-        result.Add(new(Fixed(ColumnIdentity.Reference, 200), "既存: 参照 / 新規: 宛先", true));
+            result.Add(new(new(new("Field", field.Id.NodeId), true, 144), field.Name, true));
+        result.Add(new(Fixed(ColumnIdentity.Reference, 200), "Repository", true));
         return new(result.ToArray());
     }
     public ColumnCandidate PrepareColumns(ProjectRegistration p) => new(p.Snapshot.Id, ColumnDefinitions(p), Columns(p).Columns.Select(c => c.Preference).ToArray());

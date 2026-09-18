@@ -86,6 +86,7 @@ public sealed partial class RegistrationPanel
     private async void ShowApplyHistory(object sender, RoutedEventArgs e)
     {
         if (applyDialog || Workspace.Drafts is not { } session) return;
+        ProjectSettingsFlyout.Hide();
         var owner = Workspace; var expected = lifetime;
         applyDialog = true; ApplyHistory.IsEnabled = false;
         try

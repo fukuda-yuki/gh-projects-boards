@@ -22,12 +22,12 @@ public sealed partial class RegistrationTests
             // if composition remains active, the explicit deferral must dispatch no query.
             if (Text(w, "RegistrationStatus").Contains("IME変換中")) Assert.That(f.Calls(), Has.Length.EqualTo(calls));
             Assert.That(CellText(w, 0), Is.EqualTo("に"));
-            Assert.That(Text(w, "DraftStatus"), Does.Contain("変更フィールド 0"));
+            Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             var pending = Durable(f).GetProperty("Fields").EnumerateArray().Single(f => f.GetProperty("Key").GetProperty("NodeId").GetString() == "I1");
             Assert.That(pending.GetProperty("Buffer").GetString(), Is.EqualTo("に")); Assert.That(pending.GetProperty("Change").ValueKind, Is.EqualTo(System.Text.Json.JsonValueKind.Null));
             Element(w, "GridCell0_0").Click();
             Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN, FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN);
-            Wait(() => Text(w, "DraftStatus").Contains("変更フィールド 1"));
+            Wait(() => Text(w, "DraftStatus").Contains("GitHub未反映 1セル"));
         });
     }
 

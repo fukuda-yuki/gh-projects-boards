@@ -214,7 +214,8 @@ public sealed class LocalSheetDiagnosticTests
         }
 
         AutomationElement Element(string id) => WorkspaceUi.Element(window!, id);
-        void SelectedRow(int row) => Wait(() => Element("GridSelection").Name == $"行 {row + 1} 列 1 ～ 行 {row + 1} 列 1",
+        void SelectedRow(int row) => Wait(() => Element("GridSelection").Name == "タイトル：1行・1セル"
+            && Element("GridSelection").Properties.HelpText.ValueOrDefault == $"先頭 P1T{row + 1} / アクティブ P1T{row + 1}",
             "The native input must reach the expected public selected row before the next input.");
         void ClickCell(int row)
         {
@@ -317,7 +318,8 @@ public sealed class LocalSheetDiagnosticTests
             ClickCell(2);
             using (Keyboard.Pressing(VirtualKeyShort.SHIFT)) { NativeKey(VirtualKeyShort.RIGHT); NativeKey(VirtualKeyShort.DOWN); }
             var selected = Element("GridSelection").Name;
-            Assert.That(selected, Does.Contain("行 3 列 1").And.Contain("行 4 列 2"));
+            Assert.That(selected, Is.EqualTo("タイトル ～ Renamed workflow：2行・4セル"));
+            Assert.That(Element("GridSelection").Properties.HelpText.ValueOrDefault, Is.EqualTo("先頭 P1T3 / アクティブ P1T4"));
             Wheel("range-down", 100, false); Wheel("range-return", 0, false);
             Assert.That(Element("GridSelection").Name, Is.EqualTo(selected));
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
