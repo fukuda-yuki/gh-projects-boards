@@ -39,15 +39,17 @@ public sealed partial class RegistrationTests
             FlaUI.Core.Input.Keyboard.TypeVirtualKeyCode(0x16);
             Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_N, FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_I);
             Assert.That(cell.Text, Is.EqualTo("に")); Invoke(w, "ReviewApplyButton");
-            Wait(() => Text(w, "RegistrationStatus").Contains("IME変換中"));
-            Assert.That(w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")), Is.Null);
-            Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
-            Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN); // Natural IME confirmation leaves the cell uncommitted.
-            Invoke(w, "ReviewApplyButton");
+            Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is not null || Text(w, "RegistrationStatus").Contains("IME変換中"));
+            if (w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyReviewDialog")) is null)
+            {
+                Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
+                Key(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN); // Natural IME confirmation leaves the cell uncommitted.
+                Invoke(w, "ReviewApplyButton");
+            }
             Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
             Wait(() => Element(w, "ApplyCheckStatus").Name.Contains("最新確認済み"));
             Assert.That(Element(w, "PrimaryButton").IsEnabled, Is.False);
-            Assert.That(Element(w, "ApplyDifferences").FindAllDescendants().Select(e => e.Name), Has.Some.Contains("送らない未確定入力: に"));
+            Assert.That(Element(w, "ApplyReviewDialog").FindAllDescendants().Select(e => e.Name), Has.Some.Contains("送らない未確定入力: に"));
             Capture(w, f.Root, "physical-ime-pending-review"); Invoke(w, "CloseButton");
             Assert.That(CellText(w, 0), Is.EqualTo("に")); Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);

@@ -141,8 +141,14 @@ internal static class WorkspaceUi
     }
     internal static AutomationElement Element(Window window, string id)
     {
-        if (ConnectionControls.Contains(id) && !Visible(Find(window, "ConnectionScreen")))
-            InvokeRoute(window, "ConnectionPageButton");
+        // The always-visible return button identifies the page even when a
+        // ScrollViewer peer is omitted or a system picker obscures its owner.
+        if (ConnectionControls.Contains(id) && Find(window, "ProjectsPageButton") is null)
+        {
+            Wait(() => Find(window, "ProjectsPageButton") is not null || Find(window, "ConnectionPageButton")?.IsEnabled == true,
+                "Connection settings or its entry must be available after the native dialog settles.");
+            if (Find(window, "ProjectsPageButton") is null) InvokeRoute(window, "ConnectionPageButton");
+        }
         if (ConnectionDetailsControls.Contains(id))
         {
             Wait(() => Find(window, "ConnectionDetails") is not null, "Connection settings must load before opening CLI details.");

@@ -197,6 +197,8 @@ public sealed partial class RegistrationPanel
 
     private StackPanel CandidateDetails(ApplyCandidate candidate, ApplyReview? review, bool checkedLatest, Action changed)
     {
+        var owner = Workspace; var session = owner.Drafts!; var project = owner.Selected!.Snapshot.Id; var expected = lifetime;
+        bool Current() => IsCurrent(owner, expected) && ReferenceEquals(owner.Drafts, session) && owner.Selected?.Snapshot.Id == project;
         var panel = ApplyPanel(4);
         panel.Children.Add(ApplyText(candidate.Identity, true));
         if (candidate.Missing) panel.Children.Add(ApplyMessage("取得結果で確認できません", "変更は保持しています。最新状態を確認できるまで送信できません。", InfoBarSeverity.Warning));
@@ -231,10 +233,11 @@ public sealed partial class RegistrationPanel
                     AutomationProperties.SetAutomationId(button, $"ApplyResolve-{candidate.Id}-{field.Key.Kind}{(field.Key.FieldId is null ? "" : "-" + field.Key.FieldId)}-{(useRemote ? "Remote" : "Local")}");
                     button.Click += async (_, _) =>
                     {
+                        if (!Current()) return;
                         button.IsEnabled = false;
                         var chosen = useRemote ? new LocalValue(remote.Value, field.Key.Kind != "Title" && remote.Value is null) : field.Change!;
-                        await Workspace.Drafts!.CommitAsync(w => { w.Resolve(Workspace.Selected!.Snapshot.Id.NodeId, decision, chosen); return w; }, () => CanRefreshEditors());
-                        changed();
+                        await session.CommitAsync(w => { w.Resolve(project.NodeId, decision, chosen); return w; }, () => Current() && CanRefreshEditors());
+                        if (Current()) changed();
                     };
                     panel.Children.Add(button);
                 }

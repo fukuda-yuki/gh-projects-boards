@@ -154,7 +154,7 @@ internal sealed class RowViewTests
         View(s.Workspace, p, new(Title: "Issue 1")); var visible = s.Workspace.EvaluateRows(p).Select(r => r.ItemId).ToArray();
         h.Titles["I1"] = "gone"; h.Titles["I2"] = "Issue 1";
         await h.Workspace.PrepareApplyAsync(visible.ToHashSet(), new(p.Snapshot.Id, visible, visible, false));
-        Assert.That(h.Workspace.ApplyReview, Is.Null); Assert.That(h.Workspace.Status, Does.Contain("再選択")); Assert.That(h.Writes, Is.Empty);
+        Assert.That(h.Workspace.ApplyReview, Is.Null); Assert.That(h.Workspace.Status, Does.Contain("選び直して")); Assert.That(h.Writes, Is.Empty);
         Assert.That(s.Workspace.EvaluateRows(h.Workspace.Selected!).Select(r => r.ItemId), Is.EqualTo(new[] { "P1-T2" }));
     }
     [TestCase(false), TestCase(true)]
