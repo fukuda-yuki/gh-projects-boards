@@ -125,7 +125,7 @@ In a registered Project, choose **GitHubに反映…**. One **反映内容の確
 
 **反映結果・履歴** is beside the Apply command and opens after execution unless native composition requires keeping editor focus. It shows per-field outcomes and provides explicit revalidation/resume; reopening never resumes writes. Uncertain work may require withdrawing the old approval and preparing a fresh review. Already verified success is not resent. Cancellation stops unsent work and does not roll back completed changes.
 
-Execution history is stored in version 6 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1–5 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
+Execution history is stored in version 7 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1–6 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
 
 ### Routine logic and adapter checks
 
