@@ -6,8 +6,8 @@ namespace GhProjectsBoards.E2E.Tests;
 
 public sealed partial class RegistrationTests
 {
-    [TestCase(false), TestCase(true, Category = "GridIme")]
-    public void MixedApplyReturnsToProblemWithoutTakingNativeCompositionFocus(bool ime)
+    [TestCase(false, 960, 600), TestCase(true, 1280, 800, Category = "GridIme")]
+    public void MixedApplyReturnsToProblemWithoutTakingNativeCompositionFocus(bool ime, int width, int height)
     {
         using var f = new Fixture();
         File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new {
@@ -15,6 +15,8 @@ public sealed partial class RegistrationTests
         f.Run(w =>
         {
             Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1);
+            var scale = WorkspaceWindowDpi(w.Properties.NativeWindowHandle.Value) / 96d;
+            w.Patterns.Transform.Pattern.Resize(width * scale, height * scale);
             Edit(w, 0, "verified first"); Edit(w, 1, "failed second");
             Invoke(w, "ReviewApplyButton");
             Element(w, "ApplySelectAll").AsCheckBox().IsChecked = true; WorkspaceUi.WaitForApplyReady(w);
