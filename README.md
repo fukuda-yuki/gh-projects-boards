@@ -17,6 +17,8 @@ dotnet build GhProjectsBoards.sln --configuration Release
 
 The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Ordinary startup opens **ワークスペース**, requires no GitHub login and performs no network request. Use **接続設定** for an explicit connection check. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
 
+In VS Code, F5 runs **GhProjectsBoards.App (Debug)** from [.vscode/launch.json](.vscode/launch.json): it builds the app project in Debug and launches the executable with the debugger attached. The GitHub Copilot app's **起動** run button instead builds the whole solution in Release through [scripts/Start-App.ps1](scripts/Start-App.ps1) and leaves the app running detached.
+
 The [dependency terms and source inventory](docs/dependencies.md) distinguishes Windows development use from binary redistribution. DWrite/Widgets redistribution applicability remains an unresolved #13 distribution blocker.
 
 ## Check a connection
