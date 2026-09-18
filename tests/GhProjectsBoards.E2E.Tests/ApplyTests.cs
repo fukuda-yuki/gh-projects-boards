@@ -49,7 +49,7 @@ public sealed partial class RegistrationTests
             Element(w, "ApplyTargetRows").AsListBox().Items[0].Select();
             Wait(() => Element(w, "ApplyCheckStatus").Name.Contains("最新確認済み"));
             Assert.That(Element(w, "PrimaryButton").IsEnabled, Is.False);
-            Assert.That(Element(w, "ApplyReviewDialog").FindAllDescendants().Select(e => e.Name), Has.Some.Contains("送らない未確定入力: に"));
+            Assert.That(Element(w, "ApplyReviewDialog").FindAllDescendants().Select(e => e.Properties.Name.ValueOrDefault ?? ""), Has.Some.Contains("送らない未確定入力: に"));
             Capture(w, f.Root, "physical-ime-pending-review"); Invoke(w, "CloseButton");
             Assert.That(CellText(w, 0), Is.EqualTo("に")); Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
