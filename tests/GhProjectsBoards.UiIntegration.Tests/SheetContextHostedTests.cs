@@ -16,6 +16,42 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable]
 public sealed class SheetContextHostedTests
 {
+    [TestCase(false), TestCase(true)]
+    public async Task RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible(bool multiple)
+    {
+        var p = ColumnTests.Project(); var issues = p.Snapshot.Issues.ToDictionary();
+        var second = issues.Values.Last();
+        if (multiple) issues[second.Id] = second with { Repository = second.Repository with { Id = new(p.Snapshot.Id.Scope, "R2"), NameWithOwner = "owner/second" } };
+        p = p with { Snapshot = p.Snapshot with { Issues = issues } };
+        var work = new EditingWorkspace(p.Snapshot.Id.Scope); work.SetRegistrations([p]); work.Open(p);
+        work.SaveRowView(work.PrepareRowView(p) with { Definition = new(Title: "Issue 1") });
+        var session = new DraftSession(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-identity-" + Guid.NewGuid().ToString("N"))), work, 0);
+        EditingGrid grid = null!;
+        await Ui.Run(() => grid = new EditingGrid(p, session, () => Task.FromResult(true)) { Width = 740, Height = 480 });
+        await Ui.Mount(grid);
+        try
+        {
+            await Ui.Ready<TextBox>("GridCell0_0");
+            await Ui.Run(() =>
+            {
+                Assert.That(grid.DisplayedRowIds, Is.EqualTo(new[] { "P1T1" }));
+                Assert.That(Ui.Find<TextBlock>("GridRowIdentity0").Text, Is.EqualTo(multiple ? "#1  owner/repo" : "#1"));
+                Assert.That(ToolTipService.GetToolTip(Ui.Find<TextBlock>("GridRowIdentity0"))?.ToString(), Does.Contain("owner/repo"));
+                Assert.That(Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard), Is.True);
+            });
+            await Ui.Until(() => grid.SelectionIdentity?.Field == new FieldKey("Title", "I1"));
+            await Ui.Run(() =>
+            {
+                Ui.Find<TextBox>("GridCell0_0").Text = "pending title";
+                var details = Ui.Find<Button>("GridDetails"); Assert.That(details.Focus(FocusState.Keyboard), Is.True); Ui.Click(details);
+                Assert.That(work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending title"));
+                Assert.That(work.DifferenceCount, Is.Zero);
+            });
+            await Ui.Until(() => Ui.Tree(grid).OfType<TextBlock>().Any(t => t.IsLoaded && t.Text.Contains("#1  owner/repo\nProject:")));
+        }
+        finally { await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle(); }
+    }
+
     [Test]
     public async Task VisibleScrollbarMovesTheViewportAndRetainsThePendingNativeEditor()
     {
@@ -176,7 +212,8 @@ public sealed class SheetContextHostedTests
             {
                 Assert.That(title.TransformToVisual(grid).TransformPoint(new(0, 0)).X, Is.EqualTo(left).Within(1), "The title must stay readable beside later fields.");
                 var identity = Ui.Find<TextBlock>("GridRowIdentity0");
-                Assert.That(identity.Text, Does.Contain("owner/repo").And.Contain("#1"));
+                Assert.That(identity.Text, Is.EqualTo("#1"));
+                Assert.That(ToolTipService.GetToolTip(identity)?.ToString(), Does.Contain("owner/repo"));
                 Assert.That(identity.TransformToVisual(grid).TransformPoint(new(0, 0)).X, Is.InRange(0, 740));
                 Assert.That(Ui.Find<Grid>("SheetHeader").ColumnDefinitions[1].Width.Value + 44, Is.LessThan(600), "Frozen identity must leave room for editable fields in a narrow viewport.");
                 Assert.That(work.Columns(p).Visible[0].Preference.Width, Is.EqualTo(titleWidth), "Responsive presentation must preserve the saved width.");

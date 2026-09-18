@@ -43,6 +43,7 @@ internal sealed partial class EditingGrid : Grid
     private EditRow[] canonicalRows;
     private ColumnLayout layout;
     private readonly ProjectRegistration registration;
+    private readonly bool showRepositoryIdentity;
     private readonly Func<Task<bool>> prepareLocalRows;
     private sealed record SheetClipboard(string Text, CopiedCells? Cells);
     private const string ClipboardFormat = "GhProjectsBoards.Cells.v1";
@@ -69,6 +70,7 @@ internal sealed partial class EditingGrid : Grid
     internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null)
     {
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
+        showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
         using var measured = diagnostics?.Span("grid-constructor");
         cellStyle = (Style)Application.Current.Resources["SheetCellStyle"];
@@ -314,10 +316,10 @@ internal sealed partial class EditingGrid : Grid
             if (c == 0)
             {
                 container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-                var identity = new TextBlock { Text = RowIdentity(rows[r]), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
+                var identity = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
                     VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
                 AutomationProperties.SetAutomationId(identity, $"GridRowIdentity{r}");
-                ToolTipService.SetToolTip(identity, identity.Text);
+                ToolTipService.SetToolTip(identity, RowIdentity(rows[r]));
                 SetColumn(identity, 1); container.Children.Add(identity);
             }
             SetColumnSpan(marker, container.ColumnDefinitions.Count); container.Children.Add(marker);
@@ -399,12 +401,12 @@ internal sealed partial class EditingGrid : Grid
         else if (right - offset > listScroll.ViewportWidth) offset = right - listScroll.ViewportWidth;
         listScroll.ChangeView(Math.Clamp(offset, 0, listScroll.ScrollableWidth), null, null, true);
     }
-    private string RowIdentity(EditRow row)
+    private string RowIdentity(EditRow row, bool compact = false)
     {
         if (row.IsLocal) return "新規（ローカル）";
         var item = registration.Snapshot.Items.SingleOrDefault(item => item.Id.NodeId == row.ItemId);
         var issue = item?.ContentId is { } id ? registration.Snapshot.Issues.GetValueOrDefault(id) : null;
-        return issue is null ? row.ItemId : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
+        return issue is null ? row.ItemId : compact && !showRepositoryIdentity ? $"#{issue.Number}" : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
     }
     private void FreezeIdentity(Grid line, double offset)
     {
