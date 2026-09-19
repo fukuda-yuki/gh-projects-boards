@@ -78,7 +78,7 @@ internal sealed partial class EditingGrid
         {
             selected = session.Workspace.Fields.Single(f => f.Key == fields[picker.SelectedIndex].Key);
             var remote = selected.Observation!;
-            string Display(string? value) => value is null ? "（明示的な空値）" : selected.Key.Kind == "Title" ? value
+            string Display(string? value) => value is null ? "（明示的な空値）" : selected.Key.Kind != "Select" ? value
                 : $"{remote.Options.SingleOrDefault(o => o.Id == value)?.Name ?? "選択肢不明"} [ID: {value}]";
             baseline.Text = Display(selected.Baseline);
             localValue.Text = selected.Change is { Clear: true } ? "明示的にクリア" : Display(selected.Change is { } local ? local.Value : selected.Baseline);
@@ -97,15 +97,16 @@ internal sealed partial class EditingGrid
             if (diagnostics.Length > 0) identityDetails.Text += "\n\n構成変更・Undo:\n" + diagnostics;
             dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = other.IsEnabled = decision is not null;
             text.IsEnabled = options.IsEnabled = clear.IsEnabled = decision is not null;
-            text.Visibility = selected.Key.Kind == "Title" ? Visibility.Visible : Visibility.Collapsed;
-            options.Visibility = clear.Visibility = selected.Key.Kind == "Select" ? Visibility.Visible : Visibility.Collapsed;
+            text.Visibility = selected.Key.Kind is "Title" or "Number" ? Visibility.Visible : Visibility.Collapsed;
+            options.Visibility = selected.Key.Kind == "Select" ? Visibility.Visible : Visibility.Collapsed;
+            clear.Visibility = selected.Key.Kind != "Title" ? Visibility.Visible : Visibility.Collapsed;
             text.Text = selected.Change?.Value ?? selected.Baseline ?? ""; options.ItemsSource = remote.Options; options.SelectedIndex = -1; clear.IsChecked = false;
         }
         picker.SelectionChanged += (_, _) => Show();
         other.Click += (_, _) =>
         {
             alternative = selected.Key.Kind == "Title" ? new(text.Text) : clear.IsChecked == true ? new(null, true)
-                : options.SelectedItem is SelectOption option ? new(option.Id) : null;
+                : selected.Key.Kind == "Number" ? new(text.Text) : options.SelectedItem is SelectOption option ? new(option.Id) : null;
             if (alternative is not null) dialog.Hide();
         };
         Show(); var result = await dialog.ShowAsync();

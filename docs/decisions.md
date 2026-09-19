@@ -4,7 +4,7 @@ Record accepted choices and their rationale. Keep task progress and experimental
 
 ## Planning fidelity and portability
 
-Adopt the [planning ownership matrix](planning.md) and checkpoint v8. GitHub NUMBER supplies selected work scalars; DATE is only a day projection. Exact intraday Manual/Auto provenance, per-person reports, weights and adopted calendar belong in typed local metadata, never Issue prose. Existing scalar drafts/reconciliation/Apply retain their authority; no second store or queue. Copy adopted holidays into the Project checkpoint so a bundle update cannot rewrite the plan.
+Adopt the [planning ownership matrix](planning.md) and checkpoint v9. GitHub NUMBER supplies selected work scalars; DATE is only a day projection. Exact intraday Manual/Auto provenance, per-person reports, weights and adopted calendar belong in typed local metadata, never Issue prose. Existing scalar drafts/reconciliation/Apply retain their authority; no second store or queue. Copy adopted holidays into the Project checkpoint so a bundle update cannot rewrite the plan.
 
 Use validated full-checkpoint backup and same-host/viewer restore into an empty root. Preserve unfinished/unknown dispatch evidence; independent copies are not concurrent synchronization. Unknown versions reject rather than reset. Native `blockedBy` means directed FS predecessor, distinct from hierarchy; unsupported richer links remain explicit. External contracts: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects), [official holidays](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html). #2 owns bounded proofs, #61 production integration, #13 distribution notices.
 

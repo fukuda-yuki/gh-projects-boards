@@ -132,6 +132,10 @@ internal sealed partial class EditingGrid : Grid
         Command("下へコピー (Ctrl+D)", "GridFillDown", Symbol.Download, FillDown);
         Command("元に戻す", "GridUndo", Symbol.Undo, Undo);
         Command("値をクリア", "GridClear", Symbol.Clear, ClearSelected, true);
+        var planning = Tool("計画", "GridPlanning", Symbol.Calendar);
+        planning.Click += async (_, _) => await PlanningDialogAsync(false);
+        var planningSettings = Tool("計画設定", "GridPlanningSettings", Symbol.Setting, true);
+        planningSettings.Click += async (_, _) => await PlanningDialogAsync(true);
         var columnSettings = Tool("列", "GridColumns", Symbol.ViewAll);
         columnSettings.Click += async (_, _) => await ConfigureColumnsAsync(columnSettings);
         var viewSettings = Tool("並べ替え・フィルター", "GridRowSettings", Symbol.Filter);
@@ -736,7 +740,7 @@ internal sealed partial class EditingGrid : Grid
         }
         else if (row.IsLocal) lines.Add($"B 基準: 未作成\nL ローカル: {Display(session.Workspace.Value(cell))}\nR GitHub: 未作成・未取得");
         lines.Add($"{RowIdentity(row)}\nProject: {projectId} / 項目: {row.ItemId} / 所有: {cell.Key?.Kind ?? "参照"} / ID: {cell.Key?.NodeId} / フィールド: {cell.Key?.FieldId}");
-        selectedDetails.Text = string.Join("\n", lines);
+        selectedDetails.Text = string.Join("\n", lines) + PlanningSummary(row);
         selectedDetails.Text += "\n" + status.Text + $"\nプロフィール全体: GitHub未反映 {session.Workspace.DifferenceCount}セル\n" + viewNotice.Text;
     }
     private IEnumerable<EditCell> Range()
@@ -1059,7 +1063,7 @@ internal sealed partial class EditingGrid : Grid
             var committed = owner.session.Workspace.Value(cell);
             var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind is "Select" or "LocalSelect"
                 ? cell.Options.SingleOrDefault(o => o.Id == committed)?.Name ?? (committed is not null ? "保存された選択肢IDを確認できません（要照合）" : EditingWorkspace.AvailabilityText(cell.Availability))
-                : committed ?? cell.Reason ?? "閲覧不可");
+                : committed ?? cell.Reason ?? (cell.Availability == ValueAvailability.Empty ? "" : "閲覧不可"));
             if (Text != value) { restoring = true; Text = value; restoring = false; }
             Editing = buffer is not null;
         }

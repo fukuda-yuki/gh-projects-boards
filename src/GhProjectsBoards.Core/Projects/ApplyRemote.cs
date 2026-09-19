@@ -30,8 +30,14 @@ internal sealed partial class ApplyRemote(GhConnectionService service, Connectio
         else
         {
             field = "updateProjectV2ItemFieldValue";
+            if (!PlanningScalars.Publishable(o.Key.Kind, o.Intended)) return new(ApiOutcome.Failed, FailureKind.InvalidResponse);
+            object value = o.Key.Kind switch {
+                "Number" => new { number = PlanningContract.ParseHours(o.Intended.Value!) },
+                "Date" => new { date = PlanningScalars.Normalize("Date", o.Intended.Value!) },
+                _ => (object)new { singleSelectOptionId = o.Intended.Value }
+            };
             request = ApiRequest.GraphQl("mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
-                new { input = new { projectId = batch.Project.NodeId, itemId = o.ItemId, fieldId = o.Key.FieldId, value = new { singleSelectOptionId = o.Intended.Value } } });
+                new { input = new { projectId = batch.Project.NodeId, itemId = o.ItemId, fieldId = o.Key.FieldId, value } });
         }
         var result = await service.SendAsync(context, request, token, o.Key.Kind == "Title" ? "repo" : "project");
         if (!result.IsSuccess) return result;

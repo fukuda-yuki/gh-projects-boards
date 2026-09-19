@@ -60,7 +60,7 @@ internal sealed class ProjectReader(GhConnectionService service)
             var key = operation.Key;
             if (projectId.Scope != ConnectionScope.From(context)
                 || (key.Kind == "Title" ? key.NodeId != operation.IssueId || key.ProjectId is not null || key.FieldId is not null
-                    : key.Kind != "Select" || key.NodeId != operation.ItemId || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
+                    : key.Kind is not ("Select" or "Number" or "Date") || key.NodeId != operation.ItemId || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
                 return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
             try
             {
@@ -99,10 +99,12 @@ internal sealed class ProjectReader(GhConnectionService service)
                         || field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
                     options = field.Options;
-                    if (!operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value))
+                    if (field.DataType != PlanningScalars.DataType(key.Kind)
+                        || key.Kind == "Select" && !operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value)
+                        || !PlanningScalars.Publishable(key.Kind, operation.Intended))
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
                     var observed = item.Values.Single(v => v.FieldId == field.Id);
-                    value = observed.OptionId; availability = observed.Availability;
+                    value = key.Kind == "Select" ? observed.OptionId : observed.Scalar; availability = observed.Availability;
                 }
                 if (availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return Failure();
                 // This is evidence for one field only. No complete Project snapshot is published.
@@ -190,8 +192,9 @@ internal sealed class ProjectReader(GhConnectionService service)
                     options.Add(new(optionId, Text(option, "name", allowEmpty: true)));
                 }
             }
-            var availability = owner == FieldOwner.ProjectItem && dataType == "SINGLE_SELECT"
-                && type == "ProjectV2SingleSelectField" ? ValueAvailability.Present : ValueAvailability.Unsupported;
+            var availability = owner == FieldOwner.ProjectItem && (dataType == "SINGLE_SELECT"
+                && type == "ProjectV2SingleSelectField" || dataType is "NUMBER" or "DATE" && type == "ProjectV2Field")
+                ? ValueAvailability.Present : ValueAvailability.Unsupported;
             fields.Add(id, new(id, projectId, Text(node, "name", allowEmpty: true), type, dataType, owner,
                 options.AsReadOnly(), availability));
         }
@@ -264,6 +267,26 @@ internal sealed class ProjectReader(GhConnectionService service)
             {
                 item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Unsupported));
                 return;
+            }
+            if (definition.DataType is "NUMBER" or "DATE")
+            {
+                var expected = definition.DataType == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue";
+                var raw = Optional(node, definition.DataType == "NUMBER" ? "number" : "date");
+                string? scalar = null;
+                var known = type == expected && raw.ValueKind == JsonValueKind.Null;
+                try
+                {
+                    if (type == expected && (definition.DataType == "NUMBER" ? raw.ValueKind == JsonValueKind.Number : raw.ValueKind == JsonValueKind.String))
+                    {
+                        scalar = definition.DataType == "NUMBER" ? PlanningScalars.RemoteNumber(raw)
+                            : PlanningScalars.Normalize("Date", raw.GetString()!);
+                        known = true;
+                    }
+                }
+                catch (Exception e) when (e is FormatException or OverflowException or InvalidOperationException) { known = false; }
+                var state = !known ? ValueAvailability.Unavailable : scalar is null ? ValueAvailability.Empty : ValueAvailability.Present;
+                if (!known) problems.Add(new(ReadProblemKind.IncompleteTraversal, "scalar"));
+                item.Values.Add(new(fieldId, valueId, type, state, Scalar: scalar)); return;
             }
             if (type != "ProjectV2ItemFieldSingleSelectValue")
             {

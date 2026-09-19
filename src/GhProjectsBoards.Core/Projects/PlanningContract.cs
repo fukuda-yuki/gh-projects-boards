@@ -135,6 +135,6 @@ internal sealed partial class EditingWorkspace
             throw new InvalidOperationException("計画は変更されています。現在の値を確認してください。");
         var next = plan with { Stamp = Revision + 1 };
         PlanningContract.Validate(next, Revision + 1);
-        planning.RemoveAll(p => p.ProjectId == next.ProjectId); planning.Add(next); Revision++;
+        planning.RemoveAll(p => p.ProjectId == next.ProjectId); planning.Add(next); Revision++; InvalidatePlan(next.ProjectId);
     }
 }

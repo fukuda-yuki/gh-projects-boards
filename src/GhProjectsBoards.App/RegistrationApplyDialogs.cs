@@ -147,7 +147,7 @@ public sealed partial class RegistrationPanel
     private string ApplyValue(ApplyOperation operation, string? value)
     {
         if (value is null) return "明示的な空値";
-        if (operation.Key.Kind == "Title") return value;
+        if (operation.Key.Kind is "Title" or "Number" or "Date") return value;
         var name = Workspace.Registrations.Where(p => p.Snapshot.Id.Scope == Workspace.Profile && p.Snapshot.Id.NodeId == operation.Key.ProjectId)
             .SelectMany(p => p.Snapshot.Fields).SingleOrDefault(f => f.Id.NodeId == operation.Key.FieldId)?.Options.SingleOrDefault(o => o.Id == value)?.Name;
         return name ?? value + "（選択肢名は未確認）";

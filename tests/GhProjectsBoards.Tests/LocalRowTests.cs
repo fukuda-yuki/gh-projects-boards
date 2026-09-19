@@ -115,7 +115,7 @@ internal sealed class LocalRowTests
         var final = (await store.LoadAsync(v3.Scope))!;
         Assert.That(Json(final.Journal), Is.EqualTo(Json(v3.Journal))); Assert.That(Json(final.Fields), Is.EqualTo(Json(v3.Fields)));
         Assert.That(Json(final.History[..v3.History.Length]), Is.EqualTo(Json(v3.History)));
-        Assert.That(final.Version, Is.EqualTo(8)); Assert.That(EditingWorkspace.Restore(final).HasUnresolvedApply, Is.True);
+        Assert.That(final.Version, Is.EqualTo(9)); Assert.That(EditingWorkspace.Restore(final).HasUnresolvedApply, Is.True);
     }
     [Test]
     public async Task LastUnregistrationRetainRestartAndReregisterRecoversLocalRows()
@@ -249,6 +249,6 @@ internal sealed class LocalRowTests
         var p = EditingTests.Registration();
         var w = new EditingWorkspace(p.Snapshot.Id.Scope);
         Assert.That(w.Open(p), Has.Length.EqualTo(101));
-        Assert.That(w.Snapshot().Version, Is.EqualTo(8));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(9));
     }
 }

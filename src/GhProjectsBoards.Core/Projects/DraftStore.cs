@@ -171,7 +171,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -182,32 +182,42 @@ internal sealed class DraftStore(string registrationRoot)
         if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
+        if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date")))
+            throw new InvalidDataException("Unversioned planning operations.");
         ValidateLocalRows(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
-            && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind == "Select" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
+            && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind is "Select" or "Number" or "Date" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
         bool Field(DraftField? f) => f is not null && Key(f.Key) && f.SourceProject is not null && f.SourceProject.Scope == r.Scope
-            && (f.Key.Kind != "Select" || f.SourceProject.NodeId == f.Key.ProjectId)
+            && (f.Key.Kind == "Title" || f.SourceProject.NodeId == f.Key.ProjectId)
+            && PlanningScalars.RemoteValid(f.Key.Kind, f.Baseline) && PlanningScalars.Valid(f.Key.Kind, f.Change?.Value)
             && !string.IsNullOrWhiteSpace(f.SourceProject.NodeId) && f.RetrievedAt != default && f.Stamp >= 0 && f.Stamp <= r.Revision
             && (f.Key.Kind != "Title" || !string.IsNullOrWhiteSpace(f.Baseline))
             && (f.Key.Kind != "Title" || f.Change?.Value is not { } title || title.IndexOfAny(['\r','\n','\t']) < 0)
-            && (f.Change is null || f.Change.Value != f.Baseline && (f.Change.Clear ? f.Key.Kind == "Select" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
+            && (f.Change is null || f.Change.Value != f.Baseline && (f.Change.Clear ? f.Key.Kind != "Title" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
         if (r.Fields.Any(f => !Field(f)) || r.Fields.Select(f => f.Key).Distinct().Count() != r.Fields.Length
-            || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0 && t.Rows is not { Length: > 0 }
+            || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0 && t.Rows is not { Length: > 0 } && t.Plan is null
                 || t.Changes.Any(c => c is null || c.Before is null || c.After is null)
                 || t.Changes.Select(c => c?.Key).Distinct().Count() != t.Changes.Length
                 || t.Changes.Any(c => c is null || !Key(c.Key) || !Field(c.Before) || !Field(c.After) || c.Key != c.Before.Key || c.Key != c.After.Key
-                    || c.Key.Kind == "Select" && c.Key.ProjectId != t.ProjectId
+                    || c.Key.Kind != "Title" && c.Key.ProjectId != t.ProjectId
                     || c.Before.Stamp >= c.After.Stamp || t.Changes.Any(other => other.After.Stamp != c.After.Stamp)
                     || t.Resolution && (!c.Before.Conflict || c.After.Conflict || c.Before.Observation is null
                         || c.Before.Observation.Id != c.After.Observation?.Id || c.After.Baseline != c.Before.Observation.Value)
                     || !r.Fields.Any(f => f.Key == c.Key) || !t.Resolution && c.Before.Baseline != c.After.Baseline || c.Before.SourceProject != c.After.SourceProject))
             || r.History.Select(t => t.Id).Distinct().Count() != r.History.Length)
             throw new InvalidDataException("Inconsistent draft record.");
+        foreach (var t in r.History.Where(t => t.Plan is not null))
+        {
+            PlanningContract.Validate(t.Plan!.After, r.Revision);
+            if (t.Plan.Before is not null) PlanningContract.Validate(t.Plan.Before, r.Revision);
+            if (t.Plan.After.ProjectId != t.ProjectId || t.Plan.Before is { } before && (before.ProjectId != t.ProjectId || before.Stamp >= t.Plan.After.Stamp))
+                throw new InvalidDataException("Invalid planning history.");
+        }
         foreach (var f in r.Fields.Concat(r.History.SelectMany(t => t.Changes.SelectMany(c => new[] { c.Before, c.After }))))
         {
             if (f.Conflict && (f.Observation is null || f.Change is null) || f.Observation is { } o && (string.IsNullOrWhiteSpace(o.Id) || o.Project.Scope != r.Scope
                 || o.At == default || !Enum.IsDefined(o.Availability) || o.Options is null || o.Options.Any(x => x is null)
-                || string.IsNullOrWhiteSpace(o.Project.NodeId) || f.Key.Kind == "Select" && o.Project.NodeId != f.Key.ProjectId
+                || string.IsNullOrWhiteSpace(o.Project.NodeId) || f.Key.Kind != "Title" && o.Project.NodeId != f.Key.ProjectId
                 || o.Options.Any(x => string.IsNullOrWhiteSpace(x.Id)) || o.Options.Select(x => x.Id).Distinct().Count() != o.Options.Length
                 || o.Availability is not (ValueAvailability.Present or ValueAvailability.Empty) && o.Reason is null
                 || o.Availability == ValueAvailability.Empty && (o.Value is not null || f.Key.Kind == "Title")

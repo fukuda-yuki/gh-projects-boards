@@ -129,7 +129,7 @@ internal sealed class CreationTests
         Assert.That(restored.LocalRows.Single().TitleBuffer, Is.EqualTo("pending日本語"));
         Assert.That(restored.LocalRows.Single().Selects.Single().Intent, Is.EqualTo("Set"));
         await store.SaveAsync(restored.Snapshot(), v4.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(8)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(9)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
     public async Task IdOnlyResponseIsDurableAndVerifiedWithoutRecreation()
@@ -224,7 +224,7 @@ internal sealed class CreationTests
     }
     [Test]
     public void CheckpointUsesNextExplicitVersion()
-        => Assert.That(new EditingWorkspace(new("github.com", 42)).Snapshot().Version, Is.EqualTo(8));
+        => Assert.That(new EditingWorkspace(new("github.com", 42)).Snapshot().Version, Is.EqualTo(9));
 
     [TestCase(false), TestCase(true)]
     public async Task RemoteMembershipOrFieldBeforePersistenceReconcilesAfterReloadWithoutReplay(bool fieldStage)

@@ -46,7 +46,7 @@ internal static class ApplyJournal
                     || verification.Availability == ValueAvailability.Present && string.IsNullOrWhiteSpace(verification.Value))
                 || (o.Key.Kind == "Title" ? o.Key.NodeId != o.IssueId || o.Key.ProjectId is not null || o.Key.FieldId is not null
                     || o.Intended.Clear || string.IsNullOrWhiteSpace(o.Intended.Value) || o.Intended.Value.IndexOfAny(['\r','\n','\t']) >= 0
-                    : o.Key.Kind != "Select" || o.Key.NodeId != o.ItemId || o.Key.ProjectId != batch.Project.NodeId || string.IsNullOrWhiteSpace(o.Key.FieldId)
+                    : o.Key.Kind is not ("Select" or "Number" or "Date") || o.Key.NodeId != o.ItemId || o.Key.ProjectId != batch.Project.NodeId || string.IsNullOrWhiteSpace(o.Key.FieldId)
                     || (o.Intended.Clear ? o.Intended.Value is not null : string.IsNullOrWhiteSpace(o.Intended.Value)))
                 || o.Attempts.Where((a, i) => a is null || a.Number != i + 1 || a.At == default || !Enum.IsDefined(a.State) || a.Reason is null).Any()
                 || o.State == ApplyState.Succeeded && (o.Verification is null || o.Verification.Value != o.Intended.Value
@@ -78,7 +78,7 @@ internal sealed partial class EditingWorkspace
         if (project.Snapshot.Id.Scope != Scope || !HasCheckpoint) throw new InvalidOperationException("保存済み同一プロフィールが必要です。");
         var p = project.Snapshot;
         var blocked = new List<ApplyReviewProblem>(); var operations = new List<ApplyOperation>();
-        var rows = new EditingWorkspace(Scope).Open(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
+        var rows = ObservationWorkspace().Open(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
         var locals = localRows.Where(r => r.ProjectId == p.Id.NodeId && selectedItems.Contains(r.Id)).ToArray();
         foreach (var id in selectedItems.Except(rows.Select(r => r.ItemId).Concat(locals.Select(r => r.Id))))
             blocked.Add(new(id, null, "選択した項目を現在のProjectで確認できません。"));
@@ -86,7 +86,7 @@ internal sealed partial class EditingWorkspace
         foreach (var row in rows)
         {
         // A removed/unsupported field must not silently disappear from a selected row's payload.
-        foreach (var missing in fields.Values.Where(f => f.Change is not null && f.Key.Kind == "Select"
+        foreach (var missing in fields.Values.Where(f => f.Change is not null && f.Key.Kind != "Title"
             && f.Key.ProjectId == p.Id.NodeId && f.Key.NodeId == row.ItemId && !row.Cells.Any(c => c.Key == f.Key)))
             blocked.Add(new(row.ItemId, missing.Key, "変更したフィールドを確認できません。行を対象外にするか、取得結果を確認してください。"));
         foreach (var cell in row.Cells.Where(c => c.Key is not null))
@@ -95,6 +95,7 @@ internal sealed partial class EditingWorkspace
             var reason = cell.Reason ?? (f.Conflict ? "未解決の競合" : f.Observation?.Reason);
             // Buffer-related notices exclude text, not an independently committed payload.
             if (reason?.StartsWith("未確定文字") == true) reason = null;
+            if (!PlanningScalars.Publishable(f.Key.Kind, f.Change)) reason = "GitHubへ正確に反映できる数値精度を超えています。ローカル値は保持しています。";
             if (reason is not null) { blocked.Add(new(row.ItemId, cell.Key, reason)); continue; }
             if (cell.Baseline != f.Baseline) { blocked.Add(new(row.ItemId, cell.Key, "再取得・競合解決が必要です。")); continue; }
             var issue = p.Issues[p.Items.Single(i => i.Id.NodeId == row.ItemId).ContentId!];
@@ -133,7 +134,7 @@ internal sealed partial class EditingWorkspace
             var old = fields[operation.Key];
             var value = old.Change is { } change ? change.Value : old.Baseline;
             fields[old.Key] = old with { Baseline = operation.Intended.Value,
-                Change = value == operation.Intended.Value ? null : new(value, old.Key.Kind == "Select" && value is null),
+                Change = value == operation.Intended.Value ? null : new(value, old.Key.Kind != "Title" && value is null),
                 Observation = operation.Verification, Conflict = false, RetrievedAt = operation.Verification!.At };
             for (var i = 0; i < history.Count; i++)
                 if (history[i].Changes.Any(c => c.Key == old.Key)) InvalidateRemoteUndo(i, "Applyの観測後は以前の基準値を復元できません。");
@@ -153,7 +154,9 @@ internal sealed partial class EditingWorkspace
                 else if (p.Id.NodeId == old.Key.ProjectId)
                     p = p with { Items = p.Items.Select(item => item.Id.NodeId != operation.ItemId ? item : item with {
                         Values = item.Values.Select(v => v.FieldId?.NodeId != old.Key.FieldId ? v : v with {
-                            OptionId = operation.Intended.Value, Availability = operation.Intended.Clear ? ValueAvailability.Empty : ValueAvailability.Present }).ToArray() }).ToArray() };
+                            OptionId = old.Key.Kind == "Select" ? operation.Intended.Value : v.OptionId,
+                            Scalar = old.Key.Kind is "Number" or "Date" ? operation.Intended.Value : v.Scalar,
+                            Availability = operation.Intended.Clear ? ValueAvailability.Empty : ValueAvailability.Present }).ToArray() }).ToArray() };
                 return RegistrationStore.ToRecord(r with { Snapshot = p });
             }).ToArray();
         }

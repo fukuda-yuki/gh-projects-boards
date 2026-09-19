@@ -44,7 +44,7 @@ internal sealed partial class EditingWorkspace
     public ProjectFieldDefinition[] LocalColumns(ProjectRegistration registration)
     {
         var p = registration.Snapshot;
-        var columns = p.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.DataType == "SINGLE_SELECT").ToList();
+        var columns = SupportedColumns(registration).ToList();
         foreach (var saved in localRows.Where(r => r.ProjectId == p.Id.NodeId).SelectMany(r => r.Selects).DistinctBy(s => s.FieldId))
             if (!columns.Any(f => f.Id.NodeId == saved.FieldId))
                 columns.Add(new(new(Scope, saved.FieldId), p.Id, saved.FieldName, "ProjectV2SingleSelectField", "SINGLE_SELECT",

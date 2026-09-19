@@ -25,7 +25,7 @@ internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, s
     string TypeName, string DataType, FieldOwner ValueOwner, IReadOnlyList<SelectOption> Options,
     ValueAvailability Availability);
 internal sealed record ProjectFieldValue(ScopedId? FieldId, string? ValueId, string TypeName,
-    ValueAvailability Availability, string? OptionId = null);
+    ValueAvailability Availability, string? OptionId = null, string? Scalar = null);
 internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, string TypeName,
     ScopedId? ContentId, bool IsArchived, IReadOnlyList<ProjectFieldValue> Values, bool ValuesComplete);
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,

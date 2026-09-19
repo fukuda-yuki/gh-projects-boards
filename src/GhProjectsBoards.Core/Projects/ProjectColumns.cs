@@ -33,8 +33,9 @@ internal sealed partial class EditingWorkspace
 {
     public const double MinimumColumnWidth = 80, MaximumColumnWidth = 1200;
     private readonly List<ProjectColumnPreferences> columnPreferences = [];
-    private static ProjectFieldDefinition[] SupportedColumns(ProjectRegistration p) => p.Snapshot.Fields
-        .Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.DataType == "SINGLE_SELECT").ToArray();
+    private ProjectFieldDefinition[] SupportedColumns(ProjectRegistration p) => p.Snapshot.Fields
+        .Where(f => f.ValueOwner == FieldOwner.ProjectItem && (f.DataType == "SINGLE_SELECT"
+            || Planning(p.Snapshot.Id.NodeId)?.Fields.Any(b => b.FieldId == f.Id.NodeId && b.DataType == f.DataType) == true)).ToArray();
     private static string ColumnDefinitions(ProjectRegistration p) => JsonSerializer.Serialize(new {
         p.Snapshot.FieldsComplete, Fields = p.Snapshot.Fields.Select(f => new { f.Id, f.Name, f.DataType, f.ValueOwner, f.Availability, f.Options })
     });

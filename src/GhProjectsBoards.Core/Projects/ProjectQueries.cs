@@ -15,6 +15,8 @@ internal static class ProjectQueries
           __typename
           ... on ProjectV2ItemFieldValueCommon { id FIELD_REFERENCE }
           ... on ProjectV2ItemFieldSingleSelectValue { optionId }
+          ... on ProjectV2ItemFieldNumberValue { number }
+          ... on ProjectV2ItemFieldDateValue { date }
           ... on ProjectV2ItemFieldLabelValue { FIELD_REFERENCE }
           ... on ProjectV2ItemFieldMilestoneValue { FIELD_REFERENCE }
           ... on ProjectV2ItemFieldRepositoryValue { FIELD_REFERENCE }

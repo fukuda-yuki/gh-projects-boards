@@ -49,7 +49,7 @@ internal sealed partial class EditingWorkspace
                 else if (found.Name != option.Name) changes.Add($"選択肢名変更: {option.Id} / {option.Name} → {found.Name}");
             }
         }
-        var observed = new EditingWorkspace(Scope).Open(current).SelectMany(r => r.Cells).Where(c => c.Key is not null)
+        var observed = ObservationWorkspace().Open(current).SelectMany(r => r.Cells).Where(c => c.Key is not null)
             .DistinctBy(c => c.Key).ToDictionary(c => c.Key!);
         foreach (var old in fields.Values.ToArray())
         {
@@ -85,6 +85,7 @@ internal sealed partial class EditingWorkspace
         }
         PromoteCreatedRows(current);
         Open(current); structuralChanges = changes.ToArray(); Revision++;
+        if (Planning(p.Id.NodeId) is not null) ProjectPlan(current, []);
     }
 
     public ResolutionDecision Decision(FieldKey key)
@@ -103,11 +104,18 @@ internal sealed partial class EditingWorkspace
         if (observation.Project.NodeId != projectId) throw new InvalidOperationException("比較対象のProjectが一致しません。");
         if (old.Buffer is not null) throw new InvalidOperationException("未確定文字を先に確認してください。");
         if (old.Key.Kind == "Title" ? chosen.Clear || string.IsNullOrWhiteSpace(chosen.Value) || chosen.Value.IndexOfAny(['\r','\n','\t']) >= 0
-            : chosen.Clear ? chosen.Value is not null : !observation.Options.Any(o => o.Id == chosen.Value))
+            : chosen.Clear ? chosen.Value is not null : old.Key.Kind == "Select" ? !observation.Options.Any(o => o.Id == chosen.Value)
+            : chosen.Value is null || !PlanningScalars.Valid(old.Key.Kind, chosen.Value))
             throw new InvalidOperationException("採用値が現在のフィールド定義で無効です。");
         var next = old with { Baseline = observation.Value, Change = chosen.Value == observation.Value ? null : chosen,
             Conflict = false, RetrievedAt = observation.At, Stamp = Revision + 1 };
         fields[old.Key] = next; Revision++;
+        var resolvedChanges = new Dictionary<FieldKey, FieldChange> { [old.Key] = new(old.Key, old, next) };
+        // Resolution changes a baseline; derived projections are not themselves
+        // baseline resolutions and remain guarded by their ordinary stamps.
         history.Add(new(Guid.NewGuid().ToString("N"), projectId, [new(old.Key, old, next)], Resolution: true));
+        ProjectCommittedPlan(projectId, resolvedChanges);
+        var derived = resolvedChanges.Values.Where(c => c.Key != old.Key).ToArray();
+        if (derived.Length > 0) history[^1] = history[^1] with { InvalidReason = "競合解決で計画を再計算しました。以前の取得基準をUndoでは復元できません。" };
     }
 }

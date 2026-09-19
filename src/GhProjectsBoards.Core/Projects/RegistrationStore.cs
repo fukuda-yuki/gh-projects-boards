@@ -23,7 +23,7 @@ internal sealed class RegistrationStore
         TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { info =>
         {
             if (info.Kind == JsonTypeInfoKind.Object)
-                foreach (var property in info.Properties) property.IsRequired = property.Name != "Capability";
+                foreach (var property in info.Properties) property.IsRequired = property.Name is not ("Capability" or "Scalar");
         } } },
         Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
     };
