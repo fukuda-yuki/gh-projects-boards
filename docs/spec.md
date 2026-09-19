@@ -2,6 +2,10 @@
 
 This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Acceptance and remaining scope belong to the owning Issues.
 
+## Planning and execution ownership
+
+The [planning data contract](planning.md) defines the selected ownership/operation matrix, exact work/time/Manual/calendar representation, migration, restore and field lifecycle. It extends the existing contracts below. #61 owns Boards planning; #15 Gantt, #64 Summary/baseline, #62 load and #63 new-task CSV consume that plan. #65 owns integrated acceptance and inherited latency; #1 owns routing. Historical layer Issue links below identify sources of existing behavior, not open implementation queues.
+
 ## Workspace presentation
 
 Source: #31, with the functional contracts below. Ordinary startup opens the local workspace. The user explicitly selects a saved account and Project; this neither authenticates the account nor starts communication. The compact common area shows host, account, connection state and connection settings. The Project header shows its title, cached retrieval time, independent **最新を取得**, **GitHubに反映…** and **反映結果・履歴**. These Apply commands remain together when narrow layout reflows them. The default destination for new rows is available in Project settings and never changes existing row destinations. A cache timestamp does not claim that GitHub is current.
@@ -28,7 +32,7 @@ When removal Undo restores a local row whose identity was absent from the curren
 
 Apply starts with displayed-row candidates and no approved selection. Total candidates, displayed candidates and selected rows retain distinct scopes; this does not require separate, always-visible counters. One candidate/selection summary describes the current scope without conflating those counts. Hidden changes, when present, distinguish exclusion, explicit candidate inclusion and selection; inclusion alone never selects them. Summarizing or omitting a count never changes candidate membership or selection. Pre-Apply complete refresh re-evaluates visibility and requires new selection when membership changes. Newly visible rows are not automatically selected, and newly hidden defaults are not silently retained. Selected rows still review all applicable changed fields, including hidden columns. Approved payloads remain frozen across later view changes, and recovery/history remain reachable regardless of row visibility.
 
-Local Save/Cancel/Reset changes the definition; Reset leaves columns intact. Checkpoint v7 adds definitions to the latest coherent profile candidate and migrates v1–6 with default row order and no filters, preserving column preferences and all work/history. Transient projection/selection/counts are not saved. Save failure preserves the accepted view and candidate. Stale candidates, missing options and incompatible fields require repair or reset; criteria keep their IDs and are never silently removed to broaden the view. Invalid saved criteria expose an empty projection with a repair/reset explanation while preserving the complete underlying dataset. Partial retrieval never replaces accepted definitions or preferences.
+Local Save/Cancel/Reset changes the definition; Reset leaves columns intact. Checkpoint v8 persists definitions in the coherent profile candidate. Older records without row preferences restore source order/no filters while preserving columns and all work/history. Transient projection/selection/counts are not saved. Save failure preserves the accepted view and candidate. Stale candidates, missing options and incompatible fields require repair or reset; criteria keep their IDs and are never silently removed to broaden the view. Invalid saved criteria expose an empty projection with a repair/reset explanation while preserving the complete underlying dataset. Partial retrieval never replaces accepted definitions or preferences.
 
 ## Existing-field Apply
 
@@ -104,11 +108,11 @@ Source: #7, with #8 recovery and #9 retention. A selected saved profile can prep
 
 Refresh and existing-field Apply preserve local records. Missing fields/options retain saved IDs and labels with actionable validation, including fields no longer in the fetched column set. Identical remote titles never identify a local row. Unregister-retain preserves rows for re-registration of the same scoped Project. Apply selection/review/history keeps new-row creation distinct from existing Issue updates under the creation contract below; local identities are never presented as existing remote targets. A stale review is rejected without losing newer preparation. Remote acknowledgement invalidates only remote Undo state; the guarded local portion of a mixed paste remains recoverable.
 
-Version 6 uses the existing whole-profile checkpoint, serialized save gate and guarded Undo history, adding Project column preferences. Versions 1–5 migrate without discarding Apply attempts, successful/unresolved outcomes, conflicts or pending work. Older writers cannot overwrite the new schema. Repository existence, creation permission, Issue creation, Project addition and returned remote IDs follow the #11 creation contract below.
+Version 8 uses the whole-profile checkpoint, serialized save gate and guarded Undo history, including Project preferences and planning metadata. Versions 1–7 migrate without discarding Apply attempts, successful/unresolved outcomes, conflicts or pending work. Older writers cannot overwrite the new schema. Repository existence, creation permission, Issue creation, Project addition and returned remote IDs follow the #11 creation contract below.
 
 ### Existing fetched fields
 
-This production slice does not finalize or reduce #2's broader MVP matrix.
+These existing fields retain their behavior. The [planning matrix](planning.md#selected-ownership-and-operation-matrix) specifies the selected work/date/relationship extensions and defers other candidates by name.
 
 | Field/item | Read | Local edit | Explicit clear | Validation and identity |
 | --- | --- | --- | --- | --- |
@@ -197,9 +201,9 @@ The reader traverses Project field definitions, items and every implemented item
 
 Result outcomes are Complete, Partial, Failed, Cancelled and TimedOut. Cancellation/timeout can retain a partial Project. Per-connection completion flags describe traversal, not universal support or readability. A Complete result means the requested traversal completed without detected problems; it can contain explicitly unsupported fields and known unavailable items. It does not establish a transactionally consistent snapshot: GitHub does not pin successive queries to one revision, and equal-count concurrent replacements can escape count/cursor checks.
 
-Values distinguish Present, Empty, Unsupported, Unavailable and NotLoaded. An explicit null option, or an absent supported field after a complete, error-free traversal, is Empty. On a partial read, nulls become Unavailable and absent supported fields stay NotLoaded; redacted content never implies an empty Issue or field. Unknown option IDs retain the observed ID as Unavailable. Partial GraphQL data is retained but never treated as complete. Missing or unsupported data cannot authorize clearing or deletion; this slice has no writes or apply implementation.
+Values distinguish Present, Empty, Unsupported, Unavailable and NotLoaded. An explicit null option, or an absent supported field after a complete, error-free traversal, is Empty. On a partial read, nulls become Unavailable and absent supported fields stay NotLoaded; redacted content never implies an empty Issue or field. Unknown option IDs retain the observed ID as Unavailable. Partial GraphQL data is retained but never treated as complete. Missing or unsupported data cannot authorize clearing or deletion. The reader is query-only; publication belongs to the explicit Apply boundary.
 
-The broader MVP field/item editing matrix remains under [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2). Body, assignees, labels, milestone, text/number/date/iteration/multi-select, Issue fields and relationships remain candidates requiring separate read/edit/clear decisions.
+The [selected matrix](planning.md#selected-ownership-and-operation-matrix) defines P1 work/date/relationship extensions and every broader candidate's disposition. Existing unsupported/unavailable classifications survive these extensions.
 
 Schema references: [GitHub Project types](https://docs.github.com/en/graphql/reference/projects), [Project API queries and redacted items](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects), and [cursor pagination](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api).
 
@@ -229,8 +233,8 @@ Complete Project traversal determines exact membership; incomplete traversal can
 
 One scoped logical row is retained through creation and promotion. Verified full Project observations and durable lineage mappings prevent duplicate presentation. Promotion preserves later title/select edits and buffers, and defers rather than discarding unavailable work or overwriting shared drafts. Creation-related lifetime Undo cannot resurrect eligibility; unaffected mixed-operation parts remain independently undoable. Active native composition defers replacement. No successful operation is described as rolled back.
 
-## Contracts to define
+## Continuing ownership
 
-- Supported field and item-type matrix: [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2).
-- Persistence format, location, and recovery: [#8](https://github.com/fukuda-yuki/gh-projects-boards/issues/8).
+- Planning fields, typed checkpoint migration and publication: [planning contract](planning.md), #61.
+- Combined P1/P2, human recovery and inherited latency: #65.
 - Distribution and company environment checks: [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).

@@ -1,0 +1,79 @@
+# Planning data contract
+
+[#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) owns these decisions and their bounded proofs. [#61](https://github.com/fukuda-yuki/gh-projects-boards/issues/61) owns the production Boards path. [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) owns routing/status; Issues own acceptance/evidence. Later Gantt (#15), Summary (#64), load (#62) and new-task CSV (#63) consume the same adopted plan.
+
+## Identity and storage
+
+Host/stable viewer is the isolation boundary. Project, Issue, item, field and person node IDs are distinct; names never select a mutation target. A task key is its Issue node ID within the Project or its existing `local-<guid>` until verified creation. Promotion uses the retained creation journal, never title equality. Cross-Project observation grants no write permission. Unavailable content is not inferred deleted.
+
+Extend the existing `DraftRecord` to v8 with `ProjectPlanning[]`, metadata version 1. Reuse `DraftStore`/`DraftSession`, complete registrations, B/L/R field drafts/buffers, operation history and Apply/creation journal. No second database, queue, credential owner or hidden Issue prose. Metadata contains explicit Project start/cutoff, field mappings, exact adopted calendar, weights and task metadata. Exact intraday mode/time/attribution/calendar has **local checkpoint authority**. GitHub NUMBER scalars remain in the existing field-draft lifecycle; do not introduce another editable metadata copy of them. New tasks retain equivalent typed local values until verified promotion. Date/actual-total publication is a labelled projection.
+
+UI-free plan consumers use committed work and the same scoped metadata. No writes arise from input, calculations, saves, filters or switching. Publication retains explicit selection, fresh permissions, immutable approved payload, durable dispatch state, pacing, independent readback and uncertain-result recovery. No concurrent multi-device synchronization is claimed.
+
+## Selected ownership and operation matrix
+
+Every entry inherits the profile identity, optimistic checkpoint revision, unknown-version refusal and corruption protection. Availability is Present/Empty/Unsupported/Unavailable/NotLoaded, never absent-to-zero. Local input uses dated capability observations; publication freshly checks permission. Explicit clear differs from blank TSV input.
+
+| Value / stable key | Source, units and states | Read / edit / create / clear; permission | Conflict and consumer |
+| --- | --- | --- | --- |
+| Title / Issue ID | Native nonblank Issue text | Existing editor/creation; clear rejected; Issue update/create | Existing shared B/L/R draft and Apply; #61/#63 |
+| Single-select / Project + item + field ID | Native option ID, explicit empty | Existing editor/setup/clear; Project update | Existing complete paging, B/L/R/Apply; #61/#63 |
+| Full estimate / mapped NUMBER | Raw person-hours, null unknown, zero known | Read/edit/local new-task/clear; Project update | Existing scalar B/L/R, unchanged by weight/actuals; #61 -> #64/#63 |
+| Independent remaining / separate NUMBER | Raw hours, never estimate minus actual | Read/edit/local new-task/clear. Initial estimate proposal requires visible acceptance; later estimate changes do not resynchronize | Same scalar lifecycle; in-progress/reopened schedule this operand; #61 -> #64/#62/#63 |
+| Actual total / mapped NUMBER | Projection of explicit cumulative reports; unknown if absent | Read/review/publish/clear through coherent actual input. Outside edits require explicit attribution/date reconciliation | Scalar B/L/R plus report decision, never proportional allocation; #61 -> #64 |
+| Actual contribution / Project + task + person (or null) | Cumulative raw hours + reported-through date; absent unknown, explicit zero known | PMO edit/correct/remove; preserve historical person on reassignment; Project preparation permission | Metadata and coherent Undo; unattributed balance explicit; #61 -> #64/#62 |
+| Start / Finish / DATE field IDs | Date-only projection of adopted endpoint | Read/reviewed set/clear; Project update; direct remote changes require exact-time decision | B/L/R plus date reconciliation, never implicit Auto release; #61 -> #15 |
+| Mode / exact endpoints / task key | Unplanned/Auto/Manual; nullable Asia/Tokyo minute values | Explicit initialization; committing endpoint enters Manual, retains other visible endpoint; partial drafts persist; explicit return-to-Auto only | Local metadata authority, not inferred from DATE or empty legacy metadata; #61 -> #15/#64/#62 |
+| Suggested/effective endpoints | Derived with input revision; unresolved/stale labelled | Manual endpoints adopted, Auto suggestion separate; no remote write | Successors consume effective finish; no second persisted truth; #61 -> #15/#64/#62 |
+| Cutoff/progress/actual endpoints | Explicit cutoff and Unstarted/InProgress/Completed/Reopened | Coherent completion + zero remaining; explicit remaining after reopen. Actual finish never from updatedAt | Remote Open/Closed conflict needs reconciliation; preserve actuals/Manual; #61 -> #64/#62 |
+| Native assignees / Issue + person IDs | Complete native set independent of planning owner | Read all pages/preserve, no native set mutation selected | Changes never rewrite historical attribution or silently select owner; #61 -> #64/#62 |
+| Planning owner/weight / Project + person ID | One explicit owner, weight 0–100%; new configured person defaults 100%; zero unavailable | Local task/Project input; clear owner does not pick another | Weight used once. No owner + no assignees = visibly provisional common-calendar/100%; multiple assignees without owner unresolved; #61 -> #64/#62 |
+| Explicit person work shares | Raw estimate/remaining contributions, sum <= corresponding known task operand; balance unattributed | Local edit/clear, no headcount division/duplication | Metadata authority; #61 -> #64/#62 |
+| Native predecessors / blocked -> blocking Issue ID | Complete directed zero-lag FS set; inaccessible separate | Read all pages, add/remove explicitly changed links through existing review/journal and Issue permission; local endpoints wait for verified identities | Relation B/L/R, no remove-all replacement; #61 -> #15/#63 |
+| Native hierarchy / parent + Issue ID | Parent distinct from FS | P1 read/preserve only | Outside edits update observation; #61 -> #15/#63 |
+| Richer relations / predecessor + kind | Preserve unsupported type/lead-lag | Metadata/diagnostic, Manual exception; no unsupported mutation | Never coerce or delete to obtain schedule; #61 -> #15/#63 |
+| Calendar / Project + revision; exception / date + optional person ID | Exact holiday payload/source/hash/coverage, regular week and explicit intervals | Explicit adoption and exception edit; no runtime download | Person exception > Project exception > regular week/holiday; retain Manual/actuals/baseline; #61 -> #62/#64 |
+
+## Numeric, time and field rules
+
+One person-day = eight raw hours. Accept finite nonnegative decimal hours <=1,000,000,000 with at most eight fractional digits; inspect the lexical fractional length before decimal parsing, including trailing zeros, and reject excessive precision rather than round raw labor. GitHub Float publication is limited to 15 significant decimal digits. Higher-precision accepted local work remains exact and explicitly unpublishable; do not round it to make it fit. Independent readback must equal the canonical decimal; a mismatch never acknowledges publication. The bounded proof covers representative values, not every service/version/magnitude. Formatting is not stored rounding.
+
+Explicitly map distinct existing Project NUMBER fields to Estimate/Remaining/Actual and DATE fields to Start/Finish by ID/type. No automatic field creation or name remapping. A missing/type-changed field blocks dependent input/publication, preserves local work and leaves unrelated work available. Same-named native Issue fields are not substitutes. Arbitrary number/date editing is not selected implicitly.
+
+Use `DateTimeKind.Unspecified` for Asia/Tokyo wall-clock minutes, independent of machine timezone. Common week: Mon–Fri 09:00–13:00 / 14:00–18:00. Intervals are start inclusive/end exclusive. Valid finish at 13:00/18:00 stays there; positive new work advances to the next eligible interval. Required minutes = E / weight * 60, rounded upward once at the final schedule boundary. Expose that rounding without changing E. No resource leveling, staggering, productivity factor or headcount division.
+
+Forward FS includes filtered-out prerequisites, Project start, earliest start, fixed start/finish and explicit cutoff for remaining work. Deadlines warn without shortening effort. Cycles, missing inputs, ambiguous owners, inaccessible prerequisites, unknown holiday years, zero capacity and impossible fixed constraints explain unresolved Auto results. Valid Manual pairs survive advisory conflicts; suggestion and warnings remain separate. Previous results, if retained, carry stale/source-revision labels. Hierarchy is never an FS edge.
+
+## Remote edits, first use and restore
+
+Complete explicit refresh reconciles NUMBER inputs through existing B/L/R. Preserve offscreen/pending native work; failed/partial refresh cannot replace the complete checkpoint. Changed GitHub DATE carries no time. Keep exact Manual endpoints/mode while showing baseline/local/remote days. Adopting the remote day requires PMO to confirm the exact endpoint; retaining local prepares its day projection. Remote clear also requires a decision and never flips mode. Unchanged day means projection compatibility, not remote proof of exact time. External actual-total changes preserve reports and require explicit attribution/correction and reporting date.
+
+Compare R with B before treating a differing local day as an external edit: R=B preserves local intent; R equals the adopted local projection is compatible; R differs from both requires an exact-endpoint decision. Explicit remote-day adoption changes only the chosen endpoint, retains the other and establishes Manual. A lone native assignee is still not an explicitly selected planning owner; any nonempty native assignee set with no selected owner is unresolved until PMO chooses. Estimate and remaining person contributions have independent nullable operands; unknown is never synthesized as zero.
+
+Legacy tasks start **Unplanned**, with unknown missing work. Explicit setup selects Project start, cutoff, mappings and adopted calendar; only explicitly added people default to 100%. Existing v1–v7 records migrate additively with empty plans, preserving pending work, history, approvals and known/unknown creation identities. Unknown checkpoint/metadata versions reject with original bytes preserved; no default reset.
+
+Backup/second Windows profile uses a flushed full checkpoint. `DraftStore.ExportBackupAsync` creates a new validated file; `RestoreBackupAsync` imports into a new empty data root for the **same host/stable viewer**. Registrations, exact adopted dates and unfinished evidence travel together, without credentials. Reopen with normal saved-profile selection; reconnect/reconcile before publication. No merge or simultaneous independent-copy synchronization is claimed. Protect the unencrypted file as private work data. Pending/unknown writes never replay on restore.
+
+## Official offline holidays
+
+Bundle all **54 official dates in 2025–2027**, including substitute/intervening holidays named `休日`. Source: [Cabinet Office page](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html) and [CSV](https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv). `scripts/Import-HolidayPreset.ps1` consumes saved Shift-JIS bytes, validates headers/duplicates/coverage and emits version/source/SHA256/retrieval time. No substitute/equinox algorithm or runtime download. #13 owns notice/distribution review; preserve official attribution and derived-data provenance.
+
+Each Project copies adopted dates/version/source/hash/years. Bundle updates never replace them implicitly. Outside coverage, retain the calendar and require explicit PMO exceptions or visibly selected `HolidaysNotConsidered`. Unknown years are not verified holiday-free. Adoption shows changed dates and recalculates affected Auto work, retaining exceptions/Manual/actuals/protected baseline. Company holidays are explicit exceptions.
+
+## P2 compatibility and named dispositions
+
+#64 adds Project/person allowance in raw hours and one protected baseline to the same checkpoint. Baseline key = Project + baseline ID; capture scope/task IDs, full estimate, effective dates/modes and exact calendar/weight revisions. Absence means not captured, not zero. Later edits/reassignment never rewrite it; #64 owns deliberate protected replacement. Forecast = actual + independent remaining; unknown operands carry incomplete totals, never zero.
+
+#62 consumes effective dates, raw remaining/person shares/unattributed work and intervals/weights. Any Manual load distribution is a labelled model and cannot change task dates/labor. #63 adds a versioned manifest keyed by import ID/content hash, file-local task/predecessor keys and existing local GUID/verified creation lineage. Atomic local Undo/repeat detection retain earlier uncertain attempts. Future typed payloads require explicit version migrations; old readers reject rather than discard them. This contract does not implement P2 screens/engines.
+
+| Candidate | Disposition |
+| --- | --- |
+| Title, Project single-select/Status, local new Issue creation | Already supported; preserve #61/#63 extensions |
+| Selected NUMBER/DATE planning roles, native FS, native assignee/hierarchy reads, exact local metadata | Required P1, #61 |
+| Allowance/baseline, load data and task CSV manifest | Required P2, #64/#62/#63 |
+| Body/long text, state mutation, labels, milestone, Issue Type/Issue custom fields, arbitrary text/number/date, Iteration, multi-select/set editing | Deferred under #1; state remains read/reference/reconciliation input |
+| PR/GitHub Draft editing/creation; restricted/unknown-content editing | Deferred #1; retain read-only classifications. Local rows are not GitHub Drafts |
+| Hierarchy writes, richer relations/lead-lag/backward automation, joint automatic scheduling | Deferred #1; preserve observations/unsupported metadata; Manual exception |
+| Kanban, full Excel/Gantt exchange, existing-Issue reimport | Deferred #1, beyond #63 |
+
+Gantt is selected P1 (#15), not a #61 prerequisite. Combined human/whole-product and inherited latency acceptance stays #65, existing Apply performance/recovery #51, distribution/GHEC/EMU #13.

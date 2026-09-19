@@ -2,6 +2,12 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
+## Planning fidelity and portability
+
+Adopt the [planning ownership matrix](planning.md) and checkpoint v8. GitHub NUMBER supplies selected work scalars; DATE is only a day projection. Exact intraday Manual/Auto provenance, per-person reports, weights and adopted calendar belong in typed local metadata, never Issue prose. Existing scalar drafts/reconciliation/Apply retain their authority; no second store or queue. Copy adopted holidays into the Project checkpoint so a bundle update cannot rewrite the plan.
+
+Use validated full-checkpoint backup and same-host/viewer restore into an empty root. Preserve unfinished/unknown dispatch evidence; independent copies are not concurrent synchronization. Unknown versions reject rather than reset. Native `blockedBy` means directed FS predecessor, distinct from hierarchy; unsupported richer links remain explicit. External contracts: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects), [official holidays](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html). #2 owns bounded proofs, #61 production integration, #13 distribution notices.
+
 ## Table-centered workspace
 
 Microsoft Project's [sheet-oriented views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d) and [optional lower detail view](https://support.microsoft.com/en-gb/project/split-a-view-in-project-desktop) inform the chosen table-centered workspace. [DESIGN.md](../DESIGN.md) owns the general UI/UX/IA criteria; the [workspace contract](spec.md#workspace-presentation) owns concrete layout and interaction behavior.
@@ -10,7 +16,7 @@ The compact account/connection strip, collapsible repository navigation and opti
 
 Native command overflow and responsive Project commands provide compact command access. General reachability and context criteria live in [Interaction and context](../DESIGN.md#interaction-and-context); the workspace contract specifies window sizing, status routes and focus restoration. Native input controls and public focus APIs remain the implementation choice.
 
-Keep row/column definitions in the existing scoped profile checkpoint and preserve canonical row/field identities beneath presentation changes. Transient pane visibility, selection and scrolling do not acquire a separate persistence owner. Reuse the established draft, conflict and Apply engines; this presentation decision adds no dependency or storage schema. Human visual/usability acceptance remains owned by #31.
+Keep row/column definitions in the existing scoped profile checkpoint and preserve canonical row/field identities beneath presentation changes. Transient pane visibility, selection and scrolling do not acquire a separate persistence owner. Reuse the established draft, conflict and Apply engines; this presentation decision adds no dependency or storage schema. Human visual/usability acceptance remains owned by #65.
 
 Frozen row identity and table-local header commands support comparison across columns. Native choice buttons open their option controls on request to reduce idle per-cell templates, while retained active/pending editors protect native text/IME input. The [input contract](spec.md#selection-input-and-rectangular-operations) owns that behavior. One viewport and nonanimated wheel/scrollbar updates keep row identity and fields aligned; touch/precision-touchpad behavior requires its own native acceptance evidence. The workspace and [column](spec.md#project-specific-columns) contracts specify the corresponding controls and operations.
 
@@ -20,11 +26,11 @@ Use `updateIssue` with only `id/title`, `updateProjectV2ItemFieldValue` with Pro
 
 Use sequential dispatch with at least one second between mutation starts, revalidating after the wait. Honor Retry-After and primary reset headers; absent timing defaults to one minute with exponential increases. Rescheduling is bounded to three waits per execution and always revalidates. Only a known rate-limit rejection permits automatic mutation rescheduling. Ambiguous writes require explicit reconciliation. Transport never retries mutations. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
-Keep execution records in the existing version 7 profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; broader performance optimization belongs to #12.
+Keep execution records in the existing version 8 profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; existing Apply performance belongs to #51 and integrated local latency to #65.
 
 ## Local preparation identity and recovery
 
-Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 7 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
+Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 8 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
 
 ## Native platform
 
@@ -70,7 +76,7 @@ Preflight cannot atomically prevent another process from switching gh authentica
 
 Use existing .NET `System.Text.Json` and filesystem APIs, without a new dependency, for a versioned per-user registration/settings and currently supported read-cache format. One atomic record per normalized host/viewer/Project contains settings and snapshot together. A root writer lock, flushed and verified temporary write, and same-directory replacement protect the last good record. Backups are explicit recovery material, never authenticated sessions or automatically selected snapshots.
 
-This bounded decision supports local registration/restart verification. It is not the final storage design for #8's drafts, operation-level Undo, shared Issue work or apply history. The unencrypted location, sensitive-data implications and local deletion/recovery rules are documented in [README](../README.md#local-registration-storage).
+This is the retained legacy registration format. Migrated profiles use the authoritative checkpoint for registrations, drafts, Undo, shared Issue work, planning and Apply history. The unencrypted location, sensitive-data implications and local deletion/recovery rules are documented in [README](../README.md#local-registration-storage).
 
 Discovery uses the current official [Repository.projectsV2](https://docs.github.com/en/graphql/reference/repos#repository) linked-Project relationship, [ProjectV2.repositories and owner connections](https://docs.github.com/en/graphql/reference/projects) and [Project API guidance](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects). Repository association does not change Project ownership or item scope.
 
@@ -82,9 +88,9 @@ Use one versioned JSON draft/checkpoint record per host/stable viewer with exist
 | --- | --- |
 | Supported field/item matrix and component suitability | #2 |
 | Few-row Japanese input contract | #24 |
-| Table editing, selection, paste and Undo | #7 |
-| Local persistence and recovery | #8 |
-| Cross-feature validation and performance under the layered test policy | #12 |
+| Boards planning and its data lifecycle | #61 |
+| Feature persistence and recovery | #61 / #64 / #63 |
+| Cross-feature validation and inherited performance under the layered test policy | #65 |
 | Distribution, component notices, signing, update/rollback and enterprise validation | #13 |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using GhProjectsBoards.App.GitHub;
 
 namespace GhProjectsBoards.Core.Projects;
@@ -14,7 +15,18 @@ internal sealed class DraftStore(string registrationRoot)
     private static readonly JsonSerializerOptions Json = new()
     {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true, WriteIndented = true
+        RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true, WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { info =>
+        {
+            // Optional constructor defaults are for deliberate new input, not
+            // permission to reconstruct missing persisted Manual/weight data.
+            if (info.Type == typeof(ProjectPlanning) || info.Type == typeof(PlanningTask) || info.Type == typeof(PlanningPerson)
+                || info.Type == typeof(PlanningCalendar) || info.Type == typeof(PlanningFieldBinding) || info.Type == typeof(PlanningLink)
+                || info.Type == typeof(ActualContribution) || info.Type == typeof(WorkContribution)
+                || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval)
+                || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate))
+                foreach (var property in info.Properties) property.IsRequired = true;
+        } } }
     };
     public string FileFor(ConnectionScope scope) => Path.Combine(root,
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{scope.Host}\n{scope.ViewerId}"))) + ".json");
@@ -57,6 +69,28 @@ internal sealed class DraftStore(string registrationRoot)
         var record = await ReadAsync(file);
         if (record.Scope != scope) throw new InvalidDataException("Draft scope mismatch.");
         return record;
+    }
+    public async Task ExportBackupAsync(ConnectionScope scope, string destination)
+    {
+        if (!Path.IsPathFullyQualified(destination)) throw new ArgumentException("An absolute backup filename is required.");
+        using var execution = AcquireExecution(scope);
+        var record = await LoadAsync(scope) ?? throw new InvalidDataException("No saved checkpoint to export.");
+        await using (var stream = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+        {
+            await JsonSerializer.SerializeAsync(stream, record, Json); await stream.FlushAsync(); stream.Flush(true);
+        }
+        _ = await ReadAsync(destination);
+    }
+    public async Task RestoreBackupAsync(string source, ConnectionScope expectedScope)
+    {
+        if (!Path.IsPathFullyQualified(source)) throw new ArgumentException("An absolute backup filename is required.");
+        // Restore is deliberately a new-root operation. Never merge another
+        // profile, replace pending work, or reactivate a second live executor.
+        if (Directory.Exists(registrationRoot) && Directory.EnumerateFileSystemEntries(registrationRoot).Any())
+            throw new InvalidOperationException("Restore requires an empty data root.");
+        var record = await ReadAsync(source);
+        if (record.Scope != expectedScope) throw new InvalidDataException("Backup account/host mismatch.");
+        await SaveAsync(record, 0);
     }
     public async Task SaveAsync(DraftRecord record, long expectedRevision, Func<bool>? canCommit = null)
     {
@@ -137,7 +171,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -145,6 +179,9 @@ internal sealed class DraftStore(string registrationRoot)
         EditingWorkspace.ValidateColumns(r.ColumnPreferences ?? []);
         if (r.Version >= 7 && r.RowPreferences is null || r.Version < 7 && r.RowPreferences is { Length: > 0 }) throw new InvalidDataException("Invalid row schema version.");
         EditingWorkspace.ValidateRowPreferences(r.RowPreferences ?? []);
+        if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
+        foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
+        if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
         ValidateLocalRows(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
             && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind == "Select" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));

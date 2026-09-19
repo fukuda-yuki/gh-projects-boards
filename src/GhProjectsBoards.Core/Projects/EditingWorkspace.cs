@@ -9,7 +9,8 @@ internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[
     LocalRowChange[]? Rows = null);
 internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History,
     RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null, ApplyBatch[]? Journal = null,
-    LocalRow[]? LocalRows = null, ProjectColumnPreferences[]? ColumnPreferences = null, ProjectRowPreference[]? RowPreferences = null);
+    LocalRow[]? LocalRows = null, ProjectColumnPreferences[]? ColumnPreferences = null, ProjectRowPreference[]? RowPreferences = null,
+    ProjectPlanning[]? Planning = null);
 internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline, string? Reason, SelectOption[] Options,
     ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null)
 {
@@ -27,7 +28,7 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(7, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray());
+    public DraftRecord Snapshot() => new(8, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray());
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -39,6 +40,7 @@ internal sealed partial class EditingWorkspace
         result.localRows.AddRange(record.LocalRows ?? []);
         result.columnPreferences.AddRange(record.ColumnPreferences ?? []);
         result.rowPreferences.AddRange(record.RowPreferences ?? []);
+        result.planning.AddRange(record.Planning ?? []);
         return result;
     }
     public string? Value(EditCell cell) => IsLocal(cell.Key) ? LocalValueFor(cell) : cell.Key is { } key && fields.TryGetValue(key, out var f)

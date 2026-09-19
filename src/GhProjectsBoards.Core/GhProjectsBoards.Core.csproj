@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Planning/JapanHolidays2025-2027.json" />
     <InternalsVisibleTo Include="GhProjectsBoards.App" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <InternalsVisibleTo Include="GhProjectsBoards.Tests" />
