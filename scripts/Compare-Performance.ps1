@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$Baseline, [Parameter(Mandatory)][string]$Candidate, [Parameter(Mandatory)][string]$Output)
+param([Parameter(Mandatory)][string]$Baseline, [Parameter(Mandatory)][string]$Candidate, [Parameter(Mandatory)][string]$Output, [switch]$AllowSingleSampleControls)
 $ErrorActionPreference = 'Stop'
 if (Test-Path -LiteralPath $Output) { throw 'Comparison output exists' }
 New-Item -ItemType Directory -Path $Output | Out-Null
@@ -20,7 +20,7 @@ foreach ($case in Get-ChildItem -LiteralPath $Baseline -Directory | Where-Object
     foreach ($property in 'count','changes','changedRows','changedFields','mixed','samples','field','instrument','frequency','boundary','runtime','os','processorCount','warmup') {
         if ($plan.$property -ne $otherPlan.$property) { throw "Incompatible plans: $($case.Name) $property" }
     }
-    if ($plan.samples -lt 3 -or $plan.warmup -ne 1) { throw 'Insufficient sampling plan' }
+    if (($plan.samples -lt 3 -and !($AllowSingleSampleControls -and $plan.samples -eq 1)) -or $plan.warmup -ne 1) { throw 'Insufficient sampling plan' }
     $expectedSamples = @(0..($plan.samples - 1) | ForEach-Object { "sample-$_.json" } | Sort-Object)
     foreach ($root in @($case.FullName,$candidateCase)) {
         $actualSamples = @(Get-ChildItem -LiteralPath $root -File | Where-Object Name -match '^sample-\d+\.json$' | Select-Object -ExpandProperty Name | Sort-Object)
@@ -55,7 +55,7 @@ $rows | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $Output 'samples.json')
 $rows | Export-Csv -NoTypeInformation (Join-Path $Output 'samples.csv')
 $summary = foreach ($group in $rows | Group-Object case,source) {
     $first = $group.Group[0]
-    $result = [ordered]@{ case=$first.case; source=$first.source; samples=$group.Count; items=$first.items; changes=$first.changes; changedRows=$first.changedRows; changedFields=$first.changedFields; field=$first.field; mixed=$first.mixed; instrument=$first.instrument }
+    $result = [ordered]@{ case=$first.case; source=$first.source; samples=$group.Count; repeatability=$(if ($group.Count -eq 1) { 'Single-sample control; no variation estimate' } else { 'Descriptive repeated samples; inspect observed range' }); items=$first.items; changes=$first.changes; changedRows=$first.changedRows; changedFields=$first.changedFields; field=$first.field; mixed=$first.mixed; instrument=$first.instrument }
     foreach ($metric in @('prepareMs','executeMs','endToEndMs','firstDurableSuccessMs','observationMsInclusive','checkpointMsInclusive','mandatoryWaitMs','gateWaitMs','responseParseMs','newBatches','executionProcesses','preparationProcesses','mutations','fullTraversals','returnedItems','returnedValues','returnedUtf8Bytes','versionCalls','authCalls','identityCalls','dataQueries','mutationCalls','checkpointCommits','checkpointBytes')) {
         if (!$first.instrument -and $metric -notin 'prepareMs','executeMs','endToEndMs','mutations') { $result[$metric] = $null; continue }
         $values = @($group.Group.$metric | Where-Object { $null -ne $_ } | Sort-Object)
