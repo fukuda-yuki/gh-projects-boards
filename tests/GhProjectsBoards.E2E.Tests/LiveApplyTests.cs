@@ -22,6 +22,8 @@ public sealed class LiveApplyTests
         using var fixture = JsonDocument.Parse(File.ReadAllText(manifest!)); var f = fixture.RootElement;
         var issueId = f.GetProperty("issue").GetString()!; var itemId = f.GetProperty("item").GetString()!;
         var marker = f.GetProperty("marker").GetString()!;
+        var initialTitle = f.TryGetProperty("baselineTitle", out var baselineTitle) ? baselineTitle.GetString()! : marker + " A";
+        var changedTitle = f.TryGetProperty("changedTitle", out var requestedTitle) ? requestedTitle.GetString()! : marker + " B";
         Assert.That(f.GetProperty("project").GetString(), Is.EqualTo("PVT_kwHOBGPKL84BjFYc"));
         Assert.That(f.GetProperty("repository").GetString(), Is.EqualTo("R_kgDOUVKgAw"));
         var root = Path.GetDirectoryName(manifest!)!; var data = Path.Combine(root, "product-data");
@@ -40,24 +42,24 @@ public sealed class LiveApplyTests
             E("RegistrationUrl").AsTextBox().Text = "https://github.com/users/fukuda-yuki/projects/3";
             Click("ResolveProjectButton"); Wait(() => E("RegisterProjectButton").IsEnabled); Click("RegisterProjectButton");
             Wait(() => WorkspaceUi.ProjectInformation(w).Contains("PVT_kwHOBGPKL84BjFYc"));
-            var titleCell = w.FindAllDescendants().Single(e => Regex.IsMatch(e.Properties.AutomationId.ValueOrDefault ?? "", "^GridCell[0-9]+_0$") && e.AsTextBox().Text == marker + " A");
+            var titleCell = w.FindAllDescendants().Single(e => Regex.IsMatch(e.Properties.AutomationId.ValueOrDefault ?? "", "^GridCell[0-9]+_0$") && e.AsTextBox().Text == initialTitle);
             var row = int.Parse(Regex.Match(titleCell.AutomationId, "[0-9]+").Value);
-            var initialOption = VerifyRemote(marker + " A", null, false);
-            titleCell.Click(); titleCell.AsTextBox().Text = marker + " B"; Keyboard.Type(VirtualKeyShort.RETURN);
+            var initialOption = VerifyRemote(initialTitle, null, false);
+            titleCell.Click(); titleCell.AsTextBox().Text = changedTitle; Keyboard.Type(VirtualKeyShort.RETURN);
             Wait(() => E("DraftStatus").Name.Contains("GitHub未反映 1セル"));
-            VerifyRemote(marker + " A", initialOption);
+            VerifyRemote(initialTitle, initialOption);
             Click("RefreshProjectButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("照合をローカル保存"));
-            VerifyRemote(marker + " A", initialOption);
+            VerifyRemote(initialTitle, initialOption);
             Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.Zero);
             RunApply();
-            VerifyRemote(marker + " B", initialOption);
+            VerifyRemote(changedTitle, initialOption);
             WorkspaceUi.ToggleChoice(w, $"GridCell{row}_1");
             Wait(() => E("DraftStatus").Name.Contains("GitHub未反映 1セル")); RunApply();
             var journal = Checkpoint().GetProperty("Journal").EnumerateArray().Last().GetProperty("Operations")[0];
             var option = journal.GetProperty("Intended").GetProperty("Value").GetString();
-            VerifyRemote(marker + " B", option);
+            VerifyRemote(changedTitle, option);
             E($"GridCell{row}_1").Focus(); Click("GridClear");
-            Wait(() => E("DraftStatus").Name.Contains("GitHub未反映 1セル")); RunApply(); VerifyRemote(marker + " B", null);
+            Wait(() => E("DraftStatus").Name.Contains("GitHub未反映 1セル")); RunApply(); VerifyRemote(changedTitle, null);
             var operations = Checkpoint().GetProperty("Journal").EnumerateArray().SelectMany(b => b.GetProperty("Operations").EnumerateArray()).ToArray();
             Assert.That(operations.Length, Is.EqualTo(3));
             Assert.That(operations.All(o => o.GetProperty("Attempts").GetArrayLength() == 1 && o.GetProperty("State").GetInt32() == 2), Is.True);
@@ -75,7 +77,7 @@ public sealed class LiveApplyTests
                 WorkspaceUi.OpenProjectNavigation(w);
                 Wait(() => WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle)) is not null);
                 WorkspaceUi.ProjectNavigation(w).FindFirstDescendant(cf => cf.ByName(projectTitle))!.Click();
-                Wait(() => E($"GridCell{row}_0").AsTextBox().Text == marker + " B"); VerifyRemote(marker + " B", null);
+                Wait(() => E($"GridCell{row}_0").AsTextBox().Text == changedTitle); VerifyRemote(changedTitle, null);
                 Assert.That(Checkpoint().GetProperty("Journal").GetArrayLength(), Is.EqualTo(3));
                 w.Close(); Wait(() => reopened.HasExited); Assert.That(reopened.ExitCode, Is.Zero);
             }
@@ -88,9 +90,13 @@ public sealed class LiveApplyTests
         JsonElement Checkpoint() => JsonDocument.Parse(File.ReadAllText(Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single())).RootElement.Clone();
         void RunApply()
         {
-            Click("ReviewApplyButton"); var targets = E("ApplyTargetRows").AsListBox();
-            targets.Items.Single(i => i.Name.Contains("fukuda-yuki/codex-sandbox #") && i.Name.Contains(marker)).Select();
+            Click("ReviewApplyButton");
+            Wait(() => WorkspaceUi.ApplyRows(w).Length > 0);
+            WorkspaceUi.ApplyRows(w).Single(i => i.Name.Contains("fukuda-yuki/codex-sandbox #") && i.Name.Contains(marker)).Select();
             WorkspaceUi.WaitForApplyReady(w);
+            var operations = Checkpoint().GetProperty("Journal").EnumerateArray().SelectMany(b => b.GetProperty("Operations").EnumerateArray()).ToArray();
+            Assert.That(operations.Length, Is.LessThan(3), "Three product writes are the predeclared live limit.");
+            File.AppendAllText(Path.Combine(root, "mutation-intents.jsonl"), JsonSerializer.Serialize(new { at = DateTimeOffset.UtcNow, stage = "ordinary-apply", issueId, itemId }) + Environment.NewLine);
             Click("PrimaryButton"); Wait(() => WorkspaceUi.RegistrationStatusText(w).Contains("反映完了"));
             Assert.That(E("DraftStatus").Name, Does.Contain("GitHub未反映 0セル"));
             Assert.That(w.FindFirstDescendant(cf => cf.ByAutomationId("ApplyHistoryDialog")), Is.Null);

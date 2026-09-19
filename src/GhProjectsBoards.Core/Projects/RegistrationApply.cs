@@ -12,23 +12,36 @@ internal sealed partial class RegistrationWorkspace
         or FailureKind.MissingExecutable or FailureKind.StartFailed);
     public string? ExecutingBatchId { get; private set; }
     private int applyConnectionRevision;
+    private ApplyBatch[] UnfinishedApplyBatches => Drafts?.Workspace.Journal.Where(b =>
+        b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))).ToArray() ?? [];
+    public bool CanRestartApplyReview => CanRead && Selected is { } selected && UnfinishedApplyBatches is { Length: > 0 } batches
+        && batches.All(b => b.Project == selected.Snapshot.Id && (b.Creations ?? []).Length == 0);
+    public Task RestartApplyReviewAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null)
+        => PrepareApplyCoreAsync(items, viewSelection, restart: true);
     public string? ApplyBlockReason(ApplyReview? review)
     {
         if (!CanRead) return "接続を確認してください。保存済みの変更は保持しています。";
         if (review is null || !ReferenceEquals(review, ApplyReview) || applyConnectionRevision != ConnectionRevision
             || Selected?.Snapshot.Id != review.Batch.Project) return "GitHubの最新状態の確認が必要です。";
         if (Drafts?.Workspace.Revision != review.Batch.ReviewedRevision) return "確認後に変更がありました。最新状態を再確認してください。";
+        if (UnfinishedApplyBatches is { Length: > 0 } unfinished)
+            return "前回の反映が未完了です。" + ApplyResultsPresentation.Summary(ApplyResultsPresentation.Attention(unfinished))
+                + (CanRestartApplyReview ? "。"
+                    : "。「反映結果・履歴」で対象のProjectと結果を確認してください。");
         if (review.SelectedRows == 0) return "反映する行を選択してください。";
-        if (review.Blocked.Length > 0) return "選択した行に未解決の項目があります。解決するか、その行を対象外にしてください。";
+        if (review.Blocked.Length > 0) return $"選択対象の{review.Problems.Select(p => p.RowId).Distinct().Count()}件に要対応の項目があります。解決するか、その行の選択を解除してください。";
         if (review.IssueCount == 0) return "選択した行に反映できる変更がありません。未確定入力は送信しません。";
-        if (Drafts!.Workspace.Journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))))
-            return "未完了の反映結果があります。「反映結果・履歴」で確認してください。";
         return null;
     }
-    public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null) => RunAsync(async token =>
+    public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null)
+        => PrepareApplyCoreAsync(items, viewSelection, restart: false);
+    private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart) => RunAsync(async token =>
     {
         ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false; RequireConnection();
         if (Selected is not { } selected || Drafts is not { } session) return;
+        if (restart && !CanRestartApplyReview)
+        { Status = "このProjectの既存フィールドの反映だけをやり直せます。「反映結果・履歴」で対象を確認してください。"; return; }
+        var previousApprovals = restart ? UnfinishedApplyBatches.Select(b => b.Id).ToArray() : [];
         var connection = ConnectionRevision; var requestGeneration = generation;
         bool Current() => connection == ConnectionRevision && requestGeneration == generation && CanRead && !token.IsCancellationRequested;
         if (CanRefresh?.Invoke() == false) { Status = "IME変換中です。自然に確定・取消した後で反映内容の確認を開いてください。"; return; }
@@ -45,6 +58,9 @@ internal sealed partial class RegistrationWorkspace
         if (!await session.CommitAsync(w =>
         {
             w.Reconcile(selected, fetched);
+            // Withdraw only after a complete, same-context observation, in the same durable checkpoint.
+            // Attempts and verified successes survive; this action never executes the old or new payload.
+            foreach (var id in previousApprovals) w.SupersedeApply(id);
             w.SetRegistrations(registrations.Select(r => r == selected ? fetched : r)); return w;
         }, () => Selected == selected && Current()
             && (session.Workspace.HasCheckpoint || store.MatchesLegacy(selected.Snapshot.Id.Scope, registrations))))

@@ -1,6 +1,7 @@
 using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 
 namespace GhProjectsBoards.App;
@@ -33,6 +34,7 @@ public sealed partial class RegistrationPanel
         var status = ApplyText(""); AutomationProperties.SetAutomationId(status, "ApplyCheckStatus");
         var counts = ApplyText(""); AutomationProperties.SetAutomationId(counts, "ApplyTargetCounts");
         var reasons = ApplyText(""); AutomationProperties.SetAutomationId(reasons, "ApplyBlockReason");
+        AutomationProperties.SetLiveSetting(reasons, AutomationLiveSetting.Polite);
         var includeHidden = new CheckBox { Content = "非表示行も候補に追加する" };
         AutomationProperties.SetAutomationId(includeHidden, "ApplyIncludeHidden");
         var hiddenText = ApplyText(""); AutomationProperties.SetAutomationId(hiddenText, "ApplyHiddenSummary");
@@ -40,6 +42,12 @@ public sealed partial class RegistrationPanel
         var connection = new Button { Content = "接続設定" }; AutomationProperties.SetAutomationId(connection, "ApplyConnectionSettings");
         var history = new Button { Content = "反映結果・履歴" }; AutomationProperties.SetAutomationId(history, "ApplyReviewHistory");
         var jump = new Button { Content = "問題の行へ" }; AutomationProperties.SetAutomationId(jump, "ApplyGoToProblem");
+        var restart = new Button { Content = "再確認してやり直す" }; AutomationProperties.SetAutomationId(restart, "ApplyRestartReview");
+        var recovery = new Grid { ColumnSpacing = 8 };
+        recovery.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); recovery.ColumnDefinitions.Add(new());
+        var recoveryHint = ApplyText("前回の承認を取り消して再確認します。反映済みの変更は保持し、ここでは送信しません。");
+        recoveryHint.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(recoveryHint, 1);
+        recovery.Children.Add(restart); recovery.Children.Add(recoveryHint);
         var informationText = ApplyText("");
         var information = new Button { Content = "確認情報", Flyout = new Flyout { Content = informationText } };
         AutomationProperties.SetAutomationId(information, "ApplyReviewIdentity");
@@ -49,6 +57,7 @@ public sealed partial class RegistrationPanel
         header.Children.Add(counts); header.Children.Add(status); header.Children.Add(legend);
         var hidden = ApplyPanel(4); hidden.Children.Add(hiddenText); hidden.Children.Add(includeHidden);
         var problem = ApplyPanel(4); problem.Children.Add(reasons);
+        problem.Children.Add(recovery);
         var actions = ApplyPanel(8); actions.Orientation = Orientation.Horizontal;
         actions.Children.Add(jump); actions.Children.Add(connection); problem.Children.Add(actions);
         var auxiliary = new Grid { ColumnSpacing = 8, HorizontalAlignment = HorizontalAlignment.Left, MaxWidth = 580 };
@@ -78,7 +87,7 @@ public sealed partial class RegistrationPanel
         void RootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => SizeReview();
         reviewRoot.Changed += RootChanged;
         AutomationProperties.SetAutomationId(dialog, "ApplyReviewDialog");
-        bool open = true, suspended = false, checking = false, goConnection = false, goHistory = false;
+        bool open = true, suspended = false, checking = false, goConnection = false, goHistory = false, restartRequested = false;
         int request = 0, nextProblem = 0;
         ApplyReview? review = null;
         ApplyConfirmationPresentation? presentation = null;
@@ -95,11 +104,12 @@ public sealed partial class RegistrationPanel
                 : owner.ApplyBlockReason(review);
             dialog.IsPrimaryButtonEnabled = !checking && Current() && reason is null;
             var problemIds = ProblemIds();
-            reasons.Text = problemIds.Length > 0 ? $"選択対象の{problemIds.Length}件に要対応の項目があります。解決するか、その行の選択を解除してください。"
-                : reason ?? "";
+            reasons.Text = reason ?? "";
+            recovery.Visibility = !checking && Current() && owner.CanRestartApplyReview ? Visibility.Visible : Visibility.Collapsed;
+            restart.IsEnabled = !checking && Current() && owner.CanRestartApplyReview;
             jump.Visibility = problemIds.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
             connection.Visibility = owner.ApplyNeedsConnectionRecovery ? Visibility.Visible : Visibility.Collapsed;
-            problem.Visibility = reasons.Text.Length > 0 || connection.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+            problem.Visibility = reasons.Text.Length > 0 || connection.Visibility == Visibility.Visible || recovery.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
             dialog.PrimaryButtonText = checking ? "GitHubに反映（確認中）" : review is null ? "GitHubに反映（確認が必要）" : $"GitHubに反映（{review.IssueCount}件）";
             retry.IsEnabled = !checking && Current();
             informationText.Text = $"{initial.Snapshot.Title}\nProject ID {projectId.NodeId}\n{projectId.Scope.Host} / {login}\nアカウント ID {projectId.Scope.ViewerId}\n"
@@ -131,10 +141,13 @@ public sealed partial class RegistrationPanel
             while (Current())
             {
                 var thisRequest = request;
+                var restartThisCheck = restartRequested; restartRequested = false;
                 checking = true; review = null;
                 status.Text = "GitHubの最新状態を確認中…"; Populate();
                 var ids = selectedIds.ToHashSet();
-                await owner.PrepareApplyAsync(ids, new(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true));
+                var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
+                if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
+                else await owner.PrepareApplyAsync(ids, targets);
                 if (!Current()) break;
                 if (thisRequest != request) continue;
                 checking = false; review = owner.ApplyReview;
@@ -149,10 +162,11 @@ public sealed partial class RegistrationPanel
             }
             checking = false; UpdateApproval();
         }
-        void QueueCheck()
+        void QueueCheck(bool restartApproval = false)
         {
             if (!Current()) return;
             request++; review = null; dialog.IsPrimaryButtonEnabled = false;
+            restartRequested |= restartApproval;
             if (!checkingTask.IsCompleted) { owner.Cancel(); return; }
             checkingTask = CheckLoop();
         }
@@ -170,6 +184,7 @@ public sealed partial class RegistrationPanel
         includeHidden.Checked += (_, _) => { Populate(); QueueCheck(); };
         includeHidden.Unchecked += (_, _) => { Populate(); QueueCheck(); };
         retry.Click += (_, _) => QueueCheck();
+        restart.Click += (_, _) => { if (!checking && owner.CanRestartApplyReview) QueueCheck(restartApproval: true); };
         jump.Click += (_, _) => { var ids = ProblemIds(); if (ids.Length > 0) table.GoToProblem(ids[nextProblem++ % ids.Length]); };
         connection.Click += (_, _) => { goConnection = true; suspended = true; owner.Cancel(); dialog.Hide(); };
         history.Click += (_, _) => { goHistory = true; suspended = true; owner.Cancel(); dialog.Hide(); };

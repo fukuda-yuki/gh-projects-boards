@@ -1,0 +1,158 @@
+{
+  "formatVersion": 1,
+  "source": "b1655b3a7c8a4a26a82b820c1f0c27dceae52e36",
+  "base": "13d8bd7",
+  "date": "2026-09-19",
+  "environment": {
+    "mechanisms": [
+      "NUnit through dotnet test",
+      "Native WinUI hosted integration",
+      "FlaUI UIA3 ordinary executable",
+      "Computer Use ordinary executable self-check"
+    ],
+    "sdk": "10.0.401",
+    "packaging": "Unpackaged Release x64",
+    "os": "Microsoft Windows NT 10.0.26200.0"
+  },
+  "sourceNote": "All execution started from working trees. Per-run source patches and environment files retain that provenance. b1655b3 adds only the final recovery-hint layout after ordinary and live execution; the final hosted two-size run uses that layout. Earlier full selection counts overlap later focused selections.",
+  "hashes": [
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationApply.cs",
+      "sha256": "2E6197BEC2F4A33C569A4EE8DC1A545201A0BEF4FD9F6C809621D6BEA6720D1D"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+      "sha256": "817E38DA1217BC71474AC229825C8C74DB6CB0A17EC0E5D529D7376A4BF17D1A"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.dll",
+      "sha256": "57AF13943D6E1906663B8FE648A494EE2F329B20CFF42C1596FA0847F8601920"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.Core.dll",
+      "sha256": "D3633751DA918CDE056F471CA64351E09A39E689D3D21B544E04A94986605FF4"
+    }
+  ],
+  "runs": [
+    {
+      "name": "logic-and-storage",
+      "artifact": "TestResults/issue51-live-regression/green/apply-green-2.trx",
+      "sha256": "73FC4E76768663B34987443F6943DECD6AECBC0199B64D86FB6E3ED6BDDEE143",
+      "command": "dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~ApplyRecoveryTests|FullyQualifiedName~ApplyTests|FullyQualifiedName~ApplyResultsPresentationTests' --logger 'trx;LogFileName=apply-green-2.trx' --results-directory TestResults/issue51-live-regression/green",
+      "counts": {
+        "failed": 0,
+        "executed": 54,
+        "skipped": 0,
+        "passed": 54
+      }
+    },
+    {
+      "name": "recovery-lifetime",
+      "artifact": "TestResults/issue51-live-regression/green/recovery-lifetime.trx",
+      "sha256": "B0A8D0709EA0D6A13F11B5F28F057D8873CC190B69581DBE9232C1BE8391CDE1",
+      "command": "dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter FullyQualifiedName~ApplyRecoveryTests --logger 'trx;LogFileName=recovery-lifetime.trx' --results-directory TestResults/issue51-live-regression/green",
+      "counts": {
+        "failed": 0,
+        "executed": 9,
+        "skipped": 0,
+        "passed": 9
+      }
+    },
+    {
+      "name": "hosted-related",
+      "artifact": "TestResults/ui-integration/run-20260919-184654-432-67db9a01/results.xml",
+      "sha256": "8E178B476FEC48F16BE463F75402B62BB0FEF41EF7A30898E283551B68BF4DA2",
+      "command": ".\\scripts\\Test-UiIntegration.ps1 -Where \"test =~ 'InterruptedApplyExplainsRecovery|OneConfirmationShowsConflict|FailedOrIncompleteLatestCheck|ConnectionRecoveryPreservesWork|Offscreen'\" -TimeoutSeconds 180",
+      "counts": {
+        "failed": 0,
+        "executed": 7,
+        "skipped": 0,
+        "passed": 7
+      }
+    },
+    {
+      "name": "hosted-final-sizes",
+      "artifact": "TestResults/ui-integration/run-20260919-190122-344-14a7ea56/results.xml",
+      "sha256": "B54899BD3247E8C3EA5A5E99B2B8BB7FCABCA38BF730E5C8DF39029167812C80",
+      "command": ".\\scripts\\Test-UiIntegration.ps1 -Where \"test =~ 'InterruptedApplyExplainsRecovery'\" -TimeoutSeconds 120",
+      "counts": {
+        "failed": 0,
+        "executed": 2,
+        "skipped": 0,
+        "passed": 2
+      }
+    },
+    {
+      "name": "ordinary-fake",
+      "artifact": "TestResults/e2e/20260919-185129-6212b5d8ccc647b6b90ec4c3d9ccee01/e2e.trx",
+      "sha256": "83409AEB5CB1177B0DB956EA8CEA18BB91B4BBA2414CFE8C4AD68D324A957A4E",
+      "command": "scripts/Test-E2E.ps1 -Filter FullyQualifiedName~CancelledApplyCanBeReviewedAgainAndSentOnlyAfterExplicitConfirmation",
+      "counts": {
+        "failed": 0,
+        "executed": 1,
+        "skipped": 0,
+        "passed": 1
+      }
+    },
+    {
+      "name": "ordinary-live",
+      "artifact": "TestResults/e2e/20260919-185247-b9f71a2638a2455aace9018b56e97d14/e2e.trx",
+      "sha256": "E02ADF62E8558D320939D22488AD6D392C7730700B7044419689EA662E2B5615",
+      "command": "scripts/Test-E2E.ps1 -Filter FullyQualifiedName~LiveApplyTests",
+      "counts": {
+        "failed": 0,
+        "executed": 1,
+        "skipped": 0,
+        "passed": 1
+      },
+      "environment": {
+        "GHPB_APPLY_FIXTURE": "TestResults/issue51-live-regression/live-product/fixture.json"
+      }
+    }
+  ],
+  "live": {
+    "cleanupWrites": 2,
+    "productWrites": 3,
+    "independentReadback": true,
+    "cleanupVerified": true,
+    "baselinePreserved": true,
+    "fixtureCount": 1,
+    "totalWrites": 7,
+    "setupWrites": 2,
+    "artifacts": [
+      {
+        "path": "TestResults/issue51-live-regression/live-budget.json",
+        "sha256": "89381D3BE050A3C1FA8AA38B25B3E3BA1CC7048EBA9E2A26EDFA56A03807C09A"
+      },
+      {
+        "path": "TestResults/issue51-live-regression/live-product/product-evidence.json",
+        "sha256": "91CA7DD31E302D473F0C5427101C745E16A2F070EE2BB85BE77E4E2B1F4DC4A8"
+      },
+      {
+        "path": "TestResults/performance/issue51-recovery-one-prepare/adapter/stage-result.json",
+        "sha256": "8767E78F0B98131E1DBB69BE9ABF21BF2426D499D771A9AB353B753FD5AF509B"
+      },
+      {
+        "path": "TestResults/performance/issue51-recovery-one-cleanup/adapter/stage-result.json",
+        "sha256": "1383D1A37DFDCFFA96F096157406A5B49A6A01E418D3D4927E6330FCCF2314E5"
+      }
+    ],
+    "timingSamples": 0
+  },
+  "copiedUserState": {
+    "originalModified": false,
+    "selectedRows": 28,
+    "oldStates": {
+      "unknown": 1,
+      "cancelled": 30,
+      "succeeded": 40
+    },
+    "finalApplyEnabledAfterRecovery": true,
+    "remoteWrites": 0
+  },
+  "review": {
+    "unresolvedFindings": 0,
+    "independentReadOnly": true,
+    "requiredLifetimeCoverageAdded": true
+  }
+}
