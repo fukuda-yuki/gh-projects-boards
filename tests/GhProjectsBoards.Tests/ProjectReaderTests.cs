@@ -435,11 +435,15 @@ internal sealed class ProjectReaderTests
     {
         public ScriptedRunner Runner { get; }
         public Func<string, JsonElement, GhProcessResult?>? Override { get; set; }
+        public Action<System.Text.Json.Nodes.JsonNode>? ChangeCombinedResponse { get; set; }
+        public Action<string, System.Text.Json.Nodes.JsonNode>? ChangeObservationResponse { get; set; }
+        public Func<GhCommand, GhProcessResult?>? OverrideProcess { get; set; }
         public long ViewerId { get; set; } = 42;
         public ProjectBoundary()
         {
             Runner = new ScriptedRunner(command =>
             {
+                if (OverrideProcess?.Invoke(command) is { } overridden) return overridden;
                 if (command.Arguments[0] == "--version")
                     return new(ProcessCompletion.Exited, true, 0, "gh version 2.100.0");
                 if (command.Arguments[0] == "auth") return GhConnectionTests.Auth();
@@ -448,6 +452,40 @@ internal sealed class ProjectReaderTests
                 using var json = JsonDocument.Parse(command.StandardInput!);
                 var query = json.RootElement.GetProperty("query").GetString()!;
                 var variables = json.RootElement.GetProperty("variables");
+                if (query.Contains("ApplyObservation"))
+                {
+                    var fields = Respond(ProjectQueries.Fields, JsonSerializer.SerializeToElement(new { id = variables.GetProperty("id").GetString(), after = (string?)null }));
+                    if (!fields.StandardOutput.StartsWith("HTTP/2.0 200")) return fields;
+                    var project = Body(fields);
+                    if (project["errors"] is System.Text.Json.Nodes.JsonArray { Count: > 0 }) return fields;
+                    var itemResult = Respond(ProjectQueries.ApplyItem, JsonSerializer.SerializeToElement(new { id = variables.GetProperty("item").GetString() }));
+                    if (!itemResult.StandardOutput.StartsWith("HTTP/2.0 200")) return itemResult;
+                    var item = Body(itemResult);
+                    if (item["errors"] is System.Text.Json.Nodes.JsonArray { Count: > 0 }) return itemResult;
+                    var combined = new System.Text.Json.Nodes.JsonObject { ["data"] = new System.Text.Json.Nodes.JsonObject {
+                        ["project"] = project["data"]!["node"]?.DeepClone(), ["item"] = item["data"]!["node"]?.DeepClone() } };
+                    if (query.Contains("viewer { databaseId }")) combined["data"]!["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = ViewerId });
+                    ChangeCombinedResponse?.Invoke(combined);
+                    ChangeObservationResponse?.Invoke(query, combined);
+                    return ScriptedRunner.Http(combined.ToJsonString());
+                }
+                var response = Respond(query, variables);
+                if (query.Contains("viewer { databaseId }") && response.StandardOutput.StartsWith("HTTP/2.0 200"))
+                {
+                    var data = Body(response);
+                    if (data["data"] is System.Text.Json.Nodes.JsonObject fields)
+                    {
+                        fields["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = ViewerId });
+                        ChangeObservationResponse?.Invoke(query, data);
+                        return ScriptedRunner.Http(data.ToJsonString());
+                    }
+                }
+                return response;
+            });
+            static System.Text.Json.Nodes.JsonNode Body(GhProcessResult response) => System.Text.Json.Nodes.JsonNode.Parse(
+                response.StandardOutput[(response.StandardOutput.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4)..])!;
+            GhProcessResult Respond(string query, JsonElement variables)
+            {
                 var custom = Override?.Invoke(query, variables);
                 if (custom is not null) return custom;
                 var id = variables.GetProperty("id").GetString()!;
@@ -456,7 +494,7 @@ internal sealed class ProjectReaderTests
                 if (query.Contains("ProjectItems"))
                     return Response(Project(id, "items", Page([Item(id)], 1)));
                 throw new AssertionException("Unexpected query operation.");
-            });
+            }
         }
         public void AssertQueriesOnly()
         {

@@ -1,0 +1,1562 @@
+[
+  {
+    "case": "case-0",
+    "source": "baseline",
+    "samples": 3,
+    "repeatability": "Descriptive repeated samples; inspect observed range",
+    "items": 50,
+    "changes": null,
+    "changedRows": 50,
+    "changedFields": 50,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 3,
+      "max": 178.9469,
+      "min": 15.7821,
+      "median": 24.4518
+    },
+    "executeMs": {
+      "observed": 3,
+      "max": 50507.8581,
+      "min": 50276.1585,
+      "median": 50452.4934
+    },
+    "endToEndMs": {
+      "observed": 3,
+      "max": 50532.3099,
+      "min": 50455.1054,
+      "median": 50468.275499999996
+    },
+    "firstDurableSuccessMs": {
+      "observed": 3,
+      "max": 46.7876,
+      "min": 46.3314,
+      "median": 46.4837
+    },
+    "observationMsInclusive": {
+      "observed": 3,
+      "max": 23.4466,
+      "min": 23.3309,
+      "median": 23.417
+    },
+    "checkpointMsInclusive": {
+      "observed": 3,
+      "max": 1961.5983,
+      "min": 1806.9919,
+      "median": 1822.8085
+    },
+    "mandatoryWaitMs": {
+      "observed": 3,
+      "max": 48597.7713,
+      "min": 48513.484,
+      "median": 48596.1707
+    },
+    "gateWaitMs": {
+      "observed": 3,
+      "max": 0.1353,
+      "min": 0.0973,
+      "median": 0.1024
+    },
+    "responseParseMs": {
+      "observed": 3,
+      "max": 1.9699,
+      "min": 1.8703,
+      "median": 1.9548
+    },
+    "newBatches": {
+      "observed": 3,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 3,
+      "max": 1050.0,
+      "min": 1050.0,
+      "median": 1050.0
+    },
+    "preparationProcesses": {
+      "observed": 3,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 3,
+      "max": 50,
+      "min": 50,
+      "median": 50
+    },
+    "fullTraversals": {
+      "observed": 3,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 3,
+      "max": 150.0,
+      "min": 150.0,
+      "median": 150.0
+    },
+    "returnedValues": {
+      "observed": 3,
+      "max": 150.0,
+      "min": 150.0,
+      "median": 150.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 3,
+      "max": 236417.0,
+      "min": 236417.0,
+      "median": 236417.0
+    },
+    "versionCalls": {
+      "observed": 3,
+      "max": 100.0,
+      "min": 100.0,
+      "median": 100.0
+    },
+    "authCalls": {
+      "observed": 3,
+      "max": 352.0,
+      "min": 352.0,
+      "median": 352.0
+    },
+    "identityCalls": {
+      "observed": 3,
+      "max": 352.0,
+      "min": 352.0,
+      "median": 352.0
+    },
+    "dataQueries": {
+      "observed": 3,
+      "max": 202.0,
+      "min": 202.0,
+      "median": 202.0
+    },
+    "mutationCalls": {
+      "observed": 3,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "checkpointCommits": {
+      "observed": 3,
+      "max": 102.0,
+      "min": 102.0,
+      "median": 102.0
+    },
+    "checkpointBytes": {
+      "observed": 3,
+      "max": 38344435.0,
+      "min": 38330765.0,
+      "median": 38331193.0
+    }
+  },
+  {
+    "case": "case-0",
+    "source": "candidate",
+    "samples": 3,
+    "repeatability": "Descriptive repeated samples; inspect observed range",
+    "items": 50,
+    "changes": null,
+    "changedRows": 50,
+    "changedFields": 50,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 3,
+      "max": 26.3661,
+      "min": 14.9214,
+      "median": 18.3925
+    },
+    "executeMs": {
+      "observed": 3,
+      "max": 50298.0416,
+      "min": 50208.4202,
+      "median": 50232.6119
+    },
+    "endToEndMs": {
+      "observed": 3,
+      "max": 50316.4341,
+      "min": 50234.7863,
+      "median": 50247.5333
+    },
+    "firstDurableSuccessMs": {
+      "observed": 3,
+      "max": 54.9207,
+      "min": 47.3555,
+      "median": 50.9788
+    },
+    "observationMsInclusive": {
+      "observed": 3,
+      "max": 26.012,
+      "min": 25.7779,
+      "median": 25.9086
+    },
+    "checkpointMsInclusive": {
+      "observed": 3,
+      "max": 1618.0726,
+      "min": 1589.554,
+      "median": 1593.711
+    },
+    "mandatoryWaitMs": {
+      "observed": 3,
+      "max": 48645.5218,
+      "min": 48580.8863,
+      "median": 48601.4339
+    },
+    "gateWaitMs": {
+      "observed": 3,
+      "max": 0.0878,
+      "min": 0.0763,
+      "median": 0.079
+    },
+    "responseParseMs": {
+      "observed": 3,
+      "max": 1.6576,
+      "min": 1.605,
+      "median": 1.6229
+    },
+    "newBatches": {
+      "observed": 3,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 3,
+      "max": 550.0,
+      "min": 550.0,
+      "median": 550.0
+    },
+    "preparationProcesses": {
+      "observed": 3,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 3,
+      "max": 50,
+      "min": 50,
+      "median": 50
+    },
+    "fullTraversals": {
+      "observed": 3,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 3,
+      "max": 150.0,
+      "min": 150.0,
+      "median": 150.0
+    },
+    "returnedValues": {
+      "observed": 3,
+      "max": 150.0,
+      "min": 150.0,
+      "median": 150.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 3,
+      "max": 198717.0,
+      "min": 198717.0,
+      "median": 198717.0
+    },
+    "versionCalls": {
+      "observed": 3,
+      "max": 100.0,
+      "min": 100.0,
+      "median": 100.0
+    },
+    "authCalls": {
+      "observed": 3,
+      "max": 152.0,
+      "min": 152.0,
+      "median": 152.0
+    },
+    "identityCalls": {
+      "observed": 3,
+      "max": 152.0,
+      "min": 152.0,
+      "median": 152.0
+    },
+    "dataQueries": {
+      "observed": 3,
+      "max": 102.0,
+      "min": 102.0,
+      "median": 102.0
+    },
+    "mutationCalls": {
+      "observed": 3,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "checkpointCommits": {
+      "observed": 3,
+      "max": 102.0,
+      "min": 102.0,
+      "median": 102.0
+    },
+    "checkpointBytes": {
+      "observed": 3,
+      "max": 38343782.0,
+      "min": 38318429.0,
+      "median": 38343744.0
+    }
+  },
+  {
+    "case": "case-1",
+    "source": "baseline",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 50,
+    "changes": null,
+    "changedRows": 0,
+    "changedFields": 0,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 18.6785,
+      "min": 18.6785,
+      "median": 18.6785
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 0.0114,
+      "min": 0.0114,
+      "median": 0.0114
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 18.689899999999998,
+      "min": 18.689899999999998,
+      "median": 18.689899999999998
+    },
+    "firstDurableSuccessMs": null,
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 15.2004,
+      "min": 15.2004,
+      "median": 15.2004
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0006,
+      "min": 0.0006,
+      "median": 0.0006
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.4874,
+      "min": 0.4874,
+      "median": 0.4874
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 0,
+      "min": 0,
+      "median": 0
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 0,
+      "min": 0,
+      "median": 0
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 30325.0,
+      "min": 30325.0,
+      "median": 30325.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 228741.0,
+      "min": 228741.0,
+      "median": 228741.0
+    }
+  },
+  {
+    "case": "case-1",
+    "source": "candidate",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 50,
+    "changes": null,
+    "changedRows": 0,
+    "changedFields": 0,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 17.5825,
+      "min": 17.5825,
+      "median": 17.5825
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 0.0153,
+      "min": 0.0153,
+      "median": 0.0153
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 17.5978,
+      "min": 17.5978,
+      "median": 17.5978
+    },
+    "firstDurableSuccessMs": null,
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 14.4531,
+      "min": 14.4531,
+      "median": 14.4531
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0005,
+      "min": 0.0005,
+      "median": 0.0005
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.469,
+      "min": 0.469,
+      "median": 0.469
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 0,
+      "min": 0,
+      "median": 0
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 0,
+      "min": 0,
+      "median": 0
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 50.0,
+      "min": 50.0,
+      "median": 50.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 30325.0,
+      "min": 30325.0,
+      "median": 30325.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 228743.0,
+      "min": 228743.0,
+      "median": 228743.0
+    }
+  },
+  {
+    "case": "case-2",
+    "source": "baseline",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 50,
+    "changes": null,
+    "changedRows": 1,
+    "changedFields": 1,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 24.6589,
+      "min": 24.6589,
+      "median": 24.6589
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 48.4796,
+      "min": 48.4796,
+      "median": 48.4796
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 73.1385,
+      "min": 73.1385,
+      "median": 73.1385
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 48.3025,
+      "min": 48.3025,
+      "median": 48.3025
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.6512,
+      "min": 0.6512,
+      "median": 0.6512
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 60.8303,
+      "min": 60.8303,
+      "median": 60.8303
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0034,
+      "min": 0.0034,
+      "median": 0.0034
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.59,
+      "min": 0.59,
+      "median": 0.59
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 21.0,
+      "min": 21.0,
+      "median": 21.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 52.0,
+      "min": 52.0,
+      "median": 52.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 52.0,
+      "min": 52.0,
+      "median": 52.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 34432.0,
+      "min": 34432.0,
+      "median": 34432.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 926679.0,
+      "min": 926679.0,
+      "median": 926679.0
+    }
+  },
+  {
+    "case": "case-2",
+    "source": "candidate",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 50,
+    "changes": null,
+    "changedRows": 1,
+    "changedFields": 1,
+    "field": "Title",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 18.4145,
+      "min": 18.4145,
+      "median": 18.4145
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 46.2581,
+      "min": 46.2581,
+      "median": 46.2581
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 64.6726,
+      "min": 64.6726,
+      "median": 64.6726
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 46.1011,
+      "min": 46.1011,
+      "median": 46.1011
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.6663,
+      "min": 0.6663,
+      "median": 0.6663
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 57.7117,
+      "min": 57.7117,
+      "median": 57.7117
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0024,
+      "min": 0.0024,
+      "median": 0.0024
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.5246,
+      "min": 0.5246,
+      "median": 0.5246
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 11.0,
+      "min": 11.0,
+      "median": 11.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 52.0,
+      "min": 52.0,
+      "median": 52.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 52.0,
+      "min": 52.0,
+      "median": 52.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 33678.0,
+      "min": 33678.0,
+      "median": 33678.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 5.0,
+      "min": 5.0,
+      "median": 5.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 5.0,
+      "min": 5.0,
+      "median": 5.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 926701.0,
+      "min": 926701.0,
+      "median": 926701.0
+    }
+  },
+  {
+    "case": "case-3",
+    "source": "baseline",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 101,
+    "changes": null,
+    "changedRows": 1,
+    "changedFields": 1,
+    "field": "Select",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 32.3319,
+      "min": 32.3319,
+      "median": 32.3319
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 66.3923,
+      "min": 66.3923,
+      "median": 66.3923
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 98.7242,
+      "min": 98.7242,
+      "median": 98.7242
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 66.214,
+      "min": 66.214,
+      "median": 66.214
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.6373,
+      "min": 0.6373,
+      "median": 0.6373
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 82.121,
+      "min": 82.121,
+      "median": 82.121
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0035,
+      "min": 0.0035,
+      "median": 0.0035
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 1.0338,
+      "min": 1.0338,
+      "median": 1.0338
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 21.0,
+      "min": 21.0,
+      "median": 21.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 103.0,
+      "min": 103.0,
+      "median": 103.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 103.0,
+      "min": 103.0,
+      "median": 103.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 64499.0,
+      "min": 64499.0,
+      "median": 64499.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 7.0,
+      "min": 7.0,
+      "median": 7.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 1845937.0,
+      "min": 1845937.0,
+      "median": 1845937.0
+    }
+  },
+  {
+    "case": "case-3",
+    "source": "candidate",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 101,
+    "changes": null,
+    "changedRows": 1,
+    "changedFields": 1,
+    "field": "Select",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 34.9739,
+      "min": 34.9739,
+      "median": 34.9739
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 67.0631,
+      "min": 67.0631,
+      "median": 67.0631
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 102.037,
+      "min": 102.037,
+      "median": 102.037
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 66.8461,
+      "min": 66.8461,
+      "median": 66.8461
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 0.7012,
+      "min": 0.7012,
+      "median": 0.7012
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 89.1265,
+      "min": 89.1265,
+      "median": 89.1265
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 0.0,
+      "min": 0.0,
+      "median": 0.0
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0026,
+      "min": 0.0026,
+      "median": 0.0026
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 1.0372,
+      "min": 1.0372,
+      "median": 1.0372
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 11.0,
+      "min": 11.0,
+      "median": 11.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 103.0,
+      "min": 103.0,
+      "median": 103.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 103.0,
+      "min": 103.0,
+      "median": 103.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 63745.0,
+      "min": 63745.0,
+      "median": 63745.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 2.0,
+      "min": 2.0,
+      "median": 2.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 5.0,
+      "min": 5.0,
+      "median": 5.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 1845941.0,
+      "min": 1845941.0,
+      "median": 1845941.0
+    }
+  },
+  {
+    "case": "case-4",
+    "source": "baseline",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 2,
+    "changes": null,
+    "changedRows": 2,
+    "changedFields": 4,
+    "field": "Both",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 9.425,
+      "min": 9.425,
+      "median": 9.425
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 3065.788,
+      "min": 3065.788,
+      "median": 3065.788
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 3075.213,
+      "min": 3075.213,
+      "median": 3075.213
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 22.7218,
+      "min": 22.7218,
+      "median": 22.7218
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 3.1145,
+      "min": 3.1145,
+      "median": 3.1145
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 85.4173,
+      "min": 85.4173,
+      "median": 85.4173
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 2983.6232,
+      "min": 2983.6232,
+      "median": 2983.6232
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.019,
+      "min": 0.019,
+      "median": 0.019
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.2899,
+      "min": 0.2899,
+      "median": 0.2899
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 84.0,
+      "min": 84.0,
+      "median": 84.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 4,
+      "min": 4,
+      "median": 4
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 18743.0,
+      "min": 18743.0,
+      "median": 18743.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 8.0,
+      "min": 8.0,
+      "median": 8.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 30.0,
+      "min": 30.0,
+      "median": 30.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 30.0,
+      "min": 30.0,
+      "median": 30.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 18.0,
+      "min": 18.0,
+      "median": 18.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 241908.0,
+      "min": 241908.0,
+      "median": 241908.0
+    }
+  },
+  {
+    "case": "case-4",
+    "source": "candidate",
+    "samples": 1,
+    "repeatability": "Single-sample control; no variation estimate",
+    "items": 2,
+    "changes": null,
+    "changedRows": 2,
+    "changedFields": 4,
+    "field": "Both",
+    "mixed": false,
+    "instrument": true,
+    "prepareMs": {
+      "observed": 1,
+      "max": 8.0911,
+      "min": 8.0911,
+      "median": 8.0911
+    },
+    "executeMs": {
+      "observed": 1,
+      "max": 3078.4437,
+      "min": 3078.4437,
+      "median": 3078.4437
+    },
+    "endToEndMs": {
+      "observed": 1,
+      "max": 3086.5348,
+      "min": 3086.5348,
+      "median": 3086.5348
+    },
+    "firstDurableSuccessMs": {
+      "observed": 1,
+      "max": 21.3115,
+      "min": 21.3115,
+      "median": 21.3115
+    },
+    "observationMsInclusive": {
+      "observed": 1,
+      "max": 4.1985,
+      "min": 4.1985,
+      "median": 4.1985
+    },
+    "checkpointMsInclusive": {
+      "observed": 1,
+      "max": 91.9914,
+      "min": 91.9914,
+      "median": 91.9914
+    },
+    "mandatoryWaitMs": {
+      "observed": 1,
+      "max": 2987.0609,
+      "min": 2987.0609,
+      "median": 2987.0609
+    },
+    "gateWaitMs": {
+      "observed": 1,
+      "max": 0.0133,
+      "min": 0.0133,
+      "median": 0.0133
+    },
+    "responseParseMs": {
+      "observed": 1,
+      "max": 0.2602,
+      "min": 0.2602,
+      "median": 0.2602
+    },
+    "newBatches": {
+      "observed": 1,
+      "max": 1,
+      "min": 1,
+      "median": 1
+    },
+    "executionProcesses": {
+      "observed": 1,
+      "max": 44.0,
+      "min": 44.0,
+      "median": 44.0
+    },
+    "preparationProcesses": {
+      "observed": 1,
+      "max": 6.0,
+      "min": 6.0,
+      "median": 6.0
+    },
+    "mutations": {
+      "observed": 1,
+      "max": 4,
+      "min": 4,
+      "median": 4
+    },
+    "fullTraversals": {
+      "observed": 1,
+      "max": 1.0,
+      "min": 1.0,
+      "median": 1.0
+    },
+    "returnedItems": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "returnedValues": {
+      "observed": 1,
+      "max": 9.0,
+      "min": 9.0,
+      "median": 9.0
+    },
+    "returnedUtf8Bytes": {
+      "observed": 1,
+      "max": 15727.0,
+      "min": 15727.0,
+      "median": 15727.0
+    },
+    "versionCalls": {
+      "observed": 1,
+      "max": 8.0,
+      "min": 8.0,
+      "median": 8.0
+    },
+    "authCalls": {
+      "observed": 1,
+      "max": 14.0,
+      "min": 14.0,
+      "median": 14.0
+    },
+    "identityCalls": {
+      "observed": 1,
+      "max": 14.0,
+      "min": 14.0,
+      "median": 14.0
+    },
+    "dataQueries": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "mutationCalls": {
+      "observed": 1,
+      "max": 4.0,
+      "min": 4.0,
+      "median": 4.0
+    },
+    "checkpointCommits": {
+      "observed": 1,
+      "max": 10.0,
+      "min": 10.0,
+      "median": 10.0
+    },
+    "checkpointBytes": {
+      "observed": 1,
+      "max": 241957.0,
+      "min": 241957.0,
+      "median": 241957.0
+    }
+  }
+]

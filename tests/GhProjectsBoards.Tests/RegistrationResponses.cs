@@ -7,6 +7,12 @@ internal static class RegistrationResponses
 {
     public static object? Query(string query, JsonElement variables, string host = "github.com", int itemCount = 101, bool columns = false, bool bulk = false, bool reviewInformation = false, bool reviewDetails = false)
     {
+        if (query.Contains("ApplyObservation"))
+        {
+            var project = JsonSerializer.SerializeToElement(Query("ProjectFields", variables, host, itemCount, columns, bulk, reviewInformation, reviewDetails));
+            var item = JsonSerializer.SerializeToElement(Query("ApplyItem", JsonSerializer.SerializeToElement(new { id = variables.GetProperty("item").GetString() }), host, itemCount, columns, bulk, reviewInformation, reviewDetails));
+            return new { data = new { project = project.GetProperty("data").GetProperty("node"), item = item.GetProperty("data").GetProperty("node") } };
+        }
         var next = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
         object Page(object[] nodes, bool more = false, int? total = null) => new { nodes, totalCount = total ?? nodes.Length, pageInfo = new { hasNextPage = more, endCursor = more ? "next" : null } };
         object Repo(string name) => new { id = "R-" + name, nameWithOwner = "sample-user/" + name, owner = new { id = "O1" } };

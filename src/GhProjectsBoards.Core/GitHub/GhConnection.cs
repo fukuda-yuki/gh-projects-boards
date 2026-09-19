@@ -35,7 +35,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ConnectionReport> ConnectAsync(CancellationToken cancellationToken = default)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ConnectionReport(new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled)); }
         try { return await ConnectCoreAsync(cancellationToken); }
         finally { gate.Release(); }
@@ -43,25 +43,46 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ConnectionReport> RecheckAsync(ConnectionContext context, CancellationToken cancellationToken = default)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ConnectionReport(new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled)); }
+        try { return await RecheckCoreAsync(context, cancellationToken); }
+        finally { gate.Release(); }
+    }
+
+    // Evidence lasts only through this immediate read. External gh credential changes
+    // are not locked; the scoped reader also verifies the viewer in each response.
+    internal async Task<ApiResult> RecheckAndReadAsync(ConnectionContext context, ApiRequest request, string requiredScope, CancellationToken cancellationToken)
+    {
+        if (request.IsMutation) return new(ApiOutcome.Failed, FailureKind.InvalidInput);
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
+        catch (OperationCanceledException) { return new(ApiOutcome.Cancelled, FailureKind.Cancelled); }
         try
         {
-            if (context.IsInvalidated || !GitHubAddress.TryHost(host, out var normalizedHost)
-                || normalizedHost != context.Host || !executable.Equals(context.Executable, StringComparison.OrdinalIgnoreCase))
-            {
-                context.Invalidate();
-                return new ConnectionReport(new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged), Context: context);
-            }
-            var current = await ConnectCoreAsync(cancellationToken);
-            if (current.IsConnected && current.Context!.ViewerId != context.ViewerId)
-            {
-                context.Invalidate();
-                return current with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged), Context = context };
-            }
-            return current with { Context = context };
+            var check = await RecheckCoreAsync(context, cancellationToken);
+            if (!check.IsConnected) return check.Result;
+            if (check.Authentication?.Store != CredentialStore.Keyring) return new(ApiOutcome.Failed, FailureKind.UnknownCredentialStore);
+            if (check.Authentication.HasScope(requiredScope) != true) return new(ApiOutcome.Failed, FailureKind.PermissionDenied);
+            if (cancellationToken.IsCancellationRequested) return new(ApiOutcome.Cancelled, FailureKind.Cancelled);
+            return await new GhApiTransport(runner, executable, timeout).SendAsync(context.Host, request, cancellationToken);
         }
         finally { gate.Release(); }
+    }
+
+    private async Task<ConnectionReport> RecheckCoreAsync(ConnectionContext context, CancellationToken cancellationToken)
+    {
+        if (context.IsInvalidated || !GitHubAddress.TryHost(host, out var normalizedHost)
+            || normalizedHost != context.Host || !executable.Equals(context.Executable, StringComparison.OrdinalIgnoreCase))
+        {
+            context.Invalidate();
+            return new ConnectionReport(new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged), Context: context);
+        }
+        var current = await ConnectCoreAsync(cancellationToken);
+        if (current.IsConnected && current.Context!.ViewerId != context.ViewerId)
+        {
+            context.Invalidate();
+            return current with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged), Context = context };
+        }
+        return current with { Context = context };
     }
 
     private async Task<ConnectionReport> ConnectCoreAsync(CancellationToken cancellationToken)
@@ -87,7 +108,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ApiResult> SendAsync(ConnectionContext context, ApiRequest request, CancellationToken cancellationToken = default, string? requiredScope = null)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled); }
         try
         {

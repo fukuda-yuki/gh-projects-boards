@@ -10,19 +10,21 @@ internal static class PerformanceRun
     {
         if (!Path.IsPathFullyQualified(root) || Directory.Exists(root)) return 2;
         Directory.CreateDirectory(root);
-        var plan = new { count, changes, mixed, samples, field, warmup = 1, instrument, frequency = Stopwatch.Frequency,
+        if (field is not ("Title" or "Select" or "Both") || changes < 0 || changes > count) throw new ArgumentException("Invalid workload");
+        var expectedFields = changes * (field == "Both" ? 2 : 1);
+        var plan = new { count, changedRows = changes, changedFields = expectedFields, mixed, samples, field, warmup = 1, instrument, frequency = Stopwatch.Frequency,
             boundary = "Core with in-process synthetic gh responses; production waits and actual checkpoint I/O", runtime = Environment.Version.ToString(),
             processorCount = Environment.ProcessorCount, os = Environment.OSVersion.ToString() };
         await File.WriteAllTextAsync(Path.Combine(root, "plan.json"), JsonSerializer.Serialize(plan));
         var calibration = new List<double>();
         for (var i = -1; i < 5; i++)
         {
-            var process = await new GhProjectsBoards.App.GitHub.GhProcessRunner().RunAsync(new(Environment.ProcessPath!, ["--version"]));
-            if (process.ExitCode != 0) throw new InvalidOperationException("Synthetic process calibration failed");
+            var process = await new GhProjectsBoards.App.GitHub.GhProcessRunner().RunAsync(new(@"C:\Program Files\GitHub CLI\gh.exe", ["--version"]));
+            if (process.ExitCode != 0) throw new InvalidOperationException("Installed gh calibration failed");
             if (i >= 0) calibration.Add(process.Elapsed.TotalMilliseconds);
         }
         await File.WriteAllTextAsync(Path.Combine(root, "process-calibration.json"), JsonSerializer.Serialize(new {
-            boundary = "separate synthetic executable --version startup/exit estimate; never subtracted from product spans", warmup = 1, samplesMs = calibration }));
+            boundary = "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans", warmup = 1, samplesMs = calibration }));
         for (int sample = -1; sample < samples; sample++)
         {
             var data = Path.Combine(root, sample < 0 ? "warmup" : "sample-" + sample);
@@ -46,8 +48,10 @@ internal static class PerformanceRun
                 w.SetBuffer(rows[^3].Cells[0], "pending\ntext");
             }
             for (int i = 0; i < changes; i++)
-                if (field == "Select") { if (i % 2 == 0) w.Commit("P1", rows[i].Cells[1], "done", true); else w.Clear("P1", [rows[i].Cells[1]]); }
-                else w.Commit("P1", rows[i].Cells[0], "Measured " + i.ToString("D4"));
+            {
+                if (field is "Select" or "Both") { if (i % 2 == 0) w.Commit("P1", rows[i].Cells[1], "done", true); else w.Clear("P1", [rows[i].Cells[1]]); }
+                if (field is "Title" or "Both") w.Commit("P1", rows[i].Cells[0], "Measured " + i.ToString("D4"));
+            }
             await h.Workspace.Drafts!.FlushAsync();
             var checkpoint = new DraftStore(data).FileFor(w.Scope);
             var seedName = sample < 0 ? "warmup-seed.json" : $"sample-{sample}-seed.json";
@@ -77,15 +81,24 @@ internal static class PerformanceRun
             using (PerformanceTrace.Span("prepare")) await h.Workspace.PrepareApplyAsync(rows.Take(Math.Max(changes, 1)).Select(r => r.ItemId).ToHashSet());
             var prepare = timer.Elapsed.TotalMilliseconds;
             var review = h.Workspace.ApplyReview ?? throw new InvalidOperationException(h.Workspace.Status);
-            if (review.Batch.Operations.Length != changes) throw new InvalidOperationException("Unexpected review count");
+            if (review.Batch.Operations.Length != expectedFields) throw new InvalidOperationException("Unexpected review count");
+            var executionStart = Stopwatch.GetTimestamp();
             timer.Restart(); // User review is outside both measured execution intervals.
             using (PerformanceTrace.Span("execute")) await h.Workspace.ConfirmApplyAsync(review);
             var execute = timer.Elapsed.TotalMilliseconds;
             trace?.Dispose();
             var journal = h.Workspace.Drafts!.Workspace.Journal.SingleOrDefault(b => b.Id == review.Batch.Id);
-            var success = h.Writes.Count == changes && journal is not null && journal.Operations.All(o => o.State == ApplyState.Succeeded);
+            var journalDelta = h.Workspace.Drafts.Workspace.Journal.Count - (durable.Journal?.Length ?? 0);
+            var success = h.Writes.Count == expectedFields && (expectedFields == 0 ? journal is null && journalDelta == 0
+                : journal is not null && journal.Operations.Length == expectedFields && journal.Operations.All(o => o.State == ApplyState.Succeeded));
+            var firstSuccess = trace?.Samples.FirstOrDefault(s => s.Kind == "durable-success");
             var result = new { sample, prepareMs = prepare, executeMs = execute, endToEndMs = prepare + execute, success,
-                initialSha256, mutations = h.Writes.Count, spans = trace?.Samples, journalOperations = journal?.Operations.Length };
+                firstDurableSuccessMs = firstSuccess is null ? (double?)null : (firstSuccess.Start - executionStart) * 1000d / Stopwatch.Frequency,
+                initialSha256, mutations = h.Writes.Count, changedRows = changes, changedFields = expectedFields, newBatches = journalDelta,
+                commandInvocations = trace?.Samples.Where(s => s.Kind.StartsWith("process-")).GroupBy(s => new { s.Kind, phase = s.Start < executionStart ? "prepare" : "execute" })
+                    .Select(g => new { g.Key.Kind, g.Key.phase, count = g.Count(), inclusiveMs = g.Sum(s => s.End - s.Start) * 1000d / Stopwatch.Frequency }).ToArray(),
+                errors = journal?.Operations.Where(o => o.State != ApplyState.Succeeded).Select(o => new { o.State, o.Reason }).ToArray(),
+                spans = trace?.Samples, journalOperations = journal?.Operations.Length };
             await File.WriteAllTextAsync(Path.Combine(root, sample < 0 ? "warmup.json" : $"sample-{sample}.json"), JsonSerializer.Serialize(result));
             Console.WriteLine($"sample={sample} items={count} changes={changes} prepare={prepare:F1} execute={execute:F1} success={success}");
             if (!success) return 1;

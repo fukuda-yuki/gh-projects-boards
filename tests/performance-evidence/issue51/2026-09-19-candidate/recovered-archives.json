@@ -1,0 +1,83 @@
+[
+  {
+    "archive": "baseline-harness-source.zip",
+    "sha256": "BF882D9205B493D9010B2B37594564305DEA1827AECD52AC65908D08B6A10E48",
+    "expected": "BF882D9205B493D9010B2B37594564305DEA1827AECD52AC65908D08B6A10E48",
+    "matches": true,
+    "entries": 226,
+    "observationContainsVariant": false,
+    "readerBytes": 25888
+  },
+  {
+    "archive": "baseline-source.zip",
+    "sha256": "DE3937E8F4F9BF9959A593D9A145C6D51150304B42B8D1F5871FD734316E2585",
+    "expected": "DE3937E8F4F9BF9959A593D9A145C6D51150304B42B8D1F5871FD734316E2585",
+    "matches": true,
+    "entries": 226,
+    "observationContainsVariant": false,
+    "readerBytes": 25888
+  },
+  {
+    "archive": "cleanup-source.zip",
+    "sha256": "ADA9D0BC963DBB0CC0F9AF3AD7E9C58F6C0A8CFAA4BEBA699D6A2E02DD757E81",
+    "expected": "ADA9D0BC963DBB0CC0F9AF3AD7E9C58F6C0A8CFAA4BEBA699D6A2E02DD757E81",
+    "matches": true,
+    "entries": 232,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "live-final-source.zip",
+    "sha256": "A9E9F5AD5C8712E73918188E3FEBA2951AC2F2313B17521F90B1EE31873D454F",
+    "expected": "A9E9F5AD5C8712E73918188E3FEBA2951AC2F2313B17521F90B1EE31873D454F",
+    "matches": true,
+    "entries": 231,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "live-source.zip",
+    "sha256": "4FC4E0B4778D0403641A43B9176B734FCBF655E43F4AD45D72D239129B0EDCDB",
+    "expected": "4FC4E0B4778D0403641A43B9176B734FCBF655E43F4AD45D72D239129B0EDCDB",
+    "matches": true,
+    "entries": 231,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "live-staged-source.zip",
+    "sha256": "F94EEBA744C0A52C609A5115ABE7157172CF033B455051468A366C8CAE1AF5B0",
+    "expected": "F94EEBA744C0A52C609A5115ABE7157172CF033B455051468A366C8CAE1AF5B0",
+    "matches": true,
+    "entries": 231,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "live-strict-source.zip",
+    "sha256": "224ECAB24DC9CE7806B46EDA175393B760C32F7839A15BEBF790107E04120DBA",
+    "expected": "224ECAB24DC9CE7806B46EDA175393B760C32F7839A15BEBF790107E04120DBA",
+    "matches": true,
+    "entries": 231,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "prototype-source.zip",
+    "sha256": "4C177A9BD80F318ABF89F1049289112FF9DFBF9FEE63E5519AFA3FA5D845DCFF",
+    "expected": "4C177A9BD80F318ABF89F1049289112FF9DFBF9FEE63E5519AFA3FA5D845DCFF",
+    "matches": true,
+    "entries": 228,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  },
+  {
+    "archive": "verification-source.zip",
+    "sha256": "37A067A7F10005939FC35BB342CFE8B2DD47F513F9F0FCE6D9B48AF34DE8E988",
+    "expected": "37A067A7F10005939FC35BB342CFE8B2DD47F513F9F0FCE6D9B48AF34DE8E988",
+    "matches": true,
+    "entries": 232,
+    "observationContainsVariant": true,
+    "readerBytes": 27130
+  }
+]

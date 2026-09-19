@@ -1,0 +1,44 @@
+[
+  {
+    "label": "main",
+    "source": "5e5fb12b24e453dcd41d993b23b29ce78ec7f81c",
+    "commonHarness": "21a9884cacc1b8035ec70d83f79c9db5aed48e4d",
+    "instrumentationOverlay": true,
+    "archivesha256": "AB9E75E72791E980D8931E8CFD8A2D3D3AF4A87C835D4BE73E48EE6753973EBC",
+    "binaries": [
+      {
+        "sha256": "6210A6963F8110DBD3F56DC58D6C82EDB55EE2782EFEFFEE32DC07D6A498251B",
+        "name": "GhProjectsBoards.Core.dll"
+      },
+      {
+        "sha256": "1CFEF9BF38B12193C580081AE855A5D25B785B37A39B528723BB152E6A4BDF7E",
+        "name": "GhProjectsBoards.Tests.dll"
+      },
+      {
+        "sha256": "2FA8730798246E138A3C9D60A85A06E702BCB7DE8F57286ED5AD98A7A04BDDCE",
+        "name": "GhProjectsBoards.Tests.exe"
+      }
+    ]
+  },
+  {
+    "label": "candidate",
+    "source": "21a9884cacc1b8035ec70d83f79c9db5aed48e4d",
+    "commonHarness": "21a9884cacc1b8035ec70d83f79c9db5aed48e4d",
+    "instrumentationOverlay": false,
+    "archivesha256": "954940A3D29437AEE75241BC2FEB34B65C03B023F8F5C550E706E67EC319573D",
+    "binaries": [
+      {
+        "sha256": "66A06FE87CB4DFF845567C45E949AC4D08FD7B2A30551D30CDC06DB3D06C8144",
+        "name": "GhProjectsBoards.Core.dll"
+      },
+      {
+        "sha256": "D771888CE381D27B84E8EFC8CEA60209B218987EFDCD0EC64DCDAF74506E2462",
+        "name": "GhProjectsBoards.Tests.dll"
+      },
+      {
+        "sha256": "F873E78879CE7251D28A1D53039E147683CD6C30D5FD001379CE1AD2BF5968A9",
+        "name": "GhProjectsBoards.Tests.exe"
+      }
+    ]
+  }
+]

@@ -1,0 +1,282 @@
+[
+  {
+    "stage": "prepare",
+    "status": "Passed",
+    "mutations": 2,
+    "logicalOperations": [
+      "CreateFixture",
+      "PerformanceAdd"
+    ],
+    "firstIntentAt": "2026-09-19T13:47:34.016771+09:00",
+    "processWindowMs": 14005.4813,
+    "processRecordSha256": "2BE160FC93E4C5A4814F778549F628791A5BAF37F3720B0149E4A3CF6C8DD7C4",
+    "resultSha256": "8767E78F0B98131E1DBB69BE9ABF21BF2426D499D771A9AB353B753FD5AF509B",
+    "budget": {
+      "Allowed": true,
+      "RecentWrites": 0,
+      "RequestedWithReserve": 4,
+      "ResumeAfter": null,
+      "LastMutation": null
+    },
+    "cleanup": false,
+    "measuredSamples": 0,
+    "restoredSamples": 0,
+    "stopwatchFrequency": 10000000,
+    "processWindowDefinition": "First process start through last process end within this stage; not timed Apply and not full lifecycle elapsed",
+    "processCategories": [
+      {
+        "kind": "auth",
+        "count": 10,
+        "inclusiveMs": 3970.3561
+      },
+      {
+        "kind": "identity",
+        "count": 10,
+        "inclusiveMs": 3660.4102
+      },
+      {
+        "kind": "mutation",
+        "count": 2,
+        "inclusiveMs": 1180.3274
+      },
+      {
+        "kind": "query",
+        "count": 7,
+        "inclusiveMs": 4946.0025
+      },
+      {
+        "kind": "version",
+        "count": 1,
+        "inclusiveMs": 67.2053
+      }
+    ],
+    "mutationRecords": [
+      {
+        "Kind": "mutation",
+        "Start": 2926381521816,
+        "End": 2926387076925,
+        "Started": true,
+        "Completion": 0,
+        "ExitCode": 0,
+        "HttpStatus": 201,
+        "Quota": {
+          "x-ratelimit-resource": "core",
+          "x-ratelimit-limit": "5000",
+          "x-ratelimit-used": "4",
+          "x-ratelimit-remaining": "4996",
+          "x-ratelimit-reset": "1789795147"
+        },
+        "RequestBytes": 146,
+        "ResponseBytes": 4170,
+        "InFlight": 1,
+        "Throttled": false,
+        "StopReason": null,
+        "RequestId": "CFA1:3A8A71:2C6A01:3C2A8A:6AAE13E5",
+        "ErrorTypes": [],
+        "Messages": []
+      },
+      {
+        "Kind": "mutation",
+        "Start": 2926427672386,
+        "End": 2926433920551,
+        "Started": true,
+        "Completion": 0,
+        "ExitCode": 0,
+        "HttpStatus": 200,
+        "Quota": {
+          "x-ratelimit-resource": "graphql",
+          "x-ratelimit-limit": "5000",
+          "x-ratelimit-used": "25",
+          "x-ratelimit-remaining": "4975",
+          "x-ratelimit-reset": "1789793917"
+        },
+        "RequestBytes": 228,
+        "ResponseBytes": 1288,
+        "InFlight": 1,
+        "Throttled": false,
+        "StopReason": null,
+        "RequestId": "D998:BDEE2:2E1941:3DDAF7:6AAE13E9",
+        "ErrorTypes": [],
+        "Messages": []
+      }
+    ],
+    "nonzeroExitRecords": [],
+    "graphqlOrThrottleSignals": 0
+  },
+  {
+    "stage": "verify",
+    "status": "Passed",
+    "mutations": 0,
+    "logicalOperations": [],
+    "firstIntentAt": null,
+    "processWindowMs": 6032.0424,
+    "processRecordSha256": "6EB1FEC3F22348E73ED003A3ADBDE6BC9D15981A15E096BC860794E92681A6AD",
+    "resultSha256": "41AFDCB11728DFE3A0813F7B769DC4F31E06F88F2F731C4545C7E1585D62D204",
+    "budget": {
+      "Allowed": true,
+      "RecentWrites": 2,
+      "RequestedWithReserve": 0,
+      "ResumeAfter": null,
+      "LastMutation": "2026-09-19T13:47:38.6334001+09:00"
+    },
+    "cleanup": false,
+    "measuredSamples": 0,
+    "restoredSamples": 0,
+    "stopwatchFrequency": 10000000,
+    "processWindowDefinition": "First process start through last process end within this stage; not timed Apply and not full lifecycle elapsed",
+    "processCategories": [
+      {
+        "kind": "auth",
+        "count": 5,
+        "inclusiveMs": 1718.0221
+      },
+      {
+        "kind": "identity",
+        "count": 5,
+        "inclusiveMs": 1719.6835
+      },
+      {
+        "kind": "query",
+        "count": 4,
+        "inclusiveMs": 2462.4787
+      },
+      {
+        "kind": "version",
+        "count": 1,
+        "inclusiveMs": 65.9457
+      }
+    ],
+    "mutationRecords": [],
+    "nonzeroExitRecords": [],
+    "graphqlOrThrottleSignals": 0
+  },
+  {
+    "stage": "cleanup",
+    "status": "Passed",
+    "mutations": 2,
+    "logicalOperations": [
+      "PerformanceRemove",
+      "PerformanceDelete"
+    ],
+    "firstIntentAt": "2026-09-19T13:48:41.8409363+09:00",
+    "processWindowMs": 12979.5339,
+    "processRecordSha256": "487B639BDD918AA4BCFDCF783ABF1C16A3C51DF0D1379B77B23D8DC1A25C7EC5",
+    "resultSha256": "1383D1A37DFDCFFA96F096157406A5B49A6A01E418D3D4927E6330FCCF2314E5",
+    "budget": {
+      "Allowed": true,
+      "RecentWrites": 2,
+      "RequestedWithReserve": 2,
+      "ResumeAfter": null,
+      "LastMutation": "2026-09-19T13:47:38.6334001+09:00"
+    },
+    "cleanup": true,
+    "measuredSamples": 0,
+    "restoredSamples": 0,
+    "stopwatchFrequency": 10000000,
+    "processWindowDefinition": "First process start through last process end within this stage; not timed Apply and not full lifecycle elapsed",
+    "processCategories": [
+      {
+        "kind": "auth",
+        "count": 9,
+        "inclusiveMs": 3169.8223
+      },
+      {
+        "kind": "identity",
+        "count": 9,
+        "inclusiveMs": 3066.0747
+      },
+      {
+        "kind": "mutation",
+        "count": 2,
+        "inclusiveMs": 3111.3361
+      },
+      {
+        "kind": "query",
+        "count": 6,
+        "inclusiveMs": 3429.965
+      },
+      {
+        "kind": "version",
+        "count": 1,
+        "inclusiveMs": 62.6213
+      }
+    ],
+    "mutationRecords": [
+      {
+        "Kind": "mutation",
+        "Start": 2927059768405,
+        "End": 2927064721179,
+        "Started": true,
+        "Completion": 0,
+        "ExitCode": 0,
+        "HttpStatus": 200,
+        "Quota": {
+          "x-ratelimit-resource": "graphql",
+          "x-ratelimit-limit": "5000",
+          "x-ratelimit-used": "32",
+          "x-ratelimit-remaining": "4968",
+          "x-ratelimit-reset": "1789793917"
+        },
+        "RequestBytes": 230,
+        "ResponseBytes": 1288,
+        "InFlight": 1,
+        "Throttled": false,
+        "StopReason": null,
+        "RequestId": "E9E2:D5EF:29C6BF:398C4A:6AAE1428",
+        "ErrorTypes": [],
+        "Messages": []
+      },
+      {
+        "Kind": "mutation",
+        "Start": 2927071533684,
+        "End": 2927097694271,
+        "Started": true,
+        "Completion": 0,
+        "ExitCode": 0,
+        "HttpStatus": 200,
+        "Quota": {
+          "x-ratelimit-resource": "graphql",
+          "x-ratelimit-limit": "5000",
+          "x-ratelimit-used": "33",
+          "x-ratelimit-remaining": "4967",
+          "x-ratelimit-reset": "1789793917"
+        },
+        "RequestBytes": 160,
+        "ResponseBytes": 1259,
+        "InFlight": 1,
+        "Throttled": false,
+        "StopReason": null,
+        "RequestId": "E9E6:2BE386:2BE5E9:3BACE5:6AAE142A",
+        "ErrorTypes": [],
+        "Messages": []
+      }
+    ],
+    "nonzeroExitRecords": [
+      {
+        "Kind": "query",
+        "Start": 2927105231694,
+        "End": 2927108537479,
+        "Started": true,
+        "Completion": 0,
+        "ExitCode": 1,
+        "HttpStatus": 410,
+        "Quota": {
+          "x-ratelimit-resource": "core",
+          "x-ratelimit-limit": "5000",
+          "x-ratelimit-used": "60",
+          "x-ratelimit-remaining": "4940",
+          "x-ratelimit-reset": "1789794166"
+        },
+        "RequestBytes": 0,
+        "ResponseBytes": 1400,
+        "InFlight": 1,
+        "Throttled": false,
+        "StopReason": null,
+        "RequestId": "C0B4:1C72D:2CEB7D:3CB3DF:6AAE142D",
+        "ErrorTypes": [],
+        "Messages": []
+      }
+    ],
+    "graphqlOrThrottleSignals": 0
+  }
+]

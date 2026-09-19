@@ -1,0 +1,132 @@
+[
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-0",
+    "samplesMs": [
+      59.1554,
+      61.5129,
+      58.3135,
+      63.8861,
+      57.2492
+    ],
+    "source": "main"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-1",
+    "samplesMs": [
+      55.8379,
+      57.7018,
+      55.3527,
+      57.167,
+      56.4131
+    ],
+    "source": "main"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-2",
+    "samplesMs": [
+      56.0529,
+      57.7924,
+      58.2675,
+      61.5607,
+      54.718
+    ],
+    "source": "main"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-3",
+    "samplesMs": [
+      56.5251,
+      56.4634,
+      58.3966,
+      59.6779,
+      57.6227
+    ],
+    "source": "main"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-4",
+    "samplesMs": [
+      53.2315,
+      55.9614,
+      54.6433,
+      55.5676,
+      56.4308
+    ],
+    "source": "main"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-0",
+    "samplesMs": [
+      56.6238,
+      56.901,
+      61.6073,
+      56.9984,
+      57.4804
+    ],
+    "source": "candidate"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-1",
+    "samplesMs": [
+      55.4598,
+      62.6698,
+      64.2196,
+      54.3097,
+      54.6373
+    ],
+    "source": "candidate"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-2",
+    "samplesMs": [
+      62.0529,
+      54.5793,
+      55.9115,
+      57.6196,
+      55.7788
+    ],
+    "source": "candidate"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-3",
+    "samplesMs": [
+      55.4685,
+      55.5581,
+      54.5951,
+      55.027,
+      64.5001
+    ],
+    "source": "candidate"
+  },
+  {
+    "warmup": 1,
+    "boundary": "Installed gh --version process startup/exit only; no authentication/network; never subtracted from product spans",
+    "case": "case-4",
+    "samplesMs": [
+      61.4759,
+      53.3953,
+      55.6213,
+      58.9756,
+      60.0741
+    ],
+    "source": "candidate"
+  }
+]

@@ -9,6 +9,9 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.FirstOrDefault() == "--performance-init" && args.Length == 2) return LivePerformanceRun.Initialize(args[1]);
+        if (args.FirstOrDefault() == "--performance-stage" && args.Length == 5)
+            return await LivePerformanceRun.Stage(args[1], args[2], args[3], args[4]);
         if (args.FirstOrDefault() == "--performance" && args.Length == 9) return await PerformanceRun.Run(args[1], int.Parse(args[2]), int.Parse(args[3]), bool.Parse(args[4]), int.Parse(args[5]), bool.Parse(args[6]), args[7], args[8]);
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
@@ -198,10 +201,11 @@ internal static class FakeGhProgram
                 settings.TryGetProperty("reviewDetails", out var reviewDetails) && reviewDetails.GetBoolean());
             if (response is not null)
             {
-                if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))
+                if (query.Contains("ProjectItems") || query.Contains("ApplyItem") || query.Contains("ApplyObservation"))
                 {
                     var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
-                    var items = query.Contains("ApplyItem") ? new[] { node["data"]!["node"]! } : node["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
+                    var items = query.Contains("ApplyObservation") ? new[] { node["data"]!["item"]! }
+                        : query.Contains("ApplyItem") ? new[] { node["data"]!["node"]! } : node["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
                     foreach (var item in items.Where(i => i!["content"]?["id"]?.ToString() == "I1"))
                     {
                         if (settings.TryGetProperty("remoteTitle", out var title) && title.ValueKind == JsonValueKind.String) item!["content"]!["title"] = title.GetString();
@@ -220,6 +224,12 @@ internal static class FakeGhProgram
                         }
                     }
                     response = query.Contains("ProjectItems") && settings.TryGetProperty("creation", out var enabledCreation) && enabledCreation.GetBoolean() ? FakeCreation.Augment(node, directory, host) : node;
+                }
+                if (query.Contains("viewer { databaseId }"))
+                {
+                    var observed = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
+                    observed["data"]!["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = id });
+                    response = observed;
                 }
                 WriteHttp(response); return 0;
             }

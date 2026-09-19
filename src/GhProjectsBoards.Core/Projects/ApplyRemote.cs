@@ -9,11 +9,6 @@ internal sealed partial class ApplyRemote(GhConnectionService service, Connectio
     {
         using var measured = PerformanceTrace.Span("operation-observation");
         if (batch.Project.Scope != ConnectionScope.From(context)) return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
-        var check = await service.RecheckAsync(context, token);
-        if (!check.IsConnected) return (null, check.Result);
-        if (check.Authentication?.Store != CredentialStore.Keyring) return (null, new(ApiOutcome.Failed, FailureKind.UnknownCredentialStore));
-        if (check.Authentication.HasScope(operation.Key.Kind == "Title" ? "repo" : "project") != true)
-            return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
         return await new ProjectReader(service).ObserveFieldAsync(context, batch, operation, token);
     }
     public async Task<ApiResult> MutateAsync(ApplyBatch batch, ApplyOperation o, CancellationToken token)

@@ -1,0 +1,1346 @@
+[
+  {
+    "source": "main",
+    "case": "case-0",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "813913375A0F03CE027DF7F43C62A8B94F97DB11F52BC3E80BF22D9D281FCCEA",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0055
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0022
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2452
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.1232
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 1.6025
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 0.5688
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 200,
+        "inclusiveMs": 10.1452
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9214
+      }
+    ],
+    "originalSha256": "80CFFB617303B99EBBF637236FA533CA0AF8FBA3EBBC7C2AE9D378C513492806"
+  },
+  {
+    "source": "main",
+    "case": "case-0",
+    "sample": 1,
+    "success": true,
+    "initialSha256": "D5F295851778CE09F2FA332C1CCBAADC165AA0E1283337A61A24DCAC858F1654",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0074
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0037
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2764
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.1271
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 1.6057
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 0.5903
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 200,
+        "inclusiveMs": 9.7676
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9176
+      }
+    ],
+    "originalSha256": "D966FA9722C1F4E50E5CA2DA0E2169E1E5454C86E38FC934FC0E8295B6C7B3AB"
+  },
+  {
+    "source": "main",
+    "case": "case-0",
+    "sample": 2,
+    "success": true,
+    "initialSha256": "558038797638D735E6C80E276415E8C44782B3C099A4DDCE704455934A904DA2",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0073
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0036
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2738
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.099
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 1.6502
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 0.5831
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 200,
+        "inclusiveMs": 9.5485
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9546
+      }
+    ],
+    "originalSha256": "E1BF57F017DD9E2C7348675925460AC4CCDE48C3403E3CCA15696D9DF81D20AB"
+  },
+  {
+    "source": "main",
+    "case": "case-0",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "BAAEFE2D99AA7CB85741C9BE949FA0FECC1C7D458F9DB23670C3E6391F8B4C78",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0146
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0095
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.1958
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.2037
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 1.7693
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 350,
+        "inclusiveMs": 0.6652
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 200,
+        "inclusiveMs": 11.9487
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 1.6704
+      }
+    ],
+    "originalSha256": "F2134BCBF4C7A3CF8BA66484F0DABD2C72C72B6AD0C573176AC8BACF4F7802F4"
+  },
+  {
+    "source": "main",
+    "case": "case-1",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "06A1C6B0801E71EDDC4ED95474F09F012264415EB482323B0F8126124C3F8DD7",
+    "mutations": 0,
+    "newBatches": 0,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0102
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0053
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.1672
+      }
+    ],
+    "originalSha256": "678998549E6E36949EFBE12D2D93B942903769B67DA69179150D070B76FC4132"
+  },
+  {
+    "source": "main",
+    "case": "case-1",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "09B8F9E1173D82BC9F55B6EC62565A5900AAAFFC86B58363080A25050F4B7449",
+    "mutations": 0,
+    "newBatches": 0,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0163
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.007
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.108
+      }
+    ],
+    "originalSha256": "8C6C45DF4505ADEF6EF372C807D7876A3B7F9F37E26C53D80CFA34545BAAA678"
+  },
+  {
+    "source": "main",
+    "case": "case-2",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "5B1A184B770CB3D69C519112BD0FB67A89762536E300CE0F9599FD1F036BACE5",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0121
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0061
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 6.0385
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0024
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0352
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0155
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.2824
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.0232
+      }
+    ],
+    "originalSha256": "520DE2675FE5B391EF30C9DB4CA5F7837F48284D4ED9DCA315B72AF9BB9458CC"
+  },
+  {
+    "source": "main",
+    "case": "case-2",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "D6165CB6ABF846FD6FDCC33A0CE35042CD302739229024DD11606CFADAE88978",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0205
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0131
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.1749
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0095
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.067
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0285
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.9083
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.8392
+      }
+    ],
+    "originalSha256": "93519F232CB73F47E4C7523166D7310752BA28D4CEEBF49B23EF62A0B0DC93D3"
+  },
+  {
+    "source": "main",
+    "case": "case-3",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "F7C9A1B9FEEB9A82EB0B05FB0F6AB03D4492AC959ECBD2C56A4E6AABDB75978F",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0131
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0083
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 2.2534
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0025
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0324
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0146
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.2754
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.0241
+      }
+    ],
+    "originalSha256": "F5303C2E5E57EDA25E10A04033FBC50CF799A0F8FD3F9EFA6EBAF41C7D9DB5D5"
+  },
+  {
+    "source": "main",
+    "case": "case-3",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "9ED1F1E8C3FFCCEE4FFAC452046FD699528050EFCFA95D2BF3B2F98F6D2A7A82",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0208
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0116
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 2.5761
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0097
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0596
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 7,
+        "inclusiveMs": 0.0211
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.8584
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.4916
+      }
+    ],
+    "originalSha256": "52CA87359C4C9AC99AC5EF5A3B47915CF70E35A2B0FBEB384BC216CC0CD9EEFB"
+  },
+  {
+    "source": "main",
+    "case": "case-4",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "19C91B47B37F5B02A365559173EADFDFE994CECAF6B5614527347FBA13B9FEBA",
+    "mutations": 4,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0107
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0089
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.1609
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 0.0387
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 28,
+        "inclusiveMs": 0.1246
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 28,
+        "inclusiveMs": 0.0751
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 16,
+        "inclusiveMs": 1.1301
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.1004
+      }
+    ],
+    "originalSha256": "5125D6C94757E310F395334FD2E8615CD1C7ABED589814AB23CCC046FBE0C14D"
+  },
+  {
+    "source": "main",
+    "case": "case-4",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "B0CEFD0D6C1322208FFEAE9AFA19C8A3B5E2D25955D0DC7E11F3A8F41DC78B9B",
+    "mutations": 4,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.016
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0081
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.197
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 0.0435
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 28,
+        "inclusiveMs": 0.2135
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 28,
+        "inclusiveMs": 0.1245
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 16,
+        "inclusiveMs": 2.1228
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 1.6849
+      }
+    ],
+    "originalSha256": "2BD9B271C67D2863447BDF165DE3C85381A3CA5276651D4FDE99BE14B36D347D"
+  },
+  {
+    "source": "candidate",
+    "case": "case-0",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "813913375A0F03CE027DF7F43C62A8B94F97DB11F52BC3E80BF22D9D281FCCEA",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0064
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0033
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2645
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.1294
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.9803
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.4132
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 12.9461
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9541
+      }
+    ],
+    "originalSha256": "DAEC510730D3B33501254BB2105BB22E14031FB9EDD1E43FE6517D198A05F831"
+  },
+  {
+    "source": "candidate",
+    "case": "case-0",
+    "sample": 1,
+    "success": true,
+    "initialSha256": "D5F295851778CE09F2FA332C1CCBAADC165AA0E1283337A61A24DCAC858F1654",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0089
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.004
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2873
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.1203
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.984
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.4289
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 12.429
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9611
+      }
+    ],
+    "originalSha256": "9AB46F51857F211AAA71E98802D53D6CD73A7F060CE5A110C8BE19351372C39B"
+  },
+  {
+    "source": "candidate",
+    "case": "case-0",
+    "sample": 2,
+    "success": true,
+    "initialSha256": "558038797638D735E6C80E276415E8C44782B3C099A4DDCE704455934A904DA2",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0071
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0035
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2709
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.109
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.9887
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.4451
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 12.8162
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 0.9461
+      }
+    ],
+    "originalSha256": "311682142D9BDEAC6DDA7DE882003C06BD9A96968B055644B94FF2CCD4F9E4A2"
+  },
+  {
+    "source": "candidate",
+    "case": "case-0",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "BAAEFE2D99AA7CB85741C9BE949FA0FECC1C7D458F9DB23670C3E6391F8B4C78",
+    "mutations": 50,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0142
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0066
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.2057
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 0.1878
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 1.0937
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 150,
+        "inclusiveMs": 0.5056
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 100,
+        "inclusiveMs": 16.1233
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 50,
+        "inclusiveMs": 1.6777
+      }
+    ],
+    "originalSha256": "589955D6E4FA69688C8F3FA0467203ACA015A7C0C76FD38488710B2E106CF86A"
+  },
+  {
+    "source": "candidate",
+    "case": "case-1",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "06A1C6B0801E71EDDC4ED95474F09F012264415EB482323B0F8126124C3F8DD7",
+    "mutations": 0,
+    "newBatches": 0,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0094
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0049
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.0741
+      }
+    ],
+    "originalSha256": "8F8D5488C68CF782896B9BB83D136753E76F012254D7E8FF50C28229A1DFEA92"
+  },
+  {
+    "source": "candidate",
+    "case": "case-1",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "09B8F9E1173D82BC9F55B6EC62565A5900AAAFFC86B58363080A25050F4B7449",
+    "mutations": 0,
+    "newBatches": 0,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.013
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0068
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.1477
+      }
+    ],
+    "originalSha256": "15F0087C0B3E3E66B17F4DA9BF8F849E557AABEA382C7D8F1777AB31094EC367"
+  },
+  {
+    "source": "candidate",
+    "case": "case-2",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "5B1A184B770CB3D69C519112BD0FB67A89762536E300CE0F9599FD1F036BACE5",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0118
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0059
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.0674
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0023
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0171
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.011
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.3673
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.0223
+      }
+    ],
+    "originalSha256": "51DD3C734248E1FB25D4435AB3B834165D8B0A3DF7C88B04C3E6A59D684F8008"
+  },
+  {
+    "source": "candidate",
+    "case": "case-2",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "D6165CB6ABF846FD6FDCC33A0CE35042CD302739229024DD11606CFADAE88978",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0177
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0102
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 1.1779
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0094
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0359
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0156
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 2.3713
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.6667
+      }
+    ],
+    "originalSha256": "8C282F6BB277ECB19CBDB9C34DF64037501C4916490AB3BF1331B822F0C806C1"
+  },
+  {
+    "source": "candidate",
+    "case": "case-3",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "F7C9A1B9FEEB9A82EB0B05FB0F6AB03D4492AC959ECBD2C56A4E6AABDB75978F",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0157
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.009
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 2.2274
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0025
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0181
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0123
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.3809
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.0249
+      }
+    ],
+    "originalSha256": "4B7F88A293024A0EDA7A51CEC034380CCCD4A72EF653AE41E7C4B804CA377719"
+  },
+  {
+    "source": "candidate",
+    "case": "case-3",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "9ED1F1E8C3FFCCEE4FFAC452046FD699528050EFCFA95D2BF3B2F98F6D2A7A82",
+    "mutations": 1,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0227
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 0.0116
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 3,
+        "inclusiveMs": 2.5146
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 0.0126
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0418
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 3,
+        "inclusiveMs": 0.0185
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 2,
+        "inclusiveMs": 2.0159
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 1,
+        "inclusiveMs": 0.5402
+      }
+    ],
+    "originalSha256": "34886545DB6157FE90F129256CA0062A9C863753C55C5BD89E08489DF3E12075"
+  },
+  {
+    "source": "candidate",
+    "case": "case-4",
+    "sample": 0,
+    "success": true,
+    "initialSha256": "19C91B47B37F5B02A365559173EADFDFE994CECAF6B5614527347FBA13B9FEBA",
+    "mutations": 4,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0071
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0042
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.1205
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 0.0652
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 12,
+        "inclusiveMs": 0.0789
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 12,
+        "inclusiveMs": 0.0775
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 1.3964
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 0.0866
+      }
+    ],
+    "originalSha256": "7311F0706E4266D26F1C37DCED2BCFFD7FDCA08A98BD6EF8ACCE524DC89DF2A6"
+  },
+  {
+    "source": "candidate",
+    "case": "case-4",
+    "sample": -1,
+    "success": true,
+    "initialSha256": "B0CEFD0D6C1322208FFEAE9AFA19C8A3B5E2D25955D0DC7E11F3A8F41DC78B9B",
+    "mutations": 4,
+    "newBatches": 1,
+    "unsettledFields": 0,
+    "commandInvocations": [
+      {
+        "Kind": "process-auth",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0145
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.0064
+      },
+      {
+        "Kind": "process-query",
+        "phase": "prepare",
+        "count": 2,
+        "inclusiveMs": 0.2279
+      },
+      {
+        "Kind": "process-version",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 0.0226
+      },
+      {
+        "Kind": "process-auth",
+        "phase": "execute",
+        "count": 12,
+        "inclusiveMs": 0.1069
+      },
+      {
+        "Kind": "process-identity",
+        "phase": "execute",
+        "count": 12,
+        "inclusiveMs": 0.0652
+      },
+      {
+        "Kind": "process-query",
+        "phase": "execute",
+        "count": 8,
+        "inclusiveMs": 3.049
+      },
+      {
+        "Kind": "process-mutation",
+        "phase": "execute",
+        "count": 4,
+        "inclusiveMs": 1.686
+      }
+    ],
+    "originalSha256": "642FD46C7D2374E85C89CB262905396E56BEB06AAA407DFDDF195313A2A62EF2"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "singleItemAttempts": 1,
+  "incrementMaximum": 2,
+  "beforeMembership": 0,
+  "afterMembership": 1,
+  "cleanupVerified": true,
+  "baselineSha256": "B0EB1CBC0C036D1B4B45010B5022F74AFAF40DEAFF26C855AA260E8C01164819",
+  "manifestSha256": "B1C3AD81B77896C235C6CA46146A810DF99BC21D29B6B5E26660A88C4F3D7011",
+  "mutations": 4,
+  "measuredApplySamples": 0,
+  "finding": "One isolated add succeeded; historical failures remain unclassified. No second diagnostic or bulk preparation.",
+  "deletedIssueHttpStatus": 410
+}
