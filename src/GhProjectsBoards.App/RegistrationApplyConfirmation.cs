@@ -43,9 +43,11 @@ public sealed partial class RegistrationPanel
         var history = new Button { Content = "反映結果・履歴" }; AutomationProperties.SetAutomationId(history, "ApplyReviewHistory");
         var jump = new Button { Content = "問題の行へ" }; AutomationProperties.SetAutomationId(jump, "ApplyGoToProblem");
         var restart = new Button { Content = "再確認してやり直す" }; AutomationProperties.SetAutomationId(restart, "ApplyRestartReview");
-        var recovery = ApplyPanel(4);
-        recovery.Children.Add(ApplyText("前回の承認を取り消して再確認します。反映済みの変更は保持し、ここでは送信しません。"));
-        recovery.Children.Add(restart);
+        var recovery = new Grid { ColumnSpacing = 8 };
+        recovery.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); recovery.ColumnDefinitions.Add(new());
+        var recoveryHint = ApplyText("前回の承認を取り消して再確認します。反映済みの変更は保持し、ここでは送信しません。");
+        recoveryHint.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(recoveryHint, 1);
+        recovery.Children.Add(restart); recovery.Children.Add(recoveryHint);
         var informationText = ApplyText("");
         var information = new Button { Content = "確認情報", Flyout = new Flyout { Content = informationText } };
         AutomationProperties.SetAutomationId(information, "ApplyReviewIdentity");
