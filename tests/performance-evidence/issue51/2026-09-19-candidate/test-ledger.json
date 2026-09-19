@@ -1,0 +1,122 @@
+[
+  {
+    "id": "a-green",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 127,
+    "passed": 127,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/a-green/results.trx",
+    "sha256": "09A940F17858FF7C96A1C1CD49AE1E577A7386833128E4EDF7265EA160B402A6"
+  },
+  {
+    "id": "a-red",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 5,
+    "passed": 2,
+    "failed": 3,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/a-red/results.trx",
+    "sha256": "64CF93706CD10F92A128977F9B7F56F2C2D301A4EF3B4D2D80BACA0D93B569F2"
+  },
+  {
+    "id": "b-green",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 35,
+    "passed": 34,
+    "failed": 1,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/b-green/results.trx",
+    "sha256": "FAD913671377F7251FA7C796D080E8ED948037E2E5BC719426EF7807D2BAA189"
+  },
+  {
+    "id": "b-green-corrected",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 35,
+    "passed": 35,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/b-green-corrected/results.trx",
+    "sha256": "91865BC20A39A10BEE82FE88103E5ED59F3F3801D544B6663B44E56C313F3A8B"
+  },
+  {
+    "id": "b-red",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 7,
+    "passed": 0,
+    "failed": 7,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/b-red/results.trx",
+    "sha256": "F62D26E5CE81AF32853A117E7A93206839A2D41538E0F37F63389F87AAB1A114"
+  },
+  {
+    "id": "current-regression",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 195,
+    "passed": 195,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/current-regression/results.trx",
+    "sha256": "FC968FE6B36DFC40318BF5E4F2B380C92B71DB01DCA9848CF193FBDFAC1D0448"
+  },
+  {
+    "id": "harness-final",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/harness-final/results.trx",
+    "sha256": "E99B6E37EA8B4799608367D968E0F33D5B7788B935049375161A37809B1E3144"
+  },
+  {
+    "id": "harness-final-v2",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 69,
+    "passed": 69,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/harness-final-v2/results.trx",
+    "sha256": "299B636231DA9BFC1FE7BBF849F66C1304EA73BE2CA59808E523BD04F7E315B7"
+  },
+  {
+    "id": "harness-final-v3",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 71,
+    "passed": 71,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/harness-final-v3/results.trx",
+    "sha256": "A88D4D89FF59A88234F56EB25AF5CCD8F69EB0389B9E03D81925B6E45BE70641"
+  },
+  {
+    "id": "harness-reviewed",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 44,
+    "passed": 44,
+    "failed": 0,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/harness-reviewed/results.trx",
+    "sha256": "06444545954F761ED3AE675105FA72A0BD8FFB83252CC019C045BBE71BAC83BB"
+  },
+  {
+    "id": "harness-second",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 35,
+    "passed": 34,
+    "failed": 1,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/harness-second/results.trx",
+    "sha256": "C2420D28BABEBC399FCC687AA8F502D1B3220E70316DC882EB7FA199067CAF2F"
+  },
+  {
+    "id": "stages-first",
+    "boundary": "logic/adapter/storage with synthetic process boundary",
+    "executed": 7,
+    "passed": 5,
+    "failed": 2,
+    "skipped": 0,
+    "original": "TestResults/issue51-candidate/stages-first/results.trx",
+    "sha256": "831280B682511349782F222D5E7C6324E359256C40B861BC6A4BD791C10A31A3"
+  }
+]

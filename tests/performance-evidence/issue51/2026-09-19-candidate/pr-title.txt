@@ -1,0 +1,1 @@
+Reduce Apply observation invocations with response-bound identity checks

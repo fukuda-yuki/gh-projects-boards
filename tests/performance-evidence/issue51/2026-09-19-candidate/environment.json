@@ -1,0 +1,15 @@
+{
+  "sdk": "10.0.401",
+  "network": "Synthetic has no network; Live records are contextual only",
+  "cpu": {
+    "Name": "AMD Ryzen 7 9700X 8-Core Processor             ",
+    "NumberOfCores": 8,
+    "NumberOfLogicalProcessors": 16
+  },
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "packaging": "Unpackaged Release",
+  "powershell": "7.6.6",
+  "ghVersion": "gh version 2.100.0 (2026-09-03)",
+  "runtime": "10.0.12",
+  "timingExecution": "Serial Release sampling; no other build/test/live workload concurrent"
+}

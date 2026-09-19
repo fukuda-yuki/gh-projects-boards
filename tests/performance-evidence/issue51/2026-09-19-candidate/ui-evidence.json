@@ -1,0 +1,118 @@
+{
+  "ordinary": {
+    "source": "21a9884cacc1b8035ec70d83f79c9db5aed48e4d",
+    "sourceChanges": [],
+    "scope": "Representative whole-app Apply success/history/restart and mixed-result journeys",
+    "endpoint": "Isolated external fake gh; no live GitHub",
+    "driver": "FlaUI.UIA3 5.0.0",
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "configuration": "Release",
+    "filter": "FullyQualifiedName~OrdinaryApplyReviewsTitleThenVerifiesAndRestoresHistoryWithoutReplay|FullyQualifiedName~MixedApplyReturnsToProblemWithoutTakingNativeCompositionFocus&TestCategory!=GridIme",
+    "executed": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "appSha256": "23841387BAAEA432A10306955A03DCAA9F4874D035171FFC6B470D6340362D47",
+    "fakeGhSha256": "F873E78879CE7251D28A1D53039E147683CD6C30D5FD001379CE1AD2BF5968A9",
+    "testAssemblySha256": "B061A3ACE855878F45C6D409A597FF8A9FFD5198ED3688B0B8F0721D33F06F19",
+    "trxSha256": "A1DC761E70B1EDCEF91A0C2B54497463E7A6A494206AB393B7063A4B6B8CF1A4",
+    "root": "TestResults/e2e/20260919-133643-70e5ae67dc8f4036987e1ec455c38418",
+    "nativeModuleVerifications": [
+      {
+        "file": "loaded-winui-24876.json",
+        "sha256": "559366AEAFCED687ACCBAC7943AE6A2F1C599143535FB5DDCB2EC73E2150D36D"
+      },
+      {
+        "file": "loaded-winui-35812.json",
+        "sha256": "0E55A455BBB08BCF0AB101196C8722D06476EC55F72772C2D4DBC7CD0264A813"
+      },
+      {
+        "file": "loaded-winui-36876.json",
+        "sha256": "6B607B9B5F4930F5065B282349E36CE2A1AE1007A7220077ECC199FE92083B62"
+      },
+      {
+        "file": "loaded-winui-38108.json",
+        "sha256": "616A37C32273DE42979B2583B8B538266D66A362987E1CB13EAF48039048319D"
+      },
+      {
+        "file": "loaded-winui-38628.json",
+        "sha256": "A68032B4D44ECFE15D2DFE3146D8BAAA4683A0732D53F2105CB752C2A37FDD15"
+      }
+    ],
+    "screenshots": [
+      {
+        "file": "registration-0dda1711a0f84e41bd788c102c3657ab/problem-cell-and-pending-input.png",
+        "sha256": "363E3E2E3AFC59E8FC765F66942A20DEE7D56E6D90376ECF56A49CA0868EDF9D"
+      },
+      {
+        "file": "registration-0dda1711a0f84e41bd788c102c3657ab/short-failure-warning.png",
+        "sha256": "F2130C102F798E06E37A49B91286CC25B975B4F2DF5849515E03CD13059E189D"
+      },
+      {
+        "file": "registration-2401c302df524aa18dfb613f2b6d7874/apply-history.png",
+        "sha256": "B55276371625AA0ACFFF04B2FD7E2DEEA9FF770A83C22424ABEE103C7EA97520"
+      },
+      {
+        "file": "registration-2401c302df524aa18dfb613f2b6d7874/apply-review.png",
+        "sha256": "9FC61DA744670DEF8B28A7E9EAF4F545BAC917E112D19084B5D3ADD1F2A05514"
+      },
+      {
+        "file": "registration-5c64864021bd41afa642be26e8006084/apply-history.png",
+        "sha256": "FE342B2DCD2B35BE4D80E2B3425549D66C35E384AA1D015030D04A0C9A5C6171"
+      },
+      {
+        "file": "registration-5c64864021bd41afa642be26e8006084/apply-review.png",
+        "sha256": "93C200D0686F89F60F56FFB2476B4C6427A5980AEA637E65377D4D450D8A12BB"
+      }
+    ]
+  },
+  "hosted": {
+    "source": "1695faf751b924515c9e573d24554219c5e89dc8",
+    "sourceState": "Precommit A+B plus corrected harness; product code matches frozen candidate",
+    "scope": "Actual WinUI views/events/results collaboration",
+    "where": "method =~ 'WithdrawingFailedApply|LateApplyOutcome|DeletedProblemTarget|CompletedApplyHistory|SuccessfulConfirmation|MixedResultsReturn'",
+    "counts": {
+      "inconclusive": "0",
+      "failed": "0",
+      "passed": "8",
+      "skipped": "0",
+      "total": "8"
+    },
+    "binaries": [
+      {
+        "name": "GhProjectsBoards.App.dll",
+        "sha256": "BC85D2BA170D1881D91CD98384CC208AA34AFB2D17B95E29709273E9FEB53761"
+      },
+      {
+        "name": "GhProjectsBoards.Core.dll",
+        "sha256": "6E3392BB474D82FB3D59BE67C32AE58F26318886F51F73547C563937F1EB2E34"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.dll",
+        "sha256": "A3BF13B5679C1A115226CC9B0DBE7785952F1EFC03985290691718C053FB3737"
+      },
+      {
+        "name": "Microsoft.UI.Xaml.dll",
+        "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C"
+      },
+      {
+        "name": "GhProjectsBoards.App.pri",
+        "sha256": "8F668B34DDAACEF0F677F6FBA873FB88F638B7AAFE2B307062DB7D3034CA7880"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.pri",
+        "sha256": "6472D40EA64E3E46C79053B9E6111A1EC69AD93D48FF0D869E183B4B7B10DC59"
+      }
+    ],
+    "resultSha256": "995BEE72EEE91561D0AABA22D7AE5B04DB3C4A30756E7C36B5E5C0983548EC33",
+    "root": "TestResults/ui-integration/run-20260919-133559-480-251e830e"
+  },
+  "failedSelection": {
+    "root": "TestResults/ui-integration/run-20260919-133409-440-90f539bd",
+    "executed": 0,
+    "reason": "Incorrect class selector; runner rejected zero execution"
+  },
+  "visualReview": "Ordinary failure warning, exact problem cell with retained pending input, and success history were inspected from PNGs. Required controls and short messages are readable at the captured sizes. This is scoped self-review, not human acceptance.",
+  "omitted": "Physical IME rerun, screen-reader listening, other text-scale/high-contrast settings, enterprise acceptance"
+}
