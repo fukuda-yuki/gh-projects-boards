@@ -6,6 +6,40 @@ namespace GhProjectsBoards.E2E.Tests;
 
 public sealed partial class RegistrationTests
 {
+    [Test]
+    public void CancelledApplyCanBeReviewedAgainAndSentOnlyAfterExplicitConfirmation()
+    {
+        using var f = new Fixture();
+        File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true, applyDelayMs = 10000 }));
+        f.Run(w =>
+        {
+            Connect(w); Invoke(w, "ProjectsPageButton"); Register(w, 1);
+            Edit(w, 0, "Recovered title"); WorkspaceUi.ToggleChoice(w, "GridCell0_1");
+            Invoke(w, "ReviewApplyButton"); Element(w, "ApplySelectAll").AsCheckBox().IsChecked = true;
+            WorkspaceUi.WaitForApplyReady(w); Invoke(w, "PrimaryButton");
+            Wait(() => File.Exists(Path.Combine(f.Root, "apply-requests.jsonl")));
+            Invoke(w, "CancelProjectButton"); WorkspaceUi.WaitForApplyStopped(w);
+            File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true }));
+
+            Invoke(w, "ReviewApplyButton");
+            Wait(() => Text(w, "ApplyBlockReason").Contains("前回"));
+            Assert.That(Text(w, "ApplyBlockReason"), Does.Contain("未送信 1フィールド").And.Contain("要確認 1フィールド"));
+            Element(w, "ApplySelectAll").AsCheckBox().IsChecked = true;
+            Wait(() => Element(w, "ApplyRestartReview").IsEnabled);
+            Capture(w, f.Root, "cancelled-apply-recovery");
+            Invoke(w, "ApplyRestartReview"); WorkspaceUi.WaitForApplyReady(w);
+            Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(1));
+            Capture(w, f.Root, "cancelled-apply-reviewed-without-dispatch");
+            Invoke(w, "PrimaryButton"); WorkspaceUi.WaitForApplyStopped(w);
+            Assert.That(WorkspaceUi.RegistrationStatusText(w), Does.Contain("反映完了"));
+            var journal = Durable(f).GetProperty("Journal").EnumerateArray().ToArray();
+            Assert.That(journal, Has.Length.EqualTo(2));
+            Assert.That(journal[0].GetProperty("Operations")[0].GetProperty("Attempts").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(journal[1].GetProperty("Operations").EnumerateArray().All(o => o.GetProperty("State").GetInt32() == 2), Is.True);
+            Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(3));
+        });
+    }
+
     [TestCase(false, 960, 600), TestCase(true, 1280, 800, Category = "GridIme")]
     public void MixedApplyReturnsToProblemWithoutTakingNativeCompositionFocus(bool ime, int width, int height)
     {

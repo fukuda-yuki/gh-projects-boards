@@ -11,7 +11,7 @@ internal static class WorkspaceUi
 {
     internal static void WaitForApplyStopped(Window window)
     {
-        Wait(() => !Element(window, "CancelProjectButton").IsEnabled &&
+        Wait(() => Find(window, "CancelProjectButton")?.IsEnabled != true &&
             (Find(window, "ApplyHistoryButton")?.IsEnabled == true || Visible(Find(window, "ApplyOutcomeWarning"))),
             "The approved execution must settle.", TimeSpan.FromSeconds(60));
         if (!RegistrationStatusText(window).Contains("反映完了"))
