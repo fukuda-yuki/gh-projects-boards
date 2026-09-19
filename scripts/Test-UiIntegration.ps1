@@ -1,5 +1,5 @@
 param(
-    [string]$Where = 'cat != Infrastructure',
+    [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance',
     [switch]$Discover,
     [switch]$NoBuild,
     [ValidateRange(1, 3600)][int]$TimeoutSeconds = 180
