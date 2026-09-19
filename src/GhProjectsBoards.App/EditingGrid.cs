@@ -43,6 +43,7 @@ internal sealed partial class EditingGrid : Grid
     private EditRow[] canonicalRows;
     private ColumnLayout layout;
     private readonly ProjectRegistration registration;
+    private readonly bool showRepositoryIdentity;
     private readonly Func<Task<bool>> prepareLocalRows;
     private sealed record SheetClipboard(string Text, CopiedCells? Cells);
     private const string ClipboardFormat = "GhProjectsBoards.Cells.v1";
@@ -66,9 +67,10 @@ internal sealed partial class EditingGrid : Grid
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
         if (c >= 0) Select(r, c, false, false);
     }
-    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null)
+    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null)
     {
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
+        showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
         using var measured = diagnostics?.Span("grid-constructor");
         cellStyle = (Style)Application.Current.Resources["SheetCellStyle"];
@@ -79,6 +81,10 @@ internal sealed partial class EditingGrid : Grid
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         ScrollViewer.SetVerticalScrollBarVisibility(list, ScrollBarVisibility.Hidden);
         layout = session.Workspace.Columns(registration);
+        temporaryApplyColumns.UnionWith(temporaryColumns ?? []);
+        if (temporaryApplyColumns.Count > 0)
+            layout = new(layout.Columns.Select(c => temporaryApplyColumns.Contains(c.Id.FieldId ?? "")
+                ? c with { Preference = c.Preference with { Visible = true } } : c).ToArray());
         projection = previousProjection ?? new(registration.Snapshot.Id);
         if (previousProjection is null) projection.Reapply(session.Workspace, registration);
         else projection.Promote(session.Workspace);
@@ -157,6 +163,7 @@ internal sealed partial class EditingGrid : Grid
         detailsPane.Child = new ScrollViewer { Content = selectedDetails, MaxHeight = 156, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         SetRow(detailsPane, 4); Children.Add(detailsPane);
         var footer = new StackPanel { Spacing = 0, Padding = new(8, 2, 8, 2) };
+        InitializeApplyProblems(footer);
         var selectionBar = new Grid { ColumnSpacing = 12 };
         selectionBar.ColumnDefinitions.Add(new()); selectionBar.ColumnDefinitions.Add(new() { Width = new GridLength(1.7, GridUnitType.Star) }); selectionBar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         selection.TextTrimming = TextTrimming.CharacterEllipsis; selection.VerticalAlignment = VerticalAlignment.Center; selectionBar.Children.Add(selection);
@@ -309,10 +316,10 @@ internal sealed partial class EditingGrid : Grid
             if (c == 0)
             {
                 container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-                var identity = new TextBlock { Text = RowIdentity(rows[r]), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
+                var identity = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
                     VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
                 AutomationProperties.SetAutomationId(identity, $"GridRowIdentity{r}");
-                ToolTipService.SetToolTip(identity, identity.Text);
+                ToolTipService.SetToolTip(identity, RowIdentity(rows[r]));
                 SetColumn(identity, 1); container.Children.Add(identity);
             }
             SetColumnSpan(marker, container.ColumnDefinitions.Count); container.Children.Add(marker);
@@ -394,12 +401,12 @@ internal sealed partial class EditingGrid : Grid
         else if (right - offset > listScroll.ViewportWidth) offset = right - listScroll.ViewportWidth;
         listScroll.ChangeView(Math.Clamp(offset, 0, listScroll.ScrollableWidth), null, null, true);
     }
-    private string RowIdentity(EditRow row)
+    private string RowIdentity(EditRow row, bool compact = false)
     {
         if (row.IsLocal) return "新規（ローカル）";
         var item = registration.Snapshot.Items.SingleOrDefault(item => item.Id.NodeId == row.ItemId);
         var issue = item?.ContentId is { } id ? registration.Snapshot.Issues.GetValueOrDefault(id) : null;
-        return issue is null ? row.ItemId : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
+        return issue is null ? row.ItemId : compact && !showRepositoryIdentity ? $"#{issue.Number}" : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
     }
     private void FreezeIdentity(Grid line, double offset)
     {
@@ -581,6 +588,7 @@ internal sealed partial class EditingGrid : Grid
             UpdateSelectedDetails();
             return;
         }
+        RefreshApplyProblems();
         // The durable acknowledgement arrives before RegistrationWorkspace publishes the matching
         // complete snapshot. Keep the existing selection/editor identity until that panel handoff.
         if (canonicalRows.Any(row => row.IsLocal && !session.Workspace.LocalRows.Any(r => r.Id == row.ItemId)
@@ -661,9 +669,10 @@ internal sealed partial class EditingGrid : Grid
         var field = session.Workspace.Field(cell);
         markers[r][c].Text += field?.Conflict == true ? " 競合（比較が必要）" : "";
         if (field?.Observation?.Reason is { } reason) markers[r][c].Text += " " + reason;
+        if (ApplyProblem(cell) is { } problem) markers[r][c].Text += " / " + problem.Description;
         var explanation = markers[r][c].Text;
         markers[r][c].Tag = explanation;
-        markers[r][c].Text = CellHasProblem(cell) ? "!"
+        markers[r][c].Text = ApplyProblem(cell)?.Kind == ApplyAttentionKind.Uncertain ? "?" : CellHasProblem(cell) ? "!"
             : HasDraftMarker(cell) ? "◆" : !cell.Editable ? "▧" : "";
         markers[r][c].Visibility = markers[r][c].Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         AutomationProperties.SetName(markers[r][c], explanation);
@@ -708,6 +717,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateSelectedDetails()
     {
+        UpdateApplyProblemText();
         if (!active || currentRow >= rows.Length) { selectedDetails.Text = "セルを選択すると、値・入力状態・Issueの識別情報を表示します。"; selectionMode.Text = "選択モード"; return; }
         var row = rows[currentRow]; var cell = row.Cells[currentColumn]; var field = session.Workspace.Field(cell);
         var pending = session.Workspace.Buffer(cell);
@@ -809,11 +819,11 @@ internal sealed partial class EditingGrid : Grid
             : operationProblem is not null ? operationProblem + " / " + saved : statusBeforeSave + saved + statusAfterSave;
         ToolTipService.SetToolTip(status, status.Text);
     }
-    private bool CellHasProblem(EditCell cell) => session.Workspace.Field(cell) is { } field
+    private bool CellHasProblem(EditCell cell) => ApplyProblem(cell) is not null || (session.Workspace.Field(cell) is { } field
         ? field.Conflict || field.Observation?.Reason is not null
         : cell.Key is { Kind: "LocalTitle" } title ? session.Workspace.LocalProblems(registration, title.NodeId).Any(p => p.StartsWith("タイトル"))
         : cell.Key is { Kind: "LocalRepository" } repository ? session.Workspace.LocalProblems(registration, repository.NodeId).Any(p => p.StartsWith("宛先"))
-        : cell.Key is { Kind: "LocalSelect" } && session.Workspace.Value(cell) is { } value && !cell.Options.Any(o => o.Id == value);
+        : cell.Key is { Kind: "LocalSelect" } && session.Workspace.Value(cell) is { } value && !cell.Options.Any(o => o.Id == value));
     private bool HasDraftMarker(EditCell cell) => session.Workspace.Changed(cell) || cell.Key?.Kind switch
     {
         "LocalTitle" or "LocalRepository" => !string.IsNullOrEmpty(session.Workspace.Value(cell)),
@@ -1031,7 +1041,7 @@ internal sealed partial class EditingGrid : Grid
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             IsReadOnly = !cell.Editable; Refresh();
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
-            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.selectionMode.Text = "IME変換中"; };
+            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.applyProblemTip.IsOpen = false; owner.selectionMode.Text = "IME変換中"; };
             TextCompositionEnded += (_, _) => { composing = false; owner.UpdateSelectedDetails(); };
             TextChanging += (_, _) =>
             {

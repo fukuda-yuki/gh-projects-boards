@@ -9,8 +9,7 @@ namespace GhProjectsBoards.App;
 public sealed partial class RegistrationPanel
 {
     private bool applyDialog;
-    private static string ApplyIdentity(ApplyOperation operation) => operation.Identity.EndsWith(" / " + operation.IssueId, StringComparison.Ordinal)
-        ? operation.Identity[..^(operation.IssueId.Length + 3)] : operation.Identity;
+    private static string ApplyIdentity(ApplyOperation operation) => ApplyResultsPresentation.Identity(operation);
     private void UpdateApplyProgress()
     {
         var batch = Workspace.Drafts?.Workspace.Journal.SingleOrDefault(b => b.Id == Workspace.ExecutingBatchId);
@@ -40,27 +39,51 @@ public sealed partial class RegistrationPanel
         ProjectSettingsFlyout.Hide();
         var owner = Workspace; var expected = lifetime;
         applyDialog = true; ApplyHistory.IsEnabled = false;
+        string? resolutionBatch = null; string? resolutionOperation = null; bool setupReview = false;
+        string? resumeBatch = null; string? withdrawBatch = null;
         try
         {
-            var batch = session.Workspace.Journal.LastOrDefault();
-            var historyContent = ApplyPanel(16);
-            var recoveryActions = new List<Button>();
-            string? resolutionBatch = null; string? resolutionOperation = null; bool setupReview = false; string? resumeBatch = null;
-            if (batch is null) historyContent.Children.Add(ApplyText("実行履歴なし"));
-            foreach (var b in session.Workspace.Journal.Reverse())
+            var historyContent = new ListView { SelectionMode = ListViewSelectionMode.None,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, MaxHeight = 380 };
+            AutomationProperties.SetAutomationId(historyContent, "ApplyResultBatches");
+            var allHistory = new CheckBox { Content = "完了分を含む保存履歴" };
+            AutomationProperties.SetAutomationId(allHistory, "ApplyShowAllHistory");
+            var attention = ApplyResultsPresentation.Attention(session.Workspace.Journal);
+            var content = ApplyPanel();
+            var heading = new Grid { ColumnSpacing = 8 };
+            heading.ColumnDefinitions.Add(new()); heading.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            heading.Children.Add(ApplyText(ApplyResultsPresentation.Summary(attention)));
+            var help = ApplyHelp("履歴を開くだけでは送信しません。「確認して再開」は未完了の結果を照合してから続けます。不確定な送信は自動で繰り返しません。「承認を撤回」は試行を保存したまま承認を取り消します。再度反映するには新しいレビューが必要です。", "ApplyHistoryHelp");
+            Grid.SetColumn(help, 1); heading.Children.Add(help); content.Children.Add(heading);
+            content.Children.Add(allHistory); content.Children.Add(historyContent);
+            var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "反映結果・履歴", Content = content,
+                CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
+            AutomationProperties.SetAutomationId(dialog, "ApplyHistoryDialog");
+            void Populate()
             {
+                historyContent.Items.Clear();
+                foreach (var b in session.Workspace.Journal.Reverse())
+                {
+                var pending = attention.Where(a => a.BatchId == b.Id).ToArray();
+                if (allHistory.IsChecked != true && pending.Length == 0) continue;
                 var entry = ApplyPanel(12);
                 entry.Children.Add(ApplyText($"{b.ProjectName} / {b.ReviewedAt.LocalDateTime:g}", emphasis: true));
-                entry.Children.Add(ApplyText($"更新 {b.Operations.Select(o => o.IssueId).Distinct().Count()}件（{b.Operations.Length}フィールド） / 新規作成 {b.Creations?.Length ?? 0}件 / {b.Project.Scope.Host}"));
-                if ((b.Creations ?? []).Any(c => !c.Completed))
+                if (b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))
+                    || (b.Creations ?? []).Any(c => !c.Completed && c.Authorized))
                 {
-                    var resume = new Button { Content = "この実行の未完了を確認して再開", IsEnabled = Workspace.CanRead };
-                    AutomationProperties.SetAutomationId(resume, "ResumeCreationBatch-" + b.Id);
-                    ToolTipService.SetToolTip(resume, $"{b.ProjectName} / 実行 {b.Id}");
-                    resume.Click += (_, _) => resumeBatch = b.Id; entry.Children.Add(resume); recoveryActions.Add(resume);
+                    var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                    var resume = new Button { Content = "確認して再開", IsEnabled = Workspace.CanRead };
+                    AutomationProperties.SetAutomationId(resume, ((b.Creations ?? []).Any() ? "ResumeCreationBatch-" : "ResumeApplyBatch-") + b.Id);
+                    AutomationProperties.SetName(resume, $"確認して再開：{b.ProjectName} / {b.ReviewedAt.LocalDateTime:g}");
+                    resume.Click += (_, _) => { resumeBatch = b.Id; dialog.Hide(); };
+                    var withdraw = new Button { Content = "承認を撤回" };
+                    AutomationProperties.SetAutomationId(withdraw, "WithdrawApplyBatch-" + b.Id);
+                    withdraw.Click += (_, _) => { withdrawBatch = b.Id; dialog.Hide(); };
+                    actions.Children.Add(resume); actions.Children.Add(withdraw); entry.Children.Add(actions);
                 }
-                foreach (var operation in b.Operations) entry.Children.Add(ApplyChange(operation, includeHistory: true));
-                foreach (var c in b.Creations ?? [])
+                foreach (var operation in b.Operations.Where(o => allHistory.IsChecked == true || pending.Any(a => a.OperationId == o.Id)))
+                    entry.Children.Add(ApplyChange(operation, includeHistory: true));
+                foreach (var c in (b.Creations ?? []).Where(c => allHistory.IsChecked == true || pending.Any(a => a.CreationId == c.Id)))
                 {
                     var creation = CreationHistory(c);
                     if (c.Dispatched && !c.Completed && session.Workspace.Creations.Last(x => x.LocalId == c.LocalId).Id == c.Id)
@@ -68,33 +91,39 @@ public sealed partial class RegistrationPanel
                         var resolve = new Button { Content = c.Verified is null ? "作成の不確定結果を解決" : "既知Issueの設定を再比較", IsEnabled = Workspace.CanRead };
                         AutomationProperties.SetAutomationId(resolve, "ResolveCreation-" + c.Id);
                         AutomationProperties.SetName(resolve, $"{resolve.Content}: {c.Repository.Name} / {c.Title}");
-                        resolve.Click += (_, _) => { resolutionBatch = b.Id; resolutionOperation = c.Id; setupReview = c.Verified is not null; };
-                        creation.Children.Add(resolve); recoveryActions.Add(resolve);
+                        resolve.Click += (_, _) => { resolutionBatch = b.Id; resolutionOperation = c.Id; setupReview = c.Verified is not null; dialog.Hide(); };
+                        creation.Children.Add(resolve);
                     }
                     entry.Children.Add(creation);
                 }
                 entry.Children.Add(ApplyDetails("実行とProjectの識別情報", ApplyText($"実行 {b.Id}\nProject {b.Project.NodeId}\nアカウント ID {b.Project.Scope.ViewerId}"), "ApplyBatchIdentity-" + b.Id));
-                historyContent.Children.Add(entry);
+                historyContent.Items.Add(entry);
+                }
+                if (session.Workspace.Journal.Count == 0) historyContent.Items.Add(ApplyText("実行履歴なし"));
+                historyContent.Visibility = historyContent.Items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             }
-            var content = ApplyPanel();
-            content.Children.Add(ApplyText("各フィールドの反映済み・失敗・未送信・結果確認が必要な項目を確認できます。履歴を開くだけでは送信しません。中止は未送信の処理を止め、完了したGitHub更新は取り消しません。"));
-            if (batch is not null) content.Children.Add(ApplyText($"下の操作対象: 最新の実行 / {batch.ProjectName} / {batch.ReviewedAt.LocalDateTime:g}"));
-            content.Children.Add(new ScrollViewer { MaxHeight = 380, Content = historyContent, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
-            var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "反映結果・履歴", Content = content,
-                PrimaryButtonText = "未完了の結果を確認して再開", IsPrimaryButtonEnabled = batch is not null && Workspace.CanRead,
-                SecondaryButtonText = batch is null ? "" : "旧承認を撤回して再レビュー",
-                CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
-            AutomationProperties.SetAutomationId(dialog, "ApplyHistoryDialog");
-            foreach (var button in recoveryActions) button.Click += (_, _) => dialog.Hide();
-            var choice = await ShowDialogAsync(dialog);
-            if (!IsCurrent(owner, expected) || !ReferenceEquals(owner.Drafts, session)) return;
-            if (resumeBatch is not null) { await Workspace.ResumeApplyAsync(resumeBatch); return; }
-            if (resolutionBatch is not null && resolutionOperation is not null)
-            { if (setupReview) await ReviewCreationSetupAsync(resolutionBatch, resolutionOperation); else await ResolveCreationAsync(resolutionBatch, resolutionOperation); return; }
-            if (choice == ContentDialogResult.Primary && batch is not null) await Workspace.ResumeApplyAsync(batch.Id);
-            if (choice == ContentDialogResult.Secondary && batch is not null) await Workspace.SupersedeApplyAsync(batch.Id);
+            allHistory.Checked += (_, _) => Populate(); allHistory.Unchecked += (_, _) => Populate(); Populate();
+            await ShowDialogAsync(dialog);
         }
-        finally { applyDialog = false; if (IsLoaded) { if (expected == lifetime) rendered = null; Update(); } }
+        finally { applyDialog = false; if (IsLoaded) Update(); }
+        if (!IsCurrent(owner, expected) || !ReferenceEquals(owner.Drafts, session)) return;
+        if (resumeBatch is not null)
+        {
+            var generation = applyViewGeneration;
+            await owner.ResumeApplyAsync(resumeBatch);
+            if (IsCurrent(owner, expected) && generation == applyViewGeneration) QueueApplyOutcome(resumeBatch);
+        }
+        else if (withdrawBatch is not null) await owner.SupersedeApplyAsync(withdrawBatch);
+        else if (resolutionBatch is not null && resolutionOperation is not null)
+        { if (setupReview) await ReviewCreationSetupAsync(resolutionBatch, resolutionOperation); else await ResolveCreationAsync(resolutionBatch, resolutionOperation); }
+    }
+    private static Button ApplyHelp(string text, string id)
+    {
+        var help = new Button { Content = new FontIcon { Glyph = "\uE946" }, Padding = new(6), MinWidth = 28, MinHeight = 28,
+            Flyout = new Flyout { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = 400 } } };
+        AutomationProperties.SetAutomationId(help, id); AutomationProperties.SetName(help, "反映結果の操作について");
+        ToolTipService.SetToolTip(help, text);
+        return help;
     }
     private string HiddenColumnNote(string? fieldId, string? projectId = null) => Workspace.Selected is { } p
         && (projectId is null || p.Snapshot.Id.NodeId == projectId) && Workspace.Drafts?.Workspace.Columns(p).Hidden(fieldId) == true ? "（グリッドでは非表示）" : "";
@@ -137,7 +166,8 @@ public sealed partial class RegistrationPanel
         values.Children.Add(ApplyText($"所有: {(operation.Key.Kind == "Title" ? "Issue共通のタイトル" : "このProjectの項目フィールド")} / フィールド {operation.Key.FieldId ?? "Issue title"}"));
         if (includeHistory)
         {
-            panel.Children.Add(ApplyText($"{ApplyStateText(operation.State)} / {operation.Reason}"));
+            var uncertain = ApplyResultsPresentation.Kind(operation) == ApplyAttentionKind.Uncertain;
+            panel.Children.Add(ApplyText($"{(uncertain ? "結果の確認が必要" : ApplyStateText(operation.State))} / {operation.Reason}"));
             if (operation.NotBefore is { } wait) panel.Children.Add(ApplyText($"再開可能時刻: {wait.LocalDateTime:g}"));
             var verification = operation.Verification;
             values.Children.Add(ApplyText($"読み戻し: {(verification is null ? "未確認" : verification.Availability is ValueAvailability.Present or ValueAvailability.Empty ? ApplyValue(operation, verification.Value) : $"未確認（{verification.Availability}）")}"));
@@ -210,6 +240,7 @@ public sealed partial class RegistrationPanel
     private async Task ReviewCreationSetupAsync(string batchId, string id)
     {
         var owner = Workspace; var expected = lifetime;
+        var generation = applyViewGeneration;
         await owner.PrepareCreationSetupAsync(batchId, id);
         if (!IsCurrent(owner, expected)) return;
         if (Workspace.CreationSetupReview is not { } review) return;
@@ -230,11 +261,16 @@ public sealed partial class RegistrationPanel
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "既知Issueの設定を再承認", Content = content, PrimaryButtonText = "この設定を承認して再開",
             CloseButtonText = "保留", DefaultButton = ContentDialogButton.Close };
         AutomationProperties.SetAutomationId(dialog, "CreationSetupReviewDialog");
-        if (await ShowDialogAsync(dialog) == ContentDialogResult.Primary) await Workspace.ConfirmCreationSetupAsync(review);
+        if (await ShowDialogAsync(dialog) == ContentDialogResult.Primary && IsCurrent(owner, expected) && generation == applyViewGeneration)
+        {
+            await owner.ConfirmCreationSetupAsync(review);
+            if (IsCurrent(owner, expected) && generation == applyViewGeneration) QueueApplyOutcome(batchId);
+        }
     }
     private async Task ResolveCreationAsync(string batchId, string id)
     {
         var owner = Workspace; var expected = lifetime;
+        var generation = applyViewGeneration;
         var c = Workspace.Drafts!.Workspace.Creations.Single(c => c.Id == id);
         var url = new TextBox { Header = "関連付けるIssue URL" }; AutomationProperties.SetAutomationId(url, "CreationBindUrl");
         var panel = ApplyPanel();
@@ -278,7 +314,11 @@ public sealed partial class RegistrationPanel
             acknowledge.Checked += (_, _) => confirm.IsPrimaryButtonEnabled = true;
             acknowledge.Unchecked += (_, _) => confirm.IsPrimaryButtonEnabled = false;
             AutomationProperties.SetAutomationId(confirm, "CreationRetryConfirmDialog");
-            if (await ShowDialogAsync(confirm) == ContentDialogResult.Primary) await Workspace.ConfirmCreationRetryAsync(review);
+            if (await ShowDialogAsync(confirm) == ContentDialogResult.Primary && IsCurrent(owner, expected) && generation == applyViewGeneration)
+            {
+                await owner.ConfirmCreationRetryAsync(review);
+                if (IsCurrent(owner, expected) && generation == applyViewGeneration) QueueApplyOutcome(review.Batch.Id);
+            }
         }
     }
     private sealed record ApplyTarget(string Id, string Description)

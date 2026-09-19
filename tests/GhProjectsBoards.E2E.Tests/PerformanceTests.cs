@@ -29,7 +29,7 @@ public sealed partial class RegistrationTests
                 WorkspaceUi.WaitForApplyReady(w);
                 var prepareMs = timer.Elapsed.TotalMilliseconds;
                 timer.Restart(); Invoke(w, "PrimaryButton");
-                Wait(() => Text(w, "RegistrationStatus").Contains("反映処理が終了"));
+                Wait(() => Text(w, "RegistrationStatus").Contains("反映完了"));
                 var executeMs = timer.Elapsed.TotalMilliseconds;
                 Assert.That(Text(w, "DraftStatus"), Does.Contain("GitHub未反映 0セル"));
                 Assert.That(File.ReadAllLines(Path.Combine(f.Root, "apply-requests.jsonl")), Has.Length.EqualTo(1));

@@ -159,6 +159,8 @@ internal static class FakeGhProgram
             var saved = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile))! : new System.Text.Json.Nodes.JsonObject();
             File.AppendAllText(Path.Combine(directory, "apply-requests.jsonl"), value.GetRawText() + "\n");
             if (settings.TryGetProperty("applyDelayMs", out var applyDelay)) await Task.Delay(applyDelay.GetInt32());
+            if (settings.TryGetProperty("rejectApplyId", out var rejected) && value.TryGetProperty("id", out var target) && rejected.GetString() == target.GetString())
+            { Console.WriteLine("HTTP/2 403 Forbidden\n\n{\"message\":\"Synthetic permission denial\"}"); return 1; }
             if (query.Contains("ApplyTitle") && value.GetProperty("id").GetString() == "I1")
             {
                 saved["title"] = value.GetProperty("title").GetString(); File.WriteAllText(stateFile, saved.ToJsonString());

@@ -112,6 +112,7 @@ internal sealed partial class RegistrationWorkspace
             registrations.AddRange(session.Workspace.CheckpointRegistrations);
             Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == selectedId);
         }
-        Status = "反映処理が終了しました。「反映結果・履歴」で反映済み・失敗・未送信・結果確認が必要な項目を確認してください。";
+        var attention = ApplyResultsPresentation.Attention(session.Workspace.Journal).Where(a => a.BatchId == batchId).ToArray();
+        Status = attention.Length == 0 ? "反映完了" : ApplyResultsPresentation.Summary(attention);
     }
 }

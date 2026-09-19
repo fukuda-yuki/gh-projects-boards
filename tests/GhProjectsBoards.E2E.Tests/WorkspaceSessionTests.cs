@@ -176,7 +176,7 @@ public sealed partial class RegistrationTests
             Assert.That(Element(window, "ApplyIncludeHidden").AsCheckBox().IsChecked, Is.False);
             Screenshot(window, "08-explicit-existing-target"); WorkspaceUi.WaitForApplyReady(window);
             Screenshot(window, "09-existing-title-review"); Invoke(window, "PrimaryButton");
-            Wait(() => Text(window, "RegistrationStatus").Contains("反映処理が終了"));
+            Wait(() => Text(window, "RegistrationStatus").Contains("反映完了"));
             var operation = Durable(fixture).GetProperty("Journal")[0].GetProperty("Operations")[0];
             Assert.That(operation.GetProperty("Intended").GetProperty("Value").GetString(), Is.EqualTo("plan"));
             Assert.That(operation.GetProperty("State").GetInt32(), Is.EqualTo(2));

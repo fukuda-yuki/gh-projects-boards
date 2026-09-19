@@ -15,7 +15,10 @@ internal static class Ui
     public static Window Window = null!;
     public static Grid Root = null!;
     public static Exception? Fatal;
-    public static void RecordFailure(Exception error) => Interlocked.CompareExchange(ref Fatal, error, null);
+    public static void RecordFailure(Exception error)
+    {
+        if (Interlocked.CompareExchange(ref Fatal, error, null) is null) Console.Error.WriteLine(error);
+    }
     public static async Task Run(Action action) => await Run(() => { action(); return Task.CompletedTask; });
     public static async Task Run(Func<Task> action, bool check = true)
     {
@@ -29,7 +32,7 @@ internal static class Ui
         catch (TimeoutException error) { RecordFailure(error); throw; }
         if (check) Check();
     }
-    public static void Check() { if (Fatal is { } error) throw new AssertionException("Unhandled asynchronous UI failure", error); }
+    public static void Check() { if (Fatal is { } error) throw new AssertionException("Unhandled asynchronous UI failure: " + error, error); }
     public static async Task Idle()
     {
         var deadline = DateTime.UtcNow.AddSeconds(10);
