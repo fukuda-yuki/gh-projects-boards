@@ -30,6 +30,7 @@ internal static class PlanningScalars
     public static string Kind(string dataType) => dataType switch { "NUMBER" => "Number", "DATE" => "Date", _ => "Select" };
     public static string DataType(string kind) => kind switch { "Number" => "NUMBER", "Date" => "DATE", _ => "SINGLE_SELECT" };
     public static string Normalize(string kind, string value) => kind switch {
+        "Dependency" => value == "present" ? value : throw new InvalidOperationException("先行関係の値が無効です。"),
         "Number" => PlanningContract.CanonicalHours(PlanningContract.ParseHours(value)),
         "Date" => DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
             ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : throw new InvalidOperationException("日付は yyyy-MM-dd で入力してください。"),
@@ -49,6 +50,8 @@ internal sealed partial class EditingWorkspace
     // Fresh comparison rows carry the same explicit mapping, never local values.
     private EditingWorkspace ObservationWorkspace()
     {
-        var result = new EditingWorkspace(Scope); result.planning.AddRange(planning); return result;
+        var result = new EditingWorkspace(Scope); result.planning.AddRange(planning);
+        foreach (var field in fields.Values.Where(f => f.Key.Kind == "Dependency")) result.fields.Add(field.Key, field);
+        return result;
     }
 }

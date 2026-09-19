@@ -32,7 +32,7 @@ internal static class WorkspaceUi
     ];
     private static readonly HashSet<string> GridCommands = [
         "GridAddRow", "GridDuplicateRows", "GridRemoveRows", "GridAppendRows", "GridCopy", "GridPaste", "GridClear", "GridUndo", "GridFillDown",
-        "GridColumns", "GridRowSettings", "GridSave", "GridConflicts"
+        "GridColumns", "GridRowSettings", "GridSave", "GridConflicts", "GridPlanning", "GridPlanningSettings", "GridInitializePlans"
     ];
     private static AutomationElement? Find(Window window, string id)
     {

@@ -190,7 +190,9 @@ public sealed partial class RegistrationPanel
         panel.Children.Add(ApplyText($"宛先 {creation.Repository.Name}"));
         foreach (var select in creation.Selects)
             panel.Children.Add(ApplyText($"{select.FieldName}{HiddenColumnNote(select.FieldId)}: {SelectIntentText(select)}"));
-        if (creation.Selects.Length == 0) panel.Children.Add(ApplyText("Projectフィールドの指定なし"));
+        foreach (var intent in creation.PlanningIntents ?? [])
+            panel.Children.Add(ApplyText($"{intent.FieldName}: {(intent.Value.Clear ? "クリア" : intent.Value.Value)}"));
+        if (creation.Selects.Length == 0 && (creation.PlanningIntents?.Length ?? 0) == 0) panel.Children.Add(ApplyText("Projectフィールドの指定なし"));
         panel.Children.Add(ApplyDetails("ローカル行と作成試行", ApplyText($"Repository ID {creation.Repository.Id}\nローカル行 {creation.LocalId}\n作成試行 {creation.Id}"), "CreationReviewIdentity-" + creation.Id));
         return panel;
     }
@@ -216,6 +218,8 @@ public sealed partial class RegistrationPanel
         if (creation.UserBound) details.Children.Add(ApplyText("利用者が確認したURLを関連付けました。元の作成成功の証明ではありません。"));
         foreach (var select in creation.SetupIntents ?? creation.Selects.ToArray())
             details.Children.Add(ApplyText($"{select.FieldName} [{select.FieldId}]: {SelectIntentText(select)}"));
+        foreach (var intent in creation.SetupPlanningIntents ?? creation.PlanningIntents ?? [])
+            details.Children.Add(ApplyText($"{intent.FieldName}: {(intent.Value.Clear ? "クリア" : intent.Value.Value)}"));
         foreach (var intents in creation.EarlierSetupIntents ?? [])
         {
             details.Children.Add(ApplyText("以前に承認した設定（現在の承認には含みません）", emphasis: true));
@@ -253,6 +257,10 @@ public sealed partial class RegistrationPanel
         values.Children.Add(ApplyText("現在のローカル値から承認する設定", emphasis: true));
         foreach (var intent in review.Intents)
             values.Children.Add(ApplyText($"{intent.FieldName} [{intent.FieldId}]: {SelectIntentText(intent)}"));
+        foreach (var intent in review.PlanningIntents ?? [])
+            values.Children.Add(ApplyText($"{intent.FieldName}: {(intent.Value.Clear ? "クリア" : intent.Value.Value)}"));
+        foreach (var intent in review.WithdrawnPlanning ?? [])
+            values.Children.Add(ApplyMessage("削除・型変更された計画フィールドの意図を撤回", intent.FieldName, InfoBarSeverity.Warning));
         if (review.Fields is null) values.Children.Add(ApplyText("所属後に初期値を観測します。"));
         foreach (var withdrawn in review.Withdrawn)
             values.Children.Add(ApplyMessage("削除・型変更されたフィールドの意図を撤回", $"{withdrawn.FieldName} [{withdrawn.FieldId}] / 以前の意図は実行履歴に保持", InfoBarSeverity.Warning));

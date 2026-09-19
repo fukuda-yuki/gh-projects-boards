@@ -31,7 +31,28 @@ internal sealed partial class RegistrationWorkspace
             fields.Add(f with { Id = Guid.NewGuid().ToString("N"), Expected = observed.Value, Verification = observed,
                 State = ApplyState.Pending, Attempts = [], Reason = "現在値からの設定を別途再レビュー" });
         }
-        CreationSetupReview = new(batchId, id, session.Workspace.Revision, issue, c.ItemId is null ? null : fields.ToArray(), proposed, withdrawn);
+        var registration = session.Workspace.CheckpointRegistrations.Single(p => p.Snapshot.Id == batch.Project);
+        foreach (var field in session.Workspace.Fields.Where(f => f.Key.NodeId == c.LocalId && f.Key.ProjectId == batch.Project.NodeId))
+            if (session.Workspace.PlanningPublicationProblem(registration, c.LocalId, field) is { } stale)
+            { Status = stale; return; }
+        var planning = session.Workspace.LocalRows.Any(r => r.Id == c.LocalId) ? session.Workspace.CreationPlanningFor(registration, c.LocalId)
+            : c.SetupPlanningIntents ?? c.PlanningIntents ?? [];
+        var withdrawnPlanning = planning.Where(s => s.Kind != "Dependency" && !project.Fields.Any(f => f.Id.NodeId == s.FieldId
+            && f.DataType == PlanningScalars.DataType(s.Kind) && f.ValueOwner == FieldOwner.ProjectItem)).ToArray();
+        planning = planning.Except(withdrawnPlanning).ToArray();
+        foreach (var intent in planning)
+        {
+            if (!PlanningScalars.Publishable(intent.Kind, intent.Value)) { Status = "計画フィールドを正確に反映できません。ローカル値を確認してください。"; return; }
+            if (c.ItemId is null) continue;
+            var target = intent.Kind == "Dependency" ? session.Workspace.VerifiedPredecessor(intent.FieldId) : intent.FieldId;
+            if (target is null) { Status = "先行する新規行のIssue ID検証待ちです。"; return; }
+            var operation = new ApplyOperation(Guid.NewGuid().ToString("N"), new(intent.Kind, intent.Kind == "Dependency" ? c.Verified.Id : c.ItemId, batch.Project.NodeId, target),
+                c.ItemId, c.Verified.Id, c.Verified.Url, intent.FieldName, null, intent.Value, c.Stamp, ApplyState.Pending, [], "計画フィールドの設定を再比較");
+            var read = await remote.ObserveAsync(batch, operation, token);
+            if (read.Observation is not { } observed) { Status = "計画フィールド・先行関係を確認できません。"; return; }
+            fields.Add(operation with { Expected = observed.Value, Verification = observed });
+        }
+        CreationSetupReview = new(batchId, id, session.Workspace.Revision, issue, c.ItemId is null ? null : fields.ToArray(), proposed, withdrawn, planning, withdrawnPlanning);
     });
     public Task ConfirmCreationSetupAsync(CreationSetupReview review) => RunAsync(async token =>
     {

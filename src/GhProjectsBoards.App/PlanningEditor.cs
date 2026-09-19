@@ -38,6 +38,9 @@ internal sealed partial class EditingGrid
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetAutomationId(status, "PlanningStatus");
         Func<ProjectPlanning> candidate;
+        Func<PlanningValueEdit[]> values = () => [];
+        Func<PlanningDependencyEdit[]> dependencies = () => [];
+        Func<PlanningProjectionDecision[]> decisions = () => [];
         if (settings)
         {
             var start = PlanningText(content, "Project開始（日本時間）", "PlanProjectStart", DateText(plan.Start));
@@ -57,9 +60,10 @@ internal sealed partial class EditingGrid
                 content.Children.Add(box); mappings.Add(role, box);
             }
             content.Children.Add(new TextBlock { Text = $"採用祝日: {plan.Calendar.Holidays.FirstYear}–{plan.Calendar.Holidays.LastYear} / {plan.Calendar.Holidays.Dates.Length}日。平日9–13時・14–18時。", TextWrapping = TextWrapping.Wrap });
-            candidate = () => plan with { Start = PlanningDate(start.Text), Cutoff = PlanningDate(cutoff.Text),
+            var settingsValues = PlanningSettings(content, plan);
+            candidate = () => { var extra = settingsValues(); return plan with { Start = PlanningDate(start.Text), Cutoff = PlanningDate(cutoff.Text), People = extra.People, Calendar = extra.Calendar,
                 Fields = mappings.Where(x => (string)((ComboBoxItem)x.Value.SelectedItem).Tag != "").Select(x =>
-                    new PlanningFieldBinding(x.Key, (string)((ComboBoxItem)x.Value.SelectedItem).Tag, x.Key is "Start" or "Finish" ? "DATE" : "NUMBER")).ToArray() };
+                    new PlanningFieldBinding(x.Key, (string)((ComboBoxItem)x.Value.SelectedItem).Tag, x.Key is "Start" or "Finish" ? "DATE" : "NUMBER")).ToArray() }; };
         }
         else
         {
@@ -69,7 +73,7 @@ internal sealed partial class EditingGrid
             content.Children.Add(new TextBlock { Text = rows[currentRow].Cells[0].Key is null ? id : work.Value(rows[currentRow].Cells[0]), TextWrapping = TextWrapping.Wrap });
             var mode = new ComboBox { Header = "日程の決め方", HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetAutomationId(mode, "PlanMode");
-            foreach (var value in Enum.GetValues<PlanningMode>()) mode.Items.Add(new ComboBoxItem { Content = value.ToString(), Tag = value });
+            foreach (var value in Enum.GetValues<PlanningMode>()) mode.Items.Add(new ComboBoxItem { Content = value.ToString(), Tag = value, IsEnabled = value != PlanningMode.Unplanned || task.Mode == PlanningMode.Unplanned });
             mode.SelectedIndex = (int)task.Mode; content.Children.Add(mode);
             var owner = new ComboBox { Header = "計画担当者", HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetAutomationId(owner, "PlanOwner");
@@ -80,17 +84,36 @@ internal sealed partial class EditingGrid
             var finish = PlanningText(content, "採用終了（日本時間、空欄可）", "PlanTaskFinish", DateText(calculated.Finish));
             var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
             AutomationProperties.SetAutomationId(preview, "PlanSuggestion"); content.Children.Add(preview);
-            void Preview() => preview.Text = $"自動案: {DateText(calculated.SuggestedStart)} → {DateText(calculated.SuggestedFinish)}\n{calculated.Problem ?? string.Join(" / ", calculated.Warnings)}\nAutoを選ぶと採用日時をこの自動案で置き換えます。";
-            mode.SelectionChanged += (_, _) => Preview(); Preview();
+            var details = PlanningTaskDetails(content, plan, task, rows[currentRow]);
+            values = details.Values; dependencies = details.Dependencies; decisions = details.Decisions;
             candidate = () =>
             {
                 var selectedMode = (PlanningMode)((ComboBoxItem)mode.SelectedItem).Tag;
                 var first = PlanningDate(start.Text); var last = PlanningDate(finish.Text);
                 if (start.Text != DateText(calculated.Start) || finish.Text != DateText(calculated.Finish)) selectedMode = PlanningMode.Manual;
-                var chosen = task with { Mode = selectedMode, OwnerId = (string)((ComboBoxItem)owner.SelectedItem).Tag is { Length: > 0 } personId ? personId : null,
+                var chosen = details.Task() with { Mode = selectedMode, OwnerId = (string)((ComboBoxItem)owner.SelectedItem).Tag is { Length: > 0 } personId ? personId : null,
                     ManualStart = selectedMode == PlanningMode.Manual ? first : null, ManualFinish = selectedMode == PlanningMode.Manual ? last : null };
                 return plan with { Tasks = plan.Tasks.Where(t => t.Id != id).Append(chosen).ToArray() };
             };
+            void Preview()
+            {
+                try
+                {
+                    var staged = EditingWorkspace.Restore(work.Snapshot());
+                    staged.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions());
+                    var next = staged.PlanFor(registration).Tasks.Single(t => t.Id == id);
+                    preview.Text = $"保存後: {DateText(next.Start)} → {DateText(next.Finish)}\n自動案: {DateText(next.SuggestedStart)} → {DateText(next.SuggestedFinish)}\n{next.Problem ?? next.Controller}\n{string.Join(" / ", next.Warnings)}";
+                }
+                catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { preview.Text = e.Message; }
+            }
+            var previewButton = new Button { Content = "日程をプレビュー" }; AutomationProperties.SetAutomationId(previewButton, "PlanPreview");
+            previewButton.Click += (_, _) => Preview(); content.Children.Add(previewButton);
+            mode.SelectionChanged += (_, _) => {
+                if ((PlanningMode)((ComboBoxItem)mode.SelectedItem).Tag == PlanningMode.Auto)
+                { start.Text = DateText(calculated.Start); finish.Text = DateText(calculated.Finish); }
+                Preview();
+            };
+            preview.Text = $"現在: {DateText(calculated.Start)} → {DateText(calculated.Finish)}\n自動案: {DateText(calculated.SuggestedStart)} → {DateText(calculated.SuggestedFinish)}\n{calculated.Problem ?? string.Join(" / ", calculated.Warnings)}";
         }
         content.Children.Add(status);
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = settings ? "計画設定" : "タスクの計画", PrimaryButtonText = "保存", CloseButtonText = "キャンセル",
@@ -98,7 +121,7 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(dialog, "PlanningDialog");
         dialog.PrimaryButtonClick += (_, args) =>
         {
-            try { work.CommitPlanning(registration, candidate(), expected); }
+            try { work.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions()); }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; }
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
@@ -112,6 +135,8 @@ internal sealed partial class EditingGrid
         if (!row.IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == row.ItemId && i.Kind == ProjectItemKind.Issue && i.ContentId is not null)) return "";
         var id = session.Workspace.TaskId(registration, row.ItemId);
         var result = session.Workspace.PlanFor(registration).Tasks.SingleOrDefault(t => t.Id == id);
-        return result is null ? "" : $"\n{result.Mode}: {DateText(result.Start)} → {DateText(result.Finish)}\n{result.Problem ?? result.Controller}\n{string.Join(" / ", result.Warnings)}";
+        return result is null ? "" : $"\n{result.Mode}: {DateText(result.Start)} → {DateText(result.Finish)}\n{result.Problem ?? result.Controller}"
+            + (result.Mode == PlanningMode.Auto && !result.Resolved ? "\n表の以前の日付は今回の計算結果ではありません。" : "")
+            + $"\n{string.Join(" / ", result.Warnings)}";
     }
 }

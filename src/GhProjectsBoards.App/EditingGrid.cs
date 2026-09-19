@@ -136,6 +136,8 @@ internal sealed partial class EditingGrid : Grid
         planning.Click += async (_, _) => await PlanningDialogAsync(false);
         var planningSettings = Tool("計画設定", "GridPlanningSettings", Symbol.Setting, true);
         planningSettings.Click += async (_, _) => await PlanningDialogAsync(true);
+        var initializePlans = Tool("Autoを設定", "GridInitializePlans", Symbol.Calendar, true);
+        initializePlans.Click += async (_, _) => await InitializeSelectedPlansAsync();
         var columnSettings = Tool("列", "GridColumns", Symbol.ViewAll);
         columnSettings.Click += async (_, _) => await ConfigureColumnsAsync(columnSettings);
         var viewSettings = Tool("並べ替え・フィルター", "GridRowSettings", Symbol.Filter);

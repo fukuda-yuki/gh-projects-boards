@@ -10,15 +10,15 @@ internal sealed partial class EditingWorkspace
 {
     public ApplyCandidate[] ApplyCandidates(ProjectRegistration project)
     {
-        var rows = Open(project);
+        var rows = OperationRows(project);
         var candidates = new List<ApplyCandidate>();
         var included = new HashSet<FieldKey>();
         foreach (var row in rows)
         {
             var related = fields.Values.Where(f => row.Cells.Any(c => c.Key == f.Key)
-                || f.Key.Kind == "Select" && f.Key.NodeId == row.ItemId && f.Key.ProjectId == project.Snapshot.Id.NodeId).ToArray();
+                || f.Key.Kind is "Select" or "Number" or "Date" && f.Key.NodeId == row.ItemId && f.Key.ProjectId == project.Snapshot.Id.NodeId).ToArray();
             foreach (var f in related) included.Add(f.Key);
-            if (!row.IsLocal && !related.Any(f => f.Change is not null || f.Buffer is not null || f.Conflict)) continue;
+            if (!row.IsLocal && !related.Any(f => f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == ProjectionDecisionReason)) continue;
             var local = localRows.SingleOrDefault(r => r.Id == row.ItemId);
             var issueId = project.Snapshot.Items.SingleOrDefault(i => i.Id.NodeId == row.ItemId)?.ContentId;
             var issue = issueId is null ? null : project.Snapshot.Issues.GetValueOrDefault(issueId);

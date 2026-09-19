@@ -35,7 +35,7 @@ internal sealed partial class EditingGrid
             var item = project?.Items.SingleOrDefault(i => i.Id.NodeId == field.Key.NodeId);
             var issue = project?.Issues.Values.SingleOrDefault(i => i.Id.NodeId == (field.Key.Kind == "Title" ? field.Key.NodeId : item?.ContentId?.NodeId));
             var identity = issue is null ? field.Key.NodeId : $"{issue.Repository.NameWithOwner} #{issue.Number}";
-            var name = field.Key.Kind == "Title" ? "タイトル" : project?.Fields.SingleOrDefault(f => f.Id.NodeId == field.Key.FieldId)?.Name ?? "単一選択";
+            var name = field.Key.Kind == "Title" ? "タイトル" : project?.Fields.SingleOrDefault(f => f.Id.NodeId == field.Key.FieldId)?.Name ?? field.Key.Kind;
             return $"{identity} / {name} [{field.Key.FieldId ?? "Title"}] / {project?.Title ?? observedProject?.NodeId ?? "未確認のProject"} [{observedProject?.NodeId ?? "?"}]";
         }
         var picker = new ComboBox { Header = "比較するフィールド", ItemsSource = fields.Select(Label).ToArray(), SelectedIndex = 0,
@@ -63,20 +63,24 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(options, "ConflictAlternativeOption");
         var clear = new CheckBox { Content = "明示的にクリア" }; AutomationProperties.SetAutomationId(clear, "ConflictAlternativeClear");
         var other = new Button { Content = "別の値をローカル採用" }; AutomationProperties.SetAutomationId(other, "ConflictUseAlternative");
+        var cancelUnavailable = new Button { Content = "この下書きを取り消す", Visibility = Visibility.Collapsed };
+        AutomationProperties.SetAutomationId(cancelUnavailable, "ConflictCancelUnavailable");
         var identityDetails = ComparisonText("");
         var details = new Expander { Header = "所有範囲・識別情報・構成変更", Content = identityDetails,
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         var content = new StackPanel { Spacing = 12 };
-        foreach (var element in new FrameworkElement[] { picker, context, notice, comparison, pending, text, options, clear, other, details }) content.Children.Add(element);
+        foreach (var element in new FrameworkElement[] { picker, context, notice, comparison, pending, cancelUnavailable, text, options, clear, other, details }) content.Children.Add(element);
         var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "競合・未確認の比較（ローカルのみ）",
             Content = new ScrollViewer { MaxHeight = 460, Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled },
             PrimaryButtonText = "GitHub値を採用", SecondaryButtonText = "ローカル値を保持", CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
         dialog.Resources["ContentDialogMaxWidth"] = 760d;
         AutomationProperties.SetAutomationId(dialog, "ConflictDialog");
         DraftField selected = fields[0]; ResolutionDecision? decision = null; LocalValue? alternative = null;
+        long shownRevision = session.Workspace.Revision;
         void Show()
         {
             selected = session.Workspace.Fields.Single(f => f.Key == fields[picker.SelectedIndex].Key);
+            shownRevision = session.Workspace.Revision;
             var remote = selected.Observation!;
             string Display(string? value) => value is null ? "（明示的な空値）" : selected.Key.Kind != "Select" ? value
                 : $"{remote.Options.SingleOrDefault(o => o.Id == value)?.Name ?? "選択肢不明"} [ID: {value}]";
@@ -93,6 +97,9 @@ internal sealed partial class EditingGrid
             notice.Severity = decision is null ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
             pending.Text = selected.Buffer is null ? "" : "未確定文字（採用値には含みません）: " + selected.Buffer;
             pending.Visibility = selected.Buffer is null ? Visibility.Collapsed : Visibility.Visible;
+            cancelUnavailable.Visibility = selected.Key.Kind is "Number" or "Date"
+                && remote.Availability is ValueAvailability.Unavailable or ValueAvailability.NotLoaded or ValueAvailability.Unsupported
+                && (selected.Change is not null || selected.Buffer is not null) ? Visibility.Visible : Visibility.Collapsed;
             identityDetails.Text = $"所有: {(selected.Key.Kind == "Title" ? "Issue（同じアカウント内で共有）" : "Project項目")}\nProject ID: {remote.Project.NodeId}\n対象 ID: {selected.Key.NodeId}\nフィールド ID: {selected.Key.FieldId ?? "Issue title"}";
             if (diagnostics.Length > 0) identityDetails.Text += "\n\n構成変更・Undo:\n" + diagnostics;
             dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = other.IsEnabled = decision is not null;
@@ -103,6 +110,11 @@ internal sealed partial class EditingGrid
             text.Text = selected.Change?.Value ?? selected.Baseline ?? ""; options.ItemsSource = remote.Options; options.SelectedIndex = -1; clear.IsChecked = false;
         }
         picker.SelectionChanged += (_, _) => Show();
+        cancelUnavailable.Click += async (_, _) => {
+            if (await session.CommitAsync(candidate => { candidate.CancelUnavailablePlanningDraft(selected.Key, shownRevision); return candidate; }, () => IsLoaded && CanRefresh))
+            { dialog.Hide(); Update(); }
+            else { notice.Message = session.Status; Show(); }
+        };
         other.Click += (_, _) =>
         {
             alternative = selected.Key.Kind == "Title" ? new(text.Text) : clear.IsChecked == true ? new(null, true)

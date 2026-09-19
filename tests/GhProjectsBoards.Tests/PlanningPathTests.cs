@@ -13,6 +13,7 @@ internal sealed class PlanningPathTests
             .Select(f => new ProjectFieldDefinition(new(snapshot.Id.Scope, "F-" + f.Item1), snapshot.Id, f.Item1,
                 "ProjectV2Field", f.Item2, FieldOwner.ProjectItem, [], ValueAvailability.Present)).ToArray();
         return p with { Snapshot = snapshot with { Fields = snapshot.Fields.Concat(fields).ToArray(),
+            Issues = snapshot.Issues.ToDictionary(i => i.Key, i => i.Value with { Native = new([], [], new(ValueAvailability.Empty), true) }),
             Items = snapshot.Items.Select(i => i with { Values = i.Values.Concat(fields.Select(f =>
                 new ProjectFieldValue(f.Id, null, "Absent", ValueAvailability.Empty))).ToArray() }).ToArray() } };
     }
@@ -66,6 +67,32 @@ internal sealed class PlanningPathTests
             Is.EqualTo(PlanningContractTests.At("2026-10-05 18:00")));
     }
 
+    [Test]
+    public async Task ActualProjectionRoundTripsWithExplicitAttributionDecisionAndIndependentRemaining()
+    {
+        var h = await ApplyTests.Harness.Create(2, planning: true); await h.Workspace.PrepareLocalRowsAsync();
+        var w = h.Workspace.Drafts!.Workspace; var p = h.Workspace.Selected!;
+        var task = new PlanningTask("I1", PlanningMode.Auto, "U1", Progress: PlanningProgress.InProgress,
+            ActualStart: PlanningContractTests.At("2026-10-05 09:00"), Actuals: [new("U1", 5, new(2026, 10, 5))]);
+        w.CommitPlanning(p, Plan() with { Tasks = [task] }, w.Revision, [new("P1-T1", "Estimate", "16"), new("P1-T1", "Remaining", "4")]);
+        await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
+        await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
+        Assert.That(h.Scalars["P1-T1/F-Actual"]!.GetValue<decimal>(), Is.EqualTo(5));
+        h.Scalars["P1-T1/F-Actual"] = 6m;
+        await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
+        w = h.Workspace.Drafts.Workspace; p = h.Workspace.Selected!;
+        var decision = w.PlanningDecisions("P1", "P1-T1").Single();
+        Assert.That(w.Planning("P1")!.Tasks[0].Actuals!.Single().Hours, Is.EqualTo(5));
+        Assert.That(h.Workspace.ApplyReview!.Blocked, Is.Not.Empty);
+        var corrected = task with { Actuals = [new("U1", 6, new(2026, 10, 6))] };
+        w.CommitPlanning(p, w.Planning("P1")! with { Tasks = [corrected] }, w.Revision, decisions: [new(decision.Key, decision.Observation!.Id, true)]);
+        Assert.That(await h.Workspace.Drafts.FlushAsync(), Is.True);
+        var restored = EditingWorkspace.Restore((await new DraftStore(h.Root).LoadAsync(w.Scope))!);
+        var input = restored.PlanFor(p).Inputs!.Single(i => i.Task.Id == "I1");
+        Assert.That(input.Remaining, Is.EqualTo(4)); Assert.That(input.Estimate, Is.EqualTo(16));
+        Assert.That(input.Task.Actuals, Is.EqualTo(corrected.Actuals));
+        Assert.That(restored.PlanningDecisions("P1", "P1-T1"), Is.Empty);
+    }
     [Test]
     public async Task UnmappedNegativeNativeNumbersDoNotBlockCompleteRetrieval()
     {

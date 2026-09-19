@@ -116,6 +116,7 @@ internal static class PlanningContract
                 || t.ManualFinish < t.ManualStart || t.ActualFinish < t.ActualStart
                 || (t.Actuals ?? []).Any(a => a is null || a.PersonId is not null && !Id(a.PersonId) || !Hours(a.Hours) || a.ReportedThrough == default)
                 || (t.Actuals ?? []).Select(a => a.PersonId).Distinct().Count() != (t.Actuals ?? []).Length
+                || !Hours((t.Actuals ?? []).Sum(a => a.Hours))
                 || (t.Contributions ?? []).Any(a => a is null || !Id(a.PersonId) || a.EstimateHours is { } e && !Hours(e) || a.RemainingHours is { } r && !Hours(r))
                 || (t.Contributions ?? []).Select(a => a.PersonId).Distinct().Count() != (t.Contributions ?? []).Length
                 || (t.LocalLinks ?? []).Any(l => l is null || !Id(l.PredecessorId) || !Id(l.Kind) || !Minute(l.ExternalFinish))

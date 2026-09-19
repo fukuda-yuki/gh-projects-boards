@@ -6,6 +6,7 @@ internal sealed record ResolutionDecision(FieldKey Key, long Revision, string Ob
 
 internal sealed partial class EditingWorkspace
 {
+    private const string PendingObservationReason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。";
     private RegistrationStore.RegistrationRecord[]? registrations;
     private string[] structuralChanges = [];
     public IReadOnlyList<string> StructuralChanges => structuralChanges;
@@ -34,6 +35,7 @@ internal sealed partial class EditingWorkspace
             throw new InvalidOperationException("完全な同一Projectの取得結果が必要です。");
         // Opening a cache only initializes missing keys; it never accepts an older shared observation.
         Open(previous);
+        InvalidatePlanningForRemoteInputs(previous, current);
         var changes = new List<string>();
         foreach (var item in p.Items.Where(i => !previous.Snapshot.Items.Any(old => old.Id == i.Id))) changes.Add($"追加項目: {item.Id.NodeId}");
         foreach (var item in previous.Snapshot.Items.Where(i => !p.Items.Any(next => next.Id == i.Id))) changes.Add($"Projectで未観測: {item.Id.NodeId}（Issue削除の証明ではありません）");
@@ -49,10 +51,11 @@ internal sealed partial class EditingWorkspace
                 else if (found.Name != option.Name) changes.Add($"選択肢名変更: {option.Id} / {option.Name} → {found.Name}");
             }
         }
-        var observed = ObservationWorkspace().Open(current).SelectMany(r => r.Cells).Where(c => c.Key is not null)
+        var observed = ObservationWorkspace().OperationRows(current).SelectMany(r => r.Cells).Where(c => c.Key is not null)
             .DistinctBy(c => c.Key).ToDictionary(c => c.Key!);
         foreach (var old in fields.Values.ToArray())
         {
+            if (old.Key.NodeId.StartsWith("local-", StringComparison.Ordinal)) continue;
             if (!Belongs(old.Key, previous.Snapshot) && !Belongs(old.Key, p) && old.SourceProject != p.Id) continue;
             if (old.Observation is { } accepted && accepted.At > current.RetrievedAt) continue;
             observed.TryGetValue(old.Key, out var cell);
@@ -68,7 +71,8 @@ internal sealed partial class EditingWorkspace
             {
                 var remote = observation.Value;
                 // Inactive text is recoverable input, never an implicit local commit.
-                if (old.Buffer is not null) next = next with { Observation = observation with { Reason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。" } };
+                if (ProjectionNeedsDecision(old, remote)) next = next with { Observation = observation with { Reason = ProjectionDecisionReason }, Conflict = false };
+                else if (old.Buffer is not null) next = next with { Observation = observation with { Reason = PendingObservationReason } };
                 else if (local == old.Baseline || local == remote)
                     next = next with { Baseline = remote, Change = null, Conflict = false, RetrievedAt = current.RetrievedAt };
                 else if (remote == old.Baseline) next = next with { Conflict = false };

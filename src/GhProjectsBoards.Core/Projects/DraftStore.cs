@@ -182,28 +182,30 @@ internal sealed class DraftStore(string registrationRoot)
         if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
-        if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date")))
+        if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date" or "Dependency")))
             throw new InvalidDataException("Unversioned planning operations.");
         ValidateLocalRows(r);
         bool Key(FieldKey? k) => k is not null && !string.IsNullOrWhiteSpace(k.NodeId)
-            && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind is "Select" or "Number" or "Date" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
+            && (k.Kind == "Title" ? k.ProjectId is null && k.FieldId is null : k.Kind is "Select" or "Number" or "Date" or "Dependency" && !string.IsNullOrWhiteSpace(k.ProjectId) && !string.IsNullOrWhiteSpace(k.FieldId));
         bool Field(DraftField? f) => f is not null && Key(f.Key) && f.SourceProject is not null && f.SourceProject.Scope == r.Scope
             && (f.Key.Kind == "Title" || f.SourceProject.NodeId == f.Key.ProjectId)
             && PlanningScalars.RemoteValid(f.Key.Kind, f.Baseline) && PlanningScalars.Valid(f.Key.Kind, f.Change?.Value)
             && !string.IsNullOrWhiteSpace(f.SourceProject.NodeId) && f.RetrievedAt != default && f.Stamp >= 0 && f.Stamp <= r.Revision
             && (f.Key.Kind != "Title" || !string.IsNullOrWhiteSpace(f.Baseline))
             && (f.Key.Kind != "Title" || f.Change?.Value is not { } title || title.IndexOfAny(['\r','\n','\t']) < 0)
-            && (f.Change is null || f.Change.Value != f.Baseline && (f.Change.Clear ? f.Key.Kind != "Title" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
-        if (r.Fields.Any(f => !Field(f)) || r.Fields.Select(f => f.Key).Distinct().Count() != r.Fields.Length
+            && (f.Change is null || (f.Change.Value != f.Baseline || f.Key.Kind is "Number" or "Date" && f.Key.NodeId.StartsWith("local-", StringComparison.Ordinal) && f.Change.Clear)
+                && (f.Change.Clear ? f.Key.Kind != "Title" && f.Change.Value is null : !string.IsNullOrWhiteSpace(f.Change.Value)));
+        var fieldKeys = r.Fields.Where(f => f is not null).Select(f => f.Key).ToHashSet();
+        if (r.Fields.Any(f => !Field(f)) || fieldKeys.Count != r.Fields.Length
             || r.History.Any(t => t is null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.ProjectId) || t.Changes is null || t.Changes.Length == 0 && t.Rows is not { Length: > 0 } && t.Plan is null
                 || t.Changes.Any(c => c is null || c.Before is null || c.After is null)
                 || t.Changes.Select(c => c?.Key).Distinct().Count() != t.Changes.Length
                 || t.Changes.Any(c => c is null || !Key(c.Key) || !Field(c.Before) || !Field(c.After) || c.Key != c.Before.Key || c.Key != c.After.Key
                     || c.Key.Kind != "Title" && c.Key.ProjectId != t.ProjectId
-                    || c.Before.Stamp >= c.After.Stamp || t.Changes.Any(other => other.After.Stamp != c.After.Stamp)
+                    || c.Before.Stamp >= c.After.Stamp || t.Changes[0].After.Stamp != c.After.Stamp
                     || t.Resolution && (!c.Before.Conflict || c.After.Conflict || c.Before.Observation is null
                         || c.Before.Observation.Id != c.After.Observation?.Id || c.After.Baseline != c.Before.Observation.Value)
-                    || !r.Fields.Any(f => f.Key == c.Key) || !t.Resolution && c.Before.Baseline != c.After.Baseline || c.Before.SourceProject != c.After.SourceProject))
+                    || !fieldKeys.Contains(c.Key) || !t.Resolution && c.Before.Baseline != c.After.Baseline || c.Before.SourceProject != c.After.SourceProject))
             || r.History.Select(t => t.Id).Distinct().Count() != r.History.Length)
             throw new InvalidDataException("Inconsistent draft record.");
         foreach (var t in r.History.Where(t => t.Plan is not null))

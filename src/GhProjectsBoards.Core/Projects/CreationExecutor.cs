@@ -79,6 +79,17 @@ internal sealed partial class ApplyExecutor
                     c.Verified!.Id, c.Verified.Url, s.FieldName, value.OptionId, new(s.OptionId, s.ExplicitClear), c.Stamp,
                     ApplyState.Pending, [], "所属後の初期値を観測・保存", observation));
             }
+            foreach (var intent in c.SetupPlanningIntents ?? c.PlanningIntents ?? [])
+            {
+                var target = intent.Kind == "Dependency" ? session.Workspace.VerifiedPredecessor(intent.FieldId) : intent.FieldId;
+                if (target is null) { await Save(c with { Reason = "先行する新規行のIssue ID検証待ちです。既知の作成結果は保持しています。" }); return; }
+                var key = new FieldKey(intent.Kind, intent.Kind == "Dependency" ? c.Verified!.Id : item.Id.NodeId, batch.Project.NodeId, target);
+                var operation = new ApplyOperation(Guid.NewGuid().ToString("N"), key, item.Id.NodeId, c.Verified!.Id,
+                    c.Verified.Url, intent.FieldName, null, intent.Value, c.Stamp, ApplyState.Pending, [], "所属後の計画フィールドを観測");
+                var initial = await remote.ObserveAsync(batch, operation, token);
+                if (initial.Observation is not { } observedValue) { await Save(c with { Reason = "計画フィールド・先行関係の初期値または権限を確認できません。" }); return; }
+                setup.Add(operation with { Expected = observedValue.Value, Verification = observedValue });
+            }
             await Save(c with { Fields = setup.ToArray() });
         }
         foreach (var saved in c.Fields!)

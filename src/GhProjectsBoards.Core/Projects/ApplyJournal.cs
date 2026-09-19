@@ -46,7 +46,7 @@ internal static class ApplyJournal
                     || verification.Availability == ValueAvailability.Present && string.IsNullOrWhiteSpace(verification.Value))
                 || (o.Key.Kind == "Title" ? o.Key.NodeId != o.IssueId || o.Key.ProjectId is not null || o.Key.FieldId is not null
                     || o.Intended.Clear || string.IsNullOrWhiteSpace(o.Intended.Value) || o.Intended.Value.IndexOfAny(['\r','\n','\t']) >= 0
-                    : o.Key.Kind is not ("Select" or "Number" or "Date") || o.Key.NodeId != o.ItemId || o.Key.ProjectId != batch.Project.NodeId || string.IsNullOrWhiteSpace(o.Key.FieldId)
+                    : o.Key.Kind is not ("Select" or "Number" or "Date" or "Dependency") || o.Key.NodeId != (o.Key.Kind == "Dependency" ? o.IssueId : o.ItemId) || o.Key.ProjectId != batch.Project.NodeId || string.IsNullOrWhiteSpace(o.Key.FieldId)
                     || (o.Intended.Clear ? o.Intended.Value is not null : string.IsNullOrWhiteSpace(o.Intended.Value)))
                 || o.Attempts.Where((a, i) => a is null || a.Number != i + 1 || a.At == default || !Enum.IsDefined(a.State) || a.Reason is null).Any()
                 || o.State == ApplyState.Succeeded && (o.Verification is null || o.Verification.Value != o.Intended.Value
@@ -78,13 +78,18 @@ internal sealed partial class EditingWorkspace
         if (project.Snapshot.Id.Scope != Scope || !HasCheckpoint) throw new InvalidOperationException("保存済み同一プロフィールが必要です。");
         var p = project.Snapshot;
         var blocked = new List<ApplyReviewProblem>(); var operations = new List<ApplyOperation>();
-        var rows = ObservationWorkspace().Open(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
+        var rows = ObservationWorkspace().OperationRows(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
         var locals = localRows.Where(r => r.ProjectId == p.Id.NodeId && selectedItems.Contains(r.Id)).ToArray();
         foreach (var id in selectedItems.Except(rows.Select(r => r.ItemId).Concat(locals.Select(r => r.Id))))
             blocked.Add(new(id, null, "選択した項目を現在のProjectで確認できません。"));
         var creations = ReviewCreations(project, locals, destinations, blocked);
         foreach (var row in rows)
         {
+        foreach (var decision in PlanningDecisions(p.Id.NodeId, row.ItemId))
+            blocked.Add(new(row.ItemId, decision.Key, ProjectionDecisionReason));
+        var taskId = p.Items.Single(i => i.Id.NodeId == row.ItemId).ContentId?.NodeId;
+        if (Planning(p.Id.NodeId)?.Tasks.SingleOrDefault(t => t.Id == taskId)?.LocalLinks?.Any(l => l.PredecessorId.StartsWith("local-", StringComparison.Ordinal)) == true)
+            blocked.Add(new(row.ItemId, null, "先行する新規行のIssue作成・所属検証を待っています。"));
         // A removed/unsupported field must not silently disappear from a selected row's payload.
         foreach (var missing in fields.Values.Where(f => f.Change is not null && f.Key.Kind != "Title"
             && f.Key.ProjectId == p.Id.NodeId && f.Key.NodeId == row.ItemId && !row.Cells.Any(c => c.Key == f.Key)))
@@ -93,6 +98,7 @@ internal sealed partial class EditingWorkspace
         {
             if (!fields.TryGetValue(cell.Key!, out var f) || f.Change is null || operations.Any(o => o.Key == f.Key)) continue;
             var reason = cell.Reason ?? (f.Conflict ? "未解決の競合" : f.Observation?.Reason);
+            reason ??= PlanningPublicationProblem(project, row.ItemId, f);
             // Buffer-related notices exclude text, not an independently committed payload.
             if (reason?.StartsWith("未確定文字") == true) reason = null;
             if (!PlanningScalars.Publishable(f.Key.Kind, f.Change)) reason = "GitHubへ正確に反映できる数値精度を超えています。ローカル値は保持しています。";
@@ -141,13 +147,19 @@ internal sealed partial class EditingWorkspace
             registrations = CheckpointRegistrations.Select(r =>
             {
                 var p = r.Snapshot;
-                if (old.Key.Kind == "Title")
+                if (old.Key.Kind is "Title" or "Dependency")
                 {
                     var id = new ScopedId(Scope, operation.IssueId);
                     if (p.Issues.TryGetValue(id, out var issue))
                     {
                         var issues = p.Issues.ToDictionary(x => x.Key, x => x.Value);
-                        issues[id] = issue with { Title = new(ValueAvailability.Present, operation.Intended.Value) };
+                        if (old.Key.Kind == "Title") issues[id] = issue with { Title = new(ValueAvailability.Present, operation.Intended.Value) };
+                        else if (issue.Native is { Complete: true } native)
+                        {
+                            var predecessors = native.Predecessors.Where(i => i.NodeId != old.Key.FieldId).ToList();
+                            if (!operation.Intended.Clear) predecessors.Add(new(Scope, old.Key.FieldId!));
+                            issues[id] = issue with { Native = native with { Predecessors = predecessors.ToArray() } };
+                        }
                         p = p with { Issues = issues };
                     }
                 }
@@ -157,9 +169,12 @@ internal sealed partial class EditingWorkspace
                             OptionId = old.Key.Kind == "Select" ? operation.Intended.Value : v.OptionId,
                             Scalar = old.Key.Kind is "Number" or "Date" ? operation.Intended.Value : v.Scalar,
                             Availability = operation.Intended.Clear ? ValueAvailability.Empty : ValueAvailability.Present }).ToArray() }).ToArray() };
-                return RegistrationStore.ToRecord(r with { Snapshot = p });
+                var updated = r with { Snapshot = p };
+                if (old.Key.Kind == "Dependency") InvalidatePlanningForRemoteInputs(r, updated);
+                return RegistrationStore.ToRecord(updated);
             }).ToArray();
         }
         Revision++;
+        if (acknowledge && operation.Key.Kind == "Dependency") ReconcileAcknowledgedDependency(operation);
     }
 }

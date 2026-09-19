@@ -23,7 +23,7 @@ internal sealed class RegistrationStore
         TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { info =>
         {
             if (info.Kind == JsonTypeInfoKind.Object)
-                foreach (var property in info.Properties) property.IsRequired = property.Name is not ("Capability" or "Scalar");
+                foreach (var property in info.Properties) property.IsRequired = property.Name is not ("Capability" or "Scalar" or "Native");
         } } },
         Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
     };
@@ -191,6 +191,14 @@ internal sealed class RegistrationStore
                 || i.Values.Any(v => v is null || (v.FieldId is not null && !Valid(v.FieldId)) || !Enum.IsDefined(v.Availability)))
             || p.Issues.Any(pair => pair.Key != pair.Value.Id || !Valid(pair.Key) || !Valid(pair.Value.Repository.Id) || !Valid(pair.Value.Repository.OwnerId))
             || r.Repositories.Any(repo => !Valid(repo.Id) || !Valid(repo.OwnerId))) throw new InvalidDataException("InconsistentSnapshot");
+        foreach (var native in p.Issues.Values.Select(i => i.Native).OfType<IssuePlanningObservation>())
+            if (!native.Complete || native.Assignees is null || native.Predecessors is null || native.Parent is null
+                || native.Assignees.Any(a => a is null || !Valid(a.Id) || string.IsNullOrWhiteSpace(a.Login))
+                || native.Assignees.Select(a => a.Id).Distinct().Count() != native.Assignees.Length
+                || native.Predecessors.Any(a => !Valid(a)) || native.Predecessors.Distinct().Count() != native.Predecessors.Length
+                || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty)
+                || (native.Parent.Availability == ValueAvailability.Empty ? native.Parent.Value is not null : !Valid(native.Parent.Value)))
+                throw new InvalidDataException("Incomplete planning observation.");
     }
     internal sealed record RegistrationRecord(int Version, string ViewerLogin, string OwnerLogin,
         IReadOnlyList<RepositoryReadModel> Repositories, string? DefaultRepository, DateTimeOffset RetrievedAt, SnapshotRecord Snapshot);
