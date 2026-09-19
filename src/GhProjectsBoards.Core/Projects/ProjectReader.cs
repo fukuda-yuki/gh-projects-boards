@@ -25,6 +25,34 @@ internal sealed class ProjectReader(GhConnectionService service)
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
         private ApiOutcome? interruption;
+        private string? observationScope;
+        private bool firstObservationRead;
+
+        private async Task<ApiResult> SendAsync(string query, object variables)
+        {
+            if (observationScope is null)
+                return await service.SendAsync(context, ApiRequest.GraphQl(query, variables), cancellationToken);
+            // Each contributing response identifies its own authenticated principal.
+            // Preflight alone cannot bind a later subprocess to the same gh account.
+            var request = ApiRequest.GraphQl(query.Insert(query.LastIndexOf('}'), " viewer { databaseId } "), variables);
+            var first = firstObservationRead; firstObservationRead = false;
+            var result = first
+                ? await service.RecheckAndReadAsync(context, request, observationScope, cancellationToken)
+                : await service.SendAsync(context, request, cancellationToken);
+            if (!result.IsSuccess) return result;
+            if (result.Data is not { ValueKind: JsonValueKind.Object } body
+                || !body.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object
+                || !data.TryGetProperty("viewer", out var viewer) || viewer.ValueKind != JsonValueKind.Object
+                || !viewer.TryGetProperty("databaseId", out var id) || id.ValueKind != JsonValueKind.Number
+                || !id.TryGetInt64(out var viewerId) || viewerId <= 0)
+                return new(ApiOutcome.Failed, FailureKind.InvalidResponse);
+            if (viewerId != context.ViewerId || context.IsInvalidated)
+            {
+                context.Invalidate();
+                return new(ApiOutcome.Failed, FailureKind.IdentityChanged);
+            }
+            return result;
+        }
 
         public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ApplyOperation operation)
         {
@@ -36,10 +64,12 @@ internal sealed class ProjectReader(GhConnectionService service)
                 return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
             try
             {
+                observationScope = key.Kind == "Title" ? "repo" : "project";
+                firstObservationRead = true;
                 // Complete definitions retain the reader's field ownership and unknown-value guards.
                 // Their cost depends on fields/options, never unrelated Project item count.
-                var result = await service.SendAsync(context, ApiRequest.GraphQl(ProjectQueries.ApplyObservation,
-                    new { id = projectId.NodeId, item = operation.ItemId, after = (string?)null }), cancellationToken);
+                var result = await SendAsync(ProjectQueries.ApplyObservation,
+                    new { id = projectId.NodeId, item = operation.ItemId, after = (string?)null });
                 if (!result.IsSuccess) return (null, result);
                 var data = Property(result.Data ?? default, "data");
                 var initialFields = ReadProjectFields(Property(data, "project"));
@@ -292,7 +322,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                     {
                         if (stopped) return false;
                         progress?.Invoke(new(stage, fields.Count, items.Count, issues.Count));
-                        var result = await service.SendAsync(context, ApiRequest.GraphQl(query, new { id, after }), cancellationToken);
+                        var result = await SendAsync(query, new { id, after });
                         trusted = result.IsSuccess;
                         if (!trusted)
                         {

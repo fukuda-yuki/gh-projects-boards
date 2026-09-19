@@ -436,6 +436,7 @@ internal sealed class ProjectReaderTests
         public ScriptedRunner Runner { get; }
         public Func<string, JsonElement, GhProcessResult?>? Override { get; set; }
         public Action<System.Text.Json.Nodes.JsonNode>? ChangeCombinedResponse { get; set; }
+        public Action<string, System.Text.Json.Nodes.JsonNode>? ChangeObservationResponse { get; set; }
         public Func<GhCommand, GhProcessResult?>? OverrideProcess { get; set; }
         public long ViewerId { get; set; } = 42;
         public ProjectBoundary()
@@ -463,10 +464,23 @@ internal sealed class ProjectReaderTests
                     if (item["errors"] is System.Text.Json.Nodes.JsonArray { Count: > 0 }) return itemResult;
                     var combined = new System.Text.Json.Nodes.JsonObject { ["data"] = new System.Text.Json.Nodes.JsonObject {
                         ["project"] = project["data"]!["node"]?.DeepClone(), ["item"] = item["data"]!["node"]?.DeepClone() } };
+                    if (query.Contains("viewer { databaseId }")) combined["data"]!["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = ViewerId });
                     ChangeCombinedResponse?.Invoke(combined);
+                    ChangeObservationResponse?.Invoke(query, combined);
                     return ScriptedRunner.Http(combined.ToJsonString());
                 }
-                return Respond(query, variables);
+                var response = Respond(query, variables);
+                if (query.Contains("viewer { databaseId }") && response.StandardOutput.StartsWith("HTTP/2.0 200"))
+                {
+                    var data = Body(response);
+                    if (data["data"] is System.Text.Json.Nodes.JsonObject fields)
+                    {
+                        fields["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = ViewerId });
+                        ChangeObservationResponse?.Invoke(query, data);
+                        return ScriptedRunner.Http(data.ToJsonString());
+                    }
+                }
+                return response;
             });
             static System.Text.Json.Nodes.JsonNode Body(GhProcessResult response) => System.Text.Json.Nodes.JsonNode.Parse(
                 response.StandardOutput[(response.StandardOutput.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4)..])!;

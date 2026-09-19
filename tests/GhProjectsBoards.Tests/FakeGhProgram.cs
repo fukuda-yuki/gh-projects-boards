@@ -222,6 +222,12 @@ internal static class FakeGhProgram
                     }
                     response = query.Contains("ProjectItems") && settings.TryGetProperty("creation", out var enabledCreation) && enabledCreation.GetBoolean() ? FakeCreation.Augment(node, directory, host) : node;
                 }
+                if (query.Contains("viewer { databaseId }"))
+                {
+                    var observed = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
+                    observed["data"]!["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = id });
+                    response = observed;
+                }
                 WriteHttp(response); return 0;
             }
         }
