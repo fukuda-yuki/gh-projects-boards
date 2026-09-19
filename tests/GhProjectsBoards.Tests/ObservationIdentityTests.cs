@@ -99,20 +99,21 @@ internal sealed class ObservationIdentityTests
      TestCase("scope", FailureKind.PermissionDenied), TestCase("viewer", FailureKind.IdentityChanged), TestCase("cancel", FailureKind.Cancelled)]
     public async Task ImmediateReadRetainsVersionIdentityKeyringScopeAndCancellationRequirements(string defect, FailureKind expected)
     {
-        var baseline = GhConnectionTests.ConnectedRunner(); var changed = false;
-        var runner = new ScriptedRunner(command => changed && command.Arguments[0] == "--version" && defect == "version"
+        var h = await ApplyTests.Harness.Create(1); var w = h.Workspace.Drafts!.Workspace;
+        w.Commit("P1", w.Open(h.Workspace.Selected!)[0].Cells[1], "done", true);
+        await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
+        h.Boundary.OverrideProcess = command => command.Arguments[0] == "--version" && defect == "version"
             ? new(ProcessCompletion.Exited, true, 0, "invalid version")
-            : changed && command.Arguments[0] == "auth" && defect is "scope" or "keyring"
+            : command.Arguments[0] == "auth" && defect is "scope" or "keyring"
                 ? GhConnectionTests.Auth(source: defect == "keyring" ? "unknown" : "keyring", scopes: defect == "scope" ? "repo" : "repo, project")
-                : changed && command.Arguments.Contains("user") && defect == "viewer" ? ScriptedRunner.Http("{\"id\":99,\"login\":\"other\"}")
-                    : baseline.RunAsync(command).GetAwaiter().GetResult());
-        var service = new GhConnectionService("gh.exe", "github.com", runner);
-        var context = (await service.ConnectAsync()).Context!; changed = true;
+                : command.Arguments.Contains("user") && defect == "viewer" ? ScriptedRunner.Http("{\"id\":99,\"login\":\"other\"}") : null;
+        var batch = h.Workspace.ApplyReview!.Batch;
 
-        var result = await service.RecheckAndReadAsync(context, ApiRequest.Rest("GET", "resource"), "project", new(defect == "cancel"));
+        var result = await new ApplyRemote(h.Service, h.Context).ObserveAsync(batch, batch.Operations.Single(), new(defect == "cancel"));
 
-        Assert.That(result.Failure, Is.EqualTo(expected));
-        Assert.That(result.Data, Is.Null);
+        Assert.That(result.Result.Failure, Is.EqualTo(expected));
+        Assert.That(result.Observation, Is.Null);
+        Assert.That(h.Writes, Is.Empty);
     }
 
     [TestCase("viewer"), TestCase("scope"), TestCase("keyring")]

@@ -102,6 +102,7 @@ internal sealed partial class ApplyExecutor(DraftStore store, DraftSession sessi
             if (!await session.CommitAsync(w => { w.RecordApply(batchId, operation, acknowledge); return w; }, () => true))
                 throw new InvalidOperationException((acknowledge ? "GitHubの読み戻しは一致しましたが、ローカルへの結果保存に失敗しました。" : "実行結果の保存に失敗しました。")
                     + "追加送信を停止しました。永続Runningは不確定として復元されます。");
+            if (operation.State == ApplyState.Succeeded) PerformanceTrace.Count("durable-success");
             Progress?.Invoke($"{operation.Identity} / {operation.FieldName}: {operation.State} / {operation.Reason}");
         }
     }

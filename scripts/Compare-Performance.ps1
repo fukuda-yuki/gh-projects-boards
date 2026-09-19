@@ -17,7 +17,7 @@ foreach ($case in Get-ChildItem -LiteralPath $Baseline -Directory | Where-Object
     $candidateCase = Join-Path $Candidate $case.Name
     $plan = Get-Content (Join-Path $case.FullName 'plan.json') -Raw | ConvertFrom-Json
     $otherPlan = Get-Content (Join-Path $candidateCase 'plan.json') -Raw | ConvertFrom-Json
-    foreach ($property in 'count','changes','mixed','samples','field','instrument','frequency','boundary','runtime','os','processorCount','warmup') {
+    foreach ($property in 'count','changes','changedRows','changedFields','mixed','samples','field','instrument','frequency','boundary','runtime','os','processorCount','warmup') {
         if ($plan.$property -ne $otherPlan.$property) { throw "Incompatible plans: $($case.Name) $property" }
     }
     if ($plan.samples -lt 3 -or $plan.warmup -ne 1) { throw 'Insufficient sampling plan' }
@@ -40,9 +40,12 @@ foreach ($case in Get-ChildItem -LiteralPath $Baseline -Directory | Where-Object
             $data = $entry[1]
             function Count-Kind($kind) { if (!$plan.instrument) { return $null }; [double]($data.spans | Where-Object Kind -eq $kind | Measure-Object Count -Sum).Sum }
             function Time-Kind($kind) { if (!$plan.instrument) { return $null }; (($data.spans | Where-Object Kind -eq $kind | ForEach-Object { $_.End - $_.Start } | Measure-Object -Sum).Sum) * 1000.0 / $plan.frequency }
-            $rows += [pscustomobject]@{ case = $case.Name; source = $entry[0]; sample = $data.sample; items = $plan.count; changes = $plan.changes; field = $plan.field; mixed = $plan.mixed; instrument = $plan.instrument;
-                prepareMs = $data.prepareMs; executeMs = $data.executeMs; endToEndMs = $data.endToEndMs;
+            $rows += [pscustomobject]@{ case = $case.Name; source = $entry[0]; sample = $data.sample; items = $plan.count; changes = $plan.changes; changedRows = $data.changedRows; changedFields = $data.changedFields; field = $plan.field; mixed = $plan.mixed; instrument = $plan.instrument;
+                prepareMs = $data.prepareMs; executeMs = $data.executeMs; endToEndMs = $data.endToEndMs; firstDurableSuccessMs = $data.firstDurableSuccessMs;
                 observationMsInclusive = (Time-Kind 'operation-observation'); checkpointMsInclusive = (Time-Kind 'checkpoint-save'); mandatoryWaitMs = (Time-Kind 'mandatory-wait');
+                gateWaitMs = (Time-Kind 'connection-gate-wait'); responseParseMs = (Time-Kind 'api-response-parse'); newBatches = $data.newBatches;
+                executionProcesses = $(if ($plan.instrument) { [double]($data.commandInvocations | Where-Object phase -eq 'execute' | Measure-Object count -Sum).Sum } else { $null });
+                preparationProcesses = $(if ($plan.instrument) { [double]($data.commandInvocations | Where-Object phase -eq 'prepare' | Measure-Object count -Sum).Sum } else { $null });
                 mutations = $data.mutations; fullTraversals = (Count-Kind 'full-project-traversal'); returnedItems = (Count-Kind 'returned-items'); returnedValues = (Count-Kind 'returned-values'); returnedUtf8Bytes = (Count-Kind 'returned-utf8-bytes');
                 versionCalls = (Count-Kind 'process-version'); authCalls = (Count-Kind 'process-auth'); identityCalls = (Count-Kind 'process-identity'); dataQueries = (Count-Kind 'process-query'); mutationCalls = (Count-Kind 'process-mutation'); checkpointCommits = (Count-Kind 'checkpoint-commits'); checkpointBytes = (Count-Kind 'checkpoint-bytes') }
         }
@@ -52,13 +55,14 @@ $rows | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $Output 'samples.json')
 $rows | Export-Csv -NoTypeInformation (Join-Path $Output 'samples.csv')
 $summary = foreach ($group in $rows | Group-Object case,source) {
     $first = $group.Group[0]
-    $result = [ordered]@{ case=$first.case; source=$first.source; samples=$group.Count; items=$first.items; changes=$first.changes; field=$first.field; mixed=$first.mixed; instrument=$first.instrument }
-    foreach ($metric in @('prepareMs','executeMs','endToEndMs','observationMsInclusive','checkpointMsInclusive','mandatoryWaitMs','mutations','fullTraversals','returnedItems','returnedValues','returnedUtf8Bytes','versionCalls','authCalls','identityCalls','dataQueries','mutationCalls','checkpointCommits','checkpointBytes')) {
+    $result = [ordered]@{ case=$first.case; source=$first.source; samples=$group.Count; items=$first.items; changes=$first.changes; changedRows=$first.changedRows; changedFields=$first.changedFields; field=$first.field; mixed=$first.mixed; instrument=$first.instrument }
+    foreach ($metric in @('prepareMs','executeMs','endToEndMs','firstDurableSuccessMs','observationMsInclusive','checkpointMsInclusive','mandatoryWaitMs','gateWaitMs','responseParseMs','newBatches','executionProcesses','preparationProcesses','mutations','fullTraversals','returnedItems','returnedValues','returnedUtf8Bytes','versionCalls','authCalls','identityCalls','dataQueries','mutationCalls','checkpointCommits','checkpointBytes')) {
         if (!$first.instrument -and $metric -notin 'prepareMs','executeMs','endToEndMs','mutations') { $result[$metric] = $null; continue }
-        $values = @($group.Group.$metric | Sort-Object)
+        $values = @($group.Group.$metric | Where-Object { $null -ne $_ } | Sort-Object)
+        if ($values.Count -eq 0) { $result[$metric] = $null; continue }
         $middle = [int][Math]::Floor($values.Count/2)
         $median = if ($values.Count % 2) { $values[$middle] } else { ($values[$middle-1] + $values[$middle]) / 2 }
-        $result[$metric] = @{ median=$median; min=$values[0]; max=$values[-1] }
+        $result[$metric] = @{ median=$median; min=$values[0]; max=$values[-1]; observed=$values.Count }
     }
     [pscustomobject]$result
 }

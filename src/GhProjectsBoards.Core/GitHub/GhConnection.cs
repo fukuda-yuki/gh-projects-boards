@@ -35,7 +35,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ConnectionReport> ConnectAsync(CancellationToken cancellationToken = default)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ConnectionReport(new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled)); }
         try { return await ConnectCoreAsync(cancellationToken); }
         finally { gate.Release(); }
@@ -43,7 +43,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ConnectionReport> RecheckAsync(ConnectionContext context, CancellationToken cancellationToken = default)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ConnectionReport(new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled)); }
         try { return await RecheckCoreAsync(context, cancellationToken); }
         finally { gate.Release(); }
@@ -54,7 +54,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
     internal async Task<ApiResult> RecheckAndReadAsync(ConnectionContext context, ApiRequest request, string requiredScope, CancellationToken cancellationToken)
     {
         if (request.IsMutation) return new(ApiOutcome.Failed, FailureKind.InvalidInput);
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new(ApiOutcome.Cancelled, FailureKind.Cancelled); }
         try
         {
@@ -108,7 +108,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 
     public async Task<ApiResult> SendAsync(ConnectionContext context, ApiRequest request, CancellationToken cancellationToken = default, string? requiredScope = null)
     {
-        try { await gate.WaitAsync(cancellationToken); }
+        try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }
         catch (OperationCanceledException) { return new ApiResult(ApiOutcome.Cancelled, FailureKind.Cancelled); }
         try
         {

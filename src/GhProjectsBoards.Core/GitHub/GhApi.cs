@@ -72,6 +72,7 @@ internal sealed class GhApiTransport(IGhProcessRunner runner, string executable,
         var arguments = new List<string> { "api", request.Endpoint, "--hostname", host, "--method", request.Method, "--include" };
         if (request.Payload is not null) arguments.AddRange(["--input", "-"]);
         var process = await runner.RunAsync(new GhCommand(executable, arguments, request.Payload, timeout), cancellationToken);
+        using var parsing = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("api-response-parse");
         if (process.Completion != ProcessCompletion.Exited) return ProcessFailure(process, request.IsMutation);
         var separator = process.StandardOutput.IndexOf("\r\n\r\n", StringComparison.Ordinal);
         var separatorLength = 4;

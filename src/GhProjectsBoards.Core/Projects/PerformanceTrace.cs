@@ -33,6 +33,7 @@ internal sealed class PerformanceTrace : IDisposable
             GhProcessResult result;
             using (Span(kind)) result = await inner.RunAsync(command, cancellationToken);
             Count("returned-utf8-bytes", System.Text.Encoding.UTF8.GetByteCount(result.StandardOutput));
+            if (result.Completion != ProcessCompletion.Exited || result.ExitCode != 0) Count("subprocess-errors");
             return result;
         }
     }
