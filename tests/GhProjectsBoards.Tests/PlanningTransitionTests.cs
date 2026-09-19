@@ -6,6 +6,22 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanningTransitionTests
 {
+    [Test]
+    public async Task PublishedWorkRevokesEarlierSettingsUndoThatWouldDivergeFromAdoptedDateFields()
+    {
+        var h = await ApplyTests.Harness.Create(2, planning: true); await h.Workspace.PrepareLocalRowsAsync();
+        var w = h.Workspace.Drafts!.Workspace; var p = h.Workspace.Selected!;
+        w.CommitPlanning(p, PlanningPathTests.Plan() with { Tasks = [new("I1", PlanningMode.Auto, "U1")] }, w.Revision);
+        w.CommitPlanning(p, w.Planning("P1")! with { People = [new("U1", "Owner", 50)] }, w.Revision);
+        w.Commit("P1", w.Open(p)[0].Cells.Single(c => c.Key?.FieldId == "F-Estimate"), "16");
+        await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" }); await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
+        w = h.Workspace.Drafts.Workspace; p = h.Workspace.Selected!;
+        Assert.That(w.Journal.Single().Operations.All(o => o.State == ApplyState.Succeeded), Is.True);
+        w.Undo("P1");
+        Assert.That(w.Planning("P1")!.People.Single().WeightPercent, Is.EqualTo(50));
+        Assert.That(w.PlanFor(p).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-08 18:00")));
+        Assert.That(w.Value(w.Open(p)[0].Cells.Single(c => c.Key?.FieldId == "F-Finish")), Is.EqualTo("2026-10-08"));
+    }
     [TestCase(null, true), TestCase("16", true), TestCase("8", false)]
     public void PendingTextRefreshUsesCompatibleCommittedWorkAndHoldsRealConflict(string? remoteHours, bool compatible)
     {

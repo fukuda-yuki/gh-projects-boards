@@ -170,7 +170,8 @@ internal sealed partial class EditingWorkspace
                             Scalar = old.Key.Kind is "Number" or "Date" ? operation.Intended.Value : v.Scalar,
                             Availability = operation.Intended.Clear ? ValueAvailability.Empty : ValueAvailability.Present }).ToArray() }).ToArray() };
                 var updated = r with { Snapshot = p };
-                if (old.Key.Kind == "Dependency") InvalidatePlanningForRemoteInputs(r, updated);
+                if (old.Key.Kind is "Dependency" or "Number" or "Date" && !ReferenceEquals(p, r.Snapshot))
+                    InvalidatePlanningForRemoteInputs(r, updated);
                 return RegistrationStore.ToRecord(updated);
             }).ToArray();
         }
