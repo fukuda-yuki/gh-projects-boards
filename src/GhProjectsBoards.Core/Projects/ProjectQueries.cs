@@ -2,6 +2,12 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal static class ProjectQueries
 {
+    // Both aliases reuse the selections used by full reads and their existing validators.
+    public static string ApplyObservation => "query ApplyObservation($id: ID!, $item: ID!, $after: String) {"
+        + Body(Fields).Replace("node(id: $id)", "project: node(id: $id)")
+        + Body(ApplyItem).Replace("node(id: $id)", "item: node(id: $item)") + "}";
+    private static string Body(string query) => query[(query.IndexOf('{') + 1)..query.LastIndexOf('}')];
+
     private const string PageInfo = "totalCount pageInfo { hasNextPage endCursor }";
     private const string FieldReference = "field { ... on ProjectV2FieldCommon { id project { id } } }";
     private const string Values = """

@@ -198,10 +198,11 @@ internal static class FakeGhProgram
                 settings.TryGetProperty("reviewDetails", out var reviewDetails) && reviewDetails.GetBoolean());
             if (response is not null)
             {
-                if (query.Contains("ProjectItems") || query.Contains("ApplyItem"))
+                if (query.Contains("ProjectItems") || query.Contains("ApplyItem") || query.Contains("ApplyObservation"))
                 {
                     var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
-                    var items = query.Contains("ApplyItem") ? new[] { node["data"]!["node"]! } : node["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
+                    var items = query.Contains("ApplyObservation") ? new[] { node["data"]!["item"]! }
+                        : query.Contains("ApplyItem") ? new[] { node["data"]!["node"]! } : node["data"]!["node"]!["items"]!["nodes"]!.AsArray().ToArray();
                     foreach (var item in items.Where(i => i!["content"]?["id"]?.ToString() == "I1"))
                     {
                         if (settings.TryGetProperty("remoteTitle", out var title) && title.ValueKind == JsonValueKind.String) item!["content"]!["title"] = title.GetString();

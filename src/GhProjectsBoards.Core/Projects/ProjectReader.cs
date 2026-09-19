@@ -38,12 +38,15 @@ internal sealed class ProjectReader(GhConnectionService service)
             {
                 // Complete definitions retain the reader's field ownership and unknown-value guards.
                 // Their cost depends on fields/options, never unrelated Project item count.
-                fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
-                    ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
-                if (!fieldsComplete || project is null) return Failure();
-                var result = await service.SendAsync(context, ApiRequest.GraphQl(ProjectQueries.ApplyItem, new { id = operation.ItemId }), cancellationToken);
+                var result = await service.SendAsync(context, ApiRequest.GraphQl(ProjectQueries.ApplyObservation,
+                    new { id = projectId.NodeId, item = operation.ItemId, after = (string?)null }), cancellationToken);
                 if (!result.IsSuccess) return (null, result);
-                var node = Property(Property(result.Data ?? default, "data"), "node");
+                var data = Property(result.Data ?? default, "data");
+                var initialFields = ReadProjectFields(Property(data, "project"));
+                var node = Property(data, "item");
+                fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
+                    ReadProjectFields, value => { AddField(value); return Task.CompletedTask; }, initialFields);
+                if (!fieldsComplete || project is null) return Failure();
                 MatchNode(node, operation.ItemId, "ProjectV2Item");
                 await AddItemAsync(node);
                 if (problems.Count != 0 || !items.TryGetValue(new(projectId.Scope, operation.ItemId), out var builder) || !builder.Complete)
