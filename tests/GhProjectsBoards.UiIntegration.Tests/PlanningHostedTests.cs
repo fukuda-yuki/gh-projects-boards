@@ -111,7 +111,8 @@ public sealed class PlanningHostedTests
         project = project with { Snapshot = project.Snapshot with { Issues = project.Snapshot.Issues.ToDictionary(p => p.Key, p => p.Value with {
             Native = p.Value.Native! with { Assignees = [new(new(project.Snapshot.Id.Scope, "U1"), "Owner")] } }) } };
         var w = session.Workspace; w.SetRegistrations([project]);
-        w.CommitPlanning(project, w.Planning("P1")! with { Tasks = [w.Planning("P1")!.Tasks[0] with { Actuals = [new("U1", 5, new(2026, 10, 6))] }] }, w.Revision);
+        w.CommitPlanning(project, w.Planning("P1")! with { Tasks = [w.Planning("P1")!.Tasks[0] with { Actuals = [new("U1", 5, new(2026, 10, 6))] }] }, w.Revision,
+            [new("P1T1", "Remaining", "4")]);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
         await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_4");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
@@ -133,13 +134,25 @@ public sealed class PlanningHostedTests
         await Ui.Run(() => {
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Actuals![0], Is.EqualTo(new ActualContribution("U1", 7, new(2026, 10, 13))));
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I2").Actuals![0], Is.EqualTo(new ActualContribution("U1", 9, new(2026, 10, 13))));
-            Assert.That(w.Value(w.Open(project)[0].Cells[2]), Is.Null); Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.Null);
+            Assert.That(w.Value(w.Open(project)[0].Cells[2]), Is.Null); Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("4"));
         });
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
             Assert.That(w.Value(w.Open(project)[1].Cells[4]), Is.Null); Assert.That(w.Buffer(w.Open(project)[1].Cells[4]), Is.EqualTo("9"));
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Actuals![0].Hours, Is.EqualTo(7));
             Assert.That(w.Journal, Is.Empty);
+        });
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_3").Focus(FocusState.Keyboard));
+        await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Remaining");
+        clipboard = "3"; await Ui.ClickCommand("GridPaste");
+        await Ui.Run(() => {
+            Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("3"));
+            Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+        });
+        await Ui.ClickCommand("GridUndo");
+        await Ui.Run(() => {
+            Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("4"));
+            Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
         });
     }
     [Test]
@@ -180,6 +193,48 @@ public sealed class PlanningHostedTests
         await Ui.Run(() => {
             Assert.That(w.Planning("P1")!.Tasks[0].Actuals, Is.EqualTo(original));
             Assert.That(w.Buffer(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+        });
+    }
+
+    [Test]
+    public async Task TaskDetailsClosureRetainsTheNextActualInputAndItsFocus()
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
+        await Ui.ClickCommand("GridTaskDetails"); await Ui.DialogReady("PlanningDialog");
+        await Ui.Run(() => {
+            // Supply the next public control input as soon as the modal boundary ends.
+            // Reading an earlier UIA element can hide its replacement during close.
+            Ui.Dialog("PlanningDialog")!.Closed += (_, _) => {
+                var input = Ui.Find<TextBox>("GridCell0_4"); input.Focus(FocusState.Keyboard); input.Text = "5";
+            };
+            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+        });
+        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Task.Delay(400); // Inspect the input after the modal closing animation has settled.
+        await Ui.Ready<TextBox>("GridCell0_4");
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("GridCell0_4");
+            Assert.That(input.Text, Is.EqualTo("5"));
+            Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(input));
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[4]), Is.EqualTo("5"));
+        });
+    }
+
+    [Test]
+    public async Task ActualNativeF2TypingKeepsTheInputFocusedAndVisibleBeforeReportConfirmation()
+    {
+        await SheetNativeInput.Click("GridCell0_4");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Number5);
+        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_4").Text == "5");
+        await SheetNativeInput.Rendered();
+        await Ui.Run(async () => {
+            var input = Ui.Find<TextBox>("GridCell0_4");
+            Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(input));
+            Assert.That(input.Text, Is.EqualTo("5"));
+            await ApplyInformationEvidence.Capture(grid, "actual-native-pending-five");
+            Assert.That(session.Workspace.Value(session.Workspace.Open(project)[0].Cells[4]), Is.Null);
         });
     }
 

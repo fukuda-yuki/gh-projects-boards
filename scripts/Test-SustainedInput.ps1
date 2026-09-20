@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{40}$')][string]$SourceRevision,
     [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$RunId,
     [ValidateSet('cold','warm')][string]$Condition = 'cold',
-    [ValidateSet('standard','ime')][string]$Mode = 'standard',
+    [ValidateSet('standard','ime','scroll')][string]$Mode = 'standard',
     [string]$SeedExecutable
 )
 $ErrorActionPreference = 'Stop'

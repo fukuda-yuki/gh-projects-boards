@@ -43,9 +43,11 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(dialog, "PlanningBatchDialog");
         dialog.PrimaryButtonClick += (_, args) => {
             try { work.CommitPlanning(registration, Candidate(), expected); }
-            catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { notice.Text = e.Message; args.Cancel = true; }
+            catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { notice.Text = e.Message; args.Cancel = true; return; }
+            // No row replacement may run after the modal releases native input.
+            RebuildRows(); Update();
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-        { RebuildRows(); Update(); await FlushDraftsAsync("planning-batch"); }
+        { await FlushDraftsAsync("planning-batch"); }
     }
 }

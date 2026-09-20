@@ -27,7 +27,7 @@ public sealed class SustainedInputDiagnosticTests
         var output = Path.GetFullPath(Required("OUTPUT"));
         var condition = Required("CONDITION");
         var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
-        Assert.That(mode, Is.AnyOf("standard", "ime"));
+        Assert.That(mode, Is.AnyOf("standard", "ime", "scroll"));
         Assert.That(condition, Is.AnyOf("cold", "warm"));
         Assert.That(Directory.Exists(output), Is.False, "Retain earlier attempts.");
         using var seed = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "diagnostics", "gantt-fixture.json")));
@@ -46,14 +46,15 @@ public sealed class SustainedInputDiagnosticTests
             coreSha256 = Hash(Path.Combine(Path.GetDirectoryName(app)!, "GhProjectsBoards.Core.dll")),
             driverSha256 = Hash(typeof(SustainedInputDiagnosticTests).Assembly.Location),
             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow,
-            schedule = mode == "ime" ? "60 seconds of physical Japanese IME composition, conversion and confirmation, including a bounded writer-lock failure and explicit save recovery."
+            schedule = mode == "scroll" ? "Native vertical scrollbar-thumb drag to the last row, immediate physical-key title edit, horizontal roundtrip and wheel return. Independent timestamped GDI frames cover the entire probe."
+                : mode == "ime" ? "60 seconds of physical Japanese IME composition, conversion and confirmation, including a bounded writer-lock failure and explicit save recovery."
                 : "60 seconds per condition: 20 title input, 20 NUMBER input, 20 alternating wheel/horizontal motion. Warm runs have an additional unmeasured 10 second title phase. Each condition starts a fresh process and fixture. A separate scrollbar-thumb probe remains required.",
             boundary = "Input start immediately before native key dispatch to first exact UIA native TextBox value readback, including UIA observer cost; not composited pixels. Independent best-effort GDI samples cover scrolling, with capture gaps reported; app rendering callbacks are separate pre-presentation signals. No physical scanout claim.",
             target = "Typed native-value readback p95 <=100 ms. Report all samples, capture gaps and app rendering gaps >=100 ms. No threshold asserted by this diagnostic test.",
             humanAcceptance = "Failed prior evaluation; not re-evaluated by this diagnostic."
         });
         var events = new List<object>();
-        var expectedBuffers = new Dictionary<int, string>();
+        var expectedBuffers = new Dictionary<(int Row, int Column), string>();
         void Record(string kind, object detail) => events.Add(new { kind, ticks = Stopwatch.GetTimestamp(), detail });
         void Write(string name, object value) => File.WriteAllText(Path.Combine(output, name), JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true }));
         static string Hash(string path) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)));
@@ -88,18 +89,19 @@ public sealed class SustainedInputDiagnosticTests
             if (condition == "warm" && mode == "standard") Input("warmup", 0, 10, false);
             var start = Stopwatch.GetTimestamp();
             Record("workload-start", new { start });
-            if (mode == "ime") Ime(60);
+            if (mode == "scroll") ScrollbarAndDistantEdit();
+            else if (mode == "ime") Ime(60);
             else { Input("title", 0, 20, true); Input("number", 2, 20, true); Scroll(20); }
             Record("workload-end", new { elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds });
             Capture("after-workload");
             window.Close(); normal = process.WaitForExit(20000) && process.ExitCode == 0;
             Assert.That(normal, Is.True, "Ordinary close must flush and exit.");
             using var after = JsonDocument.Parse(File.ReadAllText(checkpoint));
-            foreach (var (column, expected) in expectedBuffers)
+            foreach (var ((row, column), expected) in expectedBuffers)
             {
                 var field = after.RootElement.GetProperty("Fields").EnumerateArray().Single(f => column == 0
-                    ? f.GetProperty("Key").GetProperty("Kind").GetString() == "Title" && f.GetProperty("Key").GetProperty("NodeId").GetString() == "I1"
-                    : f.GetProperty("Key").GetProperty("NodeId").GetString() == "P1T1" && f.GetProperty("Key").GetProperty("FieldId").GetString() == "F-Estimate");
+                    ? f.GetProperty("Key").GetProperty("Kind").GetString() == "Title" && f.GetProperty("Key").GetProperty("NodeId").GetString() == "I" + (row + 1)
+                    : f.GetProperty("Key").GetProperty("NodeId").GetString() == "P1T" + (row + 1) && f.GetProperty("Key").GetProperty("FieldId").GetString() == "F-Estimate");
                 Assert.That(field.GetProperty("Buffer").GetString(), Is.EqualTo(expected), "Close must retain the last observed native input.");
             }
             Assert.That(after.RootElement.GetProperty("History").GetArrayLength(), Is.EqualTo(before.RootElement.GetProperty("History").GetArrayLength()), "Buffer typing must not create cell commits.");
@@ -111,7 +113,7 @@ public sealed class SustainedInputDiagnosticTests
                 foreach (var property in new[] { "Mode", "OwnerId", "ManualStart", "ManualFinish", "Actuals", "Contributions" })
                     Assert.That(System.Text.Json.Nodes.JsonNode.DeepEquals(System.Text.Json.Nodes.JsonNode.Parse(task.GetProperty(property).GetRawText()),
                         System.Text.Json.Nodes.JsonNode.Parse(oldTasks[task.GetProperty("Id").GetString()!].GetProperty(property).GetRawText())), Is.True, property);
-            Write("durable-readback.json", new { passed = true, expectedBuffers, historyOperations = after.RootElement.GetProperty("History").GetArrayLength(), planningTasksUnchanged = oldTasks.Count,
+            Write("durable-readback.json", new { passed = true, expectedBuffers = expectedBuffers.Select(p => new { p.Key.Row, p.Key.Column, p.Value }).ToArray(), historyOperations = after.RootElement.GetProperty("History").GetArrayLength(), planningTasksUnchanged = oldTasks.Count,
                 endpoint = "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey." });
         }
         catch (Exception e)
@@ -154,7 +156,7 @@ public sealed class SustainedInputDiagnosticTests
                 var end = Stopwatch.GetTimestamp();
                 Record("typed-value", new { phase, measured, index, begin, sent, end, matched, milliseconds = Stopwatch.GetElapsedTime(begin, end).TotalMilliseconds });
                 Assert.That(matched, Is.True, "Native key must update the selected cell.");
-                expectedBuffers[column] = expected;
+                expectedBuffers[(0, column)] = expected;
                 index++;
                 // 5 updates/second is declared pacing, outside each measured latency.
                 var rest = 200 - Stopwatch.GetElapsedTime(begin).TotalMilliseconds;
@@ -175,15 +177,17 @@ public sealed class SustainedInputDiagnosticTests
                     using var locked = !testedFailure && Stopwatch.GetElapsedTime(start).TotalSeconds >= 20
                         ? new FileStream(Path.Combine(data, "Drafts", ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None) : null;
                     Keyboard.TypeVirtualKeyCode(0x16);
+                    FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(100);
                     var begin = Stopwatch.GetTimestamp();
-                    Keyboard.Type(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O);
+                    foreach (var key in new[] { VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O })
+                    { Keyboard.Type(key); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(100); }
                     Wait(() => cell.Text == "にほんご", "Physical romaji must start native composition.");
                     Keyboard.Type(VirtualKeyShort.SPACE); Wait(() => cell.Text == "日本語", "Native conversion must produce the expected candidate.");
                     Thread.Sleep(1200); // Allow in-flight durable completion while the IME still owns composition.
                     Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
                     if (index == 0 || locked is not null) Capture(locked is null ? "ime-composing" : "ime-composing-save-failure");
                     Keyboard.Type(VirtualKeyShort.RETURN); Wait(() => cell.Text == "日本語", "Composition confirmation must retain the pending text.");
-                    expectedBuffers[0] = "日本語";
+                    expectedBuffers[(0, 0)] = "日本語";
                     Record("physical-ime", new { index, begin, end = Stopwatch.GetTimestamp(), writerLocked = locked is not null, nativeText = "日本語" });
                     if (locked is not null)
                     {
@@ -199,10 +203,9 @@ public sealed class SustainedInputDiagnosticTests
             }
             finally { Keyboard.TypeVirtualKeyCode(0x1A); }
         }
-        void Scroll(int seconds)
+        void WithScrollFrames(Action action)
         {
             var list = Element("ProjectItems"); var bounds = list.BoundingRectangle;
-            Mouse.Position = new Point(bounds.Left + bounds.Width / 2, bounds.Top + 70);
             var captures = new List<object>();
             using var stop = new CancellationTokenSource();
             var camera = Task.Run(() => {
@@ -217,8 +220,75 @@ public sealed class SustainedInputDiagnosticTests
                     captures.Add(new { index, begin, end, path }); index++; Thread.Sleep(33);
                 }
             });
-            try
+            try { action(); }
+            finally { stop.Cancel(); camera.GetAwaiter().GetResult(); Write("scroll-captures.json", captures); }
+        }
+        void ScrollbarAndDistantEdit() => WithScrollFrames(() =>
+        {
+            var firstTitle = Element("GridCell0_0").AsTextBox().Text;
+            var bar = Element("SheetVerticalScroll"); var bounds = bar.BoundingRectangle;
+            Mouse.MoveTo(new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2));
+            var thumb = Retry.WhileNull(() => bar.FindFirstDescendant(cf => cf.ByControlType(ControlType.Thumb)),
+                TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(50)).Result;
+            var rect = thumb is not null && !thumb.Properties.IsOffscreen.Value ? thumb.BoundingRectangle : Rectangle.Empty;
+            var targetSource = "public Thumb";
+            Rectangle Bounds(string id) => bar.FindFirstDescendant(cf => cf.ByAutomationId(id))?.BoundingRectangle ?? Rectangle.Empty;
+            var smallAfter = Bounds("VerticalSmallIncrease");
+            if (rect.IsEmpty && bar.ClassName == "ScrollBar")
             {
+                // WinUI's standard peer exposes the track buttons but omits Thumb.
+                // Their rendered rectangles bound the real thumb without a guessed size.
+                var before = Bounds("VerticalLargeDecrease"); var after = Bounds("VerticalLargeIncrease");
+                var smallBefore = Bounds("VerticalSmallDecrease");
+                if (!smallBefore.IsEmpty && !smallAfter.IsEmpty)
+                {
+                    var top = before.Height > 0 ? before.Bottom : smallBefore.Bottom;
+                    var bottom = after.Height > 0 ? after.Top : smallAfter.Top;
+                    if (bottom > top && top >= bounds.Top && bottom <= bounds.Bottom)
+                        rect = Rectangle.FromLTRB(bounds.Left, top, bounds.Right, bottom);
+                }
+                targetSource = "gap between observed standard native track buttons";
+            }
+            Assert.That(rect.IsEmpty, Is.False, "A visible native thumb is required; no guessed drag target.");
+            var from = new Point(rect.Left + rect.Width / 2, rect.Top + rect.Height / 2);
+            var to = new Point(from.X, smallAfter.IsEmpty ? bounds.Bottom - rect.Height / 2 : smallAfter.Top - rect.Height / 2);
+            var start = Stopwatch.GetTimestamp();
+            Record("thumb-drag-start", new { from, to, rect, targetSource });
+            NativePointer.Drag(window!, from, to);
+            var scroll = Element("ProjectItems").Patterns.Scroll.Pattern;
+            Wait(() => scroll.VerticalScrollPercent.Value >= 99 && WorkspaceUi.HasVisibleElement(window!, "GridCell999_0"), "Thumb must reach the last task.");
+            var reached = Stopwatch.GetTimestamp();
+            var far = Element("GridCell999_0").AsTextBox(); far.Click();
+            Wait(() => far.Properties.HasKeyboardFocus.Value, "The newly visible last task must own input.");
+            Keyboard.Type(VirtualKeyShort.F2);
+            using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
+            var begin = Stopwatch.GetTimestamp(); Keyboard.Type(VirtualKeyShort.KEY_9);
+            Wait(() => far.Text == "9", "Immediate distant edit must reach the last task.");
+            var observed = Stopwatch.GetTimestamp(); expectedBuffers[(999, 0)] = "9";
+            Record("distant-edit", new { start, reached, begin, observed, nativeText = far.Text,
+                verticalPercent = scroll.VerticalScrollPercent.Value, canonicalIssue = "I1000", canonicalItem = "P1T1000",
+                keyToNativeMilliseconds = Stopwatch.GetElapsedTime(begin, observed).TotalMilliseconds });
+            Thread.Sleep(250); Capture("distant-edit");
+            var area = Element("ProjectItems").BoundingRectangle; Mouse.MoveTo(new Point(area.Left + area.Width / 2, area.Top + 70));
+            Mouse.HorizontalScroll(120);
+            Wait(() => scroll.HorizontalScrollPercent.Value > 0, "Physical horizontal input must move the viewport.");
+            Record("horizontal-end", new { percent = scroll.HorizontalScrollPercent.Value });
+            Capture("horizontal-end"); Mouse.HorizontalScroll(-120);
+            Wait(() => scroll.HorizontalScrollPercent.Value == 0, "Horizontal return must restore the left edge.");
+            for (var i = 0; i < 12 && scroll.VerticalScrollPercent.Value > 0; i++)
+            {
+                Mouse.Scroll(120); Thread.Sleep(200);
+                Record("wheel-return", new { index = i, verticalPercent = scroll.VerticalScrollPercent.Value });
+            }
+            Wait(() => scroll.VerticalScrollPercent.Value == 0, "Wheel return must restore the first task.");
+            Assert.That(Element("GridCell0_0").AsTextBox().Text, Is.EqualTo(firstTitle), "Far edit must not write to the first task.");
+            Record("scroll-roundtrip-end", new { verticalPercent = scroll.VerticalScrollPercent.Value, horizontalPercent = scroll.HorizontalScrollPercent.Value });
+            Thread.Sleep(250); Capture("scroll-return");
+        });
+        void Scroll(int seconds) => WithScrollFrames(() =>
+        {
+                var bounds = Element("ProjectItems").BoundingRectangle;
+                Mouse.Position = new Point(bounds.Left + bounds.Width / 2, bounds.Top + 70);
                 var start = Stopwatch.GetTimestamp(); var index = 0;
                 Record("scroll-phase-start", new { bounds });
                 while (Stopwatch.GetElapsedTime(start).TotalSeconds < seconds)
@@ -231,8 +301,6 @@ public sealed class SustainedInputDiagnosticTests
                     Thread.Sleep(200); index++;
                 }
                 Record("scroll-phase-end", new { samples = index });
-            }
-            finally { stop.Cancel(); camera.GetAwaiter().GetResult(); Write("scroll-captures.json", captures); }
-        }
+        });
     }
 }

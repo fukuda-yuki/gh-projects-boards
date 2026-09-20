@@ -88,6 +88,41 @@ public sealed class GanttHostedTests
     private static SelectorBar Views() => Ui.Find<SelectorBar>("ProjectViews");
     private static DateTime At(string text) => PlanningContractTests.At(text);
 
+    [TestCase(false), TestCase(true)]
+    public async Task SchedulingPopupKeepsDateInputAndItsActionsReachableAfterTheCommandMenuCloses(bool fromGantt)
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
+        if (fromGantt)
+        {
+            await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
+            await Ui.Ready<ListView>("GanttTasks");
+            await Ui.Until(() => Ui.Find<GanttView>("GanttView").SelectedRowId == "P1T1");
+        }
+        await Ui.ClickCommand(fromGantt ? "GanttEdit" : "GridPlanning"); await ScheduleReady();
+        await Task.Delay(400); await SheetNativeInput.Rendered();
+        ScrollViewer viewport = null!;
+        await Ui.Run(() => {
+            var panel = Schedule(); Assert.That(panel, Is.Not.Null, "Closing command overflow must not dismiss the date editor.");
+            DependencyObject? parent = panel;
+            while (parent is not null && parent is not ScrollViewer) parent = VisualTreeHelper.GetParent(parent);
+            viewport = (ScrollViewer)parent!;
+            var input = Ui.Find<TextBox>("ScheduleStart", panel);
+            var bounds = input.TransformToVisual(viewport).TransformBounds(new(0, 0, input.ActualWidth, input.ActualHeight));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight), "The date input must be visibly usable, not merely present in the UI tree.");
+            viewport.ChangeView(null, viewport.ScrollableHeight, null, true);
+        });
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var close = Ui.Find<Button>("ScheduleClose", Schedule());
+            var bounds = close.TransformToVisual(viewport).TransformBounds(new(0, 0, close.ActualWidth, close.ActualHeight));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight));
+            Ui.Click(close);
+        });
+        await Ui.Until(() => Schedule() is null);
+    }
+
     [Test]
     public async Task ReturningFromBoardsRevealsItsSelectedTaskOutsideTheRetainedGanttSearch()
     {

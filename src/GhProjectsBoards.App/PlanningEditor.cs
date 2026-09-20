@@ -83,11 +83,14 @@ internal sealed partial class EditingGrid
         {
             if (!CanRefresh) { status.Text = "IME変換を確定または取消してから保存してください。"; args.Cancel = true; return; }
             try { work.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions()); }
-            catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; }
+            catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; return; }
+            // Finish replacing mapped controls while the modal still owns input.
+            // After Closed, the user can already be typing into the next cell.
+            layout = work.Columns(registration); RebuildRows(); Update();
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {
-            layout = work.Columns(registration); RebuildRows(); Update(); await FlushDraftsAsync("planning");
+            await FlushDraftsAsync("planning");
         }
     }
     private string PlanningSummary(EditRow row)
