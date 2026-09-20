@@ -61,6 +61,43 @@ public sealed class SummaryHostedTests
         await Ui.Run(() => { Assert.That(grid.SummaryPersonId, Is.EqualTo("A")); Assert.That(work.Journal, Is.Empty); });
     }
     [Test]
+    public async Task ProtectedSummarySurvivesContextualGanttDateEditAndReturnsToTheSameTask()
+    {
+        await Open(); await Ui.ClickCommand("SummaryEstablish"); await Ui.DialogReady("SummaryBaselineDialog");
+        await Ui.Run(() => Ui.DialogButton("SummaryBaselineDialog", "PrimaryButton"));
+        await Ui.Until(() => Ui.Dialog("SummaryBaselineDialog") is null);
+        var baseline = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Planning("P1")!.Summary);
+        await Ui.ClickCommand("SummaryGantt"); await Ui.Ready<ListView>("GanttTasks");
+        await Ui.ClickCommand("GanttEdit");
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is { IsLoaded: true } editor
+            && Ui.Find<Button>("ScheduleApply", editor).IsLoaded);
+        await Ui.Run(() => {
+            var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
+            Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 1;
+            Ui.Find<TextBox>("ScheduleStart", editor).Text = "2026-10-05 12:07";
+            Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-06 16:19";
+        });
+        await Ui.Until(() => Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor"))));
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<GanttView>("GanttView").SelectedRowId, Is.EqualTo("P1T1"));
+            var plan = session.Workspace.Planning("P1")!;
+            Assert.That(plan.Version, Is.EqualTo(4));
+            Assert.That(plan.Tasks.Single(t => t.Id == "I1").ManualFinish, Is.EqualTo(PlanningContractTests.At("2026-10-06 16:19")));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(plan.Summary), Is.EqualTo(baseline));
+        });
+        await Open();
+        await Ui.Run(() => Assert.That(grid.SummaryPersonId, Is.EqualTo("A")));
+        await Ui.ClickCommand("SummaryUndo");
+        await Ui.Run(() => {
+            Assert.That(session.Workspace.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Mode, Is.EqualTo(PlanningMode.Unplanned));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(session.Workspace.Planning("P1")!.Summary), Is.EqualTo(baseline));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task AllowanceSaveFailureRetainsCandidateAndRetryPersistsOnlyAllowanceThenUndo()
     {
         await Open(); await Ui.ClickCommand("SummaryAllowance"); await Ui.DialogReady("SummaryAllowanceDialog");

@@ -27,11 +27,15 @@ internal sealed partial class EditingGrid
         ? (id, SelectionIdentity is { } selected && selected.Item == id ? selected.Field : canonicalRows.FirstOrDefault(r => r.ItemId == id)?.Cells[0].Key)
         : ShowingSummary && summaryView?.SelectedRowId is { } summaryRow ? (summaryRow, canonicalRows.FirstOrDefault(r => r.ItemId == summaryRow)?.Cells[0].Key) : SelectionIdentity;
 
-    private void InitializeProjectViews()
+    private void InitializeProjectViews(Grid commandRow)
     {
         boardsElements = Children.OfType<FrameworkElement>().ToArray();
-        RowDefinitions.Insert(0, new() { Height = GridLength.Auto });
-        foreach (var child in boardsElements) SetRow(child, GetRow(child) + 1);
+        // The view selector and contextual commands share the existing header.
+        // Adding a second full row would consume the sheet's working viewport.
+        Children.Remove(commandRow);
+        var header = new Grid();
+        header.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new());
+        SetColumn(commandRow, 1); header.Children.Add(commandRow);
         projectViews = new SelectorBar { Padding = new(8, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Stretch,
             Style = (Style)Application.Current.Resources["ProjectViewsStyle"] };
         AutomationProperties.SetAutomationId(projectViews, "ProjectViews");
@@ -48,7 +52,7 @@ internal sealed partial class EditingGrid
             if (!CanRefresh) { switchingView = true; projectViews.SelectedItem = ShowingGantt ? ganttView : ShowingSummary ? summaryItem : boardsView; switchingView = false; return; }
             ShowProjectView(projectViews.SelectedItem == ganttView ? ProjectView.Gantt : projectViews.SelectedItem == summaryItem ? ProjectView.Summary : ProjectView.Boards);
         };
-        Children.Add(projectViews);
+        header.Children.Add(projectViews); Children.Add(header);
     }
     internal void ShowProjectView(bool showGantt, string? selectedRowId = null)
         => ShowProjectView(showGantt ? ProjectView.Gantt : ProjectView.Boards, selectedRowId);
@@ -74,7 +78,8 @@ internal sealed partial class EditingGrid
             {
                 gantt = new GanttView { Visibility = Visibility.Collapsed };
                 SetRow(gantt, 1); SetRowSpan(gantt, RowDefinitions.Count - 1); Children.Add(gantt);
-                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(true); } };
+                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(true); } };
+                gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(true); } };
                 gantt.BoardsRequested += id => { if (SelectGanttRow(id)) ShowProjectView(false); };
                 gantt.UndoRequested += () => { Run(Undo); UpdateGantt(true); };
                 gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(true); };
@@ -119,8 +124,8 @@ internal sealed partial class EditingGrid
     {
         if (!ShowingGantt) return;
         gantt!.ShowOperationStatus(operationProblem, session.Status);
-        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.Revision && ganttProjectionGeneration == projection.Generation) return;
+        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.PresentationRevision && ganttProjectionGeneration == projection.Generation) return;
         gantt!.Present(GanttProjection.Create(session.Workspace, registration, projection.Ids), selected);
-        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.Revision; ganttProjectionGeneration = projection.Generation;
+        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.PresentationRevision; ganttProjectionGeneration = projection.Generation;
     }
 }

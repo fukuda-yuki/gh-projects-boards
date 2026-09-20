@@ -11,6 +11,7 @@ internal static class FakeGhProgram
     {
         if (args.FirstOrDefault() == "--seed-gantt" && args.Length == 2) return await GanttWorkload.Seed(args[1]);
         if (args.FirstOrDefault() == "--seed-summary" && args.Length == 2) return await SummaryWorkload.Seed(args[1]);
+        if (args.FirstOrDefault() == "--seed-planning-check" && args.Length == 3) return await PlanningEvaluation.Seed(args[1], args[2]);
         if (args.FirstOrDefault() == "--performance-init" && args.Length == 2) return LivePerformanceRun.Initialize(args[1]);
         if (args.FirstOrDefault() == "--performance-stage" && args.Length == 5)
             return await LivePerformanceRun.Stage(args[1], args[2], args[3], args[4]);
@@ -233,7 +234,8 @@ internal static class FakeGhProgram
                     var planned = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
                     var stateFile = Path.Combine(directory, "apply-state.json");
                     var plannedState = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile)) : null;
-                    PlanningResponses.Augment(planned, plannedState?["scalars"]?.AsObject(), plannedState?["dependencies"]?.AsObject()); response = planned;
+                    PlanningResponses.Augment(planned, plannedState?["scalars"]?.AsObject(), plannedState?["dependencies"]?.AsObject(),
+                        settings.TryGetProperty("planningAssignee", out var assignee) ? assignee.GetString() : null); response = planned;
                 }
                 if (query.Contains("ProjectItems") || query.Contains("ApplyItem") || query.Contains("ApplyObservation"))
                 {

@@ -21,7 +21,10 @@ public sealed class GanttHostedTests
     [SetUp]
     public async Task Setup()
     {
-        project = PlanningPathTests.Registration(4); var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
+        project = PlanningPathTests.Registration(4);
+        project = project with { Snapshot = project.Snapshot with { Issues = project.Snapshot.Issues.ToDictionary(i => i.Key, i => i.Value.Number == 1
+            ? i.Value with { Native = i.Value.Native! with { Assignees = [new(new(project.Snapshot.Id.Scope, "U1"), "Owner")] } } : i.Value) } };
+        var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
         work.CommitPlanning(project, PlanningPathTests.Plan() with { People = [new("U1", "Owner", 80)], Tasks = [
             new("I1", PlanningMode.Auto, "U1"), new("I2", PlanningMode.Manual, ManualStart: At("2026-10-05 09:00"), ManualFinish: At("2026-10-05 13:00")),
             new("I3", PlanningMode.Auto, LocalLinks: [new("I2")])] }, work.Revision,
@@ -57,12 +60,12 @@ public sealed class GanttHostedTests
             Assert.That(Views().Items[2].IsEnabled, Is.True, "The integrated Summary consumer is available.");
         });
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-early-connected"));
-        await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
         await Ui.Run(() => {
-            Ui.Find<TextBox>("PlanTaskFinish", Ui.Dialog("PlanningDialog")).Text = "2026-10-08 12:07";
-            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+            Ui.Find<TextBox>("ScheduleFinish", Schedule()).Text = "2026-10-08 12:07";
+            Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule()));
         });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Ui.Until(() => Schedule() is null);
         await Ui.Until(() => Ui.Find<TextBlock>("GanttSelected").Text.Contains("2026-10-08 12:07"));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("2026-10-08 12:07"));
@@ -79,8 +82,46 @@ public sealed class GanttHostedTests
             Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1T1")); Assert.That(work.Journal, Is.Empty);
         });
     }
+    private static Task ScheduleReady() => Ui.Until(() => Schedule() is { IsLoaded: true } panel
+        && Ui.Tree(panel).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "ScheduleApply" && b.IsLoaded));
+    private static StackPanel? Schedule() => Ui.Popup<StackPanel>("SchedulingEditor");
     private static SelectorBar Views() => Ui.Find<SelectorBar>("ProjectViews");
     private static DateTime At(string text) => PlanningContractTests.At(text);
+
+    [TestCase(false), TestCase(true)]
+    public async Task SchedulingPopupKeepsDateInputAndItsActionsReachableAfterTheCommandMenuCloses(bool fromGantt)
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
+        if (fromGantt)
+        {
+            await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
+            await Ui.Ready<ListView>("GanttTasks");
+            await Ui.Until(() => Ui.Find<GanttView>("GanttView").SelectedRowId == "P1T1");
+        }
+        await Ui.ClickCommand(fromGantt ? "GanttEdit" : "GridPlanning"); await ScheduleReady();
+        await Task.Delay(400); await SheetNativeInput.Rendered();
+        ScrollViewer viewport = null!;
+        await Ui.Run(() => {
+            var panel = Schedule(); Assert.That(panel, Is.Not.Null, "Closing command overflow must not dismiss the date editor.");
+            DependencyObject? parent = panel;
+            while (parent is not null && parent is not ScrollViewer) parent = VisualTreeHelper.GetParent(parent);
+            viewport = (ScrollViewer)parent!;
+            var input = Ui.Find<TextBox>("ScheduleStart", panel);
+            var bounds = input.TransformToVisual(viewport).TransformBounds(new(0, 0, input.ActualWidth, input.ActualHeight));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight), "The date input must be visibly usable, not merely present in the UI tree.");
+            viewport.ChangeView(null, viewport.ScrollableHeight, null, true);
+        });
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var close = Ui.Find<Button>("ScheduleClose", Schedule());
+            var bounds = close.TransformToVisual(viewport).TransformBounds(new(0, 0, close.ActualWidth, close.ActualHeight));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight));
+            Ui.Click(close);
+        });
+        await Ui.Until(() => Schedule() is null);
+    }
 
     [Test]
     public async Task ReturningFromBoardsRevealsItsSelectedTaskOutsideTheRetainedGanttSearch()
@@ -203,11 +244,11 @@ public sealed class GanttHostedTests
             Assert.That(text, Does.Contain("配賦: 100%").And.Contain("2026-10-13: 10:00–12:00").And.Contain("official-2025-2027"));
             Ui.Find<AppBarButton>("GanttDetails").Flyout.Hide();
         });
-        await Ui.ClickCommand("GanttBoards"); await Ui.ClickCommand("GridPlanning"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GanttBoards"); await Ui.ClickCommand("GridPlanning"); await ScheduleReady();
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanTaskStart", Ui.Dialog("PlanningDialog")).Text, Is.EqualTo("2026-10-13 10:00"));
-            Assert.That(Ui.Find<TextBox>("PlanTaskFinish", Ui.Dialog("PlanningDialog")).Text, Is.EqualTo("2026-10-13 12:00"));
-            Ui.DialogButton("PlanningDialog", "CloseButton"); Assert.That(session.Workspace.Journal, Is.Empty);
+            Assert.That(Ui.Find<TextBox>("ScheduleStart", Schedule()).Text, Is.EqualTo("2026-10-13 10:00"));
+            Assert.That(Ui.Find<TextBox>("ScheduleFinish", Schedule()).Text, Is.EqualTo("2026-10-13 12:00"));
+            Ui.Click(Ui.Find<Button>("ScheduleClose", Schedule())); Assert.That(session.Workspace.Journal, Is.Empty);
         });
     }
 
@@ -220,12 +261,15 @@ public sealed class GanttHostedTests
         });
         await Ui.Run(() => Views().SelectedItem = Views().Items[1]); await Ui.Ready<ListView>("GanttTasks");
         await Ui.Run(() => Ui.Find<ListView>("GanttTasks").SelectedIndex = 0);
-        await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
         await Ui.Run(() => {
-            var d = Ui.Dialog("PlanningDialog");
-            Ui.Find<TextBox>("PlanTaskStart", d).Text = "2026-10-05 12:07"; Ui.Find<TextBox>("PlanTaskFinish", d).Text = "2026-10-05 13:00";
-            Ui.Tree(d!).OfType<Expander>().Single(e => (string)e.Header == "先行Issue（終了→開始）").IsExpanded = true;
+            var d = Schedule();
+            Ui.Find<TextBox>("ScheduleStart", d).Text = "2026-10-05 12:07"; Ui.Find<TextBox>("ScheduleFinish", d).Text = "2026-10-05 13:00";
+            Ui.Click(Ui.Find<Button>("ScheduleApply", d));
         });
+        await Ui.Until(() => Schedule() is null);
+        await Ui.ClickCommand("GanttTaskDetailsEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "先行Issue（終了→開始）").IsExpanded = true);
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).Any(c => AutomationProperties.GetAutomationId(c) == "PlanPredecessors" && c is FrameworkElement { IsLoaded: true }));
         await Ui.Run(() => { var links = Ui.Find<ListView>("PlanPredecessors", Ui.Dialog("PlanningDialog")); links.SelectedItems.Add(links.Items[0]); Ui.DialogButton("PlanningDialog", "PrimaryButton"); });
         await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("12:07"));
@@ -245,9 +289,9 @@ public sealed class GanttHostedTests
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-05 14:00").And.Contain("18:00"));
             Ui.Find<ListView>("GanttTasks").SelectedIndex = 0;
         });
-        await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
-        await Ui.Run(() => { Ui.Find<ComboBox>("PlanMode", Ui.Dialog("PlanningDialog")).SelectedIndex = (int)PlanningMode.Auto; Ui.DialogButton("PlanningDialog", "PrimaryButton"); });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("Auto"));
+        await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
+        await Ui.Run(() => { Ui.Find<RadioButtons>("ScheduleMethod", Schedule()).SelectedIndex = 0; Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())); });
+        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("Auto"));
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-09 13:00")));
         await Ui.ClickCommand("GanttUndo");
         await Ui.Run(() => {
@@ -269,17 +313,17 @@ public sealed class GanttHostedTests
         });
         await Ui.Until(() => Ui.Find<GanttView>("GanttView").SelectedRowId == "P1T2");
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-selected-dependency"));
-        await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
         await Ui.Run(() => {
-            Ui.Find<TextBox>("PlanTaskFinish", Ui.Dialog("PlanningDialog")).Text = "2026-10-04 09:00";
-            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+            Ui.Find<TextBox>("ScheduleFinish", Schedule()).Text = "2026-10-04 09:00";
+            Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule()));
         });
         await Ui.Run(() => {
-            Assert.That(Ui.Dialog("PlanningDialog"), Is.Not.Null);
+            Assert.That(Schedule(), Is.Not.Null);
             Assert.That(session.Workspace.PlanFor(project).Tasks.Single(t => t.Id == "I2").Finish, Is.EqualTo(At("2026-10-05 13:00")));
-            Ui.DialogButton("PlanningDialog", "CloseButton");
+            Ui.Click(Ui.Find<Button>("ScheduleClose", Schedule()));
         });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Ui.Until(() => Schedule() is null);
         await Ui.ClickCommand("GanttBoards");
         await Ui.Until(() => !grid.ShowingGantt && grid.SelectionIdentity?.Item == "P1T2");
     }
@@ -298,13 +342,13 @@ public sealed class GanttHostedTests
         {
             var eight = i % 2 == 0;
             var before = session.Workspace.PlanFor(project).Tasks;
-            await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
+            await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
             await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
             await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).Any(c => AutomationProperties.GetAutomationId(c) == "PlanWork-Estimate" && c is FrameworkElement { IsLoaded: true }));
             await Ui.Run(() => Ui.Find<TextBox>("PlanWork-Estimate", Ui.Dialog("PlanningDialog")).Text = eight ? "8" : "4");
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            await Ui.Run(() => Ui.DialogButton("PlanningDialog", "PrimaryButton"));
-            await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains(eight ? "2026-10-05 18:00" : "2026-10-05 13:00"));
+            await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())));
+            await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains(eight ? "2026-10-05 18:00" : "2026-10-05 13:00"));
             await SheetNativeInput.Rendered(); timer.Stop();
             await Ui.Run(() => Assert.That(Ui.Find<Rectangle>("GanttBar-P1T1").Width, Is.EqualTo(eight ? 36 : 16)));
             if (i >= 0) visible.Add(timer.Elapsed.TotalMilliseconds);
@@ -358,9 +402,9 @@ public sealed class GanttHostedTests
         await Ui.ClickCommand("GanttReveal");
         await VisibleRow(999);
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-1000-last-day"));
-        await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
-        await Ui.Run(() => { Ui.Find<TextBox>("PlanTaskFinish", Ui.Dialog("PlanningDialog")).Text = "2027-03-15 16:19"; Ui.DialogButton("PlanningDialog", "PrimaryButton"); });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("16:19"));
+        await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
+        await Ui.Run(() => { Ui.Find<TextBox>("ScheduleFinish", Schedule()).Text = "2027-03-15 16:19"; Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())); });
+        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("16:19"));
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("GanttSearch").Text, Is.Empty);

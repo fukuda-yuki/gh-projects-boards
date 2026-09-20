@@ -40,7 +40,7 @@ internal static class Ui
         {
             if (DateTime.UtcNow >= deadline)
             {
-                var error = new TimeoutException("Incomplete asynchronous event teardown");
+                var error = new TimeoutException($"Incomplete asynchronous event teardown (operations={Volatile.Read(ref TrackedContext.Operations)}, posts={Volatile.Read(ref TrackedContext.Posts)})");
                 RecordFailure(error); throw error;
             }
             await Task.Yield();
@@ -95,6 +95,8 @@ internal static class Ui
     public static ContentDialog? Dialog(string id) => VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot)
         .SelectMany(p => Tree(p.Child)).OfType<ContentDialog>().SingleOrDefault(d => AutomationProperties.GetAutomationId(d) == id);
     public static Task DialogReady(string id) => Until(() => Dialog(id)?.IsLoaded == true);
+    public static T? Popup<T>(string id) where T : FrameworkElement => VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot)
+        .SelectMany(p => Tree(p.Child)).OfType<T>().SingleOrDefault(c => AutomationProperties.GetAutomationId(c) == id);
     public static void DialogButton(string id, string name)
     {
         var dialog = Dialog(id)!;

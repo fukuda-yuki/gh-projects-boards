@@ -37,9 +37,11 @@ internal sealed partial class EditingWorkspace
     private void SetLocalBuffer(EditCell cell, string? text)
     {
         var old = Local(cell);
-        if (!cell.Editable || LocalBufferFor(cell) == text) return;
+        var previous = LocalBufferFor(cell);
+        if (!cell.Editable || previous == text) return;
         ReplaceLocal(cell.Key!.Kind == "LocalTitle" ? old with { TitleBuffer = text } : old with { RepositoryBuffer = text });
         Revision++;
+        if (previous is not null && text is not null) pendingTextChanges++;
     }
     public ProjectFieldDefinition[] LocalColumns(ProjectRegistration registration)
     {
@@ -51,7 +53,7 @@ internal sealed partial class EditingWorkspace
                     FieldOwner.ProjectItem, [], ValueAvailability.Unavailable));
         return columns.ToArray();
     }
-    private IEnumerable<EditRow> OpenLocal(ProjectRegistration registration, ProjectFieldDefinition[] columns)
+    private IEnumerable<EditRow> OpenLocal(ProjectRegistration registration, ProjectFieldDefinition[] columns, bool initializeFields)
     {
         foreach (var row in localRows.Where(r => r.ProjectId == registration.Snapshot.Id.NodeId))
         {
@@ -70,7 +72,7 @@ internal sealed partial class EditingWorkspace
                         Availability = ValueAvailability.Empty,
                         InputLocked = Planning(row.ProjectId)?.Fields.Any(b => b.FieldId == f.Id.NodeId && b.Role is "Actual" or "Start" or "Finish") == true };
                     cells.Add(cell);
-                    if (!fields.ContainsKey(cell.Key!)) { fields[cell.Key!] = new(cell.Key!, null, registration.Snapshot.Id, registration.RetrievedAt, null, null, 0); Revision++; }
+                    if (initializeFields && !fields.ContainsKey(cell.Key!)) { fields[cell.Key!] = new(cell.Key!, null, registration.Snapshot.Id, registration.RetrievedAt, null, null, 0); Revision++; }
                 }
             }
             cells.Add(Cell("LocalRepository", "新規行の宛先 owner/repository", row.Repository,

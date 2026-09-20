@@ -109,7 +109,10 @@ public sealed class ColumnHostedTests
         await Ui.Run(() =>
         {
             Assert.That(grid.SelectionIdentity?.Field?.FieldId, Is.EqualTo("P1C"));
-            Ui.Click("GridUndo");
+        });
+        await Ui.ClickCommand("GridUndo");
+        await Ui.Run(() =>
+        {
             Assert.That(session.Workspace.Value(session.Workspace.Open(p)[0].Cells[3]), Is.EqualTo("C0"));
             Assert.That(session.Workspace.Value(session.Workspace.Open(p)[0].Cells[1]), Is.EqualTo("A0"));
         });

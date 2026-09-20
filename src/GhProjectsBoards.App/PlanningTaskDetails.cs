@@ -54,9 +54,10 @@ internal sealed partial class EditingGrid
         var actualFinish = PlanningText(effort, "実績終了（日本時間）", "PlanActualFinish", DateText(task.ActualFinish));
         effort.Children.Add(new TextBlock { Text = "進行中・再開は基準日時から残時間を計画。完了は残時間0と実績日時を入力します。GitHubのOpen/Closedは変更しません。", TextWrapping = TextWrapping.Wrap });
         var reports = PlanningSection(effort, "累積実績・担当者別内訳");
-        var reportEnabled = new CheckBox { Content = "実績報告を設定する", IsChecked = task.Actuals is not null };
-        AutomationProperties.SetAutomationId(reportEnabled, "PlanReportsEnabled"); reports.Children.Add(reportEnabled);
-        reports.Children.Add(new TextBlock { Text = "累積人時と報告対象最終日を入力します。設定をオンにして全内訳を空欄にすると実績を削除。残時間は自動で差し引きません。", TextWrapping = TextWrapping.Wrap });
+        var removeActuals = false;
+        var removeReports = new Button { Content = "実績を削除" };
+        AutomationProperties.SetAutomationId(removeReports, "PlanRemoveReports"); reports.Children.Add(removeReports);
+        reports.Children.Add(new TextBlock { Text = "累計人時と報告対象最終日。残時間は独立した見積です。", TextWrapping = TextWrapping.Wrap });
         var reportRows = new List<(string? Id, TextBox Hours, TextBox Day)>();
         var shareRows = new List<(string Id, TextBox Estimate, TextBox Remaining)>();
         var people = plan.People.Select(p => (Id: p.Id, Name: p.Name)).Concat((task.Actuals ?? []).Where(a => a.PersonId is not null).Select(a => (a.PersonId!, a.PersonId!)))
@@ -67,11 +68,14 @@ internal sealed partial class EditingGrid
             var hours = PlanningText(reports, person.Name + " 累積実績（人時）", "PlanActualHours-" + (person.Id ?? "Unattributed"), saved is null ? "" : PlanningContract.CanonicalHours(saved.Hours));
             var day = PlanningText(reports, "報告対象最終日 yyyy-MM-dd", "PlanReportedThrough-" + (person.Id ?? "Unattributed"), saved?.ReportedThrough.ToString("yyyy-MM-dd"));
             reportRows.Add((person.Id, hours, day));
+            hours.TextChanged += (_, _) => { if (hours.Text.Length != 0) removeActuals = false; };
+            day.TextChanged += (_, _) => { if (day.Text.Length != 0) removeActuals = false; };
             if (person.Id is null) continue;
             var share = task.Contributions?.SingleOrDefault(c => c.PersonId == person.Id);
             shareRows.Add((person.Id, PlanningText(reports, person.Name + " 見積内訳（人時、空欄は不明）", "PlanShareEstimate-" + person.Id, share?.EstimateHours?.ToString(CultureInfo.InvariantCulture)),
                 PlanningText(reports, person.Name + " 残時間内訳（人時、空欄は不明）", "PlanShareRemaining-" + person.Id, share?.RemainingHours?.ToString(CultureInfo.InvariantCulture))));
         }
+        removeReports.Click += (_, _) => { removeActuals = true; foreach (var r in reportRows) { r.Hours.Text = ""; r.Day.Text = ""; } };
         reports.Children.Add(new TextBlock { Text = "内訳の合計をタスク工数以下にします。差額は未割当のまま保持します。", TextWrapping = TextWrapping.Wrap });
         var constraints = PlanningSection(parent, "日程の制約");
         var earliest = PlanningText(constraints, "最早開始", "PlanEarliest", DateText(task.EarliestStart));
@@ -109,12 +113,20 @@ internal sealed partial class EditingGrid
         }
         return new(() => {
             decimal? Hours(string value) => string.IsNullOrWhiteSpace(value) ? null : PlanningContract.ParseHours(value);
-            var actuals = reportEnabled.IsChecked != true ? task.Actuals : reportRows.Where(r => !string.IsNullOrWhiteSpace(r.Hours.Text)).Select(r => {
+            var editedReports = reportRows.Any(r => r.Hours.Text != (task.Actuals?.SingleOrDefault(a => a.PersonId == r.Id) is { } saved ? PlanningContract.CanonicalHours(saved.Hours) : "")
+                || r.Day.Text != (task.Actuals?.SingleOrDefault(a => a.PersonId == r.Id)?.ReportedThrough.ToString("yyyy-MM-dd") ?? ""));
+            if (!removeActuals && editedReports && reportRows.Any(r => task.Actuals?.Any(a => a.PersonId == r.Id) == true
+                && string.IsNullOrWhiteSpace(r.Hours.Text) && string.IsNullOrWhiteSpace(r.Day.Text)))
+                throw new InvalidOperationException("担当者別の実績を消すには表の「内訳」、全実績を消すには「実績を削除」を選んでください。");
+            var actuals = removeActuals ? [] : !editedReports ? task.Actuals : reportRows.Where(r => !string.IsNullOrWhiteSpace(r.Hours.Text) || !string.IsNullOrWhiteSpace(r.Day.Text)).Select(r => {
                 if (!DateOnly.TryParseExact(r.Day.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) throw new InvalidOperationException("実績の報告対象最終日を入力してください。");
                 return new ActualContribution(r.Id, PlanningContract.ParseHours(r.Hours.Text), day); }).ToArray();
+            var shares = shareRows.Where(r => r.Estimate.Text.Length != 0 || r.Remaining.Text.Length != 0
+                || task.Contributions?.Any(c => c.PersonId == r.Id) == true)
+                .Select(r => new WorkContribution(r.Id, Hours(r.Estimate.Text), Hours(r.Remaining.Text))).ToArray();
             return task with { LaborKind = (TaskLaborKind)laborKind.SelectedIndex, Progress = (PlanningProgress)((ComboBoxItem)progress.SelectedItem).Tag, ActualStart = PlanningDate(actualStart.Text), ActualFinish = PlanningDate(actualFinish.Text),
                 EarliestStart = PlanningDate(earliest.Text), FixedStart = PlanningDate(fixedStart.Text), FixedFinish = PlanningDate(fixedFinish.Text), Deadline = PlanningDate(deadline.Text), Actuals = actuals,
-                Contributions = shareRows.Where(r => r.Estimate.Text.Length != 0 || r.Remaining.Text.Length != 0).Select(r => new WorkContribution(r.Id, Hours(r.Estimate.Text), Hours(r.Remaining.Text))).ToArray() };
+                Contributions = task.Contributions is null && shares.Length == 0 ? null : shares };
         }, () => numbers.Where(n => n.Input.Text != n.Initial || n.Role == "Remaining" && confirmRemaining.IsChecked == true && !n.Input.IsReadOnly)
             .Select(n => new PlanningValueEdit(row.ItemId, n.Role, n.Input.Text.Length == 0 ? null : n.Input.Text)).ToArray(),
             () => selected.SetEquals(adopted.Where(l => l.Kind == "FS" && l.ExternalFinish is null).Select(l => l.PredecessorId)) ? [] : [new(task.Id, selected.ToArray())],

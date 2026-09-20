@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 
@@ -68,7 +69,7 @@ internal sealed class ApplyRecoveryTests
 
         await h.Workspace.RestartApplyReviewAsync(new HashSet<string> { "P1-T1", "P1-T2" });
 
-        Assert.That(h.Workspace.Drafts!.Workspace.Journal.Single(), Is.EqualTo(old));
+        Assert.That(JsonSerializer.Serialize(h.Workspace.Drafts!.Workspace.Journal.Single()), Is.EqualTo(JsonSerializer.Serialize(old)));
         Assert.That(h.Workspace.ApplyBlockReason(h.Workspace.ApplyReview), Is.Not.Null);
         Assert.That(h.Writes, Has.Count.EqualTo(2));
     }

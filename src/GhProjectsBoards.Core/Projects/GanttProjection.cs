@@ -17,7 +17,7 @@ internal sealed record GanttProjection(GanttRow[] Rows, AdoptedPlan Plan)
         var inputs = (plan.Inputs ?? []).ToDictionary(i => i.Task.Id);
         var visible = boardsRows.ToHashSet();
         var items = project.Snapshot.Items.ToDictionary(i => i.Id.NodeId);
-        var rows = work.Open(project).Select(row => {
+        var rows = work.ReadRows(project).Select(row => {
             var item = items.GetValueOrDefault(row.ItemId);
             var taskId = row.IsLocal ? row.ItemId : item?.ContentId?.NodeId ?? row.ItemId;
             var issue = project.Snapshot.Issues.GetValueOrDefault(new(work.Scope, taskId));

@@ -18,12 +18,13 @@ internal sealed record PlanningPerson(string Id, string Name, decimal WeightPerc
 internal sealed record ActualContribution(string? PersonId, decimal Hours, DateOnly ReportedThrough);
 internal sealed record WorkContribution(string PersonId, decimal? EstimateHours, decimal? RemainingHours);
 internal sealed record PlanningLink(string PredecessorId, string Kind = "FS", DateTime? ExternalFinish = null);
+internal sealed record PlanningAssignment(string[] Assignees, bool Complete, bool Legacy = false);
 internal sealed record PlanningTask(string Id, PlanningMode Mode = PlanningMode.Unplanned, string? OwnerId = null,
     DateTime? ManualStart = null, DateTime? ManualFinish = null, PlanningProgress Progress = PlanningProgress.Unstarted,
     DateTime? ActualStart = null, DateTime? ActualFinish = null, DateTime? EarliestStart = null,
     DateTime? FixedStart = null, DateTime? FixedFinish = null, DateTime? Deadline = null,
     ActualContribution[]? Actuals = null, WorkContribution[]? Contributions = null,
-    PlanningLink[]? LocalLinks = null, TaskLaborKind LaborKind = TaskLaborKind.Unspecified);
+    PlanningLink[]? LocalLinks = null, TaskLaborKind LaborKind = TaskLaborKind.Unspecified, PlanningAssignment? Assignment = null);
 internal sealed record ProjectPlanning(int Version, string ProjectId, long Stamp, DateTime? Start, DateTime? Cutoff,
     PlanningFieldBinding[] Fields, PlanningCalendar Calendar, PlanningPerson[] People, PlanningTask[] Tasks,
     SummarySettings? Summary = null);
@@ -32,6 +33,24 @@ internal sealed record ProjectPlanning(int Version, string ProjectId, long Stamp
 // assumed time reconstructed from a GitHub DATE projection.
 internal static class PlanningContract
 {
+    internal static bool SameRetainedTask(PlanningTask left, PlanningTask right)
+    {
+        static bool Same<T>(T[]? a, T[]? b) => a is null ? b is null : b is not null && a.SequenceEqual(b);
+        var a = left.Assignment ?? new([], false, true);
+        var b = right.Assignment ?? new([], false, true);
+        return left with { Actuals = null, Contributions = null, LocalLinks = null, Assignment = null }
+            == right with { Actuals = null, Contributions = null, LocalLinks = null, Assignment = null }
+            && Same(left.Actuals, right.Actuals) && Same(left.Contributions, right.Contributions)
+            && Same(left.LocalLinks, right.LocalLinks) && a.Complete == b.Complete && a.Legacy == b.Legacy
+            && Same(a.Assignees, b.Assignees);
+    }
+    internal static DateTime? ParseMinute(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (!DateTime.TryParseExact(text, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var value))
+            throw new InvalidOperationException("日時は yyyy-MM-dd HH:mm（日本時間）で入力してください。");
+        return DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
+    }
     public static readonly string[] Roles = ["Estimate", "Remaining", "Actual", "Start", "Finish"];
     public static string CanonicalHours(decimal hours)
     {
@@ -82,7 +101,7 @@ internal static class PlanningContract
     {
         static bool Id(string? v) => !string.IsNullOrWhiteSpace(v);
         static bool Hours(decimal h) => h >= 0 && h <= 1_000_000_000m && decimal.Round(h, 8) == h;
-        if (p is null || p.Version is not (1 or 2) || !Id(p.ProjectId) || p.Stamp < 0 || p.Stamp > revision
+        if (p is null || p.Version is not (1 or 2 or 3 or 4) || !Id(p.ProjectId) || p.Stamp < 0 || p.Stamp > revision
             || !Minute(p.Start) || !Minute(p.Cutoff) || p.Fields is null || p.People is null || p.Tasks is null || p.Calendar is null)
             throw new InvalidDataException("Unsupported or invalid planning metadata; preserve the source checkpoint.");
         if (p.Fields.Any(f => f is null || !Roles.Contains(f.Role) || !Id(f.FieldId)
@@ -114,6 +133,11 @@ internal static class PlanningContract
         foreach (var t in p.Tasks)
         {
             if (t is null || !Id(t.Id) || !Enum.IsDefined(t.Mode) || !Enum.IsDefined(t.Progress) || !Enum.IsDefined(t.LaborKind)
+                || p.Version >= 3 && t.Assignment is null
+                || t.Assignment is { } assignment && (p.Version < 3 || assignment.Assignees is null
+                    || assignment.Assignees.Any(a => !Id(a)) || assignment.Assignees.Distinct().Count() != assignment.Assignees.Length
+                    || assignment.Legacy && (assignment.Complete || assignment.Assignees.Length != 0)
+                    || !assignment.Legacy && t.OwnerId != (assignment.Complete && assignment.Assignees.Length == 1 ? assignment.Assignees[0] : null))
                 || !new[] { t.ManualStart, t.ManualFinish, t.ActualStart, t.ActualFinish, t.EarliestStart, t.FixedStart, t.FixedFinish, t.Deadline }.All(Minute)
                 || t.ManualFinish < t.ManualStart || t.ActualFinish < t.ActualStart
                 || (t.Actuals ?? []).Any(a => a is null || a.PersonId is not null && !Id(a.PersonId) || !Hours(a.Hours) || a.ReportedThrough == default)

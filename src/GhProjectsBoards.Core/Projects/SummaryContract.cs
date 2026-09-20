@@ -9,9 +9,29 @@ internal sealed record ProtectedBaseline(string Id, string ProjectId, DateTimeOf
 
 internal static class SummaryContract
 {
+    internal static bool SameSettings(SummarySettings? left, SummarySettings? right)
+    {
+        if (left == right) return true;
+        if (left is null || right is null || !Same(left.Allowances, right.Allowances)) return false;
+        var a = left.Baseline; var b = right.Baseline;
+        if (a == b) return true;
+        if (a is null || b is null || a.Calendar is null || b.Calendar is null) return false;
+        var ac = a.Calendar; var bc = b.Calendar;
+        return a with { Calendar = b.Calendar, People = b.People, Tasks = b.Tasks } == b
+            && Same(a.People, b.People) && Same(a.Tasks, b.Tasks)
+            && ac with { Holidays = bc.Holidays, Exceptions = bc.Exceptions } == bc
+            && ac.Holidays is not null && bc.Holidays is not null
+            && ac.Holidays with { Dates = bc.Holidays.Dates } == bc.Holidays
+            && Same(ac.Holidays.Dates, bc.Holidays.Dates)
+            && ac.Exceptions is not null && bc.Exceptions is not null && ac.Exceptions.Length == bc.Exceptions.Length
+            && ac.Exceptions.Zip(bc.Exceptions).All(e => e.First is not null && e.Second is not null
+                && e.First with { Intervals = e.Second.Intervals } == e.Second && Same(e.First.Intervals, e.Second.Intervals));
+    }
+    private static bool Same<T>(T[]? left, T[]? right) => left is null ? right is null : right is not null && left.SequenceEqual(right);
+
     internal static void Validate(ProjectPlanning p, long revision)
     {
-        if (p.Version == 1 && (p.Summary is not null || p.Tasks.Any(t => t.LaborKind != TaskLaborKind.Unspecified)))
+        if (p.Version is 1 or 3 && (p.Summary is not null || p.Tasks.Any(t => t.LaborKind != TaskLaborKind.Unspecified)))
             throw new InvalidDataException("Unversioned Summary metadata.");
         if (p.Summary is not { } s) return;
         if (s.Allowances is null || s.Allowances.Any(a => a is null || string.IsNullOrWhiteSpace(a.PersonId)
@@ -43,7 +63,7 @@ internal sealed partial class EditingWorkspace
     }
     private void CommitSummary(ProjectPlanning before, SummarySettings summary)
     {
-        SetPlanning(before with { Version = 2, Summary = summary }, before.Stamp);
+        SetPlanning(before with { Version = before.Version >= 3 ? 4 : 2, Summary = summary }, before.Stamp);
         history.Add(new(Guid.NewGuid().ToString("N"), before.ProjectId, [], Plan: new(before, Planning(before.ProjectId)!)));
     }
     public void SetAllowance(ProjectRegistration project, string personId, decimal? hours, long expectedRevision)
