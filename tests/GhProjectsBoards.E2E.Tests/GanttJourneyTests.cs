@@ -68,7 +68,10 @@ public sealed partial class RegistrationTests
             Assert.That(CellText(w, 0), Is.EqualTo("pending gantt title"));
             OpenGanttProject(w, "P1"); Wait(() => WorkspaceUi.HasVisibleElement(w, "GanttSelected"));
             Assert.That(Text(w, "GanttSelected"), Does.Contain("#1000").And.Contain("16:19"));
-            w.Patterns.Transform.Pattern.Resize(1200, 750); WorkspaceUi.CloseProjectNavigation(w);
+            w.Patterns.Transform.Pattern.Resize(1200, 750);
+            // The responsive transition closes the inline pane. Invoking the
+            // toggle while its closing content still reports visible reopens it.
+            Wait(() => Element(w, "ToggleProjectNavigation").Name == "Project一覧を表示" && !WorkspaceUi.HasVisibleElement(w, "SavedProfiles"));
             Invoke(w, "GanttReveal"); Capture(w, f.Root, "gantt-ordinary-narrow");
             Invoke(w, "GanttBoards"); Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell999_2"));
             Assert.That(CellText(w, 999, 2), Is.EqualTo("24未確定"));

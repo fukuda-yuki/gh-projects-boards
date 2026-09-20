@@ -342,7 +342,7 @@ public sealed class GanttHostedTests
                 var list = Ui.Find<ListView>("GanttTasks"); list.SelectedIndex = i % 2 == 0 ? 999 : 0;
             });
             await Ui.ClickCommand("GanttReveal");
-            await Ui.Until(() => Ui.Tree(grid).OfType<ListViewItem>().Any(r => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(r) == (i % 2 == 0 ? "GanttRow-P1T1000" : "GanttRow-P1T1") && r.IsLoaded));
+            await VisibleRow(i % 2 == 0 ? 999 : 0);
             await Ui.Run(async () => {
                 var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var frames = 0; EventHandler<object> frame = (_, _) => { if (++frames >= 2) done.TrySetResult(); };
@@ -356,6 +356,7 @@ public sealed class GanttHostedTests
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2027-03-15 12:07").And.Contain("13:00"));
         });
         await Ui.ClickCommand("GanttReveal");
+        await VisibleRow(999);
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-1000-last-day"));
         await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => { Ui.Find<TextBox>("PlanTaskFinish", Ui.Dialog("PlanningDialog")).Text = "2027-03-15 16:19"; Ui.DialogButton("PlanningDialog", "PrimaryButton"); });
@@ -369,12 +370,14 @@ public sealed class GanttHostedTests
         });
         await Ui.Run(() => { Ui.Find<ComboBox>("GanttScale").SelectedIndex = 1; Ui.Find<ListView>("GanttTasks").SelectedIndex = 989; });
         await Ui.ClickCommand("GanttReveal");
+        await VisibleRow(989); await SheetNativeInput.Rendered();
         await Ui.Run(() => Assert.That(Ui.Find<ComboBox>("GanttRelated").Items.Count, Is.GreaterThanOrEqualTo(12)));
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-1000-fan-in-week"));
         await Ui.Run(() => {
             var dpi = grid.XamlRoot.RasterizationScale; Ui.Window.AppWindow.Resize(new((int)(960 * dpi), (int)(600 * dpi)));
         });
         await Ui.Until(() => grid.ActualWidth <= 960);
+        await Ui.ClickCommand("GanttReveal"); await VisibleRow(989); await SheetNativeInput.Rendered();
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-1000-narrow"));
         await Ui.ClickCommand("GanttBoards");
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T990" && !grid.ShowingGantt);
@@ -387,6 +390,8 @@ public sealed class GanttHostedTests
         Console.WriteLine("Gantt navigation command-to-render-events ms: " + System.Text.Json.JsonSerializer.Serialize(samples));
         Assert.That(samples.Max(), Is.LessThanOrEqualTo(1000), "Normal-scale navigation engineering budget; not physical scanout or inherited selection/menu evidence.");
     }
+    private Task VisibleRow(int index) => Ui.Until(() => Ui.Find<ListView>("GanttTasks").ContainerFromIndex(index) is ListViewItem { IsLoaded: true } item
+        && !Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(item).IsOffscreen());
 }
 
 public sealed partial class HostedTests

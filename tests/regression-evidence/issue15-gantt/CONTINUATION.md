@@ -28,8 +28,19 @@ Holiday/personal-exception context and corrected Light/Dark captures passed
 (`run-20260920-104439-395-ba8ad201`); the Light image was inspected with readable
 common-view labels and a continuous page background.
 
-Next: pin this source and run the final scoped hosted/ordinary selections;
-inspect their final normal/narrow images; finish source review;
+Source checkpoint: `27b94874affb607606c31a9839908c888c287475` contains the complete
+product code. The broadened hosted selection passed 32/32 on that clean source
+(`run-20260920-104616-223-39717512`). Final ordinary selection was 3 pass / 1 fail
+(`20260920-104734-fc2a7fb9a54446c2b2255fab8786d1ad`): the new test toggled an
+already-closing responsive pane open again. It now waits for the public closed
+state; the ordinary 1,000-task case passed (`20260920-105213-cbca55e14dff43ffa3c135e1fec6525e`).
+Hosted scale capture now also waits for the selected row to be onscreen and
+reveals it after narrowing (`run-20260920-105125-599-6ad371e0`, 1/1). Earlier images
+that captured the selection offscreen are retained but are not the final evidence.
+These final changes affect the test driver only, not product behavior.
+
+Next: commit these observation corrections and run the final scoped selections;
+inspect their final normal/narrow images; finish evidence handoff;
 pin final source and evidence including failed attempts and measurement boundaries;
 prepare Unit C-only PR text and factual #15/#1/#65 updates. Keep publication,
 PR creation, merge, Issue closure and release user-owned. Do not start P2.
