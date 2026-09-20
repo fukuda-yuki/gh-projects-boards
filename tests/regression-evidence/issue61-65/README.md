@@ -89,3 +89,7 @@ dotnet build GhProjectsBoards.sln -c Release
 ```
 
 Human reevaluation remains required after the demonstrated working loop. Other DPI/scaling, High Contrast/readout, broader Q1 selection/menu/bulk/planning timing combinations, and live GitHub were not newly accepted by these runs. #51/Q2, release/merge, and dependent Summary UI expansion remain separate. No main push, automatic merge/release, machine configuration change or real-user data overwrite occurred.
+
+## Publication boundary
+
+Automatic approval review rejected `git push --set-upstream origin codex/issue-61-65-input-repair` before execution: `Pushing to a remote is denied; do it manually.` The corrective branch is committed locally and has no upstream. No corrective PR or CI run was created, and no alternative upload route was used. [Manual handoff](PR-HANDOFF.md) contains the exact publication commands and a prepared truthful PR body. #61/#65 remain open; #64 stays preserved in PR #68.
