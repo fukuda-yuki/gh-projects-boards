@@ -84,6 +84,9 @@ public sealed class SustainedInputDiagnosticTests
             // This narrow layout closes the overlay when the Project is invoked.
             // Wait for its public state instead of toggling during the closing animation.
             Wait(() => Element("ToggleProjectNavigation").Name == "Project一覧を表示", "Project navigation must finish closing.");
+            // The overlay remains hit-testable during its closing animation even
+            // after its public label changes. This untimed setup wait is not warmup.
+            Thread.Sleep(400);
             Keyboard.TypeVirtualKeyCode(0x1A);
             Capture("ready");
             if (condition == "warm" && mode == "standard") Input("warmup", 0, 10, false);
@@ -192,9 +195,11 @@ public sealed class SustainedInputDiagnosticTests
                     if (locked is not null)
                     {
                         Wait(() => Element("DraftStatus").Name.Contains("保存失敗"), "Save failure must become visible after composition confirmation.");
+                        Thread.Sleep(250); // Observe settled pixels separately from the native text readback.
                         Capture("ime-confirmed-save-failure"); locked.Dispose(); testedFailure = true;
                         WorkspaceUi.Element(window!, "GridSave").AsButton().Invoke();
                         Wait(() => Element("DraftStatus").Name.Contains("保存済み"), "Explicit retry must clear the save failure.");
+                        Thread.Sleep(250);
                         Capture("ime-save-recovered"); cell = Element("GridCell0_0").AsTextBox(); cell.Click();
                     }
                     index++;
