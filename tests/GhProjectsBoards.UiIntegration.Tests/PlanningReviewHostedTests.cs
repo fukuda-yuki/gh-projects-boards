@@ -224,6 +224,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleClose", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
+        await ShowDateColumns();
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("GridCell0_5").Text, Is.EqualTo("2026-10-05 12:07")));
     }
     [Test, Category("ReviewRegression")]

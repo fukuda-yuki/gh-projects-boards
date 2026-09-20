@@ -71,6 +71,7 @@ public sealed partial class PlanningHostedTests
     public async Task DateCellPasteShowsManualBeforeCommitAndCalendarTimeControlsRetainMinutePrecision()
     {
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard)); await Ui.ClickCommand("GridPaste");
+        await ShowDateColumns();
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_5").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Start");
         clipboard = "2026-10-05 12:07"; await Ui.ClickCommand("GridPaste");
@@ -131,8 +132,9 @@ public sealed partial class PlanningHostedTests
             Assert.That(Ui.Find<TextBlock>("ActualInputHeading").Text, Does.Contain("過去の報告担当者を保持"));
             Ui.Find<TextBox>("GridCell0_4").Text = "7";
             Ui.Find<CalendarDatePicker>("ActualReportedThrough").Date = new DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.FromHours(9));
-            Ui.Click("ActualUpdate");
         });
+        await Ui.Until(() => Ui.Find<Button>("ActualUpdate") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click("ActualUpdate"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         clipboard = "9"; await Ui.ClickCommand("GridPaste");
         await Ui.Run(() => {
