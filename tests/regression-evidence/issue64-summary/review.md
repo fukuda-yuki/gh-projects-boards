@@ -18,7 +18,11 @@ oracle --engine browser --model gpt-5.6-sol --browser-thinking-time heavy --brow
 
 The browser runtime continued beyond the supplied timeout. It was reattached
 with `oracle session issue64-summary-review --render`; no duplicate model
-request was submitted. The final answer had nine numbered finding groups.
+request was submitted. That reattachment later reported "Chrome is no longer
+reachable" after the original browser session ended. The original invocation
+exited 0 and saved the complete response; the reattachment failure is retained
+separately and is not a second review result. The final answer had nine numbered
+finding groups.
 
 | Review group | Parent-agent verification and disposition |
 | --- | --- |
