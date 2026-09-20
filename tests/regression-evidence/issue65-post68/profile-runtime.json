@@ -1,0 +1,4592 @@
+{
+  "source": "948dd5393aed7992f1b058301532989771921a90",
+  "lostEvents": 0,
+  "sessionStartUtc": "2026-09-20T14:23:56.3150000Z",
+  "reasons": {
+    "AllocSmall/0": 197,
+    "AllocSmall/1": 241,
+    "AllocSmall/2": 109,
+    "Induced/2": 1,
+    "InducedNotForced/2": 1
+  },
+  "gcSuspensions": [
+    {
+      "start": "2026-09-20T14:23:56.3464758Z",
+      "end": "2026-09-20T14:23:56.3482842Z",
+      "milliseconds": 1.808399999999999,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:56.3933937Z",
+      "end": "2026-09-20T14:23:56.4006612Z",
+      "milliseconds": 7.267499999999998,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.4191106Z",
+      "end": "2026-09-20T14:23:56.4311432Z",
+      "milliseconds": 12.032599999999988,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.6153466Z",
+      "end": "2026-09-20T14:23:56.6203259Z",
+      "milliseconds": 4.9792999999999665,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.6379127Z",
+      "end": "2026-09-20T14:23:56.6505874Z",
+      "milliseconds": 12.67470000000003,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.6959527Z",
+      "end": "2026-09-20T14:23:56.7033360Z",
+      "milliseconds": 7.38330000000002,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.7208509Z",
+      "end": "2026-09-20T14:23:56.7330327Z",
+      "milliseconds": 12.181799999999953,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.7508303Z",
+      "end": "2026-09-20T14:23:56.7727362Z",
+      "milliseconds": 21.905899999999974,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.7798893Z",
+      "end": "2026-09-20T14:23:56.7821192Z",
+      "milliseconds": 2.2298999999999864,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:56.9685972Z",
+      "end": "2026-09-20T14:23:56.9758906Z",
+      "milliseconds": 7.293399999999906,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:56.9944439Z",
+      "end": "2026-09-20T14:23:57.0112326Z",
+      "milliseconds": 16.788700000000063,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.0527344Z",
+      "end": "2026-09-20T14:23:57.0589060Z",
+      "milliseconds": 6.1715999999998985,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.0763546Z",
+      "end": "2026-09-20T14:23:57.1057563Z",
+      "milliseconds": 29.401700000000005,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.1115423Z",
+      "end": "2026-09-20T14:23:57.1137345Z",
+      "milliseconds": 2.1922000000000708,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:57.2966456Z",
+      "end": "2026-09-20T14:23:57.3014403Z",
+      "milliseconds": 4.794700000000034,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.3191457Z",
+      "end": "2026-09-20T14:23:57.3321810Z",
+      "milliseconds": 13.035300000000007,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.3745704Z",
+      "end": "2026-09-20T14:23:57.3809409Z",
+      "milliseconds": 6.370499999999993,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.3985401Z",
+      "end": "2026-09-20T14:23:57.4250088Z",
+      "milliseconds": 26.468700000000126,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.4309813Z",
+      "end": "2026-09-20T14:23:57.4330891Z",
+      "milliseconds": 2.1077999999999975,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:57.4571977Z",
+      "end": "2026-09-20T14:23:57.4672472Z",
+      "milliseconds": 10.04950000000008,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.6519278Z",
+      "end": "2026-09-20T14:23:57.6567542Z",
+      "milliseconds": 4.826400000000149,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.6744519Z",
+      "end": "2026-09-20T14:23:57.7039866Z",
+      "milliseconds": 29.53469999999993,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.7099095Z",
+      "end": "2026-09-20T14:23:57.7115968Z",
+      "milliseconds": 1.6873000000000502,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:57.7592058Z",
+      "end": "2026-09-20T14:23:57.7660629Z",
+      "milliseconds": 6.857099999999946,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.7831030Z",
+      "end": "2026-09-20T14:23:57.7950430Z",
+      "milliseconds": 11.939999999999827,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:57.9861405Z",
+      "end": "2026-09-20T14:23:57.9911546Z",
+      "milliseconds": 5.014100000000099,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.0086975Z",
+      "end": "2026-09-20T14:23:58.0203365Z",
+      "milliseconds": 11.638999999999896,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.0616200Z",
+      "end": "2026-09-20T14:23:58.0680409Z",
+      "milliseconds": 6.420900000000074,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.0862598Z",
+      "end": "2026-09-20T14:23:58.0979507Z",
+      "milliseconds": 11.690900000000056,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.1163812Z",
+      "end": "2026-09-20T14:23:58.1422666Z",
+      "milliseconds": 25.88539999999989,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.1482057Z",
+      "end": "2026-09-20T14:23:58.1503949Z",
+      "milliseconds": 2.189200000000028,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:58.3234682Z",
+      "end": "2026-09-20T14:23:58.3284055Z",
+      "milliseconds": 4.93730000000005,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.3469027Z",
+      "end": "2026-09-20T14:23:58.3619755Z",
+      "milliseconds": 15.072799999999916,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.4041250Z",
+      "end": "2026-09-20T14:23:58.4112279Z",
+      "milliseconds": 7.102899999999863,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.4304185Z",
+      "end": "2026-09-20T14:23:58.4578317Z",
+      "milliseconds": 27.41319999999996,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.4640606Z",
+      "end": "2026-09-20T14:23:58.4664503Z",
+      "milliseconds": 2.3897000000001754,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:58.6550325Z",
+      "end": "2026-09-20T14:23:58.6603705Z",
+      "milliseconds": 5.338000000000193,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.6776811Z",
+      "end": "2026-09-20T14:23:58.6903722Z",
+      "milliseconds": 12.691100000000006,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.7319447Z",
+      "end": "2026-09-20T14:23:58.7383814Z",
+      "milliseconds": 6.436700000000201,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.7556827Z",
+      "end": "2026-09-20T14:23:58.7821775Z",
+      "milliseconds": 26.49479999999994,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:58.7873791Z",
+      "end": "2026-09-20T14:23:58.7896212Z",
+      "milliseconds": 2.2420999999999367,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:58.8148346Z",
+      "end": "2026-09-20T14:23:58.8245109Z",
+      "milliseconds": 9.676300000000083,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.0046154Z",
+      "end": "2026-09-20T14:23:59.0096978Z",
+      "milliseconds": 5.0823999999997795,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.0271343Z",
+      "end": "2026-09-20T14:23:59.0536797Z",
+      "milliseconds": 26.545399999999972,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.0591329Z",
+      "end": "2026-09-20T14:23:59.0621789Z",
+      "milliseconds": 3.0459999999998217,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:59.1254766Z",
+      "end": "2026-09-20T14:23:59.1322240Z",
+      "milliseconds": 6.747400000000198,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.1493215Z",
+      "end": "2026-09-20T14:23:59.1620989Z",
+      "milliseconds": 12.777399999999943,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.5555601Z",
+      "end": "2026-09-20T14:23:59.5612800Z",
+      "milliseconds": 5.719900000000052,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.5789444Z",
+      "end": "2026-09-20T14:23:59.5902115Z",
+      "milliseconds": 11.267100000000028,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.6367174Z",
+      "end": "2026-09-20T14:23:59.6434653Z",
+      "milliseconds": 6.747899999999845,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.6612978Z",
+      "end": "2026-09-20T14:23:59.6747221Z",
+      "milliseconds": 13.42430000000013,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.6935381Z",
+      "end": "2026-09-20T14:23:59.7167830Z",
+      "milliseconds": 23.24489999999969,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.7229465Z",
+      "end": "2026-09-20T14:23:59.7251271Z",
+      "milliseconds": 2.1806000000001404,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:23:59.8964866Z",
+      "end": "2026-09-20T14:23:59.9014330Z",
+      "milliseconds": 4.946399999999812,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.9191365Z",
+      "end": "2026-09-20T14:23:59.9323023Z",
+      "milliseconds": 13.165799999999763,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.9743503Z",
+      "end": "2026-09-20T14:23:59.9808278Z",
+      "milliseconds": 6.477499999999964,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:23:59.9987520Z",
+      "end": "2026-09-20T14:24:00.0376796Z",
+      "milliseconds": 38.927599999999984,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.0435849Z",
+      "end": "2026-09-20T14:24:00.0462538Z",
+      "milliseconds": 2.6689000000001215,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:00.2356978Z",
+      "end": "2026-09-20T14:24:00.2411661Z",
+      "milliseconds": 5.468299999999999,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.2582560Z",
+      "end": "2026-09-20T14:24:00.2699225Z",
+      "milliseconds": 11.66650000000027,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.3104969Z",
+      "end": "2026-09-20T14:24:00.3171305Z",
+      "milliseconds": 6.633600000000115,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.3349021Z",
+      "end": "2026-09-20T14:24:00.3599019Z",
+      "milliseconds": 24.99980000000005,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.3654565Z",
+      "end": "2026-09-20T14:24:00.3677307Z",
+      "milliseconds": 2.2742000000002918,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:00.3932291Z",
+      "end": "2026-09-20T14:24:00.4018754Z",
+      "milliseconds": 8.646299999999883,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.5999314Z",
+      "end": "2026-09-20T14:24:00.6049702Z",
+      "milliseconds": 5.038799999999355,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.6222876Z",
+      "end": "2026-09-20T14:24:00.6500286Z",
+      "milliseconds": 27.740999999999985,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.6550242Z",
+      "end": "2026-09-20T14:24:00.6573689Z",
+      "milliseconds": 2.3447000000005573,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:00.7006078Z",
+      "end": "2026-09-20T14:24:00.7067137Z",
+      "milliseconds": 6.105900000000474,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.7242992Z",
+      "end": "2026-09-20T14:24:00.7391724Z",
+      "milliseconds": 14.873199999999997,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.9154552Z",
+      "end": "2026-09-20T14:24:00.9210814Z",
+      "milliseconds": 5.626199999999699,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.9395603Z",
+      "end": "2026-09-20T14:24:00.9684125Z",
+      "milliseconds": 28.852200000000266,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:00.9744752Z",
+      "end": "2026-09-20T14:24:00.9768138Z",
+      "milliseconds": 2.338600000000042,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:01.0255808Z",
+      "end": "2026-09-20T14:24:01.0328426Z",
+      "milliseconds": 7.261800000000221,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.0502031Z",
+      "end": "2026-09-20T14:24:01.0634638Z",
+      "milliseconds": 13.260700000000725,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.0829667Z",
+      "end": "2026-09-20T14:24:01.1095543Z",
+      "milliseconds": 26.58759999999984,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.1155940Z",
+      "end": "2026-09-20T14:24:01.1178335Z",
+      "milliseconds": 2.23949999999968,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:01.2859697Z",
+      "end": "2026-09-20T14:24:01.2908727Z",
+      "milliseconds": 4.903000000000247,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.3086151Z",
+      "end": "2026-09-20T14:24:01.3213878Z",
+      "milliseconds": 12.772700000000441,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.3893130Z",
+      "end": "2026-09-20T14:24:01.4177678Z",
+      "milliseconds": 28.454799999999523,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.4234973Z",
+      "end": "2026-09-20T14:24:01.4255422Z",
+      "milliseconds": 2.0448999999998705,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:01.6224951Z",
+      "end": "2026-09-20T14:24:01.6283368Z",
+      "milliseconds": 5.841699999999946,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.6460602Z",
+      "end": "2026-09-20T14:24:01.6577776Z",
+      "milliseconds": 11.717400000000453,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.7207462Z",
+      "end": "2026-09-20T14:24:01.7278680Z",
+      "milliseconds": 7.121800000000803,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.7453291Z",
+      "end": "2026-09-20T14:24:01.7723025Z",
+      "milliseconds": 26.973399999999856,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:01.7777503Z",
+      "end": "2026-09-20T14:24:01.7799333Z",
+      "milliseconds": 2.1829999999999927,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:01.8049229Z",
+      "end": "2026-09-20T14:24:01.8137619Z",
+      "milliseconds": 8.839000000000851,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.2018724Z",
+      "end": "2026-09-20T14:24:02.2069784Z",
+      "milliseconds": 5.105999999999767,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.2244808Z",
+      "end": "2026-09-20T14:24:02.2536214Z",
+      "milliseconds": 29.140599999999722,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.2581172Z",
+      "end": "2026-09-20T14:24:02.2614275Z",
+      "milliseconds": 3.3103000000000975,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:02.3129812Z",
+      "end": "2026-09-20T14:24:02.3191263Z",
+      "milliseconds": 6.145099999999729,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.3365657Z",
+      "end": "2026-09-20T14:24:02.3498323Z",
+      "milliseconds": 13.266599999999926,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.5309352Z",
+      "end": "2026-09-20T14:24:02.5357666Z",
+      "milliseconds": 4.831400000000031,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.5534536Z",
+      "end": "2026-09-20T14:24:02.5814254Z",
+      "milliseconds": 27.971800000000258,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.5870798Z",
+      "end": "2026-09-20T14:24:02.5893353Z",
+      "milliseconds": 2.2554999999993015,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:02.6374306Z",
+      "end": "2026-09-20T14:24:02.6448499Z",
+      "milliseconds": 7.419300000000476,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.6637455Z",
+      "end": "2026-09-20T14:24:02.6771486Z",
+      "milliseconds": 13.40310000000045,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.6971706Z",
+      "end": "2026-09-20T14:24:02.7202575Z",
+      "milliseconds": 23.086899999999332,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:02.7262120Z",
+      "end": "2026-09-20T14:24:02.7287810Z",
+      "milliseconds": 2.5689999999995052,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:03.0986714Z",
+      "end": "2026-09-20T14:24:03.1039669Z",
+      "milliseconds": 5.295500000000175,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.1218155Z",
+      "end": "2026-09-20T14:24:03.1344733Z",
+      "milliseconds": 12.657799999999952,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.1832982Z",
+      "end": "2026-09-20T14:24:03.1895465Z",
+      "milliseconds": 6.248300000000199,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.2078325Z",
+      "end": "2026-09-20T14:24:03.2220508Z",
+      "milliseconds": 14.218299999999545,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.3974455Z",
+      "end": "2026-09-20T14:24:03.4024931Z",
+      "milliseconds": 5.047599999999875,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.4201033Z",
+      "end": "2026-09-20T14:24:03.4333545Z",
+      "milliseconds": 13.251200000000608,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.4785131Z",
+      "end": "2026-09-20T14:24:03.4849624Z",
+      "milliseconds": 6.449300000000221,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.5033198Z",
+      "end": "2026-09-20T14:24:03.5260584Z",
+      "milliseconds": 22.73859999999968,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.5329836Z",
+      "end": "2026-09-20T14:24:03.5353425Z",
+      "milliseconds": 2.358900000000176,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:03.7055008Z",
+      "end": "2026-09-20T14:24:03.7200966Z",
+      "milliseconds": 14.595800000000054,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.7734081Z",
+      "end": "2026-09-20T14:24:03.7784151Z",
+      "milliseconds": 5.007000000000517,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.7977566Z",
+      "end": "2026-09-20T14:24:03.8257617Z",
+      "milliseconds": 28.00510000000031,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.8322242Z",
+      "end": "2026-09-20T14:24:03.8340946Z",
+      "milliseconds": 1.8704000000007,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:03.8745416Z",
+      "end": "2026-09-20T14:24:03.8805692Z",
+      "milliseconds": 6.027600000000348,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:03.8991102Z",
+      "end": "2026-09-20T14:24:03.9133957Z",
+      "milliseconds": 14.285499999999956,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.1101412Z",
+      "end": "2026-09-20T14:24:04.1149856Z",
+      "milliseconds": 4.8443999999999505,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.1329135Z",
+      "end": "2026-09-20T14:24:04.1582698Z",
+      "milliseconds": 25.356300000000374,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.1645579Z",
+      "end": "2026-09-20T14:24:04.1668720Z",
+      "milliseconds": 2.314100000000508,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:04.2104872Z",
+      "end": "2026-09-20T14:24:04.2165743Z",
+      "milliseconds": 6.087100000000646,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.2342528Z",
+      "end": "2026-09-20T14:24:04.2472795Z",
+      "milliseconds": 13.026699999999437,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.4261735Z",
+      "end": "2026-09-20T14:24:04.4490312Z",
+      "milliseconds": 22.857700000000477,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.4536563Z",
+      "end": "2026-09-20T14:24:04.4557303Z",
+      "milliseconds": 2.074000000000524,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:04.4777312Z",
+      "end": "2026-09-20T14:24:04.4832055Z",
+      "milliseconds": 5.474299999999857,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.5003349Z",
+      "end": "2026-09-20T14:24:04.5103214Z",
+      "milliseconds": 9.986500000000888,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.5501568Z",
+      "end": "2026-09-20T14:24:04.5560233Z",
+      "milliseconds": 5.866500000000087,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.5742576Z",
+      "end": "2026-09-20T14:24:04.6037321Z",
+      "milliseconds": 29.474499999998443,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.6096908Z",
+      "end": "2026-09-20T14:24:04.6119205Z",
+      "milliseconds": 2.229699999999866,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:04.8799903Z",
+      "end": "2026-09-20T14:24:04.8849765Z",
+      "milliseconds": 4.98620000000119,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.9027199Z",
+      "end": "2026-09-20T14:24:04.9147149Z",
+      "milliseconds": 11.9950000000008,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.9543964Z",
+      "end": "2026-09-20T14:24:04.9604434Z",
+      "milliseconds": 6.04700000000048,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:04.9777088Z",
+      "end": "2026-09-20T14:24:05.0014984Z",
+      "milliseconds": 23.789600000000064,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.0068118Z",
+      "end": "2026-09-20T14:24:05.0089241Z",
+      "milliseconds": 2.112300000000687,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:05.1962009Z",
+      "end": "2026-09-20T14:24:05.2027594Z",
+      "milliseconds": 6.558500000001004,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.2200723Z",
+      "end": "2026-09-20T14:24:05.2309510Z",
+      "milliseconds": 10.878699999999299,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.2483871Z",
+      "end": "2026-09-20T14:24:05.2731302Z",
+      "milliseconds": 24.743099999999686,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.2796312Z",
+      "end": "2026-09-20T14:24:05.2814621Z",
+      "milliseconds": 1.8309000000008382,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:05.3217909Z",
+      "end": "2026-09-20T14:24:05.3276619Z",
+      "milliseconds": 5.870999999999185,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.3467162Z",
+      "end": "2026-09-20T14:24:05.3620172Z",
+      "milliseconds": 15.300999999999476,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.5457571Z",
+      "end": "2026-09-20T14:24:05.5505460Z",
+      "milliseconds": 4.788899999999558,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.5682244Z",
+      "end": "2026-09-20T14:24:05.5965375Z",
+      "milliseconds": 28.313100000001214,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.6023303Z",
+      "end": "2026-09-20T14:24:05.6044455Z",
+      "milliseconds": 2.1152000000001863,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:05.6608912Z",
+      "end": "2026-09-20T14:24:05.6678639Z",
+      "milliseconds": 6.972700000000259,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:05.6855987Z",
+      "end": "2026-09-20T14:24:05.6970545Z",
+      "milliseconds": 11.455799999999726,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.0670623Z",
+      "end": "2026-09-20T14:24:06.0734755Z",
+      "milliseconds": 6.41320000000087,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.0922633Z",
+      "end": "2026-09-20T14:24:06.1179421Z",
+      "milliseconds": 25.678799999999683,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.1233841Z",
+      "end": "2026-09-20T14:24:06.1255553Z",
+      "milliseconds": 2.171200000000681,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:06.1477741Z",
+      "end": "2026-09-20T14:24:06.1571298Z",
+      "milliseconds": 9.35570000000007,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.1965230Z",
+      "end": "2026-09-20T14:24:06.2026587Z",
+      "milliseconds": 6.135700000000725,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.2198489Z",
+      "end": "2026-09-20T14:24:06.2493233Z",
+      "milliseconds": 29.47439999999915,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.2552643Z",
+      "end": "2026-09-20T14:24:06.2573731Z",
+      "milliseconds": 2.108799999999974,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:06.4506216Z",
+      "end": "2026-09-20T14:24:06.4556345Z",
+      "milliseconds": 5.012899999999718,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.4751184Z",
+      "end": "2026-09-20T14:24:06.4878471Z",
+      "milliseconds": 12.728700000001481,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.5286723Z",
+      "end": "2026-09-20T14:24:06.5353787Z",
+      "milliseconds": 6.706399999999121,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.5528182Z",
+      "end": "2026-09-20T14:24:06.5803397Z",
+      "milliseconds": 27.521500000000742,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.5856079Z",
+      "end": "2026-09-20T14:24:06.5876145Z",
+      "milliseconds": 2.006599999998798,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:06.7800987Z",
+      "end": "2026-09-20T14:24:06.7852315Z",
+      "milliseconds": 5.132799999999406,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.8028286Z",
+      "end": "2026-09-20T14:24:06.8139588Z",
+      "milliseconds": 11.130199999999604,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.8321537Z",
+      "end": "2026-09-20T14:24:06.8547195Z",
+      "milliseconds": 22.56579999999849,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.8610046Z",
+      "end": "2026-09-20T14:24:06.8634848Z",
+      "milliseconds": 2.480199999999968,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:06.9061241Z",
+      "end": "2026-09-20T14:24:06.9121578Z",
+      "milliseconds": 6.033699999999953,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:06.9305417Z",
+      "end": "2026-09-20T14:24:06.9462266Z",
+      "milliseconds": 15.684900000000198,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.1442071Z",
+      "end": "2026-09-20T14:24:07.1491714Z",
+      "milliseconds": 4.964299999999639,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.1668308Z",
+      "end": "2026-09-20T14:24:07.1930579Z",
+      "milliseconds": 26.227100000000064,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.1993576Z",
+      "end": "2026-09-20T14:24:07.2015338Z",
+      "milliseconds": 2.1761999999998807,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:07.2592192Z",
+      "end": "2026-09-20T14:24:07.2657790Z",
+      "milliseconds": 6.559800000000905,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.2839827Z",
+      "end": "2026-09-20T14:24:07.2978441Z",
+      "milliseconds": 13.861399999999776,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.4799785Z",
+      "end": "2026-09-20T14:24:07.4860589Z",
+      "milliseconds": 6.080400000000736,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.5043684Z",
+      "end": "2026-09-20T14:24:07.5288953Z",
+      "milliseconds": 24.52690000000075,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.5344035Z",
+      "end": "2026-09-20T14:24:07.5368170Z",
+      "milliseconds": 2.4134999999987485,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:07.5613048Z",
+      "end": "2026-09-20T14:24:07.5716055Z",
+      "milliseconds": 10.300699999999779,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.6139212Z",
+      "end": "2026-09-20T14:24:07.6198403Z",
+      "milliseconds": 5.919099999999162,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.6376784Z",
+      "end": "2026-09-20T14:24:07.6675143Z",
+      "milliseconds": 29.835900000000038,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.6736787Z",
+      "end": "2026-09-20T14:24:07.6758007Z",
+      "milliseconds": 2.121999999999389,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:07.8647899Z",
+      "end": "2026-09-20T14:24:07.8703043Z",
+      "milliseconds": 5.514400000000023,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.8871593Z",
+      "end": "2026-09-20T14:24:07.9003902Z",
+      "milliseconds": 13.230900000000474,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.9651972Z",
+      "end": "2026-09-20T14:24:07.9717718Z",
+      "milliseconds": 6.5745999999999185,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:07.9901508Z",
+      "end": "2026-09-20T14:24:08.0196844Z",
+      "milliseconds": 29.53360000000066,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.0253359Z",
+      "end": "2026-09-20T14:24:08.0276724Z",
+      "milliseconds": 2.3364999999994325,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:08.4167207Z",
+      "end": "2026-09-20T14:24:08.4223418Z",
+      "milliseconds": 5.621100000000297,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.4407354Z",
+      "end": "2026-09-20T14:24:08.4517115Z",
+      "milliseconds": 10.97609999999986,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.4702077Z",
+      "end": "2026-09-20T14:24:08.4941473Z",
+      "milliseconds": 23.9395999999997,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.5009812Z",
+      "end": "2026-09-20T14:24:08.5028727Z",
+      "milliseconds": 1.8914999999997235,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:08.5453621Z",
+      "end": "2026-09-20T14:24:08.5514094Z",
+      "milliseconds": 6.0473000000001775,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.5692315Z",
+      "end": "2026-09-20T14:24:08.5841822Z",
+      "milliseconds": 14.950699999999415,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.7627894Z",
+      "end": "2026-09-20T14:24:08.7678039Z",
+      "milliseconds": 5.014500000001135,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.7855248Z",
+      "end": "2026-09-20T14:24:08.8148738Z",
+      "milliseconds": 29.34900000000016,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.8205896Z",
+      "end": "2026-09-20T14:24:08.8228652Z",
+      "milliseconds": 2.27560000000085,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:08.8737565Z",
+      "end": "2026-09-20T14:24:08.8799101Z",
+      "milliseconds": 6.153599999999642,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:08.8977682Z",
+      "end": "2026-09-20T14:24:08.9110801Z",
+      "milliseconds": 13.311899999998786,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.0979696Z",
+      "end": "2026-09-20T14:24:09.1033372Z",
+      "milliseconds": 5.367599999999584,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.1216370Z",
+      "end": "2026-09-20T14:24:09.1487158Z",
+      "milliseconds": 27.07879999999932,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.1540637Z",
+      "end": "2026-09-20T14:24:09.1562663Z",
+      "milliseconds": 2.2025999999987107,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:09.1815813Z",
+      "end": "2026-09-20T14:24:09.1901139Z",
+      "milliseconds": 8.532600000000457,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.2400882Z",
+      "end": "2026-09-20T14:24:09.2462777Z",
+      "milliseconds": 6.1895000000004075,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.2635502Z",
+      "end": "2026-09-20T14:24:09.2917647Z",
+      "milliseconds": 28.214500000000044,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.2981927Z",
+      "end": "2026-09-20T14:24:09.3005945Z",
+      "milliseconds": 2.401799999999639,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:09.4892991Z",
+      "end": "2026-09-20T14:24:09.4947191Z",
+      "milliseconds": 5.420000000000073,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.5127021Z",
+      "end": "2026-09-20T14:24:09.5249150Z",
+      "milliseconds": 12.212900000000445,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.5654329Z",
+      "end": "2026-09-20T14:24:09.5715160Z",
+      "milliseconds": 6.083099999999831,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.5885629Z",
+      "end": "2026-09-20T14:24:09.6180976Z",
+      "milliseconds": 29.534699999998338,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.6236591Z",
+      "end": "2026-09-20T14:24:09.6257956Z",
+      "milliseconds": 2.136499999998705,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:09.8162601Z",
+      "end": "2026-09-20T14:24:09.8217342Z",
+      "milliseconds": 5.474100000001272,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.8392411Z",
+      "end": "2026-09-20T14:24:09.8504183Z",
+      "milliseconds": 11.177200000000084,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.8699080Z",
+      "end": "2026-09-20T14:24:09.8917133Z",
+      "milliseconds": 21.80529999999999,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.8982478Z",
+      "end": "2026-09-20T14:24:09.9001696Z",
+      "milliseconds": 1.9218000000000757,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:09.9457948Z",
+      "end": "2026-09-20T14:24:09.9519875Z",
+      "milliseconds": 6.192699999999604,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:09.9699016Z",
+      "end": "2026-09-20T14:24:09.9844634Z",
+      "milliseconds": 14.561800000001313,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.1929118Z",
+      "end": "2026-09-20T14:24:10.1987298Z",
+      "milliseconds": 5.8179999999993015,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.2170385Z",
+      "end": "2026-09-20T14:24:10.2451676Z",
+      "milliseconds": 28.129100000000108,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.2508606Z",
+      "end": "2026-09-20T14:24:10.2529308Z",
+      "milliseconds": 2.0702000000001135,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:10.2994455Z",
+      "end": "2026-09-20T14:24:10.3057569Z",
+      "milliseconds": 6.3114000000005035,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.3233449Z",
+      "end": "2026-09-20T14:24:10.3345300Z",
+      "milliseconds": 11.185100000000602,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.4944075Z",
+      "end": "2026-09-20T14:24:10.5019660Z",
+      "milliseconds": 7.558500000001004,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.5318066Z",
+      "end": "2026-09-20T14:24:10.5554898Z",
+      "milliseconds": 23.683199999999488,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.5605623Z",
+      "end": "2026-09-20T14:24:10.5628735Z",
+      "milliseconds": 2.311200000000099,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:10.5861717Z",
+      "end": "2026-09-20T14:24:10.5916458Z",
+      "milliseconds": 5.474099999999453,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.6324965Z",
+      "end": "2026-09-20T14:24:10.6382717Z",
+      "milliseconds": 5.775200000000041,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.6555806Z",
+      "end": "2026-09-20T14:24:10.6607514Z",
+      "milliseconds": 5.170799999999872,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.8412066Z",
+      "end": "2026-09-20T14:24:10.8477627Z",
+      "milliseconds": 6.5560999999997875,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.8657528Z",
+      "end": "2026-09-20T14:24:10.8710326Z",
+      "milliseconds": 5.27980000000025,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.8930502Z",
+      "end": "2026-09-20T14:24:10.9121115Z",
+      "milliseconds": 19.06130000000121,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.9164522Z",
+      "end": "2026-09-20T14:24:10.9184372Z",
+      "milliseconds": 1.985000000000582,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:10.9548594Z",
+      "end": "2026-09-20T14:24:10.9593935Z",
+      "milliseconds": 4.5341000000007625,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:10.9770012Z",
+      "end": "2026-09-20T14:24:10.9887193Z",
+      "milliseconds": 11.71810000000005,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.1707777Z",
+      "end": "2026-09-20T14:24:11.1754191Z",
+      "milliseconds": 4.641399999998612,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.1932767Z",
+      "end": "2026-09-20T14:24:11.2233805Z",
+      "milliseconds": 30.103799999998955,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.2293651Z",
+      "end": "2026-09-20T14:24:11.2313964Z",
+      "milliseconds": 2.031299999998737,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:11.2943525Z",
+      "end": "2026-09-20T14:24:11.3008159Z",
+      "milliseconds": 6.463399999998728,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.3182217Z",
+      "end": "2026-09-20T14:24:11.3321595Z",
+      "milliseconds": 13.937799999999697,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.5104529Z",
+      "end": "2026-09-20T14:24:11.5157047Z",
+      "milliseconds": 5.251800000000003,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.5340237Z",
+      "end": "2026-09-20T14:24:11.5623118Z",
+      "milliseconds": 28.28809999999976,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.5684722Z",
+      "end": "2026-09-20T14:24:11.5708251Z",
+      "milliseconds": 2.352899999999863,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:11.5997901Z",
+      "end": "2026-09-20T14:24:11.6101354Z",
+      "milliseconds": 10.345299999999042,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.6455159Z",
+      "end": "2026-09-20T14:24:11.6502110Z",
+      "milliseconds": 4.695099999999002,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.6674868Z",
+      "end": "2026-09-20T14:24:11.6978235Z",
+      "milliseconds": 30.336699999999837,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.7039680Z",
+      "end": "2026-09-20T14:24:11.7061376Z",
+      "milliseconds": 2.1695999999992637,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:11.8918892Z",
+      "end": "2026-09-20T14:24:11.8966808Z",
+      "milliseconds": 4.7916000000004715,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.9141398Z",
+      "end": "2026-09-20T14:24:11.9263382Z",
+      "milliseconds": 12.19839999999931,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:11.9888088Z",
+      "end": "2026-09-20T14:24:11.9953390Z",
+      "milliseconds": 6.53019999999924,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.0130312Z",
+      "end": "2026-09-20T14:24:12.0406982Z",
+      "milliseconds": 27.66700000000128,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.0463888Z",
+      "end": "2026-09-20T14:24:12.0486144Z",
+      "milliseconds": 2.2255999999997584,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:12.2335830Z",
+      "end": "2026-09-20T14:24:12.2384304Z",
+      "milliseconds": 4.847399999998743,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.2560993Z",
+      "end": "2026-09-20T14:24:12.2673873Z",
+      "milliseconds": 11.288000000000466,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.2913168Z",
+      "end": "2026-09-20T14:24:12.2976659Z",
+      "milliseconds": 6.349099999999453,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.3343365Z",
+      "end": "2026-09-20T14:24:12.3604639Z",
+      "milliseconds": 26.127400000001217,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.3671463Z",
+      "end": "2026-09-20T14:24:12.3693652Z",
+      "milliseconds": 2.2188999999998487,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:12.3891240Z",
+      "end": "2026-09-20T14:24:12.3944347Z",
+      "milliseconds": 5.310699999999997,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.6004763Z",
+      "end": "2026-09-20T14:24:12.6080343Z",
+      "milliseconds": 7.557999999999083,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.6258465Z",
+      "end": "2026-09-20T14:24:12.6333972Z",
+      "milliseconds": 7.550699999999779,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.6740165Z",
+      "end": "2026-09-20T14:24:12.6812681Z",
+      "milliseconds": 7.251599999999598,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.6990541Z",
+      "end": "2026-09-20T14:24:12.7043359Z",
+      "milliseconds": 5.28179999999702,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.8814032Z",
+      "end": "2026-09-20T14:24:12.9013525Z",
+      "milliseconds": 19.94930000000022,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.9057806Z",
+      "end": "2026-09-20T14:24:12.9076298Z",
+      "milliseconds": 1.8492000000005646,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:12.9284795Z",
+      "end": "2026-09-20T14:24:12.9346817Z",
+      "milliseconds": 6.202199999999721,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.9566723Z",
+      "end": "2026-09-20T14:24:12.9612313Z",
+      "milliseconds": 4.559000000001106,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:12.9984126Z",
+      "end": "2026-09-20T14:24:13.0035478Z",
+      "milliseconds": 5.135200000000623,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.0209808Z",
+      "end": "2026-09-20T14:24:13.0335356Z",
+      "milliseconds": 12.554799999998068,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.2196300Z",
+      "end": "2026-09-20T14:24:13.2245188Z",
+      "milliseconds": 4.888800000000629,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.2423479Z",
+      "end": "2026-09-20T14:24:13.2691088Z",
+      "milliseconds": 26.76090000000113,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.2749910Z",
+      "end": "2026-09-20T14:24:13.2771407Z",
+      "milliseconds": 2.14969999999812,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:13.3242145Z",
+      "end": "2026-09-20T14:24:13.3308161Z",
+      "milliseconds": 6.601600000001781,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.3488068Z",
+      "end": "2026-09-20T14:24:13.3640187Z",
+      "milliseconds": 15.21190000000206,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.5453905Z",
+      "end": "2026-09-20T14:24:13.5505495Z",
+      "milliseconds": 5.158999999999651,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.5679641Z",
+      "end": "2026-09-20T14:24:13.5929215Z",
+      "milliseconds": 24.957399999999325,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.5989147Z",
+      "end": "2026-09-20T14:24:13.6014166Z",
+      "milliseconds": 2.5018999999992957,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:13.6285976Z",
+      "end": "2026-09-20T14:24:13.6359616Z",
+      "milliseconds": 7.363999999997759,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.6718659Z",
+      "end": "2026-09-20T14:24:13.6845174Z",
+      "milliseconds": 12.651499999999942,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.7018725Z",
+      "end": "2026-09-20T14:24:13.7068671Z",
+      "milliseconds": 4.994599999998172,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.8876661Z",
+      "end": "2026-09-20T14:24:13.9103340Z",
+      "milliseconds": 22.667900000000373,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.9154960Z",
+      "end": "2026-09-20T14:24:13.9177040Z",
+      "milliseconds": 2.2080000000023574,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:13.9392966Z",
+      "end": "2026-09-20T14:24:13.9477064Z",
+      "milliseconds": 8.409799999997631,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:13.9884866Z",
+      "end": "2026-09-20T14:24:13.9946145Z",
+      "milliseconds": 6.127899999999499,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.0122587Z",
+      "end": "2026-09-20T14:24:14.0372356Z",
+      "milliseconds": 24.97690000000148,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.0427109Z",
+      "end": "2026-09-20T14:24:14.0447742Z",
+      "milliseconds": 2.063300000001618,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:14.2372253Z",
+      "end": "2026-09-20T14:24:14.2422883Z",
+      "milliseconds": 5.063000000001921,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.2593425Z",
+      "end": "2026-09-20T14:24:14.2706298Z",
+      "milliseconds": 11.28729999999996,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.3123619Z",
+      "end": "2026-09-20T14:24:14.3199214Z",
+      "milliseconds": 7.559499999999389,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.3565735Z",
+      "end": "2026-09-20T14:24:14.3892773Z",
+      "milliseconds": 32.70380000000296,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.3944647Z",
+      "end": "2026-09-20T14:24:14.3966904Z",
+      "milliseconds": 2.225699999999051,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:14.4179382Z",
+      "end": "2026-09-20T14:24:14.4250366Z",
+      "milliseconds": 7.098399999998946,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.6092907Z",
+      "end": "2026-09-20T14:24:14.6158139Z",
+      "milliseconds": 6.523199999999633,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.6333152Z",
+      "end": "2026-09-20T14:24:14.6421562Z",
+      "milliseconds": 8.84100000000035,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.6829189Z",
+      "end": "2026-09-20T14:24:14.6890602Z",
+      "milliseconds": 6.141299999999319,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.7068104Z",
+      "end": "2026-09-20T14:24:14.7354677Z",
+      "milliseconds": 28.65730000000258,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.7410402Z",
+      "end": "2026-09-20T14:24:14.7433768Z",
+      "milliseconds": 2.3365999999987253,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:14.9294531Z",
+      "end": "2026-09-20T14:24:14.9352753Z",
+      "milliseconds": 5.82220000000234,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.9521003Z",
+      "end": "2026-09-20T14:24:14.9631082Z",
+      "milliseconds": 11.007900000000518,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:14.9852154Z",
+      "end": "2026-09-20T14:24:14.9916693Z",
+      "milliseconds": 6.453900000000431,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.0284074Z",
+      "end": "2026-09-20T14:24:15.0551892Z",
+      "milliseconds": 26.781800000000658,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.0603034Z",
+      "end": "2026-09-20T14:24:15.0626459Z",
+      "milliseconds": 2.342499999998836,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:15.0843134Z",
+      "end": "2026-09-20T14:24:15.0894391Z",
+      "milliseconds": 5.125700000000506,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.2698079Z",
+      "end": "2026-09-20T14:24:15.2762150Z",
+      "milliseconds": 6.407100000000355,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.2931780Z",
+      "end": "2026-09-20T14:24:15.3025169Z",
+      "milliseconds": 9.33889999999883,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.3418553Z",
+      "end": "2026-09-20T14:24:15.3477992Z",
+      "milliseconds": 5.9439000000020314,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.3651480Z",
+      "end": "2026-09-20T14:24:15.3930862Z",
+      "milliseconds": 27.938200000000506,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.3991847Z",
+      "end": "2026-09-20T14:24:15.4014443Z",
+      "milliseconds": 2.25959999999759,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:15.6016614Z",
+      "end": "2026-09-20T14:24:15.6067472Z",
+      "milliseconds": 5.085800000000745,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.6241298Z",
+      "end": "2026-09-20T14:24:15.6362676Z",
+      "milliseconds": 12.137800000000425,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.6587890Z",
+      "end": "2026-09-20T14:24:15.6669705Z",
+      "milliseconds": 8.181499999998778,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.7038847Z",
+      "end": "2026-09-20T14:24:15.7308719Z",
+      "milliseconds": 26.987199999999575,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.7363791Z",
+      "end": "2026-09-20T14:24:15.7386572Z",
+      "milliseconds": 2.278100000003178,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:15.7620876Z",
+      "end": "2026-09-20T14:24:15.7681620Z",
+      "milliseconds": 6.074400000001333,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.9490872Z",
+      "end": "2026-09-20T14:24:15.9560769Z",
+      "milliseconds": 6.989699999998265,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:15.9736856Z",
+      "end": "2026-09-20T14:24:15.9825328Z",
+      "milliseconds": 8.847200000000157,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.0228488Z",
+      "end": "2026-09-20T14:24:16.0287845Z",
+      "milliseconds": 5.935700000001816,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.0462495Z",
+      "end": "2026-09-20T14:24:16.0741183Z",
+      "milliseconds": 27.868799999996554,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.0795440Z",
+      "end": "2026-09-20T14:24:16.0815959Z",
+      "milliseconds": 2.051899999998568,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:16.2875104Z",
+      "end": "2026-09-20T14:24:16.2932003Z",
+      "milliseconds": 5.6899000000012165,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.3111714Z",
+      "end": "2026-09-20T14:24:16.3233744Z",
+      "milliseconds": 12.203000000001339,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.3468561Z",
+      "end": "2026-09-20T14:24:16.3545779Z",
+      "milliseconds": 7.721799999999348,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.3920287Z",
+      "end": "2026-09-20T14:24:16.4225725Z",
+      "milliseconds": 30.543799999999464,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.4279339Z",
+      "end": "2026-09-20T14:24:16.4303512Z",
+      "milliseconds": 2.417300000000978,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:16.4544307Z",
+      "end": "2026-09-20T14:24:16.4612325Z",
+      "milliseconds": 6.801799999997456,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.7012206Z",
+      "end": "2026-09-20T14:24:16.7108539Z",
+      "milliseconds": 9.63329999999769,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.7363323Z",
+      "end": "2026-09-20T14:24:16.7525993Z",
+      "milliseconds": 16.267000000003463,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.8000217Z",
+      "end": "2026-09-20T14:24:16.8066673Z",
+      "milliseconds": 6.645599999999831,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.8241906Z",
+      "end": "2026-09-20T14:24:16.8543182Z",
+      "milliseconds": 30.127599999999802,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:16.8598296Z",
+      "end": "2026-09-20T14:24:16.8619932Z",
+      "milliseconds": 2.1635999999998603,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:17.2372841Z",
+      "end": "2026-09-20T14:24:17.2424383Z",
+      "milliseconds": 5.154200000000856,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.2593860Z",
+      "end": "2026-09-20T14:24:17.2710368Z",
+      "milliseconds": 11.650800000003073,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.2932901Z",
+      "end": "2026-09-20T14:24:17.3009559Z",
+      "milliseconds": 7.665800000002491,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.3372693Z",
+      "end": "2026-09-20T14:24:17.3634932Z",
+      "milliseconds": 26.223900000000867,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.3698162Z",
+      "end": "2026-09-20T14:24:17.3721630Z",
+      "milliseconds": 2.346799999999348,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:17.3940106Z",
+      "end": "2026-09-20T14:24:17.4004233Z",
+      "milliseconds": 6.41269999999713,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.5912055Z",
+      "end": "2026-09-20T14:24:17.5990577Z",
+      "milliseconds": 7.852200000001176,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.6172506Z",
+      "end": "2026-09-20T14:24:17.6265777Z",
+      "milliseconds": 9.327100000002247,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.6681549Z",
+      "end": "2026-09-20T14:24:17.6742802Z",
+      "milliseconds": 6.125299999999697,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.6917959Z",
+      "end": "2026-09-20T14:24:17.7201169Z",
+      "milliseconds": 28.320999999999913,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.7257339Z",
+      "end": "2026-09-20T14:24:17.7278748Z",
+      "milliseconds": 2.140900000002148,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:17.9168399Z",
+      "end": "2026-09-20T14:24:17.9220685Z",
+      "milliseconds": 5.228600000002189,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.9406456Z",
+      "end": "2026-09-20T14:24:17.9528908Z",
+      "milliseconds": 12.245200000001205,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:17.9765705Z",
+      "end": "2026-09-20T14:24:17.9826797Z",
+      "milliseconds": 6.109199999998964,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.0175547Z",
+      "end": "2026-09-20T14:24:18.0439796Z",
+      "milliseconds": 26.42489999999816,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.0490597Z",
+      "end": "2026-09-20T14:24:18.0511976Z",
+      "milliseconds": 2.1378999999978987,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:18.0750456Z",
+      "end": "2026-09-20T14:24:18.0804981Z",
+      "milliseconds": 5.452499999999418,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.2564351Z",
+      "end": "2026-09-20T14:24:18.2630007Z",
+      "milliseconds": 6.565600000001723,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.2808147Z",
+      "end": "2026-09-20T14:24:18.2893047Z",
+      "milliseconds": 8.4900000000016,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.3295495Z",
+      "end": "2026-09-20T14:24:18.3356357Z",
+      "milliseconds": 6.086199999997916,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.3531602Z",
+      "end": "2026-09-20T14:24:18.3793257Z",
+      "milliseconds": 26.165500000002794,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.3850776Z",
+      "end": "2026-09-20T14:24:18.3872171Z",
+      "milliseconds": 2.139500000001135,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:18.5715896Z",
+      "end": "2026-09-20T14:24:18.5768087Z",
+      "milliseconds": 5.219100000002072,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.5951188Z",
+      "end": "2026-09-20T14:24:18.6074033Z",
+      "milliseconds": 12.284500000001572,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.6294926Z",
+      "end": "2026-09-20T14:24:18.6368465Z",
+      "milliseconds": 7.353899999998248,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.6744983Z",
+      "end": "2026-09-20T14:24:18.7044723Z",
+      "milliseconds": 29.97400000000198,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.7101159Z",
+      "end": "2026-09-20T14:24:18.7123587Z",
+      "milliseconds": 2.2427999999999884,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:18.7358118Z",
+      "end": "2026-09-20T14:24:18.7432326Z",
+      "milliseconds": 7.420799999999872,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.9228049Z",
+      "end": "2026-09-20T14:24:18.9294262Z",
+      "milliseconds": 6.62130000000252,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:18.9469993Z",
+      "end": "2026-09-20T14:24:18.9556982Z",
+      "milliseconds": 8.698899999999412,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.0114244Z",
+      "end": "2026-09-20T14:24:19.0173012Z",
+      "milliseconds": 5.876800000001822,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.0349030Z",
+      "end": "2026-09-20T14:24:19.0626216Z",
+      "milliseconds": 27.71860000000015,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.0688436Z",
+      "end": "2026-09-20T14:24:19.0710440Z",
+      "milliseconds": 2.2004000000015367,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:19.2620111Z",
+      "end": "2026-09-20T14:24:19.2679126Z",
+      "milliseconds": 5.901499999999942,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.2868272Z",
+      "end": "2026-09-20T14:24:19.2993662Z",
+      "milliseconds": 12.53900000000067,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.3220938Z",
+      "end": "2026-09-20T14:24:19.3285799Z",
+      "milliseconds": 6.486100000001898,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.3641534Z",
+      "end": "2026-09-20T14:24:19.3922023Z",
+      "milliseconds": 28.048900000001595,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.3975914Z",
+      "end": "2026-09-20T14:24:19.4000515Z",
+      "milliseconds": 2.4601000000002387,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:19.4230872Z",
+      "end": "2026-09-20T14:24:19.4286896Z",
+      "milliseconds": 5.602399999999761,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.6099924Z",
+      "end": "2026-09-20T14:24:19.6166861Z",
+      "milliseconds": 6.693699999999808,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.6350708Z",
+      "end": "2026-09-20T14:24:19.6445398Z",
+      "milliseconds": 9.468999999997322,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.6864147Z",
+      "end": "2026-09-20T14:24:19.6924679Z",
+      "milliseconds": 6.053199999998469,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.7112307Z",
+      "end": "2026-09-20T14:24:19.7418003Z",
+      "milliseconds": 30.5695999999989,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.7479447Z",
+      "end": "2026-09-20T14:24:19.7502748Z",
+      "milliseconds": 2.33009999999922,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:19.9350538Z",
+      "end": "2026-09-20T14:24:19.9403511Z",
+      "milliseconds": 5.2972999999983585,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.9581705Z",
+      "end": "2026-09-20T14:24:19.9700368Z",
+      "milliseconds": 11.866300000001502,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:19.9923071Z",
+      "end": "2026-09-20T14:24:19.9992326Z",
+      "milliseconds": 6.925499999997555,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.0354891Z",
+      "end": "2026-09-20T14:24:20.0615705Z",
+      "milliseconds": 26.08140000000276,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.0673925Z",
+      "end": "2026-09-20T14:24:20.0698675Z",
+      "milliseconds": 2.474999999998545,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:20.0930147Z",
+      "end": "2026-09-20T14:24:20.0989090Z",
+      "milliseconds": 5.89429999999993,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.2770396Z",
+      "end": "2026-09-20T14:24:20.2840989Z",
+      "milliseconds": 7.059300000000803,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.3025165Z",
+      "end": "2026-09-20T14:24:20.3134113Z",
+      "milliseconds": 10.894799999998213,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.3542862Z",
+      "end": "2026-09-20T14:24:20.3603091Z",
+      "milliseconds": 6.022899999999936,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.3781796Z",
+      "end": "2026-09-20T14:24:20.4085907Z",
+      "milliseconds": 30.41110000000117,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.4148965Z",
+      "end": "2026-09-20T14:24:20.4170928Z",
+      "milliseconds": 2.19629999999961,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:20.6085650Z",
+      "end": "2026-09-20T14:24:20.6139563Z",
+      "milliseconds": 5.391300000002957,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.6310647Z",
+      "end": "2026-09-20T14:24:20.6426652Z",
+      "milliseconds": 11.600500000000466,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.6650703Z",
+      "end": "2026-09-20T14:24:20.6720016Z",
+      "milliseconds": 6.931300000000192,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.7074350Z",
+      "end": "2026-09-20T14:24:20.7362710Z",
+      "milliseconds": 28.83599999999933,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.7416585Z",
+      "end": "2026-09-20T14:24:20.7439180Z",
+      "milliseconds": 2.2595000000001164,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:20.7675994Z",
+      "end": "2026-09-20T14:24:20.7755561Z",
+      "milliseconds": 7.956700000002456,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.9600082Z",
+      "end": "2026-09-20T14:24:20.9672377Z",
+      "milliseconds": 7.229500000001281,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:20.9853789Z",
+      "end": "2026-09-20T14:24:20.9942074Z",
+      "milliseconds": 8.828499999999622,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.0527857Z",
+      "end": "2026-09-20T14:24:21.0589191Z",
+      "milliseconds": 6.133399999998801,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.0766502Z",
+      "end": "2026-09-20T14:24:21.1051783Z",
+      "milliseconds": 28.52809999999954,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.1108691Z",
+      "end": "2026-09-20T14:24:21.1130456Z",
+      "milliseconds": 2.176500000001397,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:21.3039353Z",
+      "end": "2026-09-20T14:24:21.3088532Z",
+      "milliseconds": 4.9179000000003725,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.3265250Z",
+      "end": "2026-09-20T14:24:21.3386771Z",
+      "milliseconds": 12.152099999999336,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.3609201Z",
+      "end": "2026-09-20T14:24:21.3687251Z",
+      "milliseconds": 7.805000000000291,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.4040516Z",
+      "end": "2026-09-20T14:24:21.4306636Z",
+      "milliseconds": 26.61200000000099,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.4363337Z",
+      "end": "2026-09-20T14:24:21.4385785Z",
+      "milliseconds": 2.244800000000396,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:21.4617028Z",
+      "end": "2026-09-20T14:24:21.4678546Z",
+      "milliseconds": 6.151799999999639,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.6572838Z",
+      "end": "2026-09-20T14:24:21.6641685Z",
+      "milliseconds": 6.884699999998702,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.6822752Z",
+      "end": "2026-09-20T14:24:21.6911219Z",
+      "milliseconds": 8.846699999998236,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.7328243Z",
+      "end": "2026-09-20T14:24:21.7389606Z",
+      "milliseconds": 6.1362999999983,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.7570965Z",
+      "end": "2026-09-20T14:24:21.7870852Z",
+      "milliseconds": 29.9887000000017,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:21.7933369Z",
+      "end": "2026-09-20T14:24:21.7958294Z",
+      "milliseconds": 2.492500000000291,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:21.9882056Z",
+      "end": "2026-09-20T14:24:21.9932918Z",
+      "milliseconds": 5.086199999997916,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.0113885Z",
+      "end": "2026-09-20T14:24:22.0233677Z",
+      "milliseconds": 11.979199999997945,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.0455682Z",
+      "end": "2026-09-20T14:24:22.0516449Z",
+      "milliseconds": 6.0766999999978,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.0876631Z",
+      "end": "2026-09-20T14:24:22.1135495Z",
+      "milliseconds": 25.886399999999412,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.1192215Z",
+      "end": "2026-09-20T14:24:22.1216383Z",
+      "milliseconds": 2.416799999999057,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:22.1461872Z",
+      "end": "2026-09-20T14:24:22.1562020Z",
+      "milliseconds": 10.014800000000832,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.3462743Z",
+      "end": "2026-09-20T14:24:22.3510331Z",
+      "milliseconds": 4.75879999999961,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.3692229Z",
+      "end": "2026-09-20T14:24:22.3974922Z",
+      "milliseconds": 28.26929999999993,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.4041077Z",
+      "end": "2026-09-20T14:24:22.4059542Z",
+      "milliseconds": 1.8464999999996508,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:22.4479497Z",
+      "end": "2026-09-20T14:24:22.4541597Z",
+      "milliseconds": 6.209999999999127,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.4715422Z",
+      "end": "2026-09-20T14:24:22.4830563Z",
+      "milliseconds": 11.514100000000326,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.6683356Z",
+      "end": "2026-09-20T14:24:22.6735080Z",
+      "milliseconds": 5.172400000003108,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.6908089Z",
+      "end": "2026-09-20T14:24:22.7187294Z",
+      "milliseconds": 27.920500000000175,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.7245127Z",
+      "end": "2026-09-20T14:24:22.7265938Z",
+      "milliseconds": 2.0810999999994237,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:22.7548432Z",
+      "end": "2026-09-20T14:24:22.7610163Z",
+      "milliseconds": 6.173099999999977,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.7963879Z",
+      "end": "2026-09-20T14:24:22.8096537Z",
+      "milliseconds": 13.265799999997398,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.8277328Z",
+      "end": "2026-09-20T14:24:22.8570909Z",
+      "milliseconds": 29.35809999999765,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:22.8632533Z",
+      "end": "2026-09-20T14:24:22.8652955Z",
+      "milliseconds": 2.042199999999866,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:23.0495818Z",
+      "end": "2026-09-20T14:24:23.0542495Z",
+      "milliseconds": 4.667700000001787,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.0715490Z",
+      "end": "2026-09-20T14:24:23.0848112Z",
+      "milliseconds": 13.26220000000103,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.1247815Z",
+      "end": "2026-09-20T14:24:23.1309773Z",
+      "milliseconds": 6.195799999997689,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.1485096Z",
+      "end": "2026-09-20T14:24:23.1769277Z",
+      "milliseconds": 28.418099999998958,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.1826485Z",
+      "end": "2026-09-20T14:24:23.1846884Z",
+      "milliseconds": 2.0398999999997613,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:23.3668600Z",
+      "end": "2026-09-20T14:24:23.3718989Z",
+      "milliseconds": 5.038899999999558,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.3898189Z",
+      "end": "2026-09-20T14:24:23.4016065Z",
+      "milliseconds": 11.787600000003295,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.4418371Z",
+      "end": "2026-09-20T14:24:23.4480399Z",
+      "milliseconds": 6.202799999999115,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.4653759Z",
+      "end": "2026-09-20T14:24:23.4909394Z",
+      "milliseconds": 25.563500000000204,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.4961878Z",
+      "end": "2026-09-20T14:24:23.4984074Z",
+      "milliseconds": 2.219600000000355,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:23.5216637Z",
+      "end": "2026-09-20T14:24:23.5316115Z",
+      "milliseconds": 9.947799999998097,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.7154467Z",
+      "end": "2026-09-20T14:24:23.7201417Z",
+      "milliseconds": 4.694999999999709,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.7375672Z",
+      "end": "2026-09-20T14:24:23.7648933Z",
+      "milliseconds": 27.326099999998405,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.7714626Z",
+      "end": "2026-09-20T14:24:23.7733601Z",
+      "milliseconds": 1.8975000000027649,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:23.8145050Z",
+      "end": "2026-09-20T14:24:23.8205468Z",
+      "milliseconds": 6.041799999999057,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:23.8385454Z",
+      "end": "2026-09-20T14:24:23.8537318Z",
+      "milliseconds": 15.186400000002322,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.0499450Z",
+      "end": "2026-09-20T14:24:24.0554283Z",
+      "milliseconds": 5.483299999999872,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.0728052Z",
+      "end": "2026-09-20T14:24:24.0977863Z",
+      "milliseconds": 24.98110000000088,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.1042652Z",
+      "end": "2026-09-20T14:24:24.1066300Z",
+      "milliseconds": 2.364799999999377,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:24.1524752Z",
+      "end": "2026-09-20T14:24:24.1587484Z",
+      "milliseconds": 6.273199999999633,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.1767308Z",
+      "end": "2026-09-20T14:24:24.1895791Z",
+      "milliseconds": 12.848299999997835,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.2081476Z",
+      "end": "2026-09-20T14:24:24.2311742Z",
+      "milliseconds": 23.026600000001054,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.2381113Z",
+      "end": "2026-09-20T14:24:24.2403272Z",
+      "milliseconds": 2.2158999999992375,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:24.4173726Z",
+      "end": "2026-09-20T14:24:24.4220025Z",
+      "milliseconds": 4.629899999999907,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.4392581Z",
+      "end": "2026-09-20T14:24:24.4524214Z",
+      "milliseconds": 13.163300000000163,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.4934849Z",
+      "end": "2026-09-20T14:24:24.4996385Z",
+      "milliseconds": 6.153600000001461,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.5172059Z",
+      "end": "2026-09-20T14:24:24.5455084Z",
+      "milliseconds": 28.302499999997963,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.5513330Z",
+      "end": "2026-09-20T14:24:24.5534266Z",
+      "milliseconds": 2.0936000000001513,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:24.7356124Z",
+      "end": "2026-09-20T14:24:24.7405715Z",
+      "milliseconds": 4.959099999996397,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.7576928Z",
+      "end": "2026-09-20T14:24:24.7698451Z",
+      "milliseconds": 12.152299999997922,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.8332243Z",
+      "end": "2026-09-20T14:24:24.8401355Z",
+      "milliseconds": 6.911199999998644,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.8578502Z",
+      "end": "2026-09-20T14:24:24.8866594Z",
+      "milliseconds": 28.80919999999969,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:24.8922168Z",
+      "end": "2026-09-20T14:24:24.8942351Z",
+      "milliseconds": 2.0183000000033644,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:24.9179894Z",
+      "end": "2026-09-20T14:24:24.9282350Z",
+      "milliseconds": 10.245600000002014,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.1243613Z",
+      "end": "2026-09-20T14:24:25.1294449Z",
+      "milliseconds": 5.083599999998114,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.1473123Z",
+      "end": "2026-09-20T14:24:25.1754065Z",
+      "milliseconds": 28.094199999999546,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.1812723Z",
+      "end": "2026-09-20T14:24:25.1831205Z",
+      "milliseconds": 1.8482000000003609,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:25.2256260Z",
+      "end": "2026-09-20T14:24:25.2315711Z",
+      "milliseconds": 5.945100000000821,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.2491090Z",
+      "end": "2026-09-20T14:24:25.2628708Z",
+      "milliseconds": 13.761800000000221,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.4633534Z",
+      "end": "2026-09-20T14:24:25.4699016Z",
+      "milliseconds": 6.5482000000010885,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.4874136Z",
+      "end": "2026-09-20T14:24:25.5148742Z",
+      "milliseconds": 27.46059999999852,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.5204650Z",
+      "end": "2026-09-20T14:24:25.5225727Z",
+      "milliseconds": 2.1077000000004773,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:25.5697842Z",
+      "end": "2026-09-20T14:24:25.5762446Z",
+      "milliseconds": 6.460400000003574,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.5940457Z",
+      "end": "2026-09-20T14:24:25.6076430Z",
+      "milliseconds": 13.597300000001269,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.6260941Z",
+      "end": "2026-09-20T14:24:25.6520239Z",
+      "milliseconds": 25.929800000001705,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.6578899Z",
+      "end": "2026-09-20T14:24:25.6598293Z",
+      "milliseconds": 1.9394000000029337,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:25.8329300Z",
+      "end": "2026-09-20T14:24:25.8381628Z",
+      "milliseconds": 5.232799999997951,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.8554328Z",
+      "end": "2026-09-20T14:24:25.8690393Z",
+      "milliseconds": 13.606500000001688,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.9122615Z",
+      "end": "2026-09-20T14:24:25.9185924Z",
+      "milliseconds": 6.330900000000838,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.9373686Z",
+      "end": "2026-09-20T14:24:25.9679317Z",
+      "milliseconds": 30.563099999999395,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:25.9740269Z",
+      "end": "2026-09-20T14:24:25.9762248Z",
+      "milliseconds": 2.1978999999992084,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:26.1746381Z",
+      "end": "2026-09-20T14:24:26.1795705Z",
+      "milliseconds": 4.932400000001508,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.1972940Z",
+      "end": "2026-09-20T14:24:26.2100830Z",
+      "milliseconds": 12.788999999997031,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.2512611Z",
+      "end": "2026-09-20T14:24:26.2579996Z",
+      "milliseconds": 6.738499999999476,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.2755829Z",
+      "end": "2026-09-20T14:24:26.3038969Z",
+      "milliseconds": 28.313999999998487,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.3093953Z",
+      "end": "2026-09-20T14:24:26.3115506Z",
+      "milliseconds": 2.155299999998533,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:26.3356844Z",
+      "end": "2026-09-20T14:24:26.3453204Z",
+      "milliseconds": 9.636000000002241,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.5234514Z",
+      "end": "2026-09-20T14:24:26.5282928Z",
+      "milliseconds": 4.84139999999752,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.5460280Z",
+      "end": "2026-09-20T14:24:26.5751496Z",
+      "milliseconds": 29.121600000002218,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.5804125Z",
+      "end": "2026-09-20T14:24:26.5835144Z",
+      "milliseconds": 3.1019000000014785,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:26.6279696Z",
+      "end": "2026-09-20T14:24:26.6348522Z",
+      "milliseconds": 6.882600000000821,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.6524846Z",
+      "end": "2026-09-20T14:24:26.6676731Z",
+      "milliseconds": 15.188500000000204,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.8465134Z",
+      "end": "2026-09-20T14:24:26.8516708Z",
+      "milliseconds": 5.157400000000052,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.8711312Z",
+      "end": "2026-09-20T14:24:26.8972146Z",
+      "milliseconds": 26.08339999999953,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.9045069Z",
+      "end": "2026-09-20T14:24:26.9070480Z",
+      "milliseconds": 2.5410999999985506,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:26.9540163Z",
+      "end": "2026-09-20T14:24:26.9602718Z",
+      "milliseconds": 6.2554999999993015,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:26.9784843Z",
+      "end": "2026-09-20T14:24:26.9915431Z",
+      "milliseconds": 13.058799999998882,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.0102070Z",
+      "end": "2026-09-20T14:24:27.0350831Z",
+      "milliseconds": 24.876100000001315,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.0412879Z",
+      "end": "2026-09-20T14:24:27.0435366Z",
+      "milliseconds": 2.248700000000099,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:27.2282911Z",
+      "end": "2026-09-20T14:24:27.2331767Z",
+      "milliseconds": 4.885600000001432,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.2508051Z",
+      "end": "2026-09-20T14:24:27.2639176Z",
+      "milliseconds": 13.112499999999272,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.3051159Z",
+      "end": "2026-09-20T14:24:27.3111705Z",
+      "milliseconds": 6.054599999999482,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.3287510Z",
+      "end": "2026-09-20T14:24:27.3579084Z",
+      "milliseconds": 29.157400000000052,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.3637172Z",
+      "end": "2026-09-20T14:24:27.3660218Z",
+      "milliseconds": 2.304599999999482,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:27.5513224Z",
+      "end": "2026-09-20T14:24:27.5566385Z",
+      "milliseconds": 5.316100000000006,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.5741265Z",
+      "end": "2026-09-20T14:24:27.5860070Z",
+      "milliseconds": 11.88050000000294,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.6258572Z",
+      "end": "2026-09-20T14:24:27.6330709Z",
+      "milliseconds": 7.2137000000002445,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.6517229Z",
+      "end": "2026-09-20T14:24:27.6789373Z",
+      "milliseconds": 27.21440000000075,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.6844741Z",
+      "end": "2026-09-20T14:24:27.6870377Z",
+      "milliseconds": 2.5636000000013155,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:27.7125722Z",
+      "end": "2026-09-20T14:24:27.7210428Z",
+      "milliseconds": 8.470600000000559,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.9023137Z",
+      "end": "2026-09-20T14:24:27.9075043Z",
+      "milliseconds": 5.190600000001723,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.9254854Z",
+      "end": "2026-09-20T14:24:27.9568097Z",
+      "milliseconds": 31.32430000000022,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:27.9620431Z",
+      "end": "2026-09-20T14:24:27.9646735Z",
+      "milliseconds": 2.6304000000018277,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:28.0053591Z",
+      "end": "2026-09-20T14:24:28.0112553Z",
+      "milliseconds": 5.896199999999226,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.0291122Z",
+      "end": "2026-09-20T14:24:28.0435440Z",
+      "milliseconds": 14.431800000002113,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.2303754Z",
+      "end": "2026-09-20T14:24:28.2356099Z",
+      "milliseconds": 5.234499999998661,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.2527718Z",
+      "end": "2026-09-20T14:24:28.2792269Z",
+      "milliseconds": 26.455100000002858,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.2848983Z",
+      "end": "2026-09-20T14:24:28.2869812Z",
+      "milliseconds": 2.0828999999976077,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:28.3352893Z",
+      "end": "2026-09-20T14:24:28.3423210Z",
+      "milliseconds": 7.031699999999546,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.3617783Z",
+      "end": "2026-09-20T14:24:28.3740893Z",
+      "milliseconds": 12.310999999997875,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.3939313Z",
+      "end": "2026-09-20T14:24:28.4202909Z",
+      "milliseconds": 26.359599999999773,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.4267407Z",
+      "end": "2026-09-20T14:24:28.4286876Z",
+      "milliseconds": 1.9469000000026426,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:28.5969357Z",
+      "end": "2026-09-20T14:24:28.6022502Z",
+      "milliseconds": 5.3144999999967695,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.6193270Z",
+      "end": "2026-09-20T14:24:28.6319948Z",
+      "milliseconds": 12.66779999999926,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.6739578Z",
+      "end": "2026-09-20T14:24:28.6801057Z",
+      "milliseconds": 6.147899999999936,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.6983303Z",
+      "end": "2026-09-20T14:24:28.7272621Z",
+      "milliseconds": 28.931799999998475,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.7331578Z",
+      "end": "2026-09-20T14:24:28.7356846Z",
+      "milliseconds": 2.526799999999639,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:28.9219347Z",
+      "end": "2026-09-20T14:24:28.9270197Z",
+      "milliseconds": 5.084999999999127,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.9446828Z",
+      "end": "2026-09-20T14:24:28.9571984Z",
+      "milliseconds": 12.51560000000245,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:28.9972678Z",
+      "end": "2026-09-20T14:24:29.0045553Z",
+      "milliseconds": 7.287499999998545,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.0232051Z",
+      "end": "2026-09-20T14:24:29.0524403Z",
+      "milliseconds": 29.235199999999168,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.0576284Z",
+      "end": "2026-09-20T14:24:29.0599581Z",
+      "milliseconds": 2.329699999998411,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:29.0857233Z",
+      "end": "2026-09-20T14:24:29.0939704Z",
+      "milliseconds": 8.2471000000005,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.2806520Z",
+      "end": "2026-09-20T14:24:29.2857466Z",
+      "milliseconds": 5.094599999996717,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.3031056Z",
+      "end": "2026-09-20T14:24:29.3300175Z",
+      "milliseconds": 26.91189999999915,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.3350159Z",
+      "end": "2026-09-20T14:24:29.3386147Z",
+      "milliseconds": 3.5987999999997555,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:29.3828143Z",
+      "end": "2026-09-20T14:24:29.3886781Z",
+      "milliseconds": 5.8637999999991735,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.4062826Z",
+      "end": "2026-09-20T14:24:29.4186527Z",
+      "milliseconds": 12.370100000000093,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.5990106Z",
+      "end": "2026-09-20T14:24:29.6050836Z",
+      "milliseconds": 6.072999999996682,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.6221573Z",
+      "end": "2026-09-20T14:24:29.6488156Z",
+      "milliseconds": 26.658300000002782,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.6547556Z",
+      "end": "2026-09-20T14:24:29.6571425Z",
+      "milliseconds": 2.386900000004971,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:29.7054391Z",
+      "end": "2026-09-20T14:24:29.7116404Z",
+      "milliseconds": 6.201299999993353,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.7292364Z",
+      "end": "2026-09-20T14:24:29.7406459Z",
+      "milliseconds": 11.409500000001572,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.7596548Z",
+      "end": "2026-09-20T14:24:29.7856974Z",
+      "milliseconds": 26.042600000000675,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.7919023Z",
+      "end": "2026-09-20T14:24:29.7940537Z",
+      "milliseconds": 2.151399999995192,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:29.9619035Z",
+      "end": "2026-09-20T14:24:29.9670224Z",
+      "milliseconds": 5.118900000001304,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:29.9843333Z",
+      "end": "2026-09-20T14:24:29.9975615Z",
+      "milliseconds": 13.228200000005018,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.0391649Z",
+      "end": "2026-09-20T14:24:30.0452565Z",
+      "milliseconds": 6.091599999999744,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.0624112Z",
+      "end": "2026-09-20T14:24:30.0931958Z",
+      "milliseconds": 30.784599999999045,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.0987906Z",
+      "end": "2026-09-20T14:24:30.1011380Z",
+      "milliseconds": 2.3473999999987427,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:30.2845399Z",
+      "end": "2026-09-20T14:24:30.2913636Z",
+      "milliseconds": 6.823699999993551,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.3099944Z",
+      "end": "2026-09-20T14:24:30.3249268Z",
+      "milliseconds": 14.93239999999787,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.3672328Z",
+      "end": "2026-09-20T14:24:30.3746537Z",
+      "milliseconds": 7.420900000004622,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.3933507Z",
+      "end": "2026-09-20T14:24:30.4212533Z",
+      "milliseconds": 27.90259999999398,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.4267373Z",
+      "end": "2026-09-20T14:24:30.4287667Z",
+      "milliseconds": 2.029399999999441,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:30.5877106Z",
+      "end": "2026-09-20T14:24:30.5971157Z",
+      "milliseconds": 9.405100000003586,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.6385669Z",
+      "end": "2026-09-20T14:24:30.6440195Z",
+      "milliseconds": 5.452600000004168,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.6618298Z",
+      "end": "2026-09-20T14:24:30.6922829Z",
+      "milliseconds": 30.453099999998813,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.6982608Z",
+      "end": "2026-09-20T14:24:30.7002142Z",
+      "milliseconds": 1.9534000000057858,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:30.7420944Z",
+      "end": "2026-09-20T14:24:30.7480033Z",
+      "milliseconds": 5.908899999994901,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.7651585Z",
+      "end": "2026-09-20T14:24:30.7786535Z",
+      "milliseconds": 13.49500000000262,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.9389249Z",
+      "end": "2026-09-20T14:24:30.9467973Z",
+      "milliseconds": 7.872400000000198,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:30.9642255Z",
+      "end": "2026-09-20T14:24:31.0048753Z",
+      "milliseconds": 40.64979999999923,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:31.0113530Z",
+      "end": "2026-09-20T14:24:31.0140681Z",
+      "milliseconds": 2.7150999999939813,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:32.7954041Z",
+      "end": "2026-09-20T14:24:32.8077902Z",
+      "milliseconds": 12.386100000003353,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:35.4750136Z",
+      "end": "2026-09-20T14:24:35.5842853Z",
+      "milliseconds": 109.27170000000478,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:49.3574895Z",
+      "end": "2026-09-20T14:24:49.5163550Z",
+      "milliseconds": 158.86549999999988,
+      "reason": "SuspendForGC"
+    },
+    {
+      "start": "2026-09-20T14:24:49.5226229Z",
+      "end": "2026-09-20T14:24:49.5357587Z",
+      "milliseconds": 13.13579999999638,
+      "reason": "SuspendForGCPrep"
+    },
+    {
+      "start": "2026-09-20T14:24:50.5859722Z",
+      "end": "2026-09-20T14:24:50.5991415Z",
+      "milliseconds": 13.169300000001385,
+      "reason": "SuspendForGC"
+    }
+  ],
+  "suspensionSummary": {
+    "SuspendForGC": {
+      "count": 439,
+      "totalMs": 5932.388300000012,
+      "maxMs": 158.86549999999988
+    },
+    "SuspendForGCPrep": {
+      "count": 111,
+      "totalMs": 259.98679999999644,
+      "maxMs": 13.13579999999638
+    },
+    "SuspendOther": {
+      "count": 25414,
+      "totalMs": 729.7445999999966,
+      "maxMs": 0.6642000000010739
+    }
+  },
+  "sampledAllocations": [
+    {
+      "type": "System.Text.Json.ArgumentState",
+      "sampledBytes": 1287333360
+    },
+    {
+      "type": "System.String",
+      "sampledBytes": 1266605552
+    },
+    {
+      "type": "System.Byte[]",
+      "sampledBytes": 773773648
+    },
+    {
+      "type": "System.Collections.BitArray",
+      "sampledBytes": 746097312
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ConnectionScope,System.String,System.Object,System.Object]",
+      "sampledBytes": 289722560
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.Int64,System.Object,System.Object]",
+      "sampledBytes": 288425400
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.DraftField",
+      "sampledBytes": 232974776
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ConnectionScope",
+      "sampledBytes": 196545256
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ScopedId",
+      "sampledBytes": 196495824
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.FieldKey",
+      "sampledBytes": 132509408
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.String,System.String,System.String]",
+      "sampledBytes": 130055864
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningTask",
+      "sampledBytes": 122427416
+    },
+    {
+      "type": "Entry[GhProjectsBoards.Core.Projects.FieldKey][]",
+      "sampledBytes": 118371424
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.DraftField[]",
+      "sampledBytes": 99191816
+    },
+    {
+      "type": "Entry[GhProjectsBoards.Core.Projects.ScopedId][]",
+      "sampledBytes": 94220488
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectFieldValue",
+      "sampledBytes": 85310328
+    },
+    {
+      "type": "System.Nullable`1[System.DateTime][]",
+      "sampledBytes": 83834440
+    },
+    {
+      "type": "System.DateTimeOffset",
+      "sampledBytes": 77504808
+    },
+    {
+      "type": "System.Int32[]",
+      "sampledBytes": 76615528
+    },
+    {
+      "type": "System.Boolean",
+      "sampledBytes": 75557544
+    },
+    {
+      "type": "System.Int64",
+      "sampledBytes": 57773408
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectFieldValue[]",
+      "sampledBytes": 49528344
+    },
+    {
+      "type": "Entry[System.String][]",
+      "sampledBytes": 44672928
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.IssueReadModel",
+      "sampledBytes": 44008672
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.Boolean,System.Object,System.Object]",
+      "sampledBytes": 38063160
+    },
+    {
+      "type": "DistinctIterator`1[GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 36198208
+    },
+    {
+      "type": "System.Collections.Generic.HashSet`1[GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 34296808
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ValueAvailability",
+      "sampledBytes": 33028064
+    },
+    {
+      "type": "Entry[GhProjectsBoards.Core.Projects.ScopedId,GhProjectsBoards.Core.Projects.IssueReadModel][]",
+      "sampledBytes": 32819344
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectItemReadModel",
+      "sampledBytes": 31757472
+    },
+    {
+      "type": "System.Text.Json.JsonDocument",
+      "sampledBytes": 30614504
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.DraftField]",
+      "sampledBytes": 27699656
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.FieldChange[]",
+      "sampledBytes": 26567168
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.FieldChange",
+      "sampledBytes": 26341976
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.LocalValue",
+      "sampledBytes": 24634032
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.NativePerson[]",
+      "sampledBytes": 22567344
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.Nullable`1[System.Boolean],System.DateTimeOffset,System.Object,System.Object]",
+      "sampledBytes": 22478032
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.FieldKey,GhProjectsBoards.Core.Projects.DraftField,GhProjectsBoards.Core.Projects.DraftField,System.Object]",
+      "sampledBytes": 20894344
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.Object,System.Object]",
+      "sampledBytes": 20645280
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ScopedId,GhProjectsBoards.Core.Projects.ScopedId,System.String,System.Object]",
+      "sampledBytes": 17689384
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ValueAvailability,System.String,System.Object,System.Object]",
+      "sampledBytes": 17575416
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.RepositoryReadModel",
+      "sampledBytes": 16823672
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningTask[]",
+      "sampledBytes": 16001992
+    },
+    {
+      "type": "ArraySelectIterator`2[GhProjectsBoards.Core.Projects.NativePerson,GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 15919376
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.IssueReadModel[]",
+      "sampledBytes": 15874464
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ScopedId[]",
+      "sampledBytes": 14469216
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.CapabilityObservation",
+      "sampledBytes": 14371536
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.ProjectFieldValue]",
+      "sampledBytes": 14065992
+    },
+    {
+      "type": "AsyncStateMachineBox`1[System.IO.Pipelines.FlushResult,System.Text.Json.PooledByteBufferWriter+<FlushAsync>d__20]",
+      "sampledBytes": 13881112
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ReadValue`1[System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState]]",
+      "sampledBytes": 13308192
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.IssuePlanningObservation",
+      "sampledBytes": 11929336
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ReadValue`1[System.String]",
+      "sampledBytes": 11279544
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectItemKind",
+      "sampledBytes": 11077192
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.NativePerson[],GhProjectsBoards.Core.Projects.ScopedId[],GhProjectsBoards.Core.Projects.ReadValue`1[GhProjectsBoards.Core.Projects.ScopedId],System.Boolean]",
+      "sampledBytes": 10205368
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningProgress",
+      "sampledBytes": 9922544
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ScopedId,System.String,System.Object,System.Object]",
+      "sampledBytes": 9911272
+    },
+    {
+      "type": "System.Int32",
+      "sampledBytes": 9803544
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[GhProjectsBoards.Core.Projects.ValueAvailability,GhProjectsBoards.Core.Projects.ScopedId,System.Object,System.Object]",
+      "sampledBytes": 9582808
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 9121488
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningMode",
+      "sampledBytes": 8745616
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.TaskLaborKind",
+      "sampledBytes": 8426344
+    },
+    {
+      "type": "WinRT.ObjectReference`1[WinRT.Interop.IUnknownVftbl]",
+      "sampledBytes": 8369832
+    },
+    {
+      "type": "System.Collections.Generic.HashSet`1[System.String]",
+      "sampledBytes": 6932904
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectItemReadModel[]",
+      "sampledBytes": 6927264
+    },
+    {
+      "type": "DistinctIterator`1[System.String]",
+      "sampledBytes": 6846224
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ActualContribution[]",
+      "sampledBytes": 6831112
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.NativePerson",
+      "sampledBytes": 6381976
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 5969632
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.NativePerson]",
+      "sampledBytes": 5646016
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.ProjectFieldValue]",
+      "sampledBytes": 5540608
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ReadValue`1[GhProjectsBoards.Core.Projects.ScopedId]",
+      "sampledBytes": 4796152
+    },
+    {
+      "type": "ArraySelectIterator`2[GhProjectsBoards.Core.Projects.ActualContribution,System.String]",
+      "sampledBytes": 4633904
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.Decimal,System.DateOnly,System.Object]",
+      "sampledBytes": 3945928
+    },
+    {
+      "type": "System.String[]",
+      "sampledBytes": 3083096
+    },
+    {
+      "type": "ReferenceTrackerNativeObjectWrapper",
+      "sampledBytes": 2866464
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.ActualContribution]",
+      "sampledBytes": 2812176
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ActualContribution",
+      "sampledBytes": 2775456
+    },
+    {
+      "type": "System.DateTime",
+      "sampledBytes": 2665184
+    },
+    {
+      "type": "Entry[System.DateOnly][]",
+      "sampledBytes": 2337272
+    },
+    {
+      "type": "System.Text.Json.WriteStackFrame[]",
+      "sampledBytes": 2328776
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.ActualContribution]",
+      "sampledBytes": 1919888
+    },
+    {
+      "type": "Entry",
+      "sampledBytes": 1917744
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.EditCell",
+      "sampledBytes": 1812200
+    },
+    {
+      "type": "<>f__AnonymousType0`2[System.Runtime.InteropServices.ComWrappers,System.Runtime.InteropServices.CreateComInterfaceFlags]",
+      "sampledBytes": 1488848
+    },
+    {
+      "type": "Entry[System.Object,System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper][]",
+      "sampledBytes": 1441936
+    },
+    {
+      "type": "Entry[System.IntPtr,System.Runtime.InteropServices.GCHandle][]",
+      "sampledBytes": 1292976
+    },
+    {
+      "type": "ManagedObjectWrapperHolder[]",
+      "sampledBytes": 1206456
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.ProjectFieldValue,System.Boolean]",
+      "sampledBytes": 1172608
+    },
+    {
+      "type": "Sample",
+      "sampledBytes": 959224
+    },
+    {
+      "type": "System.Object",
+      "sampledBytes": 951344
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.Border",
+      "sampledBytes": 852800
+    },
+    {
+      "type": "System.Object[]",
+      "sampledBytes": 852760
+    },
+    {
+      "type": "WinRT.IInspectable",
+      "sampledBytes": 850856
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.EditCell[]",
+      "sampledBytes": 746200
+    },
+    {
+      "type": "<>c__DisplayClass58_3",
+      "sampledBytes": 746200
+    },
+    {
+      "type": "ManagedObjectWrapperHolder",
+      "sampledBytes": 738128
+    },
+    {
+      "type": "Entry[System.Object,System.Collections.Generic.List`1[System.Runtime.InteropServices.ComWrappers+ManagedObjectWrapperHolder]][]",
+      "sampledBytes": 671888
+    },
+    {
+      "type": "Entry[System.Object,System.Runtime.InteropServices.ComWrappers+ManagedObjectWrapperHolder][]",
+      "sampledBytes": 647328
+    },
+    {
+      "type": "System.IntPtr",
+      "sampledBytes": 641728
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectPlanning",
+      "sampledBytes": 640552
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ColumnIdentity",
+      "sampledBytes": 639600
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.PlanningFieldBinding,System.Boolean]",
+      "sampledBytes": 639600
+    },
+    {
+      "type": "VolatileNode[System.Int32,System.WeakReference`1[System.Object]][]",
+      "sampledBytes": 533000
+    },
+    {
+      "type": "FillHandle",
+      "sampledBytes": 533000
+    },
+    {
+      "type": "EventState",
+      "sampledBytes": 532784
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.PresentationColumn,System.Boolean]",
+      "sampledBytes": 531408
+    },
+    {
+      "type": "System.GCMemoryInfoData",
+      "sampledBytes": 529448
+    },
+    {
+      "type": "AsyncStateMachineBox`1[System.ArraySegment`1[System.Byte],System.Text.Json.JsonDocument+<ReadToEndAsync>d__85]",
+      "sampledBytes": 435552
+    },
+    {
+      "type": "<>c__DisplayClass7_0",
+      "sampledBytes": 426400
+    },
+    {
+      "type": "<>c__DisplayClass112_0",
+      "sampledBytes": 426400
+    },
+    {
+      "type": "Entry[GhProjectsBoards.Core.Projects.ProjectFieldDefinition][]",
+      "sampledBytes": 426400
+    },
+    {
+      "type": "ManagedObjectWrapperReleaser",
+      "sampledBytes": 426400
+    },
+    {
+      "type": "System.Action",
+      "sampledBytes": 425808
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 421704
+    },
+    {
+      "type": "StateMachineBox`1[System.Int32,System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[Microsoft.Win32.SafeHandles.SafeFileHandle,System.Memory`1[System.Byte],System.Int64,System.IO.Strategies.OSFileStreamStrategy],System.Int32]]",
+      "sampledBytes": 320552
+    },
+    {
+      "type": "WinRT.ObjectReferenceValue",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.EditTransaction",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "System.Collections.Generic.List`1[System.Runtime.InteropServices.ComWrappers+ManagedObjectWrapperHolder]",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "<>c__DisplayClass135_0",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.SelectOption[]",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "DistinctIterator`1[System.ValueTuple`2[System.DateOnly,System.String]]",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.ProjectPlanning,System.Boolean]",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "IEnumerableWhereIterator`1[Microsoft.UI.Xaml.FrameworkElement]",
+      "sampledBytes": 319800
+    },
+    {
+      "type": "<>f__AnonymousType28`6[System.Int64,System.Int64,System.Int32,System.Int64,System.String,System.Object]",
+      "sampledBytes": 318992
+    },
+    {
+      "type": "MeasuredSpan",
+      "sampledBytes": 316248
+    },
+    {
+      "type": "Sample[]",
+      "sampledBytes": 217848
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Media.TranslateTransform",
+      "sampledBytes": 214240
+    },
+    {
+      "type": "ListSelectIterator`2[GhProjectsBoards.Core.Projects.EditCell,GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 213568
+    },
+    {
+      "type": "Tables[System.Int32,System.WeakReference`1[System.Object]]",
+      "sampledBytes": 213208
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.IssueState",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "DelegateHelper[Microsoft.UI.Xaml.UIElement,System.IntPtr]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Media.SolidColorBrush",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.ColumnDefinition",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.CreationOperation,System.Boolean]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "ArrayWhereSelectIterator`2[GhProjectsBoards.Core.Projects.EditCell,GhProjectsBoards.Core.Projects.RowValue]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningPerson[]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Func`2[System.String,GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Collections.Concurrent.ConcurrentDictionary`2[System.Int32,System.WeakReference`1[System.Object]]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Collections.Generic.HashSet`1[GhProjectsBoards.Core.Projects.ProjectFieldDefinition]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Collections.Generic.HashSet`1[System.ValueTuple`2[System.DateOnly,System.String]]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.DateOnly,System.String,System.Object,System.Object]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "<ExceptIterator>d__88`1[GhProjectsBoards.Core.Projects.ProjectFieldDefinition]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "<>c__DisplayClass148_0",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "IEnumerableSelectIterator`2[GhProjectsBoards.Core.Projects.ProjectFieldDefinition,System.String]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "Microsoft.UI.Xaml.RoutedEventHandler",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.String,System.Nullable`1[System.DateTime],System.Object]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningPerson",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.EditTransaction[]",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "<>c__DisplayClass114_0",
+      "sampledBytes": 213200
+    },
+    {
+      "type": "<>c__DisplayClass58_4",
+      "sampledBytes": 211776
+    },
+    {
+      "type": "Microsoft.UI.Xaml.BringIntoViewRequestedEventArgs",
+      "sampledBytes": 209648
+    },
+    {
+      "type": "Entry[]",
+      "sampledBytes": 131088
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.EditCell,System.Boolean]",
+      "sampledBytes": 110528
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.FieldKey[]",
+      "sampledBytes": 107880
+    },
+    {
+      "type": "System.Linq.Grouping`2[System.String,GhProjectsBoards.Core.Projects.FieldKey]",
+      "sampledBytes": 107872
+    },
+    {
+      "type": "Entry[System.Object,ABI.WinRT.Interop.EventSource`1[Windows.Foundation.TypedEventHandler`2[Microsoft.UI.Xaml.Controls.TextBox,Microsoft.UI.Xaml.Controls.TextCompositionEndedEventArgs]]][]",
+      "sampledBytes": 106632
+    },
+    {
+      "type": "Entry[System.Object,ABI.WinRT.Interop.EventSource`1[Microsoft.UI.Xaml.Input.PointerEventHandler]][]",
+      "sampledBytes": 106632
+    },
+    {
+      "type": "OfTypeIterator`1[Microsoft.UI.Xaml.FrameworkElement]",
+      "sampledBytes": 106616
+    },
+    {
+      "type": "System.UInt32[]",
+      "sampledBytes": 106616
+    },
+    {
+      "type": "ArraySelectIterator`2[GhProjectsBoards.Core.Projects.CalendarException,System.ValueTuple`2[System.DateOnly,System.String]]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Enumerator[GhProjectsBoards.Core.Projects.ProjectFieldDefinition]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>c__DisplayClass134_0",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "WinRT._EventSource_global__Windows_Foundation_TypedEventHandler_global__Microsoft_UI_Xaml_Controls_TextBox__global__Microsoft_UI_Xaml_Controls_TextCompositionStartedEventArgs_",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "ABI.System.Collections.Generic.FromAbiEnumerator`1[Microsoft.UI.Xaml.UIElement]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.TextBlock",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.ProjectItemReadModel]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Linq.PartialArrayEnumerator`1[GhProjectsBoards.Core.Projects.FieldKey]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Text.Json.Arguments`4[System.String,System.String,System.Object,System.Object]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>c__DisplayClass12_0",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,System.IO.Strategies.BufferedFileStreamStrategy+<FlushAsyncInternal>d__55]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>c__DisplayClass9_0",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Windows.Foundation.TypedEventHandler`2[Microsoft.UI.Xaml.Controls.TextBox,Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Input.PointerEventHandler",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>c__DisplayClass16_0",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.Button[]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.SZGenericArrayEnumerator`1[GhProjectsBoards.Core.Projects.ProjectFieldDefinition]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectFieldDefinition[]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.WeakReference`1[System.Object]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "RangeIterator`1[System.Int32]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>c__DisplayClass8_0",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningFieldBinding[]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.ProjectFieldDefinition]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Input.CharacterReceivedRoutedEventArgs",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Input.KeyEventHandler",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "NativeObjectWrapper",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Double",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.PlanningLink",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "IListSelectIterator`2[GhProjectsBoards.Core.Projects.FieldKey,System.String]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Delegate3$4",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Threading.SemaphoreSlim",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "<>f__AnonymousType26`13[System.Int64,System.Int64,System.String,System.String,System.Int64,System.Int64,System.Int64,System.Int32,System.Int32,System.Nullable`1[System.Int64],System.Int32,System.Int32,System.Int32]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Concat2Iterator`1[System.String]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Func`2[GhProjectsBoards.Core.Projects.SelectOption,System.Boolean]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.SelectOption",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Windows.Foundation.TypedEventHandler`2[Microsoft.UI.Xaml.Controls.TextBox,Microsoft.UI.Xaml.Controls.TextCompositionEndedEventArgs]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "DelegateHelper[Microsoft.UI.Xaml.Controls.ColumnDefinition,System.IntPtr]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Func`2[System.ValueTuple`2[GhProjectsBoards.Core.Projects.CreationOperation,GhProjectsBoards.Core.Projects.ScopedId],System.Boolean]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Collections.Generic.IEnumeratorImpl`1[Microsoft.UI.Xaml.UIElement]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Collections.Generic.LinkedListNode`1[System.Int32]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Collections.Generic.HashSet`1[System.DateOnly]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Text.Json.ReadStackFrame[]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.RoutedEventArgs",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.RegistrationStore+RegistrationRecord]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "GhProjectsBoards.Core.Projects.ProjectFieldDefinition",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Enumerator[GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Automation.Peers.TextBoxAutomationPeer",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "ArrayWhereIterator`1[GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "OfTypeIterator`1[GhProjectsBoards.App.EditingGrid+TitleCell]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "ArraySelectIterator`2[GhProjectsBoards.Core.Projects.PlanningTask,System.String]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "Node[System.Int32,System.WeakReference`1[System.Object]]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "IEnumerableWhereIterator`1[GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 106600
+    },
+    {
+      "type": "IteratorSelectIterator`2[System.String,GhProjectsBoards.Core.Projects.EditCell]",
+      "sampledBytes": 103984
+    },
+    {
+      "type": "<>c__DisplayClass147_0",
+      "sampledBytes": 103160
+    },
+    {
+      "type": "SpanScope",
+      "sampledBytes": 103048
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.Button",
+      "sampledBytes": 102672
+    },
+    {
+      "type": "System.Collections.Generic.List`1[GhProjectsBoards.Core.Projects.DraftField]",
+      "sampledBytes": 102520
+    },
+    {
+      "type": "Microsoft.UI.Xaml.Controls.Grid",
+      "sampledBytes": 102472
+    }
+  ],
+  "callbackGaps": [
+    {
+      "index": 0,
+      "milliseconds": 215.1475,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 22.919999999999998,
+      "gcSuspensionOverlapMs": 19.404,
+      "otherSuspensionOverlapMs": 3.5159999999999982,
+      "outsideSuspensionMs": 192.22750000000002,
+      "observedUiSpanUnionMs": 87.914,
+      "combinedObservedSpanUnionMs": 96.175,
+      "outsideCombinedObservedSpansMs": 118.97250000000001
+    },
+    {
+      "index": 1,
+      "milliseconds": 288.1296,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 54.510999999999996,
+      "gcSuspensionOverlapMs": 51.238,
+      "otherSuspensionOverlapMs": 3.272999999999996,
+      "outsideSuspensionMs": 233.6186,
+      "observedUiSpanUnionMs": 48.4147,
+      "combinedObservedSpanUnionMs": 102.303,
+      "outsideCombinedObservedSpansMs": 185.82659999999998
+    },
+    {
+      "index": 2,
+      "milliseconds": 134.0502,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.778,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.778,
+      "outsideSuspensionMs": 132.2722,
+      "observedUiSpanUnionMs": 34.5069,
+      "combinedObservedSpanUnionMs": 35.751999999999995,
+      "outsideCombinedObservedSpansMs": 98.2982
+    },
+    {
+      "index": 3,
+      "milliseconds": 114.9794,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.501,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.501,
+      "outsideSuspensionMs": 113.4784,
+      "observedUiSpanUnionMs": 24.3733,
+      "combinedObservedSpanUnionMs": 25.506,
+      "outsideCombinedObservedSpansMs": 89.4734
+    },
+    {
+      "index": 4,
+      "milliseconds": 142.9646,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 14.056,
+      "gcSuspensionOverlapMs": 12.386,
+      "otherSuspensionOverlapMs": 1.67,
+      "outsideSuspensionMs": 128.90859999999998,
+      "observedUiSpanUnionMs": 44.3529,
+      "combinedObservedSpanUnionMs": 45.513000000000005,
+      "outsideCombinedObservedSpansMs": 97.45159999999998
+    },
+    {
+      "index": 5,
+      "milliseconds": 206.5567,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 2.622,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.622,
+      "outsideSuspensionMs": 203.93470000000002,
+      "observedUiSpanUnionMs": 66.4251,
+      "combinedObservedSpanUnionMs": 68.208,
+      "outsideCombinedObservedSpansMs": 138.3487
+    },
+    {
+      "index": 6,
+      "milliseconds": 212.3599,
+      "classification": "callback-gap-with-captured-progress",
+      "runtimeSuspensionOverlapMs": 2.763,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.763,
+      "outsideSuspensionMs": 209.5969,
+      "observedUiSpanUnionMs": 49.7762,
+      "combinedObservedSpanUnionMs": 51.731,
+      "outsideCombinedObservedSpansMs": 160.62890000000002
+    },
+    {
+      "index": 7,
+      "milliseconds": 113.6379,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.401,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.401,
+      "outsideSuspensionMs": 112.2369,
+      "observedUiSpanUnionMs": 25.2847,
+      "combinedObservedSpanUnionMs": 26.262999999999998,
+      "outsideCombinedObservedSpansMs": 87.3749
+    },
+    {
+      "index": 8,
+      "milliseconds": 116.1586,
+      "classification": "unexplained-callback-gap",
+      "runtimeSuspensionOverlapMs": 108.22699999999999,
+      "gcSuspensionOverlapMs": 108.094,
+      "otherSuspensionOverlapMs": 0.13299999999999557,
+      "outsideSuspensionMs": 7.931600000000017,
+      "observedUiSpanUnionMs": 0.0,
+      "combinedObservedSpanUnionMs": 108.22699999999999,
+      "outsideCombinedObservedSpansMs": 7.931600000000017
+    },
+    {
+      "index": 9,
+      "milliseconds": 103.5915,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.402,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.402,
+      "outsideSuspensionMs": 102.1895,
+      "observedUiSpanUnionMs": 8.9388,
+      "combinedObservedSpanUnionMs": 10.229999999999999,
+      "outsideCombinedObservedSpansMs": 93.36149999999999
+    },
+    {
+      "index": 10,
+      "milliseconds": 164.3353,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.94,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.94,
+      "outsideSuspensionMs": 162.3953,
+      "observedUiSpanUnionMs": 7.7775,
+      "combinedObservedSpanUnionMs": 9.627,
+      "outsideCombinedObservedSpansMs": 154.70829999999998
+    },
+    {
+      "index": 11,
+      "milliseconds": 105.9876,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.385,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.385,
+      "outsideSuspensionMs": 104.6026,
+      "observedUiSpanUnionMs": 26.7338,
+      "combinedObservedSpanUnionMs": 27.731,
+      "outsideCombinedObservedSpansMs": 78.25659999999999
+    },
+    {
+      "index": 12,
+      "milliseconds": 101.1135,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.105,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.105,
+      "outsideSuspensionMs": 100.0085,
+      "observedUiSpanUnionMs": 0.0,
+      "combinedObservedSpanUnionMs": 1.105,
+      "outsideCombinedObservedSpansMs": 100.0085
+    },
+    {
+      "index": 13,
+      "milliseconds": 138.4556,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.739,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.739,
+      "outsideSuspensionMs": 136.7166,
+      "observedUiSpanUnionMs": 32.1264,
+      "combinedObservedSpanUnionMs": 33.353,
+      "outsideCombinedObservedSpansMs": 105.1026
+    },
+    {
+      "index": 14,
+      "milliseconds": 107.7973,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.277,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.277,
+      "outsideSuspensionMs": 106.5203,
+      "observedUiSpanUnionMs": 0.0,
+      "combinedObservedSpanUnionMs": 1.277,
+      "outsideCombinedObservedSpansMs": 106.5203
+    },
+    {
+      "index": 15,
+      "milliseconds": 139.4671,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.689,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.689,
+      "outsideSuspensionMs": 137.7781,
+      "observedUiSpanUnionMs": 32.978,
+      "combinedObservedSpanUnionMs": 34.277,
+      "outsideCombinedObservedSpansMs": 105.19009999999999
+    },
+    {
+      "index": 16,
+      "milliseconds": 141.0981,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 1.667,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.667,
+      "outsideSuspensionMs": 139.4311,
+      "observedUiSpanUnionMs": 31.9744,
+      "combinedObservedSpanUnionMs": 33.224000000000004,
+      "outsideCombinedObservedSpansMs": 107.87409999999998
+    },
+    {
+      "index": 17,
+      "milliseconds": 133.6632,
+      "classification": "unexplained-callback-gap",
+      "runtimeSuspensionOverlapMs": 1.562,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.562,
+      "outsideSuspensionMs": 132.10119999999998,
+      "observedUiSpanUnionMs": 27.8403,
+      "combinedObservedSpanUnionMs": 28.983999999999998,
+      "outsideCombinedObservedSpansMs": 104.6792
+    },
+    {
+      "index": 18,
+      "milliseconds": 109.3081,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.213,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.213,
+      "outsideSuspensionMs": 108.0951,
+      "observedUiSpanUnionMs": 0.0,
+      "combinedObservedSpanUnionMs": 1.213,
+      "outsideCombinedObservedSpansMs": 108.0951
+    },
+    {
+      "index": 19,
+      "milliseconds": 165.812,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 2.026,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.026,
+      "outsideSuspensionMs": 163.786,
+      "observedUiSpanUnionMs": 47.0871,
+      "combinedObservedSpanUnionMs": 48.414,
+      "outsideCombinedObservedSpansMs": 117.39800000000001
+    },
+    {
+      "index": 20,
+      "milliseconds": 100.2772,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 1.192,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.192,
+      "outsideSuspensionMs": 99.0852,
+      "observedUiSpanUnionMs": 1.9359,
+      "combinedObservedSpanUnionMs": 3.108,
+      "outsideCombinedObservedSpansMs": 97.16919999999999
+    },
+    {
+      "index": 21,
+      "milliseconds": 139.5186,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 2.066,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.066,
+      "outsideSuspensionMs": 137.4526,
+      "observedUiSpanUnionMs": 46.6736,
+      "combinedObservedSpanUnionMs": 47.929,
+      "outsideCombinedObservedSpansMs": 91.58959999999999
+    },
+    {
+      "index": 22,
+      "milliseconds": 170.7542,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 2.166,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.166,
+      "outsideSuspensionMs": 168.5882,
+      "observedUiSpanUnionMs": 48.7285,
+      "combinedObservedSpanUnionMs": 50.147,
+      "outsideCombinedObservedSpansMs": 120.6072
+    },
+    {
+      "index": 23,
+      "milliseconds": 106.2483,
+      "classification": "unexplained-callback-gap",
+      "runtimeSuspensionOverlapMs": 1.302,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.302,
+      "outsideSuspensionMs": 104.9463,
+      "observedUiSpanUnionMs": 1.9021,
+      "combinedObservedSpanUnionMs": 3.203,
+      "outsideCombinedObservedSpansMs": 103.0453
+    },
+    {
+      "index": 24,
+      "milliseconds": 106.4912,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 1.403,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.403,
+      "outsideSuspensionMs": 105.0882,
+      "observedUiSpanUnionMs": 0.0703,
+      "combinedObservedSpanUnionMs": 1.473,
+      "outsideCombinedObservedSpansMs": 105.01820000000001
+    },
+    {
+      "index": 25,
+      "milliseconds": 162.635,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 2.008,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.008,
+      "outsideSuspensionMs": 160.62699999999998,
+      "observedUiSpanUnionMs": 45.519,
+      "combinedObservedSpanUnionMs": 46.917,
+      "outsideCombinedObservedSpansMs": 115.71799999999999
+    },
+    {
+      "index": 26,
+      "milliseconds": 150.0895,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 1.789,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.789,
+      "outsideSuspensionMs": 148.3005,
+      "observedUiSpanUnionMs": 35.8735,
+      "combinedObservedSpanUnionMs": 37.231,
+      "outsideCombinedObservedSpansMs": 112.85849999999999
+    },
+    {
+      "index": 27,
+      "milliseconds": 105.7863,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 1.219,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.219,
+      "outsideSuspensionMs": 104.5673,
+      "observedUiSpanUnionMs": 2.0513,
+      "combinedObservedSpanUnionMs": 3.258,
+      "outsideCombinedObservedSpansMs": 102.5283
+    },
+    {
+      "index": 28,
+      "milliseconds": 379.4546,
+      "classification": "correlated-visible-delay-unattributed",
+      "runtimeSuspensionOverlapMs": 174.52100000000002,
+      "gcSuspensionOverlapMs": 172.002,
+      "otherSuspensionOverlapMs": 2.5190000000000055,
+      "outsideSuspensionMs": 204.9336,
+      "observedUiSpanUnionMs": 255.5111,
+      "combinedObservedSpanUnionMs": 256.964,
+      "outsideCombinedObservedSpansMs": 122.49060000000003
+    },
+    {
+      "index": 29,
+      "milliseconds": 168.6009,
+      "classification": "callback-gap-with-captured-progress",
+      "runtimeSuspensionOverlapMs": 2.3,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 2.3,
+      "outsideSuspensionMs": 166.30089999999998,
+      "observedUiSpanUnionMs": 0.1217,
+      "combinedObservedSpanUnionMs": 2.423,
+      "outsideCombinedObservedSpansMs": 166.1779
+    },
+    {
+      "index": 30,
+      "milliseconds": 189.6854,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 15.445,
+      "gcSuspensionOverlapMs": 13.169,
+      "otherSuspensionOverlapMs": 2.276,
+      "outsideSuspensionMs": 174.2404,
+      "observedUiSpanUnionMs": 64.294,
+      "combinedObservedSpanUnionMs": 66.666,
+      "outsideCombinedObservedSpansMs": 123.01939999999999
+    },
+    {
+      "index": 31,
+      "milliseconds": 125.5661,
+      "classification": "correlated-application-viewport-delay",
+      "runtimeSuspensionOverlapMs": 1.652,
+      "gcSuspensionOverlapMs": 0,
+      "otherSuspensionOverlapMs": 1.652,
+      "outsideSuspensionMs": 123.9141,
+      "observedUiSpanUnionMs": 1.5043,
+      "combinedObservedSpanUnionMs": 3.156,
+      "outsideCombinedObservedSpansMs": 122.4101
+    }
+  ],
+  "boundary": "Separate profiled execution only; starts during title input and covers the full scroll phase. UTC/QPC synchronization comes from this driver. Runtime suspensions may overlap UI spans; do not add them. SuspendOther, frequent under sampling, is separated from GC reasons and is not attributed to application GC. Edge-clipped start/stop events are retained in the archived original. Sampled allocation bytes are estimates. Neither GC nor sampled stacks prove physical scanout or explain intervals in unprofiled runs."
+}

@@ -23,4 +23,14 @@ An unresolved/reproduced application-caused visible freeze keeps #65 performance
 
 Focused human workflow reevaluation uses separate synthetic data and remains distinct from engineering measurements. Complete Summary acceptance/expansion, P1/P2, other display/scaling/High Contrast/accessibility environments, broader recovery, #51 throughput, release packaging, live GitHub and human acceptance retain their existing owners. This changeset does not close #65, #64 or #61.
 
-Execution counts, final measured binaries and isolated launch instructions will be recorded after the frozen runs. No pending execution in this working receipt is a pass.
+## Frozen execution receipt
+
+Product corrections are committed at `a776073c5221ce7184208a5adfb8890031a47bff`. Test-operation corrections at `948dd5393aed7992f1b058301532989771921a90` leave `src/` identical; this is the frozen ordinary-app/driver source for the six repetitions, IME, thumb, trace-disabled companions and separate profile. Later changes in this directory are evidence only.
+
+**Scroll performance is FAIL / still open.** All six final light-observer runs retain application-side viewport delays corroborated by independent pixels. Native-value typing p95 is <=100 ms in each run; that does not clear scrolling. The 1,000-task Gantt calculation maximum is 1,298.9222 ms against <=1,000 ms. The final native-retention probe also fails, with 78 sampled unloaded wrappers. See [measurements and cause/fix map](performance.md).
+
+The [execution receipt](executions.md) separates Core, actual controls, ordinary fake-gh workflows, native checks, retained failed attempts and NOT RUN boundaries. The [focused handoff](handoff.md) provides fresh and weekly isolated roots and the retained launcher. This prepares workflow reevaluation; human acceptance remains NOT RUN.
+
+The [raw evidence archive](raw-evidence.zip) is a remotely deliverable artifact, not a local-path attachment claim. It contains original trace/driver/result bytes and 3,442 timestamped captures stored by content hash (48 unique PNGs), with a map back to every original run/name. [Artifact manifest](artifact-manifest.json), [binary manifest](binaries.json), [machine receipt](machine.json), [measurements](measurements.json), [all 59 result attempts](executions.json), [per-pause ledgers](scroll/) and original source reviews are readable alongside it. The large original synthetic checkpoints and runtime profile files remain local with hashes; their derived data and exact producer/source identity are included. No raw failure was repaired or regenerated.
+
+Restore one complete run into a new directory with `python unpack-evidence.py raw-evidence.zip <new-directory> --run post68-final-cold-01`, then run `analyze-scroll.py` against its `observations` directory (Python + Pillow). A fresh extraction reproduced the complete original classification exactly. Original full-window captures with potentially unrelated edge/occlusion pixels and private review-session URLs are excluded from publication.

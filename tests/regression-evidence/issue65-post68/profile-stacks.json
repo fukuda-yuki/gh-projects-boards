@@ -1,0 +1,1510 @@
+[
+  {
+    "thread": "Thread (42472)",
+    "unit": "milliseconds",
+    "start": 25.7244,
+    "end": 54731.89236875,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        48763.34851464385
+      ],
+      [
+        "CPU_TIME",
+        5942.783819002805
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.029842564848685527
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool)",
+        0.002866937108763068
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.0009789883633857244
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.0005119447945638456
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        0.00044358369773789263
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.0002846118203692072
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.ThreadPoolWorkQueue.Dispatch()",
+        0.0001727790813674801
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.0001715082442927951
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.JsonDocument+<ParseAsyncCore>d__72.MoveNext()",
+        0.0001646348976578338
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[System.__Canon,System.Memory`1[System.Byte],System.Int64,System.__Canon],System.Int32].MoveNext()",
+        7.880878729338292e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        54706.16796875
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        48384.82453302754
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        3688.1613353831885
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext()",
+        3583.2965358909355
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext(class System.Threading.Thread)",
+        564.504730768204
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].ExecutionContextCallback(class System.Object)",
+        564.504730768204
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.Validate(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        525.9374126665574
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14.MoveNext()",
+        347.0057097002536
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext()",
+        196.02719200586762
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.FromRecord(class RegistrationRecord)",
+        183.55000388280018
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>g__Field|7(class GhProjectsBoards.Core.Projects.DraftField)",
+        148.2691991762651
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__11(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        131.7889006132579
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.Validate(class GhProjectsBoards.Core.Projects.ProjectRegistration)",
+        122.02440246396924
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Valid(class System.String,class System.String)",
+        114.89969852779885
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Normalize(class System.String,class System.String)",
+        114.89969852779885
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.ReadAsync(class System.String)",
+        102.9763995361327
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_1.<Validate>b__15(class GhProjectsBoards.Core.Projects.FieldChange)",
+        91.82279881261209
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.Validate(class GhProjectsBoards.Core.Projects.ProjectPlanning,int64)",
+        76.95889605962572
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<>c__DisplayClass24_0.<FlushCoreAsync>b__0()",
+        71.26134163675482
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.SaveAsync(class GhProjectsBoards.Core.Projects.DraftRecord,int64,class System.Func`1<bool>)",
+        71.26134163675482
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__10(class GhProjectsBoards.Core.Projects.DraftField)",
+        56.44640036365301
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ValueAvailability].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        36.887699100859436
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.RemoteValid(class System.String,class System.String)",
+        33.36950016178609
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11.MoveNext()",
+        23.54499886406802
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext()",
+        19.63059889945862
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        17.653399724617884
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.<ReadAsync>g__CheckPlan|15_0(value class System.Text.Json.JsonElement)",
+        12.325397948740871
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        8.572700325582446
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        7.664199956198445
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        6.31230003869274
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext(class System.Threading.Thread)",
+        5.962699397086453
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].ExecutionContextCallback(class System.Object)",
+        5.962699397086453
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        5.843899784181701
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].ReadAndCacheConstructorArgument(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo)",
+        4.985499605130542
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].TryRead(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo,!!0&)",
+        4.985499605130542
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PerformanceTrace+SpanScope.Dispose()",
+        4.445599818182018
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.TaskLaborKind].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        4.074088530181143
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.LoadAsync(class GhProjectsBoards.Core.Projects.ConnectionScope,bool)",
+        3.9143999646094016
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext(class System.Threading.Thread)",
+        3.605599880218506
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].ExecutionContextCallback(class System.Object)",
+        3.605599880218506
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (42296)",
+    "unit": "milliseconds",
+    "start": 25.9164,
+    "end": 55304.0335875,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        48789.51293729701
+      ],
+      [
+        "CPU_TIME",
+        6488.426944468412
+      ],
+      [
+        "Microsoft.WinUI!ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(class WinRT.IObjectReference,class Microsoft.UI.Xaml.ApplicationInitializationCallback)",
+        0.17723234068907345
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.EnsureRow(int32)",
+        4.354777775006369e-05
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.UpdateCell(int32,int32)",
+        4.481709765968844e-06
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<FlushCoreAsync>d__24.MoveNext()",
+        2.3608105834682647e-06
+      ],
+      [
+        "Microsoft.WinUI!Microsoft.UI.Xaml.FrameworkElement.Microsoft.UI.Xaml.IFrameworkElementOverrides.MeasureOverride(value class Windows.Foundation.Size)",
+        2.3088286980055273e-06
+      ],
+      [
+        "Microsoft.InteractiveExperiences.Projection!WinRT.GenericTypeInstantiations.Windows_Foundation_TypedEventHandler_2_Microsoft_UI_Windowing_AppWindow__Microsoft_UI_Windowing_AppWindowClosingEventArgs.Do_Abi_Invoke(int,int,int)",
+        2.2949243430048227e-06
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.UpdateColumnVisibility(int32)",
+        2.1707601263187826e-06
+      ],
+      [
+        "System.Linq.il!System.Linq.Enumerable+ArraySelectIterator`2[System.__Canon,System.__Canon].ToArray()",
+        1.665496817793155e-06
+      ],
+      [
+        "Microsoft.WinUI!Microsoft.UI.Xaml.Controls.Control.set_IsEnabled(bool)",
+        1.5443802112713456e-06
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.MainWindow+<Closing>d__12.MoveNext()",
+        1.5335026546381414e-06
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55278.1171875
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.Program.Main(class System.String[])",
+        55278.1171875
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.EnsureRow(int32)",
+        1099.9207774095557
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.CreateCellEditor(int32,int32)",
+        339.3464923759966
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<FlushCoreAsync>d__24.MoveNext()",
+        288.92253050481156
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+TitleCell..ctor(class GhProjectsBoards.App.EditingGrid,int32,int32,class GhProjectsBoards.Core.Projects.EditCell)",
+        271.6539958081412
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSnapshot.Copy(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        184.59590288627552
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.UpdateCell(int32,int32)",
+        165.39649953226035
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+<>c__DisplayClass98_1.<BuildRows>b__5(class Microsoft.UI.Xaml.FrameworkElement,class System.Object)",
+        159.23430019280204
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,GhProjectsBoards.Core.Projects.DraftSession+<FlushCoreAsync>d__24].ExecutionContextCallback(class System.Object)",
+        143.8386748246688
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,GhProjectsBoards.Core.Projects.DraftSession+<FlushCoreAsync>d__24].MoveNext()",
+        134.71157451643953
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,GhProjectsBoards.Core.Projects.DraftSession+<FlushCoreAsync>d__24].MoveNext(class System.Threading.Thread)",
+        134.71157451643953
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.EditingWorkspace.Snapshot()",
+        130.67184445359322
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.ScrollChanged(class System.Object,class Microsoft.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs)",
+        130.5230608709535
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSnapshot.Plan(class GhProjectsBoards.Core.Projects.ProjectPlanning)",
+        130.40360171044844
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSnapshot+<>c.<Plan>b__4_0(class GhProjectsBoards.Core.Projects.PlanningTask)",
+        129.87980148982146
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.SyncHeader(bool)",
+        128.5216609337076
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.Update(class System.String)",
+        111.46798257831605
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.UpdateColumnVisibility(int32)",
+        103.29843726733088
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.FreezeIdentity(class Microsoft.UI.Xaml.Controls.Grid,float64)",
+        93.72448234691547
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.CreateFillHandle(int32,int32)",
+        83.74889918726694
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.SessionChanged()",
+        80.92148241356799
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.MainWindow+<Closing>d__12.MoveNext()",
+        77.16120144710294
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.MainWindow.Closing(class Microsoft.UI.Windowing.AppWindow,class Microsoft.UI.Windowing.AppWindowClosingEventArgs)",
+        77.16120144710294
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+TitleCell+<>c__DisplayClass12_0.<.ctor>b__3(class Microsoft.UI.Xaml.Controls.TextBox,class Microsoft.UI.Xaml.Controls.TextBoxTextChangingEventArgs)",
+        70.96099494492944
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+TitleCell.Refresh()",
+        66.27679970004829
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationWorkspace.FlushDraftsAsync()",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationWorkspace+<FlushDraftsAsync>d__79.MoveNext()",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession.FlushAsync()",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession.CompleteFlushAsync(class System.Threading.Tasks.TaskCompletionSource`1<bool>)",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<CompleteFlushAsync>d__23.MoveNext()",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession.FlushCoreAsync()",
+        64.88630214844306
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+ChoiceCell..ctor(class GhProjectsBoards.App.EditingGrid,int32,int32,class GhProjectsBoards.Core.Projects.EditCell)",
+        64.53809585942508
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid+<>c__DisplayClass98_1.<BuildRows>b__7()",
+        48.1676977306488
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.PaintCellState(int32,int32)",
+        47.45609370618331
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.ReleaseRow(int32)",
+        46.20369774400024
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.MainWindow.<Closing>b__12_0()",
+        40.23350143432617
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSnapshot+<>c.<Copy>b__0_0(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        37.92999999706683
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.UpdateSelectedDetails()",
+        37.76568261063763
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.EditingGrid.EnsureCell(int32,int32)",
+        30.009898395539494
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (22368)",
+    "unit": "milliseconds",
+    "start": 25.9193,
+    "end": 55303.87366875,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        54134.6936239794
+      ],
+      [
+        "CPU_TIME",
+        1143.2493219045946
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.008865273101037019
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.002026993745857908
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool)",
+        0.00019355144286237191
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        7.568748151243199e-05
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        5.6679266890569124e-05
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.ThreadPoolWorkQueue.Dispatch()",
+        5.3359794947027694e-05
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        3.9192485019157175e-05
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.JsonDocument+<ParseAsyncCore>d__72.MoveNext()",
+        3.77328869944904e-05
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[System.__Canon,System.Memory`1[System.Byte],System.Int64,System.__Canon],System.Int32].MoveNext()",
+        2.9950714633741882e-05
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        2.4661610041221138e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55277.95436875
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        54060.609667203986
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        712.4735342506428
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext()",
+        696.4812345916762
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext(class System.Threading.Thread)",
+        247.93201026878342
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].ExecutionContextCallback(class System.Object)",
+        247.93201026878342
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.Validate(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        121.8640246651621
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14.MoveNext()",
+        61.5996988721854
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.FromRecord(class RegistrationRecord)",
+        59.54940031884689
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>g__Field|7(class GhProjectsBoards.Core.Projects.DraftField)",
+        37.86120015246797
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext()",
+        37.26749918403675
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Valid(class System.String,class System.String)",
+        33.05230019917872
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Normalize(class System.String,class System.String)",
+        33.05230019917872
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__10(class GhProjectsBoards.Core.Projects.DraftField)",
+        32.8160002567065
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.Validate(class GhProjectsBoards.Core.Projects.ProjectRegistration)",
+        24.791100056183495
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.SaveAsync(class GhProjectsBoards.Core.Projects.DraftRecord,int64,class System.Func`1<bool>)",
+        24.33219968814865
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<>c__DisplayClass24_0.<FlushCoreAsync>b__0()",
+        24.33219968814865
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.ReadAsync(class System.String)",
+        13.99139971542354
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__11(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        11.024299687740495
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11.MoveNext()",
+        9.856699801825926
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.Validate(class GhProjectsBoards.Core.Projects.ProjectPlanning,int64)",
+        6.528522234471893
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext()",
+        5.862599913786653
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext(class System.Threading.Thread)",
+        5.862599913786653
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].ExecutionContextCallback(class System.Object)",
+        5.862599913786653
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_1.<Validate>b__15(class GhProjectsBoards.Core.Projects.FieldChange)",
+        5.0451998957614705
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.RemoteValid(class System.String,class System.String)",
+        4.808899856467178
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.LoadAsync(class GhProjectsBoards.Core.Projects.ConnectionScope,bool)",
+        3.9940998880392726
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ValueAvailability].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        2.698199865684728
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        2.6428312238740546
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        1.8713997342829316
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ProjectItemKind].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        1.578499840915356
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        1.3371999653336388
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.ParseHours(class System.String)",
+        1.2794999543193626
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.CanonicalHours(value class System.Decimal)",
+        1.242699964737767
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].ReadAndCacheConstructorArgument(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo)",
+        0.8721999563949794
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].TryRead(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo,!!0&)",
+        0.8721999563949794
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningProgress].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.7264999877452283
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        0.5633999902729556
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningMode].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.49639999690043624
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        0.3877999970673045
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (20648)",
+    "unit": "milliseconds",
+    "start": 25.9207,
+    "end": 55303.97929375,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        55201.350896605865
+      ],
+      [
+        "CPU_TIME",
+        76.57652421321836
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+GateThread.GateThreadStart()",
+        0.1219879547131768
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class WaitHandleWaitSourceMap)",
+        0.00918497620978087
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55278.05859375001
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (27820)",
+    "unit": "milliseconds",
+    "start": 25.9216,
+    "end": 55304.15206875,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        47849.82580159227
+      ],
+      [
+        "CPU_TIME",
+        7428.102746223443
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.29603997818395555
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool)",
+        0.0020873469571256464
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.0014865097082292777
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.0005493008072789962
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        0.00046283758365461836
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.00031689707634541264
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.JsonDocument+<ParseAsyncCore>d__72.MoveNext()",
+        0.00030953564339597506
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.0002181069620519338
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.ThreadPoolWorkQueue.Dispatch()",
+        0.0002149317716657606
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[System.__Canon,System.Memory`1[System.Byte],System.Int64,System.__Canon],System.Int32].MoveNext()",
+        8.227902708313195e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55278.23046875
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        47441.877927728245
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        4543.031350202553
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext()",
+        4388.418952656923
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext(class System.Threading.Thread)",
+        880.5548657079705
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].ExecutionContextCallback(class System.Object)",
+        880.5548657079705
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.Validate(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        646.7545892689004
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14.MoveNext()",
+        419.36452700297684
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext()",
+        249.94472542632764
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.FromRecord(class RegistrationRecord)",
+        207.6401027095269
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.ReadAsync(class System.String)",
+        154.61239754563076
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.Validate(class GhProjectsBoards.Core.Projects.ProjectRegistration)",
+        146.7826017443915
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.Validate(class GhProjectsBoards.Core.Projects.ProjectPlanning,int64)",
+        125.27166683232053
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>g__Field|7(class GhProjectsBoards.Core.Projects.DraftField)",
+        100.56959890967732
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__11(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        96.06910026818628
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Valid(class System.String,class System.String)",
+        78.06879894473832
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Normalize(class System.String,class System.String)",
+        78.06879894473832
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<>c__DisplayClass24_0.<FlushCoreAsync>b__0()",
+        65.00709123287061
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.SaveAsync(class GhProjectsBoards.Core.Projects.DraftRecord,int64,class System.Func`1<bool>)",
+        65.00709123287061
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__10(class GhProjectsBoards.Core.Projects.DraftField)",
+        50.536999632101924
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_1.<Validate>b__15(class GhProjectsBoards.Core.Projects.FieldChange)",
+        50.0325992775754
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        27.225978849214584
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.RemoteValid(class System.String,class System.String)",
+        22.50079959918253
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext()",
+        21.68389707260394
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11.MoveNext()",
+        21.68389707260394
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        15.02360003550973
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ValueAvailability].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        12.442499550003504
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        10.157499776546047
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext(class System.Threading.Thread)",
+        9.750298831844134
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].ExecutionContextCallback(class System.Object)",
+        9.750298831844134
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext(class System.Threading.Thread)",
+        8.244999468804963
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].ExecutionContextCallback(class System.Object)",
+        8.244999468804963
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        7.023899834730173
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.ParseHours(class System.String)",
+        5.71769986408799
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PerformanceTrace+SpanScope.Dispose()",
+        5.483598999335186
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.TaskLaborKind].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        4.698395085882112
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.CanonicalHours(value class System.Decimal)",
+        4.594899910198819
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningProgress].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        4.4959835838233175
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].ReadAndCacheConstructorArgument(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo)",
+        4.315599839632341
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].TryRead(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo,!!0&)",
+        4.315599839632341
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (39624)",
+    "unit": "milliseconds",
+    "start": 25.9328,
+    "end": 55303.93670625,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        54920.37781718409
+      ],
+      [
+        "CPU_TIME",
+        357.53733219773903
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.TimerQueue.TimerThread()",
+        0.0755289096771321
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class WaitHandleWaitSourceMap)",
+        0.013227958495917846
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55278.00390625
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (34860)",
+    "unit": "milliseconds",
+    "start": 25.9337,
+    "end": 54731.84829375,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        49734.36497601748
+      ],
+      [
+        "CPU_TIME",
+        4971.5363042457975
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.008234114048093488
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool)",
+        0.002474279164175641
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.0008832034262411526
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        0.0004390648404921649
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.00041708735621170945
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.0003009377698077742
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.00018766712690876375
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.JsonDocument+<ParseAsyncCore>d__72.MoveNext()",
+        0.0001284939355628012
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.ThreadPoolWorkQueue.Dispatch()",
+        8.366794364178531e-05
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[System.__Canon,System.Memory`1[System.Byte],System.Int64,System.__Canon],System.Int32].MoveNext()",
+        5.559216110384568e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        54705.91459375
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        49495.15555661581
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        3046.1828242642905
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext()",
+        2948.2357253345012
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext(class System.Threading.Thread)",
+        930.280846312618
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].ExecutionContextCallback(class System.Object)",
+        930.280846312618
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.Validate(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        364.5445505040178
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14.MoveNext()",
+        273.8891335854125
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext()",
+        168.53059592333324
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.FromRecord(class RegistrationRecord)",
+        145.1120016054411
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.Validate(class GhProjectsBoards.Core.Projects.ProjectRegistration)",
+        100.73670048597492
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.ReadAsync(class System.String)",
+        97.94709892978943
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>g__Field|7(class GhProjectsBoards.Core.Projects.DraftField)",
+        97.81850020625447
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__10(class GhProjectsBoards.Core.Projects.DraftField)",
+        62.147500210855
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Valid(class System.String,class System.String)",
+        59.04369953955755
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Normalize(class System.String,class System.String)",
+        59.04369953955755
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__11(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        54.70329988669333
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.RemoteValid(class System.String,class System.String)",
+        38.77480002901744
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ValueAvailability].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        35.712399727135846
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_1.<Validate>b__15(class GhProjectsBoards.Core.Projects.FieldChange)",
+        35.67099999539947
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.Validate(class GhProjectsBoards.Core.Projects.ProjectPlanning,int64)",
+        30.811136458124125
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        30.549899372034247
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11.MoveNext()",
+        25.573598734094958
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<>c__DisplayClass24_0.<FlushCoreAsync>b__0()",
+        24.53959962053318
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.SaveAsync(class GhProjectsBoards.Core.Projects.DraftRecord,int64,class System.Func`1<bool>)",
+        24.53959962053318
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext()",
+        23.58279876976212
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext(class System.Threading.Thread)",
+        7.069699688148546
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].ExecutionContextCallback(class System.Object)",
+        7.069699688148546
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        5.768299923523728
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.ParseHours(class System.String)",
+        5.04829989897874
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningMode].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        4.75918457358307
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext(class System.Threading.Thread)",
+        4.504099833105101
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].ExecutionContextCallback(class System.Object)",
+        4.504099833105101
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        4.499399816037339
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        4.4652991597653795
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningProgress].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        3.765688098731289
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.CanonicalHours(value class System.Decimal)",
+        3.009899923501507
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        2.7924000024795532
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.TaskLaborKind].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        2.726881753387488
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].ReadAndCacheConstructorArgument(value class System.Text.Json.ReadStack&,value class System.Text.Json.Utf8JsonReader&,class System.Text.Json.Serialization.Metadata.JsonParameterInfo)",
+        2.4759999557118135
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (21456)",
+    "unit": "milliseconds",
+    "start": 25.9344,
+    "end": 55303.8953375,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        55277.9609375
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55277.9609375
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (26280)",
+    "unit": "milliseconds",
+    "start": 25.9349,
+    "end": 55303.900515625,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        53614.028361617835
+      ],
+      [
+        "CPU_TIME",
+        1663.9356808564903
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+IOCompletionPoller.Poll()",
+        0.0015731506735505718
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        55277.965615625
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (37892) (.NET Finalizer Thread)",
+    "unit": "milliseconds",
+    "start": 34.3402,
+    "end": 54531.8636375,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        32325.884386266152
+      ],
+      [
+        "CPU_TIME",
+        22171.57783334351
+      ],
+      [
+        "System.Private.CoreLib.il!System.GC.RunFinalizers()",
+        0.0611137039049936
+      ],
+      [
+        "WinRT.Runtime!WinRT.IObjectReference.Finalize()",
+        7.366885256487876e-05
+      ],
+      [
+        "WinRT.Runtime!WinRT.ObjectReferenceWithContext`1[WinRT.Interop.IUnknownVftbl].Release()",
+        3.0517578125e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        54497.5234375
+      ],
+      [
+        "Thread (37892) (.NET Finalizer Thread)",
+        54497.5234375
+      ],
+      [
+        "System.Private.CoreLib.il!System.GC.RunFinalizers()",
+        54497.5234375
+      ],
+      [
+        "WinRT.Runtime!WinRT.IObjectReference.Finalize()",
+        46790.107550897585
+      ],
+      [
+        "System.Private.CoreLib.il!System.Gen2GcCallback.Finalize()",
+        3206.6331302734397
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper.Finalize()",
+        2972.233035792355
+      ],
+      [
+        "WinRT.Runtime!ABI.WinRT.Interop.EventSourceState`1[System.__Canon].Finalize()",
+        3.4983999576579663
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (20844)",
+    "unit": "milliseconds",
+    "start": 337.2577,
+    "end": 55303.992075,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        49442.66595283596
+      ],
+      [
+        "CPU_TIME",
+        5523.915438919434
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.12779748759891163
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.01672512435823137
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool)",
+        0.006648303355007101
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.00045561329324073085
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        0.0003815330873067069
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        0.00028467626265182844
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[System.__Canon].OnTryRead(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,!0&)",
+        0.0002204343176117618
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.JsonDocument+<ParseAsyncCore>d__72.MoveNext()",
+        0.00016938042062975
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.ThreadPoolWorkQueue.Dispatch()",
+        0.00011666194041026756
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.AsyncOverSyncWithIoCancellation+<InvokeAsync>d__8`2[System.ValueTuple`4[System.__Canon,System.Memory`1[System.Byte],System.Int64,System.__Canon],System.Int32].MoveNext()",
+        8.086642549187673e-05
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        54966.734375
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        49112.98903897767
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15.MoveNext()",
+        3490.371456616509
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext()",
+        3354.78386308957
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.Validate(class GhProjectsBoards.Core.Projects.DraftRecord)",
+        464.22644332801923
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14.MoveNext()",
+        326.995988178334
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext()",
+        219.60258609541933
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].MoveNext(class System.Threading.Thread)",
+        178.40971978683467
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<ReadAsync>d__15].ExecutionContextCallback(class System.Object)",
+        178.40971978683467
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.FromRecord(class RegistrationRecord)",
+        175.23520294096488
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.ReadAsync(class System.String)",
+        131.09399380360037
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.RegistrationStore.Validate(class GhProjectsBoards.Core.Projects.ProjectRegistration)",
+        112.36670101529887
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.Validate(class GhProjectsBoards.Core.Projects.ProjectPlanning,int64)",
+        72.99235607418854
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>g__Field|7(class GhProjectsBoards.Core.Projects.DraftField)",
+        72.48189748498424
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftSession+<>c__DisplayClass24_0.<FlushCoreAsync>b__0()",
+        59.78630068988787
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.SaveAsync(class GhProjectsBoards.Core.Projects.DraftRecord,int64,class System.Func`1<bool>)",
+        59.78630068988787
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__11(class GhProjectsBoards.Core.Projects.EditTransaction)",
+        47.555599890063036
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Valid(class System.String,class System.String)",
+        46.24079680793824
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.Normalize(class System.String,class System.String)",
+        46.24079680793824
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_0.<Validate>b__10(class GhProjectsBoards.Core.Projects.DraftField)",
+        43.340897656190805
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11.MoveNext()",
+        36.6420957922939
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore+<>c__DisplayClass17_1.<Validate>b__15(class GhProjectsBoards.Core.Projects.FieldChange)",
+        29.14099982879344
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext()",
+        28.10329630374798
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningScalars.RemoteValid(class System.String,class System.String)",
+        26.241100092093575
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].MoveNext(class System.Threading.Thread)",
+        22.161996403026194
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,GhProjectsBoards.Core.Projects.DraftStore+<LoadAsync>d__11].ExecutionContextCallback(class System.Object)",
+        22.161996403026194
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        17.178822509353267
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].MoveNext(class System.Threading.Thread)",
+        13.942793260383667
+      ],
+      [
+        "System.Private.CoreLib.il!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,GhProjectsBoards.Core.Projects.DraftStore+<SaveAsync>d__14].ExecutionContextCallback(class System.Object)",
+        13.942793260383667
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ValueAvailability].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        11.3720997148597
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        11.246199901298155
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.<ReadAsync>g__CheckPlan|15_0(value class System.Text.Json.JsonElement)",
+        9.851899623105055
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.DraftStore.LoadAsync(class GhProjectsBoards.Core.Projects.ConnectionScope,bool)",
+        8.53879948854592
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.PlanningProgress].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        6.32548783474158
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PerformanceTrace+SpanScope.Dispose()",
+        5.891999776458761
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.Nullable`1[GhProjectsBoards.Core.Projects.IssueState],System.__Canon,System.__Canon].CreateObject(value class System.Text.Json.ReadStackFrame&)",
+        5.6026998767738405
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5[System.__Canon,GhProjectsBoards.Core.Projects.ValueAvailability,System.__Canon,System.__Canon,System.__Canon].InitializeConstructorArgumentCaches(value class System.Text.Json.ReadStack&,class System.Text.Json.JsonSerializerOptions)",
+        5.276799749360919
+      ],
+      [
+        "GhProjectsBoards.Core!GhProjectsBoards.Core.Projects.PlanningContract.CanonicalHours(value class System.Decimal)",
+        4.890797695682181
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.FlushInBackground()",
+        4.520399661064175
+      ],
+      [
+        "System.Text.Json.il!System.Text.Json.Serialization.JsonConverter`1[GhProjectsBoards.Core.Projects.ProjectItemKind].TryReadAsObject(value class System.Text.Json.Utf8JsonReader&,class System.Type,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.ReadStack&,class System.Object&)",
+        3.9924980353931687
+      ]
+    ]
+  },
+  {
+    "thread": "Thread (31008)",
+    "unit": "milliseconds",
+    "start": 34732.2042,
+    "end": 55303.86529775391,
+    "exclusive": [
+      [
+        "UNMANAGED_CODE_TIME",
+        20525.723884066974
+      ],
+      [
+        "CPU_TIME",
+        45.930592793978576
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        0.0064568323286948726
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart()",
+        0.00016406062786700204
+      ]
+    ],
+    "relevant": [
+      [
+        "Process64 GhProjectsBoards.App.exe\" (40708) Args: ",
+        20571.66109775391
+      ],
+      [
+        "System.Private.CoreLib.il!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32)",
+        20559.06734689103
+      ],
+      [
+        "GhProjectsBoards.App!GhProjectsBoards.App.SheetDiagnostics+DiagnosticSink.Flush()",
+        12.593586802249774
+      ]
+    ]
+  }
+]
