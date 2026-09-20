@@ -17,6 +17,7 @@ internal sealed class SheetDiagnostics
     private readonly List<RenderRequest> rendering = [];
     private Func<bool, object>? snapshot;
     private bool attached, visualCounts;
+    private readonly bool visualWalk = Environment.GetEnvironmentVariable("GHPB_SHEET_VISUAL_WALK") != "0";
     private long previousRendering;
     private sealed record RenderRequest(long Span, long End);
 
@@ -30,12 +31,12 @@ internal sealed class SheetDiagnostics
     }
     internal void Record(string kind, object? data = null) => sink!.Add(grid, kind, data);
     internal IDisposable Span(string kind, string? reason = null) => new MeasuredSpan(this, kind, reason);
-    internal void RequestVisualCounts() => visualCounts = true;
+    internal void RequestVisualCounts() => visualCounts = visualWalk;
     internal void Attach(Func<bool, object> state)
     {
         snapshot = state;
         if (attached) return;
-        attached = true; visualCounts = true; previousRendering = 0;
+        attached = true; visualCounts = visualWalk; previousRendering = 0;
         CompositionTarget.Rendering += Rendering;
         Record("grid-loaded", state(false));
     }

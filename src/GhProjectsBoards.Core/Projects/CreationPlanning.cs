@@ -81,9 +81,18 @@ internal sealed partial class EditingWorkspace
         planning[planning.FindIndex(p => p.ProjectId == projectId)] = plan with { Stamp = Revision + 1, Tasks = tasks, Summary = summary };
         InvalidatePlan(projectId);
     }
-    private bool PlanningIdentityOccupied(string projectId, string issueId)
+    private bool PlanningIdentityOccupied(string projectId, string issueId, string localId)
     {
-        if (Planning(projectId)?.Tasks.Any(t => t.Id == issueId) == true) return true;
+        var plan = Planning(projectId);
+        if (plan?.Tasks.Any(t => t.Id == issueId) == true
+            || plan?.Summary?.Baseline?.Tasks.Any(t => t.TaskId == issueId) == true) return true;
+        if (plan?.Tasks.Any(t => (t.LocalLinks ?? []).GroupBy(l =>
+                (Id: l.PredecessorId == localId ? issueId : l.PredecessorId, l.Kind)).Any(g => g.Count() > 1)) == true) return true;
+        // A per-edge field owns its own baseline, local intent and reconciliation
+        // state. Promoting a retained link must not silently consume that intent.
+        if (plan?.Tasks.Any(task => (task.LocalLinks ?? []).Any(link => link.Kind == "FS" && link.ExternalFinish is null
+            && fields.ContainsKey(new("Dependency", task.Id == localId ? issueId : task.Id, projectId,
+                link.PredecessorId == localId ? issueId : link.PredecessorId)))) == true) return true;
         var registration = CheckpointRegistrations.SingleOrDefault(p => p.Snapshot.Id.NodeId == projectId);
         var items = registration?.Snapshot.Items.Where(i => i.ContentId?.NodeId == issueId).Select(i => i.Id.NodeId).ToHashSet() ?? [];
         return fields.Values.Any(f => f.Key.ProjectId == projectId && (items.Contains(f.Key.NodeId) || f.Key.Kind == "Dependency" && f.Key.NodeId == issueId)

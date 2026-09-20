@@ -27,6 +27,8 @@ public sealed class SustainedInputDiagnosticTests
         var output = Path.GetFullPath(Required("OUTPUT"));
         var condition = Required("CONDITION");
         var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
+        var traceDetail = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_TRACE_DETAIL") ?? "full";
+        Assert.That(traceDetail, Is.AnyOf("full", "light", "off"));
         Assert.That(mode, Is.AnyOf("standard", "ime", "scroll"));
         Assert.That(condition, Is.AnyOf("cold", "warm"));
         Assert.That(Directory.Exists(output), Is.False, "Retain earlier attempts.");
@@ -38,7 +40,7 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, mode, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, traceDetail, data, tasks = 1000, people = 20,
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -62,7 +64,9 @@ public sealed class SustainedInputDiagnosticTests
             TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(50)).Result, Is.True, reason);
         var startInfo = new ProcessStartInfo(app) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(app)! };
         startInfo.Environment["GHPB_DATA_ROOT"] = data;
-        startInfo.Environment["GHPB_SHEET_DIAGNOSTICS"] = Path.Combine(output, "app-trace.jsonl");
+        if (traceDetail != "off") startInfo.Environment["GHPB_SHEET_DIAGNOSTICS"] = Path.Combine(output, "app-trace.jsonl");
+        else startInfo.Environment.Remove("GHPB_SHEET_DIAGNOSTICS");
+        startInfo.Environment["GHPB_SHEET_VISUAL_WALK"] = traceDetail == "full" ? "1" : "0";
         startInfo.Environment["GH_CONFIG_DIR"] = Path.Combine(output, "empty-gh-config");
         foreach (var key in new[] { "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN" }) startInfo.Environment.Remove(key);
         using var dpi = new DesktopDpiScope();
@@ -91,6 +95,7 @@ public sealed class SustainedInputDiagnosticTests
             Capture("ready");
             if (condition == "warm" && mode == "standard") Input("warmup", 0, 10, false);
             var start = Stopwatch.GetTimestamp();
+            Record("clock-sync", new { before = Stopwatch.GetTimestamp(), utc = DateTimeOffset.UtcNow, after = Stopwatch.GetTimestamp() });
             Record("workload-start", new { start });
             if (mode == "scroll") ScrollbarAndDistantEdit();
             else if (mode == "ime") Ime(60);
@@ -302,7 +307,9 @@ public sealed class SustainedInputDiagnosticTests
                     if (index % 6 == 4) Mouse.HorizontalScroll(120);
                     else if (index % 6 == 5) Mouse.HorizontalScroll(-120);
                     else Mouse.Scroll(index % 4 < 2 ? -80 : 80);
-                    Record("scroll-input", new { index, begin, sent = Stopwatch.GetTimestamp() });
+                    Record("scroll-input", new { index, begin, sent = Stopwatch.GetTimestamp(),
+                        axis = index % 6 is 4 or 5 ? "horizontal" : "vertical",
+                        detents = index % 6 == 4 ? 120 : index % 6 == 5 ? -120 : index % 4 < 2 ? -80 : 80 });
                     Thread.Sleep(200); index++;
                 }
                 Record("scroll-phase-end", new { samples = index });

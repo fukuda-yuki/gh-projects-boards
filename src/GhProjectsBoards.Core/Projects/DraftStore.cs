@@ -11,6 +11,7 @@ internal sealed class DraftStore(string registrationRoot)
 {
     private readonly string root = Path.Combine(registrationRoot, "Drafts");
     private readonly SemaphoreSlim saves = new(1);
+    private readonly HashSet<string> rejectedCandidates = new(StringComparer.OrdinalIgnoreCase);
     public bool HasInterruptedSave(ConnectionScope scope) => Directory.Exists(root) && Directory.EnumerateFiles(root, Path.GetFileName(FileFor(scope)) + ".*.tmp").Any();
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -61,12 +62,14 @@ internal sealed class DraftStore(string registrationRoot)
         }
         return (records.ToArray(), problems.ToArray());
     }
-    public async Task<DraftRecord?> LoadAsync(ConnectionScope scope)
+    public Task<DraftRecord?> LoadAsync(ConnectionScope scope) => LoadAsync(scope, false);
+    private async Task<DraftRecord?> LoadAsync(ConnectionScope scope, bool retryOwnedCandidate)
     {
         var file = FileFor(scope);
         if (!File.Exists(file))
         {
-            if (File.Exists(file + ".bak") || Directory.Exists(root) && Directory.EnumerateFiles(root, Path.GetFileName(file) + ".*.tmp").Any())
+            if (File.Exists(file + ".bak") || Directory.Exists(root) && Directory.EnumerateFiles(root, Path.GetFileName(file) + ".*.tmp")
+                .Any(candidate => !retryOwnedCandidate || !rejectedCandidates.Contains(candidate)))
                 throw new InvalidDataException("Interrupted draft save; retain recovery files.");
             return null;
         }
@@ -108,12 +111,16 @@ internal sealed class DraftStore(string registrationRoot)
             using var gate = new FileStream(Path.Combine(root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             var file = FileFor(record.Scope);
             DraftRecord? current;
-            using (PerformanceTrace.Span("checkpoint-current-load-wall")) current = await LoadAsync(record.Scope);
+            using (PerformanceTrace.Span("checkpoint-current-load-wall")) current = await LoadAsync(record.Scope, true);
             if ((current?.Revision ?? 0) != expectedRevision || record.Revision < expectedRevision)
                 throw new InvalidDataException("Stale draft revision; reopen after preserving local work.");
             var temp = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            var ownsCandidate = false;
+            try
+            {
             await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
+                ownsCandidate = true;
                 using (PerformanceTrace.Span("checkpoint-serialize-write-wall")) await JsonSerializer.SerializeAsync(stream, record, Json);
                 using (PerformanceTrace.Span("checkpoint-stream-flush-wall")) await stream.FlushAsync();
                 using (PerformanceTrace.Span("checkpoint-durable-flush-sync")) stream.Flush(true);
@@ -126,7 +133,15 @@ internal sealed class DraftStore(string registrationRoot)
                 if (File.Exists(file)) File.Replace(temp, file, file + ".bak"); else File.Move(temp, file);
             }
             PerformanceTrace.Count("checkpoint-commits");
-
+            }
+            catch
+            {
+                // Only this live writer knows this attempt failed before commit.
+                // Keep the original recovery bytes, even when a file handle prevents
+                // rename. A different writer or restart must still report the orphan.
+                if (ownsCandidate) rejectedCandidates.Add(temp);
+                throw;
+            }
         }
         finally { saves.Release(); }
     }

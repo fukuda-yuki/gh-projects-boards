@@ -40,7 +40,7 @@ internal sealed partial class EditingGrid
             Style = (Style)Application.Current.Resources["ProjectViewsStyle"] };
         AutomationProperties.SetAutomationId(projectViews, "ProjectViews");
         boardsView = new() { Text = "Boards" }; ganttView = new() { Text = "Gantt" };
-        summaryItem = new SelectorBarItem { Text = "Summary" };
+        summaryItem = new SelectorBarItem { Text = summaryEnabled ? "Summary" : "Summary（準備中）", IsEnabled = summaryEnabled };
         AutomationProperties.SetAutomationId(boardsView, "ProjectViewBoards"); AutomationProperties.SetAutomationId(ganttView, "ProjectViewGantt");
         AutomationProperties.SetAutomationId(summaryItem, "ProjectViewSummary");
         projectViews.Items.Add(boardsView); projectViews.Items.Add(ganttView); projectViews.Items.Add(summaryItem);
@@ -59,6 +59,7 @@ internal sealed partial class EditingGrid
     internal void ShowProjectView(ProjectView view, string? selectedRowId = null, string? personId = null)
     {
         if (!CanRefresh || projectViews is null) return;
+        if (view == ProjectView.Summary && !summaryEnabled) view = ProjectView.Boards;
         var prior = CurrentProjectView; var id = selectedRowId ?? ViewSelection?.Item;
         switchingView = true; projectViews.SelectedItem = view == ProjectView.Gantt ? ganttView : view == ProjectView.Summary ? summaryItem : boardsView; switchingView = false;
         if (prior == ProjectView.Boards && view != ProjectView.Boards)
@@ -70,7 +71,7 @@ internal sealed partial class EditingGrid
         if (summaryView is not null) summaryView.Visibility = Visibility.Collapsed;
         if (view == ProjectView.Summary)
         {
-            EnsureSummary(); summaryView!.Visibility = Visibility.Visible; UpdateSummary(true, personId);
+            EnsureSummary(); summaryView!.Visibility = Visibility.Visible; UpdateSummary(true, personId, id);
         }
         else if (view == ProjectView.Gantt)
         {

@@ -50,8 +50,9 @@ internal static class SummaryWorkload
         var result = SummaryProjection.Create(restored, p, DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9)));
         if (result.TaskCount != 1000 || result.People.Single(p => p.Id == "U1").Forecast.Hours != 120
             || result.People.Single(p => p.Id == "U2").Headroom != -16) throw new InvalidDataException("Independent Summary fixture readback failed.");
-        await File.WriteAllTextAsync(Path.Combine(root, "summary-fixture.json"), JsonSerializer.Serialize(new {
-            kind = "synthetic-summary-v1", tasks = 1000, people = 20, projects = 2, scope = "github.com/viewer42", validatedReadback = true,
+        Directory.CreateDirectory(Path.Combine(root, "diagnostics"));
+        await File.WriteAllTextAsync(Path.Combine(root, "diagnostics", "summary-fixture.json"), JsonSerializer.Serialize(new {
+            kind = "synthetic-summary-v2", dataRoot = Path.GetFullPath(root), tasks = 1000, people = 20, projects = 2, scope = "github.com/viewer42", validatedReadback = true,
             cutoff = result.Cutoff, independentExpected = new { A = new[] { 160, 144, 48, 72, 120 }, B = new[] { 80, 64, 56, 40, 96 } },
             examples = "A/B values in raw hours (allowance, estimate, actual, remaining, forecast); I3 missing remaining, I4 stale actual, I5 future actual, I6 reassigned historical U3, I7 joint U5/U6 with unattributed balance, I8 rollup, I10 direct with baseline4h/current12h, I12 ambiguous parent, local unpublished task, offscreen pending estimate; P2 allowance U1=8h",
             network = "offline seed; no authentication or GitHub calls", humanAcceptance = "not run" }, new JsonSerializerOptions { WriteIndented = true }));

@@ -120,7 +120,7 @@ internal sealed partial class EditingWorkspace
         if (fields.TryGetValue(new("Title", issue.Id), out var draft) && (draft.Change is not null || draft.Buffer is not null || draft.Conflict))
             throw new InvalidOperationException("関連付け先には既存のタイトル下書きがあります。作業を解決してから再確認してください。");
         var projectId = journal.Single(b => b.Id == batchId).Project.NodeId;
-        if (PlanningIdentityOccupied(projectId, issue.Id))
+        if (PlanningIdentityOccupied(projectId, issue.Id, c.LocalId))
             throw new InvalidOperationException("関連付け先には既存の計画・工数下書きがあります。既存作業を確認してから関連付けてください。");
         RecordCreation(batchId, c with { Verified = issue, UserBound = true, Authorized = true,
             EarlierUncertain = true, Reason = "ユーザー確認で関連付け（元の送信成功の証明ではありません）" });
@@ -180,7 +180,7 @@ internal sealed partial class EditingWorkspace
                 || !item.Values.Any(v => v.FieldId?.NodeId == s.FieldId && v.Availability is ValueAvailability.Present or ValueAvailability.Empty))) continue;
             if (fields.TryGetValue(new("Title", issue.Id.NodeId), out var shared)
                 && (shared.Change is not null || shared.Buffer is not null || shared.Conflict)) continue;
-            if (PlanningIdentityOccupied(p.Id.NodeId, issue.Id.NodeId)) continue;
+            if (PlanningIdentityOccupied(p.Id.NodeId, issue.Id.NodeId, c.LocalId)) continue;
             void Transfer(FieldKey key, string? baseline, string? value, string? buffer, FieldObservation observation)
             {
                 fields[key] = new(key, baseline, p.Id, observation.At,

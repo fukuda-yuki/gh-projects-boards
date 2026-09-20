@@ -23,6 +23,7 @@ internal sealed partial class EditingWorkspace
             if (index >= 0) columnPreferences[index] = new(p.Snapshot.Id.NodeId, Columns(p).Columns.Select(c => c.Preference).ToArray());
         }
         registrations = current.Select(RegistrationStore.ToRecord).ToArray(); Revision++;
+        calculatedPlans.Clear();
     }
     private static bool SameUndoState(DraftField a, DraftField b) => a.Baseline == b.Baseline && a.Change == b.Change
         && a.Buffer == b.Buffer && a.Stamp == b.Stamp && a.Conflict == b.Conflict

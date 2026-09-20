@@ -27,7 +27,7 @@ public sealed class SummaryPerformanceHostedTests
             Assert.That(projection.People.Single(p => p.Id == "U2").Headroom, Is.EqualTo(-16)); if (i >= 0) calculation.Add(watch.Elapsed.TotalMilliseconds);
         }
         var session = new DraftSession(new DraftStore(Path.Combine(output, "session")), work, 0); Assert.That(await session.FlushAsync(), Is.True);
-        EditingGrid grid = null!; await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new(p, session, () => Task.FromResult(true)); });
+        EditingGrid grid = null!; await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new(p, session, () => Task.FromResult(true), allowSummary: true); });
         await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0"); await Ui.Idle();
         var scale = 0d;
         try

@@ -7,6 +7,25 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid
 {
+    private readonly bool summaryEnabled;
+    private static bool SummaryEvaluationEnabled()
+    {
+        // The existing isolated fixture launcher is the temporary development
+        // boundary. Ordinary saved profiles keep the unfinished report contained.
+        var root = Environment.GetEnvironmentVariable("GHPB_DATA_ROOT");
+        if (string.IsNullOrWhiteSpace(root) || !System.IO.Path.IsPathFullyQualified(root)) return false;
+        try
+        {
+            using var marker = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(
+                System.IO.Path.Combine(root, "diagnostics", "summary-fixture.json")));
+            var value = marker.RootElement;
+            return value.GetProperty("kind").GetString() == "synthetic-summary-v2"
+                && value.GetProperty("validatedReadback").GetBoolean()
+                && string.Equals(value.GetProperty("dataRoot").GetString(), System.IO.Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception error) when (error is System.IO.IOException or UnauthorizedAccessException
+            or System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException) { return false; }
+    }
     private long summaryRevision = -1;
     private EditingWorkspace? summaryWorkspace;
     private DateOnly summaryDay;
@@ -23,13 +42,13 @@ internal sealed partial class EditingGrid
         summaryView.SaveRequested += async () => { await FlushDraftsAsync("summary-retry"); Update(); };
         summaryView.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateSummary(true); };
     }
-    private void UpdateSummary(bool force = false, string? person = null)
+    private void UpdateSummary(bool force = false, string? person = null, string? row = null)
     {
         if (!ShowingSummary) return;
         summaryView!.ShowOperationStatus(operationProblem, session.Status);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9));
         if (!force && summaryWorkspace == session.Workspace && summaryRevision == session.Workspace.Revision && summaryDay == today) return;
-        summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today), person);
+        summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today), person, row);
         summaryWorkspace = session.Workspace; summaryRevision = session.Workspace.Revision; summaryDay = today;
     }
     private async Task AllowanceDialogAsync(string personId)
