@@ -9,6 +9,7 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.FirstOrDefault() == "--seed-gantt" && args.Length == 2) return await GanttWorkload.Seed(args[1]);
         if (args.FirstOrDefault() == "--performance-init" && args.Length == 2) return LivePerformanceRun.Initialize(args[1]);
         if (args.FirstOrDefault() == "--performance-stage" && args.Length == 5)
             return await LivePerformanceRun.Stage(args[1], args[2], args[3], args[4]);

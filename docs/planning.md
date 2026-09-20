@@ -1,6 +1,6 @@
 # Planning data contract
 
-[#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) owns these decisions and their bounded proofs. [#61](https://github.com/fukuda-yuki/gh-projects-boards/issues/61) owns the production Boards path. [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) owns routing/status; Issues own acceptance/evidence. Later Gantt (#15), Summary (#64), load (#62) and new-task CSV (#63) consume the same adopted plan.
+[#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) owns these decisions and their bounded proofs. [#61](https://github.com/fukuda-yuki/gh-projects-boards/issues/61) owns the production Boards path. [#15](https://github.com/fukuda-yuki/gh-projects-boards/issues/15) owns Gantt inspection and linked editing. [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) owns routing/status; Issues own acceptance/evidence. Gantt and later Summary (#64), load (#62) and new-task CSV (#63) consume the same adopted plan.
 
 ## Identity and storage
 
@@ -71,6 +71,16 @@ Backup/second Windows profile uses a flushed full checkpoint. `DraftStore.Export
 Bundle all **54 official dates in 2025–2027**, including substitute/intervening holidays named `休日`. Source: [Cabinet Office page](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html) and [CSV](https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv). `scripts/Import-HolidayPreset.ps1` consumes saved Shift-JIS bytes, validates headers/duplicates/coverage and emits version/source/SHA256/retrieval time. No substitute/equinox algorithm or runtime download. #13 owns notice/distribution review; preserve official attribution and derived-data provenance.
 
 Each Project copies adopted dates/version/source/hash/years. Bundle updates never replace them implicitly. Outside coverage, retain the calendar and require explicit PMO exceptions or visibly selected `HolidaysNotConsidered`. Unknown years are not verified holiday-free. Adoption shows changed dates and recalculates affected Auto work, retaining exceptions/Manual/actuals/protected baseline. Company holidays are explicit exceptions.
+
+## Gantt inspection and linked editing
+
+The compact Project selector switches Boards and Gantt within the same workspace; Summary remains unavailable until its consumer exists. Switching preserves committed work, unfinished cell text and stable selected identity without a cell commit or remote access. Native composition must finish or cancel naturally before switching. Each Project remembers its selected row and view during the session; checkpoint restoration preserves work without promising persisted viewport positions.
+
+`GanttProjection` consumes `EditingWorkspace.PlanFor` and committed titles. It retains every row independently of the Boards filter, identifies duplicate titles by Repository/Issue or local ID, and distinguishes Unplanned, partial, unresolved, stale and unavailable results. Only a complete current adopted interval is a bar. A partial Manual interval has its known endpoint marker; no missing time is synthesized from a DATE field. The selected row exposes exact Japan wall-clock minutes, effective owner/weight, effort, progress, adoption reason, automatic suggestion, calendar revision, endpoint-day personal intervals and relationship provenance. Unknown owners/weights remain unknown. Manual conflicts remain advisory; invalid edits and failed saves retain their actual error and a local retry path.
+
+The day/week axis uses uniform elapsed wall-clock time (96/28 DIPs per day) with exact minute positions. Project start and known endpoints bound a navigable horizon with trailing space; an empty plan's calendar page supplies navigation context only. Frozen identity accompanies one virtualized vertical task list and a shared horizontal timeline offset. Work/rest shading follows the adopted Project calendar, not every person's exceptions; unknown coverage uses `?`. Short bars retain their actual duration, with a hairline marker below one DIP and the full row as their hit target. Day/week changes preserve the current day. Selected-task FS arrows expose direction without drawing every relationship at once; the relationship selector retains complete identities and can reveal filtered/offscreen prerequisites or successors. External prerequisites remain inspectable even when they have no local row.
+
+**日程を編集** opens the existing planning editor for that stable task. Date overrides enter Manual, explicit Auto releases them, and **元に戻す** uses the shared coherent history. **表で開く** reveals the same row, temporarily including it if the Boards filter excludes it. **計画設定** uses the existing Project editor and replan. Save failures stay visible in Gantt with **保存を再試行**. These commands neither level resources nor change the remote Apply contract. Bar dragging remains deferred.
 
 ## P2 compatibility and named dispositions
 

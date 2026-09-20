@@ -185,6 +185,7 @@ internal sealed partial class EditingGrid : Grid
         {
             if (e.Key == VirtualKey.Escape && drag is not null) { CancelDrag(); e.Handled = true; return; }
             if (e.Key != VirtualKey.F6 || !CanRefresh) return;
+            if (ShowingGantt) { gantt!.CycleFocus(Down(VirtualKey.Shift)); e.Handled = true; return; }
             var focused = FocusManager.GetFocusedElement(XamlRoot);
             var region = ReferenceEquals(focused, reapplyButton) ? 1 : ReferenceEquals(focused, detailsButton) ? 2 : 0;
             var next = viewStrip.Visibility == Visibility.Visible
@@ -200,10 +201,11 @@ internal sealed partial class EditingGrid : Grid
             e.Handled = true;
         };
         BuildRows();
+        InitializeProjectViews();
         ActualThemeChanged += (_, _) => Update("theme");
         InitializeDrag();
         Unloaded += (_, _) => { generation++; CancelDrag(); session.Changed -= SessionChanged; DetachWheel(); if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; diagnostics?.Detach(); };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; listScroll = Descendants(list).OfType<ScrollViewer>().FirstOrDefault(); if (listScroll is not null) { listScroll.ViewChanged += ScrollChanged; listScroll.SizeChanged += ScrollSizeChanged; AttachWheel(); ResizeSheetColumns(); } diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
+        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; AttachSheetScroll(); diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
@@ -351,7 +353,7 @@ internal sealed partial class EditingGrid : Grid
         controls[r] = []; markers[r] = []; cellBorders[r] = []; selectionFrames[r] = []; fillHandles[r] = [];
         rowLines[r].Children.Clear(); rowLines[r].ColumnDefinitions.Clear();
     }
-    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    internal static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {
@@ -581,6 +583,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void Update(string updateReason = "caller")
     {
+        UpdateGantt();
         using var measured = diagnostics?.Span("update", updateReason);
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) return;
@@ -819,6 +822,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void RefreshStatus()
     {
+        if (ShowingGantt) gantt!.ShowOperationStatus(operationProblem, session.Status);
         var saved = session.Status.Replace("（GitHub未反映）", "");
         // Keep a save failure visible even when a bulk command also has a rejection.
         status.Text = saved.Contains("失敗") ? saved + " / " + operationProblem
