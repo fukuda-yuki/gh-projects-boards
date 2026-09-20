@@ -1,0 +1,4 @@
+# Keep generated ledgers available while default review focuses on the corrective
+# source, regression cases and human-readable failure/acceptance receipts.
+*.json linguist-generated=true
+scroll/*.jsonl linguist-generated=true
