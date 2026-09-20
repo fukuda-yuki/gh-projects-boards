@@ -1,5 +1,10 @@
 # Corrective branch handoff
 
+> Follow-up: the user requested local integration into the original Summary
+> checkout. See the [local integration handoff](../issue64-local-integration/README.md)
+> for its branch, merge source and validation. The standalone publication
+> commands below describe the earlier repair branch, not the combined checkout.
+
 Local implementation and selected validation are complete for this bounded repair. Remote publication is blocked by the execution policy, not missing user authorization. The rejected push did not run. No corrective PR, CI, merge or release exists.
 
 - Branch: `codex/issue-61-65-input-repair`, no upstream. Main remains `3dcb3364d6c65f07f04b600e3b65f5ad53403557`.
