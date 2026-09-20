@@ -589,7 +589,7 @@ internal sealed partial class EditingGrid : Grid
         if (!CanRefresh) return;
         // A selection or a durable-save acknowledgement does not change cell values.
         // Keep native editors untouched unless the workspace or its projection changed.
-        if (presentedWorkspace == session.Workspace && presentedRevision == session.Workspace.Revision
+        if (presentedWorkspace == session.Workspace && presentedRevision == session.Workspace.PresentationRevision
             && presentedGeneration == generation && updateReason != "theme")
         {
             RefreshStatus();
@@ -658,7 +658,7 @@ internal sealed partial class EditingGrid : Grid
             for (var r = 0; r < controls.Count; r++) for (var c = 0; c < controls[r].Length; c++) UpdateCell(r, c);
             using (diagnostics?.Span("update-selected-details")) UpdateSelectedDetails();
             UpdateSelection();
-            presentedWorkspace = session.Workspace; presentedRevision = session.Workspace.Revision; presentedGeneration = generation;
+            presentedWorkspace = session.Workspace; presentedRevision = session.Workspace.PresentationRevision; presentedGeneration = generation;
         }
         finally { updating = false; }
     }
@@ -1058,7 +1058,20 @@ internal sealed partial class EditingGrid : Grid
                 if (restoring || !cell.Editable || !owner.CurrentEditor(row, column, this)) return;
                 using var measured = owner.diagnostics?.Span("text-changing");
                 owner.diagnostics?.Record("text-changing", new { row, column, key = cell.Key, length = Text.Length, composing });
-                Editing = true; owner.session.Workspace.SetBuffer(cell, Text); owner.UpdateSelectedDetails(); _ = owner.FlushDraftsAsync("text-changing");
+                Editing = true;
+                var hadBuffer = owner.session.Workspace.Buffer(cell) is not null;
+                owner.session.Workspace.SetBuffer(cell, Text);
+                // Native typing already displays this buffer. Refresh only peers
+                // sharing its identity; aggregate presentation changes on entry/exit.
+                if (!hadBuffer) owner.Update("pending-state");
+                else
+                {
+                    for (var r = 0; r < owner.controls.Count; r++)
+                        for (var c = 0; c < owner.controls[r].Length; c++)
+                            if (owner.rows[r].Cells[c].Key == cell.Key && !ReferenceEquals(owner.controls[r][c], this)) owner.UpdateCell(r, c);
+                    owner.UpdateSelectedDetails();
+                }
+                _ = owner.FlushDraftsAsync("text-changing");
             };
         }
         public void Refresh()

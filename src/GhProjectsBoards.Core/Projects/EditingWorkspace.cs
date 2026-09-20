@@ -25,6 +25,10 @@ internal sealed partial class EditingWorkspace
     private readonly List<EditTransaction> history = [];
     public ConnectionScope Scope { get; }
     public long Revision { get; private set; }
+    private long pendingTextChanges;
+    // Changed buffer contents are durable work, but do not change committed
+    // projections, differences or the count/location of pending cells.
+    public long PresentationRevision => Revision - pendingTextChanges;
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
@@ -102,6 +106,7 @@ internal sealed partial class EditingWorkspace
         if (old.Buffer == text) return;
         fields[cell.Key!] = old with { Buffer = text };
         Revision++;
+        if (old.Buffer is not null && text is not null) pendingTextChanges++;
     }
     public void Commit(string projectId, EditCell cell, string value, bool optionId = false)
         => Apply(projectId, [(cell, value, false, optionId)]);

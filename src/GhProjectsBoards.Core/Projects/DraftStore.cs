@@ -238,6 +238,7 @@ internal sealed class DraftStore(string registrationRoot)
 internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace, long durableRevision)
 {
     private readonly SemaphoreSlim gate = new(1);
+    private Task<bool>? pendingFlush;
     private readonly string recoveryNotice = store.HasInterruptedSave(workspace.Scope) ? " / 中断保存ファイルを保持しています（要確認）" : "";
     public EditingWorkspace Workspace { get; private set; } = workspace;
     public long DurableRevision { get; private set; } = durableRevision;
@@ -262,9 +263,22 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
         { Status = "ローカル保存失敗または比較後の変更。元の作業を保持しました。再試行してください。"; return false; }
         finally { gate.Release(); Changed?.Invoke(); }
     }
-    public async Task<bool> FlushAsync()
+    public Task<bool> FlushAsync()
     {
         PerformanceTrace.Count("draft-flush-requests");
+        if (pendingFlush is { IsCompleted: false }) return pendingFlush;
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        pendingFlush = completion.Task;
+        _ = CompleteFlushAsync(completion);
+        return completion.Task;
+    }
+    private async Task CompleteFlushAsync(TaskCompletionSource<bool> completion)
+    {
+        try { completion.SetResult(await FlushCoreAsync()); }
+        catch (Exception error) { completion.SetException(error); }
+    }
+    private async Task<bool> FlushCoreAsync()
+    {
         using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
         try
         {
@@ -275,7 +289,13 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
                 using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
                 DraftRecord snapshot;
                 using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
-                await store.SaveAsync(snapshot, DurableRevision);
+                var expectedRevision = DurableRevision;
+                // Capture on the workspace's owning context. Records are replaced,
+                // never mutated by subsequent edits; only this fixed snapshot crosses
+                // to the worker. The gate and store's revision/atomic-replace guards
+                // still serialize every durable write. New input requests join this
+                // loop immediately, with no timer/debounce or enlarged loss window.
+                await Task.Run(() => store.SaveAsync(snapshot, expectedRevision));
                 DurableRevision = snapshot.Revision;
             }
             Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;

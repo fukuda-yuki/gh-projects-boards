@@ -37,9 +37,11 @@ internal sealed partial class EditingWorkspace
     private void SetLocalBuffer(EditCell cell, string? text)
     {
         var old = Local(cell);
-        if (!cell.Editable || LocalBufferFor(cell) == text) return;
+        var previous = LocalBufferFor(cell);
+        if (!cell.Editable || previous == text) return;
         ReplaceLocal(cell.Key!.Kind == "LocalTitle" ? old with { TitleBuffer = text } : old with { RepositoryBuffer = text });
         Revision++;
+        if (previous is not null && text is not null) pendingTextChanges++;
     }
     public ProjectFieldDefinition[] LocalColumns(ProjectRegistration registration)
     {

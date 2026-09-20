@@ -107,8 +107,8 @@ internal sealed partial class EditingGrid
     {
         if (!ShowingGantt) return;
         gantt!.ShowOperationStatus(operationProblem, session.Status);
-        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.Revision && ganttProjectionGeneration == projection.Generation) return;
+        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.PresentationRevision && ganttProjectionGeneration == projection.Generation) return;
         gantt!.Present(GanttProjection.Create(session.Workspace, registration, projection.Ids), selected);
-        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.Revision; ganttProjectionGeneration = projection.Generation;
+        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.PresentationRevision; ganttProjectionGeneration = projection.Generation;
     }
 }
