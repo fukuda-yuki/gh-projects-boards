@@ -49,6 +49,7 @@ internal sealed class GanttView : Grid
     internal string? SelectedRowId => (list.SelectedItem as GanttRow)?.RowId;
     internal GanttProjection AdoptedProjection => projection;
     internal GanttAxis Axis => axis;
+    internal FrameworkElement SchedulingAnchor { get; }
     private sealed record Relation(string Label, string? RowId);
 
     internal GanttView()
@@ -63,6 +64,7 @@ internal sealed class GanttView : Grid
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var commands = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true, HorizontalAlignment = HorizontalAlignment.Left };
+        SchedulingAnchor = commands;
         AutomationProperties.SetAutomationId(commands, "GanttCommands");
         Button Tool(string text, string id, Symbol icon, Action action, bool secondary = false)
         {

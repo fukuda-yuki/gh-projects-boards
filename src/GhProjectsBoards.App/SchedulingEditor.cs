@@ -64,7 +64,7 @@ internal sealed partial class EditingGrid
         var dateCells = row.Cells.Where(c => work.PlanningInputRole(c) is "Start" or "Finish").ToArray();
         string Initial(string role, DateTime? value) => dateCells.SingleOrDefault(c => work.PlanningInputRole(c) == role) is { } c
             ? work.Buffer(c) ?? DateText(value) : DateText(value);
-        var panel = new StackPanel { Spacing = 8, Width = 360 };
+        var panel = new StackPanel { Spacing = 8, Width = 420 };
         AutomationProperties.SetAutomationId(panel, "SchedulingEditor");
         panel.Children.Add(new TextBlock { Text = RowIdentity(row), TextWrapping = TextWrapping.Wrap, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         var method = new RadioButtons { Header = "日程の決め方", MaxColumns = 2 };
@@ -90,7 +90,10 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(apply, "ScheduleApply"); AutomationProperties.SetAutomationId(close, "ScheduleClose");
         AutomationProperties.SetAutomationId(settings, "ScheduleSettings");
         actions.Children.Add(apply); actions.Children.Add(close); actions.Children.Add(settings); panel.Children.Add(actions);
-        var flyout = new Flyout { Content = new ScrollViewer { Content = panel, MaxHeight = Math.Max(180, XamlRoot.Size.Height - 100), VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        // Anchor to a stable toolbar or contextual control, never an overflow
+        // item that disappears or the full-height workspace.
+        var flyout = new Flyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom,
+            Content = new ScrollViewer { Content = panel, MaxHeight = Math.Max(180, XamlRoot.Size.Height - 240), VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
         var expected = work.Revision; var editorGeneration = generation; var explicitAuto = method.SelectedIndex == 0;
         ProjectPlanning Candidate() => work.SchedulingCandidate(registration, rowId,
             method.SelectedIndex == 0 ? PlanningMode.Auto : method.SelectedIndex == 1 ? PlanningMode.Manual : PlanningMode.Unplanned,

@@ -145,7 +145,7 @@ internal sealed partial class EditingGrid : Grid
         Command("元に戻す", "GridUndo", Symbol.Undo, Undo);
         Command("値をクリア", "GridClear", Symbol.Clear, ClearSelected, true);
         var planning = Tool("計画", "GridPlanning", Symbol.Calendar);
-        planning.Click += async (_, _) => await ShowSchedulingEditorAsync(planning);
+        planning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowSchedulingEditorAsync(toolbar); };
         var taskDetails = Tool("タスクの詳細", "GridTaskDetails", Symbol.Edit, true);
         taskDetails.Click += async (_, _) => await PlanningDialogAsync(false);
         var planningSettings = Tool("計画設定", "GridPlanningSettings", Symbol.Setting, true);
