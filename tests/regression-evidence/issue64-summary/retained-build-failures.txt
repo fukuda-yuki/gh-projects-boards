@@ -42,4 +42,3 @@ C:\Program Files\dotnet\sdk\10.0.401\Microsoft.Common.CurrentVersion.targets(509
 Artifact: TestResults/issue64/build-08.log
 MSBUILD : error MSB1009: プロジェクト ファイルが存在しません。
 スイッチ: GhProjectsBoards.slnx
-
