@@ -1,0 +1,44 @@
+[
+  {
+    "file": "assets/gantt-geometry-Light.png",
+    "sha256": "6B929D0D303B003BE550C628C4075BA152E5706AACA82CDCFFAE9017EB94B7AC",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  },
+  {
+    "file": "assets/gantt-geometry-Dark.png",
+    "sha256": "8126982BF3D863C033D02F252C6F618E1C0835A20956B77BA1498C0BA6331EDD",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  },
+  {
+    "file": "assets/gantt-1000-replanned.png",
+    "sha256": "367570D9FA2AEDFB477372317E79B6CA8C4C80BA61E0C4C4F54179295905A848",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  },
+  {
+    "file": "assets/gantt-1000-last-day.png",
+    "sha256": "E9AAB27C378B1731DDE679DDA025C62C34993FD50DB67BF02BE4DA0C21AB17B1",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  },
+  {
+    "file": "assets/gantt-1000-fan-in-week.png",
+    "sha256": "1CFA761A9949829EABF59FCFE10D7502AD5618FD8037AF275B6E1C78765F46E5",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  },
+  {
+    "file": "assets/gantt-1000-narrow.png",
+    "sha256": "111B7116C043FD0C14251F9D398441335804CC9E7E2C590395622E07B9D308A4",
+    "sourceRun": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "capture": "RenderTargetBitmap of actual EditingGrid and Gantt controls; not an ordinary-window or physical-scanout capture",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4"
+  }
+]
