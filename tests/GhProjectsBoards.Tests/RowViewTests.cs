@@ -13,7 +13,7 @@ internal sealed class RowViewTests
     public void CheckpointExplicitlyVersionsRowDefinitions()
     {
         var w = new EditingWorkspace(EditingTests.Registration().Snapshot.Id.Scope);
-        Assert.That(w.Snapshot().Version, Is.EqualTo(9));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(12));
     }
     [TestCase(false), TestCase(true)]
     public void OptionOrderAndDistinctMissingStatesSortAfterValues(bool descending)
@@ -107,7 +107,7 @@ internal sealed class RowViewTests
         await store.SaveAsync(record, 0); var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         Assert.That(restored.RowView(p), Is.EqualTo(new RowViewDefinition()));
         await store.SaveAsync(restored.Snapshot(), record.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(9));
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(12));
         Assert.That(restored.Columns(p).Visible[1].Id.FieldId, Is.EqualTo(version == 6 ? "P1C" : "P1A"));
     }
     [Test]

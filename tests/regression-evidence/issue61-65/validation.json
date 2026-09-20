@@ -1,0 +1,73 @@
+{
+  "productionSource": "ad56c06bfd8fbc314d6c92a5bc6692dcbb244dac",
+  "human": "Prior negative evaluation; reevaluation not run",
+  "main": "3dcb3364d6c65f07f04b600e3b65f5ad53403557",
+  "selectedReceipts": [
+    {
+      "boundary": "Core / real isolated storage",
+      "run": "core-final-15",
+      "counts": "<Counters total=\"621\" executed=\"621\" passed=\"621\" failed=\"0\" error=\"0\" timeout=\"0\" aborted=\"0\" inconclusive=\"0\" passedButRunAborted=\"0\" notRunnable=\"0\" notExecuted=\"0\" disconnected=\"0\" warning=\"0\" completed=\"0\" inProgress=\"0\" pending=\"0\" xmlns=\"http://microsoft.com/schemas/VisualStudio/TeamTest/2010\" />"
+    },
+    {
+      "boundary": "Core / real isolated storage",
+      "run": "final-review-core-red-13",
+      "counts": "<Counters total=\"3\" executed=\"3\" passed=\"0\" failed=\"3\" error=\"0\" timeout=\"0\" aborted=\"0\" inconclusive=\"0\" passedButRunAborted=\"0\" notRunnable=\"0\" notExecuted=\"0\" disconnected=\"0\" warning=\"0\" completed=\"0\" inProgress=\"0\" pending=\"0\" xmlns=\"http://microsoft.com/schemas/VisualStudio/TeamTest/2010\" />"
+    },
+    {
+      "boundary": "Core / real isolated storage",
+      "run": "final-review-core-green-14",
+      "counts": "<Counters total=\"35\" executed=\"35\" passed=\"35\" failed=\"0\" error=\"0\" timeout=\"0\" aborted=\"0\" inconclusive=\"0\" passedButRunAborted=\"0\" notRunnable=\"0\" notExecuted=\"0\" disconnected=\"0\" warning=\"0\" completed=\"0\" inProgress=\"0\" pending=\"0\" xmlns=\"http://microsoft.com/schemas/VisualStudio/TeamTest/2010\" />"
+    },
+    {
+      "run": "run-20260920-183210-949-83f98d04",
+      "skipped": "0",
+      "boundary": "actual-control UI integration",
+      "failed": "17",
+      "passed": "61",
+      "total": "78"
+    },
+    {
+      "run": "run-20260920-184357-127-3034d4d0",
+      "skipped": "0",
+      "boundary": "actual-control UI integration",
+      "failed": "1",
+      "passed": "50",
+      "total": "51"
+    },
+    {
+      "run": "run-20260920-184713-181-4019df31",
+      "skipped": "0",
+      "boundary": "actual-control UI integration",
+      "failed": "0",
+      "passed": "7",
+      "total": "7"
+    },
+    {
+      "run": "run-20260920-184936-010-16b77628",
+      "skipped": "0",
+      "boundary": "actual-control UI integration",
+      "failed": "2",
+      "passed": "0",
+      "total": "2"
+    },
+    {
+      "run": "run-20260920-185109-793-520d0767",
+      "skipped": "0",
+      "boundary": "actual-control UI integration",
+      "failed": "0",
+      "passed": "37",
+      "total": "37"
+    }
+  ],
+  "remaining": "Scroll stalls and broad Q1 environments remain open; see README and portable executions ledger.",
+  "liveGitHub": "Not run",
+  "environment": {
+    "runtime": "10.0.12",
+    "scale": "125 percent",
+    "sdk": "10.0.401",
+    "powershell": "7.6.6",
+    "os": "Windows 11 build 26200",
+    "architecture": "Windows x64"
+  },
+  "launcherSource": "802004a2a38abfea141a365e0e502a075390306a"
+}

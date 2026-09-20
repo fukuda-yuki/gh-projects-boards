@@ -5,11 +5,14 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace GhProjectsBoards.App;
 
+internal enum ProjectView { Boards, Gantt, Summary }
+
 internal sealed partial class EditingGrid
 {
     private GanttView? gantt;
+    private SummaryView? summaryView;
     private SelectorBar? projectViews;
-    private SelectorBarItem boardsView = null!, ganttView = null!;
+    private SelectorBarItem boardsView = null!, ganttView = null!, summaryItem = null!;
     private FrameworkElement[] boardsElements = [];
     private readonly Dictionary<UIElement, Visibility> boardsVisibility = [];
     private bool switchingView;
@@ -17,61 +20,75 @@ internal sealed partial class EditingGrid
     private EditingWorkspace? ganttWorkspace;
     private long ganttProjectionGeneration = -1;
     internal bool ShowingGantt => gantt?.Visibility == Visibility.Visible;
+    internal bool ShowingSummary => summaryView?.Visibility == Visibility.Visible;
+    internal ProjectView CurrentProjectView => ShowingGantt ? ProjectView.Gantt : ShowingSummary ? ProjectView.Summary : ProjectView.Boards;
+    internal string? SummaryPersonId => summaryView?.SelectedPersonId;
     internal (string Item, FieldKey? Field)? ViewSelection => ShowingGantt && gantt?.SelectedRowId is { } id
         ? (id, SelectionIdentity is { } selected && selected.Item == id ? selected.Field : canonicalRows.FirstOrDefault(r => r.ItemId == id)?.Cells[0].Key)
-        : SelectionIdentity;
+        : ShowingSummary && summaryView?.SelectedRowId is { } summaryRow ? (summaryRow, canonicalRows.FirstOrDefault(r => r.ItemId == summaryRow)?.Cells[0].Key) : SelectionIdentity;
 
-    private void InitializeProjectViews()
+    private void InitializeProjectViews(Grid commandRow)
     {
         boardsElements = Children.OfType<FrameworkElement>().ToArray();
-        RowDefinitions.Insert(0, new() { Height = GridLength.Auto });
-        foreach (var child in boardsElements) SetRow(child, GetRow(child) + 1);
+        // The view selector and contextual commands share the existing header.
+        // Adding a second full row would consume the sheet's working viewport.
+        Children.Remove(commandRow);
+        var header = new Grid();
+        header.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new());
+        SetColumn(commandRow, 1); header.Children.Add(commandRow);
         projectViews = new SelectorBar { Padding = new(8, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Stretch,
             Style = (Style)Application.Current.Resources["ProjectViewsStyle"] };
         AutomationProperties.SetAutomationId(projectViews, "ProjectViews");
         boardsView = new() { Text = "Boards" }; ganttView = new() { Text = "Gantt" };
-        var summary = new SelectorBarItem { Text = "Summary", IsEnabled = false };
-        ToolTipService.SetToolTip(summary, "Summaryは今後対応します。");
+        summaryItem = new SelectorBarItem { Text = "Summary" };
         AutomationProperties.SetAutomationId(boardsView, "ProjectViewBoards"); AutomationProperties.SetAutomationId(ganttView, "ProjectViewGantt");
-        AutomationProperties.SetAutomationId(summary, "ProjectViewSummary");
-        projectViews.Items.Add(boardsView); projectViews.Items.Add(ganttView); projectViews.Items.Add(summary);
+        AutomationProperties.SetAutomationId(summaryItem, "ProjectViewSummary");
+        projectViews.Items.Add(boardsView); projectViews.Items.Add(ganttView); projectViews.Items.Add(summaryItem);
         projectViews.SelectedItem = boardsView;
         // A view change must never end an active native composition merely by stealing focus.
         projectViews.GettingFocus += (_, args) => { if (!CanRefresh) args.Cancel = true; };
         projectViews.SelectionChanged += (_, _) => {
             if (switchingView) return;
-            if (!CanRefresh) { switchingView = true; projectViews.SelectedItem = ShowingGantt ? ganttView : boardsView; switchingView = false; return; }
-            ShowProjectView(projectViews.SelectedItem == ganttView);
+            if (!CanRefresh) { switchingView = true; projectViews.SelectedItem = ShowingGantt ? ganttView : ShowingSummary ? summaryItem : boardsView; switchingView = false; return; }
+            ShowProjectView(projectViews.SelectedItem == ganttView ? ProjectView.Gantt : projectViews.SelectedItem == summaryItem ? ProjectView.Summary : ProjectView.Boards);
         };
-        Children.Add(projectViews);
+        header.Children.Add(projectViews); Children.Add(header);
     }
     internal void ShowProjectView(bool showGantt, string? selectedRowId = null)
+        => ShowProjectView(showGantt ? ProjectView.Gantt : ProjectView.Boards, selectedRowId);
+    internal void ShowProjectView(ProjectView view, string? selectedRowId = null, string? personId = null)
     {
         if (!CanRefresh || projectViews is null) return;
-        switchingView = true; projectViews.SelectedItem = showGantt ? ganttView : boardsView; switchingView = false;
-        if (showGantt)
+        var prior = CurrentProjectView; var id = selectedRowId ?? ViewSelection?.Item;
+        switchingView = true; projectViews.SelectedItem = view == ProjectView.Gantt ? ganttView : view == ProjectView.Summary ? summaryItem : boardsView; switchingView = false;
+        if (prior == ProjectView.Boards && view != ProjectView.Boards)
+        {
+            boardsVisibility.Clear();
+            foreach (var child in boardsElements) { boardsVisibility[child] = child.Visibility; child.Visibility = Visibility.Collapsed; }
+        }
+        if (gantt is not null) gantt.Visibility = Visibility.Collapsed;
+        if (summaryView is not null) summaryView.Visibility = Visibility.Collapsed;
+        if (view == ProjectView.Summary)
+        {
+            EnsureSummary(); summaryView!.Visibility = Visibility.Visible; UpdateSummary(true, personId);
+        }
+        else if (view == ProjectView.Gantt)
         {
             if (gantt is null)
             {
                 gantt = new GanttView { Visibility = Visibility.Collapsed };
                 SetRow(gantt, 1); SetRowSpan(gantt, RowDefinitions.Count - 1); Children.Add(gantt);
-                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(true); } };
+                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(true); } };
+                gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(true); } };
                 gantt.BoardsRequested += id => { if (SelectGanttRow(id)) ShowProjectView(false); };
                 gantt.UndoRequested += () => { Run(Undo); UpdateGantt(true); };
                 gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(true); };
                 gantt.SaveRequested += async () => { await FlushDraftsAsync("gantt-retry"); Update(); };
             }
-            if (!ShowingGantt)
-            {
-                boardsVisibility.Clear();
-                foreach (var child in boardsElements) { boardsVisibility[child] = child.Visibility; child.Visibility = Visibility.Collapsed; }
-            }
-            gantt.Visibility = Visibility.Visible; UpdateGantt(true, selectedRowId ?? SelectionIdentity?.Item);
+            gantt.Visibility = Visibility.Visible; UpdateGantt(true, id);
         }
-        else if (gantt is not null)
+        else if (prior != ProjectView.Boards)
         {
-            var id = gantt.SelectedRowId;
-            gantt.Visibility = Visibility.Collapsed;
             foreach (var (child, visibility) in boardsVisibility) child.Visibility = visibility;
             boardsVisibility.Clear();
             if (id is not null) SelectGanttRow(id);
@@ -107,8 +124,8 @@ internal sealed partial class EditingGrid
     {
         if (!ShowingGantt) return;
         gantt!.ShowOperationStatus(operationProblem, session.Status);
-        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.Revision && ganttProjectionGeneration == projection.Generation) return;
+        if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.PresentationRevision && ganttProjectionGeneration == projection.Generation) return;
         gantt!.Present(GanttProjection.Create(session.Workspace, registration, projection.Ids), selected);
-        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.Revision; ganttProjectionGeneration = projection.Generation;
+        ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.PresentationRevision; ganttProjectionGeneration = projection.Generation;
     }
 }

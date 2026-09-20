@@ -104,6 +104,7 @@ public sealed partial class MainWindow : Window
             closingRequested = false; ProjectsPage.IsEnabled = true; ConnectionPage.ResumeAfterFailedClose();
             return;
         }
+        await SheetDiagnostics.CompleteAsync();
         closeReady = true;
         DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
     }

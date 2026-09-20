@@ -41,6 +41,7 @@ internal sealed class GanttView : Grid
     private ScrollViewer? vertical;
     private WorkingCalendar? calendar;
     internal event Action<string>? EditRequested;
+    internal event Action<string>? TaskDetailsRequested;
     internal event Action<string>? BoardsRequested;
     internal event Action? UndoRequested;
     internal event Action? SettingsRequested;
@@ -48,6 +49,7 @@ internal sealed class GanttView : Grid
     internal string? SelectedRowId => (list.SelectedItem as GanttRow)?.RowId;
     internal GanttProjection AdoptedProjection => projection;
     internal GanttAxis Axis => axis;
+    internal FrameworkElement SchedulingAnchor { get; }
     private sealed record Relation(string Label, string? RowId);
 
     internal GanttView()
@@ -62,6 +64,7 @@ internal sealed class GanttView : Grid
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var commands = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true, HorizontalAlignment = HorizontalAlignment.Left };
+        SchedulingAnchor = commands;
         AutomationProperties.SetAutomationId(commands, "GanttCommands");
         Button Tool(string text, string id, Symbol icon, Action action, bool secondary = false)
         {
@@ -77,6 +80,7 @@ internal sealed class GanttView : Grid
         context = Tool("詳細", "GanttDetails", Symbol.List, ShowDetails);
         Tool("元に戻す", "GanttUndo", Symbol.Undo, () => UndoRequested?.Invoke());
         Tool("計画設定", "GanttSettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
+        Tool("タスクの詳細", "GanttTaskDetailsEdit", Symbol.Edit, () => { if (SelectedRowId is { } id) TaskDetailsRequested?.Invoke(id); }, true);
         Children.Add(commands);
         var filter = new Grid { ColumnSpacing = 8, Padding = new(8, 2, 8, 4) };
         filter.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); filter.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); filter.ColumnDefinitions.Add(new());
@@ -214,7 +218,7 @@ internal sealed class GanttView : Grid
     }
     private Relation[] Relations(GanttRow row)
     {
-        var byId = projection.Rows.ToDictionary(r => r.TaskId);
+        var byId = projection.Rows.DistinctBy(r => r.TaskId).ToDictionary(r => r.TaskId);
         return (row.Input?.Predecessors ?? []).Select(link => {
             var previous = byId.GetValueOrDefault(link.PredecessorId);
             return new Relation($"先行 → [{link.Kind}] {previous?.Identity ?? link.PredecessorId} {previous?.Title ?? "外部・未確認"} / 終了 {Exact(previous?.Plan?.Finish ?? link.ExternalFinish)}", previous?.RowId);
@@ -231,7 +235,7 @@ internal sealed class GanttView : Grid
         if (input is not null && config is not null)
         {
             var owner = config.People.FirstOrDefault(o => o.Id == input.Task.OwnerId);
-            var provisional = input.Task.OwnerId is null && input.Assignees.Length == 0;
+            var provisional = input.Task.Assignment is not { Legacy: false } && input.Task.OwnerId is null && input.Assignees.Length == 0;
             var ownerText = owner?.Name ?? (provisional ? "共通・暫定" : input.Task.OwnerId is null ? "担当者の選択が必要" : input.Task.OwnerId + "（未確認）");
             var weightText = owner is not null ? owner.WeightPercent + "%" : provisional ? "100%" : "未確認";
             Text($"担当: {ownerText} / 配賦: {weightText}\n見積 {input.Estimate?.ToString() ?? "不明"} / 残時間 {input.Remaining?.ToString() ?? "不明"} / 実績 {input.ActualTotal?.ToString() ?? "不明"} 人時\n進捗: {input.Task.Progress}");
@@ -244,6 +248,12 @@ internal sealed class GanttView : Grid
                 try { Text($"{date:yyyy-MM-dd}: " + string.Join(" / ", calendar.Intervals(date, input.Task.OwnerId).Select(i => $"{i.StartMinute / 60:00}:{i.StartMinute % 60:00}–{i.EndMinute / 60:00}:{i.EndMinute % 60:00}"))); }
                 catch (InvalidOperationException e) { Text(e.Message); }
             }
+        }
+        if (config?.Summary?.Baseline is { } baseline)
+        {
+            var captured = baseline.Tasks.SingleOrDefault(t => t.TaskId == row.TaskId);
+            Text($"基準 {baseline.CapturedAt.LocalDateTime:g} / {baseline.Calendar.Revision}\n"
+                + SummaryText.Comparison(new(captured, row, captured is null ? "基準なし（追加）" : "基準と現在")));
         }
         var flyout = new Flyout { Content = new ScrollViewer { Content = panel, MaxHeight = 480, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         foreach (var relation in Relations(row))

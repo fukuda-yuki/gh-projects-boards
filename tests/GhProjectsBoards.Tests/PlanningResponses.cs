@@ -6,7 +6,7 @@ namespace GhProjectsBoards.Tests;
 // still parse, validate, persist, dispatch and independently read back these values.
 internal static class PlanningResponses
 {
-    public static void Augment(JsonNode response, JsonObject? scalars = null, JsonObject? dependencies = null)
+    public static void Augment(JsonNode response, JsonObject? scalars = null, JsonObject? dependencies = null, string? assignee = null)
     {
         foreach (var node in response["data"]!.AsObject().Select(p => p.Value).Where(n => n is not null).ToArray())
         {
@@ -24,6 +24,8 @@ internal static class PlanningResponses
             foreach (var item in items)
             {
                 item!["content"]!["state"] = "OPEN";
+                if (assignee is not null) item["content"]!["assignees"] = System.Text.Json.JsonSerializer.SerializeToNode(
+                    ProjectReaderTests.Page([new { id = assignee, login = "fixture-worker" }], 1));
                 if (dependencies is not null)
                 {
                     var predecessors = dependencies[item["content"]!["id"]!.ToString()]?.AsArray() ?? [];

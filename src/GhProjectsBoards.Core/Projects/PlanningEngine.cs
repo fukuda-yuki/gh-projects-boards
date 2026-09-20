@@ -90,6 +90,8 @@ internal static class PlanningEngine
             decimal? minutes = null; DateTime? start = null, finish = null;
             var controller = task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened ? "残工数・基準日時・配賦・カレンダー" : "見積工数・配賦・カレンダー";
             if (project.Calendar.HolidaysNotConsidered) warnings.Add("祝日を考慮しない計画");
+            if ((task.Assignment is null || task.Assignment.Legacy) && task.Mode != PlanningMode.Unplanned)
+                warnings.Add(task.OwnerId is null ? "以前の共通カレンダーによる暫定計画を保持" : "以前の独立した計画担当者を保持。変更時は日程を比較してください。");
             if (input.ActualTotal is not null && task.Actuals is null) warnings.Add("実績合計の内訳・報告対象日が未入力です。");
             foreach (var (name, total, sum) in new[] { ("見積", input.Estimate, (task.Contributions ?? []).Sum(c => c.EstimateHours ?? 0)), ("残時間", input.Remaining, (task.Contributions ?? []).Sum(c => c.RemainingHours ?? 0)) })
                 if (total is { } knownHours && knownHours != sum) warnings.Add(sum > knownHours ? $"{name}の内訳が合計を超えています。" : $"{name}の未割当: {PlanningContract.CanonicalHours(knownHours - sum)}人時");
@@ -110,6 +112,14 @@ internal static class PlanningEngine
                 if (!input.RelationshipsComplete) throw new InvalidOperationException("担当者・先行Issueが未取得です。最新を取得してください。");
                 if (cycles.Contains(task.Id)) throw new InvalidOperationException("先行関係が循環しています。");
                 decimal weight;
+                if (task.Assignment is { Legacy: false } assignment)
+                {
+                    if (!assignment.Complete || !input.RelationshipsComplete) throw new InvalidOperationException("担当者の取得が未完了です。最新を取得して日程を比較してください。");
+                    if (!assignment.Assignees.ToHashSet().SetEquals(input.Assignees)) throw new InvalidOperationException("GitHub担当者が変わりました。日程を比較して自動計算を採用してください。");
+                    if (assignment.Assignees.Length != 1) throw new InvalidOperationException(assignment.Assignees.Length == 0
+                        ? "GitHub担当者が未設定です。日時を指定するか、担当者を設定後に最新を取得してください。"
+                        : "複数担当者の同時計画は未対応です。日時を指定するか、担当・分担を確認してください。");
+                }
                 if (task.OwnerId is null)
                 {
                     if (input.Assignees.Length != 0) throw new InvalidOperationException("計画担当者を明示的に選んでください。");

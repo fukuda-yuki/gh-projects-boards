@@ -8,7 +8,7 @@ internal sealed partial class EditingWorkspace
         var registration = CheckpointRegistrations.SingleOrDefault(p => p.Snapshot.Id.NodeId == projectId);
         if (registration is null) return;
         var rows = registration.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null)
-            .ToDictionary(i => i.ContentId!.NodeId, i => i.Id.NodeId);
+            .DistinctBy(i => i.ContentId!.NodeId).ToDictionary(i => i.ContentId!.NodeId, i => i.Id.NodeId);
         foreach (var task in plan.Tasks.Where(t => t.Contributions is { Length: > 0 }))
         {
             var row = task.Id.StartsWith("local-", StringComparison.Ordinal) ? task.Id : rows.GetValueOrDefault(task.Id);

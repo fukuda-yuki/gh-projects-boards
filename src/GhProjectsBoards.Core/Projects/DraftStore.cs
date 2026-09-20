@@ -23,9 +23,13 @@ internal sealed class DraftStore(string registrationRoot)
             if (info.Type == typeof(ProjectPlanning) || info.Type == typeof(PlanningTask) || info.Type == typeof(PlanningPerson)
                 || info.Type == typeof(PlanningCalendar) || info.Type == typeof(PlanningFieldBinding) || info.Type == typeof(PlanningLink)
                 || info.Type == typeof(ActualContribution) || info.Type == typeof(WorkContribution)
-                || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval)
-                || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate))
-                foreach (var property in info.Properties) property.IsRequired = true;
+                || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval) || info.Type == typeof(PlanningAssignment)
+                || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate)
+                || info.Type == typeof(SummarySettings) || info.Type == typeof(PersonAllowance)
+                || info.Type == typeof(ProtectedBaseline) || info.Type == typeof(BaselineTask))
+                foreach (var property in info.Properties)
+                    if (!(info.Type == typeof(ProjectPlanning) && property.Name == nameof(ProjectPlanning.Summary))
+                        && !(info.Type == typeof(PlanningTask) && property.Name is nameof(PlanningTask.LaborKind) or nameof(PlanningTask.Assignment))) property.IsRequired = true;
         } } }
     };
     public string FileFor(ConnectionScope scope) => Path.Combine(root,
@@ -131,8 +135,26 @@ internal sealed class DraftStore(string registrationRoot)
         await using var stream = File.OpenRead(file);
         DraftRecord record;
         using (PerformanceTrace.Span("checkpoint-deserialize-read-wall"))
-            record = await JsonSerializer.DeserializeAsync<DraftRecord>(stream, Json) ?? throw new InvalidDataException("Missing draft record.");
-        using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
+        {
+            using var document = await JsonDocument.ParseAsync(stream);
+            var root = document.RootElement;
+            record = root.Deserialize<DraftRecord>(Json) ?? throw new InvalidDataException("Missing draft record.");
+            using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
+            if (record.Version is 10 or 12)
+            {
+                void CheckPlan(JsonElement plan)
+                {
+                    if (plan.ValueKind == JsonValueKind.Null) return;
+                    if (!plan.TryGetProperty("Summary", out _) || !plan.TryGetProperty("Tasks", out var tasks)
+                        || tasks.EnumerateArray().Any(t => !t.TryGetProperty("LaborKind", out _)))
+                        throw new InvalidDataException("Missing Summary metadata in a current checkpoint; preserve the source.");
+                }
+                if (root.TryGetProperty("Planning", out var plans) && plans.ValueKind == JsonValueKind.Array) foreach (var plan in plans.EnumerateArray()) CheckPlan(plan);
+                if (root.TryGetProperty("History", out var transactions)) foreach (var tx in transactions.EnumerateArray())
+                    if (tx.TryGetProperty("Plan", out var change) && change.ValueKind != JsonValueKind.Null)
+                    { CheckPlan(change.GetProperty("Before")); CheckPlan(change.GetProperty("After")); }
+            }
+        }
         return record;
     }
     private static void ValidateLocalRows(DraftRecord r)
@@ -171,7 +193,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -181,6 +203,11 @@ internal sealed class DraftStore(string registrationRoot)
         EditingWorkspace.ValidateRowPreferences(r.RowPreferences ?? []);
         if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
+        var plans = (r.Planning ?? []).Concat(r.History.Where(t => t?.Plan is not null)
+            .SelectMany(t => new[] { t.Plan!.Before, t.Plan.After }.OfType<ProjectPlanning>())).ToArray();
+        if (plans.Any(p => p.Version == 2 && r.Version is not (10 or 12)
+            || p.Version == 3 && r.Version < 11 || p.Version == 4 && r.Version < 12))
+            throw new InvalidDataException("Unversioned Summary or assignment metadata.");
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
         if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date" or "Dependency")))
             throw new InvalidDataException("Unversioned planning operations.");
@@ -238,6 +265,8 @@ internal sealed class DraftStore(string registrationRoot)
 internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace, long durableRevision)
 {
     private readonly SemaphoreSlim gate = new(1);
+    private Task<bool>? pendingFlush;
+    private long flushRequests;
     private readonly string recoveryNotice = store.HasInterruptedSave(workspace.Scope) ? " / 中断保存ファイルを保持しています（要確認）" : "";
     public EditingWorkspace Workspace { get; private set; } = workspace;
     public long DurableRevision { get; private set; } = durableRevision;
@@ -245,6 +274,7 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
     public event Action? Changed;
     public async Task<bool> CommitAsync(Func<EditingWorkspace, EditingWorkspace> prepare, Func<bool> canCommit)
     {
+        var committed = false;
         using (PerformanceTrace.Span("draft-commit-gate-wall")) await gate.WaitAsync();
         try
         {
@@ -256,37 +286,65 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
             await store.SaveAsync(snapshot, DurableRevision, () => canCommit() && Workspace == original && original.Revision == revision);
             Workspace = candidate; DurableRevision = candidate.Revision;
             Status = "照合結果をローカル保存しました（GitHub未反映）";
-            return true;
+            committed = true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or InvalidOperationException)
-        { Status = "ローカル保存失敗または比較後の変更。元の作業を保持しました。再試行してください。"; return false; }
+        { Status = "ローカル保存失敗または比較後の変更。元の作業を保持しました。再試行してください。"; }
         finally { gate.Release(); Changed?.Invoke(); }
+        // Opening the new view can initialize fields or accept new input during
+        // Changed. Success must include that work, even when its flush joined one
+        // already in flight.
+        return committed && (DurableRevision == Workspace.Revision || await FlushAsync());
     }
-    public async Task<bool> FlushAsync()
+    public Task<bool> FlushAsync()
     {
         PerformanceTrace.Count("draft-flush-requests");
-        using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
-        try
+        flushRequests++;
+        if (pendingFlush is { IsCompleted: false }) return pendingFlush;
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        pendingFlush = completion.Task;
+        _ = CompleteFlushAsync(completion);
+        return completion.Task;
+    }
+    private async Task CompleteFlushAsync(TaskCompletionSource<bool> completion)
+    {
+        try { completion.SetResult(await FlushCoreAsync()); }
+        catch (Exception error) { completion.SetException(error); }
+    }
+    private async Task<bool> FlushCoreAsync()
+    {
+        while (true)
         {
-            while (DurableRevision != Workspace.Revision)
+            using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
+            var attemptedRequests = flushRequests;
+            var saved = true;
+            try
             {
-                PerformanceTrace.Count("draft-flush-iterations");
-                Status = "ローカル保存中…";
-                using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
-                DraftRecord snapshot;
-                using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
-                await store.SaveAsync(snapshot, DurableRevision);
-                DurableRevision = snapshot.Revision;
+                if (DurableRevision != Workspace.Revision)
+                {
+                    PerformanceTrace.Count("draft-flush-iterations");
+                    Status = "ローカル保存中…";
+                    using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
+                    DraftRecord snapshot;
+                    using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
+                    var expectedRevision = DurableRevision;
+                    // Snapshot owns all nested collections. Only this detached
+                    // graph crosses to the worker; the mutable workspace stays on
+                    // its caller's context. The store keeps validation and atomic
+                    // revision/readback guards, without a timer or debounce.
+                    await Task.Run(() => store.SaveAsync(snapshot, expectedRevision));
+                    DurableRevision = snapshot.Revision;
+                }
+                Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
             }
-            Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
-        { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; return false; }
-        finally
-        {
-            gate.Release();
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
+            { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; saved = false; }
+            finally { gate.Release(); }
             using (PerformanceTrace.Span("draft-settled-notification-sync")) Changed?.Invoke();
+            // A newer input/retry request survives a failed attempt. Without a
+            // newer request, failure remains visible and is never blindly retried.
+            if (!saved && flushRequests == attemptedRequests) return false;
+            if (saved && DurableRevision == Workspace.Revision) return true;
         }
     }
 }

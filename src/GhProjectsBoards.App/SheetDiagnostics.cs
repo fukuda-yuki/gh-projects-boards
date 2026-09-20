@@ -10,6 +10,7 @@ namespace GhProjectsBoards.App;
 internal sealed class SheetDiagnostics
 {
     private static readonly DiagnosticSink? sink = DiagnosticSink.Create();
+    private static readonly ConcurrentBag<Task> observers = [];
     private static long nextGrid, nextSpan;
     [ThreadStatic] private static long currentSpan;
     private readonly long grid = Interlocked.Increment(ref nextGrid);
@@ -20,6 +21,13 @@ internal sealed class SheetDiagnostics
     private sealed record RenderRequest(long Span, long End);
 
     internal static SheetDiagnostics? Create() => sink is null ? null : new();
+    internal static void Observe(Task task) { if (sink is not null) observers.Add(task); }
+    internal static async Task CompleteAsync()
+    {
+        if (sink is null) return;
+        await Task.WhenAll(observers.ToArray());
+        await sink.CompleteAsync();
+    }
     internal void Record(string kind, object? data = null) => sink!.Add(grid, kind, data);
     internal IDisposable Span(string kind, string? reason = null) => new MeasuredSpan(this, kind, reason);
     internal void RequestVisualCounts() => visualCounts = true;
@@ -90,7 +98,10 @@ internal sealed class SheetDiagnostics
         private readonly Timer timer;
         private StreamWriter? writer;
         private int count, flushing, failed;
-        private long sequence, dropped;
+        private long sequence, dropped, totalDropped;
+        private readonly object sync = new();
+        private bool closing;
+        private Task currentFlush = Task.CompletedTask;
         private DiagnosticSink(string path)
         {
             this.path = path;
@@ -105,19 +116,49 @@ internal sealed class SheetDiagnostics
         }
         internal void Add(long grid, string kind, object? data)
         {
+            lock (sync)
+            {
+            if (closing) return;
             if (Volatile.Read(ref failed) != 0) return;
             if (Interlocked.Increment(ref count) > Capacity)
             {
-                Interlocked.Decrement(ref count); Interlocked.Increment(ref dropped); return;
+                Interlocked.Decrement(ref count); Interlocked.Increment(ref dropped); Interlocked.Increment(ref totalDropped); return;
             }
             queue.Enqueue(new { sequence = Interlocked.Increment(ref sequence), ticks = Stopwatch.GetTimestamp(),
                 thread = Environment.CurrentManagedThreadId, grid, kind, data });
+            }
         }
         internal void FlushInBackground()
         {
-            if (Volatile.Read(ref failed) != 0 || Interlocked.CompareExchange(ref flushing, 1, 0) != 0) return;
-            _ = Task.Run(() =>
+            lock (sync)
             {
+            if (closing) return;
+            if (Volatile.Read(ref failed) != 0 || Interlocked.CompareExchange(ref flushing, 1, 0) != 0) return;
+            currentFlush = Task.Run(Flush);
+            }
+        }
+        internal async Task CompleteAsync()
+        {
+            Task pending;
+            lock (sync) { closing = true; timer.Dispose(); pending = currentFlush; }
+            await pending;
+            await Task.Run(() =>
+            {
+                Flush();
+                if (writer is null) return;
+                try
+                {
+                    writer.WriteLine(JsonSerializer.Serialize(new { sequence = ++sequence, ticks = Stopwatch.GetTimestamp(), grid = 0,
+                        kind = "trace-end", data = new { queued = count, dropped = totalDropped, failed,
+                            boundary = "All accepted diagnostic records drained after draft flush, before native close." } }, Json));
+                    writer.Flush(); writer.Dispose(); writer = null;
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                { Interlocked.Exchange(ref failed, 1); Debug.WriteLine($"Sheet diagnostics completion failed: {error.GetType().Name}"); }
+            });
+        }
+        private void Flush()
+        {
                 try
                 {
                     if (writer is null)
@@ -143,7 +184,6 @@ internal sealed class SheetDiagnostics
                     Debug.WriteLine($"Sheet diagnostics stopped: {error.GetType().Name}");
                 }
                 finally { Interlocked.Exchange(ref flushing, 0); }
-            });
         }
     }
 }

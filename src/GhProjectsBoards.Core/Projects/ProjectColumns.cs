@@ -19,7 +19,7 @@ internal sealed record PresentationColumn(ColumnPreference Preference, string Na
 internal sealed class ColumnLayout(PresentationColumn[] columns)
 {
     public PresentationColumn[] Columns { get; } = columns;
-    public PresentationColumn[] Visible => Columns.Where(c => c.Available && c.Preference.Visible).ToArray();
+    public PresentationColumn[] Visible { get; } = columns.Where(c => c.Available && c.Preference.Visible).ToArray();
     public bool Hidden(string? fieldId) => fieldId is not null && !Visible.Any(c => c.Id == new ColumnIdentity("Field", fieldId));
     public EditRow[] Resolve(EditRow[] canonical) => canonical.Select(row => row with {
         Cells = Visible.Select(column => column.Id.Role switch {

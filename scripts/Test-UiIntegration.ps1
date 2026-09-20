@@ -2,6 +2,7 @@ param(
     [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance',
     [switch]$Discover,
     [switch]$NoBuild,
+    [string]$BinaryRoot,
     [ValidateRange(1, 3600)][int]$TimeoutSeconds = 180
 )
 $ErrorActionPreference = 'Stop'
@@ -9,7 +10,9 @@ $repo = Split-Path $PSScriptRoot -Parent
 $run = Join-Path $repo ('TestResults/ui-integration/run-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8))
 New-Item -ItemType Directory -Path $run | Out-Null
 $project = Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj'
-$binaryRoot = Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests/bin/Release/net10.0-windows10.0.26100.0/win-x64'
+if ($BinaryRoot) {
+    if (-not $NoBuild -or -not [IO.Path]::IsPathFullyQualified($BinaryRoot)) { throw 'BinaryRoot requires NoBuild and an absolute path to the selected host output.' }
+} else { $BinaryRoot = Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests/bin/Release/net10.0-windows10.0.26100.0/win-x64' }
 $timer = [Diagnostics.Stopwatch]::StartNew()
 $metadata = [ordered]@{ source = (git -C $repo rev-parse HEAD); changes = @(git -C $repo status --porcelain); command = $MyInvocation.Line; where = $Where; discoveryOnly = $Discover.IsPresent; sdk = (dotnet --version); os = [Environment]::OSVersion.VersionString; started = (Get-Date).ToUniversalTime().ToString('o'); results = $run }
 git -C $repo diff --binary 2> (Join-Path $run 'source-diff.log') | Set-Content -LiteralPath (Join-Path $run 'source.diff') -Encoding utf8
