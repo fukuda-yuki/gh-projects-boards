@@ -26,6 +26,9 @@
                     <SolidColorBrush x:Key="SheetSelectionStrokeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <ItemsPanelTemplate x:Key="SheetRowsPanel">
+                <ItemsStackPanel CacheLength="0.5"/>
+            </ItemsPanelTemplate>
             <DataTemplate x:Key="GanttRowTemplate">
                 <local:GanttRowPresenter HorizontalContentAlignment="Stretch"/>
             </DataTemplate>
