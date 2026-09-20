@@ -40,7 +40,7 @@ internal static class Ui
         {
             if (DateTime.UtcNow >= deadline)
             {
-                var error = new TimeoutException("Incomplete asynchronous event teardown");
+                var error = new TimeoutException($"Incomplete asynchronous event teardown (operations={Volatile.Read(ref TrackedContext.Operations)}, posts={Volatile.Read(ref TrackedContext.Posts)})");
                 RecordFailure(error); throw error;
             }
             await Task.Yield();

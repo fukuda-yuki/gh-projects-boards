@@ -9,6 +9,41 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class PlanningHostedTests
 {
+    [Test, Category("ReviewFinal")]
+    public async Task ChoosingTimeFirstCompletesTheVisibleKnownDayWithoutCreatingAClearIntent()
+    {
+        await ReviewFixture(PlanningReviewRegressionTests.Observed("Finish", "2026-10-06"), PlanningPathTests.Plan());
+        await Schedule();
+        await Ui.Run(() => {
+            var editor = Ui.Popup<StackPanel>("SchedulingEditor");
+            Assert.That(Ui.Find<TextBox>("ScheduleFinish", editor).Text, Is.EqualTo("2026-10-06"));
+            Ui.Find<TimePicker>("ScheduleFinish-Time", editor).SelectedTime = new TimeSpan(16, 43, 0);
+            Assert.That(Ui.Find<TextBox>("ScheduleFinish", editor).Text, Is.EqualTo("2026-10-06 16:43"));
+        });
+        await Ui.Until(() => Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")!).IsLoaded);
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor"))));
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
+        await Ui.Run(() => {
+            Assert.That(session.Workspace.Planning("P1")!.Tasks.Single().ManualFinish, Is.EqualTo(PlanningContractTests.At("2026-10-06 16:43")));
+            Assert.That(session.Workspace.Value(session.Workspace.Open(project)[0].Cells[6]), Is.EqualTo("2026-10-06"));
+        });
+    }
+    [Test, Category("ReviewFinal")]
+    public async Task ClearingAndReselectingADayInTheSameEditorDoesNotReuseItsOldTime()
+    {
+        await ReviewFixture(project, PlanningPathTests.Plan() with { Tasks = [new("I1", PlanningMode.Manual, "U1",
+            PlanningContractTests.At("2026-10-05 10:17"), PlanningContractTests.At("2026-10-06 16:43"))] });
+        await Schedule();
+        await Ui.Run(() => {
+            var editor = Ui.Popup<StackPanel>("SchedulingEditor");
+            var date = Ui.Find<CalendarDatePicker>("ScheduleStart-Date", editor);
+            date.Date = null;
+            Assert.That(Ui.Find<TextBox>("ScheduleStart", editor).Text, Is.Empty);
+            date.Date = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.FromHours(9));
+            Assert.That(Ui.Find<TextBox>("ScheduleStart", editor).Text, Is.EqualTo("2026-10-05"));
+            Assert.That(Ui.Find<TimePicker>("ScheduleStart-Time", editor).SelectedTime, Is.Null);
+        });
+    }
     [Test, Category("ReviewRegression")]
     public async Task DelayedSchedulingPreparationDoesNotOpenAnEditorOnTheViewThatWasLeft()
     {

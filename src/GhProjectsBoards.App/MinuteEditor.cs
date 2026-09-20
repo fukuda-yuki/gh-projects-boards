@@ -2,6 +2,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using System.Globalization;
 
 namespace GhProjectsBoards.App;
 
@@ -31,24 +32,46 @@ internal sealed class MinuteEditor : StackPanel
             updating = true;
             try
             {
-                var value = PlanningContract.ParseMinute(text.Text);
-                date.Date = value is { } d ? new DateTimeOffset(d.Date, TimeSpan.FromHours(9)) : null;
-                time.SelectedTime = value?.TimeOfDay;
+                if (DateOnly.TryParseExact(text.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
+                {
+                    date.Date = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9));
+                    time.SelectedTime = null;
+                }
+                else
+                {
+                    var value = PlanningContract.ParseMinute(text.Text);
+                    date.Date = value is { } d ? new DateTimeOffset(d.Date, TimeSpan.FromHours(9)) : null;
+                    time.SelectedTime = value?.TimeOfDay;
+                }
             }
-            catch (InvalidOperationException) { /* Native unfinished text remains visible. */ }
+            catch (InvalidOperationException)
+            {
+                // Unfinished text remains visible; stale picker values must not
+                // turn a later component choice into a different exact minute.
+                date.Date = null; time.SelectedTime = null;
+            }
             finally { updating = false; }
         }
-        void ReadPickers()
+        void ReadPickers(bool dateChanged)
         {
             if (updating) return;
             updating = true;
-            try { text.Text = date.Date is { } d
-                ? d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
-                    + (time.SelectedTime is { } t ? $" {t.Hours:00}:{t.Minutes:00}" : "") : ""; }
+            try
+            {
+                if (date.Date is { } d)
+                    text.Text = d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                        + (time.SelectedTime is { } t ? $" {t.Hours:00}:{t.Minutes:00}" : "");
+                else if (dateChanged)
+                {
+                    time.SelectedTime = null;
+                    text.Text = "";
+                }
+            }
             finally { updating = false; }
         }
         ReadText();
         text.TextChanging += (_, _) => { ReadText(); Edited?.Invoke(); };
-        date.DateChanged += (_, _) => ReadPickers(); time.SelectedTimeChanged += (_, _) => ReadPickers();
+        date.DateChanged += (_, _) => ReadPickers(dateChanged: true);
+        time.SelectedTimeChanged += (_, _) => ReadPickers(dateChanged: false);
     }
 }

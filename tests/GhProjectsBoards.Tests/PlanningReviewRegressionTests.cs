@@ -87,4 +87,26 @@ internal sealed class PlanningReviewRegressionTests
         Assert.That(field.Baseline, Is.EqualTo("2026-10-06")); Assert.That(field.Change, Is.Null);
         Assert.That(w.Planning("P1")!.Tasks.Single().ManualFinish, Is.Null, "A day does not fabricate an exact time.");
     }
+    [Test]
+    public void PlanningCandidateCannotOmitARetainedAbsentTask()
+    {
+        var p = PlanningAssignmentTests.Assigned("U1");
+        var retained = new PlanningTask("I-absent", PlanningMode.Manual, "U-old", Actuals: [new("U-old", 5, new(2026, 10, 5))],
+            Contributions: [new("U-old", null, null)], Assignment: new([], false, true));
+        var w = Work(p, PlanningPathTests.Plan() with { Version = 3, Tasks = [retained] });
+        var before = JsonSerializer.Serialize(w.Snapshot());
+        Assert.That(() => w.CommitPlanning(p, w.Planning("P1")! with { Tasks = [] }, w.Revision), Throws.InvalidOperationException);
+        Assert.That(JsonSerializer.Serialize(w.Snapshot()), Is.EqualTo(before));
+    }
+    [TestCase(PlanningMode.Unplanned), TestCase(PlanningMode.Auto)]
+    public void DirectManualCandidateCannotClearAnObservedDayWithoutAnExplicitEndpointDecision(PlanningMode mode)
+    {
+        var p = Observed("Finish", "2026-10-06");
+        var w = Work(p, PlanningPathTests.Plan() with { Tasks = [new("I1", mode, "U1")] });
+        var plan = w.Planning("P1")!;
+        w.CommitPlanning(p, plan with { Tasks = [plan.Tasks.Single() with { Mode = PlanningMode.Manual,
+            ManualStart = PlanningContractTests.At("2026-10-05 10:17"), ManualFinish = null }] }, w.Revision);
+        var field = w.Fields.Single(f => f.Key.NodeId == "P1T1" && f.Key.FieldId == "F-Finish");
+        Assert.That(field.Baseline, Is.EqualTo("2026-10-06")); Assert.That(field.Change, Is.Null);
+    }
 }

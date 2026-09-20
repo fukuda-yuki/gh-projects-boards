@@ -454,8 +454,9 @@ public sealed partial class PlanningHostedTests
             var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
             Ui.Find<TextBox>("ScheduleStart", editor).Text = "2026-10-05 12:07";
             Assert.That(Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex, Is.EqualTo(1), "Direct entry immediately shows the manual method.");
-            Ui.Click(Ui.Find<Button>("ScheduleApply", editor));
         });
+        await Ui.Until(() => Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")!).IsLoaded);
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")!)));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
         await Ui.Run(() => {
             var task = session.Workspace.Planning("P1")!.Tasks.Single();

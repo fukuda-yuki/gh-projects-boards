@@ -76,7 +76,8 @@ internal sealed partial class EditingWorkspace
                 && (f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == ProjectionDecisionReason)))
             throw new InvalidOperationException("フィールドの変更前に、既存の工数・日付の差分と入力を解決してください。");
         var ids = registration.Snapshot.Issues.Keys.Select(i => i.NodeId).Concat(localRows.Where(r => r.ProjectId == candidate.ProjectId).Select(r => r.Id)).ToHashSet();
-        if (candidate.Tasks.Any(t => !ids.Contains(t.Id) && existing?.Tasks.Any(e => e.Id == t.Id && PlanningContract.SameRetainedTask(e, t)) != true))
+        if (candidate.Tasks.Any(t => !ids.Contains(t.Id) && existing?.Tasks.Any(e => e.Id == t.Id && PlanningContract.SameRetainedTask(e, t)) != true)
+            || existing?.Tasks.Any(e => !ids.Contains(e.Id) && !candidate.Tasks.Any(t => t.Id == e.Id && PlanningContract.SameRetainedTask(e, t))) == true)
             throw new InvalidOperationException("計画対象のIssueを確認できません。");
         var staged = Restore(Snapshot());
         staged.AcceptProjectionBaselines(registration, candidate, decisions ?? []);
@@ -165,7 +166,7 @@ internal sealed partial class EditingWorkspace
                     var priorEndpoint = binding.Role == "Start" ? priorTask?.ManualStart : priorTask?.ManualFinish;
                     // An unchanged unknown exact endpoint is not a deletion of
                     // an observed day during an unrelated effort/report edit.
-                    if (priorTask?.Mode == PlanningMode.Manual && priorEndpoint is null || previous is null) continue;
+                    if (priorTask?.Mode != PlanningMode.Manual || priorEndpoint is null || previous is null) continue;
                 }
                 if ((old.Change is null ? old.Baseline : old.Change.Value) == value) continue;
                 var next = old with { Change = value == old.Baseline ? null : new(value, value is null), Stamp = Revision };
