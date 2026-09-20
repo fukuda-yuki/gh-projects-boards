@@ -8,9 +8,10 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid
 {
-    private static TextBox PlanningText(StackPanel panel, string label, string id, string? value)
+    private TextBox PlanningText(StackPanel panel, string label, string id, string? value)
     {
         var input = new TextBox { Header = label, Text = value ?? "", HorizontalAlignment = HorizontalAlignment.Stretch };
+        TrackContextInput(input);
         AutomationProperties.SetAutomationId(input, id); panel.Children.Add(input); return input;
     }
     private static string DateText(DateTime? value) => value?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "";
@@ -32,7 +33,7 @@ internal sealed partial class EditingGrid
         if (!settings && (!active || currentRow >= rows.Length)) { ShowOperationProblem("計画する行を選択してください。"); return; }
         if (!settings && !rows[currentRow].IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == rows[currentRow].ItemId
             && i.Kind == ProjectItemKind.Issue && i.ContentId is not null)) { ShowOperationProblem("計画はIssueまたは新規行で設定してください。"); return; }
-        var plan = saved ?? new(1, projectId, 0, null, null, [], new("official-2025-2027", PlanningContract.BundledHolidays(), false, []), [], []);
+        var plan = saved ?? new(3, projectId, 0, null, null, [], new("official-2025-2027", PlanningContract.BundledHolidays(), false, []), [], []);
         var expected = work.Revision;
         var content = new StackPanel { Spacing = 12, MinWidth = 420 };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap };
@@ -54,73 +55,33 @@ internal sealed partial class EditingGrid
                 box.Items.Add(new ComboBoxItem { Content = "未設定", Tag = "" });
                 foreach (var f in registration.Snapshot.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem
                     && f.DataType == (role is "Start" or "Finish" ? "DATE" : "NUMBER") && f.Availability == ValueAvailability.Present))
-                    box.Items.Add(new ComboBoxItem { Content = f.Name + " [" + f.Id.NodeId + "]", Tag = f.Id.NodeId });
+                    box.Items.Add(new ComboBoxItem { Content = f.Name + (registration.Snapshot.Fields.Count(other => other.Name == f.Name) > 1 ? " [" + f.Id.NodeId + "]" : ""), Tag = f.Id.NodeId });
                 var id = plan.Fields.SingleOrDefault(f => f.Role == role)?.FieldId ?? "";
                 box.SelectedItem = box.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == id) ?? box.Items[0];
                 content.Children.Add(box); mappings.Add(role, box);
             }
             content.Children.Add(new TextBlock { Text = $"採用祝日: {plan.Calendar.Holidays.FirstYear}–{plan.Calendar.Holidays.LastYear} / {plan.Calendar.Holidays.Dates.Length}日。平日9–13時・14–18時。", TextWrapping = TextWrapping.Wrap });
             var settingsValues = PlanningSettings(content, plan);
-            candidate = () => { var extra = settingsValues(); return plan with { Start = PlanningDate(start.Text), Cutoff = PlanningDate(cutoff.Text), People = extra.People, Calendar = extra.Calendar,
+            candidate = () => { var extra = settingsValues(); return EditingWorkspace.UpgradeAssignmentContract(plan) with { Start = PlanningDate(start.Text), Cutoff = PlanningDate(cutoff.Text), People = extra.People, Calendar = extra.Calendar,
                 Fields = mappings.Where(x => (string)((ComboBoxItem)x.Value.SelectedItem).Tag != "").Select(x =>
                     new PlanningFieldBinding(x.Key, (string)((ComboBoxItem)x.Value.SelectedItem).Tag, x.Key is "Start" or "Finish" ? "DATE" : "NUMBER")).ToArray() }; };
         }
         else
         {
             var id = work.TaskId(registration, rows[currentRow].ItemId);
-            var task = plan.Tasks.SingleOrDefault(t => t.Id == id) ?? new PlanningTask(id);
-            var calculated = work.PlanFor(registration).Tasks.Single(t => t.Id == id);
-            content.Children.Add(new TextBlock { Text = rows[currentRow].Cells[0].Key is null ? id : work.Value(rows[currentRow].Cells[0]), TextWrapping = TextWrapping.Wrap });
-            var mode = new ComboBox { Header = "日程の決め方", HorizontalAlignment = HorizontalAlignment.Stretch };
-            AutomationProperties.SetAutomationId(mode, "PlanMode");
-            foreach (var value in Enum.GetValues<PlanningMode>()) mode.Items.Add(new ComboBoxItem { Content = value.ToString(), Tag = value, IsEnabled = value != PlanningMode.Unplanned || task.Mode == PlanningMode.Unplanned });
-            mode.SelectedIndex = (int)task.Mode; content.Children.Add(mode);
-            var owner = new ComboBox { Header = "計画担当者", HorizontalAlignment = HorizontalAlignment.Stretch };
-            AutomationProperties.SetAutomationId(owner, "PlanOwner");
-            owner.Items.Add(new ComboBoxItem { Content = "未設定（共通・暫定）", Tag = "" });
-            foreach (var person in plan.People) owner.Items.Add(new ComboBoxItem { Content = $"{person.Name} / {person.WeightPercent}%", Tag = person.Id });
-            owner.SelectedItem = owner.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == (task.OwnerId ?? "")) ?? owner.Items[0]; content.Children.Add(owner);
-            var start = PlanningText(content, "採用開始（日本時間、空欄可）", "PlanTaskStart", DateText(calculated.Start));
-            var finish = PlanningText(content, "採用終了（日本時間、空欄可）", "PlanTaskFinish", DateText(calculated.Finish));
-            var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
-            AutomationProperties.SetAutomationId(preview, "PlanSuggestion"); content.Children.Add(preview);
+            var task = plan.Tasks.SingleOrDefault(t => t.Id == id) ?? (plan.Version >= 3 ? EditingWorkspace.WithObservedAssignment(registration, new(id)) : new PlanningTask(id));
+            content.Children.Add(new TextBlock { Text = RowIdentity(rows[currentRow]), TextWrapping = TextWrapping.Wrap });
             var details = PlanningTaskDetails(content, plan, task, rows[currentRow]);
             values = details.Values; dependencies = details.Dependencies; decisions = details.Decisions;
-            candidate = () =>
-            {
-                var selectedMode = (PlanningMode)((ComboBoxItem)mode.SelectedItem).Tag;
-                var first = PlanningDate(start.Text); var last = PlanningDate(finish.Text);
-                if (start.Text != DateText(calculated.Start) || finish.Text != DateText(calculated.Finish)) selectedMode = PlanningMode.Manual;
-                var chosen = details.Task() with { Mode = selectedMode, OwnerId = (string)((ComboBoxItem)owner.SelectedItem).Tag is { Length: > 0 } personId ? personId : null,
-                    ManualStart = selectedMode == PlanningMode.Manual ? first : null, ManualFinish = selectedMode == PlanningMode.Manual ? last : null };
-                return plan with { Tasks = plan.Tasks.Where(t => t.Id != id).Append(chosen).ToArray() };
-            };
-            void Preview()
-            {
-                try
-                {
-                    var staged = EditingWorkspace.Restore(work.Snapshot());
-                    staged.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions());
-                    var next = staged.PlanFor(registration).Tasks.Single(t => t.Id == id);
-                    preview.Text = $"保存後: {DateText(next.Start)} → {DateText(next.Finish)}\n自動案: {DateText(next.SuggestedStart)} → {DateText(next.SuggestedFinish)}\n{next.Problem ?? next.Controller}\n{string.Join(" / ", next.Warnings)}";
-                }
-                catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { preview.Text = e.Message; }
-            }
-            var previewButton = new Button { Content = "日程をプレビュー" }; AutomationProperties.SetAutomationId(previewButton, "PlanPreview");
-            previewButton.Click += (_, _) => Preview(); content.Children.Add(previewButton);
-            mode.SelectionChanged += (_, _) => {
-                if ((PlanningMode)((ComboBoxItem)mode.SelectedItem).Tag == PlanningMode.Auto)
-                { start.Text = DateText(calculated.Start); finish.Text = DateText(calculated.Finish); }
-                Preview();
-            };
-            preview.Text = $"現在: {DateText(calculated.Start)} → {DateText(calculated.Finish)}\n自動案: {DateText(calculated.SuggestedStart)} → {DateText(calculated.SuggestedFinish)}\n{calculated.Problem ?? string.Join(" / ", calculated.Warnings)}";
+            candidate = () => plan with { Tasks = plan.Tasks.Where(t => t.Id != id).Append(details.Task()).ToArray() };
         }
         content.Children.Add(status);
-        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = settings ? "計画設定" : "タスクの計画", PrimaryButtonText = "保存", CloseButtonText = "キャンセル",
+        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = settings ? "計画設定" : "タスクの詳細", PrimaryButtonText = "保存", CloseButtonText = "キャンセル",
             Content = new ScrollViewer { Content = content, MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         AutomationProperties.SetAutomationId(dialog, "PlanningDialog");
         dialog.PrimaryButtonClick += (_, args) =>
         {
+            if (!CanRefresh) { status.Text = "IME変換を確定または取消してから保存してください。"; args.Cancel = true; return; }
             try { work.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions()); }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; }
         };

@@ -32,7 +32,9 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(9, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray());
+    // Draft 10 / planning 2 belong to the isolated Summary checkpoint. Do not
+    // reuse those versions for a different schema or silently import its data.
+    public DraftRecord Snapshot() => DraftSnapshot.Copy(new(11, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray()));
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -51,7 +53,9 @@ internal sealed partial class EditingWorkspace
         ? f.Change is { } value ? value.Value : f.Baseline : cell.Baseline;
     public string? Buffer(EditCell cell) => IsLocal(cell.Key) ? LocalBufferFor(cell) : cell.Key is { } key && fields.TryGetValue(key, out var f) ? f.Buffer : null;
     public bool Changed(EditCell cell) => cell.Key is { } key && fields.TryGetValue(key, out var f) && f.Change is not null;
-    public EditRow[] Open(ProjectRegistration registration)
+    public EditRow[] Open(ProjectRegistration registration) => ProjectRows(registration, initializeFields: true);
+    internal EditRow[] ReadRows(ProjectRegistration registration) => ProjectRows(registration, initializeFields: false);
+    private EditRow[] ProjectRows(ProjectRegistration registration, bool initializeFields)
     {
         var p = registration.Snapshot;
         if (p.Id.Scope != Scope) throw new InvalidOperationException("Scope mismatch");
@@ -85,7 +89,7 @@ internal sealed partial class EditingWorkspace
             var unsupported = p.Fields.Except(columns).Select(f => $"{f.Name}: {AvailabilityText(f.Availability)}");
             cells.Add(new(null, reference + " | " + string.Join(" / ", unsupported), null, "参照専用", []));
             cells = cells.Select(c => c with { Scope = Scope }).ToList();
-            foreach (var cell in cells.Concat(DependencyCells(registration, item, dependencyKeys[item.ContentId?.NodeId ?? ""])).Where(c => c.Key is not null && c.Reason is null))
+            foreach (var cell in cells.Concat(DependencyCells(registration, item, dependencyKeys[item.ContentId?.NodeId ?? ""])).Where(c => initializeFields && c.Key is not null && c.Reason is null))
             {
                 if (!fields.ContainsKey(cell.Key!))
                 {
@@ -94,7 +98,7 @@ internal sealed partial class EditingWorkspace
                 }
             }
             return new EditRow(item.Id.NodeId, cells.ToArray());
-        }).Concat(OpenLocal(registration, columns)).ToArray();
+        }).Concat(OpenLocal(registration, columns, initializeFields)).ToArray();
     }
     public static string AvailabilityText(ValueAvailability availability) => availability switch
     { ValueAvailability.Empty => "明示的な空値", ValueAvailability.Unsupported => "非対応", ValueAvailability.Unavailable => "閲覧不可", ValueAvailability.NotLoaded => "未取得", _ => "取得済み" };
@@ -172,8 +176,9 @@ internal sealed partial class EditingWorkspace
         Revision++;
         foreach (var change in changes.Values) fields[change.Key] = change.After;
         foreach (var change in rowChanges.Values) ReplaceLocal(change.After!);
+        var planChange = InitializeEstimatedTasks(projectId, changes);
         ProjectCommittedPlan(projectId, changes);
-        history.Add(new(Guid.NewGuid().ToString("N"), projectId, changes.Values.ToArray(), Rows: rowChanges.Values.ToArray()));
+        history.Add(new(Guid.NewGuid().ToString("N"), projectId, changes.Values.ToArray(), Rows: rowChanges.Values.ToArray(), Plan: planChange));
     }
     public void Undo(string projectId)
     {

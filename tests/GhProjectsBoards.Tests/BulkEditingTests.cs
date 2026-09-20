@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 
@@ -50,7 +51,7 @@ internal sealed class BulkEditingTests
         else
         {
             Assert.Throws<InvalidOperationException>(() => w.PasteSelection("P1", rows, new(0, 1, height, width), text));
-            Assert.That(w.Snapshot().Fields, Is.EqualTo(before.Fields));
+            Assert.That(JsonSerializer.Serialize(w.Snapshot().Fields), Is.EqualTo(JsonSerializer.Serialize(before.Fields)));
             Assert.That(w.Snapshot().History, Is.Empty);
         }
     }
@@ -76,8 +77,8 @@ internal sealed class BulkEditingTests
         var error = Assert.Throws<InvalidOperationException>(() => w.Fill("P1", rows, 0, 1, 1, 9));
 
         Assert.That(error!.Message, Does.Contain("P1T5"));
-        Assert.That(w.Snapshot().Fields, Is.EqualTo(before.Fields));
-        Assert.That(w.Snapshot().History, Is.EqualTo(before.History));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().Fields), Is.EqualTo(JsonSerializer.Serialize(before.Fields)));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().History), Is.EqualTo(JsonSerializer.Serialize(before.History)));
     }
 
     [Test]
@@ -164,7 +165,7 @@ internal sealed class BulkEditingTests
         w.Commit("P1", rows[0].Cells[1], "A1", true); var before = w.Snapshot();
         var copy = w.CopyCells("P1", rows, new(0, 1));
         Assert.Throws<InvalidOperationException>(() => w.PasteSelection("P1", rows, new(0, 2, 2), "Done", copy));
-        Assert.That(w.Snapshot().Fields, Is.EqualTo(before.Fields)); Assert.That(w.Snapshot().History, Is.EqualTo(before.History));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().Fields), Is.EqualTo(JsonSerializer.Serialize(before.Fields))); Assert.That(JsonSerializer.Serialize(w.Snapshot().History), Is.EqualTo(JsonSerializer.Serialize(before.History)));
     }
 
     [Test]
@@ -175,8 +176,8 @@ internal sealed class BulkEditingTests
         w.Commit("P1", source, "new title"); var copy = w.CopyCells("P1", rows, new(2, 0));
         w.SetBuffer(source, "unfinished"); var before = w.Snapshot();
         Assert.Throws<InvalidOperationException>(() => w.PasteSelection("P1", rows, new(0, 0, 2), "new title", copy));
-        Assert.That(w.Snapshot().Fields, Is.EqualTo(before.Fields)); Assert.That(w.Snapshot().LocalRows, Is.EqualTo(before.LocalRows));
-        Assert.That(w.Snapshot().History, Is.EqualTo(before.History));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().Fields), Is.EqualTo(JsonSerializer.Serialize(before.Fields))); Assert.That(w.Snapshot().LocalRows, Is.EqualTo(before.LocalRows));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().History), Is.EqualTo(JsonSerializer.Serialize(before.History)));
     }
 
     [Test]
@@ -187,7 +188,7 @@ internal sealed class BulkEditingTests
         w.Commit("P1", row.Cells[1], "A1", true); w.Commit("P1", row.Cells[3], "C1", true); var before = w.Snapshot();
         w.Commit("P1", row.Cells[1], "A1", true);
         Assert.That(w.Revision, Is.EqualTo(before.Revision)); Assert.That(w.Snapshot().LocalRows, Is.EqualTo(before.LocalRows));
-        Assert.That(w.Snapshot().History, Is.EqualTo(before.History));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().History), Is.EqualTo(JsonSerializer.Serialize(before.History)));
     }
 
     [Test]

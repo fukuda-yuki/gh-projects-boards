@@ -26,6 +26,8 @@ public sealed class SustainedInputDiagnosticTests
         var data = Path.GetFullPath(Required("DATA"));
         var output = Path.GetFullPath(Required("OUTPUT"));
         var condition = Required("CONDITION");
+        var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
+        Assert.That(mode, Is.AnyOf("standard", "ime"));
         Assert.That(condition, Is.AnyOf("cold", "warm"));
         Assert.That(Directory.Exists(output), Is.False, "Retain earlier attempts.");
         using var seed = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "diagnostics", "gantt-fixture.json")));
@@ -36,7 +38,7 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, data, tasks = 1000, people = 20,
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -44,12 +46,14 @@ public sealed class SustainedInputDiagnosticTests
             coreSha256 = Hash(Path.Combine(Path.GetDirectoryName(app)!, "GhProjectsBoards.Core.dll")),
             driverSha256 = Hash(typeof(SustainedInputDiagnosticTests).Assembly.Location),
             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow,
-            schedule = "60 seconds per condition: 20 title input, 20 NUMBER input, 20 alternating wheel/horizontal motion. Warm runs have an additional unmeasured 10 second title phase. Each condition starts a fresh process and fixture. Separate scrollbar-thumb and physical IME probes remain required.",
-            boundary = "Input start immediately before native key dispatch to first exact UIA native TextBox value readback, including UIA observer cost; not composited pixels. Continuous independent GDI captures cover scrolling; app rendering callbacks are separate pre-presentation signals. No physical scanout claim.",
+            schedule = mode == "ime" ? "60 seconds of physical Japanese IME composition, conversion and confirmation, including a bounded writer-lock failure and explicit save recovery."
+                : "60 seconds per condition: 20 title input, 20 NUMBER input, 20 alternating wheel/horizontal motion. Warm runs have an additional unmeasured 10 second title phase. Each condition starts a fresh process and fixture. A separate scrollbar-thumb probe remains required.",
+            boundary = "Input start immediately before native key dispatch to first exact UIA native TextBox value readback, including UIA observer cost; not composited pixels. Independent best-effort GDI samples cover scrolling, with capture gaps reported; app rendering callbacks are separate pre-presentation signals. No physical scanout claim.",
             target = "Typed native-value readback p95 <=100 ms. Report all samples, capture gaps and app rendering gaps >=100 ms. No threshold asserted by this diagnostic test.",
             humanAcceptance = "Failed prior evaluation; not re-evaluated by this diagnostic."
         });
         var events = new List<object>();
+        var expectedBuffers = new Dictionary<int, string>();
         void Record(string kind, object detail) => events.Add(new { kind, ticks = Stopwatch.GetTimestamp(), detail });
         void Write(string name, object value) => File.WriteAllText(Path.Combine(output, name), JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true }));
         static string Hash(string path) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)));
@@ -81,16 +85,34 @@ public sealed class SustainedInputDiagnosticTests
             Wait(() => Element("ToggleProjectNavigation").Name == "Project一覧を表示", "Project navigation must finish closing.");
             Keyboard.TypeVirtualKeyCode(0x1A);
             Capture("ready");
-            if (condition == "warm") Input("warmup", 0, 10, false);
+            if (condition == "warm" && mode == "standard") Input("warmup", 0, 10, false);
             var start = Stopwatch.GetTimestamp();
             Record("workload-start", new { start });
-            Input("title", 0, 20, true);
-            Input("number", 2, 20, true);
-            Scroll(20);
+            if (mode == "ime") Ime(60);
+            else { Input("title", 0, 20, true); Input("number", 2, 20, true); Scroll(20); }
             Record("workload-end", new { elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds });
             Capture("after-workload");
             window.Close(); normal = process.WaitForExit(20000) && process.ExitCode == 0;
             Assert.That(normal, Is.True, "Ordinary close must flush and exit.");
+            using var after = JsonDocument.Parse(File.ReadAllText(checkpoint));
+            foreach (var (column, expected) in expectedBuffers)
+            {
+                var field = after.RootElement.GetProperty("Fields").EnumerateArray().Single(f => column == 0
+                    ? f.GetProperty("Key").GetProperty("Kind").GetString() == "Title" && f.GetProperty("Key").GetProperty("NodeId").GetString() == "I1"
+                    : f.GetProperty("Key").GetProperty("NodeId").GetString() == "P1T1" && f.GetProperty("Key").GetProperty("FieldId").GetString() == "F-Estimate");
+                Assert.That(field.GetProperty("Buffer").GetString(), Is.EqualTo(expected), "Close must retain the last observed native input.");
+            }
+            Assert.That(after.RootElement.GetProperty("History").GetArrayLength(), Is.EqualTo(before.RootElement.GetProperty("History").GetArrayLength()), "Buffer typing must not create cell commits.");
+            foreach (var pending in before.RootElement.GetProperty("Fields").EnumerateArray().Where(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null))
+                Assert.That(after.RootElement.GetProperty("Fields").EnumerateArray().Single(f => f.GetProperty("Key").GetRawText() == pending.GetProperty("Key").GetRawText()).GetProperty("Buffer").GetString(),
+                    Is.EqualTo(pending.GetProperty("Buffer").GetString()), "Offscreen pending input must survive.");
+            var oldTasks = before.RootElement.GetProperty("Planning")[0].GetProperty("Tasks").EnumerateArray().ToDictionary(t => t.GetProperty("Id").GetString()!);
+            foreach (var task in after.RootElement.GetProperty("Planning")[0].GetProperty("Tasks").EnumerateArray())
+                foreach (var property in new[] { "Mode", "OwnerId", "ManualStart", "ManualFinish", "Actuals", "Contributions" })
+                    Assert.That(System.Text.Json.Nodes.JsonNode.DeepEquals(System.Text.Json.Nodes.JsonNode.Parse(task.GetProperty(property).GetRawText()),
+                        System.Text.Json.Nodes.JsonNode.Parse(oldTasks[task.GetProperty("Id").GetString()!].GetProperty(property).GetRawText())), Is.True, property);
+            Write("durable-readback.json", new { passed = true, expectedBuffers, historyOperations = after.RootElement.GetProperty("History").GetArrayLength(), planningTasksUnchanged = oldTasks.Count,
+                endpoint = "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey." });
         }
         catch (Exception e)
         {
@@ -132,12 +154,50 @@ public sealed class SustainedInputDiagnosticTests
                 var end = Stopwatch.GetTimestamp();
                 Record("typed-value", new { phase, measured, index, begin, sent, end, matched, milliseconds = Stopwatch.GetElapsedTime(begin, end).TotalMilliseconds });
                 Assert.That(matched, Is.True, "Native key must update the selected cell.");
+                expectedBuffers[column] = expected;
                 index++;
                 // 5 updates/second is declared pacing, outside each measured latency.
                 var rest = 200 - Stopwatch.GetElapsedTime(begin).TotalMilliseconds;
                 if (rest > 0) Thread.Sleep((int)rest);
             }
             Record("input-phase-end", new { phase, samples = index });
+        }
+        void Ime(int seconds)
+        {
+            var cell = Element("GridCell0_0").AsTextBox(); cell.Click();
+            Wait(() => cell.Properties.HasKeyboardFocus.Value, "Japanese input target must own focus.");
+            var start = Stopwatch.GetTimestamp(); var index = 0; var testedFailure = false;
+            try
+            {
+                while (Stopwatch.GetElapsedTime(start).TotalSeconds < seconds)
+                {
+                    using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
+                    using var locked = !testedFailure && Stopwatch.GetElapsedTime(start).TotalSeconds >= 20
+                        ? new FileStream(Path.Combine(data, "Drafts", ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None) : null;
+                    Keyboard.TypeVirtualKeyCode(0x16);
+                    var begin = Stopwatch.GetTimestamp();
+                    Keyboard.Type(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O);
+                    Wait(() => cell.Text == "にほんご", "Physical romaji must start native composition.");
+                    Keyboard.Type(VirtualKeyShort.SPACE); Wait(() => cell.Text == "日本語", "Native conversion must produce the expected candidate.");
+                    Thread.Sleep(1200); // Allow in-flight durable completion while the IME still owns composition.
+                    Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
+                    if (index == 0 || locked is not null) Capture(locked is null ? "ime-composing" : "ime-composing-save-failure");
+                    Keyboard.Type(VirtualKeyShort.RETURN); Wait(() => cell.Text == "日本語", "Composition confirmation must retain the pending text.");
+                    expectedBuffers[0] = "日本語";
+                    Record("physical-ime", new { index, begin, end = Stopwatch.GetTimestamp(), writerLocked = locked is not null, nativeText = "日本語" });
+                    if (locked is not null)
+                    {
+                        Wait(() => Element("DraftStatus").Name.Contains("保存失敗"), "Save failure must become visible after composition confirmation.");
+                        Capture("ime-confirmed-save-failure"); locked.Dispose(); testedFailure = true;
+                        WorkspaceUi.Element(window!, "GridSave").AsButton().Invoke();
+                        Wait(() => Element("DraftStatus").Name.Contains("保存済み"), "Explicit retry must clear the save failure.");
+                        Capture("ime-save-recovered"); cell = Element("GridCell0_0").AsTextBox(); cell.Click();
+                    }
+                    index++;
+                }
+                Assert.That(testedFailure, Is.True);
+            }
+            finally { Keyboard.TypeVirtualKeyCode(0x1A); }
         }
         void Scroll(int seconds)
         {

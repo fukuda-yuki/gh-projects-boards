@@ -12,7 +12,7 @@ internal sealed class PlanningContractTests
     public void NewCheckpointVersionsPlanningWithoutInventingAPlan()
     {
         var work = new EditingWorkspace(new("github.com", 42));
-        Assert.That(work.Snapshot().Version, Is.EqualTo(9));
+        Assert.That(work.Snapshot().Version, Is.EqualTo(11));
         Assert.That(work.Snapshot().Planning, Is.Empty);
     }
 
@@ -159,6 +159,22 @@ internal sealed class PlanningContractTests
         var target = json["Planning"]![0]![missing == "WeightPercent" ? "People" : "Tasks"]![0]!.AsObject(); target.Remove(missing);
         var raw = json.ToJsonString(); await File.WriteAllTextAsync(store.FileFor(w.Scope), raw);
         Assert.ThrowsAsync<JsonException>(() => store.LoadAsync(w.Scope));
+        Assert.That((await store.CheckpointsAsync()).Problems.Single().Kind, Is.EqualTo("InvalidCheckpoint"));
+        Assert.That(await File.ReadAllTextAsync(store.FileFor(w.Scope)), Is.EqualTo(raw));
+    }
+
+    [TestCase("Assignment"), TestCase("Assignees"), TestCase("Complete"), TestCase("Legacy")]
+    public async Task MissingAssignmentMetadataCannotSilentlyReinterpretVersionThree(string missing)
+    {
+        var root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "planning-assignment-damage-" + Guid.NewGuid().ToString("N"));
+        var w = new EditingWorkspace(new("github.com", 42));
+        w.SetPlanning(EditingWorkspace.UpgradeAssignmentContract(Plan()), 0);
+        var store = new DraftStore(root); await store.SaveAsync(w.Snapshot(), 0);
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(store.FileFor(w.Scope)))!;
+        var task = json["Planning"]![0]!["Tasks"]![0]!;
+        (missing == "Assignment" ? task : task["Assignment"]!).AsObject().Remove(missing);
+        var raw = json.ToJsonString(); await File.WriteAllTextAsync(store.FileFor(w.Scope), raw);
+        Assert.That(async () => await store.LoadAsync(w.Scope), Throws.Exception);
         Assert.That((await store.CheckpointsAsync()).Problems.Single().Kind, Is.EqualTo("InvalidCheckpoint"));
         Assert.That(await File.ReadAllTextAsync(store.FileFor(w.Scope)), Is.EqualTo(raw));
     }

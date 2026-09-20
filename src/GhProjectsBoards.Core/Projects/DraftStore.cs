@@ -23,9 +23,10 @@ internal sealed class DraftStore(string registrationRoot)
             if (info.Type == typeof(ProjectPlanning) || info.Type == typeof(PlanningTask) || info.Type == typeof(PlanningPerson)
                 || info.Type == typeof(PlanningCalendar) || info.Type == typeof(PlanningFieldBinding) || info.Type == typeof(PlanningLink)
                 || info.Type == typeof(ActualContribution) || info.Type == typeof(WorkContribution)
-                || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval)
+                || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval) || info.Type == typeof(PlanningAssignment)
                 || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate))
-                foreach (var property in info.Properties) property.IsRequired = true;
+                foreach (var property in info.Properties)
+                    if (info.Type != typeof(PlanningTask) || property.Name != nameof(PlanningTask.Assignment)) property.IsRequired = true;
         } } }
     };
     public string FileFor(ConnectionScope scope) => Path.Combine(root,
@@ -171,7 +172,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 11) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -181,6 +182,9 @@ internal sealed class DraftStore(string registrationRoot)
         EditingWorkspace.ValidateRowPreferences(r.RowPreferences ?? []);
         if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
+        if (r.Version < 11 && (r.Planning ?? []).Concat(r.History.Where(t => t?.Plan is not null)
+            .SelectMany(t => new[] { t.Plan!.Before, t.Plan.After }.OfType<ProjectPlanning>())).Any(p => p.Version >= 3))
+            throw new InvalidDataException("Unversioned assignment policy.");
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
         if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date" or "Dependency")))
             throw new InvalidDataException("Unversioned planning operations.");
@@ -239,6 +243,7 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
 {
     private readonly SemaphoreSlim gate = new(1);
     private Task<bool>? pendingFlush;
+    private long flushRequests;
     private readonly string recoveryNotice = store.HasInterruptedSave(workspace.Scope) ? " / 中断保存ファイルを保持しています（要確認）" : "";
     public EditingWorkspace Workspace { get; private set; } = workspace;
     public long DurableRevision { get; private set; } = durableRevision;
@@ -246,6 +251,7 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
     public event Action? Changed;
     public async Task<bool> CommitAsync(Func<EditingWorkspace, EditingWorkspace> prepare, Func<bool> canCommit)
     {
+        var committed = false;
         using (PerformanceTrace.Span("draft-commit-gate-wall")) await gate.WaitAsync();
         try
         {
@@ -257,15 +263,20 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
             await store.SaveAsync(snapshot, DurableRevision, () => canCommit() && Workspace == original && original.Revision == revision);
             Workspace = candidate; DurableRevision = candidate.Revision;
             Status = "照合結果をローカル保存しました（GitHub未反映）";
-            return true;
+            committed = true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or InvalidOperationException)
-        { Status = "ローカル保存失敗または比較後の変更。元の作業を保持しました。再試行してください。"; return false; }
+        { Status = "ローカル保存失敗または比較後の変更。元の作業を保持しました。再試行してください。"; }
         finally { gate.Release(); Changed?.Invoke(); }
+        // Opening the new view can initialize fields or accept new input during
+        // Changed. Success must include that work, even when its flush joined one
+        // already in flight.
+        return committed && (DurableRevision == Workspace.Revision || await FlushAsync());
     }
     public Task<bool> FlushAsync()
     {
         PerformanceTrace.Count("draft-flush-requests");
+        flushRequests++;
         if (pendingFlush is { IsCompleted: false }) return pendingFlush;
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         pendingFlush = completion.Task;
@@ -279,34 +290,38 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
     }
     private async Task<bool> FlushCoreAsync()
     {
-        using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
-        try
+        while (true)
         {
-            while (DurableRevision != Workspace.Revision)
+            using (PerformanceTrace.Span("draft-flush-gate-wall")) await gate.WaitAsync();
+            var attemptedRequests = flushRequests;
+            var saved = true;
+            try
             {
-                PerformanceTrace.Count("draft-flush-iterations");
-                Status = "ローカル保存中…";
-                using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
-                DraftRecord snapshot;
-                using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
-                var expectedRevision = DurableRevision;
-                // Capture on the workspace's owning context. Records are replaced,
-                // never mutated by subsequent edits; only this fixed snapshot crosses
-                // to the worker. The gate and store's revision/atomic-replace guards
-                // still serialize every durable write. New input requests join this
-                // loop immediately, with no timer/debounce or enlarged loss window.
-                await Task.Run(() => store.SaveAsync(snapshot, expectedRevision));
-                DurableRevision = snapshot.Revision;
+                if (DurableRevision != Workspace.Revision)
+                {
+                    PerformanceTrace.Count("draft-flush-iterations");
+                    Status = "ローカル保存中…";
+                    using (PerformanceTrace.Span("draft-saving-notification-sync")) Changed?.Invoke();
+                    DraftRecord snapshot;
+                    using (PerformanceTrace.Span("draft-snapshot-sync")) snapshot = Workspace.Snapshot();
+                    var expectedRevision = DurableRevision;
+                    // Snapshot owns all nested collections. Only this detached
+                    // graph crosses to the worker; the mutable workspace stays on
+                    // its caller's context. The store keeps validation and atomic
+                    // revision/readback guards, without a timer or debounce.
+                    await Task.Run(() => store.SaveAsync(snapshot, expectedRevision));
+                    DurableRevision = snapshot.Revision;
+                }
+                Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
             }
-            Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
-        { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; return false; }
-        finally
-        {
-            gate.Release();
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
+            { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; saved = false; }
+            finally { gate.Release(); }
             using (PerformanceTrace.Span("draft-settled-notification-sync")) Changed?.Invoke();
+            // A newer input/retry request survives a failed attempt. Without a
+            // newer request, failure remains visible and is never blindly retried.
+            if (!saved && flushRequests == attemptedRequests) return false;
+            if (saved && DurableRevision == Workspace.Revision) return true;
         }
     }
 }

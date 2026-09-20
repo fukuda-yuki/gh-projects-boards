@@ -41,6 +41,7 @@ internal sealed class GanttView : Grid
     private ScrollViewer? vertical;
     private WorkingCalendar? calendar;
     internal event Action<string>? EditRequested;
+    internal event Action<string>? TaskDetailsRequested;
     internal event Action<string>? BoardsRequested;
     internal event Action? UndoRequested;
     internal event Action? SettingsRequested;
@@ -77,6 +78,7 @@ internal sealed class GanttView : Grid
         context = Tool("詳細", "GanttDetails", Symbol.List, ShowDetails);
         Tool("元に戻す", "GanttUndo", Symbol.Undo, () => UndoRequested?.Invoke());
         Tool("計画設定", "GanttSettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
+        Tool("タスクの詳細", "GanttTaskDetailsEdit", Symbol.Edit, () => { if (SelectedRowId is { } id) TaskDetailsRequested?.Invoke(id); }, true);
         Children.Add(commands);
         var filter = new Grid { ColumnSpacing = 8, Padding = new(8, 2, 8, 4) };
         filter.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); filter.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); filter.ColumnDefinitions.Add(new());

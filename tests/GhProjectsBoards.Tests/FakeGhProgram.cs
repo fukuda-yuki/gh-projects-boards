@@ -232,7 +232,8 @@ internal static class FakeGhProgram
                     var planned = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
                     var stateFile = Path.Combine(directory, "apply-state.json");
                     var plannedState = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile)) : null;
-                    PlanningResponses.Augment(planned, plannedState?["scalars"]?.AsObject(), plannedState?["dependencies"]?.AsObject()); response = planned;
+                    PlanningResponses.Augment(planned, plannedState?["scalars"]?.AsObject(), plannedState?["dependencies"]?.AsObject(),
+                        settings.TryGetProperty("planningAssignee", out var assignee) ? assignee.GetString() : null); response = planned;
                 }
                 if (query.Contains("ProjectItems") || query.Contains("ApplyItem") || query.Contains("ApplyObservation"))
                 {

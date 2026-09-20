@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 
@@ -62,7 +63,7 @@ internal sealed class ReconciliationTests
         w.Commit("P1", rows[0].Cells[0], "Local"); var r = Remote(a); w.Reconcile(a, r); var decision = w.Decision(rows[0].Cells[0].Key!);
         if (cause == "edit") w.Commit("P1", rows[0].Cells[1], "Done"); else w.Reconcile(r, Remote(r, "New remote"));
         var before = w.Snapshot(); Assert.Throws<InvalidOperationException>(() => w.Resolve("P1", decision, new("Local")));
-        Assert.That(w.Snapshot().Fields, Is.EqualTo(before.Fields)); Assert.That(w.Revision, Is.EqualTo(before.Revision));
+        Assert.That(JsonSerializer.Serialize(w.Snapshot().Fields), Is.EqualTo(JsonSerializer.Serialize(before.Fields))); Assert.That(w.Revision, Is.EqualTo(before.Revision));
     }
 
     [TestCase("unknown"), TestCase("permission"), TestCase("removed"), TestCase("option"), TestCase("field"), TestCase("type"), TestCase("archived")]

@@ -19,7 +19,7 @@ internal sealed partial class EditingWorkspace
         var roles = plan.Fields.ToDictionary(f => f.Role, f => f.FieldId);
         var inputs = new List<PlanningInput>();
         var issueRows = registration.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null).ToDictionary(i => i.Id.NodeId, i => i.ContentId!.NodeId);
-        var allRows = Open(registration);
+        var allRows = ReadRows(registration);
         var dependencies = fields.Values.Where(f => f.Key.Kind == "Dependency" && f.Key.ProjectId == id).ToLookup(f => f.Key.NodeId);
         foreach (var row in allRows.Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId)))
         {
@@ -48,7 +48,8 @@ internal sealed partial class EditingWorkspace
         return calculatedPlans[id] = PlanningEngine.Calculate(plan, inputs.ToArray(), Revision);
     }
     public void CommitPlanning(ProjectRegistration registration, ProjectPlanning candidate, long expectedRevision,
-        PlanningValueEdit[]? values = null, PlanningDependencyEdit[]? dependencies = null, PlanningProjectionDecision[]? decisions = null)
+        PlanningValueEdit[]? values = null, PlanningDependencyEdit[]? dependencies = null, PlanningProjectionDecision[]? decisions = null,
+        FieldKey[]? consumeBuffers = null)
     {
         if (!HasCheckpoint || registration.Snapshot.Id.Scope != Scope || registration.Snapshot.Id.NodeId != candidate.ProjectId || expectedRevision != Revision)
             throw new InvalidOperationException("計画を開いた後に変更がありました。現在の値を確認してください。");
@@ -79,18 +80,26 @@ internal sealed partial class EditingWorkspace
             throw new InvalidOperationException("計画対象のIssueを確認できません。");
         var staged = Restore(Snapshot());
         staged.AcceptProjectionBaselines(registration, candidate, decisions ?? []);
-        staged.CommitPlanningCore(registration, candidate, values ?? [], dependencies ?? []);
+        staged.CommitPlanningCore(registration, candidate, values ?? [], dependencies ?? [], consumeBuffers ?? []);
         fields.Clear(); foreach (var pair in staged.fields) fields.Add(pair.Key, pair.Value);
         planning.Clear(); planning.AddRange(staged.planning);
         history.Clear(); history.AddRange(staged.history);
         Revision = staged.Revision; InvalidatePlan(candidate.ProjectId);
     }
-    private void CommitPlanningCore(ProjectRegistration registration, ProjectPlanning candidate, PlanningValueEdit[] values, PlanningDependencyEdit[] dependencies)
+    private void CommitPlanningCore(ProjectRegistration registration, ProjectPlanning candidate, PlanningValueEdit[] values, PlanningDependencyEdit[] dependencies, FieldKey[] consumeBuffers)
     {
         var before = Planning(candidate.ProjectId);
         SetPlanning(candidate, before?.Stamp ?? 0);
         var rows = Open(registration);
         var changes = new Dictionary<FieldKey, FieldChange>();
+        foreach (var key in consumeBuffers)
+        {
+            if (fields.TryGetValue(key, out var old) && old.Observation is { Reason: PendingObservationReason } observation)
+            {
+                var next = old with { Observation = observation with { Reason = null } };
+                fields[key] = next; changes[key] = new(key, old, next);
+            }
+        }
         if (values.Length != 0)
         {
             var start = history.Count;
@@ -105,6 +114,17 @@ internal sealed partial class EditingWorkspace
         ChangeDependencies(registration, dependencies, changes);
         ValidateWorkContributions(candidate.ProjectId, new Dictionary<FieldKey, FieldChange>());
         ProjectPlan(registration, changes);
+        foreach (var key in consumeBuffers)
+        {
+            var cell = rows.SelectMany(r => r.Cells).FirstOrDefault(c => c.Key == key);
+            if (cell is null || PlanningInputRole(cell) is null || key.ProjectId != candidate.ProjectId)
+                throw new InvalidOperationException("確定する計画セルの入力状態を確認してください。");
+            var old = fields[key];
+            if (old.Buffer is null) continue;
+            var next = old with { Buffer = null, Stamp = Revision };
+            fields[key] = next;
+            changes[key] = new(key, changes.TryGetValue(key, out var prior) ? prior.Before : old, next);
+        }
         foreach (var task in candidate.Tasks.Where(t => t.Progress == PlanningProgress.Completed))
         {
             var input = PlanFor(registration).Inputs!.SingleOrDefault(i => i.Task.Id == task.Id);

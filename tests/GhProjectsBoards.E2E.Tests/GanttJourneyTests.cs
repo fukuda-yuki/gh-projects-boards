@@ -59,9 +59,9 @@ public sealed partial class RegistrationTests
             Wait(() => Element(w, "GanttRow-P1T1000").IsAvailable);
             Element(w, "GanttRow-P1T1000").Patterns.SelectionItem.Pattern.Select();
             Invoke(w, "GanttReveal"); Wait(() => Text(w, "GanttSelected").Contains("2027-03-15 12:07"));
-            Invoke(w, "GanttEdit"); Wait(() => WorkspaceUi.HasVisibleElement(w, "PlanTaskFinish"));
-            Assert.That(Element(w, "PlanTaskStart").AsTextBox().Text, Is.EqualTo("2027-03-15 12:07"));
-            Set(w, "PlanTaskFinish", "2027-03-15 16:19"); Invoke(w, "PrimaryButton");
+            Invoke(w, "GanttEdit"); Wait(() => WorkspaceUi.HasVisibleElement(w, "ScheduleFinish"));
+            Assert.That(Element(w, "ScheduleStart").AsTextBox().Text, Is.EqualTo("2027-03-15 12:07"));
+            Set(w, "ScheduleFinish", "2027-03-15 16:19"); Invoke(w, "ScheduleApply");
             Wait(() => Text(w, "GanttSelected").Contains("2027-03-15 16:19"));
             Capture(w, f.Root, "gantt-ordinary-manual-edited");
             OpenGanttProject(w, "P2"); Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell0_0"));

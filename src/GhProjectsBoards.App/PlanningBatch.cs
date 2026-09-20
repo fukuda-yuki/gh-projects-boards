@@ -21,17 +21,12 @@ internal sealed partial class EditingGrid
         if (ids.Length == 0) { ShowOperationProblem("選択内に未設定の計画はありません。"); return; }
         var expected = work.Revision;
         var panel = new StackPanel { Spacing = 12, MinWidth = 420 };
-        panel.Children.Add(new TextBlock { Text = $"選択した未設定 {ids.Length} 件をAutoにします。既存のAuto・Manualは保持します。", TextWrapping = TextWrapping.Wrap });
-        var owner = new ComboBox { Header = "計画担当者", HorizontalAlignment = HorizontalAlignment.Stretch };
-        AutomationProperties.SetAutomationId(owner, "PlanBatchOwner");
-        owner.Items.Add(new ComboBoxItem { Content = "未設定（担当なしは共通・暫定）", Tag = "" });
-        foreach (var person in plan.People) owner.Items.Add(new ComboBoxItem { Content = $"{person.Name} / {person.WeightPercent}%", Tag = person.Id });
-        owner.SelectedIndex = 0; panel.Children.Add(owner);
+        panel.Children.Add(new TextBlock { Text = $"選択した未設定 {ids.Length} 件を自動計算にします。GitHub担当者とProject配賦を使います。既存の日程は保持します。", TextWrapping = TextWrapping.Wrap });
         var preview = new ListView { Height = 240, SelectionMode = ListViewSelectionMode.None };
         AutomationProperties.SetAutomationId(preview, "PlanBatchPreview"); panel.Children.Add(preview);
         var notice = new TextBlock { TextWrapping = TextWrapping.Wrap }; panel.Children.Add(notice);
-        ProjectPlanning Candidate() => plan with { Tasks = plan.Tasks.Where(t => !ids.Contains(t.Id)).Concat(ids.Select(id =>
-            (tasks.GetValueOrDefault(id) ?? new(id)) with { Mode = PlanningMode.Auto, OwnerId = (string)((ComboBoxItem)owner.SelectedItem).Tag is { Length: > 0 } person ? person : null })).ToArray() };
+        ProjectPlanning Candidate() => plan with { Version = 3, Tasks = EditingWorkspace.UpgradeAssignmentContract(plan).Tasks.Where(t => !ids.Contains(t.Id)).Concat(ids.Select(id =>
+            EditingWorkspace.WithObservedAssignment(registration, (tasks.GetValueOrDefault(id) ?? new(id)) with { Mode = PlanningMode.Auto }))).ToArray() };
         bool Preview()
         {
             try
@@ -43,8 +38,8 @@ internal sealed partial class EditingGrid
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { notice.Text = e.Message; return false; }
         }
-        owner.SelectionChanged += (_, _) => Preview(); Preview();
-        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "Autoを設定", Content = panel, PrimaryButtonText = "設定", CloseButtonText = "キャンセル" };
+        Preview();
+        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "自動計算を設定", Content = panel, PrimaryButtonText = "設定", CloseButtonText = "キャンセル" };
         AutomationProperties.SetAutomationId(dialog, "PlanningBatchDialog");
         dialog.PrimaryButtonClick += (_, args) => {
             try { work.CommitPlanning(registration, Candidate(), expected); }
