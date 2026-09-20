@@ -21,7 +21,8 @@ internal sealed partial class EditingWorkspace
         var issueRows = registration.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null).ToDictionary(i => i.Id.NodeId, i => i.ContentId!.NodeId);
         var allRows = Open(registration);
         var dependencies = fields.Values.Where(f => f.Key.Kind == "Dependency" && f.Key.ProjectId == id).ToLookup(f => f.Key.NodeId);
-        foreach (var row in allRows.Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId)))
+        foreach (var row in allRows.Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId))
+            .DistinctBy(r => r.IsLocal ? r.ItemId : issueRows[r.ItemId]))
         {
             var taskId = row.IsLocal ? row.ItemId : issueRows[row.ItemId]; var task = metadata.GetValueOrDefault(taskId) ?? new(taskId);
             decimal? Work(string role)
@@ -58,6 +59,9 @@ internal sealed partial class EditingWorkspace
             if (!registration.Snapshot.Fields.Any(f => f.Id.NodeId == binding.FieldId && f.DataType == binding.DataType && f.ValueOwner == FieldOwner.ProjectItem && f.Availability == ValueAvailability.Present))
                 throw new InvalidOperationException("計画フィールドのID・型を確認できません。");
         var existing = Planning(candidate.ProjectId);
+        if (candidate.Summary != existing?.Summary)
+            throw new InvalidOperationException("投入可能工数と基準計画はSummaryの専用操作で変更してください。");
+        if (candidate.Tasks.Any(t => t.LaborKind != TaskLaborKind.Unspecified)) candidate = candidate with { Version = 2 };
         foreach (var task in candidate.Tasks)
         {
             var previous = existing?.Tasks.SingleOrDefault(t => t.Id == task.Id);

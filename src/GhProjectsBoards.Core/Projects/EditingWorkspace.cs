@@ -28,7 +28,7 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(9, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray());
+    public DraftRecord Snapshot() => new(10, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray());
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);

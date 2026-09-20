@@ -54,7 +54,7 @@ public sealed class GanttHostedTests
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-07 13:00"));
             Assert.That(Ui.Find<ListView>("GanttTasks").Items, Has.Count.EqualTo(4));
             Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
-            Assert.That(Views().Items[2].IsEnabled, Is.False);
+            Assert.That(Views().Items[2].IsEnabled, Is.True, "The integrated Summary consumer is available.");
         });
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-early-connected"));
         await Ui.ClickCommand("GanttEdit"); await Ui.DialogReady("PlanningDialog");

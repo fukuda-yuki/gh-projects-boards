@@ -214,7 +214,7 @@ internal sealed class GanttView : Grid
     }
     private Relation[] Relations(GanttRow row)
     {
-        var byId = projection.Rows.ToDictionary(r => r.TaskId);
+        var byId = projection.Rows.DistinctBy(r => r.TaskId).ToDictionary(r => r.TaskId);
         return (row.Input?.Predecessors ?? []).Select(link => {
             var previous = byId.GetValueOrDefault(link.PredecessorId);
             return new Relation($"先行 → [{link.Kind}] {previous?.Identity ?? link.PredecessorId} {previous?.Title ?? "外部・未確認"} / 終了 {Exact(previous?.Plan?.Finish ?? link.ExternalFinish)}", previous?.RowId);
@@ -244,6 +244,12 @@ internal sealed class GanttView : Grid
                 try { Text($"{date:yyyy-MM-dd}: " + string.Join(" / ", calendar.Intervals(date, input.Task.OwnerId).Select(i => $"{i.StartMinute / 60:00}:{i.StartMinute % 60:00}–{i.EndMinute / 60:00}:{i.EndMinute % 60:00}"))); }
                 catch (InvalidOperationException e) { Text(e.Message); }
             }
+        }
+        if (config?.Summary?.Baseline is { } baseline)
+        {
+            var captured = baseline.Tasks.SingleOrDefault(t => t.TaskId == row.TaskId);
+            Text($"基準 {baseline.CapturedAt.LocalDateTime:g} / {baseline.Calendar.Revision}\n"
+                + SummaryText.Comparison(new(captured, row, captured is null ? "基準なし（追加）" : "基準と現在")));
         }
         var flyout = new Flyout { Content = new ScrollViewer { Content = panel, MaxHeight = 480, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         foreach (var relation in Relations(row))

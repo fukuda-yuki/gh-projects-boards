@@ -24,8 +24,12 @@ internal sealed class DraftStore(string registrationRoot)
                 || info.Type == typeof(PlanningCalendar) || info.Type == typeof(PlanningFieldBinding) || info.Type == typeof(PlanningLink)
                 || info.Type == typeof(ActualContribution) || info.Type == typeof(WorkContribution)
                 || info.Type == typeof(CalendarException) || info.Type == typeof(WorkingInterval)
-                || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate))
-                foreach (var property in info.Properties) property.IsRequired = true;
+                || info.Type == typeof(HolidayPreset) || info.Type == typeof(HolidayDate)
+                || info.Type == typeof(SummarySettings) || info.Type == typeof(PersonAllowance)
+                || info.Type == typeof(ProtectedBaseline) || info.Type == typeof(BaselineTask))
+                foreach (var property in info.Properties)
+                    if (!(info.Type == typeof(ProjectPlanning) && property.Name == "Summary")
+                        && !(info.Type == typeof(PlanningTask) && property.Name == "LaborKind")) property.IsRequired = true;
         } } }
     };
     public string FileFor(ConnectionScope scope) => Path.Combine(root,
@@ -131,8 +135,26 @@ internal sealed class DraftStore(string registrationRoot)
         await using var stream = File.OpenRead(file);
         DraftRecord record;
         using (PerformanceTrace.Span("checkpoint-deserialize-read-wall"))
-            record = await JsonSerializer.DeserializeAsync<DraftRecord>(stream, Json) ?? throw new InvalidDataException("Missing draft record.");
-        using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
+        {
+            using var document = await JsonDocument.ParseAsync(stream);
+            var root = document.RootElement;
+            record = root.Deserialize<DraftRecord>(Json) ?? throw new InvalidDataException("Missing draft record.");
+            using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
+            if (record.Version >= 10)
+            {
+                void CheckPlan(JsonElement plan)
+                {
+                    if (plan.ValueKind == JsonValueKind.Null) return;
+                    if (!plan.TryGetProperty("Summary", out _) || !plan.TryGetProperty("Tasks", out var tasks)
+                        || tasks.EnumerateArray().Any(t => !t.TryGetProperty("LaborKind", out _)))
+                        throw new InvalidDataException("Missing Summary metadata in a current checkpoint; preserve the source.");
+                }
+                if (root.TryGetProperty("Planning", out var plans) && plans.ValueKind == JsonValueKind.Array) foreach (var plan in plans.EnumerateArray()) CheckPlan(plan);
+                if (root.TryGetProperty("History", out var transactions)) foreach (var tx in transactions.EnumerateArray())
+                    if (tx.TryGetProperty("Plan", out var change) && change.ValueKind != JsonValueKind.Null)
+                    { CheckPlan(change.GetProperty("Before")); CheckPlan(change.GetProperty("After")); }
+            }
+        }
         return record;
     }
     private static void ValidateLocalRows(DraftRecord r)
@@ -171,7 +193,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -181,6 +203,9 @@ internal sealed class DraftStore(string registrationRoot)
         EditingWorkspace.ValidateRowPreferences(r.RowPreferences ?? []);
         if (r.Version >= 8 && r.Planning is null || r.Version < 8 && r.Planning is { Length: > 0 }) throw new InvalidDataException("Invalid planning schema version.");
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
+        if (r.Version < 10 && (r.Planning ?? []).Concat(r.History.Where(t => t?.Plan is not null)
+                .SelectMany(t => new[] { t.Plan!.Before, t.Plan.After }).OfType<ProjectPlanning>()).Any(p => p.Version >= 2))
+            throw new InvalidDataException("Unversioned Summary checkpoint.");
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
         if (r.Version < 9 && (r.History.Any(t => t?.Plan is not null) || r.Fields.Any(f => f?.Key?.Kind is "Number" or "Date" or "Dependency")))
             throw new InvalidDataException("Unversioned planning operations.");

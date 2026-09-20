@@ -9,8 +9,8 @@ namespace GhProjectsBoards.E2E.Tests;
 
 public sealed partial class RegistrationTests
 {
-    [TestCase(false), TestCase(true), Category("GridIme")]
-    public void GanttViewSwitchDoesNotEndNativeCompositionOrCommitTheCell(bool f2)
+    [TestCase(false, "Gantt"), TestCase(true, "Gantt"), TestCase(false, "Summary"), TestCase(true, "Summary"), Category("GridIme")]
+    public void ProjectViewSwitchDoesNotEndNativeCompositionOrCommitTheCell(bool f2, string view)
     {
         using var f = new Fixture();
         File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, columns = true, itemCount = 3 }));
@@ -23,15 +23,15 @@ public sealed partial class RegistrationTests
                 Keyboard.TypeVirtualKeyCode(0x16);
                 Key(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O);
                 Assert.That(cell.Text, Is.EqualTo("にほんご")); Key(VirtualKeyShort.SPACE); Assert.That(cell.Text, Is.EqualTo("日本語"));
-                Element(w, "ProjectViewGantt").Click();
+                Element(w, "ProjectView" + view).Click();
                 Assert.That(WorkspaceUi.HasVisibleElement(w, "GridCell0_0"), Is.True);
                 Assert.That(cell.Properties.HasKeyboardFocus.Value, Is.True);
                 Assert.That(cell.Text, Is.EqualTo("日本語"));
                 Key(VirtualKeyShort.RETURN); // Native composition confirmation only.
-                ChooseView(w, "ProjectViewGantt"); Wait(() => WorkspaceUi.HasVisibleElement(w, "GanttTasks"));
+                ChooseView(w, "ProjectView" + view); Wait(() => WorkspaceUi.HasVisibleElement(w, view == "Gantt" ? "GanttTasks" : "SummaryPeople"));
                 ChooseView(w, "ProjectViewBoards"); Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell0_0"));
                 Assert.That(CellText(w, 0), Is.EqualTo("日本語"));
-                Capture(w, f.Root, "gantt-physical-ime-roundtrip");
+                Capture(w, f.Root, view.ToLowerInvariant() + "-physical-ime-roundtrip");
             }
             finally { Keyboard.TypeVirtualKeyCode(0x1A); }
         });

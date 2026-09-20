@@ -186,6 +186,7 @@ internal sealed partial class EditingGrid : Grid
             if (e.Key == VirtualKey.Escape && drag is not null) { CancelDrag(); e.Handled = true; return; }
             if (e.Key != VirtualKey.F6 || !CanRefresh) return;
             if (ShowingGantt) { gantt!.CycleFocus(Down(VirtualKey.Shift)); e.Handled = true; return; }
+            if (ShowingSummary) { summaryView!.CycleFocus(Down(VirtualKey.Shift)); e.Handled = true; return; }
             var focused = FocusManager.GetFocusedElement(XamlRoot);
             var region = ReferenceEquals(focused, reapplyButton) ? 1 : ReferenceEquals(focused, detailsButton) ? 2 : 0;
             var next = viewStrip.Visibility == Visibility.Visible
@@ -584,6 +585,7 @@ internal sealed partial class EditingGrid : Grid
     private void Update(string updateReason = "caller")
     {
         UpdateGantt();
+        UpdateSummary();
         using var measured = diagnostics?.Span("update", updateReason);
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) return;
@@ -823,6 +825,7 @@ internal sealed partial class EditingGrid : Grid
     private void RefreshStatus()
     {
         if (ShowingGantt) gantt!.ShowOperationStatus(operationProblem, session.Status);
+        if (ShowingSummary) summaryView!.ShowOperationStatus(operationProblem, session.Status);
         var saved = session.Status.Replace("（GitHub未反映）", "");
         // Keep a save failure visible even when a bulk command also has a rejection.
         status.Text = saved.Contains("失敗") ? saved + " / " + operationProblem

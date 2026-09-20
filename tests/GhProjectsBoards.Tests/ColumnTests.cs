@@ -30,7 +30,7 @@ internal sealed class ColumnTests
     public void CheckpointUsesExplicitColumnSchema()
     {
         var w = new EditingWorkspace(EditingTests.Registration().Snapshot.Id.Scope);
-        Assert.That(w.Snapshot().Version, Is.EqualTo(9));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(10));
     }
     [TestCase(false), TestCase(true)]
     public void VisibleRectangleUsesOriginalKeysAndUndoAfterReordering(bool mixed)
@@ -127,7 +127,7 @@ internal sealed class ColumnTests
         await store.SaveAsync(original, 0); var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         restored.SaveColumns(Reordered(restored, p)); await store.SaveAsync(restored.Snapshot(), original.Revision);
         var record = (await store.LoadAsync(w.Scope))!;
-        Assert.That(record.Version, Is.EqualTo(9)); Assert.That(Json(record.Fields), Is.EqualTo(Json(original.Fields)));
+        Assert.That(record.Version, Is.EqualTo(10)); Assert.That(Json(record.Fields), Is.EqualTo(Json(original.Fields)));
         Assert.That(Json(record.History), Is.EqualTo(Json(original.History))); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]

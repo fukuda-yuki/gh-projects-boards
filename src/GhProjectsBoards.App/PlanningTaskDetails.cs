@@ -19,6 +19,9 @@ internal sealed partial class EditingGrid
         if (issue is not null) parent.Children.Add(new TextBlock { Text = $"GitHub: {issue.State.Value} / 担当: {string.Join("、", native?.Assignees.Select(a => a.Login) ?? [])}"
             + (native?.Parent.Value is { } p ? $" / 親: {p.NodeId}（先行関係とは別）" : ""), TextWrapping = TextWrapping.Wrap });
         var effort = PlanningSection(parent, "工数・進捗・実績");
+        var laborKind = new ComboBox { Header = "親タスクの工数区分", HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemsSource = new[] { "未指定（子を持つ場合は要確認）", "このタスクの直接工数", "子の集計（合計へ加算しない）" }, SelectedIndex = (int)task.LaborKind };
+        AutomationProperties.SetAutomationId(laborKind, "PlanLaborKind"); effort.Children.Add(laborKind);
         var numbers = new List<(string Role, TextBox Input, string Initial)>();
         foreach (var role in new[] { "Estimate", "Remaining" })
         {
@@ -109,7 +112,7 @@ internal sealed partial class EditingGrid
             var actuals = reportEnabled.IsChecked != true ? task.Actuals : reportRows.Where(r => !string.IsNullOrWhiteSpace(r.Hours.Text)).Select(r => {
                 if (!DateOnly.TryParseExact(r.Day.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) throw new InvalidOperationException("実績の報告対象最終日を入力してください。");
                 return new ActualContribution(r.Id, PlanningContract.ParseHours(r.Hours.Text), day); }).ToArray();
-            return task with { Progress = (PlanningProgress)((ComboBoxItem)progress.SelectedItem).Tag, ActualStart = PlanningDate(actualStart.Text), ActualFinish = PlanningDate(actualFinish.Text),
+            return task with { LaborKind = (TaskLaborKind)laborKind.SelectedIndex, Progress = (PlanningProgress)((ComboBoxItem)progress.SelectedItem).Tag, ActualStart = PlanningDate(actualStart.Text), ActualFinish = PlanningDate(actualFinish.Text),
                 EarliestStart = PlanningDate(earliest.Text), FixedStart = PlanningDate(fixedStart.Text), FixedFinish = PlanningDate(fixedFinish.Text), Deadline = PlanningDate(deadline.Text), Actuals = actuals,
                 Contributions = shareRows.Where(r => r.Estimate.Text.Length != 0 || r.Remaining.Text.Length != 0).Select(r => new WorkContribution(r.Id, Hours(r.Estimate.Text), Hours(r.Remaining.Text))).ToArray() };
         }, () => numbers.Where(n => n.Input.Text != n.Initial || n.Role == "Remaining" && confirmRemaining.IsChecked == true && !n.Input.IsReadOnly)

@@ -29,6 +29,9 @@
             <DataTemplate x:Key="GanttRowTemplate">
                 <local:GanttRowPresenter HorizontalContentAlignment="Stretch"/>
             </DataTemplate>
+            <DataTemplate x:Key="SummaryPersonTemplate">
+                <local:SummaryPersonPresenter/>
+            </DataTemplate>
             <Style x:Key="GanttSurfaceStyle" TargetType="Grid">
                 <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
             </Style>

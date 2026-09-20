@@ -5,6 +5,7 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal enum PlanningMode { Unplanned, Auto, Manual }
 internal enum PlanningProgress { Unstarted, InProgress, Completed, Reopened }
+internal enum TaskLaborKind { Unspecified, Direct, Rollup }
 internal sealed record PlanningFieldBinding(string Role, string FieldId, string DataType);
 internal sealed record WorkingInterval(int StartMinute, int EndMinute);
 internal sealed record CalendarException(DateOnly Date, string? PersonId, WorkingInterval[] Intervals);
@@ -22,9 +23,10 @@ internal sealed record PlanningTask(string Id, PlanningMode Mode = PlanningMode.
     DateTime? ActualStart = null, DateTime? ActualFinish = null, DateTime? EarliestStart = null,
     DateTime? FixedStart = null, DateTime? FixedFinish = null, DateTime? Deadline = null,
     ActualContribution[]? Actuals = null, WorkContribution[]? Contributions = null,
-    PlanningLink[]? LocalLinks = null);
+    PlanningLink[]? LocalLinks = null, TaskLaborKind LaborKind = TaskLaborKind.Unspecified);
 internal sealed record ProjectPlanning(int Version, string ProjectId, long Stamp, DateTime? Start, DateTime? Cutoff,
-    PlanningFieldBinding[] Fields, PlanningCalendar Calendar, PlanningPerson[] People, PlanningTask[] Tasks);
+    PlanningFieldBinding[] Fields, PlanningCalendar Calendar, PlanningPerson[] People, PlanningTask[] Tasks,
+    SummarySettings? Summary = null);
 
 // Dates are wall-clock Asia/Tokyo minutes, never machine-local DateTime or an
 // assumed time reconstructed from a GitHub DATE projection.
@@ -80,7 +82,7 @@ internal static class PlanningContract
     {
         static bool Id(string? v) => !string.IsNullOrWhiteSpace(v);
         static bool Hours(decimal h) => h >= 0 && h <= 1_000_000_000m && decimal.Round(h, 8) == h;
-        if (p is null || p.Version != 1 || !Id(p.ProjectId) || p.Stamp < 0 || p.Stamp > revision
+        if (p is null || p.Version is not (1 or 2) || !Id(p.ProjectId) || p.Stamp < 0 || p.Stamp > revision
             || !Minute(p.Start) || !Minute(p.Cutoff) || p.Fields is null || p.People is null || p.Tasks is null || p.Calendar is null)
             throw new InvalidDataException("Unsupported or invalid planning metadata; preserve the source checkpoint.");
         if (p.Fields.Any(f => f is null || !Roles.Contains(f.Role) || !Id(f.FieldId)
@@ -111,7 +113,7 @@ internal static class PlanningContract
         if (p.Tasks.Any(t => t is null) || p.Tasks.Select(t => t.Id).Distinct().Count() != p.Tasks.Length) throw new InvalidDataException("Missing or duplicate planning identity.");
         foreach (var t in p.Tasks)
         {
-            if (t is null || !Id(t.Id) || !Enum.IsDefined(t.Mode) || !Enum.IsDefined(t.Progress)
+            if (t is null || !Id(t.Id) || !Enum.IsDefined(t.Mode) || !Enum.IsDefined(t.Progress) || !Enum.IsDefined(t.LaborKind)
                 || !new[] { t.ManualStart, t.ManualFinish, t.ActualStart, t.ActualFinish, t.EarliestStart, t.FixedStart, t.FixedFinish, t.Deadline }.All(Minute)
                 || t.ManualFinish < t.ManualStart || t.ActualFinish < t.ActualStart
                 || (t.Actuals ?? []).Any(a => a is null || a.PersonId is not null && !Id(a.PersonId) || !Hours(a.Hours) || a.ReportedThrough == default)
@@ -123,6 +125,7 @@ internal static class PlanningContract
                 || (t.LocalLinks ?? []).Select(l => (l.PredecessorId, l.Kind)).Distinct().Count() != (t.LocalLinks ?? []).Length)
                 throw new InvalidDataException("Invalid planning task metadata.");
         }
+        SummaryContract.Validate(p, revision);
     }
 }
 

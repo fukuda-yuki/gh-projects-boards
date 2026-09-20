@@ -74,7 +74,11 @@ internal sealed partial class EditingWorkspace
             ? t with { LocalLinks = t.LocalLinks?.Where(l => l.Kind != "FS" || l.ExternalFinish is not null || l.PredecessorId.StartsWith("local-", StringComparison.Ordinal)).ToArray() } : t).ToArray();
         for (var i = 0; i < history.Count; i++)
             if (history[i].Plan is not null && history[i].ProjectId == projectId) InvalidateRemoteUndo(i, "作成identityの検証後は以前の計画identityをUndoで復元できません。");
-        planning[planning.FindIndex(p => p.ProjectId == projectId)] = plan with { Stamp = Revision + 1, Tasks = tasks };
+        var summary = plan.Summary;
+        if (summary?.Baseline is { } protectedBaseline) summary = summary with { Baseline = protectedBaseline with {
+            Tasks = protectedBaseline.Tasks.Select(t => t.TaskId == creation.LocalId
+                ? t with { TaskId = creation.Verified!.Id, RowId = item.Id.NodeId } : t).ToArray() } };
+        planning[planning.FindIndex(p => p.ProjectId == projectId)] = plan with { Stamp = Revision + 1, Tasks = tasks, Summary = summary };
         InvalidatePlan(projectId);
     }
     private bool PlanningIdentityOccupied(string projectId, string issueId)

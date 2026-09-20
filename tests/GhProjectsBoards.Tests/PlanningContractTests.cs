@@ -12,7 +12,7 @@ internal sealed class PlanningContractTests
     public void NewCheckpointVersionsPlanningWithoutInventingAPlan()
     {
         var work = new EditingWorkspace(new("github.com", 42));
-        Assert.That(work.Snapshot().Version, Is.EqualTo(9));
+        Assert.That(work.Snapshot().Version, Is.EqualTo(10));
         Assert.That(work.Snapshot().Planning, Is.Empty);
     }
 
@@ -62,11 +62,11 @@ internal sealed class PlanningContractTests
         Assert.That(w.Planning("P1"), Is.Null);
         w.SetPlanning(Plan(), 0); await store.SaveAsync(w.Snapshot(), 0);
         var bytes = await File.ReadAllBytesAsync(store.FileFor(w.Scope));
-        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Planning = [Plan() with { Version = 2 }] }, w.Revision));
-        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Version = 10 }, w.Revision));
+        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Planning = [Plan() with { Version = 3 }] }, w.Revision));
+        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Version = 11 }, w.Revision));
         Assert.That(await File.ReadAllBytesAsync(store.FileFor(w.Scope)), Is.EqualTo(bytes));
         Assert.Throws<InvalidOperationException>(() => w.SetPlanning(Plan(), 0));
-        foreach (var unknown in new[] { w.Snapshot() with { Version = 10 }, w.Snapshot() with { Planning = [Plan() with { Version = 2 }] } })
+        foreach (var unknown in new[] { w.Snapshot() with { Version = 11 }, w.Snapshot() with { Planning = [Plan() with { Version = 3 }] } })
         {
             var raw = JsonSerializer.Serialize(unknown);
             await File.WriteAllTextAsync(store.FileFor(w.Scope), raw);
