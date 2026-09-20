@@ -79,6 +79,14 @@ Use [the ordinary workspace walkthrough](../../docs/workspace.md) for complete s
 
 `ThemeHostedTests.StateMarkersRangeAndPendingEditorRemainDistinctAcrossTheme` captures normal, selected, changed, combined, pending, conflict and read-only states. Its output records actual scale and OS High Contrast. Run the same selection after changing the OS display conditions; requested Light/Dark alone does not establish High Contrast or a different DPI. Inspect the attached images separately. `ChangedRangeKeepsIdsAndMarkersAcrossScrollBoundaryResizeAndTheme` retains exact target IDs while exercising scroll, native column-boundary drag and theme changes. Ordinary `BulkEditingJourney` retains the distinct application route through durable restart and explicit review, while physical IME and separately measured presented-pixel performance remain their own execution boundaries.
 
+## Gantt collaboration
+
+`GanttHostedTests` mounts the production editing host and Gantt controls. It checks pending-work and date-edit roundtrips, Manual/settings/Auto/Undo, hidden-row Project selection, save failure/retry, dependency reveal, exact bar/link/calendar geometry and themes. Expectations include fixed dates and hand-specified minute coordinates independently of the projection implementation. The `PlanningPerformance` cases declare 1,000-task calculation, command-through-render-events and isolated checkpoint-save boundaries; rendered events are not physical scanout. Ordinary Gantt/restart/Apply journeys and physical `GridIme` view-switch cases live in the E2E assembly. Their actual boundaries and source-specific results are indexed in the [Issue #15 evidence](../regression-evidence/issue15-gantt/README.md).
+
+```powershell
+./scripts/Test-UiIntegration.ps1 -Where 'class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards' -TimeoutSeconds 240
+```
+
 ## Runner fault verification
 
 These intentionally failing infrastructure probes are excluded from the normal product suite. Run each in a separate process; an expected failure must have a nonzero runner exit, not just matching text in a log.

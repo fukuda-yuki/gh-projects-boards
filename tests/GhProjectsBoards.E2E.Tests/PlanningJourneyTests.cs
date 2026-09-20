@@ -9,7 +9,7 @@ namespace GhProjectsBoards.E2E.Tests;
 public sealed partial class RegistrationTests
 {
     [Test]
-    public void OrdinaryBoardsManualDependencyWeeklyReplanRestartsAndPublishesReviewedProjections()
+    public void OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections()
     {
         using var f = new Fixture();
         File.WriteAllText(Path.Combine(f.Root, "scenario.json"), JsonSerializer.Serialize(new { registration = true, apply = true, planning = true, itemCount = 2 }));
@@ -68,6 +68,9 @@ public sealed partial class RegistrationTests
             Set(w, "PlanCutoff", "2026-10-07 09:00"); Invoke(w, "PrimaryButton");
             Wait(() => w.FindFirstDescendant(cf => cf.ByAutomationId("PlanningDialog")) is null);
             Assert.That(CellText(w, 0, 2), Is.EqualTo("16")); Assert.That(CellText(w, 0, 3), Is.EqualTo("3")); Assert.That(CellText(w, 0, 4), Is.EqualTo("5"));
+            ChooseView(w, "ProjectViewGantt"); Wait(() => Text(w, "GanttSelected").Contains("2026-10-06 16:19"));
+            Assert.That(Text(w, "GanttSelected"), Does.Contain("Manual"));
+            Capture(w, f.Root, "planning-replanned-gantt");
             Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
         });
         f.Run(w =>
@@ -75,6 +78,7 @@ public sealed partial class RegistrationTests
             OpenSaved(w, profile: true); Element(w, "GridCell0_0").Focus(); Invoke(w, "GridPlanning");
             Wait(() => Element(w, "PlanTaskFinish").AsTextBox().Text == "2026-10-06 16:19");
             Assert.That(Element(w, "PlanMode").AsComboBox().SelectedItem?.Text, Is.EqualTo("Manual")); Capture(w, f.Root, "planning-restored-manual"); Invoke(w, "CloseButton");
+            ChooseView(w, "ProjectViewGantt"); Wait(() => Text(w, "GanttSelected").Contains("2026-10-06 16:19"));
             // Reconnect only for the explicit publication path.
             Invoke(w, "ConnectionPageButton"); Connect(w); Invoke(w, "ProjectsPageButton");
             Invoke(w, "ReviewApplyButton"); Wait(() => WorkspaceUi.ApplyRows(w).Length > 0);

@@ -21,6 +21,7 @@ public sealed partial class RegistrationPanel : UserControl
     private ConnectionScope[] profileChoices = [];
     private NavigationKey[] navigationKeys = [];
     private readonly Dictionary<TreeViewNode, NavigationKey> nodeKeys = [];
+    private readonly Dictionary<ScopedId, ((string Item, FieldKey? Field)? Selection, bool Gantt)> projectViewPositions = [];
     internal RegistrationWorkspace Workspace => workspace!;
     public event EventHandler? ConnectionRequested;
     internal bool FocusHeader() => ConnectionSettings.Focus(FocusState.Programmatic);
@@ -156,14 +157,16 @@ public sealed partial class RegistrationPanel : UserControl
                         return;
                     }
                     var previousGrid = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault();
+                    if (previousGrid is not null) projectViewPositions[previousGrid.RowProjection.Project] = (previousGrid.ViewSelection, previousGrid.ShowingGantt);
                     var previousProjection = previousGrid?.RowProjection.Project == selected.Snapshot.Id && renderedRefreshGeneration == workspace.AcceptedRefreshGeneration ? previousGrid?.RowProjection : null;
                     renderedRefreshGeneration = workspace.AcceptedRefreshGeneration;
                     rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
-                    var selection = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.SelectionIdentity;
+                    var position = projectViewPositions.GetValueOrDefault(selected.Snapshot.Id);
+                    var selection = position.Selection;
                     EditorHost.Children.Clear();
                     if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection,
                         temporaryColumns: previousGrid?.RowProjection.Project == selected.Snapshot.Id ? previousGrid.TemporaryApplyColumns : null);
-                        grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); Items.Visibility = Visibility.Collapsed; }
+                        grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); grid.ShowProjectView(position.Gantt, selection?.Item); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;

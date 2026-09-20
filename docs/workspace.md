@@ -85,6 +85,16 @@ For common changes, click a column heading to sort, filter, move or hide that co
 
 Width changes retain the rectangle. Reordering or changing visibility retains a visible active cell by identity and clears the former rectangle. Hidden active cells lose data selection, while their drafts and pending text remain stored. Missing or incompatible saved criteria show a repair/reset explanation rather than silently broadening the view or deleting work. Finish native composition naturally before retrying a deferred view change.
 
+## Inspect and edit the adopted Gantt plan
+
+Choose **Gantt** beside **Boards** in the Project selector. Select a row to see its mode and exact start/finish in Japan time. Use **日 / 週**, the bottom horizontal scrollbar and the task list's vertical scrollbar to inspect the horizon. Repository/Issue identity stays beside the timeline; a row with missing or unresolved dates remains visible without a complete bar. A thin short bar represents its exact duration. Shading shows the Project's working calendar; **詳細** shows the selected person's endpoint-day exceptions and the adopted holiday revision.
+
+Search a title or Issue number to locate work. **選択へ移動** brings the selected row and its date into view. The **先行 → 選択 → 後続** selector lists complete relationships; selecting an available task reveals it even outside the current search. Arrows show only the selected task's incident FS relationships. Use **詳細** for full identity, exact inputs, ownership/weight, reason, automatic suggestion and warnings.
+
+Choose **日程を編集**, change the adopted start or finish, and **保存**. The task becomes Manual and retains those dates through subsequent replan. Explicitly choose **Auto** in that editor to release the override. **元に戻す** reverses the coherent local operation. **表で開く** returns to the same row, temporarily revealing a row excluded by the Boards filter. Unfinished cell text is retained across view changes; active IME conversion must be confirmed or canceled naturally before switching. F6 / Shift+F6 moves among the Gantt task list, edit and details commands.
+
+For an isolated 1,000-task evaluation, run `./scripts/Start-GanttCheck.ps1` after the Release build, open the printed saved profile and **P1**, then choose **Gantt**. Keep the printed data directory and use `-DataRoot 'C:\absolute\printed-directory' -Resume` to reopen edits. **P2** provides a second cached Project for roundtrips. See the [Gantt evaluation and evidence index](../tests/regression-evidence/issue15-gantt/README.md) for fixed expected examples and the normal/narrow workflow.
+
 ## Prepare local rows
 
 Choose **新規行を追加**, enter a title, set supported Project values, and inspect the row's actual destination. A blank or incomplete row remains local work. The default destination only provides its initial value. A new row is not a GitHub Issue until explicitly created and independently verified.

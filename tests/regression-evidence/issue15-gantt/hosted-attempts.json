@@ -1,0 +1,415 @@
+[
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-100224-219-74fa0d1c",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests",
+    "counts": {
+      "skipped": "0",
+      "failed": "1",
+      "passed": "0",
+      "inconclusive": "0",
+      "total": "1"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-100323-700-47b5961c",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests",
+    "counts": {
+      "total": "1",
+      "inconclusive": "0",
+      "failed": "1",
+      "passed": "0",
+      "skipped": "0"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-100447-728-be5affcc",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests",
+    "counts": {
+      "inconclusive": "0",
+      "total": "1",
+      "failed": "0",
+      "passed": "1",
+      "skipped": "0"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-100929-827-4760a9b8",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests",
+    "counts": {
+      "inconclusive": "0",
+      "failed": "0",
+      "skipped": "0",
+      "passed": "3",
+      "total": "3"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-103029-008-b5aaba9f",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards",
+    "counts": null,
+    "exitCode": null,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-103205-313-9569148f",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards",
+    "counts": {
+      "total": "9",
+      "skipped": "0",
+      "inconclusive": "0",
+      "passed": "6",
+      "failed": "3"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-103405-087-7a34122c",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards",
+    "counts": {
+      "skipped": "0",
+      "total": "9",
+      "failed": "1",
+      "passed": "8",
+      "inconclusive": "0"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-103615-284-0f87603b",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards or class =~ PlanningHostedTests or class =~ RowViewHostedTests or class =~ SettingsFocusHostedTests or class =~ ThemeHostedTests or test =~ InvokingCachedProjectRevealsWorkspace or test =~ DraftSavePreservesCollapsedNavigation",
+    "counts": {
+      "total": "30",
+      "inconclusive": "0",
+      "passed": "29",
+      "skipped": "0",
+      "failed": "1"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M docs/planning.md",
+      " M docs/workspace.md",
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-103741-152-bfcd94bd",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "test =~ SaveFailureRemainsVisibleInGantt",
+    "counts": {
+      "failed": "0",
+      "passed": "1",
+      "total": "1",
+      "inconclusive": "0",
+      "skipped": "0"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M docs/planning.md",
+      " M docs/workspace.md",
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-104121-415-3950352b",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "test =~ ReturningFromBoardsRevealsItsSelectedTask or test =~ RenderedBarsAndLinks or test =~ ThousandTasksSupportBothAxes",
+    "counts": {
+      "inconclusive": "0",
+      "failed": "1",
+      "passed": "2",
+      "total": "3",
+      "skipped": "0"
+    },
+    "exitCode": 1,
+    "final": false,
+    "changes": [
+      " M docs/planning.md",
+      " M docs/workspace.md",
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      " M tests/README.md",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-104240-424-969ebeb6",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "test =~ ThousandTasksSupportBothAxes",
+    "counts": {
+      "passed": "1",
+      "failed": "0",
+      "skipped": "0",
+      "inconclusive": "0",
+      "total": "1"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M docs/planning.md",
+      " M docs/workspace.md",
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      " M tests/README.md",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-104439-395-ba8ad201",
+    "source": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+    "where": "test =~ AdoptedHolidayAndPersonalExceptionAgree or test =~ RenderedBarsAndLinks",
+    "counts": {
+      "failed": "0",
+      "total": "2",
+      "skipped": "0",
+      "inconclusive": "0",
+      "passed": "2"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M docs/planning.md",
+      " M docs/workspace.md",
+      " M src/GhProjectsBoards.App/App.xaml",
+      " M src/GhProjectsBoards.App/EditingGrid.cs",
+      " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      " M tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      " M tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      " M tests/README.md",
+      "?? scripts/Start-GanttCheck.ps1",
+      "?? src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "?? src/GhProjectsBoards.App/GanttView.cs",
+      "?? src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "?? tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "?? tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "?? tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "?? tests/regression-evidence/issue15-gantt/"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-104616-223-39717512",
+    "source": "27b94874affb607606c31a9839908c888c287475",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards or class =~ PlanningHostedTests or class =~ RowViewHostedTests or class =~ SettingsFocusHostedTests or class =~ ThemeHostedTests or test =~ InvokingCachedProjectRevealsWorkspace or test =~ DraftSavePreservesCollapsedNavigation",
+    "counts": {
+      "total": "32",
+      "skipped": "0",
+      "failed": "0",
+      "passed": "32",
+      "inconclusive": "0"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": []
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-105125-599-6ad371e0",
+    "source": "27b94874affb607606c31a9839908c888c287475",
+    "where": "test =~ ThousandTasksSupportBothAxes",
+    "counts": {
+      "total": "1",
+      "failed": "0",
+      "inconclusive": "0",
+      "passed": "1",
+      "skipped": "0"
+    },
+    "exitCode": 0,
+    "final": false,
+    "changes": [
+      " M tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs"
+    ]
+  },
+  {
+    "kind": "UI integration",
+    "run": "run-20260920-105340-713-02ef9c72",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4",
+    "where": "class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards or class =~ PlanningHostedTests or class =~ RowViewHostedTests or class =~ SettingsFocusHostedTests or class =~ ThemeHostedTests or test =~ InvokingCachedProjectRevealsWorkspace or test =~ DraftSavePreservesCollapsedNavigation",
+    "counts": {
+      "passed": "32",
+      "inconclusive": "0",
+      "skipped": "0",
+      "total": "32",
+      "failed": "0"
+    },
+    "exitCode": 0,
+    "final": true,
+    "changes": []
+  }
+]

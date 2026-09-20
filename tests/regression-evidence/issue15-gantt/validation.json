@@ -1,0 +1,544 @@
+{
+  "schemaVersion": 1,
+  "branch": "codex/issue-15-gantt",
+  "base": "40489a2d6eb3edfa4ed4a15775bbbbc9b9052acd",
+  "productSource": "27b94874affb607606c31a9839908c888c287475",
+  "validationSource": "226220233ccdb3e0961d3671b7b89c9b71e600b4",
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "runtime": "10.0.12",
+    "windowsAppSdk": "1.8.260804001",
+    "cpu": "AMD Ryzen 7 9700X",
+    "logicalProcessors": 16,
+    "memoryGiB": 61.6,
+    "graphics": [
+      "AMD Radeon Graphics",
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "dpiScale": 1.25,
+    "highContrast": false,
+    "liveGitHub": "not_run",
+    "humanAcceptance": "not_run"
+  },
+  "core": {
+    "path": "TestResults/issue15/final-core/gantt.trx",
+    "command": "dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter FullyQualifiedName~GanttProjectionTests --logger 'trx;LogFileName=gantt.trx' --results-directory TestResults/issue15/final-core",
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "cases": [
+      {
+        "name": "UnknownPartialAndStaleWorkCannotBecomeValidBars(Auto,False,False,False,Unresolved)",
+        "outcome": "Passed",
+        "duration": "00:00:00.0000090"
+      },
+      {
+        "name": "NormalFixtureHasDistinctIdentityAndExplicitLongHorizonAndDoesNotDropUnresolvedWork",
+        "outcome": "Passed",
+        "duration": "00:00:00.0930250"
+      },
+      {
+        "name": "UnknownPartialAndStaleWorkCannotBecomeValidBars(Manual,True,True,False,Scheduled)",
+        "outcome": "Passed",
+        "duration": "00:00:00.0000020"
+      },
+      {
+        "name": "UnknownPartialAndStaleWorkCannotBecomeValidBars(Manual,True,False,False,Partial)",
+        "outcome": "Passed",
+        "duration": "00:00:00.0002670"
+      },
+      {
+        "name": "MinuteGeometryDoesNotStretchShortTasksIntoDays",
+        "outcome": "Passed",
+        "duration": "00:00:00.0006700"
+      },
+      {
+        "name": "UnknownPartialAndStaleWorkCannotBecomeValidBars(Auto,True,True,True,Stale)",
+        "outcome": "Passed",
+        "duration": "00:00:00.0000030"
+      },
+      {
+        "name": "ExactAdoptedTimesAndHiddenPredecessorsSurviveProjectionWithoutUsingRemoteDays",
+        "outcome": "Passed",
+        "duration": "00:00:00.0573020"
+      },
+      {
+        "name": "MaximumDateHasOneRenderableDayAndKeepsExactMinutePositions",
+        "outcome": "Passed",
+        "duration": "00:00:00.0051190"
+      },
+      {
+        "name": "EmptyLegacyAndLocalTasksRemainVisibleWithoutInventingTimesOrChangingDrafts",
+        "outcome": "Passed",
+        "duration": "00:00:00.0887990"
+      },
+      {
+        "name": "UnknownPartialAndStaleWorkCannotBecomeValidBars(Unplanned,False,False,False,Unplanned)",
+        "outcome": "Passed",
+        "duration": "00:00:00.0002700"
+      }
+    ]
+  },
+  "ui": {
+    "path": "TestResults/ui-integration/run-20260920-105340-713-02ef9c72",
+    "command": "./scripts/Test-UiIntegration.ps1 -Where 'class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests or test =~ GanttSelectionOutsideBoards or class =~ PlanningHostedTests or class =~ RowViewHostedTests or class =~ SettingsFocusHostedTests or class =~ ThemeHostedTests or test =~ InvokingCachedProjectRevealsWorkspace or test =~ DraftSavePreservesCollapsedNavigation' -TimeoutSeconds 240",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4",
+    "changes": [],
+    "counts": {
+      "passed": "32",
+      "inconclusive": "0",
+      "skipped": "0",
+      "total": "32",
+      "failed": "0"
+    },
+    "binaries": [
+      {
+        "sha256": "8A7BC19E2AF056FD613A73F3B2B326D483AEE095C26EEE57E9D7B16ADCB7CE21",
+        "name": "GhProjectsBoards.App.dll"
+      },
+      {
+        "sha256": "E714EF981BAA1D287154609D6A69EF0A85F35A3F122AA7B539E1D41554CDB38A",
+        "name": "GhProjectsBoards.Core.dll"
+      },
+      {
+        "sha256": "A5F2BB7A56C7693E7ACCACBD4A906C118E67108096703C36A8E76FFF526052F8",
+        "name": "GhProjectsBoards.UiIntegration.Tests.dll"
+      },
+      {
+        "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+        "name": "Microsoft.UI.Xaml.dll"
+      },
+      {
+        "sha256": "834237E6A7528A0F27786E6D2B73B0A71D78889A902F8EF9A01963F322DF8288",
+        "name": "GhProjectsBoards.App.pri"
+      },
+      {
+        "sha256": "4015ADAE90F66D84A9822032ABDF67A1BB61E8C1D1D999966FCE57F74F5F20EC",
+        "name": "GhProjectsBoards.UiIntegration.Tests.pri"
+      }
+    ],
+    "cases": [
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.AdoptedHolidayAndPersonalExceptionAgreeAcrossAxisDetailsAndBoards",
+        "outcome": "Passed",
+        "durationSeconds": "0.965747"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip",
+        "outcome": "Passed",
+        "durationSeconds": "1.932772"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.DependenciesRevealTheSameTaskAndInvalidDateDoesNotAlterAdoptedPlan",
+        "outcome": "Passed",
+        "durationSeconds": "1.697524"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.F6StaysWithinVisibleGanttRegions",
+        "outcome": "Passed",
+        "durationSeconds": "0.290148"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.ManualOverrideSurvivesWeightCalendarPredecessorAndReplanThenAutoAndUndoStayCoherent",
+        "outcome": "Passed",
+        "durationSeconds": "1.309021"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.RenderedBarsAndLinksMatchIndependentMinuteGeometryInLightAndDark",
+        "outcome": "Passed",
+        "durationSeconds": "2.687839"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.ReturningFromBoardsRevealsItsSelectedTaskOutsideTheRetainedGanttSearch",
+        "outcome": "Passed",
+        "durationSeconds": "0.264750"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.SaveFailureRemainsVisibleInGanttAndRetryPersistsTheRetainedEdit",
+        "outcome": "Passed",
+        "durationSeconds": "0.237137"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.ThousandTaskReplanPublishesExpectedBarAndReportsCalculationAndSaveSeparately",
+        "outcome": "Passed",
+        "durationSeconds": "19.986082"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.ThousandTasksSupportBothAxesLongLinksShortBarsAndNarrowWindow",
+        "outcome": "Passed",
+        "durationSeconds": "7.848556"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.HostedTests.DraftSavePreservesCollapsedNavigationActiveProjectAndKeyboardFocus",
+        "outcome": "Passed",
+        "durationSeconds": "0.387014"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.HostedTests.GanttSelectionOutsideBoardsFilterSurvivesProjectRoundtripAndReturnsToThatRow",
+        "outcome": "Passed",
+        "durationSeconds": "0.932463"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Overlay)",
+        "outcome": "Passed",
+        "durationSeconds": "0.194584"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Inline)",
+        "outcome": "Passed",
+        "durationSeconds": "0.261939"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText",
+        "outcome": "Passed",
+        "durationSeconds": "0.715636"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan",
+        "outcome": "Passed",
+        "durationSeconds": "0.733409"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.PasteRendersAutoDatesAndUndoRestoresInputAndDerivedDatesTogether",
+        "outcome": "Passed",
+        "durationSeconds": "0.133450"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.PendingInputDoesNotRecalculateAndManualSaveRetainsTheOtherEndpoint",
+        "outcome": "Passed",
+        "durationSeconds": "0.520980"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.SelectedUnplannedRowUsesBatchPreviewAndOneUndo",
+        "outcome": "Passed",
+        "durationSeconds": "0.514229"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.UnavailablePlanningFieldCanBeCanceledThroughComparisonAndUndoneWithItsPendingText",
+        "outcome": "Passed",
+        "durationSeconds": "0.592079"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.WeeklyReportEditsIndependentRemainingAndActualAttributionThroughNativeControls",
+        "outcome": "Passed",
+        "durationSeconds": "0.542889"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.RowViewHostedTests.CandidateSummaryExplainsCombinedFiltersAndResetWithoutChangingSavedView",
+        "outcome": "Passed",
+        "durationSeconds": "0.497823"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.RowViewHostedTests.EditKeepsArrangementPendingBufferSurvivesHidingAndNewRowsStayVisible",
+        "outcome": "Passed",
+        "durationSeconds": "0.506999"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.RowViewHostedTests.LateClipboardRejectsChangedDestinationMapping",
+        "outcome": "Passed",
+        "durationSeconds": "0.418797"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.RowViewHostedTests.SavedFilterZeroMatchesResetAndColumnCoexistence",
+        "outcome": "Passed",
+        "durationSeconds": "1.240921"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.RowViewHostedTests.SaveIncludesLaterColumnAndDraftChangesAndRejectsObsoleteCandidate",
+        "outcome": "Passed",
+        "durationSeconds": "1.097245"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.SettingsFocusHostedTests.SettingsSaveRestoresCommittedTitleReplacementAndCancelPreservesPendingCaret(\"columns\")",
+        "outcome": "Passed",
+        "durationSeconds": "0.962373"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.SettingsFocusHostedTests.SettingsSaveRestoresCommittedTitleReplacementAndCancelPreservesPendingCaret(\"rows\")",
+        "outcome": "Passed",
+        "durationSeconds": "0.832597"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.ThemeHostedTests.ChangingWorkspaceThemeKeepsFocusedSelectedPendingTitle(Light)",
+        "outcome": "Passed",
+        "durationSeconds": "0.327308"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.ThemeHostedTests.ChangingWorkspaceThemeKeepsFocusedSelectedPendingTitle(Dark)",
+        "outcome": "Passed",
+        "durationSeconds": "0.260549"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.ThemeHostedTests.StateMarkersRangeAndPendingEditorRemainDistinctAcrossTheme(Light)",
+        "outcome": "Passed",
+        "durationSeconds": "0.588592"
+      },
+      {
+        "name": "GhProjectsBoards.UiIntegration.Tests.ThemeHostedTests.StateMarkersRangeAndPendingEditorRemainDistinctAcrossTheme(Dark)",
+        "outcome": "Passed",
+        "durationSeconds": "0.544713"
+      }
+    ]
+  },
+  "ordinary": {
+    "path": "TestResults/e2e/20260920-105510-1d542e78d7104e44b78087efdc896891",
+    "command": "./scripts/Test-E2E.ps1 -Filter 'FullyQualifiedName~Gantt'",
+    "source": "226220233ccdb3e0961d3671b7b89c9b71e600b4",
+    "changes": [],
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "cases": [
+      {
+        "name": "GanttViewSwitchDoesNotEndNativeCompositionOrCommitTheCell(False)",
+        "outcome": "Passed",
+        "duration": "00:00:07.2485000"
+      },
+      {
+        "name": "GanttViewSwitchDoesNotEndNativeCompositionOrCommitTheCell(True)",
+        "outcome": "Passed",
+        "duration": "00:00:06.8877360"
+      },
+      {
+        "name": "OrdinaryGanttThousandTaskEditProjectSwitchAndRestartRetainOnePlan",
+        "outcome": "Passed",
+        "duration": "00:00:17.8098360"
+      },
+      {
+        "name": "OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections",
+        "outcome": "Passed",
+        "duration": "00:00:36.1630490"
+      }
+    ],
+    "binaries": [
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe",
+        "sha256": "E59AA4ADDD3A087C4FFBFAD318B316A93D6E71B413826296A9BC91D01667EB41",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.dll",
+        "sha256": "8A7BC19E2AF056FD613A73F3B2B326D483AEE095C26EEE57E9D7B16ADCB7CE21",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.Core.dll",
+        "sha256": "E714EF981BAA1D287154609D6A69EF0A85F35A3F122AA7B539E1D41554CDB38A",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/Microsoft.UI.Xaml.dll",
+        "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+        "version": "3.1.8.2503 (C42BDAF2A0A4(ContainerAdministrator)-c03f50c96989525a1487cf9404f2306b314a23d0)"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/Microsoft.UI.Xaml.Controls.dll",
+        "sha256": "6E41078A44049D0AC8B50DFF7EF220CACC7384623B95331BB627620C7749E568",
+        "version": "3.1.8.2608 (CD3AC2B906A4(ContainerAdministrator)-b497e527e22752d08aabb176820923028f16f003)"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/DWriteCore.dll",
+        "sha256": "599579BD5D0DD27020E5563F9D7908BD9AA5BFF4E2DF291D06FE5377B233B32A",
+        "version": "1.8.1.2512"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/Microsoft.Windows.Widgets.dll",
+        "sha256": "544784D1EEE6EF7C18F5208B879403E888CEF8ABD9DCA11EBECCFA9A7DE67D47",
+        "version": "1.8"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/Microsoft.Windows.Widgets.Projection.dll",
+        "sha256": "B7CC844DE38D3D363F98B5652B57355AABA8804704B9258EF35DFD5D93488966",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/Microsoft.Windows.Widgets.winmd",
+        "sha256": "08F4676E4440E48F4A46567E802C59F09AA8F7B7D64A0B7A71A60A888BEFC382",
+        "version": null
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/coreclr.dll",
+        "sha256": "128AEE8C62A673D64739E585E3876B61133571CEC83A46240A62581D5465639B",
+        "version": "10,0,1226,42308 @Commit: 95017c711e6afc1085133d440e42b4bd78155701"
+      },
+      {
+        "path": "src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.runtimeconfig.json",
+        "sha256": "564EDFAD8990E994033CABA1FBFC6D7B10E935CDB4842F9C9A6225A4C09F70AA",
+        "version": null
+      },
+      {
+        "path": "tests/GhProjectsBoards.Tests/bin/Release/net10.0-windows/GhProjectsBoards.Tests.exe",
+        "sha256": "3E9537804577288B6BC60AC903839263C92D60C7571301F6B700896CEB494935",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "tests/GhProjectsBoards.Tests/bin/Release/net10.0-windows/GhProjectsBoards.Tests.dll",
+        "sha256": "BC199E8E60ABFC9C4CF4AB765FF61F969CDBA7577026777EF7F0547C03E0D836",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "tests/GhProjectsBoards.Tests/bin/Release/net10.0-windows/GhProjectsBoards.Core.dll",
+        "sha256": "E714EF981BAA1D287154609D6A69EF0A85F35A3F122AA7B539E1D41554CDB38A",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "tests/GhProjectsBoards.E2E.Tests/bin/Release/net10.0-windows10.0.26100.0/GhProjectsBoards.E2E.Tests.dll",
+        "sha256": "3FD043CE5247EE87EB1D8DD4388A044C4B1E7F5C635280BE41057FAF4FEB57C8",
+        "version": "1.0.0.0"
+      },
+      {
+        "path": "tests/GhProjectsBoards.E2E.Tests/bin/Release/net10.0-windows10.0.26100.0/FlaUI.Core.dll",
+        "sha256": "1696C344D2FF54598FB5AE869E9CBCF363C0BE3EBFF744CC50BA834056B43B6F",
+        "version": "5.0.0.0"
+      },
+      {
+        "path": "tests/GhProjectsBoards.E2E.Tests/bin/Release/net10.0-windows10.0.26100.0/FlaUI.UIA3.dll",
+        "sha256": "D00FA5203C56B9D1C7B0BC624CFFA84D599D6B8DFA6F27C0324E3059F343754C",
+        "version": "5.0.0.0"
+      }
+    ]
+  },
+  "measurements": {
+    "replan": {
+      "warmups": 2,
+      "samples": 10,
+      "changedInputs": 1,
+      "changedEndpoints": [
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29
+      ],
+      "calculationMs": [
+        0.775,
+        1.0447,
+        0.7862,
+        0.7729,
+        0.7761,
+        0.9714,
+        0.9776,
+        0.7599,
+        1.0052,
+        1.0093
+      ],
+      "commitThroughRenderEventsMs": [
+        594.8949,
+        568.1106,
+        581.5588,
+        611.852,
+        638.8585,
+        619.3206,
+        632.7745,
+        660.3492,
+        572.6916,
+        627.2187
+      ],
+      "newCheckpointSaveMs": [
+        229.6683,
+        299.7818,
+        304.0603,
+        295.9832,
+        280.2663,
+        343.7028,
+        398.2715,
+        354.0929,
+        362.5492,
+        475.5591
+      ],
+      "boundary": "PrimaryButton public invoke through dialog close, independent expected text and two render events; includes planning and UI rebuild. New checkpoint save is isolated and sequential. Neither measurement is physical scanout."
+    },
+    "navigationMs": [
+      64.992,
+      66.3839,
+      116.4152,
+      70.0729,
+      74.6148,
+      68.5229,
+      64.9155,
+      57.4892,
+      125.5585,
+      71.6765
+    ],
+    "navigationBoundary": "Selection plus public reveal command through an onscreen native row and two render events",
+    "workload": "1000 tasks, 20 people, six Project fields; initial 120-node chain, other ten-node chains, twelve-way fan-in at I990; 2026-10-05 to 2027-03-15; mixed modes and missing states",
+    "sampling": "2 warmups, 10 sequential samples per series; first estimate alternates 8 and 4 hours, 29 effective task endpoint pairs change each time; Undo history grows in the continuing session",
+    "saveBoundary": "Separate new-directory DraftStore.SaveAsync of the complete snapshot, after UI sample and real session flush. Excludes snapshot construction and does not isolate ordinary saving notification latency."
+  },
+  "sourceFiles": [
+    {
+      "path": "docs/planning.md",
+      "gitBlob": "261f7ad5156020c989577324aaa06cf9224416f1"
+    },
+    {
+      "path": "docs/workspace.md",
+      "gitBlob": "5b4fce3bac2e3d8aabbd74363870f2f7c5625f4d"
+    },
+    {
+      "path": "scripts/Start-GanttCheck.ps1",
+      "gitBlob": "c391a14d80bbf5354c9ba6d4c249706a7fcd0a58"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/App.xaml",
+      "gitBlob": "874b8ba7480f792401c035c0909dc7f63cf23ae6"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "gitBlob": "08a6e6d8d2884d5225be6968141683304bacc269"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.cs",
+      "gitBlob": "098354483fa1b1758a83d34a8c4228d6bbca8c1a"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/GanttView.cs",
+      "gitBlob": "999b2eb25197f76c266ab82cbd0ad8e3d1238194"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      "gitBlob": "0bfa7f6fe5447dc48c6388e941e7e978ef4f4df0"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "gitBlob": "ee72b01b061a2d64cb27d0b0b18190d5d2aeed20"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "gitBlob": "6ead12781534fd43cef3b13d593e061f7630d045"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      "gitBlob": "3124351ee72be5395d2769ccfb259d5e4d083089"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "gitBlob": "e8bbfca622250d0018ada9e517da749584bdc750"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "gitBlob": "3380c54c698b6ab228895786b090aac5339e7f01"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "gitBlob": "b83c8872f797de1a3bafe861cf059f303053c0fc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "gitBlob": "1c36b42c9de085d38f056f019844701c3c9b159d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      "gitBlob": "c1fde3005bd844e4c0f8e91731816a2f31a377a3"
+    },
+    {
+      "path": "tests/README.md",
+      "gitBlob": "a3412a47b52b4e63c7bc722f2b4e822f7f136ca5"
+    }
+  ]
+}
