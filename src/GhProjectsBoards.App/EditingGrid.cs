@@ -22,6 +22,7 @@ internal sealed partial class EditingGrid : Grid
     private readonly List<FrameworkElement[]> controls = [];
     private readonly List<Grid> rowLines = [];
     private readonly LinkedList<int> dormantRows = [];
+    private readonly HashSet<int> protectedUnloadedRows = [];
     private readonly List<TextBlock[]> markers = [];
     private readonly List<Border[]> cellBorders = [];
     private readonly List<Border[]> selectionFrames = [];
@@ -257,7 +258,7 @@ internal sealed partial class EditingGrid : Grid
         var identity = SelectionIdentity; generation++; CancelDrag(); active = false;
         projection.Promote(session.Workspace);
         canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear(); selectionFrames.Clear(); fillHandles.Clear(); rowLines.Clear();
-        paintedSelection.Clear(); paintedCurrent = null; dormantRows.Clear();
+        paintedSelection.Clear(); paintedCurrent = null; dormantRows.Clear(); protectedUnloadedRows.Clear();
         BuildRows(); RestoreSelection(identity);
     }
     private void BuildRows()
@@ -281,7 +282,6 @@ internal sealed partial class EditingGrid : Grid
         for (var r = 0; r < rows.Length; r++)
         {
             var index = r;
-            var rowGeneration = generation;
             var line = new Grid { MinHeight = 30, Height = 30 };
             rowLines.Add(line); controls.Add([]); markers.Add([]); cellBorders.Add([]); selectionFrames.Add([]); fillHandles.Add([]);
             line.Loading += (_, _) => { if (CurrentLine(index, line)) EnsureRow(index); };
@@ -289,9 +289,13 @@ internal sealed partial class EditingGrid : Grid
             {
                 // Finish destination layout before dismantling the previous rendered rows.
                 // Unloaded can run while the compositor still presents that viewport.
-                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                // Low-priority work can starve under sustained native activity.
+                // Queue behind the current layout turn at normal priority.
+                DispatcherQueue.TryEnqueue(() =>
                 {
-                    if (rowGeneration == generation && IsLoaded && CurrentLine(index, line) && !line.IsLoaded) ReleaseRow(index);
+                    // Window/dialog cancellation may advance generation without
+                    // replacing this row. Its exact visual identity is the guard.
+                    if (IsLoaded && CurrentLine(index, line) && !line.IsLoaded) ReleaseRow(index);
                 });
             };
             var item = new ListViewItem { Content = line, HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -308,6 +312,7 @@ internal sealed partial class EditingGrid : Grid
     private void EnsureRow(int r)
     {
         dormantRows.Remove(r);
+        protectedUnloadedRows.Remove(r);
         if (controls[r].Length != 0) return;
         using var measured = diagnostics?.Span("realize-row");
         var line = rowLines[r];
@@ -365,11 +370,14 @@ internal sealed partial class EditingGrid : Grid
         FreezeIdentity(line, listScroll?.HorizontalOffset ?? 0);
         UpdateColumnVisibility(r);
     }
+    private bool ProtectRow(int r) => active && r == currentRow || drag is { } gesture && r == gesture.SourceRow
+        || controls[r].OfType<TitleCell>().Any(cell => cell.Editing || cell.Composing);
     private void ReleaseRow(int r)
     {
         // A focused or pending native editor keeps its identity and caret even offscreen.
         // Inactive controls are discarded, never rebound to a different row or field.
-        if (active && r == currentRow || drag is { } gesture && r == gesture.SourceRow || controls[r].OfType<TitleCell>().Any(cell => cell.Editing || cell.Composing)) return;
+        if (ProtectRow(r)) { protectedUnloadedRows.Add(r); return; }
+        protectedUnloadedRows.Remove(r);
         if (controls[r].Length == 0 || dormantRows.Contains(r)) return;
         // A small inactive cache avoids destroying/recreating the same native
         // controls on a scroll roundtrip. Visible, focused and pending rows are
@@ -378,8 +386,8 @@ internal sealed partial class EditingGrid : Grid
         while (dormantRows.Count > 64)
         {
             var release = dormantRows.First!.Value; dormantRows.RemoveFirst();
-            if (rowLines[release].IsLoaded || active && release == currentRow
-                || controls[release].OfType<TitleCell>().Any(cell => cell.Editing || cell.Composing)) continue;
+            if (rowLines[release].IsLoaded) continue;
+            if (ProtectRow(release)) { protectedUnloadedRows.Add(release); continue; }
             controls[release] = []; markers[release] = []; cellBorders[release] = []; selectionFrames[release] = []; fillHandles[release] = [];
             rowLines[release].Children.Clear(); rowLines[release].ColumnDefinitions.Clear();
         }
@@ -619,6 +627,10 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) { deferredRefresh = true; return; }
         deferredRefresh = false;
+        // Selection, pending input and drag protection can end after Unloaded.
+        // Reconsider those original controls without waiting for another unload.
+        foreach (var row in protectedUnloadedRows.ToArray())
+            if (rowLines[row].IsLoaded) protectedUnloadedRows.Remove(row); else ReleaseRow(row);
         UpdateGantt();
         // A selection or a durable-save acknowledgement does not change cell values.
         // Keep native editors untouched unless the workspace or its projection changed.

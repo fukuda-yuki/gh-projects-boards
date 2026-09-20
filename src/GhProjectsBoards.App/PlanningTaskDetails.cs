@@ -112,14 +112,18 @@ internal sealed partial class EditingGrid
             decimal? Hours(string value) => string.IsNullOrWhiteSpace(value) ? null : PlanningContract.ParseHours(value);
             var editedReports = reportRows.Any(r => r.Hours.Text != (task.Actuals?.SingleOrDefault(a => a.PersonId == r.Id) is { } saved ? PlanningContract.CanonicalHours(saved.Hours) : "")
                 || r.Day.Text != (task.Actuals?.SingleOrDefault(a => a.PersonId == r.Id)?.ReportedThrough.ToString("yyyy-MM-dd") ?? ""));
-            if (!removeActuals && editedReports && reportRows.All(r => string.IsNullOrWhiteSpace(r.Hours.Text)))
-                throw new InvalidOperationException("実績を消すには「実績を削除」を選んでください。");
+            if (!removeActuals && editedReports && reportRows.Any(r => task.Actuals?.Any(a => a.PersonId == r.Id) == true
+                && string.IsNullOrWhiteSpace(r.Hours.Text) && string.IsNullOrWhiteSpace(r.Day.Text)))
+                throw new InvalidOperationException("担当者別の実績を消すには表の「内訳」、全実績を消すには「実績を削除」を選んでください。");
             var actuals = removeActuals ? [] : !editedReports ? task.Actuals : reportRows.Where(r => !string.IsNullOrWhiteSpace(r.Hours.Text) || !string.IsNullOrWhiteSpace(r.Day.Text)).Select(r => {
                 if (!DateOnly.TryParseExact(r.Day.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) throw new InvalidOperationException("実績の報告対象最終日を入力してください。");
                 return new ActualContribution(r.Id, PlanningContract.ParseHours(r.Hours.Text), day); }).ToArray();
+            var shares = shareRows.Where(r => r.Estimate.Text.Length != 0 || r.Remaining.Text.Length != 0
+                || task.Contributions?.Any(c => c.PersonId == r.Id) == true)
+                .Select(r => new WorkContribution(r.Id, Hours(r.Estimate.Text), Hours(r.Remaining.Text))).ToArray();
             return task with { Progress = (PlanningProgress)((ComboBoxItem)progress.SelectedItem).Tag, ActualStart = PlanningDate(actualStart.Text), ActualFinish = PlanningDate(actualFinish.Text),
                 EarliestStart = PlanningDate(earliest.Text), FixedStart = PlanningDate(fixedStart.Text), FixedFinish = PlanningDate(fixedFinish.Text), Deadline = PlanningDate(deadline.Text), Actuals = actuals,
-                Contributions = shareRows.Where(r => r.Estimate.Text.Length != 0 || r.Remaining.Text.Length != 0).Select(r => new WorkContribution(r.Id, Hours(r.Estimate.Text), Hours(r.Remaining.Text))).ToArray() };
+                Contributions = task.Contributions is null && shares.Length == 0 ? null : shares };
         }, () => numbers.Where(n => n.Input.Text != n.Initial || n.Role == "Remaining" && confirmRemaining.IsChecked == true && !n.Input.IsReadOnly)
             .Select(n => new PlanningValueEdit(row.ItemId, n.Role, n.Input.Text.Length == 0 ? null : n.Input.Text)).ToArray(),
             () => selected.SetEquals(adopted.Where(l => l.Kind == "FS" && l.ExternalFinish is null).Select(l => l.PredecessorId)) ? [] : [new(task.Id, selected.ToArray())],

@@ -34,8 +34,8 @@ internal sealed partial class EditingGrid
     }
     private string ExactDateText(EditCell cell, int row)
     {
-        var current = session.Workspace.PlanFor(registration).Tasks.Single(t => t.Id == session.Workspace.TaskId(registration, rows[row].ItemId));
-        return DateText(session.Workspace.PlanningInputRole(cell) == "Start" ? current.Start : current.Finish);
+        var exact = session.Workspace.SchedulingEndpoint(registration, rows[row].ItemId, session.Workspace.PlanningInputRole(cell)!);
+        return exact is null ? session.Workspace.Value(cell) ?? "" : DateText(exact);
     }
     private bool CommitDateCell()
     {
@@ -49,8 +49,12 @@ internal sealed partial class EditingGrid
     private async Task ShowSchedulingEditorAsync(FrameworkElement anchor)
     {
         if (!CanRefresh || !active) { ShowOperationProblem("日程を変更するタスクを選択してください。"); return; }
-        var rowId = rows[currentRow].ItemId; var request = generation;
-        if (!await prepareLocalRows() || request != generation || !IsLoaded) return;
+        if (!rows[currentRow].IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == rows[currentRow].ItemId
+            && i.Kind == ProjectItemKind.Issue && i.ContentId is not null))
+        { ShowOperationProblem("計画はIssueまたは新規行で設定してください。"); return; }
+        var rowId = rows[currentRow].ItemId; var request = generation; var requestedView = ShowingGantt;
+        if (!await prepareLocalRows() || request != generation || !IsLoaded || requestedView != ShowingGantt
+            || anchor.Visibility != Visibility.Visible) return;
         if (session.Workspace.Planning(projectId) is null)
         {
             await PlanningDialogAsync(true);
@@ -62,8 +66,12 @@ internal sealed partial class EditingGrid
         var current = work.PlanFor(registration).Tasks.Single(t => t.Id == id);
         var oldTask = plan.Tasks.SingleOrDefault(t => t.Id == id);
         var dateCells = row.Cells.Where(c => work.PlanningInputRole(c) is "Start" or "Finish").ToArray();
-        string Initial(string role, DateTime? value) => dateCells.SingleOrDefault(c => work.PlanningInputRole(c) == role) is { } c
-            ? work.Buffer(c) ?? DateText(value) : DateText(value);
+        string Initial(string role)
+        {
+            var value = work.SchedulingEndpoint(registration, rowId, role);
+            var cell = dateCells.SingleOrDefault(c => work.PlanningInputRole(c) == role);
+            return cell is null ? DateText(value) : work.Buffer(cell) ?? (value is null ? work.Value(cell) ?? "" : DateText(value));
+        }
         var panel = new StackPanel { Spacing = 8, Width = 420 };
         AutomationProperties.SetAutomationId(panel, "SchedulingEditor");
         panel.Children.Add(new TextBlock { Text = RowIdentity(row), TextWrapping = TextWrapping.Wrap, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
@@ -72,8 +80,8 @@ internal sealed partial class EditingGrid
         method.SelectedIndex = dateCells.Any(c => work.Buffer(c) is not null) || current.Mode == PlanningMode.Manual ? 1 : current.Mode == PlanningMode.Auto ? 0 : -1;
         AutomationProperties.SetAutomationId(method, "ScheduleMethod"); panel.Children.Add(method);
         if (current.Mode == PlanningMode.Unplanned) panel.Children.Add(new TextBlock { Text = "日程はまだ設定されていません。" });
-        var start = new MinuteEditor("開始日時", "ScheduleStart", Initial("Start", current.Start));
-        var finish = new MinuteEditor("終了日時", "ScheduleFinish", Initial("Finish", current.Finish));
+        var start = new MinuteEditor("開始日時", "ScheduleStart", Initial("Start"));
+        var finish = new MinuteEditor("終了日時", "ScheduleFinish", Initial("Finish"));
         TrackContextInput(start.Input); TrackContextInput(finish.Input);
         panel.Children.Add(start); panel.Children.Add(finish);
         var native = registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, id))?.Native;
@@ -81,8 +89,10 @@ internal sealed partial class EditingGrid
         var weight = person is null ? null : plan.People.SingleOrDefault(p => p.Id == person.Id.NodeId);
         panel.Children.Add(new TextBlock { Text = person is null ? native?.Complete != true ? "GitHub担当者: 未取得" : native.Assignees.Length == 0 ? "GitHub担当者: 未設定" : "GitHub担当者: 複数（日時を指定できます）"
             : $"GitHub担当者: {person.Login} · Project配賦: {(weight is null ? "未設定" : weight.WeightPercent + "%")}", TextWrapping = TextWrapping.Wrap });
-        if (oldTask is { Mode: not PlanningMode.Unplanned } && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
-        { Text = "以前の計画担当者・日時を保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
+        if (oldTask is not null && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
+        { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? oldTask.OwnerId ?? "未割当"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
+        if (dateCells.Any(c => work.Value(c) is not null && work.SchedulingEndpoint(registration, rowId, work.PlanningInputRole(c)!) is null))
+            panel.Children.Add(new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap });
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(preview, "SchedulePreview");
         panel.Children.Add(preview);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -94,11 +104,12 @@ internal sealed partial class EditingGrid
         // item that disappears or the full-height workspace.
         var flyout = new Flyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom,
             Content = new ScrollViewer { Content = panel, MaxHeight = Math.Max(180, XamlRoot.Size.Height - 240), VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
-        var expected = work.Revision; var editorGeneration = generation; var explicitAuto = method.SelectedIndex == 0;
+        var expected = work.Revision; var editorGeneration = generation; var explicitAuto = false;
         ProjectPlanning Candidate() => work.SchedulingCandidate(registration, rowId,
             method.SelectedIndex == 0 ? PlanningMode.Auto : method.SelectedIndex == 1 ? PlanningMode.Manual : PlanningMode.Unplanned,
             method.SelectedIndex == 1 ? PlanningDate(start.Text) : current.Start,
-            method.SelectedIndex == 1 ? PlanningDate(finish.Text) : current.Finish, explicitAuto);
+            method.SelectedIndex == 1 ? PlanningDate(finish.Text) : current.Finish, explicitAuto,
+            dateCells.Where(c => work.Buffer(c) == "").Select(c => work.PlanningInputRole(c)!).ToArray());
         void Preview()
         {
             try
@@ -117,7 +128,16 @@ internal sealed partial class EditingGrid
             if (work != session.Workspace || expected != work.Revision || editorGeneration != generation) { preview.Text = "作業が変わりました。閉じて開き直してください。"; return; }
             method.SelectedIndex = 1; explicitAuto = false;
             var cell = dateCells.SingleOrDefault(c => work.PlanningInputRole(c) == role);
-            if (cell is not null) { work.SetPlanningBuffer(cell, value); expected = work.Revision; _ = FlushDraftsAsync("date-editor-input"); }
+            if (cell is not null)
+            {
+                work.SetPlanningBuffer(cell, value); expected = work.Revision;
+                // The contextual TextBox is another editor for the same field.
+                // Pending-only revisions must also refresh its rendered peers.
+                for (var r = 0; r < controls.Count; r++)
+                    for (var c = 0; c < controls[r].Length; c++)
+                        if (rows[r].Cells[c].Key == cell.Key) UpdateCell(r, c);
+                _ = FlushDraftsAsync("date-editor-input");
+            }
             Preview();
         }
         start.Edited += () => Edited("Start", start.Text); finish.Edited += () => Edited("Finish", finish.Text);

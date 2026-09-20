@@ -40,8 +40,12 @@ internal sealed class MinuteEditor : StackPanel
         }
         void ReadPickers()
         {
-            if (updating || date.Date is not { } d || time.SelectedTime is not { } t) return;
-            text.Text = d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + $" {t.Hours:00}:{t.Minutes:00}";
+            if (updating) return;
+            updating = true;
+            try { text.Text = date.Date is { } d
+                ? d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+                    + (time.SelectedTime is { } t ? $" {t.Hours:00}:{t.Minutes:00}" : "") : ""; }
+            finally { updating = false; }
         }
         ReadText();
         text.TextChanging += (_, _) => { ReadText(); Edited?.Invoke(); };

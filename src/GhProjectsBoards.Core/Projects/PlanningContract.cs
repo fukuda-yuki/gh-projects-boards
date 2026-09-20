@@ -31,6 +31,17 @@ internal sealed record ProjectPlanning(int Version, string ProjectId, long Stamp
 // assumed time reconstructed from a GitHub DATE projection.
 internal static class PlanningContract
 {
+    internal static bool SameRetainedTask(PlanningTask left, PlanningTask right)
+    {
+        static bool Same<T>(T[]? a, T[]? b) => a is null ? b is null : b is not null && a.SequenceEqual(b);
+        var a = left.Assignment ?? new([], false, true);
+        var b = right.Assignment ?? new([], false, true);
+        return left with { Actuals = null, Contributions = null, LocalLinks = null, Assignment = null }
+            == right with { Actuals = null, Contributions = null, LocalLinks = null, Assignment = null }
+            && Same(left.Actuals, right.Actuals) && Same(left.Contributions, right.Contributions)
+            && Same(left.LocalLinks, right.LocalLinks) && a.Complete == b.Complete && a.Legacy == b.Legacy
+            && Same(a.Assignees, b.Assignees);
+    }
     internal static DateTime? ParseMinute(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;

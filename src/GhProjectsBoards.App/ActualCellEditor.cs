@@ -66,7 +66,8 @@ internal sealed partial class EditingGrid
         actualContext = (work, row.ItemId, plan.Stamp);
         var context = work.ActualInput(registration, row.ItemId);
         actualInputHeading.Text = $"{RowIdentity(row)} · 累計実績（人時）" + (context.Historical ? " · 過去の報告担当者を保持" : "")
-            + (context.MultipleReports ? " · 複数人の実績は内訳で更新" : "");
+            + (context.MultipleReports ? " · 複数人の実績は内訳で更新" : "")
+            + (context.Problem is { } problem ? "\n" + problem : "");
         var choices = context.Historical
             ? new[] { new ActualWorkerChoice(context.PersonId, PersonName(context.PersonId)) }
             : plan.People.Select(p => new ActualWorkerChoice(p.Id, p.Name))

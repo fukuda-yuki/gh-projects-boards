@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 [TestFixture, NonParallelizable, FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public sealed class PlanningHostedTests
+public sealed partial class PlanningHostedTests
 {
     private EditingGrid grid = null!;
     private DraftSession session = null!;
@@ -36,7 +36,7 @@ public sealed class PlanningHostedTests
             }
             Ui.Tree(dialog).OfType<Expander>().Single(e => (string)e.Header == "担当者・配賦").IsExpanded = true;
         });
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanWeight-U1" && c.IsLoaded));
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<CheckBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanPerson-U1" && c.IsLoaded && c.IsEnabled));
         await Ui.Run(() => {
             var dialog = Ui.Dialog("PlanningDialog")!;
             Ui.Toggle(Ui.Find<CheckBox>("PlanPerson-U1", dialog)); Ui.Find<TextBox>("PlanWeight-U1", dialog).Text = "50";
@@ -358,6 +358,7 @@ public sealed class PlanningHostedTests
         });
         await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-07 13:00"))));
+        await Ui.Ready<TextBox>("GridCell1_2");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell1_2").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         clipboard = "4"; await Ui.ClickCommand("GridPaste");

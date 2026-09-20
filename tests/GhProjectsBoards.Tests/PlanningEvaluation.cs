@@ -27,7 +27,8 @@ internal static class PlanningEvaluation
         if (read.Registrations?.Length != 2 || scenario == "Fresh" && read.Planning!.Length != 0) throw new InvalidDataException("Evaluation fixture readback failed.");
         var diagnostics = Path.Combine(root, "diagnostics"); Directory.CreateDirectory(diagnostics);
         await File.WriteAllTextAsync(Path.Combine(diagnostics, "planning-evaluation.json"), JsonSerializer.Serialize(new {
-            scenario, synthetic = true, tasks = scenario == "Load" ? 1000 : 20, projects = 2, people = 20,
+            scenario, synthetic = true, isolationId = Guid.NewGuid(), evaluationRoot = Path.GetFullPath(root),
+            tasks = scenario == "Load" ? 1000 : 20, projects = 2, people = 20,
             assignment = scenario == "Fresh" ? "No task plan/owner metadata" : scenario == "Load" ? "Retained legacy owner semantics for comparison" : "Explicit synthetic native assignment and Project weights",
             field = "F-Finish is observed as EndDate; mapping remains by ID/type", validatedReadback = true }));
         return 0;

@@ -1,7 +1,7 @@
 namespace GhProjectsBoards.Core.Projects;
 
 internal sealed record ActualInputContext(string TaskId, string? PersonId, bool HasPerson,
-    bool Historical, bool MultipleReports, decimal? ObservedTotal, DateOnly? ReportedThrough);
+    bool Historical, bool MultipleReports, decimal? ObservedTotal, DateOnly? ReportedThrough, string? Problem = null);
 
 internal sealed partial class EditingWorkspace
 {
@@ -32,13 +32,15 @@ internal sealed partial class EditingWorkspace
         if (actuals is { Length: 1 })
             return new(task.Id, actuals[0].PersonId, true, true, false, actuals[0].Hours, actuals[0].ReportedThrough);
         var value = Value(cell);
-        var total = value is null ? (decimal?)null : PlanningContract.ParseHours(value);
+        decimal? total = null; string? problem = null;
+        try { total = value is null ? null : PlanningContract.ParseHours(value); }
+        catch (InvalidOperationException) { problem = "取得した実績は工数の範囲外です。元の値を保持しています。訂正値・担当者・報告日を確認してください。"; }
         var issue = project.Snapshot.Issues.GetValueOrDefault(new(Scope, task.Id));
         var unique = issue?.Native is { Complete: true, Assignees.Length: 1 } native ? native.Assignees[0].Id.NodeId : null;
         // A fetched total has no historical worker. Only a genuinely new report
         // can propose the currently observed single assignee automatically.
-        return new(task.Id, total is null ? unique : null, total is null && unique is not null,
-            false, actuals is { Length: > 1 }, total, null);
+        return new(task.Id, value is null ? unique : null, value is null && unique is not null,
+            false, actuals is { Length: > 1 }, total, null, problem);
     }
 
     public void CommitActualInput(ProjectRegistration project, string rowId, string text, DateOnly through,
@@ -62,6 +64,7 @@ internal sealed partial class EditingWorkspace
     public void CommitActualReports(ProjectRegistration project, string rowId, ActualContribution[] reports, long expectedRevision)
     {
         var (_, cell, task) = PlanningInputTarget(project, rowId, "Actual");
+        if (reports.Length == 0) throw new InvalidOperationException("実績を消すには「実績を削除」を選んでください。");
         if (Buffer(cell) is { } pending && (reports.Length == 0 || PlanningContract.ParseHours(pending) != reports.Sum(a => a.Hours)))
             throw new InvalidOperationException("内訳の合計を入力中の累計実績に合わせてください。");
         CommitPlanningInput(project, cell, task with { Actuals = reports }, expectedRevision);

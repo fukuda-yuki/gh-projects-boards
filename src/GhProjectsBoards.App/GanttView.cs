@@ -235,7 +235,7 @@ internal sealed class GanttView : Grid
         if (input is not null && config is not null)
         {
             var owner = config.People.FirstOrDefault(o => o.Id == input.Task.OwnerId);
-            var provisional = input.Task.OwnerId is null && input.Assignees.Length == 0;
+            var provisional = input.Task.Assignment is not { Legacy: false } && input.Task.OwnerId is null && input.Assignees.Length == 0;
             var ownerText = owner?.Name ?? (provisional ? "共通・暫定" : input.Task.OwnerId is null ? "担当者の選択が必要" : input.Task.OwnerId + "（未確認）");
             var weightText = owner is not null ? owner.WeightPercent + "%" : provisional ? "100%" : "未確認";
             Text($"担当: {ownerText} / 配賦: {weightText}\n見積 {input.Estimate?.ToString() ?? "不明"} / 残時間 {input.Remaining?.ToString() ?? "不明"} / 実績 {input.ActualTotal?.ToString() ?? "不明"} 人時\n進捗: {input.Task.Progress}");
