@@ -11,7 +11,7 @@ internal sealed partial class EditingWorkspace
 {
     private static string ValueKind(EditCell cell) => cell.Key?.Kind switch {
         "Title" or "LocalTitle" => "Title", "Select" or "LocalSelect" => "Select",
-        "LocalRepository" => "Repository", _ => "Reference"
+        "LocalRepository" => "Repository", "Number" => "Number", "Date" => "Date", _ => "Reference"
     };
 
     private static void CheckRange(EditRow[] rows, CellRange range)

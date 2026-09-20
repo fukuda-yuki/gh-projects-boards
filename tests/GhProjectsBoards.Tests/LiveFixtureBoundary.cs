@@ -85,6 +85,7 @@ internal sealed class LiveFixtureBoundary : IGhProcessRunner
         var id = Membership[item]; var issue = Issues[id];
         return new { __typename = "ProjectV2Item", id = item, type = "ISSUE", isArchived = false, project = new { id = Project }, fieldValues = Page([]),
             content = new { __typename = "Issue", id, number = issue.Number, title = issue.Title, state = "OPEN", viewerCanUpdate = true,
+                assignees = Page([]), blockedBy = Page([]), parent = (object?)null,
                 url = "https://github.com/fukuda-yuki/codex-sandbox/issues/" + issue.Number,
                 repository = new { id = Repository, nameWithOwner = "fukuda-yuki/codex-sandbox", owner = new { id = "O1" } } } };
     }

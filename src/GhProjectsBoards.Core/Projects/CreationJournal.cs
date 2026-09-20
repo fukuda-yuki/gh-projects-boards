@@ -7,15 +7,18 @@ internal sealed record CreationRepository(string Id, string Name, bool IssuesEna
     public bool Allowed => IssuesEnabled && !Archived && CanCreate;
 }
 internal sealed record CreatedIssue(string Id, string RepositoryId, int Number, string Url, string Title, DateTimeOffset At);
+internal sealed record CreationPlanningIntent(string Kind, string FieldId, string FieldName, LocalValue Value);
 internal sealed record CreationOperation(string Id, string LocalId, long Stamp, CreationRepository Repository, string Title,
     ImmutableArray<LocalSelect> Selects, bool Authorized = true, bool Dispatched = false,
     CreatedIssue? Received = null, CreatedIssue? Verified = null, string? ItemId = null,
     bool MembershipDispatched = false, ApplyOperation[]? Fields = null, bool Completed = false,
     string Reason = "未送信", string? PreviousAttempt = null, bool EarlierUncertain = false, bool UserBound = false,
     string? ReceivedId = null, ApplyOperation[]? EarlierFields = null, string? SetupReviewedTitle = null, string? ReceivedItemId = null,
-    LocalSelect[]? SetupIntents = null, LocalSelect[][]? EarlierSetupIntents = null);
+    LocalSelect[]? SetupIntents = null, LocalSelect[][]? EarlierSetupIntents = null,
+    CreationPlanningIntent[]? PlanningIntents = null, CreationPlanningIntent[]? SetupPlanningIntents = null,
+    CreationPlanningIntent[][]? EarlierPlanningIntents = null);
 internal sealed record CreationSetupReview(string BatchId, string OperationId, long Revision, CreatedIssue Issue, ApplyOperation[]? Fields,
-    LocalSelect[] Intents, LocalSelect[] Withdrawn);
+    LocalSelect[] Intents, LocalSelect[] Withdrawn, CreationPlanningIntent[]? PlanningIntents = null, CreationPlanningIntent[]? WithdrawnPlanning = null);
 
 internal static class CreationJournal
 {
@@ -51,9 +54,15 @@ internal static class CreationJournal
                 || c.Selects.Concat(c.SetupIntents ?? []).Concat((c.EarlierSetupIntents ?? []).SelectMany(s => s)).Any(s => s is null
                     || string.IsNullOrWhiteSpace(s.FieldId) || s.ExplicitClear && s.OptionId is not null))
                 throw new InvalidDataException("Invalid creation setup intents.");
-            if (setupFields.Any(f => f is null || f.IssueId != c.Verified?.Id || f.ItemId != c.ItemId || f.Key.Kind != "Select"
-                || !c.Selects.Concat(c.SetupIntents ?? []).Concat((c.EarlierSetupIntents ?? []).SelectMany(s => s)).Any(s => s.FieldId == f.Key.FieldId && (s.OptionId is not null || s.ExplicitClear)
-                    && s.OptionId == f.Intended.Value && s.ExplicitClear == f.Intended.Clear)))
+            var planningIntents = (c.PlanningIntents ?? []).Concat(c.SetupPlanningIntents ?? []).Concat((c.EarlierPlanningIntents ?? []).SelectMany(s => s)).ToArray();
+            if (planningIntents.Any(s => s is null || s.Kind is not ("Number" or "Date" or "Dependency") || string.IsNullOrWhiteSpace(s.FieldId)
+                || string.IsNullOrWhiteSpace(s.FieldName) || s.Value is null || !PlanningScalars.Publishable(s.Kind, s.Value)
+                || s.Value.Clear != (s.Value.Value is null))) throw new InvalidDataException("Invalid creation planning intent.");
+            if (setupFields.Any(f => f is null || f.IssueId != c.Verified?.Id || f.ItemId != c.ItemId
+                || (f.Key.Kind == "Select" ? !c.Selects.Concat(c.SetupIntents ?? []).Concat((c.EarlierSetupIntents ?? []).SelectMany(s => s)).Any(s => s.FieldId == f.Key.FieldId && (s.OptionId is not null || s.ExplicitClear)
+                    && s.OptionId == f.Intended.Value && s.ExplicitClear == f.Intended.Clear)
+                    : !planningIntents.Any(s => s.Kind == f.Key.Kind && s.Value == f.Intended && (s.FieldId == f.Key.FieldId
+                        || s.Kind == "Dependency" && all.Any(lineage => lineage.LocalId == s.FieldId && lineage.Verified?.Id == f.Key.FieldId))))))
                 throw new InvalidDataException("Creation field target or approved intent mismatch.");
             foreach (var f in setupFields)
                 ApplyJournal.Validate(record with { Journal = [b with { Creations = null, Operations = [f] }] });
@@ -79,7 +88,12 @@ internal sealed partial class EditingWorkspace
             if (repository is null || !repository.Allowed || repository.Name != r.Repository)
             { blocked.Add(new(r.Id, null, "宛先Repository ID・Issue有効化・archive・作成権限を確認できません。")); continue; }
             if (p.Snapshot.Capability?.CanUpdate != true) blocked.Add(new(r.Id, null, "Project更新権限を確認できません。"));
-            result.Add(new(Guid.NewGuid().ToString("N"), r.Id, r.Stamp, repository, r.Title, r.Selects));
+            var intents = CreationPlanningFor(p, r.Id);
+            foreach (var field in fields.Values.Where(f => f.Key.NodeId == r.Id && f.Key.ProjectId == p.Snapshot.Id.NodeId))
+                if (PlanningPublicationProblem(p, r.Id, field) is { } stale) blocked.Add(new(r.Id, field.Key, stale));
+            foreach (var intent in intents.Where(i => !PlanningScalars.Publishable(i.Kind, i.Value)))
+                blocked.Add(new(r.Id, null, intent.FieldName + ": GitHubへ正確に反映できない値です。"));
+            result.Add(new(Guid.NewGuid().ToString("N"), r.Id, r.Stamp, repository, r.Title, r.Selects, PlanningIntents: intents));
         }
         return result.ToArray();
     }
@@ -89,6 +103,7 @@ internal sealed partial class EditingWorkspace
         var old = journal[index].Creations!.Single(c => c.Id == next.Id);
         if (old.LocalId != next.LocalId || old.Title != next.Title || old.Repository != next.Repository || old.Stamp != next.Stamp
             || !old.Selects.SequenceEqual(next.Selects) || old.Dispatched && !next.Dispatched
+            || !(old.PlanningIntents ?? []).SequenceEqual(next.PlanningIntents ?? [])
             || old.ReceivedId is not null && old.ReceivedId != next.ReceivedId
             || old.Verified is not null && old.Verified.Id != next.Verified?.Id)
             throw new InvalidOperationException("Creation payload and known identity cannot be replaced.");
@@ -104,6 +119,9 @@ internal sealed partial class EditingWorkspace
             throw new InvalidOperationException("関連付けの比較が古いか対象が一致しません。");
         if (fields.TryGetValue(new("Title", issue.Id), out var draft) && (draft.Change is not null || draft.Buffer is not null || draft.Conflict))
             throw new InvalidOperationException("関連付け先には既存のタイトル下書きがあります。作業を解決してから再確認してください。");
+        var projectId = journal.Single(b => b.Id == batchId).Project.NodeId;
+        if (PlanningIdentityOccupied(projectId, issue.Id))
+            throw new InvalidOperationException("関連付け先には既存の計画・工数下書きがあります。既存作業を確認してから関連付けてください。");
         RecordCreation(batchId, c with { Verified = issue, UserBound = true, Authorized = true,
             EarlierUncertain = true, Reason = "ユーザー確認で関連付け（元の送信成功の証明ではありません）" });
     }
@@ -115,7 +133,7 @@ internal sealed partial class EditingWorkspace
             || Creations.Last(x => x.LocalId == c.LocalId).Id != id)
             throw new InvalidOperationException("新しい作成試行を承認できません。履歴を確認してください。");
         var next = new CreationOperation(Guid.NewGuid().ToString("N"), c.LocalId, c.Stamp, repository, c.Title, c.Selects,
-            PreviousAttempt: c.Id, EarlierUncertain: true, Reason: "以前の結果不確定・重複リスクを別途承認");
+            PreviousAttempt: c.Id, EarlierUncertain: true, Reason: "以前の結果不確定・重複リスクを別途承認", PlanningIntents: c.PlanningIntents);
         return new(new(Guid.NewGuid().ToString("N"), b.Project, b.ProjectName, Revision, DateTimeOffset.UtcNow, [], [next]), [], 1, 0);
     }
     public void ConfirmCreationRetry(ApplyReview review)
@@ -137,9 +155,17 @@ internal sealed partial class EditingWorkspace
         RecordCreation(review.BatchId, c with { Authorized = true, Completed = false, Fields = review.Fields,
             EarlierFields = (c.EarlierFields ?? []).Concat(c.Fields ?? []).ToArray(), SetupReviewedTitle = review.Issue.Title,
             SetupIntents = review.Intents, EarlierSetupIntents = (c.EarlierSetupIntents ?? []).Append(c.SetupIntents ?? c.Selects.ToArray()).ToArray(),
+            SetupPlanningIntents = review.PlanningIntents, EarlierPlanningIntents = (c.EarlierPlanningIntents ?? []).Append(c.SetupPlanningIntents ?? c.PlanningIntents ?? []).ToArray(),
             Reason = "既知Issueの設定を再レビュー・承認済み（再作成しません）" });
         if (localRows.SingleOrDefault(r => r.Id == c.LocalId) is { } row && review.Withdrawn.Length > 0)
             ReplaceLocal(row with { Selects = row.Selects.Where(s => !review.Withdrawn.Any(x => x.FieldId == s.FieldId)).ToImmutableArray() });
+        foreach (var intent in review.WithdrawnPlanning ?? [])
+            foreach (var field in fields.Values.Where(f => f.Key.NodeId == c.LocalId && f.Key.Kind == intent.Kind && f.Key.FieldId == intent.FieldId).ToArray())
+            {
+                fields[field.Key] = field with { Change = null, Observation = null, Conflict = false };
+                for (var i = 0; i < history.Count; i++)
+                    if (history[i].Changes.Any(change => change.Key == field.Key)) InvalidateRemoteUndo(i, "作成設定の再レビューでフィールドの意図を撤回しました。");
+            }
     }
     private void PromoteCreatedRows(ProjectRegistration registration)
     {
@@ -154,10 +180,11 @@ internal sealed partial class EditingWorkspace
                 || !item.Values.Any(v => v.FieldId?.NodeId == s.FieldId && v.Availability is ValueAvailability.Present or ValueAvailability.Empty))) continue;
             if (fields.TryGetValue(new("Title", issue.Id.NodeId), out var shared)
                 && (shared.Change is not null || shared.Buffer is not null || shared.Conflict)) continue;
+            if (PlanningIdentityOccupied(p.Id.NodeId, issue.Id.NodeId)) continue;
             void Transfer(FieldKey key, string? baseline, string? value, string? buffer, FieldObservation observation)
             {
                 fields[key] = new(key, baseline, p.Id, observation.At,
-                    value == baseline ? null : new(value, key.Kind == "Select" && value is null), buffer, Revision + 1, observation,
+                    value == baseline ? null : new(value, key.Kind != "Title" && value is null), buffer, Revision + 1, observation,
                     buffer is null && value != baseline && observation.Value != baseline && observation.Value != value);
             }
             var title = c.SetupReviewedTitle ?? (c.UserBound ? c.Verified!.Title : c.Title);
@@ -175,9 +202,15 @@ internal sealed partial class EditingWorkspace
                     new(Guid.NewGuid().ToString("N"), p.Id, registration.RetrievedAt, value.OptionId, value.Availability, null, definition.Options.ToArray()));
             }
             // Keep unrelated parts of mixed operations available; no Undo may resurrect this lineage.
+            PromotePlanning(registration, c, item);
             foreach (var transaction in history.Where(t => (t.Rows ?? []).Any(r => r.Id == local.Id)).ToArray())
             {
                 var index = history.IndexOf(transaction);
+                if (CoupledPlanningRows(transaction))
+                {
+                    history[index] = transaction with { InvalidReason = "作成済み行を含む工数・日程の操作は分割してUndoできません。現在の入力を保持しました。" };
+                    continue;
+                }
                 var unaffected = transaction.Rows!.Where(r => r.Id != local.Id).ToArray();
                 history[index] = transaction with { Rows = transaction.Rows!.Where(r => r.Id == local.Id).ToArray(), Changes = [], InvalidReason = "作成済み行の以前のUndoは復元できません。" };
                 if (unaffected.Length > 0 || transaction.Changes.Length > 0)

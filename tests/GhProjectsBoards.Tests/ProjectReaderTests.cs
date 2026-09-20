@@ -529,6 +529,7 @@ internal sealed class ProjectReaderTests
             optionId = option, field = new { id = field, project = new { id = project } } };
     internal static object Issue(string id = "I1", int number = 1) => new { __typename = "Issue", id, number,
         url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state = "OPEN",
+        assignees = Page([], 0), blockedBy = Page([], 0), parent = (object?)null,
         repository = new { id = "R1", nameWithOwner = "example/repository", owner = new { id = "RO1" } } };
     internal static object Item(string project, string? id = null, object? values = null, object? content = null,
         string type = "ISSUE")

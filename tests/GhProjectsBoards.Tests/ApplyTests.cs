@@ -15,7 +15,7 @@ internal sealed class ApplyTests
     public void CheckpointExplicitlyVersionsExecutionHistory()
     {
         var workspace = new EditingWorkspace(new("github.com", 42));
-        Assert.That(workspace.Snapshot().Version, Is.EqualTo(7));
+        Assert.That(workspace.Snapshot().Version, Is.EqualTo(9));
     }
     [Test]
     public async Task TenOfOneHundredTitlesDispatchExactlyTenTitleOnlyPayloads()
@@ -148,7 +148,7 @@ internal sealed class ApplyTests
         await store.SaveAsync(w.Snapshot() with { Version = version, Journal = null }, 0);
         var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!); restored.SetRegistrations([registration]);
         await store.SaveAsync(restored.Snapshot(), w.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(7)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(9)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
     public async Task CorruptJournalCannotRestoreOrOverwriteRecoveredData()
@@ -245,6 +245,7 @@ internal sealed class ApplyTests
         public string Root = Path.Combine(Path.GetTempPath(), "ghpb-apply-" + Guid.NewGuid());
         public readonly Dictionary<string, string> Titles = [];
         public readonly Dictionary<string, string?> Selects = [];
+        public readonly JsonObject Scalars = [];
         public readonly List<JsonElement> Writes = [];
         public Action? OnMutation;
         public Func<string, JsonElement, GhProcessResult?>? MutationResult;
@@ -254,7 +255,7 @@ internal sealed class ApplyTests
         public RegistrationWorkspace Workspace = null!;
         public GhConnectionService Service = null!;
         public ConnectionContext Context = null!;
-        public static async Task<Harness> Create(int itemCount = 100, string? root = null)
+        public static async Task<Harness> Create(int itemCount = 100, string? root = null, bool planning = false)
         {
             var h = new Harness(); if (root is not null) h.Root = root; var boundary = h.Boundary = new ProjectReaderTests.ProjectBoundary();
             boundary.Override = (q, v) =>
@@ -270,7 +271,10 @@ internal sealed class ApplyTests
                     else
                     {
                         var id = input.GetProperty("itemId").GetString()!;
-                        h.Selects[id] = q.Contains("ApplyClear") ? null : input.GetProperty("value").GetProperty("singleSelectOptionId").GetString();
+                        if (planning && input.GetProperty("fieldId").GetString()!.StartsWith("F-"))
+                            h.Scalars[id + "/" + input.GetProperty("fieldId").GetString()] = q.Contains("ApplyClear") ? null
+                                : JsonNode.Parse(input.GetProperty("value").EnumerateObject().Single().Value.GetRawText());
+                        else h.Selects[id] = q.Contains("ApplyClear") ? null : input.GetProperty("value").GetProperty("singleSelectOptionId").GetString();
                         response = q.Contains("ApplyClear") ? (object)new { data = new { clearProjectV2ItemFieldValue = new { projectV2Item = new { id } } } }
                             : new { data = new { updateProjectV2ItemFieldValue = new { projectV2Item = new { id } } } };
                     }
@@ -295,6 +299,7 @@ internal sealed class ApplyTests
                     }
                 }
                 h.ChangeResponse?.Invoke(q, data);
+                if (planning) PlanningResponses.Augment(data, h.Scalars);
                 return ScriptedRunner.Http(data.ToJsonString());
             };
             h.Service = new("gh.exe", "github.com", boundary.Runner); h.Context = (await h.Service.ConnectAsync()).Context!;

@@ -9,6 +9,7 @@ internal static class FakeCreation
     private static string PathFor(string root) => Path.Combine(root, "creation-state.json");
     private static JsonArray Read(string root) => File.Exists(PathFor(root)) ? JsonNode.Parse(File.ReadAllText(PathFor(root)))!.AsArray() : [];
     private static object Issue(JsonNode r, string host) => new { __typename = "Issue", id = r["id"]!.ToString(),
+        assignees = ProjectReaderTests.Page([], 0), blockedBy = ProjectReaderTests.Page([], 0), parent = (object?)null,
         number = r["number"]!.GetValue<int>(), title = r["title"]!.ToString(), state = "OPEN", viewerCanUpdate = true,
         url = $"https://{host}/sample-user/{r["repository"]}/issues/{r["number"]}",
         repository = new { id = "R-" + r["repository"], nameWithOwner = "sample-user/" + r["repository"], owner = new { id = "O1" } } };

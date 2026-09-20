@@ -2,9 +2,11 @@
 
 A native Windows desktop application built with **C#, .NET 10 and WinUI 3 / Windows App SDK** for preparing GitHub Issue and Project changes in a table.
 
-GitHub remains the source of truth. Editing is local; only an explicit apply operation publishes changes. Product requirements and acceptance belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
+GitHub is authoritative for native values and relationships; exact planning metadata has the local authority defined in the planning contract. Editing is local; only explicit reviewed Apply publishes changes. Product requirements and acceptance belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
 
 Follow [Working in the workspace](docs/workspace.md) for an isolated local quickstart and a complete edit, view, compare, Apply and restart session.
+
+Current delivery owners and the selected weighted Auto/Manual contract are in [requirements](docs/requirements.md) and [planning](docs/planning.md). #61 owns Boards planning, #15 Gantt, and #65 the combined acceptance gate; existing table success is not full P1 acceptance.
 
 ## Build and run
 
@@ -54,7 +56,18 @@ $env:GHPB_DATA_ROOT = 'C:\Temp\ghpb-registration-check'
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
 
-Before checkpoint migration, each scoped Project has one hash-named JSON file containing both settings and cache. Migrated profiles use the authoritative checkpoint described below. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. Drafts use the separate versioned store described below; Apply history uses the authoritative version 7 checkpoint.
+Before checkpoint migration, each scoped Project has one hash-named JSON file containing both settings and cache. Migrated profiles use the authoritative checkpoint described below. Saves flush and validate a new temporary file, then atomically move/replace it; replacement keeps the preceding `.bak`. A competing writer is rejected. Corrupt/new-schema files are diagnosed and not overwritten or reset. Interrupted `.tmp`/`.removed` files and orphaned backups are reported, never automatically restored. To recover, close the app, preserve copies of the affected files, and restore a verified same-key/version backup under its original `.json` name; do not copy another profile's file over it. Local unregistration removes that key's JSON, backup and temporary data. Uninstall behavior is not yet defined by a distribution package; manually removing the data directory after closing all app instances removes these caches. Drafts use the separate versioned store described below; Apply history uses the authoritative version 8 checkpoint.
+
+### Checkpoint backup and isolated restore
+
+Close the source workspace normally to flush committed and pending work. With the current Release build and PowerShell on .NET 10, use the same validated checkpoint store through the offline helper:
+
+```powershell
+./scripts/Backup-Workspace.ps1 -Mode Export -DataRoot 'C:\private\ghpb-source' -File 'C:\private\plan-backup.json' -HostName 'github.com' -ViewerId 123
+./scripts/Backup-Workspace.ps1 -Mode Restore -DataRoot 'C:\private\ghpb-restored' -File 'C:\private\plan-backup.json' -HostName 'github.com' -ViewerId 123
+```
+
+Use the actual stable numeric viewer ID shown in account details. Export requires a new filename; restore requires an empty directory and the same host/viewer. Set `GHPB_DATA_ROOT` to that restored directory, start the ordinary app and choose its saved account. The backup includes registrations, exact planning metadata, pending input and unfinished publication evidence. It contains private unencrypted work, no credentials. Reconnect and reconcile before publishing. This is backup/portability, not synchronization between simultaneously active copies. Unknown/corrupt versions are diagnosed without overwriting source files.
 
 ## Project column settings
 
@@ -64,7 +77,7 @@ Copy, paste and clear follow visible order. For example, with Title/C/A/Referenc
 
 **新規行として貼り付け** first shows the TSV input columns: Title followed by visible single-select columns. Review the IDs/order and captured destination, then add or cancel. Hidden fields start as Unspecified. Whole-row duplication still copies supported committed hidden values. Apply review includes hidden differences/setup and labels them **グリッドでは非表示**; hiding a field never withdraws a planned mutation.
 
-Preferences are separate for each host/account/Project and restore offline after switching/restart. Missing/type-changed field IDs remain diagnosed in settings/comparison; replacements with the same name receive defaults. Save failure retains the candidate for retry. See the [column contract](docs/spec.md#project-specific-columns) and [storage recovery](#local-registration-storage). Overall design acceptance remains under #31.
+Preferences are separate for each host/account/Project and restore offline after switching/restart. Missing/type-changed field IDs remain diagnosed in settings/comparison; replacements with the same name receive defaults. Save failure retains the candidate for retry. See the [column contract](docs/spec.md#project-specific-columns) and [storage recovery](#local-registration-storage). Overall design acceptance remains under #65.
 
 ## Project row sorting and filtering
 
@@ -74,14 +87,14 @@ Edit or paste while the rows remain in their current arrangement. Committed chan
 
 The status shows active criteria, total/displayed rows, hidden work and temporary inclusion. **GitHubに反映…** starts with changed displayed rows and local creation rows, initially unselected. **非表示行も候補に追加する** is off by default; adding candidates does not select them. A changed visibility set after automatic checking requires selection again with an explanation. Review includes hidden column differences of selected rows; **反映結果・履歴** remains directly available for hidden rows. Approved operations keep their identities across later filtering.
 
-Switch Projects or close/restart normally to restore saved definitions. A missing field/option reports its ID and shows no data rows until you repair the condition or explicitly reset. All underlying rows and recovery work remain stored. Save failure keeps the dialog candidate for retry. View definitions are saved; pane visibility, cell selection and viewport position remain transient. #31 owns visual design and human usability acceptance.
+Switch Projects or close/restart normally to restore saved definitions. A missing field/option reports its ID and shows no data rows until you repair the condition or explicitly reset. All underlying rows and recovery work remain stored. Save failure keeps the dialog candidate for retry. View definitions are saved; pane visibility, cell selection and viewport position remain transient. #65 owns combined visual design and human usability acceptance.
 ## Credentials and failures
 
 ### Local editing and recovery
 
 Use **新規行を追加** to prepare an incomplete local row below the fetched Issues. Enter its title, choose supported single-select values, and edit the last column's actual destination (`owner/repository`; horizontal scrolling or Tab reaches it). Select a cell and use Shift+up/down for multiple rows, then **選択行を複製** to copy committed values or **新規行を削除** to remove local rows. Mixed existing/local removal is rejected. **新規行として貼り付け** appends TSV in title/single-select order, validates the entire batch and creates one Undo unit. Empty titles are allowed during manual preparation but rejected by append. Clearing values never deletes a row.
 
-Preparation works in an explicitly selected saved profile without authentication. New-row validation is separate from existing-field differences. In **GitHubに反映…**, select existing updates and/or local creation rows in **反映内容の確認**. Review destinations, committed titles and single-select intent in the same screen; incomplete rows show reasons and block sending if selected. The app checks current data automatically. **GitHubに反映（N件）** is the separate final approval. Unspecified preserves initial server values; Set and ExplicitClear request initial Project setup. Pending text is visibly excluded, retained and never implicitly committed. Save, switch Projects, refresh and restart retain work in the authoritative version 7 checkpoint; versions 1–6 remain readable.
+Preparation works in an explicitly selected saved profile without authentication. New-row validation is separate from existing-field differences. In **GitHubに反映…**, select existing updates and/or local creation rows in **反映内容の確認**. Review destinations, committed titles and single-select intent in the same screen; incomplete rows show reasons and block sending if selected. The app checks current data automatically. **GitHubに反映（N件）** is the separate final approval. Unspecified preserves initial server values; Set and ExplicitClear request initial Project setup. Pending text is visibly excluded, retained and never implicitly committed. Save, switch Projects, refresh and restart retain work in the authoritative version 8 checkpoint; versions 1–7 remain readable.
 
 **反映結果・履歴** distinguishes received identity, verified Issue existence, pending Project setup, verified completion and earlier uncertain attempts. Resume observes exact identities and never resends uncertain Issue creation. For an unknown creation, **作成の不確定結果を解決** offers hold, independently verified Issue URL binding, or a separately reviewed new attempt with explicit duplicate-risk acknowledgement. Binding performs no GitHub mutation. Successful later work does not prove an earlier attempt created nothing. Use the per-batch Resume buttons for older work. For a known Issue, **既知Issueの設定を再比較** reviews current local select choices and fresh observations; it also explicitly identifies withdrawal of retired fields. Complete identity evidence remains in history after promotion to an existing row. Creation-related removal, destination changes and Undo are guarded; unrelated mixed Undo remains available.
 
@@ -127,7 +140,7 @@ In a registered Project, choose **GitHubに反映…**. One **反映内容の確
 
 **反映結果・履歴** is beside the Apply command and opens after execution unless native composition requires keeping editor focus. It shows per-field outcomes and provides explicit revalidation/resume; reopening never resumes writes. Uncertain work may require withdrawing the old approval and preparing a fresh review. Already verified success is not resent. Cancellation stops unsent work and does not roll back completed changes.
 
-Execution history is stored in version 7 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1–6 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
+Execution history is stored in version 8 of the authoritative profile checkpoint alongside remaining drafts and cache observations. Preserve the entire profile and backups for recovery. Versions 1–7 remain readable. Live product validation is opt-in via `scripts/Test-ApplyLive.ps1`; it creates only a disposable sandbox fixture and independently verifies cleanup.
 
 ### Routine logic and adapter checks
 

@@ -32,12 +32,20 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
         var ids = displayed.SelectMany(c => c.IsCreation
             ? new[] { ColumnIdentity.Title }.Concat(workspace.LocalRows.Single(r => r.Id == c.Id).Selects
                 .Where(s => s.Intent != "Unspecified").Select(s => new ColumnIdentity("Field", s.FieldId)))
-            : c.Fields.Where(f => f.Change is not null || f.Buffer is not null || f.Conflict)
-                .Select(f => f.Key.Kind == "Title" ? ColumnIdentity.Title : new ColumnIdentity("Field", f.Key.FieldId)))
+                .Concat(workspace.CreationPlanningFor(project, c.Id).Select(s => new ColumnIdentity(s.Kind == "Dependency" ? "Dependency" : "Field", s.FieldId)))
+                .Concat(c.Fields.Where(f => f.Buffer is not null).Select(f => new ColumnIdentity("Field", f.Key.FieldId)))
+            : c.Fields.Where(f => f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == EditingWorkspace.ProjectionDecisionReason)
+                .Select(f => f.Key.Kind == "Title" ? ColumnIdentity.Title : new ColumnIdentity(f.Key.Kind == "Dependency" ? "Dependency" : "Field", f.Key.FieldId)))
             .Concat((retainedColumns ?? []).Select(c => c.Id)).Distinct().ToArray();
         string Name(ColumnIdentity id)
         {
             if (id == ColumnIdentity.Title) return "タイトル（Issue共通）";
+            if (id.Role == "Dependency")
+            {
+                var predecessor = p.Issues.GetValueOrDefault(new(p.Id.Scope, id.FieldId!));
+                return "先行: " + (predecessor is not null ? $"{predecessor.Repository.NameWithOwner} #{predecessor.Number}"
+                    : workspace.LocalRows.SingleOrDefault(r => r.Id == id.FieldId)?.Title ?? id.FieldId);
+            }
             var name = definitions.GetValueOrDefault(id.FieldId!)?.Name
                 ?? workspace.LocalRows.SelectMany(r => r.Selects).FirstOrDefault(s => s.FieldId == id.FieldId)?.FieldName
                 ?? "未確認フィールド";
@@ -68,18 +76,21 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
                 var cell = candidate.Row.Cells.SingleOrDefault(c => c.Key is not null && (id == ColumnIdentity.Title
                     ? c.Key.Kind is "Title" or "LocalTitle" : c.Key.FieldId == id.FieldId));
                 var definition = id.FieldId is null ? null : definitions.GetValueOrDefault(id.FieldId);
-                ConfirmationValue Value(string? value, ValueAvailability availability) => Format(value, availability, definition);
+                ConfirmationValue Value(string? value, ValueAvailability availability) => id.Role == "Dependency" && value == "present"
+                    ? new(ConfirmationValueKind.Value, "あり") : Format(value, availability, definition);
                 ConfirmationValue before, after;
                 string? pending = field?.Buffer, problem = null;
                 if (local is not null)
                 {
                     before = new(ConfirmationValueKind.NotCreated, "未作成");
                     var select = local.Selects.SingleOrDefault(s => s.FieldId == id.FieldId);
+                    var intent = workspace.CreationPlanningFor(project, local.Id).SingleOrDefault(s => s.FieldId == id.FieldId && (s.Kind == "Dependency") == (id.Role == "Dependency"));
                     after = id == ColumnIdentity.Title ? new(ConfirmationValueKind.Value, local.Title)
+                        : intent is not null ? intent.Value.Clear ? new(ConfirmationValueKind.Clear, "クリア") : Value(intent.Value.Value, ValueAvailability.Present)
                         : select?.ExplicitClear == true ? new(ConfirmationValueKind.Clear, "クリア")
                         : select?.OptionId is { } option ? Value(option, ValueAvailability.Present)
                         : new(ConfirmationValueKind.Unspecified, "指定なし");
-                    pending = id == ColumnIdentity.Title ? local.TitleBuffer : null;
+                    pending = id == ColumnIdentity.Title ? local.TitleBuffer : field?.Buffer;
                 }
                 else
                 {
@@ -91,7 +102,7 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
                         : Value(change.Value, change.Value is null ? ValueAvailability.Empty : ValueAvailability.Present);
                     problem = field?.Conflict == true ? "競合: GitHubと端末内の両方で変更されています。"
                         : rowProblems.FirstOrDefault(b => b.Field == field?.Key && b.Field is not null)?.Message
-                            ?? (field?.Change is not null ? observation?.Reason : null);
+                            ?? observation?.Reason;
                 }
                 return new ConfirmationCell(column, before, after, field, pending, problem, latest,
                     field?.Observation?.At ?? field?.RetrievedAt ?? project.RetrievedAt);

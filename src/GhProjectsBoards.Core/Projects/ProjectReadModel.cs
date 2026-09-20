@@ -18,14 +18,18 @@ internal sealed record ProjectReadProgress(string Stage, int Fields, int Items, 
 internal sealed record ReadValue<T>(ValueAvailability Availability, T? Value = default);
 internal sealed record RepositoryReadModel(ScopedId Id, ScopedId OwnerId, string NameWithOwner);
 internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repository, int Number, string Url,
-    ReadValue<string> Title, ReadValue<IssueState?> State, CapabilityObservation? Capability = null);
+    ReadValue<string> Title, ReadValue<IssueState?> State, CapabilityObservation? Capability = null,
+    IssuePlanningObservation? Native = null);
+internal sealed record NativePerson(ScopedId Id, string Login);
+internal sealed record IssuePlanningObservation(NativePerson[] Assignees, ScopedId[] Predecessors,
+    ReadValue<ScopedId> Parent, bool Complete);
 internal sealed record CapabilityObservation(bool? CanUpdate, DateTimeOffset ObservedAt);
 internal sealed record SelectOption(string Id, string Name);
 internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, string Name,
     string TypeName, string DataType, FieldOwner ValueOwner, IReadOnlyList<SelectOption> Options,
     ValueAvailability Availability);
 internal sealed record ProjectFieldValue(ScopedId? FieldId, string? ValueId, string TypeName,
-    ValueAvailability Availability, string? OptionId = null);
+    ValueAvailability Availability, string? OptionId = null, string? Scalar = null);
 internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, string TypeName,
     ScopedId? ContentId, bool IsArchived, IReadOnlyList<ProjectFieldValue> Values, bool ValuesComplete);
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,

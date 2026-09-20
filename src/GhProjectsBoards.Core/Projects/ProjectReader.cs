@@ -60,11 +60,11 @@ internal sealed class ProjectReader(GhConnectionService service)
             var key = operation.Key;
             if (projectId.Scope != ConnectionScope.From(context)
                 || (key.Kind == "Title" ? key.NodeId != operation.IssueId || key.ProjectId is not null || key.FieldId is not null
-                    : key.Kind != "Select" || key.NodeId != operation.ItemId || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
+                    : key.Kind is not ("Select" or "Number" or "Date" or "Dependency") || key.NodeId != (key.Kind == "Dependency" ? operation.IssueId : operation.ItemId) || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
                 return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
             try
             {
-                observationScope = key.Kind == "Title" ? "repo" : "project";
+                observationScope = key.Kind is "Title" or "Dependency" ? "repo" : "project";
                 firstObservationRead = true;
                 // Complete definitions retain the reader's field ownership and unknown-value guards.
                 // Their cost depends on fields/options, never unrelated Project item count.
@@ -87,11 +87,17 @@ internal sealed class ProjectReader(GhConnectionService service)
                 string? value;
                 ValueAvailability availability;
                 IReadOnlyList<SelectOption> options = [];
-                if (key.Kind == "Title")
+                if (key.Kind is "Title" or "Dependency")
                 {
                     var issue = issues[item.ContentId];
                     if (issue.Capability?.CanUpdate != true) return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    value = issue.Title.Value; availability = issue.Title.Availability;
+                    if (key.Kind == "Title") { value = issue.Title.Value; availability = issue.Title.Availability; }
+                    else
+                    {
+                        if (issue.Native?.Complete != true) return Failure();
+                        value = issue.Native.Predecessors.Any(i => i.NodeId == key.FieldId) ? "present" : null;
+                        availability = value is null ? ValueAvailability.Empty : ValueAvailability.Present;
+                    }
                 }
                 else
                 {
@@ -99,10 +105,12 @@ internal sealed class ProjectReader(GhConnectionService service)
                         || field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
                     options = field.Options;
-                    if (!operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value))
+                    if (field.DataType != PlanningScalars.DataType(key.Kind)
+                        || key.Kind == "Select" && !operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value)
+                        || !PlanningScalars.Publishable(key.Kind, operation.Intended))
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
                     var observed = item.Values.Single(v => v.FieldId == field.Id);
-                    value = observed.OptionId; availability = observed.Availability;
+                    value = key.Kind == "Select" ? observed.OptionId : observed.Scalar; availability = observed.Availability;
                 }
                 if (availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return Failure();
                 // This is evidence for one field only. No complete Project snapshot is published.
@@ -190,8 +198,9 @@ internal sealed class ProjectReader(GhConnectionService service)
                     options.Add(new(optionId, Text(option, "name", allowEmpty: true)));
                 }
             }
-            var availability = owner == FieldOwner.ProjectItem && dataType == "SINGLE_SELECT"
-                && type == "ProjectV2SingleSelectField" ? ValueAvailability.Present : ValueAvailability.Unsupported;
+            var availability = owner == FieldOwner.ProjectItem && (dataType == "SINGLE_SELECT"
+                && type == "ProjectV2SingleSelectField" || dataType is "NUMBER" or "DATE" && type == "ProjectV2Field")
+                ? ValueAvailability.Present : ValueAvailability.Unsupported;
             fields.Add(id, new(id, projectId, Text(node, "name", allowEmpty: true), type, dataType, owner,
                 options.AsReadOnly(), availability));
         }
@@ -223,7 +232,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                     var repository = Property(content, "repository");
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
-                        ReadTitle(content), ReadState(content), Capability(content));
+                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content));
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                     if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present)
                         problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue"));
@@ -234,6 +243,26 @@ internal sealed class ProjectReader(GhConnectionService service)
             item.Complete = await WalkAsync("values", ProjectQueries.ItemValues, id.NodeId,
                 value => { MatchNode(value, id.NodeId, "ProjectV2Item"); MatchProject(value); return Property(value, "fieldValues"); },
                 value => { AddValue(item, value); return Task.CompletedTask; }, Optional(node, "fieldValues"));
+        }
+
+        private async Task<IssuePlanningObservation> ReadNativeAsync(JsonElement issue)
+        {
+            var id = Id(issue);
+            var assignees = new Dictionary<ScopedId, NativePerson>();
+            var predecessors = new HashSet<ScopedId>();
+            var peopleComplete = await WalkAsync("assignees", ProjectQueries.Assignees, id.NodeId,
+                node => { MatchNode(node, id.NodeId, "Issue"); return Property(node, "assignees"); },
+                node => { var person = new NativePerson(Id(node), Text(node, "login"));
+                    if (!assignees.TryAdd(person.Id, person)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+                    return Task.CompletedTask; }, Property(issue, "assignees"));
+            var linksComplete = await WalkAsync("predecessors", ProjectQueries.Predecessors, id.NodeId,
+                node => { MatchNode(node, id.NodeId, "Issue"); return Property(node, "blockedBy"); },
+                node => { if (!predecessors.Add(Id(node))) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+                    return Task.CompletedTask; }, Property(issue, "blockedBy"));
+            var parent = Property(issue, "parent");
+            var parentValue = parent.ValueKind == JsonValueKind.Null ? new ReadValue<ScopedId>(ValueAvailability.Empty)
+                : new ReadValue<ScopedId>(ValueAvailability.Present, Id(parent));
+            return new(assignees.Values.ToArray(), predecessors.ToArray(), parentValue, peopleComplete && linksComplete);
         }
 
         private void AddValue(ItemBuilder item, JsonElement node)
@@ -264,6 +293,26 @@ internal sealed class ProjectReader(GhConnectionService service)
             {
                 item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Unsupported));
                 return;
+            }
+            if (definition.DataType is "NUMBER" or "DATE")
+            {
+                var expected = definition.DataType == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue";
+                var raw = Optional(node, definition.DataType == "NUMBER" ? "number" : "date");
+                string? scalar = null;
+                var known = type == expected && raw.ValueKind == JsonValueKind.Null;
+                try
+                {
+                    if (type == expected && (definition.DataType == "NUMBER" ? raw.ValueKind == JsonValueKind.Number : raw.ValueKind == JsonValueKind.String))
+                    {
+                        scalar = definition.DataType == "NUMBER" ? PlanningScalars.RemoteNumber(raw)
+                            : PlanningScalars.Normalize("Date", raw.GetString()!);
+                        known = true;
+                    }
+                }
+                catch (Exception e) when (e is FormatException or OverflowException or InvalidOperationException) { known = false; }
+                var state = !known ? ValueAvailability.Unavailable : scalar is null ? ValueAvailability.Empty : ValueAvailability.Present;
+                if (!known) problems.Add(new(ReadProblemKind.IncompleteTraversal, "scalar"));
+                item.Values.Add(new(fieldId, valueId, type, state, Scalar: scalar)); return;
             }
             if (type != "ProjectV2ItemFieldSingleSelectValue")
             {

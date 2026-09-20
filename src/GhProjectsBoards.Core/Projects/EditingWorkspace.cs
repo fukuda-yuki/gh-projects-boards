@@ -6,14 +6,15 @@ internal sealed record DraftField(FieldKey Key, string? Baseline, ScopedId Sourc
     LocalValue? Change, string? Buffer, long Stamp, FieldObservation? Observation = null, bool Conflict = false);
 internal sealed record FieldChange(FieldKey Key, DraftField Before, DraftField After);
 internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[] Changes, string? InvalidReason = null, bool Resolution = false,
-    LocalRowChange[]? Rows = null);
+    LocalRowChange[]? Rows = null, PlanningChange? Plan = null);
 internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History,
     RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null, ApplyBatch[]? Journal = null,
-    LocalRow[]? LocalRows = null, ProjectColumnPreferences[]? ColumnPreferences = null, ProjectRowPreference[]? RowPreferences = null);
+    LocalRow[]? LocalRows = null, ProjectColumnPreferences[]? ColumnPreferences = null, ProjectRowPreference[]? RowPreferences = null,
+    ProjectPlanning[]? Planning = null);
 internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline, string? Reason, SelectOption[] Options,
-    ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null)
+    ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null, bool InputLocked = false)
 {
-    public bool Editable => Key is not null && Reason is null;
+    public bool Editable => Key is not null && Reason is null && !InputLocked;
 }
 internal sealed record EditRow(string ItemId, EditCell[] Cells, bool IsLocal = false);
 
@@ -27,7 +28,7 @@ internal sealed partial class EditingWorkspace
     public EditingWorkspace(ConnectionScope scope) => Scope = scope;
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
-    public DraftRecord Snapshot() => new(7, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray());
+    public DraftRecord Snapshot() => new(9, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray());
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -39,6 +40,7 @@ internal sealed partial class EditingWorkspace
         result.localRows.AddRange(record.LocalRows ?? []);
         result.columnPreferences.AddRange(record.ColumnPreferences ?? []);
         result.rowPreferences.AddRange(record.RowPreferences ?? []);
+        result.planning.AddRange(record.Planning ?? []);
         return result;
     }
     public string? Value(EditCell cell) => IsLocal(cell.Key) ? LocalValueFor(cell) : cell.Key is { } key && fields.TryGetValue(key, out var f)
@@ -50,6 +52,7 @@ internal sealed partial class EditingWorkspace
         var p = registration.Snapshot;
         if (p.Id.Scope != Scope) throw new InvalidOperationException("Scope mismatch");
         var columns = LocalColumns(registration);
+        var dependencyKeys = fields.Keys.Where(k => k.Kind == "Dependency" && k.ProjectId == p.Id.NodeId).ToLookup(k => k.NodeId);
         string? Permission(CapabilityObservation? c) => c?.CanUpdate switch { true when c.ObservedAt != default => null, false => "更新権限なし（取得時の観測）", _ => "更新権限未確認" };
         return p.Items.Where(item => !Creations.Any(c => c.Verified is not null && c.Verified.Id == item.ContentId?.NodeId
             && localRows.Any(r => r.Id == c.LocalId && r.ProjectId == p.Id.NodeId))).Select(item =>
@@ -65,11 +68,12 @@ internal sealed partial class EditingWorkspace
                 var reason = issue is null ? "Issue以外は編集対象外" : item.IsArchived ? "アーカイブ項目は編集対象外"
                     : field.Availability != ValueAvailability.Present ? AvailabilityText(field.Availability)
                     : v?.Availability is not (ValueAvailability.Present or ValueAvailability.Empty) ? AvailabilityText(v?.Availability ?? ValueAvailability.NotLoaded) : Permission(p.Capability);
-                var key = new FieldKey("Select", item.Id.NodeId, p.Id.NodeId, field.Id.NodeId);
-                if (fields.TryGetValue(key, out var saved) && (saved.Change?.Value ?? saved.Baseline) is { } savedOption
+                var key = new FieldKey(PlanningScalars.Kind(field.DataType), item.Id.NodeId, p.Id.NodeId, field.Id.NodeId);
+                if (key.Kind == "Select" && fields.TryGetValue(key, out var saved) && (saved.Change?.Value ?? saved.Baseline) is { } savedOption
                     && !field.Options.Any(o => o.Id == savedOption)) reason = "保存された選択肢IDを確認できません（要照合）";
-                cells.Add(new(key, field.Name, v?.OptionId,
-                    reason, field.Options.ToArray(), v?.Availability ?? ValueAvailability.NotLoaded));
+                cells.Add(new(key, field.Name, key.Kind == "Select" ? v?.OptionId : v?.Scalar,
+                    reason, field.Options.ToArray(), v?.Availability ?? ValueAvailability.NotLoaded,
+                    InputLocked: Planning(p.Id.NodeId)?.Fields.Any(b => b.FieldId == field.Id.NodeId && b.Role is "Start" or "Finish" or "Actual") == true));
             }
             var reference = issue is null ? item.Kind switch { ProjectItemKind.PullRequest => "Pull Request", ProjectItemKind.Draft => "GitHub Draft", ProjectItemKind.Unavailable => "閲覧不可", _ => "非対応" }
                 : $"{issue.Repository.NameWithOwner} #{issue.Number} | {issue.State.Value}";
@@ -77,7 +81,7 @@ internal sealed partial class EditingWorkspace
             var unsupported = p.Fields.Except(columns).Select(f => $"{f.Name}: {AvailabilityText(f.Availability)}");
             cells.Add(new(null, reference + " | " + string.Join(" / ", unsupported), null, "参照専用", []));
             cells = cells.Select(c => c with { Scope = Scope }).ToList();
-            foreach (var cell in cells.Where(c => c.Editable))
+            foreach (var cell in cells.Concat(DependencyCells(registration, item, dependencyKeys[item.ContentId?.NodeId ?? ""])).Where(c => c.Key is not null && c.Reason is null))
             {
                 if (!fields.ContainsKey(cell.Key!))
                 {
@@ -109,6 +113,7 @@ internal sealed partial class EditingWorkspace
     {
         if (cell.Key?.Kind == "Title" && (string.IsNullOrWhiteSpace(text) || text.IndexOfAny(['\r','\n','\t']) >= 0)) throw new InvalidOperationException("タイトルは空欄・改行・タブにできません。");
         if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Options.Count(o => o.Name == text) != 1) throw new InvalidOperationException("選択肢が存在しないか同名で曖昧です。");
+        if (cell.Key?.Kind is "Number" or "Date") _ = PlanningScalars.Normalize(cell.Key.Kind, text);
     }
     public static string[][] ParseTsv(string text)
     {
@@ -126,8 +131,15 @@ internal sealed partial class EditingWorkspace
         {
             if (!cell.Editable) throw new InvalidOperationException(cell.Reason ?? "参照専用");
             if (IsLocal(cell.Key)) { PrepareLocalEdit(projectId, cell, text, clear, optionId, rowChanges); continue; }
-            if (cell.Scope != Scope || cell.Key!.Kind == "Select" && cell.Key.ProjectId != projectId) throw new InvalidOperationException("操作対象のプロフィール・Projectが一致しません。");
+            if (cell.Scope != Scope || cell.Key!.Kind != "Title" && cell.Key.ProjectId != projectId) throw new InvalidOperationException("操作対象のプロフィール・Projectが一致しません。");
             var key = cell.Key!;
+            if (key.NodeId.StartsWith("local-", StringComparison.Ordinal) && key.Kind is "Number" or "Date")
+            {
+                var current = CheckpointRegistrations.SingleOrDefault(p => p.Snapshot.Id.NodeId == projectId);
+                if (!localRows.Any(r => r.Id == key.NodeId && r.ProjectId == projectId)
+                    || current?.Snapshot.Capability is not { CanUpdate: true, ObservedAt: var observedAt } || observedAt == default)
+                    throw new InvalidOperationException("新規行とProjectの更新権限を確認してください。");
+            }
             if (key.Kind == "Title" && (clear || string.IsNullOrWhiteSpace(text) || text.IndexOfAny(['\r','\n','\t']) >= 0))
                 throw new InvalidOperationException("タイトルは空欄・改行・タブにできません。");
             string? value = text;
@@ -137,9 +149,10 @@ internal sealed partial class EditingWorkspace
                 if (!clear && options.Length != 1) throw new InvalidOperationException($"{cell.Display}: 選択肢が存在しないか同名で曖昧です。");
                 value = clear ? null : options[0].Id;
             }
+            else if (key.Kind is "Number" or "Date") value = clear ? null : PlanningScalars.Normalize(key.Kind, text);
             var old = fields[key];
             if (old.Conflict || old.Observation?.Reason is { } blocked && !blocked.StartsWith("未確定文字")) throw new InvalidOperationException(old.Observation?.Reason ?? "競合の比較画面で採用値を選択してください。");
-            var change = value == old.Baseline ? null : new LocalValue(value, clear);
+            var change = value == old.Baseline && !(clear && key.NodeId.StartsWith("local-", StringComparison.Ordinal)) ? null : new LocalValue(value, clear);
             var next = old with { Change = change, Buffer = null, Stamp = Revision + 1,
                 Observation = old.Observation?.Reason?.StartsWith("未確定文字") == true ? old.Observation with { Reason = null } : old.Observation };
             if (changes.TryGetValue(key, out var duplicate) && duplicate.After.Change != next.Change)
@@ -150,9 +163,11 @@ internal sealed partial class EditingWorkspace
         foreach (var entry in rowChanges.Where(entry => SameLocal(entry.Value.Before!, entry.Value.After! with { Stamp = entry.Value.Before!.Stamp })).ToArray())
             rowChanges.Remove(entry.Key);
         if (changes.Count == 0 && rowChanges.Count == 0) return;
+        ValidateWorkContributions(projectId, changes);
         Revision++;
         foreach (var change in changes.Values) fields[change.Key] = change.After;
         foreach (var change in rowChanges.Values) ReplaceLocal(change.After!);
+        ProjectCommittedPlan(projectId, changes);
         history.Add(new(Guid.NewGuid().ToString("N"), projectId, changes.Values.ToArray(), Rows: rowChanges.Values.ToArray()));
     }
     public void Undo(string projectId)
@@ -161,20 +176,35 @@ internal sealed partial class EditingWorkspace
         var transaction = history.LastOrDefault(t => t.ProjectId == projectId && t.InvalidReason is null);
         if (transaction is null) return;
         GuardLocalUndo(transaction);
+        if (transaction.Plan is { } pc && Planning(projectId)?.Stamp != pc.After.Stamp)
+            throw new InvalidOperationException("後続の計画変更があるため、この計画は元に戻せません。");
+        if (transaction.Plan is { } mapping && mapping.After.Fields.Any(binding => mapping.Before?.Fields.SingleOrDefault(b => b.Role == binding.Role) != binding)
+            && fields.Values.Any(f => f.Key.ProjectId == projectId && mapping.After.Fields.Any(b => b.FieldId == f.Key.FieldId)
+                && (f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == ProjectionDecisionReason)
+                && !transaction.Changes.Any(c => c.Key == f.Key)))
+            throw new InvalidOperationException("後続の工数・日付の入力を保持するため、以前の計画フィールド設定は元に戻せません。");
         if (transaction.Changes.Any(c => !fields.TryGetValue(c.Key, out var current) || !SameUndoState(current, c.After)))
             throw new InvalidOperationException("後続の共有編集または編集中の文字があるため、この操作は元に戻せません。");
         foreach (var c in transaction.Changes) fields[c.Key] = c.Before with { Observation = fields[c.Key].Observation };
         UndoLocal(transaction);
+        if (transaction.Plan is { } plan)
+        {
+            planning.RemoveAll(p => p.ProjectId == projectId);
+            if (plan.Before is not null) planning.Add(plan.Before);
+        }
+        InvalidatePlan(projectId);
         history.Remove(transaction); Revision++;
     }
     private static bool Belongs(FieldKey key, ProjectReadModel p) => key.ProjectId == p.Id.NodeId || key.Kind == "Title" && p.Issues.Keys.Any(id => id.NodeId == key.NodeId);
     public bool HasWork(ProjectReadModel p) => fields.Values.Any(f => (f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason is not null) && (Belongs(f.Key, p) || f.SourceProject == p.Id))
         || history.Any(t => t.Changes.Any(c => Belongs(c.Key, p)) || t.ProjectId == p.Id.NodeId && t.Rows is { Length: > 0 })
-        || localRows.Any(r => r.ProjectId == p.Id.NodeId);
+        || localRows.Any(r => r.ProjectId == p.Id.NodeId) || Planning(p.Id.NodeId) is not null;
     public void Discard(ProjectReadModel project, IEnumerable<ProjectReadModel> surviving)
     {
         if (localRows.Any(r => r.ProjectId == project.Id.NodeId && CreationLocked(r.Id))) throw new InvalidOperationException("作成履歴のある行は破棄できません。");
         var remaining = surviving.Where(p => p.Id.Scope == Scope).ToArray();
+        planning.RemoveAll(p => p.ProjectId == project.Id.NodeId); InvalidatePlan(project.Id.NodeId);
+        history.RemoveAll(t => t.ProjectId == project.Id.NodeId && t.Plan is not null);
         localRows.RemoveAll(r => r.ProjectId == project.Id.NodeId);
         history.RemoveAll(t => t.ProjectId == project.Id.NodeId && t.Rows is { Length: > 0 } && t.Changes.Length == 0);
         for (var i = 0; i < history.Count; i++)

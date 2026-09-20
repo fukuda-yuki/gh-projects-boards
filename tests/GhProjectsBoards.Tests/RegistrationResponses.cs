@@ -51,6 +51,7 @@ internal static class RegistrationResponses
                         : columns ? new[] { "A", "B", "C" }.Select(c => ProjectReaderTests.Value(projectId, projectId + c, id: projectId + c + "-V" + number)).ToArray()
                         : [ProjectReaderTests.Value(projectId, projectId + "-status", id: projectId + "-V" + number)]),
                     new { __typename = "Issue", viewerCanUpdate = true, id = "I" + number, number = reviewDetails ? 1 : number,
+                        assignees = Page([]), blockedBy = Page([]), parent = (object?)null,
                         title = reviewDetails ? new string('題', 100) + "元の末尾 " + number : "Issue " + number, state = number % 2 == 0 ? "CLOSED" : "OPEN",
                         url = $"https://{host}/sample-user/{repo}/issues/{(reviewDetails ? 1 : number)}", repository = Repo(repo) });
             }

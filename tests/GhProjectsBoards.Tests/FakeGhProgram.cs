@@ -162,6 +162,31 @@ internal static class FakeGhProgram
             var saved = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile))! : new System.Text.Json.Nodes.JsonObject();
             File.AppendAllText(Path.Combine(directory, "apply-requests.jsonl"), value.GetRawText() + "\n");
             if (settings.TryGetProperty("applyDelayMs", out var applyDelay)) await Task.Delay(applyDelay.GetInt32());
+            if (query.Contains("ApplyDependency"))
+            {
+                var issue = value.GetProperty("issueId").GetString()!; var predecessor = value.GetProperty("blockingIssueId").GetString()!;
+                saved["dependencies"] ??= new System.Text.Json.Nodes.JsonObject();
+                var existing = saved["dependencies"]![issue]?.AsArray() ?? [];
+                var updated = existing.Select(n => n!.GetValue<string>()).ToHashSet();
+                var operation = query.Contains("addBlockedBy") ? "addBlockedBy" : "removeBlockedBy";
+                if (operation == "addBlockedBy") updated.Add(predecessor); else updated.Remove(predecessor);
+                saved["dependencies"]![issue] = JsonSerializer.SerializeToNode(updated);
+                File.WriteAllText(stateFile, saved.ToJsonString());
+                WriteHttp(new System.Text.Json.Nodes.JsonObject { ["data"] = new System.Text.Json.Nodes.JsonObject { [operation] = new System.Text.Json.Nodes.JsonObject {
+                    ["issue"] = new System.Text.Json.Nodes.JsonObject { ["id"] = issue } } } }); return 0;
+            }
+            if (settings.TryGetProperty("planning", out var planEnabled) && planEnabled.GetBoolean()
+                && value.TryGetProperty("fieldId", out var field) && field.GetString()!.StartsWith("F-") && value.GetProperty("projectId").GetString() == "P1")
+            {
+                saved["scalars"] ??= new System.Text.Json.Nodes.JsonObject();
+                var itemId = value.GetProperty("itemId").GetString()!;
+                saved["scalars"]![itemId + "/" + field.GetString()] = query.Contains("ApplyClear") ? null
+                    : System.Text.Json.Nodes.JsonNode.Parse(value.GetProperty("value").EnumerateObject().Single().Value.GetRawText());
+                File.WriteAllText(stateFile, saved.ToJsonString());
+                if (query.Contains("ApplyClear")) WriteHttp(new { data = new { clearProjectV2ItemFieldValue = new { projectV2Item = new { id = itemId } } } });
+                else WriteHttp(new { data = new { updateProjectV2ItemFieldValue = new { projectV2Item = new { id = itemId } } } });
+                return 0;
+            }
             if (settings.TryGetProperty("rejectApplyId", out var rejected) && value.TryGetProperty("id", out var target) && rejected.GetString() == target.GetString())
             { Console.WriteLine("HTTP/2 403 Forbidden\n\n{\"message\":\"Synthetic permission denial\"}"); return 1; }
             if (query.Contains("ApplyTitle") && value.GetProperty("id").GetString() == "I1")
@@ -201,6 +226,13 @@ internal static class FakeGhProgram
                 settings.TryGetProperty("reviewDetails", out var reviewDetails) && reviewDetails.GetBoolean());
             if (response is not null)
             {
+                if (settings.TryGetProperty("planning", out var planning) && planning.GetBoolean())
+                {
+                    var planned = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
+                    var stateFile = Path.Combine(directory, "apply-state.json");
+                    var plannedState = File.Exists(stateFile) ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(stateFile)) : null;
+                    PlanningResponses.Augment(planned, plannedState?["scalars"]?.AsObject(), plannedState?["dependencies"]?.AsObject()); response = planned;
+                }
                 if (query.Contains("ProjectItems") || query.Contains("ApplyItem") || query.Contains("ApplyObservation"))
                 {
                     var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(response))!;
