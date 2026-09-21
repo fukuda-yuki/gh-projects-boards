@@ -15,7 +15,7 @@ internal sealed record PersonSummary(string Id, string Name, decimal? Allowance,
     public decimal? Headroom => Allowance is { } allowance && Forecast.Complete ? allowance - Forecast.Hours : null;
 }
 internal sealed record SummaryContribution(string PersonId, string TaskId, string? RowId, string Title, string Identity,
-    EffortValue Estimate, EffortValue Actual, EffortValue Remaining, DateOnly? ReportedThrough, string? Problem)
+    EffortValue Estimate, EffortValue Actual, EffortValue Remaining, DateOnly? ReportedThrough, string? Problem, bool IncludedInTotals = true)
 {
     public EffortValue Forecast => EffortValue.Sum([Actual, Remaining]);
 }
@@ -25,14 +25,15 @@ internal sealed record BaselineComparison(BaselineTask? Baseline, GanttRow? Curr
 }
 internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Estimate, EffortValue Actual,
     SummaryContribution[] Contributions, BaselineComparison[] Comparisons, DateOnly Today, DateOnly Cutoff,
-    string ProjectTitle, int TaskCount, int UnpublishedCount, ProtectedBaseline? Baseline)
+    string ProjectTitle, int TaskCount, int UnpublishedCount, ProtectedBaseline? Baseline,
+    IReadOnlyDictionary<string, string>? TaskIdsByRow = null)
 {
     internal const string Unattributed = "";
     public static SummaryProjection Create(EditingWorkspace work, ProjectRegistration project, DateOnly today)
     {
         var p = work.Planning(project.Snapshot.Id.NodeId);
         var adopted = GanttProjection.Create(work, project, []);
-        var rows = adopted.Rows.DistinctBy(r => r.TaskId).ToArray();
+        var rows = adopted.Rows.GroupBy(r => r.TaskId).Select(group => group.OrderBy(r => r.RowId, StringComparer.Ordinal).First()).ToArray();
         var cutoff = p?.Cutoff is { } at && DateOnly.FromDateTime(at) < today ? DateOnly.FromDateTime(at) : today;
         var parents = project.Snapshot.Issues.Values.Select(i => i.Native?.Parent.Value?.NodeId).OfType<string>().ToHashSet();
         var contributions = new List<SummaryContribution>(); var estimates = new List<EffortValue>(); var actuals = new List<EffortValue>();
@@ -45,6 +46,7 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
             var ambiguous = task.LaborKind == TaskLaborKind.Unspecified && parents.Contains(id);
             var rollup = task.LaborKind == TaskLaborKind.Rollup;
             var reason = unavailable ? "対象・工数を未確認" : ambiguous ? "親タスクの工数区分を確認" : rollup ? "子の集計（工数合計から除外）" : null;
+            if (row?.Input?.SourceProblem is { } sourceProblem) reason = Join(reason, sourceProblem);
             var estimate = row?.Input?.Estimate; var remaining = row?.Input?.Remaining;
             var future = (task.Actuals ?? []).Any(a => a.ReportedThrough > cutoff);
             if (future) reason = Join(reason, "基準日より後の実績は未算入");
@@ -74,8 +76,7 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
                 var ev = est.GetValueOrDefault(person) ?? new(0); var rv = rem.GetValueOrDefault(person) ?? new(0);
                 if (ambiguous || unavailable) { ev = EffortValue.Missing; rv = EffortValue.Missing; }
                 if (ambiguous) actual = EffortValue.Missing;
-                if (rollup) { ev = new(0); actual = new(0); rv = new(0); }
-                contributions.Add(new(person, id, row?.RowId, title, identity, ev, actual, rv, report?.ReportedThrough, reason));
+                contributions.Add(new(person, id, row?.RowId, title, identity, ev, actual, rv, report?.ReportedThrough, reason, !rollup));
             }
             if (rollup) return;
             estimates.Add(ambiguous || unavailable ? EffortValue.Missing : EffortValue.Of(estimate));
@@ -89,7 +90,7 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
         var allowances = (p?.Summary?.Allowances ?? []).ToDictionary(a => a.PersonId, a => a.Hours);
         var groups = contributions.ToLookup(c => c.PersonId);
         var peopleRows = groups.Select(g => g.Key).Concat(configured.Keys).Concat(allowances.Keys).Distinct().Select(id => {
-            var items = groups[id].ToArray();
+            var items = groups[id].Where(c => c.IncludedInTotals).ToArray();
             var e = EffortValue.Sum(items.Select(i => i.Estimate)); var a = EffortValue.Sum(items.Select(i => i.Actual)); var r = EffortValue.Sum(items.Select(i => i.Remaining));
             return new PersonSummary(id, id == Unattributed ? "未割当・帰属未確認" : configured.GetValueOrDefault(id) ?? id,
                 allowances.TryGetValue(id, out var allowance) ? allowance : null, e, a, r, EffortValue.Sum([a, r]));
@@ -104,7 +105,8 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
             return new BaselineComparison(b, c, state);
         }).ToArray();
         return new(peopleRows, EffortValue.Sum(estimates), EffortValue.Sum(actuals), contributions.ToArray(), comparison, today, cutoff,
-            project.Snapshot.Title, rows.Length, rows.Count(r => r.RowId.StartsWith("local-", StringComparison.Ordinal)), baseline);
+            project.Snapshot.Title, rows.Length, rows.Count(r => r.RowId.StartsWith("local-", StringComparison.Ordinal)), baseline,
+            adopted.Rows.ToDictionary(r => r.RowId, r => r.TaskId));
     }
     private static string Join(string? first, string second) => first is null ? second : first + " / " + second;
 }

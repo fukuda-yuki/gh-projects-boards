@@ -21,12 +21,28 @@ internal sealed partial class EditingWorkspace
         var issueRows = registration.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null).ToDictionary(i => i.Id.NodeId, i => i.ContentId!.NodeId);
         var allRows = ReadRows(registration);
         var dependencies = fields.Values.Where(f => f.Key.Kind == "Dependency" && f.Key.ProjectId == id).ToLookup(f => f.Key.NodeId);
-        foreach (var row in allRows.Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId))
-            .DistinctBy(r => r.IsLocal ? r.ItemId : issueRows[r.ItemId]))
+        foreach (var appearances in allRows.Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId))
+            .GroupBy(r => r.IsLocal ? r.ItemId : issueRows[r.ItemId]))
         {
+            var row = appearances.First();
             var taskId = row.IsLocal ? row.ItemId : issueRows[row.ItemId]; var task = metadata.GetValueOrDefault(taskId) ?? new(taskId);
+            // Project-item values can disagree even when they refer to the same
+            // Issue. Preserve both rows; neither ordering nor a cached first row
+            // establishes canonical labor or date values.
+            var conflict = appearances.Skip(1).Any(other => plan.Fields.Any(binding => {
+                var first = row.Cells.SingleOrDefault(c => c.Key?.FieldId == binding.FieldId);
+                var second = other.Cells.SingleOrDefault(c => c.Key?.FieldId == binding.FieldId);
+                return first is null || second is null || first.Reason != second.Reason
+                    || first.Availability != second.Availability && (first.Availability is not (ValueAvailability.Present or ValueAvailability.Empty)
+                        || second.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
+                    || Value(first) != Value(second)
+                    || Field(first)?.Observation?.Reason != Field(second)?.Observation?.Reason
+                    || Field(first)?.Conflict == true || Field(second)?.Conflict == true;
+            }));
+            var sourceProblem = conflict ? "同じIssueの重複行で値が不一致です。各行の工数・日時を確認してください。" : null;
             decimal? Work(string role)
             {
+                if (conflict) return null;
                 if (!roles.TryGetValue(role, out var field)) return null;
                 var cell = row.Cells.SingleOrDefault(c => c.Key?.FieldId == field);
                 if (cell is null || cell.Reason is not null || Field(cell)?.Conflict == true) return null;
@@ -44,7 +60,7 @@ internal sealed partial class EditingWorkspace
             if (dependencies[taskId].Any(f => f.Conflict || f.Observation?.Reason is not null)) complete = false;
             inputs.Add(new(task, Work("Estimate"), Work("Remaining"), issue?.Native?.Assignees.Select(a => a.Id.NodeId).ToArray() ?? [], links,
                 complete, issue?.State.Availability == ValueAvailability.Present ? issue.State.Value == IssueState.Closed : null,
-                task.Actuals is null ? Work("Actual") : task.Actuals.Length == 0 ? null : task.Actuals.Sum(a => a.Hours)));
+                task.Actuals is null ? Work("Actual") : task.Actuals.Length == 0 ? null : task.Actuals.Sum(a => a.Hours), sourceProblem));
         }
         return calculatedPlans[id] = PlanningEngine.Calculate(plan, inputs.ToArray(), Revision);
     }
@@ -149,12 +165,14 @@ internal sealed partial class EditingWorkspace
         var id = registration.Snapshot.Id.NodeId; InvalidatePlan(id);
         var p = Planning(id); if (p is null) return;
         var result = PlanFor(registration); var byTask = result.Tasks.ToDictionary(t => t.Id);
+        var ambiguous = (result.Inputs ?? []).Where(i => i.SourceProblem is not null).Select(i => i.Task.Id).ToHashSet();
         var metadata = p.Tasks.ToDictionary(t => t.Id);
         var priorTasks = (previous ?? p).Tasks.ToDictionary(t => t.Id);
         var issueRows = registration.Snapshot.Items.Where(i => i.Kind == ProjectItemKind.Issue && i.ContentId is not null).ToDictionary(i => i.Id.NodeId, i => i.ContentId!.NodeId);
         foreach (var row in Open(registration).Where(r => r.IsLocal || issueRows.ContainsKey(r.ItemId)))
         {
             var taskId = row.IsLocal ? row.ItemId : issueRows[row.ItemId]; if (!byTask.TryGetValue(taskId, out var task)) continue;
+            if (ambiguous.Contains(taskId)) continue;
             foreach (var binding in p.Fields.Where(f => f.Role is "Start" or "Finish" or "Actual"))
             {
                 if (binding.Role is "Start" or "Finish" && task.Mode == PlanningMode.Unplanned) continue;
@@ -191,15 +209,19 @@ internal sealed partial class EditingWorkspace
     {
         if (field.Change is null) return null;
         var role = ProjectionRole(field.Key);
+        if (role is null) return null;
+        var taskId = TaskId(registration, rowId);
+        var sourceProblem = PlanFor(registration).Inputs?.SingleOrDefault(i => i.Task.Id == taskId)?.SourceProblem;
+        if (sourceProblem is not null) return sourceProblem;
         if (role == "Actual")
         {
-            var reports = Planning(registration.Snapshot.Id.NodeId)?.Tasks.SingleOrDefault(t => t.Id == TaskId(registration, rowId))?.Actuals;
+            var reports = Planning(registration.Snapshot.Id.NodeId)?.Tasks.SingleOrDefault(t => t.Id == taskId)?.Actuals;
             var total = reports is not { Length: > 0 } ? null : PlanningContract.CanonicalHours(reports.Sum(a => a.Hours));
             if (reports is null || total != field.Change.Value)
                 return "実績の反映には一致する報告内訳・報告対象日の確認が必要です。保持した合計を計画画面で照合してください。";
         }
         if (field.Key.Kind != "Date" || field.Change is null || ProjectionRole(field.Key) is not ("Start" or "Finish")) return null;
-        var task = PlanFor(registration).Tasks.SingleOrDefault(t => t.Id == TaskId(registration, rowId));
+        var task = PlanFor(registration).Tasks.SingleOrDefault(t => t.Id == taskId);
         return task is { Mode: PlanningMode.Auto, Resolved: false }
             ? $"計画が未解決です。以前の日付下書き（入力revision {field.Stamp}）は反映できません。Autoを再計算するかManualで日時を採用してください。"
             : null;

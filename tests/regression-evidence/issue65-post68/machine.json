@@ -1,0 +1,33 @@
+{
+  "observedUtc": "2026-09-20T13:00:56.5076223Z",
+  "processors": [
+    {
+      "Name": "AMD Ryzen 7 9700X 8-Core Processor             ",
+      "NumberOfCores": 8,
+      "NumberOfLogicalProcessors": 16
+    }
+  ],
+  "video": [
+    {
+      "Name": "AMD Radeon(TM) Graphics",
+      "DriverVersion": "32.0.21036.18",
+      "CurrentHorizontalResolution": null,
+      "CurrentVerticalResolution": null,
+      "CurrentRefreshRate": null
+    },
+    {
+      "Name": "NVIDIA GeForce RTX 5070 Ti",
+      "DriverVersion": "32.0.15.9636",
+      "CurrentHorizontalResolution": 3440,
+      "CurrentVerticalResolution": 1440,
+      "CurrentRefreshRate": 29
+    }
+  ],
+  "os": {
+    "Version": "10.0.26200",
+    "BuildNumber": "26200",
+    "TotalVisibleMemorySize": 64575840
+  },
+  "powerScheme": "電源設定の GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (バランス)",
+  "boundary": "Read-only Windows WMI/display provider and power scheme. Per-window rasterization scale and viewport are independently recorded by the app trace; no physical scanout measurement."
+}

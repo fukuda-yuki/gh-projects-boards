@@ -1,0 +1,282 @@
+[
+  {
+    "run": "post68-matched-baseline-cold-01",
+    "spans": {
+      "realize-row": {
+        "count": 216,
+        "totalMs": 1307.0675,
+        "maxMs": 212.5876,
+        "allocatedBytes": 35436304
+      },
+      "diagnostic-state": {
+        "count": 97,
+        "totalMs": 2.1545,
+        "maxMs": 0.042800000000000005,
+        "allocatedBytes": 35176
+      },
+      "header-sync": {
+        "count": 96,
+        "totalMs": 101.8906,
+        "maxMs": 3.3638000000000003,
+        "allocatedBytes": 1405776
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.45730000000000004,
+        "maxMs": 0.45730000000000004,
+        "allocatedBytes": 9560
+      },
+      "release-row": {
+        "count": 151,
+        "totalMs": 52.1843,
+        "maxMs": 0.7775000000000001,
+        "allocatedBytes": 43440
+      }
+    }
+  },
+  {
+    "run": "post68-matched-baseline-warm-01",
+    "spans": {
+      "realize-row": {
+        "count": 222,
+        "totalMs": 1325.1255,
+        "maxMs": 200.0003,
+        "allocatedBytes": 35996512
+      },
+      "diagnostic-state": {
+        "count": 103,
+        "totalMs": 2.1,
+        "maxMs": 0.0324,
+        "allocatedBytes": 37048
+      },
+      "header-sync": {
+        "count": 102,
+        "totalMs": 109.20570000000001,
+        "maxMs": 3.0798,
+        "allocatedBytes": 2166384
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.447,
+        "maxMs": 0.447,
+        "allocatedBytes": 9024
+      },
+      "release-row": {
+        "count": 162,
+        "totalMs": 53.039,
+        "maxMs": 0.6566000000000001,
+        "allocatedBytes": 39480
+      }
+    }
+  },
+  {
+    "run": "post68-final-cold-01",
+    "spans": {
+      "realize-row": {
+        "count": 195,
+        "totalMs": 856.8284,
+        "maxMs": 197.9935,
+        "allocatedBytes": 25767472
+      },
+      "diagnostic-state": {
+        "count": 98,
+        "totalMs": 2.0183,
+        "maxMs": 0.0325,
+        "allocatedBytes": 34920
+      },
+      "header-sync": {
+        "count": 97,
+        "totalMs": 107.96900000000001,
+        "maxMs": 30.300500000000003,
+        "allocatedBytes": 1649744
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.5499,
+        "maxMs": 0.5499,
+        "allocatedBytes": 9736
+      },
+      "release-row": {
+        "count": 123,
+        "totalMs": 39.9859,
+        "maxMs": 0.7708,
+        "allocatedBytes": 26040
+      }
+    }
+  },
+  {
+    "run": "post68-final-warm-01",
+    "spans": {
+      "realize-row": {
+        "count": 204,
+        "totalMs": 906.2628000000001,
+        "maxMs": 189.62570000000002,
+        "allocatedBytes": 26516136
+      },
+      "diagnostic-state": {
+        "count": 99,
+        "totalMs": 2.0109,
+        "maxMs": 0.0519,
+        "allocatedBytes": 36368
+      },
+      "header-sync": {
+        "count": 97,
+        "totalMs": 109.09790000000001,
+        "maxMs": 29.6507,
+        "allocatedBytes": 1551464
+      },
+      "update": {
+        "count": 3,
+        "totalMs": 1.1443,
+        "maxMs": 0.5534,
+        "allocatedBytes": 27016
+      },
+      "release-row": {
+        "count": 141,
+        "totalMs": 48.060700000000004,
+        "maxMs": 0.8875000000000001,
+        "allocatedBytes": 43800
+      }
+    }
+  },
+  {
+    "run": "post68-final-cold-02",
+    "spans": {
+      "realize-row": {
+        "count": 175,
+        "totalMs": 579.0682,
+        "maxMs": 6.0118,
+        "allocatedBytes": 23426088
+      },
+      "diagnostic-state": {
+        "count": 99,
+        "totalMs": 1.9677,
+        "maxMs": 0.037000000000000005,
+        "allocatedBytes": 34664
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 121.4179,
+        "maxMs": 40.4681,
+        "allocatedBytes": 2057600
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.4544,
+        "maxMs": 0.4544,
+        "allocatedBytes": 9032
+      },
+      "release-row": {
+        "count": 112,
+        "totalMs": 34.403800000000004,
+        "maxMs": 1.0099,
+        "allocatedBytes": 14400
+      }
+    }
+  },
+  {
+    "run": "post68-final-warm-02",
+    "spans": {
+      "realize-row": {
+        "count": 201,
+        "totalMs": 844.159,
+        "maxMs": 161.5616,
+        "allocatedBytes": 26213288
+      },
+      "diagnostic-state": {
+        "count": 101,
+        "totalMs": 2.0136000000000003,
+        "maxMs": 0.029900000000000003,
+        "allocatedBytes": 35856
+      },
+      "header-sync": {
+        "count": 100,
+        "totalMs": 106.3023,
+        "maxMs": 28.7815,
+        "allocatedBytes": 1814520
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.4531,
+        "maxMs": 0.4531,
+        "allocatedBytes": 9568
+      },
+      "release-row": {
+        "count": 138,
+        "totalMs": 44.374100000000006,
+        "maxMs": 0.7627,
+        "allocatedBytes": 28560
+      }
+    }
+  },
+  {
+    "run": "post68-final-cold-03",
+    "spans": {
+      "realize-row": {
+        "count": 194,
+        "totalMs": 654.5761,
+        "maxMs": 15.4862,
+        "allocatedBytes": 25555848
+      },
+      "diagnostic-state": {
+        "count": 98,
+        "totalMs": 1.9089,
+        "maxMs": 0.031,
+        "allocatedBytes": 34352
+      },
+      "header-sync": {
+        "count": 97,
+        "totalMs": 107.4302,
+        "maxMs": 30.4217,
+        "allocatedBytes": 1804248
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.5406000000000001,
+        "maxMs": 0.5406000000000001,
+        "allocatedBytes": 9032
+      },
+      "release-row": {
+        "count": 130,
+        "totalMs": 39.7226,
+        "maxMs": 0.6423,
+        "allocatedBytes": 19800
+      }
+    }
+  },
+  {
+    "run": "post68-final-warm-03",
+    "spans": {
+      "realize-row": {
+        "count": 197,
+        "totalMs": 871.7813000000001,
+        "maxMs": 201.73180000000002,
+        "allocatedBytes": 25725616
+      },
+      "diagnostic-state": {
+        "count": 101,
+        "totalMs": 2.0243,
+        "maxMs": 0.0369,
+        "allocatedBytes": 36992
+      },
+      "header-sync": {
+        "count": 99,
+        "totalMs": 108.08430000000001,
+        "maxMs": 29.94,
+        "allocatedBytes": 1825208
+      },
+      "update": {
+        "count": 3,
+        "totalMs": 1.3311,
+        "maxMs": 0.5788,
+        "allocatedBytes": 26888
+      },
+      "release-row": {
+        "count": 132,
+        "totalMs": 43.9486,
+        "maxMs": 0.8623000000000001,
+        "allocatedBytes": 36840
+      }
+    }
+  }
+]

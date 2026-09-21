@@ -160,6 +160,12 @@ internal sealed class GanttView : Grid
         var selected = selectedId ?? SelectedRowId;
         var oldOrigin = axis.Origin; var day = horizontal.HorizontalOffset / axis.DayWidth;
         var verticalOffset = vertical?.VerticalOffset;
+        var selectedWasVisible = false;
+        if (list.SelectedItem is { } previous && list.ContainerFromItem(previous) is ListViewItem { IsLoaded: true } item)
+        {
+            var bounds = item.TransformToVisual(list).TransformBounds(new(0, 0, item.ActualWidth, item.ActualHeight));
+            selectedWasVisible = bounds.Bottom > 0 && bounds.Top < list.ActualHeight;
+        }
         projection = value; axis = GanttAxis.For(value, scale.SelectedIndex == 1);
         calendar = value.Plan.Configuration is { } config ? new WorkingCalendar(config.Calendar) : null;
         horizontalExtent.Width = axis.Width;
@@ -171,15 +177,18 @@ internal sealed class GanttView : Grid
         // Replacing adopted row records resets ListView's realized range. Restore
         // its viewport after layout so editing a distant task does not lose it.
         if (verticalOffset is { } offset) { list.UpdateLayout(); vertical!.ChangeView(null, offset, null, true); }
+        if (selectedWasVisible && list.SelectedItem is { } retained) list.ScrollIntoView(retained);
         horizontal.ChangeView(Math.Max(0, (oldOrigin - axis.Origin).TotalDays + day) * axis.DayWidth, null, null, true);
         Draw();
     }
     private void Filter(string? selected = null)
     {
         selected ??= SelectedRowId;
-        shown = projection.Rows.Where(MatchesSearch).ToArray();
+        var next = projection.Rows.Where(MatchesSearch).ToArray();
         updating = true;
-        list.ItemsSource = shown;
+        // Save acknowledgement and editor close may present the same adopted
+        // rows again. Replacing them would reset an in-flight viewport restore.
+        if (!shown.SequenceEqual(next)) { shown = next; list.ItemsSource = shown; }
         list.SelectedItem = shown.FirstOrDefault(r => r.RowId == selected);
         updating = false;
         summary.Text = $"{shown.Length}/{projection.Rows.Length}件 · {projection.Rows.Count(r => !r.HasBar)}件は日程未確定";
@@ -210,21 +219,25 @@ internal sealed class GanttView : Grid
         selectedText.Text = row is null ? "タスクを選ぶと、正確な日時と変更理由を確認できます。" : $"{row.Identity}  {row.Title}\n{row.StateText}  {Dates(row)}";
         var p = row?.Plan;
         notice.Text = row is null ? (projection.Rows.Length == 0 ? "Projectにタスクがありません。" : "")
-            : p?.Warnings.Length > 0 ? "注意: " + string.Join(" / ", p.Warnings)
-            : p?.Problem ?? (row.HiddenOnBoards ? "表のフィルター外 · 表で開くとこの行を一時表示" : "");
+            : string.Join(" / ", new[] { p?.Problem, p?.Warnings.Length > 0 ? "注意: " + string.Join(" / ", p.Warnings) : null,
+                row.HiddenOnBoards ? "表のフィルター外 · 表で開くとこの行を一時表示" : null }.Where(text => text is not null));
         var relations = row is null ? [] : Relations(row);
         updating = true; related.ItemsSource = relations; related.SelectedIndex = -1; updating = false;
         related.IsEnabled = relations.Length != 0;
     }
     private Relation[] Relations(GanttRow row)
     {
-        var byId = projection.Rows.DistinctBy(r => r.TaskId).ToDictionary(r => r.TaskId);
+        var byId = CanonicalRows();
         return (row.Input?.Predecessors ?? []).Select(link => {
             var previous = byId.GetValueOrDefault(link.PredecessorId);
             return new Relation($"先行 → [{link.Kind}] {previous?.Identity ?? link.PredecessorId} {previous?.Title ?? "外部・未確認"} / 終了 {Exact(previous?.Plan?.Finish ?? link.ExternalFinish)}", previous?.RowId);
-        }).Concat(projection.Rows.Where(r => r.Input?.Predecessors.Any(l => l.PredecessorId == row.TaskId) == true)
+        }).Concat(byId.Values.Where(r => r.Input?.Predecessors.Any(l => l.PredecessorId == row.TaskId) == true)
             .Select(r => new Relation($"→ 後続 {r.Identity} {r.Title}", r.RowId))).ToArray();
     }
+    private Dictionary<string, GanttRow> CanonicalRows() => projection.Rows.GroupBy(r => r.TaskId)
+        .Where(group => group.All(r => r.Input?.SourceProblem is null))
+        .ToDictionary(group => group.Key, group => group.FirstOrDefault(r => r.RowId == SelectedRowId)
+            ?? group.OrderBy(r => r.RowId, StringComparer.Ordinal).First());
     private void ShowDetails()
     {
         if (list.SelectedItem is not GanttRow row) return;
@@ -302,8 +315,9 @@ internal sealed class GanttView : Grid
     {
         lines.Children.Clear(); lines.Clip = new RectangleGeometry { Rect = new(identityWidth, 0, Math.Max(0, ActualWidth - identityWidth - 16), Math.Max(0, list.ActualHeight)) };
         if (list.SelectedItem is not GanttRow selected) return;
-        var byTask = projection.Rows.ToDictionary(r => r.TaskId);
-        var selectedEdges = projection.Rows.SelectMany(r => (r.Input?.Predecessors ?? []).Where(l => l.Kind == "FS" && (r.TaskId == selected.TaskId || l.PredecessorId == selected.TaskId)).Select(l => (From: byTask.GetValueOrDefault(l.PredecessorId), To: r)));
+        var byTask = CanonicalRows();
+        var selectedEdges = byTask.Values.SelectMany(r => (r.Input?.Predecessors ?? []).Where(l => l.Kind == "FS" && (r.TaskId == selected.TaskId || l.PredecessorId == selected.TaskId)).Select(l => (From: byTask.GetValueOrDefault(l.PredecessorId), To: r)))
+            .DistinctBy(edge => (edge.From?.TaskId, edge.To.TaskId));
         foreach (var (from, to) in selectedEdges)
         {
             if (from?.Plan?.Finish is not { } finish || to.Plan?.Start is not { } start || !from.HasBar || !to.HasBar) continue;

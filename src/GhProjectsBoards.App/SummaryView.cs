@@ -12,7 +12,8 @@ internal static class SummaryText
     internal static string Number(decimal n) => n.ToString("0.###########", CultureInfo.CurrentCulture);
     internal static string Value(EffortValue v) => v.Known == 0 && v.Unknown > 0 ? "不明"
         : Number(v.Days) + (v.Complete ? "" : "（未完）");
-    internal static string Exact(EffortValue v) => Value(v) + " 人日 / " + Number(v.Hours) + " 人時"
+    internal static string Exact(EffortValue v) => Value(v) + " 人日 / "
+        + (v.Known == 0 && v.Unknown > 0 ? "不明" : Number(v.Hours) + (v.Complete ? "" : "（小計）")) + " 人時"
         + (v.Unknown > 0 ? $" · 未入力/未確認 {v.Unknown}件" : "") + (v.Stale > 0 ? $" · 古い報告 {v.Stale}件" : "");
     internal static string Comparison(BaselineComparison c) => c.State + "\n" + (c.Baseline is { } b
         ? $"基準: 見積 {Hours(b.Estimate)} / {b.Mode?.ToString() ?? "不明"} / {Date(b.Start)} → {Date(b.Finish)}" : "基準: 未設定")
@@ -54,6 +55,7 @@ internal sealed class SummaryView : Grid
         HorizontalContentAlignment = HorizontalAlignment.Stretch, DisplayMemberPath = nameof(TaskLine.Label) };
     private readonly TextBlock totals = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new(12, 4, 12, 4) };
     private readonly TextBlock context = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new(12, 4, 12, 4) };
+    private readonly TextBlock actualHeader = new() { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock personDetail = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly TextBox filter = new() { Header = "内訳を絞り込み", PlaceholderText = "タイトル・番号", Width = 220 };
     private readonly InfoBar status = new() { IsClosable = false, Severity = InfoBarSeverity.Error };
@@ -66,9 +68,9 @@ internal sealed class SummaryView : Grid
     internal event Action<string>? EditRequested;
     internal event Action? UndoRequested, SaveRequested, SettingsRequested;
     internal string? SelectedPersonId => (people.SelectedItem as PersonSummary)?.Id;
-    internal string? SelectedRowId => (tasks.SelectedItem as TaskLine)?.Contribution.RowId;
+    internal string? SelectedRowId => (tasks.SelectedItem as TaskLine)?.RowId;
     internal SummaryProjection? AdoptedSummary => projection;
-    private sealed record TaskLine(SummaryContribution Contribution)
+    private sealed record TaskLine(SummaryContribution Contribution, string? RowId)
     {
         public string Label => $"{Contribution.Identity} · {Contribution.Title}\n見積 {SummaryText.Value(Contribution.Estimate)} / 実績 {SummaryText.Value(Contribution.Actual)} / 残り {SummaryText.Value(Contribution.Remaining)} / 見込み {SummaryText.Value(Contribution.Forecast)} 人日"
             + $"\n報告対象: {Contribution.ReportedThrough?.ToString("yyyy-MM-dd") ?? "未入力"}" + (Contribution.Problem is { } problem ? " · " + problem : "");
@@ -94,8 +96,10 @@ internal sealed class SummaryView : Grid
         SetRow(context, 2); Children.Add(context); AutomationProperties.SetAutomationId(context, "SummaryContext");
         people.ItemTemplate = (DataTemplate)Application.Current.Resources["SummaryPersonTemplate"];
         var header = SummaryPersonPresenter.Columns(); header.HorizontalAlignment = HorizontalAlignment.Left; header.Margin = new(12, 0, 0, 0);
-        var labels = new[] { "担当者", "投入可能工数\n（設定値）", "見積合計", "実績\n（本日時点）", "完了見込み", "余裕 / 超過" };
-        for (var i = 0; i < labels.Length; i++) SummaryPersonPresenter.Cell(header, labels[i], i);
+        var labels = new[] { "担当者", "投入可能工数\n（設定値）", "見積合計", "実績", "完了見込み", "余裕 / 超過" };
+        for (var i = 0; i < labels.Length; i++)
+            if (i == 3) { SetColumn(actualHeader, i); header.Children.Add(actualHeader); }
+            else SummaryPersonPresenter.Cell(header, labels[i], i);
         people.Header = header;
         ScrollViewer.SetHorizontalScrollMode(people, ScrollMode.Enabled); ScrollViewer.SetHorizontalScrollBarVisibility(people, ScrollBarVisibility.Auto);
         AutomationProperties.SetAutomationId(people, "SummaryPeople"); AutomationProperties.SetName(people, "担当者別の工数比較（人日）");
@@ -119,13 +123,22 @@ internal sealed class SummaryView : Grid
         AutomationProperties.SetAutomationId(status, "SummaryOperationStatus");
         var retry = new Button { Content = "保存を再試行" }; AutomationProperties.SetAutomationId(retry, "SummaryRetrySave"); retry.Click += (_, _) => SaveRequested?.Invoke(); status.ActionButton = retry;
         SetRow(status, 6); Children.Add(status);
-        people.SelectionChanged += (_, _) => { if (!presenting) ShowPerson(); }; filter.TextChanged += (_, _) => { if (!presenting) FilterTasks(); };
+        people.SelectionChanged += (_, _) => { if (!presenting) { tasks.SelectedItem = null; ShowPerson(); } }; filter.TextChanged += (_, _) => { if (!presenting) FilterTasks(); };
         tasks.SelectionChanged += (_, _) => { board.IsEnabled = gantt.IsEnabled = edit.IsEnabled = SelectedRowId is not null; };
     }
-    internal void Present(SummaryProjection value, string? selectedPerson = null)
+    internal void Present(SummaryProjection value, string? selectedPerson = null, string? selectedRow = null)
     {
-        var person = selectedPerson ?? SelectedPersonId; var row = SelectedRowId;
-        projection = value; presenting = true;
+        var person = selectedPerson ?? SelectedPersonId; var row = selectedRow ?? SelectedRowId;
+        presenting = true;
+        if (row is not null)
+        {
+            var taskId = value.TaskIdsByRow?.GetValueOrDefault(row);
+            var candidates = value.Contributions.Where(c => taskId is null ? c.RowId == row : c.TaskId == taskId).ToArray();
+            person = candidates.FirstOrDefault(c => c.PersonId == person)?.PersonId ?? candidates.FirstOrDefault()?.PersonId;
+            if (selectedRow is not null || person != SelectedPersonId) filter.Text = "";
+        }
+        projection = value;
+        actualHeader.Text = $"実績\n（{value.Cutoff:yyyy-MM-dd} 時点）";
         totals.Text = $"Project 合計 · 見積 {SummaryText.Value(value.Estimate)} / 実績 {SummaryText.Value(value.Actual)} 人日";
         context.Text = $"{value.ProjectTitle} · 1人日 = 8人時 · 本日 {value.Today:yyyy-MM-dd} / 報告基準 {value.Cutoff:yyyy-MM-dd} · {value.TaskCount}タスク"
             + (value.UnpublishedCount > 0 ? $"（未公開 {value.UnpublishedCount}件を含む）" : "")
@@ -144,9 +157,11 @@ internal sealed class SummaryView : Grid
     private void FilterTasks(string? selectedRow = null)
     {
         var id = selectedRow ?? SelectedRowId;
+        var taskId = id is null ? null : projection?.TaskIdsByRow?.GetValueOrDefault(id);
         var lines = (projection?.Contributions ?? []).Where(c => c.PersonId == SelectedPersonId)
-            .Where(c => (c.Title + " " + c.Identity).Contains(filter.Text, StringComparison.OrdinalIgnoreCase)).Select(c => new TaskLine(c)).ToArray();
-        tasks.ItemsSource = lines; tasks.SelectedItem = lines.FirstOrDefault(l => l.Contribution.RowId == id) ?? lines.FirstOrDefault();
+            .Where(c => (c.Title + " " + c.Identity).Contains(filter.Text, StringComparison.OrdinalIgnoreCase))
+            .Select(c => new TaskLine(c, taskId == c.TaskId ? id : c.RowId)).ToArray();
+        tasks.ItemsSource = lines; tasks.SelectedItem = id is null ? lines.FirstOrDefault() : lines.FirstOrDefault(l => l.RowId == id);
     }
     internal void ShowOperationStatus(string? problem, string saveStatus)
     {

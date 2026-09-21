@@ -64,6 +64,7 @@ public sealed partial class PlanningHostedTests
         var (p, work) = GanttWorkload.Create(1000);
         await ReviewFixture(p, work.Planning("P1")!);
         TextBox original = null!;
+        _ = await SheetNativeInput.PointFor("GridCell0_0");
         await Ui.Run(() => { original = Ui.Find<TextBox>("GridCell0_0"); original.Text = "original pending row"; original.SelectionStart = 9; original.SelectionLength = 0; });
         var references = new List<WeakReference<TextBox>>();
         for (var i = 1; i <= 80; i++)
@@ -73,6 +74,17 @@ public sealed partial class PlanningHostedTests
             await Ui.Ready<ListView>("GanttTasks");
             await Ui.Run(() => { var tasks = Ui.Find<ListView>("GanttTasks"); tasks.SelectedItem = tasks.Items[index]; });
             await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>($"GridCell{index}_0");
+            // Loaded can precede destination layout and native unload. Require
+            // the target inside the actual viewport before continuing.
+            await Ui.Until(() => {
+                var input = Ui.Find<TextBox>($"GridCell{index}_0");
+                var scroll = Ui.Tree(Ui.Find<ListView>("ProjectItems")).OfType<ScrollViewer>().First();
+                var bounds = input.TransformToVisual(scroll).TransformBounds(new(0, 0, input.ActualWidth, input.ActualHeight));
+                return bounds.Height > 0 && bounds.Top >= -1 && bounds.Bottom <= scroll.ViewportHeight + 1;
+            });
+            // Let the native window process composition/unload between user
+            // actions; a continuous queue of test dispatches is not idle layout.
+            await Task.Delay(100);
             await Ui.Run(() => {
                 var input = Ui.Find<TextBox>($"GridCell{index}_0"); references.Add(new(input));
                 Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo(p.Snapshot.Items[index].Id.NodeId));
@@ -81,6 +93,12 @@ public sealed partial class PlanningHostedTests
         // Observe retention after the native unload callbacks and finalizers,
         // outside any latency measurement. Weak references do not retain controls.
         await Ui.Idle();
+        await Ui.Until(() => !references[0].TryGetTarget(out var firstInactive) || !firstInactive.IsLoaded);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("GridCell960_0").IsLoaded, Is.True);
+            Assert.That(references[0].TryGetTarget(out var firstInactive) && firstInactive.IsLoaded, Is.False,
+                "An inactive old viewport must actually unload; the original pending editor may remain pinned by native focus.");
+        });
         await Ui.Run(async () => {
             var drained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             Assert.That(Ui.Queue.TryEnqueue(() => drained.TrySetResult()), Is.True);
@@ -206,6 +224,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleClose", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
+        await ShowDateColumns();
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("GridCell0_5").Text, Is.EqualTo("2026-10-05 12:07")));
     }
     [Test, Category("ReviewRegression")]

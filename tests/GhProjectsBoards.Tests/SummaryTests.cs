@@ -78,7 +78,11 @@ internal sealed class SummaryTests
     public void ParentClassificationAndDuplicateAppearancesCannotDoubleTaskLabor(TaskLaborKind kind, decimal expected, bool complete)
     {
         var (p, w) = Example(); var second = p.Snapshot.Issues[new(w.Scope, "I2")];
-        p = p with { Snapshot = p.Snapshot with { Items = p.Snapshot.Items.Append(p.Snapshot.Items[0] with { Id = new(w.Scope, "duplicate") }).ToArray(),
+        var cells = w.ReadRows(p)[0].Cells;
+        var duplicate = p.Snapshot.Items[0] with { Id = new(w.Scope, "duplicate"), Values = p.Snapshot.Items[0].Values.Select(v =>
+            v.FieldId is not null && cells.SingleOrDefault(c => c.Key?.FieldId == v.FieldId.NodeId) is { } cell
+                ? v with { Scalar = w.Value(cell), Availability = w.Value(cell) is null ? ValueAvailability.Empty : ValueAvailability.Present } : v).ToArray() };
+        p = p with { Snapshot = p.Snapshot with { Items = p.Snapshot.Items.Append(duplicate).ToArray(),
             Issues = p.Snapshot.Issues.ToDictionary(i => i.Key, i => i.Key == second.Id ? i.Value with { Native = i.Value.Native! with { Parent = new(ValueAvailability.Present, new(w.Scope, "I1")) } } : i.Value) } };
         w.SetRegistrations([p]); var plan = w.Planning("P1")!;
         w.CommitPlanning(p, plan with { Tasks = [plan.Tasks[0] with { LaborKind = kind }, plan.Tasks[1]] }, w.Revision);

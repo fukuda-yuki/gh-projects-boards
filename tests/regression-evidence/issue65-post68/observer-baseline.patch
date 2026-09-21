@@ -1,0 +1,47 @@
+diff --git a/src/GhProjectsBoards.App/EditingGrid.cs b/src/GhProjectsBoards.App/EditingGrid.cs
+index f53ece7..3785583 100644
+--- a/src/GhProjectsBoards.App/EditingGrid.cs
++++ b/src/GhProjectsBoards.App/EditingGrid.cs
+@@ -389,6 +389,7 @@ internal sealed partial class EditingGrid : Grid
+             var release = dormantRows.First!.Value; dormantRows.RemoveFirst();
+             if (rowLines[release].IsLoaded) continue;
+             if (ProtectRow(release)) { protectedUnloadedRows.Add(release); continue; }
++            using var measured = diagnostics?.Span("release-row");
+             controls[release] = []; markers[release] = []; cellBorders[release] = []; selectionFrames[release] = []; fillHandles[release] = [];
+             rowLines[release].Children.Clear(); rowLines[release].ColumnDefinitions.Clear();
+         }
+@@ -515,6 +516,7 @@ internal sealed partial class EditingGrid : Grid
+     private static string? DiagnosticId(DependencyObject? element) => element is null ? null : AutomationProperties.GetAutomationId(element);
+     private object CaptureDiagnosticState(bool includeVisuals)
+     {
++        using var measured = diagnostics?.Span("diagnostic-state", includeVisuals ? "visual-walk" : "light");
+         try
+         {
+             var focused = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+diff --git a/src/GhProjectsBoards.App/SheetDiagnostics.cs b/src/GhProjectsBoards.App/SheetDiagnostics.cs
+index 0b0ed2d..aaee98c 100644
+--- a/src/GhProjectsBoards.App/SheetDiagnostics.cs
++++ b/src/GhProjectsBoards.App/SheetDiagnostics.cs
+@@ -17,6 +17,7 @@ internal sealed class SheetDiagnostics
+     private readonly List<RenderRequest> rendering = [];
+     private Func<bool, object>? snapshot;
+     private bool attached, visualCounts;
++    private readonly bool visualWalk = Environment.GetEnvironmentVariable("GHPB_SHEET_VISUAL_WALK") != "0";
+     private long previousRendering;
+     private sealed record RenderRequest(long Span, long End);
+ 
+@@ -30,12 +31,12 @@ internal sealed class SheetDiagnostics
+     }
+     internal void Record(string kind, object? data = null) => sink!.Add(grid, kind, data);
+     internal IDisposable Span(string kind, string? reason = null) => new MeasuredSpan(this, kind, reason);
+-    internal void RequestVisualCounts() => visualCounts = true;
++    internal void RequestVisualCounts() => visualCounts = visualWalk;
+     internal void Attach(Func<bool, object> state)
+     {
+         snapshot = state;
+         if (attached) return;
+-        attached = true; visualCounts = true; previousRendering = 0;
++        attached = true; visualCounts = visualWalk; previousRendering = 0;
+         CompositionTarget.Rendering += Rendering;
+         Record("grid-loaded", state(false));
+     }

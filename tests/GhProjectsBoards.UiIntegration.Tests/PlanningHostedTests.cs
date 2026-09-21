@@ -14,6 +14,14 @@ public sealed partial class PlanningHostedTests
     private DraftSession session = null!;
     private ProjectRegistration project = null!;
     private string clipboard = "16";
+    private async Task ShowDateColumns()
+    {
+        await Ui.Run(() => {
+            var scroll = EditingGrid.Descendants(Ui.Find<ListView>("ProjectItems")).OfType<ScrollViewer>().First();
+            scroll.ChangeView(scroll.ScrollableWidth, null, null, true);
+        });
+        await Ui.Ready<TextBox>("GridCell0_6");
+    }
     [Test]
     public async Task FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee()
     {
@@ -51,6 +59,7 @@ public sealed partial class PlanningHostedTests
         });
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         clipboard = "8"; await Ui.ClickCommand("GridPaste");
+        await ShowDateColumns();
         await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
         await Ui.Run(() => {
             Assert.That(work.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
@@ -62,6 +71,7 @@ public sealed partial class PlanningHostedTests
     public async Task DateCellPasteShowsManualBeforeCommitAndCalendarTimeControlsRetainMinutePrecision()
     {
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard)); await Ui.ClickCommand("GridPaste");
+        await ShowDateColumns();
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_5").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Start");
         clipboard = "2026-10-05 12:07"; await Ui.ClickCommand("GridPaste");
@@ -122,8 +132,9 @@ public sealed partial class PlanningHostedTests
             Assert.That(Ui.Find<TextBlock>("ActualInputHeading").Text, Does.Contain("過去の報告担当者を保持"));
             Ui.Find<TextBox>("GridCell0_4").Text = "7";
             Ui.Find<CalendarDatePicker>("ActualReportedThrough").Date = new DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.FromHours(9));
-            Ui.Click("ActualUpdate");
         });
+        await Ui.Until(() => Ui.Find<Button>("ActualUpdate") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click("ActualUpdate"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         clipboard = "9"; await Ui.ClickCommand("GridPaste");
         await Ui.Run(() => {
@@ -387,6 +398,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
+        await ShowDateColumns();
         await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
         await Ui.ClickCommand("GridTaskDetails"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
@@ -429,6 +441,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Until(() => session.Workspace.DifferenceCount > 0);
         await Ui.Run(() => Assert.That(session.Workspace.Value(session.Workspace.Open(project)[0].Cells[2]), Is.EqualTo("16"),
             System.Text.Json.JsonSerializer.Serialize(session.Workspace.Fields.Where(f => f.Change is not null))));
+        await ShowDateColumns();
         await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("GridCell0_6").IsReadOnly, Is.False);
@@ -446,6 +459,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1" && grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
+        await ShowDateColumns();
         await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "24");
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00"))));

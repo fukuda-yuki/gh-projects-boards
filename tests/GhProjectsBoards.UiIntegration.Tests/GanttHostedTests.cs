@@ -57,7 +57,7 @@ public sealed class GanttHostedTests
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-07 13:00"));
             Assert.That(Ui.Find<ListView>("GanttTasks").Items, Has.Count.EqualTo(4));
             Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
-            Assert.That(Views().Items[2].IsEnabled, Is.True, "The integrated Summary consumer is available.");
+            Assert.That(Views().Items[2].IsEnabled, Is.False, "The held Summary consumer remains available only in isolated evaluation.");
         });
         await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "gantt-early-connected"));
         await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
@@ -342,13 +342,13 @@ public sealed class GanttHostedTests
         {
             var eight = i % 2 == 0;
             var before = session.Workspace.PlanFor(project).Tasks;
-            await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
+            await Ui.ClickCommand("GanttTaskDetailsEdit"); await Ui.DialogReady("PlanningDialog");
             await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
             await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).Any(c => AutomationProperties.GetAutomationId(c) == "PlanWork-Estimate" && c is FrameworkElement { IsLoaded: true }));
             await Ui.Run(() => Ui.Find<TextBox>("PlanWork-Estimate", Ui.Dialog("PlanningDialog")).Text = eight ? "8" : "4");
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())));
-            await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains(eight ? "2026-10-05 18:00" : "2026-10-05 13:00"));
+            await Ui.Run(() => Ui.DialogButton("PlanningDialog", "PrimaryButton"));
+            await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains(eight ? "2026-10-05 18:00" : "2026-10-05 13:00"));
             await SheetNativeInput.Rendered(); timer.Stop();
             await Ui.Run(() => Assert.That(Ui.Find<Rectangle>("GanttBar-P1T1").Width, Is.EqualTo(eight ? 36 : 16)));
             if (i >= 0) visible.Add(timer.Elapsed.TotalMilliseconds);

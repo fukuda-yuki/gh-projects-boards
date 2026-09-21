@@ -21,7 +21,7 @@ public sealed class SummaryHostedTests
         work.SetAllowance(project, "A", 160, work.Revision); work.SetAllowance(project, "B", 80, work.Revision);
         root = Path.Combine(Path.GetTempPath(), "ghpb-summary-ui-" + Guid.NewGuid().ToString("N"));
         session = new(new DraftStore(root), work, 0); Assert.That(await session.FlushAsync(), Is.True);
-        await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new EditingGrid(project, session, () => Task.FromResult(true)); });
+        await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new EditingGrid(project, session, () => Task.FromResult(true), allowSummary: true); });
         await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0"); await Ui.Idle();
     }
     [TearDown]
@@ -32,6 +32,52 @@ public sealed class SummaryHostedTests
     }
     private static SelectorBar Views() => Ui.Find<SelectorBar>("ProjectViews");
     private async Task Open() { await Ui.Run(() => Views().SelectedItem = Views().Items[2]); await Ui.Ready<ListView>("SummaryPeople"); }
+
+    [Test]
+    public async Task OrdinarySummaryEntryIsPreparingAndRememberedSelectionReturnsToBoards()
+    {
+        await Ui.Unmount(grid);
+        await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
+        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
+        var before = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot());
+        await Ui.Run(() => {
+            Assert.That(Views().Items[2].IsEnabled, Is.False);
+            Assert.That(Views().Items[2].Text, Does.Contain("準備中"));
+            grid.ShowProjectView(ProjectView.Summary, "P1T2", "B");
+            Assert.That(grid.CurrentProjectView, Is.EqualTo(ProjectView.Boards));
+            Assert.That(Ui.Find<TextBox>("GridCell0_0").IsLoaded, Is.True);
+        });
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot()), Is.EqualTo(before));
+    }
+
+    [Test]
+    public async Task NonFirstBoardsAndGanttTaskEntersSummaryWithItsActualPerson()
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell1_0").Focus(FocusState.Keyboard));
+        await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
+        await Open();
+        await Ui.Run(() => {
+            Assert.That(grid.SummaryPersonId, Is.EqualTo("B"));
+            Assert.That(Ui.Find<SummaryView>("SummaryView").SelectedRowId, Is.EqualTo("P1T2"));
+        });
+        await Ui.ClickCommand("SummaryGantt"); await Ui.Ready<ListView>("GanttTasks");
+        await Open();
+        await Ui.Run(() => Assert.That(Ui.Find<SummaryView>("SummaryView").SelectedRowId, Is.EqualTo("P1T2")));
+    }
+
+    [Test]
+    public async Task UnknownHoursAndPastReportingHeaderCannotClaimZeroOrToday()
+    {
+        var (p, w) = SummaryTests.Example();
+        await Open();
+        await Ui.Run(() => {
+            var view = Ui.Find<SummaryView>("SummaryView");
+            view.Present(SummaryProjection.Create(w, p, SummaryTests.Day.AddDays(1)));
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text), Does.Contain("実績\n（2026-09-18 時点）"));
+            Assert.That(SummaryText.Exact(EffortValue.Missing), Does.Contain("不明 人時").And.Not.Contain("0 人時"));
+            Assert.That(SummaryText.Exact(EffortValue.Sum([new(8), EffortValue.Missing])), Does.Contain("小計"));
+        });
+    }
 
     [Test]
     public async Task ActualControlsRetainPendingInputAndSameTaskAcrossAllThreeViews()

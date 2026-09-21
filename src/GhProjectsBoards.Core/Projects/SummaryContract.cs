@@ -84,6 +84,8 @@ internal sealed partial class EditingWorkspace
         if (s.Baseline?.Id != replaceBaselineId)
             throw new InvalidOperationException("基準計画が変更されています。置き換える基準計画を確認してください。");
         var projection = GanttProjection.Create(this, project, []);
+        if (projection.Rows.Any(r => r.Input?.SourceProblem is not null))
+            throw new InvalidOperationException("重複行の値を確認してから基準計画を確立してください。現在の基準は保持しています。");
         var tasks = projection.Rows.DistinctBy(r => r.TaskId).Select(r => new BaselineTask(r.TaskId, r.RowId, r.Title, r.Identity,
             r.Input?.Estimate, r.Plan?.Mode, r.Plan?.Start, r.Plan?.Finish, r.Input?.Task.LaborKind ?? TaskLaborKind.Unspecified)).ToArray();
         var baseline = new ProtectedBaseline(Guid.NewGuid().ToString("N"), p.ProjectId, capturedAt, Revision,

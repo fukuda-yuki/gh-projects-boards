@@ -23,6 +23,7 @@ internal sealed partial class EditingGrid : Grid
     private readonly List<Grid> rowLines = [];
     private readonly LinkedList<int> dormantRows = [];
     private readonly HashSet<int> protectedUnloadedRows = [];
+    private double synchronizedViewportWidth = -1, synchronizedHorizontalOffset = -1;
     private readonly List<TextBlock[]> markers = [];
     private readonly List<Border[]> cellBorders = [];
     private readonly List<Border[]> selectionFrames = [];
@@ -80,8 +81,9 @@ internal sealed partial class EditingGrid : Grid
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
         if (c >= 0) Select(r, c, false, false);
     }
-    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null)
+    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null, bool? allowSummary = null)
     {
+        summaryEnabled = allowSummary ?? SummaryEvaluationEnabled();
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
         showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
@@ -260,6 +262,7 @@ internal sealed partial class EditingGrid : Grid
         projection.Promote(session.Workspace);
         canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear(); selectionFrames.Clear(); fillHandles.Clear(); rowLines.Clear();
         paintedSelection.Clear(); paintedCurrent = null; dormantRows.Clear(); protectedUnloadedRows.Clear();
+        synchronizedViewportWidth = synchronizedHorizontalOffset = -1;
         BuildRows(); RestoreSelection(identity);
     }
     private void BuildRows()
@@ -314,7 +317,13 @@ internal sealed partial class EditingGrid : Grid
     {
         dormantRows.Remove(r);
         protectedUnloadedRows.Remove(r);
-        if (controls[r].Length != 0) return;
+        if (controls[r].Length != 0)
+        {
+            // A cached row may return after a horizontal change while offscreen.
+            FreezeIdentity(rowLines[r], listScroll?.HorizontalOffset ?? 0);
+            UpdateColumnVisibility(r);
+            return;
+        }
         using var measured = diagnostics?.Span("realize-row");
         var line = rowLines[r];
         var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
@@ -332,20 +341,11 @@ internal sealed partial class EditingGrid : Grid
             var marker = new TextBlock { FontSize = 10, Width = 10, Height = 12, HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Top, Margin = new(0, 0, 2, 0), Visibility = Visibility.Collapsed };
             AutomationProperties.SetAutomationId(marker, $"GridMarker{r}_{c}"); rowMarkers.Add(marker);
-            FrameworkElement editor;
-            if (cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable)
-            {
-                editor = new ChoiceCell(this, rr, cc, cell);
-            }
-            else
-            {
-                var text = new TitleCell(this, rr, cc, cell);
-                editor = text;
-            }
-            AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
-            AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
-            if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
-            editor.Margin = new(0, 0, 12, 0);
+            // Keep the column's layout slot, but do not construct native editors
+            // that cannot be presented. Reveal/focus realizes them synchronously;
+            // an existing editor is never rebound or replaced by this path.
+            FrameworkElement editor = ColumnInViewport(c) || session.Workspace.Buffer(cell) is not null
+                ? CreateCellEditor(r, c) : new Border { IsHitTestVisible = false };
             container.Children.Add(editor); rowControls.Add(editor);
             if (c == 0)
             {
@@ -371,6 +371,34 @@ internal sealed partial class EditingGrid : Grid
         FreezeIdentity(line, listScroll?.HorizontalOffset ?? 0);
         UpdateColumnVisibility(r);
     }
+    private FrameworkElement CreateCellEditor(int r, int c)
+    {
+        var cell = rows[r].Cells[c];
+        FrameworkElement editor = cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable
+            ? new ChoiceCell(this, r, c, cell) : new TitleCell(this, r, c, cell);
+        AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
+        AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
+        if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
+        editor.Margin = new(0, 0, 12, 0);
+        return editor;
+    }
+    private void EnsureCell(int r, int c)
+    {
+        if (controls[r][c] is TitleCell or ChoiceCell) return;
+        var container = (Grid)cellBorders[r][c].Child;
+        var editor = CreateCellEditor(r, c);
+        container.Children.Remove(controls[r][c]);
+        controls[r][c] = editor; container.Children.Insert(0, editor);
+        UpdateCell(r, c);
+    }
+    private bool ColumnInViewport(int column)
+    {
+        if (column == 0) return true;
+        var width = listScroll is { ViewportWidth: > 0 } ? listScroll.ViewportWidth : ActualWidth > 0 ? ActualWidth : 800;
+        var offset = listScroll?.HorizontalOffset ?? 0;
+        var left = 44 + Enumerable.Range(0, column).Sum(ColumnWidth);
+        return left + ColumnWidth(column) - offset > 44 + ColumnWidth(0) && left - offset < width;
+    }
     private bool ProtectRow(int r) => active && r == currentRow || drag is { } gesture && r == gesture.SourceRow
         || controls[r].OfType<TitleCell>().Any(cell => cell.Editing || cell.Composing);
     private void ReleaseRow(int r)
@@ -389,6 +417,7 @@ internal sealed partial class EditingGrid : Grid
             var release = dormantRows.First!.Value; dormantRows.RemoveFirst();
             if (rowLines[release].IsLoaded) continue;
             if (ProtectRow(release)) { protectedUnloadedRows.Add(release); continue; }
+            using var measured = diagnostics?.Span("release-row");
             controls[release] = []; markers[release] = []; cellBorders[release] = []; selectionFrames[release] = []; fillHandles[release] = [];
             rowLines[release].Children.Clear(); rowLines[release].ColumnDefinitions.Clear();
         }
@@ -409,15 +438,17 @@ internal sealed partial class EditingGrid : Grid
         SyncHeader();
     }
     private void ScrollSizeChanged(object sender, SizeChangedEventArgs args) => ResizeSheetColumns();
-    private void SyncHeader()
+    private void SyncHeader(bool force = false)
     {
         using var measured = diagnostics?.Span("header-sync");
         if (listScroll is not { ViewportWidth: > 0 }) return;
+        SyncScrollbar();
+        if (!force && synchronizedViewportWidth == listScroll.ViewportWidth && synchronizedHorizontalOffset == listScroll.HorizontalOffset) return;
+        synchronizedViewportWidth = listScroll.ViewportWidth; synchronizedHorizontalOffset = listScroll.HorizontalOffset;
         diagnostics?.Record("header-sync-request", new { listScroll.ViewportWidth, listScroll.HorizontalOffset, headerWidth = headerScroll.Width, headerOffset = headerScroll.HorizontalOffset });
         // Match the data viewport, including its scrollbar space, so the last column stays aligned.
         headerScroll.Width = listScroll.ViewportWidth;
         headerScroll.ChangeView(listScroll.HorizontalOffset, null, null, true);
-        SyncScrollbar();
         FreezeIdentity(headerGrid, listScroll.HorizontalOffset);
         for (var r = 0; r < rowLines.Count; r++)
             if (rowLines[r].IsLoaded) { FreezeIdentity(rowLines[r], listScroll.HorizontalOffset); UpdateColumnVisibility(r); }
@@ -434,12 +465,15 @@ internal sealed partial class EditingGrid : Grid
             // The active/pending editor is never collapsed while it owns native input.
             var retain = c == 0 || active && currentRow == row && currentColumn == c
                 || controls[row][c] is TitleCell { Editing: true };
-            cellBorders[row][c].Visibility = retain || right - offset > frozen && left - offset < width ? Visibility.Visible : Visibility.Collapsed;
+            var visible = retain || right - offset > frozen && left - offset < width;
+            if (visible) EnsureCell(row, c);
+            cellBorders[row][c].Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             left = right;
         }
     }
     private void RevealColumn(int row, int column)
     {
+        EnsureCell(row, column);
         cellBorders[row][column].Visibility = Visibility.Visible;
         if (column == 0 || listScroll is not { ViewportWidth: > 0 }) return;
         var left = 44 + Enumerable.Range(0, column).Sum(ColumnWidth); var right = left + ColumnWidth(column);
@@ -500,7 +534,7 @@ internal sealed partial class EditingGrid : Grid
             foreach (var identity in Descendants(line).OfType<TextBlock>().Where(t => AutomationProperties.GetAutomationId(t).StartsWith("GridRowIdentity")))
                 identity.MaxWidth = Math.Min(132, widths[0] * .4);
         }
-        SyncHeader();
+        SyncHeader(force: true);
     }
     private bool updating;
     private bool deferredRefresh;
@@ -515,6 +549,7 @@ internal sealed partial class EditingGrid : Grid
     private static string? DiagnosticId(DependencyObject? element) => element is null ? null : AutomationProperties.GetAutomationId(element);
     private object CaptureDiagnosticState(bool includeVisuals)
     {
+        using var measured = diagnostics?.Span("diagnostic-state", includeVisuals ? "visual-walk" : "light");
         try
         {
             var focused = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;

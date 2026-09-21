@@ -8,11 +8,11 @@ foreach ($path in @($Executable, $SeedExecutable)) { if (-not [IO.Path]::IsPathF
 if (-not $DataRoot) { $DataRoot = Join-Path $repo ('TestResults/summary-evaluation-' + [guid]::NewGuid().ToString('N')) }
 if (-not [IO.Path]::IsPathFullyQualified($DataRoot)) { throw 'DataRoot must be absolute.' }
 $DataRoot = [IO.Path]::GetFullPath($DataRoot)
-$marker = Join-Path $DataRoot 'summary-fixture.json'
+$marker = Join-Path $DataRoot 'diagnostics/summary-fixture.json'
 if ($Resume) {
     if (-not (Test-Path -LiteralPath $marker)) { throw 'Not a prepared Summary check.' }
     $manifest = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
-    if ($manifest.kind -ne 'synthetic-summary-v1' -or -not $manifest.validatedReadback) { throw 'Invalid Summary check marker.' }
+    if ($manifest.kind -ne 'synthetic-summary-v2' -or -not $manifest.validatedReadback -or $manifest.dataRoot -ne $DataRoot) { throw 'Invalid or older Summary check marker. Preserve this root and prepare a fresh isolated check.' }
 } else {
     if (Test-Path -LiteralPath $DataRoot) { throw 'Existing data is never overwritten. Use Resume.' }
     & $SeedExecutable --seed-summary $DataRoot
@@ -25,6 +25,8 @@ if (-not $PrepareOnly) {
     $start.UseShellExecute = $false
     $start.WorkingDirectory = Split-Path $Executable -Parent
     $start.Environment['GHPB_DATA_ROOT'] = $DataRoot
+    $start.Environment['GH_CONFIG_DIR'] = Join-Path $DataRoot 'diagnostics/empty-gh-config'
+    foreach ($key in @('GH_TOKEN','GITHUB_TOKEN','GH_ENTERPRISE_TOKEN','GITHUB_ENTERPRISE_TOKEN')) { $start.Environment.Remove($key) | Out-Null }
     $process = [Diagnostics.Process]::Start($start)
     Write-Host "Ordinary application PID: $($process.Id)"
 }

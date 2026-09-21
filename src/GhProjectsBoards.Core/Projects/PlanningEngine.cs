@@ -1,7 +1,8 @@
 namespace GhProjectsBoards.Core.Projects;
 
 internal sealed record PlanningInput(PlanningTask Task, decimal? Estimate, decimal? Remaining,
-    string[] Assignees, PlanningLink[] Predecessors, bool RelationshipsComplete = true, bool? RemoteClosed = null, decimal? ActualTotal = null);
+    string[] Assignees, PlanningLink[] Predecessors, bool RelationshipsComplete = true, bool? RemoteClosed = null, decimal? ActualTotal = null,
+    string? SourceProblem = null);
 internal sealed record TaskPlan(string Id, PlanningMode Mode, long SourceRevision, decimal? RawHours,
     decimal? ScheduledMinutes, DateTime? Start, DateTime? Finish, DateTime? SuggestedStart, DateTime? SuggestedFinish,
     string? Problem, string[] Warnings, string? Controller)
@@ -98,6 +99,7 @@ internal static class PlanningEngine
             if (input.RemoteClosed is { } closed && closed != (task.Progress == PlanningProgress.Completed)) warnings.Add("GitHub状態と採用進捗が不一致です。進捗と実績を確認してください。");
             try
             {
+                if (input.SourceProblem is { } sourceProblem) throw new InvalidOperationException(sourceProblem);
                 if (task.Mode == PlanningMode.Unplanned) throw new InvalidOperationException("Auto または Manual を選んでください。");
                 if (task.Progress == PlanningProgress.Completed)
                 {
