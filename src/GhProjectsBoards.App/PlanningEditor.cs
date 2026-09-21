@@ -81,12 +81,19 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(dialog, "PlanningDialog");
         dialog.PrimaryButtonClick += (_, args) =>
         {
+            using var operation = diagnostics?.Span("planning-save-handler");
             if (!CanRefresh) { status.Text = "IME変換を確定または取消してから保存してください。"; args.Cancel = true; return; }
-            try { work.CommitPlanning(registration, candidate(), expected, values(), dependencies(), decisions()); }
+            try {
+                ProjectPlanning next; PlanningValueEdit[] edits; PlanningDependencyEdit[] links; PlanningProjectionDecision[] choices;
+                using (diagnostics?.Span("planning-candidate")) { next = candidate(); edits = values(); links = dependencies(); choices = decisions(); }
+                using var coreTrace = diagnostics is null ? null : new PerformanceTrace();
+                using (diagnostics?.Span("planning-commit")) work.CommitPlanning(registration, next, expected, edits, links, choices);
+                if (coreTrace is not null) diagnostics!.Record("planning-core", new { samples = coreTrace.Samples.ToArray() });
+            }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; return; }
             // Finish replacing mapped controls while the modal still owns input.
             // After Closed, the user can already be typing into the next cell.
-            layout = work.Columns(registration); RebuildRows(); Update();
+            using (diagnostics?.Span("planning-view-refresh")) { layout = work.Columns(registration); RebuildRows(); Update(); }
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {

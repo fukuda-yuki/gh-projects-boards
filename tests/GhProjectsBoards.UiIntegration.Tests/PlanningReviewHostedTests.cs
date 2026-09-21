@@ -121,6 +121,68 @@ public sealed partial class PlanningHostedTests
             Assert.That(original.Text, Is.EqualTo("original pending row")); Assert.That(original.SelectionStart, Is.EqualTo(9));
         });
     }
+    [Test, Category("ReviewRetentionProgression")]
+    public async Task NativeEditorRetentionProgressionAndViewTeardown()
+    {
+        var (p, work) = GanttWorkload.Create(1000);
+        await ReviewFixture(p, work.Planning("P1")!);
+        await Ui.Run(() => { var input = Ui.Find<TextBox>("GridCell0_0"); input.Text = "original pending row"; input.Select(9, 0); });
+        var references = new List<WeakReference<TextBox>>();
+        for (var i = 1; i <= 160; i++)
+        {
+            var index = i * 6;
+            await Ui.Run(() => { var views = Ui.Find<SelectorBar>("ProjectViews"); views.SelectedItem = views.Items[1]; });
+            await Ui.Ready<ListView>("GanttTasks");
+            await Ui.Run(() => { var tasks = Ui.Find<ListView>("GanttTasks"); tasks.SelectedItem = tasks.Items[index]; });
+            await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>($"GridCell{index}_0");
+            await Ui.Until(() => {
+                var input = Ui.Find<TextBox>($"GridCell{index}_0");
+                var scroll = Ui.Tree(Ui.Find<ListView>("ProjectItems")).OfType<ScrollViewer>().First();
+                var bounds = input.TransformToVisual(scroll).TransformBounds(new(0, 0, input.ActualWidth, input.ActualHeight));
+                return bounds.Height > 0 && bounds.Top >= -1 && bounds.Bottom <= scroll.ViewportHeight + 1;
+            });
+            await Task.Delay(100);
+            await Ui.Run(() => references.Add(new(Ui.Find<TextBox>($"GridCell{index}_0"))));
+            if (i is 20 or 80 or 160) await Report(i.ToString());
+        }
+        await Ui.Run(() => { var views = Ui.Find<SelectorBar>("ProjectViews"); views.SelectedItem = views.Items[1]; });
+        await Ui.Ready<ListView>("GanttTasks");
+        await Ui.Run(() => Ui.Find<ListView>("GanttTasks").SelectedIndex = 0);
+        await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("original pending row"));
+            Assert.That(Ui.Find<TextBox>("GridCell0_0").SelectionStart, Is.EqualTo(9));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+        });
+        await Ui.Unmount(grid);
+        var releasedView = new WeakReference<EditingGrid>(grid);
+        await Ui.Run(() => grid = null!);
+        await Report("teardown");
+        Console.WriteLine("Released view still alive: " + releasedView.TryGetTarget(out _));
+        // The fixture teardown still owns a mountable view and the isolated session.
+        await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+        await Ui.Mount(grid);
+
+        async Task Report(string stage)
+        {
+            await Ui.Idle(); await Task.Delay(100);
+            await Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); });
+            await Ui.Idle();
+            await Ui.Run(() => {
+                // A diagnostic ownership census, not an assertion about private calls.
+                // The weak sample list cannot keep the evicted controls alive.
+                var owned = grid is null ? [] : ((List<FrameworkElement[]>)typeof(EditingGrid)
+                    .GetField("controls", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(grid)!)
+                    .SelectMany(r => r).OfType<TextBox>().ToHashSet();
+                var alive = references.Select(r => r.TryGetTarget(out var input) ? input : null).Where(i => i is not null).Cast<TextBox>().ToArray();
+                Console.WriteLine("Retention progression: " + System.Text.Json.JsonSerializer.Serialize(new {
+                    stage, sampled = references.Count, alive = alive.Length, loaded = alive.Count(i => i.IsLoaded),
+                    appOwned = alive.Count(owned.Contains), evicted = alive.Count(i => !owned.Contains(i)),
+                    parented = alive.Count(i => i.Parent is not null), appOwnedTotal = owned.Count,
+                    boundary = "Managed weak wrappers after native idle and diagnostic-only GC; Unloaded is not disposal." }));
+            });
+        }
+    }
     private async Task ReviewFixture(ProjectRegistration p, ProjectPlanning plan)
     {
         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
