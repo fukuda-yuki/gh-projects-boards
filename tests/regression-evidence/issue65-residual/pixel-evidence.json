@@ -1,0 +1,120 @@
+{
+  "run": "residual-final-cold-02",
+  "command": {
+    "index": 91,
+    "begin": 4666289377739,
+    "end": 4666291404929,
+    "axis": "vertical",
+    "previousOffset": 7295.999908447266,
+    "requestedOffset": 0,
+    "expectedMovement": true,
+    "nativeDeliveryMs": 2.1205,
+    "observedViewportMs": 105.2553,
+    "before": "scroll-0277.png",
+    "firstChanged": "scroll-0281.png",
+    "unchangedThroughMs": 109.3208,
+    "changedByMs": 199.7316,
+    "classification": "application-viewport-delay",
+    "wheels": [
+      {
+        "sequence": 5367,
+        "ticks": 4666289398944,
+        "thread": 2,
+        "grid": 1,
+        "kind": "sheet-wheel",
+        "data": {
+          "horizontal": false,
+          "MouseWheelDelta": 9600,
+          "units": 3,
+          "wheelHorizontal": null,
+          "wheelVertical": 0
+        }
+      }
+    ],
+    "views": [
+      {
+        "sequence": 5376,
+        "ticks": 4666290430292,
+        "thread": 2,
+        "grid": 1,
+        "kind": "scroll-view-changed",
+        "data": {
+          "IsIntermediate": false,
+          "state": {
+            "generation": 0,
+            "IsLoaded": true,
+            "project": "P1",
+            "canonicalRows": 1000,
+            "projectedRows": 1000,
+            "columns": 8,
+            "active": true,
+            "currentRow": 0,
+            "currentColumn": 2,
+            "anchorRow": 0,
+            "anchorColumn": 2,
+            "item": "P1T1",
+            "key": {
+              "Kind": "Number",
+              "NodeId": "P1T1",
+              "ProjectId": "P1",
+              "FieldId": "F-Estimate"
+            },
+            "bufferLength": 1,
+            "editing": true,
+            "composing": false,
+            "focusedId": "GridCell0_2",
+            "focusedType": "TitleCell",
+            "horizontalOffset": 0,
+            "verticalOffset": 0,
+            "viewportWidth": 833.5999755859375,
+            "viewportHeight": 364,
+            "extentWidth": 1468,
+            "extentHeight": 30400,
+            "headerOffset": 0,
+            "scale": 1.25,
+            "visuals": null
+          }
+        }
+      }
+    ]
+  },
+  "captures": [
+    {
+      "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\residual-final-cold-02\\observations\\scroll-0277.png",
+      "path": "pixels/cold02-scroll-0277.png",
+      "sha256": "52ce0a44b17256a7970b2b5b086fd7e3a2f4c8fe1c1b1abad796a5330eb57d9f",
+      "captureBeginAfterCommandMs": -93.8585,
+      "captureEndAfterCommandMs": -66.3645
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\residual-final-cold-02\\observations\\scroll-0280.png",
+      "path": "pixels/cold02-scroll-0280.png",
+      "sha256": "52ce0a44b17256a7970b2b5b086fd7e3a2f4c8fe1c1b1abad796a5330eb57d9f",
+      "captureBeginAfterCommandMs": 109.3208,
+      "captureEndAfterCommandMs": 132.9606
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\residual-final-cold-02\\observations\\scroll-0281.png",
+      "path": "pixels/cold02-scroll-0281.png",
+      "sha256": "99fee0196cc8b07a009fb48be922437f04bbfec6ac40703bc79f3640d2b37b37",
+      "captureBeginAfterCommandMs": 171.799,
+      "captureEndAfterCommandMs": 199.7316
+    }
+  ],
+  "staticReview": [
+    {
+      "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-focused-scroll-4cf605f5188540a8bf49365fce723c11\\03-bottom-right.png",
+      "path": "pixels/focused-03-bottom-right.png",
+      "sha256": "21d905f774d51ebeda33ac74dbfa3029c477d26f2dfc0a380f3d66c20f038bce",
+      "run": "run-20260921-135527-300-49d2d613",
+      "boundary": "Scoped hosted-control RenderTargetBitmap snapshot; not ordinary-app pixel timing or human acceptance."
+    },
+    {
+      "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-focused-scroll-4cf605f5188540a8bf49365fce723c11\\04-return-top-left.png",
+      "path": "pixels/focused-04-return-top-left.png",
+      "sha256": "95a0e8e7f4b6fe2b0cbd968772b40582f3b8fcb1a1ce89d998a2d9cef2c2d824",
+      "run": "run-20260921-135527-300-49d2d613",
+      "boundary": "Scoped hosted-control RenderTargetBitmap snapshot; not ordinary-app pixel timing or human acceptance."
+    }
+  ]
+}

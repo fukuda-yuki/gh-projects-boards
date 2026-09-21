@@ -1,0 +1,238 @@
+{
+  "baseline": {
+    "run": "run-20260921-134744-853-3d50befc",
+    "public": {
+      "warmups": 2,
+      "samples": 10,
+      "changedInputs": 1,
+      "changedEndpoints": [
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29
+      ],
+      "calculationMs": [
+        2.372,
+        1.9001,
+        0.964,
+        0.9355,
+        0.7847,
+        0.7684,
+        0.8483,
+        0.7832,
+        0.824,
+        11.2163
+      ],
+      "commitThroughRenderEventsMs": [
+        466.8759,
+        330.1095,
+        263.3372,
+        294.2643,
+        260.802,
+        256.833,
+        291.6433,
+        269.1862,
+        268.5558,
+        273.8378
+      ],
+      "newCheckpointSaveMs": [
+        346.2189,
+        271.3556,
+        314.9006,
+        305.9026,
+        308.7157,
+        304.4277,
+        349.9077,
+        341.0643,
+        335.8578,
+        401.4106
+      ],
+      "boundary": "PrimaryButton public invoke through dialog close, independent expected text and two render events; includes planning and UI rebuild. New checkpoint save is isolated and sequential. Neither measurement is physical scanout."
+    },
+    "handlerSpansIncludingTwoWarmups": {
+      "planning-save-handler": {
+        "count": 12,
+        "meanMs": 226.87598333333332,
+        "maxMs": 368.4099
+      },
+      "planning-candidate": {
+        "count": 12,
+        "meanMs": 0.468175,
+        "maxMs": 4.3596
+      },
+      "planning-commit": {
+        "count": 12,
+        "meanMs": 82.121475,
+        "maxMs": 172.896
+      },
+      "planning-view-refresh": {
+        "count": 12,
+        "meanMs": 144.23903333333334,
+        "maxMs": 211.6299
+      },
+      "rebuild": {
+        "count": 12,
+        "meanMs": 143.92664166666665,
+        "maxMs": 211.2509
+      },
+      "gantt-projection": {
+        "count": 12,
+        "meanMs": 27.317658333333334,
+        "maxMs": 51.5644
+      },
+      "gantt-present": {
+        "count": 12,
+        "meanMs": 36.80829166666667,
+        "maxMs": 72.1801
+      }
+    },
+    "allPresentationSpans": 25,
+    "core": {
+      "planning-stage-snapshot-restore": {
+        "count": 12,
+        "meanMs": 20.252183333333335,
+        "maxMs": 65.2431
+      },
+      "planning-schedule": {
+        "count": 24,
+        "meanMs": 1.9154916666666666,
+        "maxMs": 9.0734
+      },
+      "planning-inputs-and-schedule": {
+        "count": 420,
+        "meanMs": 0.6226485714285714,
+        "maxMs": 30.6955
+      },
+      "planning-validation-and-commit": {
+        "count": 12,
+        "meanMs": 82.118325,
+        "maxMs": 172.8934
+      }
+    },
+    "caveat": "Nested spans overlap; do not add them. Hosted traces contain complete save-handler spans but no full-process trace-end. The legacy public boundary text mentions UI rebuild; final task-value saves no longer rebuild Boards."
+  },
+  "final": {
+    "run": "run-20260921-140319-157-4359ab3c",
+    "public": {
+      "warmups": 2,
+      "samples": 10,
+      "changedInputs": 1,
+      "changedEndpoints": [
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29
+      ],
+      "calculationMs": [
+        2.226,
+        2.1726,
+        0.9841,
+        0.77,
+        0.7902,
+        0.8392,
+        1.2351,
+        0.9932,
+        0.7548,
+        0.7694
+      ],
+      "commitThroughRenderEventsMs": [
+        331.7202,
+        278.38,
+        311.3541,
+        236.8876,
+        254.4512,
+        238.0589,
+        254.1174,
+        191.4409,
+        245.4416,
+        204.0432
+      ],
+      "newCheckpointSaveMs": [
+        247.303,
+        275.0122,
+        289.9343,
+        313.3397,
+        320.0329,
+        295.7707,
+        381.5857,
+        368.9179,
+        431.9754,
+        468.1202
+      ],
+      "boundary": "PrimaryButton public invoke through dialog close, independent expected text and two render events; includes planning and UI rebuild. New checkpoint save is isolated and sequential. Neither measurement is physical scanout."
+    },
+    "handlerSpansIncludingTwoWarmups": {
+      "planning-save-handler": {
+        "count": 12,
+        "meanMs": 166.09440833333335,
+        "maxMs": 241.7844
+      },
+      "planning-candidate": {
+        "count": 12,
+        "meanMs": 0.45155,
+        "maxMs": 4.1299
+      },
+      "planning-commit": {
+        "count": 12,
+        "meanMs": 98.235175,
+        "maxMs": 141.3723
+      },
+      "planning-view-refresh": {
+        "count": 12,
+        "meanMs": 67.34259166666666,
+        "maxMs": 101.1446
+      },
+      "rebuild": {
+        "count": 0,
+        "meanMs": null,
+        "maxMs": null
+      },
+      "gantt-projection": {
+        "count": 12,
+        "meanMs": 15.973658333333333,
+        "maxMs": 33.6123
+      },
+      "gantt-present": {
+        "count": 12,
+        "meanMs": 30.777783333333332,
+        "maxMs": 39.2029
+      }
+    },
+    "allPresentationSpans": 13,
+    "core": {
+      "planning-stage-snapshot-restore": {
+        "count": 12,
+        "meanMs": 22.511625,
+        "maxMs": 58.0562
+      },
+      "planning-schedule": {
+        "count": 24,
+        "meanMs": 1.7197958333333334,
+        "maxMs": 6.0491
+      },
+      "planning-inputs-and-schedule": {
+        "count": 420,
+        "meanMs": 0.8438119047619048,
+        "maxMs": 56.087
+      },
+      "planning-validation-and-commit": {
+        "count": 12,
+        "meanMs": 98.22730833333334,
+        "maxMs": 141.3138
+      }
+    },
+    "caveat": "Nested spans overlap; do not add them. Hosted traces contain complete save-handler spans but no full-process trace-end. The legacy public boundary text mentions UI rebuild; final task-value saves no longer rebuild Boards."
+  }
+}

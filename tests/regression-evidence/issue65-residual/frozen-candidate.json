@@ -1,0 +1,26 @@
+{
+  "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+  "changes": [],
+  "files": [
+    {
+      "Algorithm": "SHA256",
+      "Hash": "0B7975F1D7739218CE9E5337014BEB40551A9FF0E36627E2553A7F524E749E50",
+      "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.dll"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "DA0DC36D54AB72B320294874C534410AEE94FDAAAC528860D36CEFF420610CB6",
+      "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.Core.dll"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "FADF2ED22D952EEA1C51EE526599A397ADFFC653C88E68B74334A940990B7067",
+      "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\tests\\GhProjectsBoards.UiIntegration.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.UiIntegration.Tests.dll"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+      "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll"
+    }
+  ]
+}

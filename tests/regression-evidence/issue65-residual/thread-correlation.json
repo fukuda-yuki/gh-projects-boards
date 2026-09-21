@@ -1,0 +1,274 @@
+[
+  {
+    "index": 0,
+    "end": 4670995747415,
+    "milliseconds": 185.2009,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      0
+    ],
+    "observedUiSpanUnionMs": 41.0424,
+    "outsideMeasuredUiSpansMs": 144.1585,
+    "uiThreadCpuMs": 140.625
+  },
+  {
+    "index": 1,
+    "end": 4670997418839,
+    "milliseconds": 143.7591,
+    "classification": "callback-gap-with-captured-progress",
+    "commands": [
+      0,
+      1
+    ],
+    "observedUiSpanUnionMs": 34.6806,
+    "outsideMeasuredUiSpansMs": 109.07849999999999,
+    "uiThreadCpuMs": 125.0
+  },
+  {
+    "index": 2,
+    "end": 4671003524511,
+    "milliseconds": 129.5017,
+    "classification": "correlated-visible-delay-unattributed",
+    "commands": [
+      3,
+      4
+    ],
+    "observedUiSpanUnionMs": 28.337,
+    "outsideMeasuredUiSpansMs": 101.1647,
+    "uiThreadCpuMs": 93.75
+  },
+  {
+    "index": 3,
+    "end": 4671015476667,
+    "milliseconds": 124.2148,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      9,
+      10
+    ],
+    "observedUiSpanUnionMs": 25.4829,
+    "outsideMeasuredUiSpansMs": 98.7319,
+    "uiThreadCpuMs": 93.75
+  },
+  {
+    "index": 4,
+    "end": 4671019927624,
+    "milliseconds": 169.1987,
+    "classification": "correlated-application-viewport-delay",
+    "commands": [
+      11,
+      12
+    ],
+    "observedUiSpanUnionMs": 37.5711,
+    "outsideMeasuredUiSpansMs": 131.6276,
+    "uiThreadCpuMs": 140.625
+  },
+  {
+    "index": 5,
+    "end": 4671022129383,
+    "milliseconds": 156.1607,
+    "classification": "correlated-application-viewport-delay",
+    "commands": [
+      12,
+      13
+    ],
+    "observedUiSpanUnionMs": 34.314,
+    "outsideMeasuredUiSpansMs": 121.8467,
+    "uiThreadCpuMs": 125.0
+  },
+  {
+    "index": 6,
+    "end": 4671033673500,
+    "milliseconds": 110.0909,
+    "classification": "callback-gap-with-captured-progress",
+    "commands": [
+      18,
+      19
+    ],
+    "observedUiSpanUnionMs": 14.0935,
+    "outsideMeasuredUiSpansMs": 95.9974,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 7,
+    "end": 4671046001868,
+    "milliseconds": 109.2785,
+    "classification": "correlated-visible-delay-unattributed",
+    "commands": [
+      24,
+      25
+    ],
+    "observedUiSpanUnionMs": 15.904,
+    "outsideMeasuredUiSpansMs": 93.3745,
+    "uiThreadCpuMs": 93.75
+  },
+  {
+    "index": 8,
+    "end": 4671058011715,
+    "milliseconds": 110.1657,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      30,
+      31
+    ],
+    "observedUiSpanUnionMs": 14.5815,
+    "outsideMeasuredUiSpansMs": 95.5842,
+    "uiThreadCpuMs": 93.75
+  },
+  {
+    "index": 9,
+    "end": 4671070358282,
+    "milliseconds": 111.0144,
+    "classification": "correlated-visible-delay-unattributed",
+    "commands": [
+      36,
+      37
+    ],
+    "observedUiSpanUnionMs": 15.5546,
+    "outsideMeasuredUiSpansMs": 95.4598,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 10,
+    "end": 4671071905068,
+    "milliseconds": 154.6786,
+    "classification": "correlated-visible-delay-unattributed",
+    "commands": [
+      37,
+      38
+    ],
+    "observedUiSpanUnionMs": 2.0616,
+    "outsideMeasuredUiSpansMs": 152.617,
+    "uiThreadCpuMs": 140.625
+  },
+  {
+    "index": 11,
+    "end": 4671082868781,
+    "milliseconds": 128.4304,
+    "classification": "correlated-application-viewport-delay",
+    "commands": [
+      42,
+      43
+    ],
+    "observedUiSpanUnionMs": 22.6499,
+    "outsideMeasuredUiSpansMs": 105.78049999999999,
+    "uiThreadCpuMs": 109.375
+  },
+  {
+    "index": 12,
+    "end": 4671095015173,
+    "milliseconds": 109.3501,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      48,
+      49
+    ],
+    "observedUiSpanUnionMs": 15.3253,
+    "outsideMeasuredUiSpansMs": 94.0248,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 13,
+    "end": 4671106990865,
+    "milliseconds": 106.5965,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      54,
+      55
+    ],
+    "observedUiSpanUnionMs": 13.8642,
+    "outsideMeasuredUiSpansMs": 92.73230000000001,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 14,
+    "end": 4671119369207,
+    "milliseconds": 110.8346,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      60,
+      61
+    ],
+    "observedUiSpanUnionMs": 16.1025,
+    "outsideMeasuredUiSpansMs": 94.7321,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 15,
+    "end": 4671131668732,
+    "milliseconds": 106.9637,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      66,
+      67
+    ],
+    "observedUiSpanUnionMs": 13.8875,
+    "outsideMeasuredUiSpansMs": 93.0762,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 16,
+    "end": 4671143694834,
+    "milliseconds": 109.3623,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      72,
+      73
+    ],
+    "observedUiSpanUnionMs": 15.39,
+    "outsideMeasuredUiSpansMs": 93.9723,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 17,
+    "end": 4671156015705,
+    "milliseconds": 107.9528,
+    "classification": "correlated-visible-delay-unattributed",
+    "commands": [
+      78,
+      79
+    ],
+    "observedUiSpanUnionMs": 14.5526,
+    "outsideMeasuredUiSpansMs": 93.4002,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 18,
+    "end": 4671168061778,
+    "milliseconds": 112.0509,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      84,
+      85
+    ],
+    "observedUiSpanUnionMs": 16.7116,
+    "outsideMeasuredUiSpansMs": 95.3393,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 19,
+    "end": 4671180360453,
+    "milliseconds": 108.3836,
+    "classification": "unexplained-callback-gap",
+    "commands": [
+      90,
+      91
+    ],
+    "observedUiSpanUnionMs": 14.2942,
+    "outsideMeasuredUiSpansMs": 94.0894,
+    "uiThreadCpuMs": 78.125
+  },
+  {
+    "index": 20,
+    "end": 4671192733480,
+    "milliseconds": 111.9626,
+    "classification": "correlated-application-viewport-delay",
+    "commands": [
+      96,
+      97
+    ],
+    "observedUiSpanUnionMs": 16.2916,
+    "outsideMeasuredUiSpansMs": 95.67099999999999,
+    "uiThreadCpuMs": 78.125
+  }
+]

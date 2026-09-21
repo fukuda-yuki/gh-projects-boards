@@ -79,11 +79,11 @@ internal sealed partial class EditingGrid
             {
                 gantt = new GanttView { Visibility = Visibility.Collapsed };
                 SetRow(gantt, 1); SetRowSpan(gantt, RowDefinitions.Count - 1); Children.Add(gantt);
-                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(true); } };
-                gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(true); } };
+                gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(); } };
+                gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(); } };
                 gantt.BoardsRequested += id => { if (SelectGanttRow(id)) ShowProjectView(false); };
-                gantt.UndoRequested += () => { Run(Undo); UpdateGantt(true); };
-                gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(true); };
+                gantt.UndoRequested += () => { Run(Undo); UpdateGantt(); };
+                gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(); };
                 gantt.SaveRequested += async () => { await FlushDraftsAsync("gantt-retry"); Update(); };
             }
             gantt.Visibility = Visibility.Visible; UpdateGantt(true, id);
@@ -126,7 +126,9 @@ internal sealed partial class EditingGrid
         if (!ShowingGantt) return;
         gantt!.ShowOperationStatus(operationProblem, session.Status);
         if (!force && ganttWorkspace == session.Workspace && ganttRevision == session.Workspace.PresentationRevision && ganttProjectionGeneration == projection.Generation) return;
-        gantt!.Present(GanttProjection.Create(session.Workspace, registration, projection.Ids), selected);
+        GanttProjection next;
+        using (diagnostics?.Span("gantt-projection")) next = GanttProjection.Create(session.Workspace, registration, projection.Ids);
+        using (diagnostics?.Span("gantt-present")) gantt!.Present(next, selected);
         ganttWorkspace = session.Workspace; ganttRevision = session.Workspace.PresentationRevision; ganttProjectionGeneration = projection.Generation;
     }
 }

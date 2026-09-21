@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml.Media;
 
 namespace GhProjectsBoards.App;
@@ -19,6 +20,8 @@ internal sealed class SheetDiagnostics
     private bool attached, visualCounts;
     private readonly bool visualWalk = Environment.GetEnvironmentVariable("GHPB_SHEET_VISUAL_WALK") != "0";
     private long previousRendering;
+    private long? previousThreadCpu;
+    private readonly bool threadTiming = Environment.GetEnvironmentVariable("GHPB_SHEET_THREAD_TIMING") == "1";
     private sealed record RenderRequest(long Span, long End);
 
     internal static SheetDiagnostics? Create() => sink is null ? null : new();
@@ -36,7 +39,7 @@ internal sealed class SheetDiagnostics
     {
         snapshot = state;
         if (attached) return;
-        attached = true; visualCounts = visualWalk; previousRendering = 0;
+        attached = true; visualCounts = visualWalk; previousRendering = 0; previousThreadCpu = null;
         CompositionTarget.Rendering += Rendering;
         Record("grid-loaded", state(false));
     }
@@ -51,8 +54,13 @@ internal sealed class SheetDiagnostics
     private void Rendering(object? sender, object args)
     {
         var now = Stopwatch.GetTimestamp();
+        long? cpu = threadTiming && GetThreadTimes(GetCurrentThread(), out _, out _, out var kernel, out var user) ? kernel + user : null;
         // This callback precedes presentation; it is not evidence that pixels were displayed.
-        Record("rendering-callback", new { previousGapTicks = previousRendering == 0 ? (long?)null : now - previousRendering });
+        // Optional OS thread CPU separates running from the unaccounted wall
+        // interval. The remainder includes waits/preemption; it is not a cause.
+        Record("rendering-callback", new { previousGapTicks = previousRendering == 0 ? (long?)null : now - previousRendering,
+            threadCpu100ns = cpu, previousThreadCpu100ns = cpu - previousThreadCpu });
+        previousThreadCpu = cpu;
         previousRendering = now;
         if (rendering.Count == 0 && !visualCounts) return;
         var pending = rendering.Select(r => new { span = r.Span, afterSpanTicks = now - r.End }).ToArray();
@@ -60,6 +68,11 @@ internal sealed class SheetDiagnostics
         var countVisuals = visualCounts; visualCounts = false;
         Record("rendering-boundary", new { spans = pending, state = snapshot?.Invoke(countVisuals), includesVisualWalk = countVisuals });
     }
+
+    [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentThread();
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetThreadTimes(IntPtr thread, out long creation, out long exit, out long kernel, out long user);
     private sealed class MeasuredSpan : IDisposable
     {
         private readonly SheetDiagnostics owner;

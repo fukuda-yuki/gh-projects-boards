@@ -79,7 +79,7 @@ internal sealed partial class EditingGrid
     private void StartDrag(bool fill, int row, int column, PointerRoutedEventArgs args)
     {
         CancelDrag();
-        var target = fill ? fillHandles[row][column] : controls[row][column];
+        var target = fill ? fillHandles[row][column]! : controls[row][column];
         if (!target.CapturePointer(args.Pointer) && !target.PointerCaptures.Any(pointer => pointer.PointerId == args.Pointer.PointerId))
         { status.Text = "ドラッグを開始できません。もう一度操作してください。"; return; }
         dragCapture = target;
@@ -146,7 +146,7 @@ internal sealed partial class EditingGrid
     }
     private void PaintCellState(int row, int column)
     {
-        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length) return;
+        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length || controls[row][column] is not (TitleCell or ChoiceCell)) return;
         var minRow = Math.Min(anchorRow, currentRow); var maxRow = Math.Max(anchorRow, currentRow);
         var minColumn = Math.Min(anchorColumn, currentColumn); var maxColumn = Math.Max(anchorColumn, currentColumn);
         var selected = active && row >= minRow && row <= maxRow && column >= minColumn && column <= maxColumn;
@@ -158,13 +158,28 @@ internal sealed partial class EditingGrid
         cellBorders[row][column].Style = (Style)Application.Current.Resources[selected || preview ? "SheetSelectedCellStyle"
             : problem ? "SheetProblemCellStyle" : changed ? "SheetChangedCellStyle" : "SheetCellStyle"];
         // Frame overlays reserve no extra content space as selection/edit states change.
+        var container = (Grid)cellBorders[row][column].Child;
         var frame = selectionFrames[row][column];
-        frame.BorderThickness = current ? new(2) : preview ? new(1) : selected
-            ? new(column == minColumn ? 1 : 0, row == minRow ? 1 : 0, column == maxColumn ? 1 : 0, row == maxRow ? 1 : 0) : new(0);
-        frame.Style = (Style)Application.Current.Resources[controls[row][column] is TitleCell { Editing: true } ? "SheetEditingFrameStyle" : "SheetSelectionFrameStyle"];
-        fillHandles[row][column].Visibility = current && minRow == maxRow && minColumn == maxColumn && cell.Editable
-            && !problem && session.Workspace.Buffer(cell) is null && !string.IsNullOrEmpty(session.Workspace.Value(cell))
-            ? Visibility.Visible : Visibility.Collapsed;
+        if (frame is null && (selected || preview))
+        {
+            frame = new Border { IsHitTestVisible = false }; selectionFrames[row][column] = frame;
+            SetColumnSpan(frame, column == 0 ? 2 : 1); container.Children.Add(frame);
+        }
+        if (frame is not null)
+        {
+            frame.BorderThickness = current ? new(2) : preview ? new(1) : selected
+                ? new(column == minColumn ? 1 : 0, row == minRow ? 1 : 0, column == maxColumn ? 1 : 0, row == maxRow ? 1 : 0) : new(0);
+            frame.Style = (Style)Application.Current.Resources[controls[row][column] is TitleCell { Editing: true } ? "SheetEditingFrameStyle" : "SheetSelectionFrameStyle"];
+        }
+        var showHandle = current && minRow == maxRow && minColumn == maxColumn && cell.Editable
+            && !problem && session.Workspace.Buffer(cell) is null && !string.IsNullOrEmpty(session.Workspace.Value(cell));
+        var handle = fillHandles[row][column];
+        if (handle is null && showHandle)
+        {
+            handle = CreateFillHandle(row, column); fillHandles[row][column] = handle;
+            SetColumnSpan(handle, column == 0 ? 2 : 1); container.Children.Add(handle);
+        }
+        if (handle is not null) handle.Visibility = showHandle ? Visibility.Visible : Visibility.Collapsed;
         if (controls[row][column] is ChoiceCell choice) choice.ShowArrow(selected);
     }
 }

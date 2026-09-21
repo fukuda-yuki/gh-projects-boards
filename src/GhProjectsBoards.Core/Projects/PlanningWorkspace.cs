@@ -11,6 +11,7 @@ internal sealed partial class EditingWorkspace
             ?? throw new InvalidOperationException("Issueを選択してください。");
     public AdoptedPlan PlanFor(ProjectRegistration registration)
     {
+        using var measured = PerformanceTrace.Span("planning-inputs-and-schedule");
         var id = registration.Snapshot.Id.NodeId;
         if (registration.Snapshot.Id.Scope != Scope) throw new InvalidOperationException("別プロフィールの計画です。");
         if (calculatedPlans.TryGetValue(id, out var cached)) return cached;
@@ -62,12 +63,13 @@ internal sealed partial class EditingWorkspace
                 complete, issue?.State.Availability == ValueAvailability.Present ? issue.State.Value == IssueState.Closed : null,
                 task.Actuals is null ? Work("Actual") : task.Actuals.Length == 0 ? null : task.Actuals.Sum(a => a.Hours), sourceProblem));
         }
-        return calculatedPlans[id] = PlanningEngine.Calculate(plan, inputs.ToArray(), Revision);
+        using (PerformanceTrace.Span("planning-schedule")) return calculatedPlans[id] = PlanningEngine.Calculate(plan, inputs.ToArray(), Revision);
     }
     public void CommitPlanning(ProjectRegistration registration, ProjectPlanning candidate, long expectedRevision,
         PlanningValueEdit[]? values = null, PlanningDependencyEdit[]? dependencies = null, PlanningProjectionDecision[]? decisions = null,
         FieldKey[]? consumeBuffers = null)
     {
+        using var measured = PerformanceTrace.Span("planning-validation-and-commit");
         if (!HasCheckpoint || registration.Snapshot.Id.Scope != Scope || registration.Snapshot.Id.NodeId != candidate.ProjectId || expectedRevision != Revision)
             throw new InvalidOperationException("計画を開いた後に変更がありました。現在の値を確認してください。");
         if (registration.Snapshot.Capability is not { CanUpdate: true } capability || capability.ObservedAt == default)
@@ -102,7 +104,8 @@ internal sealed partial class EditingWorkspace
         if (candidate.Tasks.Any(t => !ids.Contains(t.Id) && existing?.Tasks.Any(e => e.Id == t.Id && PlanningContract.SameRetainedTask(e, t)) != true)
             || existing?.Tasks.Any(e => !ids.Contains(e.Id) && !candidate.Tasks.Any(t => t.Id == e.Id && PlanningContract.SameRetainedTask(e, t))) == true)
             throw new InvalidOperationException("計画対象のIssueを確認できません。");
-        var staged = Restore(Snapshot());
+        EditingWorkspace staged;
+        using (PerformanceTrace.Span("planning-stage-snapshot-restore")) staged = Restore(Snapshot());
         staged.AcceptProjectionBaselines(registration, candidate, decisions ?? []);
         staged.CommitPlanningCore(registration, candidate, values ?? [], dependencies ?? [], consumeBuffers ?? [],
             (decisions ?? []).Select(d => d.Key).ToArray());

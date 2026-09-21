@@ -1,0 +1,593 @@
+{
+  "note": "Compact index. Paths are inside raw-evidence.zip, whose per-run metadata retains full source/binary hashes and commands; no raw record was replaced.",
+  "executions": [
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-134528-683-c951ee6c",
+      "source": "bbf047fa8f987ea6aacd0ae708b63e68648ded09",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -Where 'cat == ReviewRetentionProgression or name == ThousandTaskReplanPublishesExpectedBarAndReportsCalculationAndSaveSeparately' -TimeoutSeconds 600",
+      "counts": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-134528-683-c951ee6c/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-134528-683-c951ee6c/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-134528-683-c951ee6c/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-134744-853-3d50befc",
+      "source": "bbf047fa8f987ea6aacd0ae708b63e68648ded09",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'name == ThousandTaskReplanPublishesExpectedBarAndReportsCalculationAndSaveSeparately' -TimeoutSeconds 180",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-134744-853-3d50befc/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-134744-853-3d50befc/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-134744-853-3d50befc/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-134803-241-b6667b58",
+      "source": "bbf047fa8f987ea6aacd0ae708b63e68648ded09",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == ReviewRetention' -TimeoutSeconds 300",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-134803-241-b6667b58/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-134803-241-b6667b58/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-134803-241-b6667b58/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-135418-804-35069de0",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/EditingGrid.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.App/SheetInteraction.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -BinaryRoot (Join-Path (Get-Location) 'TestResults\\residual\\baseline-host') -Where 'name == TaskDetailSavePreservesThePendingBoardsEditorAndCaret' -TimeoutSeconds 120",
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-135418-804-35069de0/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-135418-804-35069de0/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-135418-804-35069de0/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-135516-652-986c1a82",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/EditingGrid.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.App/SheetInteraction.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -BinaryRoot (Join-Path (Get-Location) 'TestResults\\residual\\baseline-host') -Where 'name == TaskDetailSavePreservesThePendingBoardsEditorAndCaret' -TimeoutSeconds 120",
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-135516-652-986c1a82/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-135516-652-986c1a82/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-135516-652-986c1a82/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-135527-300-49d2d613",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/EditingGrid.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.App/SheetInteraction.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'name == TaskDetailSavePreservesThePendingBoardsEditorAndCaret or class == GhProjectsBoards.UiIntegration.Tests.SheetFocusedScrollHostedTests or class == GhProjectsBoards.UiIntegration.Tests.PostMergeHostedTests or class == GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests or class == GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests' -TimeoutSeconds 480",
+      "counts": {
+        "total": 31,
+        "passed": 31,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-135527-300-49d2d613/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-135527-300-49d2d613/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-135527-300-49d2d613/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-135701-957-e2478e71",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/EditingGrid.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.App/SheetDiagnostics.cs",
+        " M src/GhProjectsBoards.App/SheetInteraction.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'class == GhProjectsBoards.UiIntegration.Tests.GanttHostedTests' -TimeoutSeconds 300",
+      "counts": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-135701-957-e2478e71/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-135701-957-e2478e71/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-135701-957-e2478e71/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-135735-257-d200f045",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "changes": [
+        " M src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+        " M src/GhProjectsBoards.App/EditingGrid.cs",
+        " M src/GhProjectsBoards.App/PlanningEditor.cs",
+        " M src/GhProjectsBoards.App/SheetDiagnostics.cs",
+        " M src/GhProjectsBoards.App/SheetInteraction.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+        " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs"
+      ],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == ReviewRetentionProgression' -TimeoutSeconds 480",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-135735-257-d200f045/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-135735-257-d200f045/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-135735-257-d200f045/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-140141-474-d68d7358",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "changes": [],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == ReviewRetention' -TimeoutSeconds 240",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-140141-474-d68d7358/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-140141-474-d68d7358/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-140141-474-d68d7358/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-140218-536-b1e989ad",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "changes": [],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == ReviewRetentionProgression' -TimeoutSeconds 480",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-140218-536-b1e989ad/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-140218-536-b1e989ad/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-140218-536-b1e989ad/results.xml"
+    },
+    {
+      "kind": "hosted-ui",
+      "run": "run-20260921-140319-157-4359ab3c",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "changes": [],
+      "command": "./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'name == ThousandTaskReplanPublishesExpectedBarAndReportsCalculationAndSaveSeparately' -TimeoutSeconds 180",
+      "counts": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "metadata": "TestResults/ui-integration/run-20260921-140319-157-4359ab3c/metadata.json",
+      "sourceDiff": "TestResults/ui-integration/run-20260921-140319-157-4359ab3c/source.diff",
+      "results": "TestResults/ui-integration/run-20260921-140319-157-4359ab3c/results.xml"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-baseline-cold",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-baseline-cold/environment.json",
+      "results": "TestResults/issue61-65/residual-baseline-cold/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-baseline-cold/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-baseline-warm",
+      "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+      "condition": "warm",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-baseline-warm/environment.json",
+      "results": "TestResults/issue61-65/residual-baseline-warm/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-baseline-warm/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-cold-01",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-cold-01/environment.json",
+      "results": "TestResults/issue61-65/residual-final-cold-01/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-cold-01/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-cold-02",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-cold-02/environment.json",
+      "results": "TestResults/issue61-65/residual-final-cold-02/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-cold-02/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-cold-03",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-cold-03/environment.json",
+      "results": "TestResults/issue61-65/residual-final-cold-03/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-cold-03/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-ime",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "ime",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-ime/environment.json",
+      "results": "TestResults/issue61-65/residual-final-ime/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-ime/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-thread",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-thread/environment.json",
+      "results": "TestResults/issue61-65/residual-final-thread/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-thread/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-thumb",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "scroll",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-thumb/environment.json",
+      "results": "TestResults/issue61-65/residual-final-thumb/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-thumb/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-warm-01",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "warm",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-warm-01/environment.json",
+      "results": "TestResults/issue61-65/residual-final-warm-01/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-warm-01/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-warm-02",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "warm",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-warm-02/environment.json",
+      "results": "TestResults/issue61-65/residual-final-warm-02/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-warm-02/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-final-warm-03",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "warm",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-final-warm-03/environment.json",
+      "results": "TestResults/issue61-65/residual-final-warm-03/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-final-warm-03/observations"
+    },
+    {
+      "kind": "sustained-native",
+      "run": "residual-trial-cold",
+      "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+      "condition": "cold",
+      "mode": "standard",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "metadata": "TestResults/issue61-65/residual-trial-cold/environment.json",
+      "results": "TestResults/issue61-65/residual-trial-cold/diagnostic.trx",
+      "observations": "TestResults/issue61-65/residual-trial-cold/observations"
+    },
+    {
+      "kind": "ordinary-app",
+      "run": "20260921-141236-59ae91159cdd4849b817cd1bcfe0a454",
+      "counts": {
+        "total": "3",
+        "executed": "3",
+        "passed": "3",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": "TestResults/e2e/20260921-141236-59ae91159cdd4849b817cd1bcfe0a454/e2e.trx",
+      "artifacts": "TestResults/e2e/20260921-141236-59ae91159cdd4849b817cd1bcfe0a454"
+    }
+  ]
+}
