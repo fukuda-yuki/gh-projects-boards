@@ -1,0 +1,1059 @@
+[
+  {
+    "run": "residual-baseline-cold",
+    "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+    "condition": "cold",
+    "title": {
+      "over100Ms": 0,
+      "p95Ms": 60.1507,
+      "p50Ms": 14.9891,
+      "count": 98,
+      "maxMs": 92.6016
+    },
+    "number": {
+      "over100Ms": 0,
+      "p95Ms": 47.8543,
+      "p50Ms": 15.16,
+      "count": 99,
+      "maxMs": 61.7437
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 206.3448,
+    "commands": {
+      "application-viewport-delay": 8,
+      "no-100ms-stable-capture-proven": 84,
+      "visible-delay-unattributed": 4,
+      "clamped-or-no-op": 3
+    },
+    "callbackGaps": {
+      "correlated-application-viewport-delay": 10,
+      "correlated-visible-delay-unattributed": 4,
+      "unexplained-callback-gap": 7
+    },
+    "maximumCallbackGapMs": 311.6332,
+    "postSaveCallbackGaps": 20,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 2,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 52,
+        "clamped-or-no-op": 3,
+        "application-viewport-delay": 6,
+        "visible-delay-unattributed": 2
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 30,
+        "visible-delay-unattributed": 1
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 168,
+        "totalMs": 772.6881,
+        "medianMs": 3.0157499999999997,
+        "maxMs": 182.6386,
+        "allocatedBytes": 22727800
+      },
+      "release-row": {
+        "count": 121,
+        "totalMs": 34.724,
+        "medianMs": 0.2557,
+        "maxMs": 0.5389,
+        "allocatedBytes": 26040
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 105.23700000000001,
+        "medianMs": 0.0461,
+        "maxMs": 30.9294,
+        "allocatedBytes": 1468896
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.4003,
+        "medianMs": 0.4003,
+        "maxMs": 0.4003,
+        "allocatedBytes": 9656
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "over100Ms": 0,
+      "p95Ms": 78.8008,
+      "p50Ms": 62.9999,
+      "count": 303,
+      "maxMs": 87.2796
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-baseline-warm",
+    "source": "6762676f6299b2523dc558c42fc59454bffc6f84",
+    "condition": "warm",
+    "title": {
+      "over100Ms": 0,
+      "p95Ms": 50.839,
+      "p50Ms": 15.0684,
+      "count": 99,
+      "maxMs": 62.3268
+    },
+    "number": {
+      "over100Ms": 0,
+      "p95Ms": 54.4294,
+      "p50Ms": 15.0686,
+      "count": 99,
+      "maxMs": 62.5332
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 129.6759,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 84,
+      "visible-delay-unattributed": 5,
+      "clamped-or-no-op": 3,
+      "application-viewport-delay": 6
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 10,
+      "correlated-visible-delay-unattributed": 4,
+      "correlated-application-viewport-delay": 7
+    },
+    "maximumCallbackGapMs": 298.2166,
+    "postSaveCallbackGaps": 20,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 3,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 51,
+        "clamped-or-no-op": 3,
+        "application-viewport-delay": 5,
+        "visible-delay-unattributed": 3
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "visible-delay-unattributed": 1,
+        "no-100ms-stable-capture-proven": 30
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 177,
+        "totalMs": 718.4801,
+        "medianMs": 2.9929,
+        "maxMs": 171.7054,
+        "allocatedBytes": 21536008
+      },
+      "release-row": {
+        "count": 118,
+        "totalMs": 33.4639,
+        "medianMs": 0.25225,
+        "maxMs": 0.5653,
+        "allocatedBytes": 21000
+      },
+      "header-sync": {
+        "count": 99,
+        "totalMs": 102.93039999999999,
+        "medianMs": 0.0455,
+        "maxMs": 28.8619,
+        "allocatedBytes": 1472832
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3855,
+        "medianMs": 0.3855,
+        "maxMs": 0.3855,
+        "allocatedBytes": 9120
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "over100Ms": 0,
+      "p95Ms": 78.8623,
+      "p50Ms": 62.9524,
+      "count": 302,
+      "maxMs": 84.1407
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-trial-cold",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "title": {
+      "p50Ms": 15.0719,
+      "over100Ms": 0,
+      "p95Ms": 48.9388,
+      "maxMs": 68.0378,
+      "count": 98
+    },
+    "number": {
+      "p50Ms": 15.2428,
+      "over100Ms": 0,
+      "p95Ms": 47.8833,
+      "maxMs": 62.6207,
+      "count": 99
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 241.648,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 90,
+      "visible-delay-unattributed": 3,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 3
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 12,
+      "callback-gap-with-captured-progress": 3,
+      "correlated-visible-delay-unattributed": 3,
+      "correlated-application-viewport-delay": 3
+    },
+    "maximumCallbackGapMs": 168.0076,
+    "postSaveCallbackGaps": 19,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 2,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 56,
+        "clamped-or-no-op": 2,
+        "application-viewport-delay": 2,
+        "visible-delay-unattributed": 2
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 31
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 164,
+        "totalMs": 338.5318,
+        "medianMs": 1.9379,
+        "maxMs": 3.8728,
+        "allocatedBytes": 11304368
+      },
+      "release-row": {
+        "count": 117,
+        "totalMs": 27.2713,
+        "medianMs": 0.2013,
+        "maxMs": 0.6179,
+        "allocatedBytes": 14280
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 96.1245,
+        "medianMs": 0.04675,
+        "maxMs": 26.0852,
+        "allocatedBytes": 2106536
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3611,
+        "medianMs": 0.3611,
+        "maxMs": 0.3611,
+        "allocatedBytes": 10184
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "p50Ms": 63.0521,
+      "over100Ms": 0,
+      "p95Ms": 78.8681,
+      "maxMs": 87.9189,
+      "count": 302
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-cold-01",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "title": {
+      "count": 98,
+      "p95Ms": 51.3474,
+      "maxMs": 72.0432,
+      "p50Ms": 15.089,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 99,
+      "p95Ms": 47.2575,
+      "maxMs": 68.2827,
+      "p50Ms": 14.9704,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 324.6035,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 86,
+      "visible-delay-unattributed": 6,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 4
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 10,
+      "correlated-visible-delay-unattributed": 5,
+      "correlated-application-viewport-delay": 5,
+      "callback-gap-with-captured-progress": 1
+    },
+    "maximumCallbackGapMs": 221.423,
+    "postSaveCallbackGaps": 19,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 2,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 54,
+        "clamped-or-no-op": 2,
+        "visible-delay-unattributed": 3,
+        "application-viewport-delay": 3
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "visible-delay-unattributed": 2,
+        "no-100ms-stable-capture-proven": 29
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 150,
+        "totalMs": 308.7986,
+        "medianMs": 1.9202,
+        "maxMs": 4.1214,
+        "allocatedBytes": 10372640
+      },
+      "release-row": {
+        "count": 114,
+        "totalMs": 26.2902,
+        "medianMs": 0.19879999999999998,
+        "maxMs": 0.5765,
+        "allocatedBytes": 11760
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 98.2007,
+        "medianMs": 0.04585,
+        "maxMs": 27.3516,
+        "allocatedBytes": 1951496
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3296,
+        "medianMs": 0.3296,
+        "maxMs": 0.3296,
+        "allocatedBytes": 10056
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 302,
+      "p95Ms": 78.7242,
+      "maxMs": 86.6634,
+      "p50Ms": 62.8793,
+      "over100Ms": 0
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-warm-01",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "warm",
+    "title": {
+      "count": 99,
+      "p95Ms": 48.1182,
+      "maxMs": 76.4416,
+      "p50Ms": 14.9307,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 99,
+      "p95Ms": 47.0676,
+      "maxMs": 62.2282,
+      "p50Ms": 14.9425,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 596.2049,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 87,
+      "visible-delay-unattributed": 5,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 4
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 11,
+      "correlated-visible-delay-unattributed": 4,
+      "correlated-application-viewport-delay": 5,
+      "callback-gap-with-captured-progress": 1
+    },
+    "maximumCallbackGapMs": 167.9873,
+    "postSaveCallbackGaps": 19,
+    "postSaveAxes": {
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 56,
+        "clamped-or-no-op": 2,
+        "visible-delay-unattributed": 1,
+        "application-viewport-delay": 3
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "visible-delay-unattributed": 2,
+        "no-100ms-stable-capture-proven": 29
+      },
+      "vertical-new": {
+        "application-viewport-delay": 1,
+        "no-100ms-stable-capture-proven": 1
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 142,
+        "totalMs": 290.243,
+        "medianMs": 1.90955,
+        "maxMs": 5.4062,
+        "allocatedBytes": 10268528
+      },
+      "release-row": {
+        "count": 113,
+        "totalMs": 24.7484,
+        "medianMs": 0.1964,
+        "maxMs": 0.4552,
+        "allocatedBytes": 10080
+      },
+      "header-sync": {
+        "count": 96,
+        "totalMs": 99.20700000000001,
+        "medianMs": 0.0482,
+        "maxMs": 27.0061,
+        "allocatedBytes": 2101392
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.5079,
+        "medianMs": 0.5079,
+        "maxMs": 0.5079,
+        "allocatedBytes": 10784
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 300,
+      "p95Ms": 78.8338,
+      "maxMs": 205.7159,
+      "p50Ms": 63.0288,
+      "over100Ms": 1
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-cold-02",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "title": {
+      "count": 98,
+      "p95Ms": 47.801,
+      "maxMs": 70.7185,
+      "p50Ms": 15.2406,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 99,
+      "p95Ms": 46.7291,
+      "maxMs": 48.2307,
+      "p50Ms": 15.0261,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 236.0586,
+    "commands": {
+      "application-viewport-delay": 5,
+      "no-100ms-stable-capture-proven": 89,
+      "clamped-or-no-op": 2,
+      "visible-delay-unattributed": 3
+    },
+    "callbackGaps": {
+      "correlated-application-viewport-delay": 6,
+      "unexplained-callback-gap": 11,
+      "correlated-visible-delay-unattributed": 2,
+      "callback-gap-with-captured-progress": 1
+    },
+    "maximumCallbackGapMs": 172.67,
+    "postSaveCallbackGaps": 19,
+    "postSaveAxes": {
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 56,
+        "clamped-or-no-op": 2,
+        "visible-delay-unattributed": 2,
+        "application-viewport-delay": 3
+      },
+      "horizontal-new": {
+        "no-100ms-stable-capture-proven": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 30,
+        "visible-delay-unattributed": 1
+      },
+      "vertical-new": {
+        "application-viewport-delay": 1,
+        "no-100ms-stable-capture-proven": 1
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 159,
+        "totalMs": 327.5871,
+        "medianMs": 1.9099,
+        "maxMs": 4.7588,
+        "allocatedBytes": 10904464
+      },
+      "release-row": {
+        "count": 112,
+        "totalMs": 24.8173,
+        "medianMs": 0.1972,
+        "maxMs": 0.5952,
+        "allocatedBytes": 10080
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 99.24510000000001,
+        "medianMs": 0.0468,
+        "maxMs": 27.7611,
+        "allocatedBytes": 1962432
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.4334,
+        "medianMs": 0.4334,
+        "maxMs": 0.4334,
+        "allocatedBytes": 10376
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 302,
+      "p95Ms": 78.7148,
+      "maxMs": 79.5086,
+      "p50Ms": 62.931,
+      "over100Ms": 0
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-warm-02",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "warm",
+    "title": {
+      "count": 98,
+      "p95Ms": 46.7421,
+      "maxMs": 61.5472,
+      "p50Ms": 14.9855,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 98,
+      "p95Ms": 47.4725,
+      "maxMs": 68.3978,
+      "p50Ms": 15.0368,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 122.9943,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 90,
+      "visible-delay-unattributed": 3,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 3
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 13,
+      "correlated-visible-delay-unattributed": 3,
+      "correlated-application-viewport-delay": 4,
+      "callback-gap-with-captured-progress": 1
+    },
+    "maximumCallbackGapMs": 188.0311,
+    "postSaveCallbackGaps": 20,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 3,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 57,
+        "clamped-or-no-op": 2,
+        "visible-delay-unattributed": 1,
+        "application-viewport-delay": 2
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 30,
+        "visible-delay-unattributed": 1
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 165,
+        "totalMs": 336.9832,
+        "medianMs": 1.9345,
+        "maxMs": 4.9563,
+        "allocatedBytes": 11300944
+      },
+      "release-row": {
+        "count": 112,
+        "totalMs": 25.2298,
+        "medianMs": 0.19855,
+        "maxMs": 0.5,
+        "allocatedBytes": 9240
+      },
+      "header-sync": {
+        "count": 99,
+        "totalMs": 99.4516,
+        "medianMs": 0.0458,
+        "maxMs": 27.0135,
+        "allocatedBytes": 1950312
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3086,
+        "medianMs": 0.3086,
+        "maxMs": 0.3086,
+        "allocatedBytes": 9672
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 302,
+      "p95Ms": 78.616,
+      "maxMs": 79.3533,
+      "p50Ms": 63.0674,
+      "over100Ms": 0
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-cold-03",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "title": {
+      "count": 99,
+      "p95Ms": 51.4726,
+      "maxMs": 68.8161,
+      "p50Ms": 15.0723,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 98,
+      "p95Ms": 48.0341,
+      "maxMs": 76.8963,
+      "p50Ms": 15.0509,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 148.8353,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 90,
+      "visible-delay-unattributed": 1,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 5
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 11,
+      "correlated-visible-delay-unattributed": 1,
+      "correlated-application-viewport-delay": 6,
+      "callback-gap-with-captured-progress": 2
+    },
+    "maximumCallbackGapMs": 219.7829,
+    "postSaveCallbackGaps": 19,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 3,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 56,
+        "clamped-or-no-op": 2,
+        "application-viewport-delay": 4
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 31
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 164,
+        "totalMs": 335.5977,
+        "medianMs": 1.9400499999999998,
+        "maxMs": 5.1073,
+        "allocatedBytes": 11594216
+      },
+      "release-row": {
+        "count": 112,
+        "totalMs": 24.5322,
+        "medianMs": 0.19505,
+        "maxMs": 0.5505,
+        "allocatedBytes": 5880
+      },
+      "header-sync": {
+        "count": 99,
+        "totalMs": 99.9042,
+        "medianMs": 0.0459,
+        "maxMs": 27.3144,
+        "allocatedBytes": 1989840
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3095,
+        "medianMs": 0.3095,
+        "maxMs": 0.3095,
+        "allocatedBytes": 9672
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 302,
+      "p95Ms": 78.7502,
+      "maxMs": 80.6334,
+      "p50Ms": 62.8629,
+      "over100Ms": 0
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-warm-03",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "warm",
+    "title": {
+      "count": 99,
+      "p95Ms": 51.1028,
+      "maxMs": 62.8413,
+      "p50Ms": 15.1889,
+      "over100Ms": 0
+    },
+    "number": {
+      "count": 99,
+      "p95Ms": 48.4786,
+      "maxMs": 56.7766,
+      "p50Ms": 14.9743,
+      "over100Ms": 0
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 224.3492,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 90,
+      "visible-delay-unattributed": 2,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 4
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 13,
+      "correlated-visible-delay-unattributed": 2,
+      "correlated-application-viewport-delay": 5
+    },
+    "maximumCallbackGapMs": 172.2545,
+    "postSaveCallbackGaps": 18,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 2,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 56,
+        "clamped-or-no-op": 2,
+        "application-viewport-delay": 3,
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 31
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 159,
+        "totalMs": 324.382,
+        "medianMs": 1.9087,
+        "maxMs": 4.4098,
+        "allocatedBytes": 10737144
+      },
+      "release-row": {
+        "count": 112,
+        "totalMs": 24.528,
+        "medianMs": 0.19445,
+        "maxMs": 0.4742,
+        "allocatedBytes": 10080
+      },
+      "header-sync": {
+        "count": 98,
+        "totalMs": 97.2494,
+        "medianMs": 0.04555,
+        "maxMs": 26.3015,
+        "allocatedBytes": 1998680
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.4352,
+        "medianMs": 0.4352,
+        "maxMs": 0.4352,
+        "allocatedBytes": 10376
+      }
+    },
+    "optionalThreadCpu": [],
+    "captureGaps": {
+      "count": 303,
+      "p95Ms": 78.8112,
+      "maxMs": 80.1578,
+      "p50Ms": 63.0337,
+      "over100Ms": 0
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  },
+  {
+    "run": "residual-final-thread",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "title": {
+      "maxMs": 63.1798,
+      "p95Ms": 54.1408,
+      "count": 99,
+      "over100Ms": 0,
+      "p50Ms": 15.1644
+    },
+    "number": {
+      "maxMs": 53.1041,
+      "p95Ms": 47.1617,
+      "count": 99,
+      "over100Ms": 0,
+      "p50Ms": 14.9327
+    },
+    "traceComplete": true,
+    "lastCommitAfterScrollStartMs": 127.0541,
+    "commands": {
+      "missing-before-frame": 1,
+      "no-100ms-stable-capture-proven": 89,
+      "visible-delay-unattributed": 4,
+      "clamped-or-no-op": 2,
+      "application-viewport-delay": 3
+    },
+    "callbackGaps": {
+      "unexplained-callback-gap": 10,
+      "callback-gap-with-captured-progress": 2,
+      "correlated-visible-delay-unattributed": 5,
+      "correlated-application-viewport-delay": 4
+    },
+    "maximumCallbackGapMs": 185.2009,
+    "postSaveCallbackGaps": 20,
+    "postSaveAxes": {
+      "vertical-new": {
+        "no-100ms-stable-capture-proven": 3,
+        "application-viewport-delay": 1
+      },
+      "vertical-return": {
+        "no-100ms-stable-capture-proven": 55,
+        "clamped-or-no-op": 2,
+        "visible-delay-unattributed": 3,
+        "application-viewport-delay": 2
+      },
+      "horizontal-new": {
+        "visible-delay-unattributed": 1
+      },
+      "horizontal-return": {
+        "no-100ms-stable-capture-proven": 31
+      }
+    },
+    "postSaveWork": {
+      "realize-row": {
+        "count": 169,
+        "totalMs": 334.8194,
+        "medianMs": 1.8829,
+        "maxMs": 2.888,
+        "allocatedBytes": 11762952
+      },
+      "release-row": {
+        "count": 117,
+        "totalMs": 27.6455,
+        "medianMs": 0.1985,
+        "maxMs": 0.7679,
+        "allocatedBytes": 20160
+      },
+      "header-sync": {
+        "count": 99,
+        "totalMs": 98.9084,
+        "medianMs": 0.046,
+        "maxMs": 28.3154,
+        "allocatedBytes": 1949904
+      },
+      "update": {
+        "count": 1,
+        "totalMs": 0.3331,
+        "medianMs": 0.3331,
+        "maxMs": 0.3331,
+        "allocatedBytes": 9672
+      }
+    },
+    "optionalThreadCpu": [
+      {
+        "end": 4670995747415,
+        "wallMs": 185.2009,
+        "uiThreadCpuMs": 140.625,
+        "unaccountedWallMs": 44.57589999999999
+      },
+      {
+        "end": 4670997418839,
+        "wallMs": 143.7591,
+        "uiThreadCpuMs": 125.0,
+        "unaccountedWallMs": 18.75909999999999
+      },
+      {
+        "end": 4671003524511,
+        "wallMs": 129.5017,
+        "uiThreadCpuMs": 93.75,
+        "unaccountedWallMs": 35.7517
+      },
+      {
+        "end": 4671015476667,
+        "wallMs": 124.2148,
+        "uiThreadCpuMs": 93.75,
+        "unaccountedWallMs": 30.464799999999997
+      },
+      {
+        "end": 4671019927624,
+        "wallMs": 169.1987,
+        "uiThreadCpuMs": 140.625,
+        "unaccountedWallMs": 28.573700000000002
+      },
+      {
+        "end": 4671022129383,
+        "wallMs": 156.1607,
+        "uiThreadCpuMs": 125.0,
+        "unaccountedWallMs": 31.16069999999999
+      },
+      {
+        "end": 4671033673500,
+        "wallMs": 110.0909,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 31.965900000000005
+      },
+      {
+        "end": 4671046001868,
+        "wallMs": 109.2785,
+        "uiThreadCpuMs": 93.75,
+        "unaccountedWallMs": 15.528499999999994
+      },
+      {
+        "end": 4671058011715,
+        "wallMs": 110.1657,
+        "uiThreadCpuMs": 93.75,
+        "unaccountedWallMs": 16.4157
+      },
+      {
+        "end": 4671070358282,
+        "wallMs": 111.0144,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 32.889399999999995
+      },
+      {
+        "end": 4671071905068,
+        "wallMs": 154.6786,
+        "uiThreadCpuMs": 140.625,
+        "unaccountedWallMs": 14.053599999999989
+      },
+      {
+        "end": 4671082868781,
+        "wallMs": 128.4304,
+        "uiThreadCpuMs": 109.375,
+        "unaccountedWallMs": 19.05539999999999
+      },
+      {
+        "end": 4671095015173,
+        "wallMs": 109.3501,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 31.225099999999998
+      },
+      {
+        "end": 4671106990865,
+        "wallMs": 106.5965,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 28.471500000000006
+      },
+      {
+        "end": 4671119369207,
+        "wallMs": 110.8346,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 32.709599999999995
+      },
+      {
+        "end": 4671131668732,
+        "wallMs": 106.9637,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 28.838700000000003
+      },
+      {
+        "end": 4671143694834,
+        "wallMs": 109.3623,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 31.237300000000005
+      },
+      {
+        "end": 4671156015705,
+        "wallMs": 107.9528,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 29.827799999999996
+      },
+      {
+        "end": 4671168061778,
+        "wallMs": 112.0509,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 33.9259
+      },
+      {
+        "end": 4671180360453,
+        "wallMs": 108.3836,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 30.2586
+      },
+      {
+        "end": 4671192733480,
+        "wallMs": 111.9626,
+        "uiThreadCpuMs": 78.125,
+        "unaccountedWallMs": 33.837599999999995
+      }
+    ],
+    "captureGaps": {
+      "maxMs": 79.5019,
+      "p95Ms": 78.819,
+      "count": 302,
+      "over100Ms": 0,
+      "p50Ms": 63.0086
+    },
+    "caveat": "Cohorts and callback gaps overlap; never add them as independent failures. Native readback includes UIA. CPU has OS accounting granularity; wall remainder is not a diagnosed wait cause. Not physical scanout."
+  }
+]

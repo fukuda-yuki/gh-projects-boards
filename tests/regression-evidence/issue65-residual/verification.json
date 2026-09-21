@@ -1,0 +1,12 @@
+{
+  "archiveSha256": "9b1a0b3b782b0f364babccf16cae479cad8807eb3caae40b70f833b0851f3438",
+  "archiveBytes": 2980575,
+  "verifiedArchivedFiles": 265,
+  "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+  "verifiedFrozenBinaries": 4,
+  "completeSustainedTraces": 12,
+  "verifiedLocalDocumentLinks": 14,
+  "credentialPatternMatches": 0,
+  "priorAttempt": "Offline verifier stopped at a UnicodeDecodeError while reading Markdown using Windows cp932. Rerun with explicit UTF-8; no product or raw observation was rerun or changed.",
+  "scope": "Offline archive/hash/source and link verification only; no product rerun or acceptance change."
+}

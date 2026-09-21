@@ -1,0 +1,89 @@
+{
+  "residual-final-ime": {
+    "traceComplete": true,
+    "renderingGaps": {
+      "maxMs": 79.7373,
+      "p95Ms": 47.4979,
+      "count": 1917,
+      "over100Ms": 0,
+      "p50Ms": 33.3369
+    },
+    "captureGaps": {
+      "count": 0
+    },
+    "driverEvents": {
+      "clock-sync": 1,
+      "workload-start": 1,
+      "physical-ime": 20,
+      "workload-end": 1
+    },
+    "selectedEvents": [
+      {
+        "kind": "workload-end",
+        "ticks": 4670413718924,
+        "detail": {
+          "elapsedMs": 61963.6062
+        }
+      }
+    ]
+  },
+  "residual-final-thumb": {
+    "traceComplete": true,
+    "renderingGaps": {
+      "maxMs": 167.9162,
+      "p95Ms": 48.4805,
+      "count": 215,
+      "over100Ms": 4,
+      "p50Ms": 33.3443
+    },
+    "captureGaps": {
+      "maxMs": 79.5471,
+      "p95Ms": 78.7182,
+      "count": 110,
+      "over100Ms": 0,
+      "p50Ms": 62.9562
+    },
+    "driverEvents": {
+      "clock-sync": 1,
+      "workload-start": 1,
+      "thumb-drag-start": 1,
+      "distant-edit": 1,
+      "horizontal-end": 1,
+      "wheel-return": 4,
+      "scroll-roundtrip-end": 1,
+      "workload-end": 1
+    },
+    "selectedEvents": [
+      {
+        "kind": "distant-edit",
+        "ticks": 4670507353499,
+        "detail": {
+          "start": 4670499821924,
+          "reached": 4670504827966,
+          "begin": 4670506257030,
+          "observed": 4670507341662,
+          "nativeText": "9",
+          "verticalPercent": 100,
+          "canonicalIssue": "I1000",
+          "canonicalItem": "P1T1000",
+          "keyToNativeMilliseconds": 108.4632
+        }
+      },
+      {
+        "kind": "scroll-roundtrip-end",
+        "ticks": 4670532370372,
+        "detail": {
+          "verticalPercent": 0,
+          "horizontalPercent": 0
+        }
+      },
+      {
+        "kind": "workload-end",
+        "ticks": 4670535295231,
+        "detail": {
+          "elapsedMs": 7404.2198
+        }
+      }
+    ]
+  }
+}
