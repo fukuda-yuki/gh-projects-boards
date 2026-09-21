@@ -91,9 +91,14 @@ internal sealed partial class EditingGrid
                 if (coreTrace is not null) diagnostics!.Record("planning-core", new { samples = coreTrace.Samples.ToArray() });
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; return; }
-            // Finish replacing mapped controls while the modal still owns input.
-            // After Closed, the user can already be typing into the next cell.
-            using (diagnostics?.Span("planning-view-refresh")) { layout = work.Columns(registration); RebuildRows(); Update(); }
+            // Only settings can change the column mapping. A task-value edit
+            // refreshes the existing controls, preserving pending native input.
+            // Finish any mapping replacement while the modal still owns focus.
+            using (diagnostics?.Span("planning-view-refresh"))
+            {
+                if (settings) { layout = work.Columns(registration); RebuildRows(); }
+                Update();
+            }
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {

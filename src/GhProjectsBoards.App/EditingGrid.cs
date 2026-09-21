@@ -26,8 +26,8 @@ internal sealed partial class EditingGrid : Grid
     private double synchronizedViewportWidth = -1, synchronizedHorizontalOffset = -1;
     private readonly List<TextBlock[]> markers = [];
     private readonly List<Border[]> cellBorders = [];
-    private readonly List<Border[]> selectionFrames = [];
-    private readonly List<Button[]> fillHandles = [];
+    private readonly List<Border?[]> selectionFrames = [];
+    private readonly List<Button?[]> fillHandles = [];
     private readonly SheetDiagnostics? diagnostics;
     private long diagnosticFlushSequence;
     private readonly Style cellStyle;
@@ -326,8 +326,9 @@ internal sealed partial class EditingGrid : Grid
         }
         using var measured = diagnostics?.Span("realize-row");
         var line = rowLines[r];
-        var rowControls = new List<FrameworkElement>(); var rowMarkers = new List<TextBlock>(); var borders = new List<Border>();
-        var frames = new List<Border>(); var handles = new List<Button>();
+        var count = rows[r].Cells.Length;
+        controls[r] = new FrameworkElement[count]; markers[r] = new TextBlock[count]; cellBorders[r] = new Border[count];
+        selectionFrames[r] = new Border[count]; fillHandles[r] = new Button[count];
         line.ColumnDefinitions.Add(new() { Width = new GridLength(44) });
         var number = new TextBlock { Text = (r + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 8, 0) };
         AutomationProperties.SetAutomationId(number, $"GridRowNumber{r}");
@@ -335,38 +336,19 @@ internal sealed partial class EditingGrid : Grid
         gutter.Children.Add(number); line.Children.Add(gutter);
         for (var c = 0; c < rows[r].Cells.Length; c++)
         {
-            var rr = r; var cc = c; var cell = rows[r].Cells[c];
             line.ColumnDefinitions.Add(new() { Width = new GridLength(ColumnWidth(c)) });
-            var container = new Grid(); container.ColumnDefinitions.Add(new());
-            var marker = new TextBlock { FontSize = 10, Width = 10, Height = 12, HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Top, Margin = new(0, 0, 2, 0), Visibility = Visibility.Collapsed };
-            AutomationProperties.SetAutomationId(marker, $"GridMarker{r}_{c}"); rowMarkers.Add(marker);
-            // Keep the column's layout slot, but do not construct native editors
-            // that cannot be presented. Reveal/focus realizes them synchronously;
-            // an existing editor is never rebound or replaced by this path.
-            FrameworkElement editor = ColumnInViewport(c) || session.Workspace.Buffer(cell) is not null
-                ? CreateCellEditor(r, c) : new Border { IsHitTestVisible = false };
-            container.Children.Add(editor); rowControls.Add(editor);
-            if (c == 0)
-            {
-                container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-                var identity = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
-                    VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
-                AutomationProperties.SetAutomationId(identity, $"GridRowIdentity{r}");
-                ToolTipService.SetToolTip(identity, RowIdentity(rows[r]));
-                SetColumn(identity, 1); container.Children.Add(identity);
-            }
-            SetColumnSpan(marker, container.ColumnDefinitions.Count); container.Children.Add(marker);
-            var frame = new Border { IsHitTestVisible = false, Style = (Style)Application.Current.Resources["SheetSelectionFrameStyle"] };
-            SetColumnSpan(frame, container.ColumnDefinitions.Count); container.Children.Add(frame); frames.Add(frame);
-            var handle = CreateFillHandle(rr, cc); SetColumnSpan(handle, container.ColumnDefinitions.Count); container.Children.Add(handle); handles.Add(handle);
-            var border = new Border { Child = container, BorderThickness = new(1), MinHeight = 30 }; borders.Add(border);
+            // The empty border reserves the column slot; its entire content is
+            // realized on reveal, including markers and interaction adornments.
+            var border = new Border { BorderThickness = new(1), MinHeight = 30 };
+            cellBorders[r][c] = border; controls[r][c] = border;
             SetColumn(border, c + 1); line.Children.Add(border);
         }
-        controls[r] = rowControls.ToArray(); markers[r] = rowMarkers.ToArray(); cellBorders[r] = borders.ToArray();
-        selectionFrames[r] = frames.ToArray(); fillHandles[r] = handles.ToArray();
         var wasUpdating = updating; updating = true;
-        try { for (var c = 0; c < controls[r].Length; c++) UpdateCell(r, c); }
+        try
+        {
+            for (var c = 0; c < count; c++)
+                if (ColumnInViewport(c) || session.Workspace.Buffer(rows[r].Cells[c]) is not null) EnsureCell(r, c);
+        }
         finally { updating = wasUpdating; }
         FreezeIdentity(line, listScroll?.HorizontalOffset ?? 0);
         UpdateColumnVisibility(r);
@@ -385,10 +367,22 @@ internal sealed partial class EditingGrid : Grid
     private void EnsureCell(int r, int c)
     {
         if (controls[r][c] is TitleCell or ChoiceCell) return;
-        var container = (Grid)cellBorders[r][c].Child;
+        var container = new Grid();
         var editor = CreateCellEditor(r, c);
-        container.Children.Remove(controls[r][c]);
-        controls[r][c] = editor; container.Children.Insert(0, editor);
+        container.Children.Add(editor); controls[r][c] = editor;
+        if (c == 0)
+        {
+            container.ColumnDefinitions.Add(new()); container.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            var identity = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4), TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
+            AutomationProperties.SetAutomationId(identity, $"GridRowIdentity{r}"); ToolTipService.SetToolTip(identity, RowIdentity(rows[r]));
+            SetColumn(identity, 1); container.Children.Add(identity);
+        }
+        var marker = new TextBlock { FontSize = 10, Width = 10, Height = 12, HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top, Margin = new(0, 0, 2, 0), Visibility = Visibility.Collapsed };
+        AutomationProperties.SetAutomationId(marker, $"GridMarker{r}_{c}"); markers[r][c] = marker;
+        SetColumnSpan(marker, c == 0 ? 2 : 1); container.Children.Add(marker);
+        cellBorders[r][c].Child = container;
         UpdateCell(r, c);
     }
     private bool ColumnInViewport(int column)
@@ -746,6 +740,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateCell(int r, int c)
     {
+        if (controls[r][c] is not (TitleCell or ChoiceCell)) return;
         var cell = rows[r].Cells[c];
         markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
             + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");

@@ -121,7 +121,7 @@ public sealed partial class PlanningHostedTests
             Assert.That(original.Text, Is.EqualTo("original pending row")); Assert.That(original.SelectionStart, Is.EqualTo(9));
         });
     }
-    [Test, Category("ReviewRetentionProgression")]
+    [Test, Category("ReviewRetentionProgression"), Category("Infrastructure")]
     public async Task NativeEditorRetentionProgressionAndViewTeardown()
     {
         var (p, work) = GanttWorkload.Create(1000);
@@ -158,7 +158,16 @@ public sealed partial class PlanningHostedTests
         var releasedView = new WeakReference<EditingGrid>(grid);
         await Ui.Run(() => grid = null!);
         await Report("teardown");
-        Console.WriteLine("Released view still alive: " + releasedView.TryGetTarget(out _));
+        Console.WriteLine("Released view still alive: " + Retained(releasedView));
+        // A real view transition gives native focus a new destination. An empty
+        // host alone can leave the removed editor as the last focused element.
+        Button destination = null!;
+        await Ui.Run(() => destination = new Button { Content = "Next view" });
+        await Ui.Mount(destination); await Ui.Run(() => destination.Focus(FocusState.Keyboard));
+        await Report("next-view-focus");
+        Console.WriteLine("Released view after focus transfer: " + Retained(releasedView));
+        Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
+        await Ui.Unmount(destination);
         // The fixture teardown still owns a mountable view and the isolated session.
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
         await Ui.Mount(grid);
@@ -180,9 +189,12 @@ public sealed partial class PlanningHostedTests
                     appOwned = alive.Count(owned.Contains), evicted = alive.Count(i => !owned.Contains(i)),
                     parented = alive.Count(i => i.Parent is not null), appOwnedTotal = owned.Count,
                     boundary = "Managed weak wrappers after native idle and diagnostic-only GC; Unloaded is not disposal." }));
+                if (stage == "next-view-focus") Assert.That(alive, Is.Empty, "The replaced view must not retain sampled native editors.");
             });
         }
     }
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static bool Retained(WeakReference<EditingGrid> reference) => reference.TryGetTarget(out _);
     private async Task ReviewFixture(ProjectRegistration p, ProjectPlanning plan)
     {
         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));

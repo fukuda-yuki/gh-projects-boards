@@ -88,6 +88,33 @@ public sealed class GanttHostedTests
     private static SelectorBar Views() => Ui.Find<SelectorBar>("ProjectViews");
     private static DateTime At(string text) => PlanningContractTests.At(text);
 
+    [Test]
+    public async Task TaskDetailSavePreservesThePendingBoardsEditorAndCaret()
+    {
+        TextBox original = null!;
+        await Ui.Run(() => {
+            original = Ui.Find<TextBox>("GridCell0_0"); original.Focus(FocusState.Keyboard);
+            original.Text = "pending original title"; original.Select(8, 3);
+        });
+        await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
+        await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
+        await Ui.Ready<ListView>("GanttTasks");
+        await Ui.ClickCommand("GanttTaskDetailsEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(c => AutomationProperties.GetAutomationId(c) == "PlanWork-Estimate" && c.IsLoaded));
+        await Ui.Run(() => { Ui.Find<TextBox>("PlanWork-Estimate", Ui.Dialog("PlanningDialog")).Text = "8"; Ui.DialogButton("PlanningDialog", "PrimaryButton"); });
+        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("2026-10-06 11:00"));
+        await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Run(() => {
+            var current = Ui.Find<TextBox>("GridCell0_0");
+            Assert.That(current, Is.SameAs(original), "A task-value change must not reconstruct an unrelated pending native editor.");
+            Assert.That(current.Text, Is.EqualTo("pending original title"));
+            Assert.That(current.SelectionStart, Is.EqualTo(8)); Assert.That(current.SelectionLength, Is.EqualTo(3));
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[0]), Is.EqualTo("pending original title"));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+        });
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task SchedulingPopupKeepsDateInputAndItsActionsReachableAfterTheCommandMenuCloses(bool fromGantt)
     {
