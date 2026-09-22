@@ -29,6 +29,15 @@
             <ItemsPanelTemplate x:Key="SheetRowsPanel">
                 <ItemsStackPanel CacheLength="0.5"/>
             </ItemsPanelTemplate>
+            <!-- Cell text scrolls natively, but never exposes its own scrollbars.
+                 Avoid re-entering the unused scrollbar states on every row return. -->
+            <ControlTemplate x:Key="SheetTextScrollTemplate" TargetType="ScrollViewer">
+                <Grid Background="{TemplateBinding Background}">
+                    <ScrollContentPresenter x:Name="ScrollContentPresenter"
+                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                            Margin="{TemplateBinding Padding}"/>
+                </Grid>
+            </ControlTemplate>
             <DataTemplate x:Key="GanttRowTemplate">
                 <local:GanttRowPresenter HorizontalContentAlignment="Stretch"/>
             </DataTemplate>

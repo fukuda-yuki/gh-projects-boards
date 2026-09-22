@@ -20,6 +20,63 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable]
 public sealed class SheetFocusedScrollHostedTests
 {
+    [Test]
+    public async Task LongTitleCaretScrollsInsideCellWithoutMovingSheetOrCommitting()
+    {
+        var registration = EditingTests.Registration(count: 6);
+        var work = new EditingWorkspace(registration.Snapshot.Id.Scope);
+        work.SetRegistrations([registration]); work.Open(registration);
+        var session = new DraftSession(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-long-title-" + Guid.NewGuid().ToString("N"))), work, 0);
+        EditingGrid grid = null!;
+        Grid surface = null!;
+        TextBox editor = null!;
+        ScrollViewer textScroll = null!, sheetScroll = null!;
+        var text = string.Concat(Enumerable.Repeat("長いタイトル native caret scrolling 0123456789 ", 8));
+        var key = new FieldKey("Title", "I1");
+        await Ui.Run(() =>
+        {
+            grid = new EditingGrid(registration, session, () => Task.FromResult(true));
+            surface = new Grid { Width = 640, Height = 440 };
+            surface.Children.Add(grid);
+        });
+        try
+        {
+            await Ui.Mount(surface);
+            await Ui.Ready<TextBox>("GridCell0_0");
+            await Ui.Run(() =>
+            {
+                editor = Ui.Find<TextBox>("GridCell0_0");
+                Assert.That(editor.Focus(FocusState.Keyboard), Is.True);
+                sheetScroll = Ui.Tree(Ui.Find<ListView>("ProjectItems")).OfType<ScrollViewer>().First();
+                textScroll = Ui.Tree(editor).OfType<ScrollViewer>().First();
+            });
+            await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), editor)
+                && editor.SelectionLength == editor.Text.Length);
+            await Ui.Run(() => { editor.SelectedText = text; editor.Select(text.Length, 0); });
+            await Ui.Until(() => textScroll.HorizontalOffset > 0);
+            await Ui.Run(() =>
+            {
+                Assert.That(editor.SelectionStart, Is.EqualTo(text.Length));
+                Assert.That(editor.Text, Is.EqualTo(text));
+                Assert.That(sheetScroll.HorizontalOffset, Is.Zero);
+                Assert.That(sheetScroll.VerticalOffset, Is.Zero);
+                Assert.That(work.Fields.Single(f => f.Key == key).Buffer, Is.EqualTo(text));
+                Assert.That(work.Fields.Single(f => f.Key == key).Change, Is.Null);
+                editor.Select(0, 0);
+            });
+            await Ui.Until(() => textScroll.HorizontalOffset < 1);
+            await Ui.Run(() =>
+            {
+                Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(editor));
+                Assert.That(editor.SelectionStart, Is.Zero);
+                Assert.That(editor.Text, Is.EqualTo(text));
+                Assert.That(sheetScroll.HorizontalOffset, Is.Zero);
+                Assert.That(work.Journal, Is.Empty);
+            });
+        }
+        finally { await Ui.Unmount(surface); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); }
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task FocusedTitleScrollRoundtripRetainsPendingIdentityAndCaret(bool pending)
     {
