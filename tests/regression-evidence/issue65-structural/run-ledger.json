@@ -1,0 +1,353 @@
+[
+  {
+    "path": "e2e/20260923-022735-769e7db53bf44020b071632f6ee29040/e2e.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "notExecuted": 0
+    },
+    "failures": [
+      "  Assert.That(last.Properties.HasKeyboardFocus.Value, Is.True)\r\n  Expected: True\r\n  But was:  False\r\n"
+    ]
+  },
+  {
+    "path": "e2e/20260923-022838-fd14ef5747e44915bedc407bedb3833f/e2e.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "notExecuted": 0
+    },
+    "failures": [
+      "  Assert.That(last.Properties.HasKeyboardFocus.Value, Is.True)\r\n  Expected: True\r\n  But was:  False\r\n"
+    ]
+  },
+  {
+    "path": "e2e/20260923-022957-0660b2f4b1184d6b891c6b0b08a7328e/e2e.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "e2e/20260923-031238-9abccec5ecf740c281f245b3cfa515a8/e2e.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-cold-01/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "notExecuted": 0
+    },
+    "failures": [
+      "  The intended native editor must own focus.\r\nAssert.That(Retry.WhileFalse(predicate,\r\n            TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(50)).Result, Is.True)\r\n  Expected: True\r\n  But was:  False\r\n"
+    ]
+  },
+  {
+    "path": "replays/structural-a-cold-02/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-cold-03/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-cold-04-observer/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-cold-05-copy-boundary/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-01/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-02/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-03-copy-boundary/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-04-qualified-copy/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "notExecuted": 0
+    },
+    "failures": [
+      "  Unobstructed full-viewport pixels must be identical before using source-copy observation.\r\nAssert.That(hashes, Is.EqualTo(1))\r\n  Expected: 1\r\n  But was:  3\r\n"
+    ]
+  },
+  {
+    "path": "replays/structural-a-warm-05-desktop/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-06-desktop-confirm/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "replays/structural-a-warm-07-desktop-reproduce/diagnostic.trx",
+    "counts": {
+      "total": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "structural-core-regression/core.trx",
+    "counts": {
+      "total": 90,
+      "executed": 90,
+      "passed": 90,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-021445-520-e0b8d5d8/results.xml",
+    "counts": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": [
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "System.Runtime.InteropServices.COMException : No message provided\nData:\n  Description: <null>\n  RestrictedDescription: <null>\n  RestrictedErrorReference: <null>\n  RestrictedCapabilitySid: <null>\n  __RestrictedErrorObjectReference: <null>\n  __HasRestrictedLanguageErrorObject: False\n  ErrorCode: -2147417842"
+    ]
+  },
+  {
+    "path": "ui-integration/run-20260923-021534-623-c32d49eb/results.xml",
+    "counts": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": [
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "  Gate A mechanism: data items must let the native panel generate and recycle containers.\nAssert.That(list.Items.Cast<object>().Any(item => item is UIElement), Is.False)\n  Expected: False\n  But was:  True\n"
+    ]
+  },
+  {
+    "path": "ui-integration/run-20260923-022006-815-cceaa2ff/results.xml",
+    "counts": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-022145-323-4bdb2e49/results.xml",
+    "counts": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": [
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "System.TimeoutException : The operation has timed out."
+    ]
+  },
+  {
+    "path": "ui-integration/run-20260923-022238-183-f22a9349/results.xml",
+    "counts": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": [
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "System.TimeoutException : The operation has timed out."
+    ]
+  },
+  {
+    "path": "ui-integration/run-20260923-022340-798-cc7f5529/results.xml",
+    "counts": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": [
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "One or more child tests had errors",
+      "System.TimeoutException : Observable UI condition did not complete"
+    ]
+  },
+  {
+    "path": "ui-integration/run-20260923-022435-681-117adc93/results.xml",
+    "counts": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-023103-954-0bd9f444/results.xml",
+    "counts": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-023220-538-2b4746d0/results.xml",
+    "counts": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-023812-550-18476896/results.xml",
+    "counts": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  },
+  {
+    "path": "ui-integration/run-20260923-031420-413-36fcae07/results.xml",
+    "counts": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "failures": []
+  }
+]
