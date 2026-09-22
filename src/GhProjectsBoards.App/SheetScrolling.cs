@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace GhProjectsBoards.App;
@@ -20,6 +21,7 @@ internal sealed partial class EditingGrid
     {
         var viewport = new Grid(); viewport.ColumnDefinitions.Add(new()); viewport.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         viewport.Children.Add(list);
+        if (recycledPresentation) viewport.Children.Add(editorLayer);
         AutomationProperties.SetAutomationId(verticalScroll, "SheetVerticalScroll");
         AutomationProperties.SetName(verticalScroll, "表の縦スクロール");
         SetColumn(verticalScroll, 1); viewport.Children.Add(verticalScroll);
@@ -39,7 +41,7 @@ internal sealed partial class EditingGrid
         {
             verticalScroll.Maximum = listScroll.ScrollableHeight;
             verticalScroll.ViewportSize = listScroll.ViewportHeight;
-            verticalScroll.SmallChange = rowLines.FirstOrDefault(line => line.IsLoaded && line.ActualHeight > 0)?.ActualHeight ?? 30;
+            verticalScroll.SmallChange = RowPitch;
             verticalScroll.LargeChange = listScroll.ViewportHeight;
             verticalScroll.Value = listScroll.VerticalOffset;
             verticalScroll.Visibility = listScroll.ScrollableHeight > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -50,7 +52,7 @@ internal sealed partial class EditingGrid
     private void AttachWheel()
     {
         DetachWheel();
-        wheelSurface = listScroll?.Content as UIElement;
+        wheelSurface = recycledPresentation ? (UIElement)VisualTreeHelper.GetParent(list) : listScroll?.Content as UIElement;
         wheelSurface?.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel), true);
     }
     private void DetachWheel()
@@ -66,7 +68,7 @@ internal sealed partial class EditingGrid
         if (!(horizontal ? listScroll.ScrollableWidth > 0 : listScroll.ScrollableHeight > 0)) return;
         if (!SystemParametersInfo(horizontal ? 0x006Cu : 0x0068u, 0, out var units, 0)) units = 3;
         var viewport = horizontal ? listScroll.ViewportWidth : listScroll.ViewportHeight;
-        var unit = horizontal ? 16 : rowLines.FirstOrDefault(line => line.IsLoaded && line.ActualHeight > 0)?.ActualHeight ?? 30;
+        var unit = horizontal ? 16 : RowPitch;
         var distance = pointer.MouseWheelDelta / 120d * (units == uint.MaxValue ? viewport : units * unit);
         if (!pointer.IsHorizontalMouseWheel) distance = -distance;
         // A data sheet changes its viewport and realizes the destination together.

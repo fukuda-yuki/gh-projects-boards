@@ -85,6 +85,7 @@ internal sealed partial class EditingGrid : Grid
     {
         summaryEnabled = allowSummary ?? SummaryEvaluationEnabled();
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
+        recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") == "1";
         showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
         using var measured = diagnostics?.Span("grid-constructor");
@@ -95,6 +96,7 @@ internal sealed partial class EditingGrid : Grid
         // Each row owns native editors. Realize the destination viewport without
         // speculative offscreen rows; ReleaseRow separately retains visited editors.
         list.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["SheetRowsPanel"];
+        if (recycledPresentation) InitializeRecycling();
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         ScrollViewer.SetVerticalScrollBarVisibility(list, ScrollBarVisibility.Hidden);
@@ -260,6 +262,7 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("rebuild-start", new { generation, retainedRows = controls.Count, retainedCells = controls.Sum(row => row.Length) });
         var identity = SelectionIdentity; generation++; CancelDrag(); active = false;
         projection.Promote(session.Workspace);
+        if (recycledPresentation) ResetRecycling();
         canonicalRows = session.Workspace.Open(registration); rows = layout.Resolve(projection.Resolve(canonicalRows)); list.Items.Clear(); controls.Clear(); markers.Clear(); cellBorders.Clear(); selectionFrames.Clear(); fillHandles.Clear(); rowLines.Clear();
         paintedSelection.Clear(); paintedCurrent = null; dormantRows.Clear(); protectedUnloadedRows.Clear();
         synchronizedViewportWidth = synchronizedHorizontalOffset = -1;
@@ -283,6 +286,7 @@ internal sealed partial class EditingGrid : Grid
             var heading = CreateColumnHeader(layout.Visible[c], c, label, name);
             SetColumn(heading, c + 1); headerGrid.Children.Add(heading);
         }
+        if (recycledPresentation) { BuildRecycledRows(); ResizeSheetColumns(); return; }
         for (var r = 0; r < rows.Length; r++)
         {
             var index = r;
@@ -315,6 +319,7 @@ internal sealed partial class EditingGrid : Grid
     private bool CurrentLine(int row, Grid line) => row < rowLines.Count && ReferenceEquals(rowLines[row], line);
     private void EnsureRow(int r)
     {
+        if (recycledPresentation) { EnsureRecycledRow(r); return; }
         dormantRows.Remove(r);
         protectedUnloadedRows.Remove(r);
         if (controls[r].Length != 0)
@@ -366,6 +371,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void EnsureCell(int r, int c)
     {
+        if (recycledPresentation) { EnsureOwnedEditor(r, c); return; }
         if (controls[r][c] is TitleCell or ChoiceCell) return;
         var container = new Grid();
         var editor = CreateCellEditor(r, c);
@@ -430,6 +436,7 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("scroll-view-changed", new { args.IsIntermediate, state = CaptureDiagnosticState(false) });
         if (!args.IsIntermediate) diagnostics?.RequestVisualCounts();
         SyncHeader();
+        if (recycledPresentation) PositionOwnedEditors();
     }
     private void ScrollSizeChanged(object sender, SizeChangedEventArgs args) => ResizeSheetColumns();
     private void SyncHeader(bool force = false)
@@ -445,10 +452,12 @@ internal sealed partial class EditingGrid : Grid
         headerScroll.ChangeView(listScroll.HorizontalOffset, null, null, true);
         FreezeIdentity(headerGrid, listScroll.HorizontalOffset);
         for (var r = 0; r < rowLines.Count; r++)
-            if (rowLines[r].IsLoaded) { FreezeIdentity(rowLines[r], listScroll.HorizontalOffset); UpdateColumnVisibility(r); }
+            if (rowLines[r] is { IsLoaded: true } line) { FreezeIdentity(line, listScroll.HorizontalOffset); UpdateColumnVisibility(r); }
+        if (recycledPresentation) PositionOwnedEditors();
     }
     private void UpdateColumnVisibility(int row)
     {
+        if (recycledPresentation) { RefreshRecycledRow(row); return; }
         var width = listScroll is { ViewportWidth: > 0 } ? listScroll.ViewportWidth : ActualWidth > 0 ? ActualWidth : 800;
         var offset = listScroll?.HorizontalOffset ?? 0;
         var left = 44d; var frozen = 44 + ColumnWidth(0);
@@ -476,6 +485,7 @@ internal sealed partial class EditingGrid : Grid
         if (left - offset < frozen) offset = left - frozen;
         else if (right - offset > listScroll.ViewportWidth) offset = right - listScroll.ViewportWidth;
         listScroll.ChangeView(Math.Clamp(offset, 0, listScroll.ScrollableWidth), null, null, true);
+        if (recycledPresentation) PositionOwnedEditors();
     }
     private string RowIdentity(EditRow row, bool compact = false)
     {
@@ -521,7 +531,7 @@ internal sealed partial class EditingGrid : Grid
     private void ResizeSheetColumns()
     {
         var widths = Enumerable.Range(0, layout.Visible.Length).Select(ColumnWidth).ToArray();
-        foreach (var line in list.Items.Cast<ListViewItem>().Select(i => (Grid)i.Content).Prepend(headerGrid))
+        foreach (var line in rowLines.Where(line => line is not null).Prepend(headerGrid))
         {
             for (var c = 0; c + 1 < line.ColumnDefinitions.Count; c++) line.ColumnDefinitions[c + 1].Width = new(widths[c]);
             line.Width = 44 + widths.Sum();
@@ -552,7 +562,7 @@ internal sealed partial class EditingGrid : Grid
             if (includeVisuals)
             {
                 var tree = Descendants(this).ToHashSet();
-                var editors = controls.SelectMany(row => row).ToArray();
+                var editors = controls.SelectMany(row => row).Where(editor => editor is not null).ToArray();
                 var viewport = listScroll is null ? new Rect() : listScroll.TransformToVisual(this).TransformBounds(new(0, 0, listScroll.ViewportWidth, listScroll.ViewportHeight));
                 bool InViewport(FrameworkElement editor)
                 {
@@ -561,13 +571,13 @@ internal sealed partial class EditingGrid : Grid
                     return bounds.Left < viewport.Right && bounds.Right > viewport.Left && bounds.Top < viewport.Bottom && bounds.Bottom > viewport.Top;
                 }
                 var inViewport = controls.SelectMany((row, r) => row.Select((editor, c) => (editor, r, c)))
-                    .Where(cell => InViewport(cell.editor)).ToArray();
+                    .Where(cell => cell.editor is not null && InViewport(cell.editor)).ToArray();
                 var columnIdentities = layout.Visible;
                 visuals = new { visualDescendants = tree.Count, retainedEditors = editors.Length,
                     loadedEditors = editors.Count(editor => editor.IsLoaded), attachedEditors = editors.Count(tree.Contains),
                     viewportIntersectingEditors = inViewport.Length, retainedContainers = list.Items.Count,
-                    loadedContainers = list.Items.Cast<ListViewItem>().Count(item => item.IsLoaded),
-                    attachedContainers = list.Items.Cast<ListViewItem>().Count(tree.Contains),
+                    loadedContainers = Descendants(list).OfType<ListViewItem>().Count(item => item.IsLoaded),
+                    attachedContainers = Descendants(list).OfType<ListViewItem>().Count(),
                     nativeTextBoxesInTree = tree.OfType<TextBox>().Count(), nativeComboBoxesInTree = tree.OfType<ComboBox>().Count(),
                     nativeChoiceButtonsInTree = tree.OfType<ChoiceCell>().Count(),
                     viewport, pendingCells = rows.SelectMany(row => row.Cells).Select(cell => session.Workspace.Buffer(cell)?.Length).Count(length => length is not null),
@@ -657,6 +667,7 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) { deferredRefresh = true; return; }
         deferredRefresh = false;
+        if (recycledPresentation) ReleaseCleanEditors();
         // Selection, pending input and drag protection can end after Unloaded.
         // Reconsider those original controls without waiting for another unload.
         foreach (var row in protectedUnloadedRows.ToArray())
@@ -740,6 +751,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateCell(int r, int c)
     {
+        if (controls[r][c] is RecycledCell presentation) { presentation.Refresh(); PaintCellState(r, c); return; }
         if (controls[r][c] is not (TitleCell or ChoiceCell)) return;
         var cell = rows[r].Cells[c];
         markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
@@ -845,6 +857,7 @@ internal sealed partial class EditingGrid : Grid
             selecting = true;
             RevealColumn(r, c);
             list.ScrollIntoView(list.Items[r]);
+            if (recycledPresentation) { list.UpdateLayout(); PositionOwnedEditors(); }
             ((Control)controls[r][c]).Focus(FocusState.Keyboard);
             if (controls[r][c] is TitleCell text && !text.Editing) text.SelectAll();
             selecting = false;

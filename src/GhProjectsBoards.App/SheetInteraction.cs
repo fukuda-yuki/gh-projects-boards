@@ -99,7 +99,7 @@ internal sealed partial class EditingGrid
         var bounds = listScroll.TransformToVisual(this).TransformBounds(new(0, 0, listScroll.ViewportWidth, listScroll.ViewportHeight));
         // DPI rounding can turn a 30-DIP slot into e.g. 30.4 DIPs. Resolve to the captured logical projection,
         // never to recycled visuals or just the currently realized controls.
-        var pitch = list.Items.Cast<ListViewItem>().FirstOrDefault(item => item.ActualHeight > 0)?.ActualHeight ?? 30;
+        var pitch = RowPitch;
         var row = Math.Clamp((int)Math.Floor((Math.Clamp(point.Y, bounds.Top, bounds.Bottom - 1) - bounds.Top + listScroll.VerticalOffset) / pitch), 0, rows.Length - 1);
         diagnostics?.Record("drag-target", new { operation.Fill, point.X, point.Y, bounds, row, pitch, listScroll.VerticalOffset, listScroll.ScrollableHeight });
         operation.EndRow = row;
@@ -146,7 +146,7 @@ internal sealed partial class EditingGrid
     }
     private void PaintCellState(int row, int column)
     {
-        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length || controls[row][column] is not (TitleCell or ChoiceCell)) return;
+        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length || controls[row][column] is not (TitleCell or ChoiceCell or RecycledCell)) return;
         var minRow = Math.Min(anchorRow, currentRow); var maxRow = Math.Max(anchorRow, currentRow);
         var minColumn = Math.Min(anchorColumn, currentColumn); var maxColumn = Math.Max(anchorColumn, currentColumn);
         var selected = active && row >= minRow && row <= maxRow && column >= minColumn && column <= maxColumn;

@@ -29,6 +29,18 @@
             <ItemsPanelTemplate x:Key="SheetRowsPanel">
                 <ItemsStackPanel CacheLength="0"/>
             </ItemsPanelTemplate>
+            <DataTemplate x:Key="RecycledSheetRowTemplate">
+                <Grid Height="30" HorizontalAlignment="Left"/>
+            </DataTemplate>
+            <Style x:Key="RecycledSheetContainerStyle" TargetType="ListViewItem">
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="MinHeight" Value="30"/>
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="IsTabStop" Value="False"/>
+            </Style>
             <!-- Cell text scrolls natively, but never exposes its own scrollbars.
                  Avoid re-entering the unused scrollbar states on every row return. -->
             <ControlTemplate x:Key="SheetTextScrollTemplate" TargetType="ScrollViewer">
