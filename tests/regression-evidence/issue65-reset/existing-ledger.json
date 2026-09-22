@@ -1,0 +1,731 @@
+[
+  {
+    "run": "post69-viewport-final-cold-01",
+    "intervals": [
+      {
+        "start": 5646171761271,
+        "end": 5646172971252,
+        "callbackGapMs": 120.9981,
+        "managedUnionMs": 28.6391,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5646171767089,
+            "end": 5646173888159,
+            "axis": "vertical",
+            "priorOffset": 0,
+            "requestedOffset": 7295.999908447266,
+            "requestedReturn": false,
+            "postSave": false,
+            "wheelMs": 2.9286,
+            "viewportMs": 115.6073,
+            "unchangedThroughMs": 117.5967,
+            "changedByMs": 198.5109,
+            "before": "scroll-0000.png",
+            "lastUnchanged": "scroll-0002.png",
+            "firstChanged": "scroll-0003.png",
+            "classification": "corroborated-app-delay"
+          }
+        ],
+        "disposition": "overlaps demonstrated late response"
+      },
+      {
+        "start": 5646196041279,
+        "end": 5646197097101,
+        "callbackGapMs": 105.5822,
+        "managedUnionMs": 26.0294,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5646194264028,
+            "end": 5646196282846,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.3503,
+            "viewportMs": 11.7575,
+            "unchangedThroughMs": 0.2964,
+            "changedByMs": 81.6086,
+            "before": "scroll-0033.png",
+            "lastUnchanged": "scroll-0034.png",
+            "firstChanged": "scroll-0035.png",
+            "classification": "changed-by-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5646196282846,
+            "end": 5646198337832,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.4103,
+            "viewportMs": 77.9046,
+            "unchangedThroughMs": 63.3701,
+            "changedByMs": 146.8085,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5646198041414,
+        "end": 5646199043811,
+        "callbackGapMs": 100.2397,
+        "managedUnionMs": 24.9097,
+        "commands": [
+          {
+            "index": 12,
+            "begin": 5646196282846,
+            "end": 5646198337832,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.4103,
+            "viewportMs": 77.9046,
+            "unchangedThroughMs": 63.3701,
+            "changedByMs": 146.8085,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          },
+          {
+            "index": 13,
+            "begin": 5646198337832,
+            "end": 5646200386275,
+            "axis": "vertical",
+            "priorOffset": 21887.999725341797,
+            "requestedOffset": 29183.999633789062,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.6356,
+            "viewportMs": 67.6631,
+            "unchangedThroughMs": 48.0145,
+            "changedByMs": 141.2008,
+            "before": "scroll-0039.png",
+            "lastUnchanged": "scroll-0041.png",
+            "firstChanged": "scroll-0042.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  },
+  {
+    "run": "post69-viewport-final-cold-02",
+    "intervals": [
+      {
+        "start": 5647584735003,
+        "end": 5647585828123,
+        "callbackGapMs": 109.312,
+        "managedUnionMs": 28.4263,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5647584967013,
+            "end": 5647587022299,
+            "axis": "vertical",
+            "requestedOffset": 7295.999908447266,
+            "postSave": false,
+            "classification": "missing-before"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5647609076425,
+        "end": 5647610107136,
+        "callbackGapMs": 103.0711,
+        "managedUnionMs": 25.4564,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5647607320825,
+            "end": 5647609345179,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.4962,
+            "viewportMs": 9.2932,
+            "unchangedThroughMs": 31.3608,
+            "changedByMs": 112.4429,
+            "before": "scroll-0033.png",
+            "lastUnchanged": "scroll-0034.png",
+            "firstChanged": "scroll-0035.png",
+            "classification": "capture-bracket-crosses-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5647609345179,
+            "end": 5647611380057,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.5265,
+            "viewportMs": 72.9529,
+            "unchangedThroughMs": 94.4134,
+            "changedByMs": 177.3094,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5647611077222,
+        "end": 5647612103598,
+        "callbackGapMs": 102.6376,
+        "managedUnionMs": 25.425,
+        "commands": [
+          {
+            "index": 12,
+            "begin": 5647609345179,
+            "end": 5647611380057,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.5265,
+            "viewportMs": 72.9529,
+            "unchangedThroughMs": 94.4134,
+            "changedByMs": 177.3094,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          },
+          {
+            "index": 13,
+            "begin": 5647611380057,
+            "end": 5647613401442,
+            "axis": "vertical",
+            "priorOffset": 21887.999725341797,
+            "requestedOffset": 29183.999633789062,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.0904,
+            "viewportMs": 69.208,
+            "unchangedThroughMs": 92.1228,
+            "changedByMs": 173.4671,
+            "before": "scroll-0039.png",
+            "lastUnchanged": "scroll-0041.png",
+            "firstChanged": "scroll-0042.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  },
+  {
+    "run": "post69-viewport-final-cold-03",
+    "intervals": [
+      {
+        "start": 5649000783175,
+        "end": 5649001992478,
+        "callbackGapMs": 120.9303,
+        "managedUnionMs": 29.3284,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5649000789968,
+            "end": 5649002847837,
+            "axis": "vertical",
+            "requestedOffset": 7295.999908447266,
+            "postSave": false,
+            "classification": "missing-before"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5649025109777,
+        "end": 5649026134865,
+        "callbackGapMs": 102.5088,
+        "managedUnionMs": 24.929,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5649023258228,
+            "end": 5649025289902,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.0368,
+            "viewportMs": 19.1804,
+            "unchangedThroughMs": 16.158,
+            "changedByMs": 88.7237,
+            "before": "scroll-0033.png",
+            "lastUnchanged": "scroll-0034.png",
+            "firstChanged": "scroll-0035.png",
+            "classification": "changed-by-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5649025289902,
+            "end": 5649027318708,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.4151,
+            "viewportMs": 81.2415,
+            "unchangedThroughMs": 62.6888,
+            "changedByMs": 152.5736,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5649027111136,
+        "end": 5649028138721,
+        "callbackGapMs": 102.7585,
+        "managedUnionMs": 26.0819,
+        "commands": [
+          {
+            "index": 12,
+            "begin": 5649025289902,
+            "end": 5649027318708,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.4151,
+            "viewportMs": 81.2415,
+            "unchangedThroughMs": 62.6888,
+            "changedByMs": 152.5736,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          },
+          {
+            "index": 13,
+            "begin": 5649027318708,
+            "end": 5649029372542,
+            "axis": "vertical",
+            "priorOffset": 21887.999725341797,
+            "requestedOffset": 29183.999633789062,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.9602,
+            "viewportMs": 78.7976,
+            "unchangedThroughMs": 62.8591,
+            "changedByMs": 149.7092,
+            "before": "scroll-0039.png",
+            "lastUnchanged": "scroll-0041.png",
+            "firstChanged": "scroll-0042.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [
+      {
+        "index": 1,
+        "begin": 5649002847837,
+        "end": 5649004901939,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 9.4445,
+        "viewportMs": 86.709,
+        "unchangedThroughMs": 111.1049,
+        "changedByMs": 196.389,
+        "before": "scroll-0003.png",
+        "lastUnchanged": "scroll-0005.png",
+        "firstChanged": "scroll-0006.png",
+        "classification": "visible-delay-attribution-incomplete"
+      }
+    ],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  },
+  {
+    "run": "post69-viewport-final-warm-01",
+    "intervals": [
+      {
+        "start": 5646929600871,
+        "end": 5646930872729,
+        "callbackGapMs": 127.1858,
+        "managedUnionMs": 50.6642,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5646929614167,
+            "end": 5646931657946,
+            "axis": "vertical",
+            "requestedOffset": 7295.999908447266,
+            "postSave": false,
+            "classification": "missing-before"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5646953905751,
+        "end": 5646954936799,
+        "callbackGapMs": 103.1048,
+        "managedUnionMs": 25.7053,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5646952010059,
+            "end": 5646954055397,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.0147,
+            "viewportMs": 23.4037,
+            "unchangedThroughMs": 0.096,
+            "changedByMs": 93.2468,
+            "before": "scroll-0033.png",
+            "lastUnchanged": "scroll-0034.png",
+            "firstChanged": "scroll-0035.png",
+            "classification": "changed-by-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5646954055397,
+            "end": 5646956094345,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.2206,
+            "viewportMs": 84.9383,
+            "unchangedThroughMs": 63.2149,
+            "changedByMs": 155.7729,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [
+      {
+        "index": 1,
+        "begin": 5646931657946,
+        "end": 5646933715753,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 13.8686,
+        "viewportMs": 85.5935,
+        "unchangedThroughMs": 110.3554,
+        "changedByMs": 195.7845,
+        "before": "scroll-0003.png",
+        "lastUnchanged": "scroll-0005.png",
+        "firstChanged": "scroll-0006.png",
+        "classification": "visible-delay-attribution-incomplete"
+      },
+      {
+        "index": 22,
+        "begin": 5646974368098,
+        "end": 5646976398779,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.306,
+        "viewportMs": 21.6475,
+        "unchangedThroughMs": 109.5533,
+        "changedByMs": 191.1826,
+        "before": "scroll-0067.png",
+        "lastUnchanged": "scroll-0069.png",
+        "firstChanged": "scroll-0070.png",
+        "classification": "visible-delay-attribution-incomplete"
+      }
+    ],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  },
+  {
+    "run": "post69-viewport-final-warm-02",
+    "intervals": [
+      {
+        "start": 5648342934506,
+        "end": 5648344106826,
+        "callbackGapMs": 117.232,
+        "managedUnionMs": 29.0708,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5648343216319,
+            "end": 5648345276763,
+            "axis": "vertical",
+            "requestedOffset": 7295.999908447266,
+            "postSave": false,
+            "classification": "missing-before"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5648345265096,
+        "end": 5648346297419,
+        "callbackGapMs": 103.2323,
+        "managedUnionMs": 27.3683,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5648343216319,
+            "end": 5648345276763,
+            "axis": "vertical",
+            "requestedOffset": 7295.999908447266,
+            "postSave": false,
+            "classification": "missing-before"
+          },
+          {
+            "index": 1,
+            "begin": 5648345276763,
+            "end": 5648347317695,
+            "axis": "vertical",
+            "priorOffset": 7295.999908447266,
+            "requestedOffset": 14591.999816894531,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.2921,
+            "viewportMs": 98.6701,
+            "unchangedThroughMs": 110.8432,
+            "changedByMs": 202.5304,
+            "before": "scroll-0002.png",
+            "lastUnchanged": "scroll-0005.png",
+            "firstChanged": "scroll-0006.png",
+            "classification": "visible-delay-attribution-incomplete"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      },
+      {
+        "start": 5648367606472,
+        "end": 5648368625447,
+        "callbackGapMs": 101.8975,
+        "managedUnionMs": 25.3058,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5648365700174,
+            "end": 5648367731125,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.5475,
+            "viewportMs": 24.3132,
+            "unchangedThroughMs": 0.1026,
+            "changedByMs": 94.7126,
+            "before": "scroll-0033.png",
+            "lastUnchanged": "scroll-0034.png",
+            "firstChanged": "scroll-0035.png",
+            "classification": "changed-by-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5648367731125,
+            "end": 5648369749933,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.1299,
+            "viewportMs": 86.3945,
+            "unchangedThroughMs": 62.0928,
+            "changedByMs": 157.9575,
+            "before": "scroll-0036.png",
+            "lastUnchanged": "scroll-0038.png",
+            "firstChanged": "scroll-0039.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [
+      {
+        "index": 1,
+        "begin": 5648345276763,
+        "end": 5648347317695,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.2921,
+        "viewportMs": 98.6701,
+        "unchangedThroughMs": 110.8432,
+        "changedByMs": 202.5304,
+        "before": "scroll-0002.png",
+        "lastUnchanged": "scroll-0005.png",
+        "firstChanged": "scroll-0006.png",
+        "classification": "visible-delay-attribution-incomplete"
+      }
+    ],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  },
+  {
+    "run": "post69-viewport-final-warm-03",
+    "intervals": [
+      {
+        "start": 5649760634294,
+        "end": 5649762118224,
+        "callbackGapMs": 148.393,
+        "managedUnionMs": 64.8652,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5649760703655,
+            "end": 5649762744814,
+            "axis": "vertical",
+            "priorOffset": 0,
+            "requestedOffset": 7295.999908447266,
+            "requestedReturn": false,
+            "postSave": false,
+            "wheelMs": 3.2973,
+            "viewportMs": 136.9072,
+            "unchangedThroughMs": 109.5205,
+            "changedByMs": 197.6279,
+            "before": "scroll-0000.png",
+            "lastUnchanged": "scroll-0002.png",
+            "firstChanged": "scroll-0003.png",
+            "classification": "corroborated-app-delay"
+          }
+        ],
+        "disposition": "overlaps demonstrated late response"
+      },
+      {
+        "start": 5649762726472,
+        "end": 5649763887474,
+        "callbackGapMs": 116.1002,
+        "managedUnionMs": 25.2494,
+        "commands": [
+          {
+            "index": 0,
+            "begin": 5649760703655,
+            "end": 5649762744814,
+            "axis": "vertical",
+            "priorOffset": 0,
+            "requestedOffset": 7295.999908447266,
+            "requestedReturn": false,
+            "postSave": false,
+            "wheelMs": 3.2973,
+            "viewportMs": 136.9072,
+            "unchangedThroughMs": 109.5205,
+            "changedByMs": 197.6279,
+            "before": "scroll-0000.png",
+            "lastUnchanged": "scroll-0002.png",
+            "firstChanged": "scroll-0003.png",
+            "classification": "corroborated-app-delay"
+          },
+          {
+            "index": 1,
+            "begin": 5649762744814,
+            "end": 5649764803051,
+            "axis": "vertical",
+            "priorOffset": 7295.999908447266,
+            "requestedOffset": 14591.999816894531,
+            "requestedReturn": false,
+            "postSave": false,
+            "wheelMs": 1.6621,
+            "viewportMs": 111.6506,
+            "unchangedThroughMs": 110.8856,
+            "changedByMs": 193.187,
+            "before": "scroll-0003.png",
+            "lastUnchanged": "scroll-0005.png",
+            "firstChanged": "scroll-0006.png",
+            "classification": "corroborated-app-delay"
+          }
+        ],
+        "disposition": "overlaps demonstrated late response"
+      },
+      {
+        "start": 5649784974129,
+        "end": 5649786024351,
+        "callbackGapMs": 105.0222,
+        "managedUnionMs": 26.7031,
+        "commands": [
+          {
+            "index": 11,
+            "begin": 5649783153896,
+            "end": 5649785191389,
+            "axis": "horizontal",
+            "priorOffset": 634.4000244140625,
+            "requestedOffset": 0,
+            "requestedReturn": true,
+            "postSave": true,
+            "wheelMs": 1.6472,
+            "viewportMs": 15.6733,
+            "unchangedThroughMs": 0.1913,
+            "changedByMs": 86.0206,
+            "before": "scroll-0032.png",
+            "lastUnchanged": "scroll-0033.png",
+            "firstChanged": "scroll-0034.png",
+            "classification": "changed-by-100ms"
+          },
+          {
+            "index": 12,
+            "begin": 5649785191389,
+            "end": 5649787246141,
+            "axis": "vertical",
+            "priorOffset": 14591.999816894531,
+            "requestedOffset": 21887.999725341797,
+            "requestedReturn": false,
+            "postSave": true,
+            "wheelMs": 1.1582,
+            "viewportMs": 79.9492,
+            "unchangedThroughMs": 63.7872,
+            "changedByMs": 148.8856,
+            "before": "scroll-0035.png",
+            "lastUnchanged": "scroll-0037.png",
+            "firstChanged": "scroll-0038.png",
+            "classification": "capture-bracket-crosses-100ms"
+          }
+        ],
+        "disposition": "observation insufficient; callback gap alone is not late presentation"
+      }
+    ],
+    "visibleUncertain": [],
+    "continuousMovement": "Not established by isolated jump-response brackets; retained sustained-scroll gate stays unaccepted"
+  }
+]

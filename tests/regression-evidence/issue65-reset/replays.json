@@ -1,0 +1,3029 @@
+[
+  {
+    "run": "reset-m1-immediate-cold",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "cold",
+    "earlyScroll": "immediate",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m1-immediate-cold",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 39804
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "8"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 62,
+    "captureMaxBeginGapMs": 47.5407,
+    "captureMaxDurationMs": 31.5712,
+    "inputToScrollSeparationMs": 0.5746,
+    "diagnosticWaitEvents": [],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5836911501130,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5837113033656,
+        "detail": {
+          "phase": "title",
+          "samples": 98
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5837114583084,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5837315966725,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 0,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5837315972471,
+        "end": 5837317999353,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 7.4319,
+        "viewportMs": 106.2687,
+        "unchangedThroughMs": 109.9794,
+        "changedByMs": 162.8847,
+        "before": "scroll-0030.png",
+        "lastUnchanged": "scroll-0034.png",
+        "firstChanged": "scroll-0035.png",
+        "classification": "corroborated-app-delay",
+        "realizedRows": 13,
+        "rowRealizationMs": 28.6925,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5837316438485,
+            "End": 5837316477991,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5837315762237,
+            "End": 5837316482314,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-current-load-wall",
+            "Start": 5837315761911,
+            "End": 5837316482823,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-serialize-write-wall",
+            "Start": 5837316487583,
+            "End": 5837317959293,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-stream-flush-wall",
+            "Start": 5837317959297,
+            "End": 5837317960508,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-durable-flush-sync",
+            "Start": 5837317960509,
+            "End": 5837317963963,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-bytes",
+            "Start": 5837317963971,
+            "End": 5837317963971,
+            "Count": 16125097
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5837317965392,
+            "End": 5837319111909,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5837315730672,
+            "End": 5837319135120,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 111.0569,
+            "previousGapTicks": 1199562,
+            "threadCpu100ns": 40156250,
+            "previousThreadCpu100ns": 781250
+          },
+          {
+            "atMs": 122.5607,
+            "previousGapTicks": 115042,
+            "threadCpu100ns": 40312500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 157.4995,
+            "previousGapTicks": 349384,
+            "threadCpu100ns": 40312500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 190.799,
+            "previousGapTicks": 332995,
+            "threadCpu100ns": 40312500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5837317999353,
+        "end": 5837320034959,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 1.8913,
+        "viewportMs": 142.5203,
+        "unchangedThroughMs": 141.6221,
+        "changedByMs": 192.1359,
+        "before": "scroll-0036.png",
+        "lastUnchanged": "scroll-0041.png",
+        "firstChanged": "scroll-0042.png",
+        "classification": "corroborated-app-delay",
+        "realizedRows": 12,
+        "rowRealizationMs": 27.1592,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5837318967858,
+            "End": 5837319106649,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5837318015642,
+            "End": 5837319111396,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5837317965392,
+            "End": 5837319111909,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-replace-sync",
+            "Start": 5837319111913,
+            "End": 5837319134914,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-commits",
+            "Start": 5837319134920,
+            "End": 5837319134920,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5837315730672,
+            "End": 5837319135120,
+            "Count": 1
+          },
+          {
+            "Kind": "planning-inputs-and-schedule",
+            "Start": 5837319499742,
+            "End": 5837319499750,
+            "Count": 1
+          },
+          {
+            "Kind": "draft-settled-notification-sync",
+            "Start": 5837319497211,
+            "End": 5837319500809,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 145.7472,
+            "previousGapTicks": 1576362,
+            "threadCpu100ns": 40937500,
+            "previousThreadCpu100ns": 625000
+          },
+          {
+            "atMs": 158.6214,
+            "previousGapTicks": 128748,
+            "threadCpu100ns": 41093750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 188.1506,
+            "previousGapTicks": 295291,
+            "threadCpu100ns": 41093750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5837320034959,
+        "end": 5837322085188,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.9467,
+        "viewportMs": 35.3816,
+        "unchangedThroughMs": 31.5088,
+        "changedByMs": 88.6751,
+        "before": "scroll-0042.png",
+        "lastUnchanged": "scroll-0044.png",
+        "firstChanged": "scroll-0045.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 37.1642,
+            "previousGapTicks": 525740,
+            "threadCpu100ns": 41250000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 47.9818,
+            "previousGapTicks": 108181,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 51.0877,
+            "previousGapTicks": 31059,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 84.625,
+            "previousGapTicks": 335371,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 117.9427,
+            "previousGapTicks": 333176,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 151.2851,
+            "previousGapTicks": 333423,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 184.5694,
+            "previousGapTicks": 332847,
+            "threadCpu100ns": 41406250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5837322085188,
+        "end": 5837324133418,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.6109,
+        "viewportMs": 30.967,
+        "unchangedThroughMs": 31.5403,
+        "changedByMs": 84.0893,
+        "before": "scroll-0048.png",
+        "lastUnchanged": "scroll-0050.png",
+        "firstChanged": "scroll-0051.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 32.9664,
+            "previousGapTicks": 534195,
+            "threadCpu100ns": 41562500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 41.404,
+            "previousGapTicks": 84382,
+            "threadCpu100ns": 41562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 46.1017,
+            "previousGapTicks": 46977,
+            "threadCpu100ns": 41718750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 79.6506,
+            "previousGapTicks": 335484,
+            "threadCpu100ns": 41718750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 112.948,
+            "previousGapTicks": 332976,
+            "threadCpu100ns": 41718750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 146.1793,
+            "previousGapTicks": 332313,
+            "threadCpu100ns": 41718750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 179.6622,
+            "previousGapTicks": 334827,
+            "threadCpu100ns": 41718750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5837324133418,
+        "end": 5837326254543,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.6579,
+        "viewportMs": 8.9282,
+        "unchangedThroughMs": 48.0219,
+        "changedByMs": 112.2666,
+        "before": "scroll-0054.png",
+        "lastUnchanged": "scroll-0057.png",
+        "firstChanged": "scroll-0058.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 52.2375,
+            "previousGapTicks": 773977,
+            "threadCpu100ns": 42187500,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 65.4091,
+            "previousGapTicks": 131720,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 74.7212,
+            "previousGapTicks": 93126,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 108.2255,
+            "previousGapTicks": 335044,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 141.5417,
+            "previousGapTicks": 333160,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 174.9273,
+            "previousGapTicks": 333857,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 208.1924,
+            "previousGapTicks": 332648,
+            "threadCpu100ns": 42343750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  },
+  {
+    "run": "reset-m1-immediate-warm",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "earlyScroll": "immediate",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m1-immediate-warm",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 2132
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "8"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 63,
+    "captureMaxBeginGapMs": 47.5554,
+    "captureMaxDurationMs": 32.1666,
+    "inputToScrollSeparationMs": 0.7768,
+    "diagnosticWaitEvents": [],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5838501338075,
+        "detail": {
+          "phase": "warmup",
+          "measured": false
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5838601571172,
+        "detail": {
+          "phase": "warmup",
+          "samples": 49
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5838606594009,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5838806613027,
+        "detail": {
+          "phase": "title",
+          "samples": 98
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5838808040353,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5839008504893,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 0,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5839008512661,
+        "end": 5839010541486,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 2.5385,
+        "viewportMs": 90.8222,
+        "unchangedThroughMs": 125.9832,
+        "changedByMs": 185.1889,
+        "before": "scroll-0030.png",
+        "lastUnchanged": "scroll-0035.png",
+        "firstChanged": "scroll-0036.png",
+        "classification": "visible-delay-attribution-incomplete",
+        "realizedRows": 13,
+        "rowRealizationMs": 34.3155,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-serialize-write-wall",
+            "Start": 5839007823754,
+            "End": 5839008899903,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-stream-flush-wall",
+            "Start": 5839008899912,
+            "End": 5839008901086,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-durable-flush-sync",
+            "Start": 5839008901088,
+            "End": 5839008904749,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-bytes",
+            "Start": 5839008904758,
+            "End": 5839008904758,
+            "Count": 16125097
+          },
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5839009832404,
+            "End": 5839009924650,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5839008962131,
+            "End": 5839009930260,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5839008906234,
+            "End": 5839009930946,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-replace-sync",
+            "Start": 5839009930951,
+            "End": 5839009956674,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-commits",
+            "Start": 5839009956678,
+            "End": 5839009956678,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5839006797178,
+            "End": 5839009956872,
+            "Count": 1
+          },
+          {
+            "Kind": "planning-inputs-and-schedule",
+            "Start": 5839009970860,
+            "End": 5839009970863,
+            "Count": 1
+          },
+          {
+            "Kind": "draft-settled-notification-sync",
+            "Start": 5839009967849,
+            "End": 5839009971998,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [
+          {
+            "id": 1015,
+            "parent": 0,
+            "kind": "realize-row",
+            "reason": null,
+            "start": 5839009267546,
+            "end": 5839009362490,
+            "elapsedTicks": 94944,
+            "thread": 2,
+            "endThread": 2,
+            "managedAllocatedBytesOnThread": 64544,
+            "gc0": 1,
+            "gc1": 0,
+            "gc2": 0
+          }
+        ],
+        "callbackSamples": [
+          {
+            "atMs": 96.1423,
+            "previousGapTicks": 1151136,
+            "threadCpu100ns": 47031250,
+            "previousThreadCpu100ns": 781250
+          },
+          {
+            "atMs": 154.3165,
+            "previousGapTicks": 581745,
+            "threadCpu100ns": 47187500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 180.9542,
+            "previousGapTicks": 266376,
+            "threadCpu100ns": 47187500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5839010541486,
+        "end": 5839012597152,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.8704,
+        "viewportMs": 73.447,
+        "unchangedThroughMs": 95.0979,
+        "changedByMs": 150.2254,
+        "before": "scroll-0036.png",
+        "lastUnchanged": "scroll-0040.png",
+        "firstChanged": "scroll-0041.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 12,
+        "rowRealizationMs": 24.6636,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 76.2961,
+            "previousGapTicks": 982246,
+            "threadCpu100ns": 47812500,
+            "previousThreadCpu100ns": 625000
+          },
+          {
+            "atMs": 87.6031,
+            "previousGapTicks": 113070,
+            "threadCpu100ns": 47812500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 111.6495,
+            "previousGapTicks": 240466,
+            "threadCpu100ns": 47968750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 144.7638,
+            "previousGapTicks": 331137,
+            "threadCpu100ns": 47968750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 178.1184,
+            "previousGapTicks": 333549,
+            "threadCpu100ns": 47968750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5839012597152,
+        "end": 5839014664579,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.6711,
+        "viewportMs": 25.5608,
+        "unchangedThroughMs": 16.4878,
+        "changedByMs": 76.875,
+        "before": "scroll-0042.png",
+        "lastUnchanged": "scroll-0044.png",
+        "firstChanged": "scroll-0045.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 27.6373,
+            "previousGapTicks": 550852,
+            "threadCpu100ns": 48281250,
+            "previousThreadCpu100ns": 312500
+          },
+          {
+            "atMs": 38.5634,
+            "previousGapTicks": 109270,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 38.9988,
+            "previousGapTicks": 4355,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 72.739,
+            "previousGapTicks": 337397,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 105.9243,
+            "previousGapTicks": 331852,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 139.3384,
+            "previousGapTicks": 334140,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 172.5937,
+            "previousGapTicks": 332555,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 205.8869,
+            "previousGapTicks": 332933,
+            "threadCpu100ns": 48437500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5839014664579,
+        "end": 5839016696565,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 0.952,
+        "viewportMs": 49.6823,
+        "unchangedThroughMs": 48.1302,
+        "changedByMs": 103.2033,
+        "before": "scroll-0048.png",
+        "lastUnchanged": "scroll-0051.png",
+        "firstChanged": "scroll-0052.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 51.3158,
+            "previousGapTicks": 521716,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 312500
+          },
+          {
+            "atMs": 60.4086,
+            "previousGapTicks": 90932,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 65.6929,
+            "previousGapTicks": 52839,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 99.2135,
+            "previousGapTicks": 335206,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 132.6658,
+            "previousGapTicks": 334521,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 166.0713,
+            "previousGapTicks": 334055,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 199.3236,
+            "previousGapTicks": 332523,
+            "threadCpu100ns": 48750000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5839016696565,
+        "end": 5839019029394,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.4921,
+        "viewportMs": 29.8217,
+        "unchangedThroughMs": 79.3542,
+        "changedByMs": 133.8378,
+        "before": "scroll-0055.png",
+        "lastUnchanged": "scroll-0058.png",
+        "firstChanged": "scroll-0059.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 74.8921,
+            "previousGapTicks": 787666,
+            "threadCpu100ns": 49218750,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 86.894,
+            "previousGapTicks": 120027,
+            "threadCpu100ns": 49375000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 95.9339,
+            "previousGapTicks": 90404,
+            "threadCpu100ns": 49375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 129.5126,
+            "previousGapTicks": 335774,
+            "threadCpu100ns": 49531250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 163.0092,
+            "previousGapTicks": 334973,
+            "threadCpu100ns": 49531250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 196.1679,
+            "previousGapTicks": 331587,
+            "threadCpu100ns": 49531250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 229.5667,
+            "previousGapTicks": 333987,
+            "threadCpu100ns": 49531250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  },
+  {
+    "run": "reset-m1-settled-cold",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "cold",
+    "earlyScroll": "settled",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m1-settled-cold",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 37240
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "8"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 76,
+    "captureMaxBeginGapMs": 48.0371,
+    "captureMaxDurationMs": 37.6103,
+    "inputToScrollSeparationMs": 487.1083,
+    "diagnosticWaitEvents": [
+      {
+        "kind": "diagnostic-save-wait-start",
+        "ticks": 5838210347301,
+        "detail": {
+          "diagnosticOnly": true
+        }
+      },
+      {
+        "kind": "diagnostic-save-wait-end",
+        "ticks": 5838215212725,
+        "detail": {
+          "diagnosticOnly": true
+        }
+      }
+    ],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5837807734424,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5838008528972,
+        "detail": {
+          "phase": "title",
+          "samples": 98
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5838010101323,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5838210347294,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 0,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5838215218377,
+        "end": 5838217256721,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 2.519,
+        "viewportMs": 96.2517,
+        "unchangedThroughMs": 109.8663,
+        "changedByMs": 160.3071,
+        "before": "scroll-0044.png",
+        "lastUnchanged": "scroll-0048.png",
+        "firstChanged": "scroll-0049.png",
+        "classification": "visible-delay-attribution-incomplete",
+        "realizedRows": 13,
+        "rowRealizationMs": 29.1262,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 100.752,
+            "previousGapTicks": 1111397,
+            "threadCpu100ns": 41875000,
+            "previousThreadCpu100ns": 781250
+          },
+          {
+            "atMs": 112.0372,
+            "previousGapTicks": 112855,
+            "threadCpu100ns": 42031250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 122.7846,
+            "previousGapTicks": 107479,
+            "threadCpu100ns": 42031250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 156.2926,
+            "previousGapTicks": 335077,
+            "threadCpu100ns": 42031250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 189.742,
+            "previousGapTicks": 334491,
+            "threadCpu100ns": 42031250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5838217256721,
+        "end": 5838219308135,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 2.0507,
+        "viewportMs": 83.4056,
+        "unchangedThroughMs": 94.5147,
+        "changedByMs": 156.7876,
+        "before": "scroll-0050.png",
+        "lastUnchanged": "scroll-0054.png",
+        "firstChanged": "scroll-0055.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 12,
+        "rowRealizationMs": 24.954,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 86.6829,
+            "previousGapTicks": 1007751,
+            "threadCpu100ns": 42656250,
+            "previousThreadCpu100ns": 625000
+          },
+          {
+            "atMs": 99.5341,
+            "previousGapTicks": 128511,
+            "threadCpu100ns": 42812500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 118.984,
+            "previousGapTicks": 194501,
+            "threadCpu100ns": 42968750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 152.4722,
+            "previousGapTicks": 334882,
+            "threadCpu100ns": 42968750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 185.879,
+            "previousGapTicks": 334071,
+            "threadCpu100ns": 42968750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5838219308135,
+        "end": 5838221359621,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.5896,
+        "viewportMs": 31.5824,
+        "unchangedThroughMs": 32.0214,
+        "changedByMs": 85.4043,
+        "before": "scroll-0056.png",
+        "lastUnchanged": "scroll-0058.png",
+        "firstChanged": "scroll-0059.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 33.5682,
+            "previousGapTicks": 528298,
+            "threadCpu100ns": 43125000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 43.6066,
+            "previousGapTicks": 100389,
+            "threadCpu100ns": 43281250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 47.2285,
+            "previousGapTicks": 36221,
+            "threadCpu100ns": 43281250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 80.7195,
+            "previousGapTicks": 334909,
+            "threadCpu100ns": 43281250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 114.085,
+            "previousGapTicks": 333656,
+            "threadCpu100ns": 43281250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 147.4438,
+            "previousGapTicks": 333586,
+            "threadCpu100ns": 43281250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 180.8142,
+            "previousGapTicks": 333706,
+            "threadCpu100ns": 43437500,
+            "previousThreadCpu100ns": 156250
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5838221359621,
+        "end": 5838223392118,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.5531,
+        "viewportMs": 29.257,
+        "unchangedThroughMs": 16.0621,
+        "changedByMs": 80.2234,
+        "before": "scroll-0062.png",
+        "lastUnchanged": "scroll-0064.png",
+        "firstChanged": "scroll-0065.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 31.3466,
+            "previousGapTicks": 556807,
+            "threadCpu100ns": 43593750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 41.9238,
+            "previousGapTicks": 105776,
+            "threadCpu100ns": 43750000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 75.6926,
+            "previousGapTicks": 337680,
+            "threadCpu100ns": 43750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 109.0251,
+            "previousGapTicks": 333332,
+            "threadCpu100ns": 43750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 142.6179,
+            "previousGapTicks": 335927,
+            "threadCpu100ns": 43750000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 175.8213,
+            "previousGapTicks": 332030,
+            "threadCpu100ns": 43750000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5838223392118,
+        "end": 5838225487786,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.1828,
+        "viewportMs": 6.0854,
+        "unchangedThroughMs": 47.7295,
+        "changedByMs": 110.3877,
+        "before": "scroll-0068.png",
+        "lastUnchanged": "scroll-0071.png",
+        "firstChanged": "scroll-0072.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 50.0225,
+            "previousGapTicks": 774510,
+            "threadCpu100ns": 44218750,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 61.8261,
+            "previousGapTicks": 118039,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 72.3751,
+            "previousGapTicks": 105489,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 105.6846,
+            "previousGapTicks": 333095,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 139.199,
+            "previousGapTicks": 335137,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 172.5708,
+            "previousGapTicks": 333720,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 205.7264,
+            "previousGapTicks": 331560,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  },
+  {
+    "run": "reset-m1-settled-warm",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "earlyScroll": "settled",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m1-settled-warm",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 12776
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "8"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 75,
+    "captureMaxBeginGapMs": 48.6352,
+    "captureMaxDurationMs": 32.4366,
+    "inputToScrollSeparationMs": 424.4689,
+    "diagnosticWaitEvents": [
+      {
+        "kind": "diagnostic-save-wait-start",
+        "ticks": 5839980124299,
+        "detail": {
+          "diagnosticOnly": true
+        }
+      },
+      {
+        "kind": "diagnostic-save-wait-end",
+        "ticks": 5839984363165,
+        "detail": {
+          "diagnosticOnly": true
+        }
+      }
+    ],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5839472275481,
+        "detail": {
+          "phase": "warmup",
+          "measured": false
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5839572482621,
+        "detail": {
+          "phase": "warmup",
+          "samples": 49
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5839577512342,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5839778146384,
+        "detail": {
+          "phase": "title",
+          "samples": 98
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5839779570871,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5839980124292,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 0,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5839984368981,
+        "end": 5839986401395,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 2.6417,
+        "viewportMs": 90.4243,
+        "unchangedThroughMs": 94.9184,
+        "changedByMs": 158.5811,
+        "before": "scroll-0043.png",
+        "lastUnchanged": "scroll-0047.png",
+        "firstChanged": "scroll-0048.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 13,
+        "rowRealizationMs": 27.7938,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 95.0885,
+            "previousGapTicks": 1075683,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 781250
+          },
+          {
+            "atMs": 107.2337,
+            "previousGapTicks": 121456,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 121.1854,
+            "previousGapTicks": 139519,
+            "threadCpu100ns": 50312500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 154.3342,
+            "previousGapTicks": 331459,
+            "threadCpu100ns": 50312500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 187.7157,
+            "previousGapTicks": 333835,
+            "threadCpu100ns": 50312500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5839986401395,
+        "end": 5839988458327,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.6927,
+        "viewportMs": 92.4682,
+        "unchangedThroughMs": 95.5281,
+        "changedByMs": 155.3404,
+        "before": "scroll-0049.png",
+        "lastUnchanged": "scroll-0053.png",
+        "firstChanged": "scroll-0054.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 12,
+        "rowRealizationMs": 34.800399999999996,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [
+          {
+            "id": 1025,
+            "parent": 0,
+            "kind": "realize-row",
+            "reason": null,
+            "start": 5839987083532,
+            "end": 5839987194028,
+            "elapsedTicks": 110496,
+            "thread": 2,
+            "endThread": 2,
+            "managedAllocatedBytesOnThread": 64968,
+            "gc0": 1,
+            "gc1": 0,
+            "gc2": 0
+          }
+        ],
+        "callbackSamples": [
+          {
+            "atMs": 95.8947,
+            "previousGapTicks": 1114204,
+            "threadCpu100ns": 51093750,
+            "previousThreadCpu100ns": 781250
+          },
+          {
+            "atMs": 106.1438,
+            "previousGapTicks": 102497,
+            "threadCpu100ns": 51093750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 117.5812,
+            "previousGapTicks": 114372,
+            "threadCpu100ns": 51250000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 151.111,
+            "previousGapTicks": 335296,
+            "threadCpu100ns": 51250000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 184.492,
+            "previousGapTicks": 333813,
+            "threadCpu100ns": 51250000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5839988458327,
+        "end": 5839990501517,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.1567,
+        "viewportMs": 28.6574,
+        "unchangedThroughMs": 31.4829,
+        "changedByMs": 84.5624,
+        "before": "scroll-0055.png",
+        "lastUnchanged": "scroll-0057.png",
+        "firstChanged": "scroll-0058.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 30.263,
+            "previousGapTicks": 514641,
+            "threadCpu100ns": 51406250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 39.3604,
+            "previousGapTicks": 90980,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 45.1971,
+            "previousGapTicks": 58369,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 78.8034,
+            "previousGapTicks": 336056,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 112.0443,
+            "previousGapTicks": 332403,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 145.5081,
+            "previousGapTicks": 334644,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 178.8928,
+            "previousGapTicks": 333844,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5839990501517,
+        "end": 5839992540130,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.8563,
+        "viewportMs": 24.9746,
+        "unchangedThroughMs": 16.0944,
+        "changedByMs": 79.7999,
+        "before": "scroll-0061.png",
+        "lastUnchanged": "scroll-0063.png",
+        "firstChanged": "scroll-0064.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 26.4946,
+            "previousGapTicks": 519207,
+            "threadCpu100ns": 51718750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 34.5402,
+            "previousGapTicks": 80465,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 41.0743,
+            "previousGapTicks": 65340,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 74.351,
+            "previousGapTicks": 332767,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 107.8546,
+            "previousGapTicks": 335032,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 141.1509,
+            "previousGapTicks": 332956,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 174.5598,
+            "previousGapTicks": 334087,
+            "threadCpu100ns": 51875000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5839992540130,
+        "end": 5839994618778,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.8186,
+        "viewportMs": 4.6109,
+        "unchangedThroughMs": 48.0335,
+        "changedByMs": 108.6589,
+        "before": "scroll-0067.png",
+        "lastUnchanged": "scroll-0070.png",
+        "firstChanged": "scroll-0071.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 53.4103,
+            "previousGapTicks": 827121,
+            "threadCpu100ns": 52343750,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 67.4457,
+            "previousGapTicks": 140362,
+            "threadCpu100ns": 52500000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 104.0955,
+            "previousGapTicks": 366493,
+            "threadCpu100ns": 52500000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 137.4691,
+            "previousGapTicks": 333736,
+            "threadCpu100ns": 52500000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 170.6364,
+            "previousGapTicks": 331678,
+            "threadCpu100ns": 52500000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 204.0993,
+            "previousGapTicks": 334625,
+            "threadCpu100ns": 52500000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  },
+  {
+    "run": "reset-m2-inactive-cold",
+    "source": "fd45ecbb40a67fb0395bfb52e32baf9fc326f893",
+    "condition": "cold",
+    "earlyScroll": "immediate",
+    "appSha256": "D1594153A75171BB410D89FE2BA6AA3B92D45A44A618D70E4706290B1290B23A",
+    "coreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m2-inactive-cold",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 3560
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "8"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 62,
+    "captureMaxBeginGapMs": 47.4946,
+    "captureMaxDurationMs": 32.5683,
+    "inputToScrollSeparationMs": 0.5612,
+    "diagnosticWaitEvents": [],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5841252644513,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5841453079311,
+        "detail": {
+          "phase": "title",
+          "samples": 98
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5841454599882,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5841655296671,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 75,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5841655302283,
+        "end": 5841657337755,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 2.7243,
+        "viewportMs": 48.8979,
+        "unchangedThroughMs": 47.6044,
+        "changedByMs": 109.1266,
+        "before": "scroll-0029.png",
+        "lastUnchanged": "scroll-0032.png",
+        "firstChanged": "scroll-0033.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 13,
+        "rowRealizationMs": 13.234300000000001,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5841655653556,
+            "End": 5841655694147,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5841654972445,
+            "End": 5841655699156,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-current-load-wall",
+            "Start": 5841654972053,
+            "End": 5841655699538,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-serialize-write-wall",
+            "Start": 5841655703482,
+            "End": 5841657265287,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-stream-flush-wall",
+            "Start": 5841657265297,
+            "End": 5841657266329,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-durable-flush-sync",
+            "Start": 5841657266331,
+            "End": 5841657269800,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-bytes",
+            "Start": 5841657269812,
+            "End": 5841657269812,
+            "Count": 16125097
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5841657320936,
+            "End": 5841658435165,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5841657271233,
+            "End": 5841658435691,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5841654939355,
+            "End": 5841658459743,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 52.2368,
+            "previousGapTicks": 804389,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 58.4204,
+            "previousGapTicks": 61843,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 71.1738,
+            "previousGapTicks": 127528,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 104.7021,
+            "previousGapTicks": 335286,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 138.0669,
+            "previousGapTicks": 333644,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 171.3637,
+            "previousGapTicks": 332970,
+            "threadCpu100ns": 44375000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5841657337755,
+        "end": 5841659371145,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 1.9191,
+        "viewportMs": 36.7157,
+        "unchangedThroughMs": 79.0644,
+        "changedByMs": 138.9117,
+        "before": "scroll-0035.png",
+        "lastUnchanged": "scroll-0039.png",
+        "firstChanged": "scroll-0040.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 12,
+        "rowRealizationMs": 19.5017,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5841658393426,
+            "End": 5841658430648,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5841657320936,
+            "End": 5841658435165,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5841657271233,
+            "End": 5841658435691,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-replace-sync",
+            "Start": 5841658435694,
+            "End": 5841658459525,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-commits",
+            "Start": 5841658459530,
+            "End": 5841658459530,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5841654939355,
+            "End": 5841658459743,
+            "Count": 1
+          },
+          {
+            "Kind": "planning-inputs-and-schedule",
+            "Start": 5841658464371,
+            "End": 5841658464377,
+            "Count": 1
+          },
+          {
+            "Kind": "draft-settled-notification-sync",
+            "Start": 5841658460544,
+            "End": 5841658465621,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [
+          {
+            "id": 801,
+            "parent": 0,
+            "kind": "realize-row",
+            "reason": null,
+            "start": 5841657503316,
+            "end": 5841657584058,
+            "elapsedTicks": 80742,
+            "thread": 2,
+            "endThread": 2,
+            "managedAllocatedBytesOnThread": 58904,
+            "gc0": 1,
+            "gc1": 0,
+            "gc2": 0
+          }
+        ],
+        "callbackSamples": [
+          {
+            "atMs": 38.2533,
+            "previousGapTicks": 704363,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 312500
+          },
+          {
+            "atMs": 83.0337,
+            "previousGapTicks": 447811,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 105.541,
+            "previousGapTicks": 225067,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 135.2012,
+            "previousGapTicks": 296601,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 167.9597,
+            "previousGapTicks": 327589,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 201.3276,
+            "previousGapTicks": 333676,
+            "threadCpu100ns": 44687500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5841659371145,
+        "end": 5841661404614,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.041,
+        "viewportMs": 41.5706,
+        "unchangedThroughMs": 47.0353,
+        "changedByMs": 102.2187,
+        "before": "scroll-0041.png",
+        "lastUnchanged": "scroll-0044.png",
+        "firstChanged": "scroll-0045.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 42.8638,
+            "previousGapTicks": 448747,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 64.6817,
+            "previousGapTicks": 218191,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 97.9224,
+            "previousGapTicks": 332399,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 131.245,
+            "previousGapTicks": 333233,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 164.6758,
+            "previousGapTicks": 334307,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 197.9882,
+            "previousGapTicks": 333122,
+            "threadCpu100ns": 44843750,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5841661404614,
+        "end": 5841663448569,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.1577,
+        "viewportMs": 42.0478,
+        "unchangedThroughMs": 47.4761,
+        "changedByMs": 98.8306,
+        "before": "scroll-0048.png",
+        "lastUnchanged": "scroll-0050.png",
+        "firstChanged": "scroll-0051.png",
+        "classification": "changed-by-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 43.5627,
+            "previousGapTicks": 489211,
+            "threadCpu100ns": 45000000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 51.2514,
+            "previousGapTicks": 76900,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 61.1091,
+            "previousGapTicks": 98577,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 94.6528,
+            "previousGapTicks": 335428,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 127.9879,
+            "previousGapTicks": 333354,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 161.296,
+            "previousGapTicks": 333080,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 194.6814,
+            "previousGapTicks": 333851,
+            "threadCpu100ns": 45156250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5841663448569,
+        "end": 5841665740944,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.2487,
+        "viewportMs": 24.4091,
+        "unchangedThroughMs": 63.6934,
+        "changedByMs": 127.7479,
+        "before": "scroll-0054.png",
+        "lastUnchanged": "scroll-0057.png",
+        "firstChanged": "scroll-0058.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 70.0844,
+            "previousGapTicks": 797984,
+            "threadCpu100ns": 45625000,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 82.3999,
+            "previousGapTicks": 123158,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 90.2016,
+            "previousGapTicks": 78021,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 123.6137,
+            "previousGapTicks": 334117,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 157.0285,
+            "previousGapTicks": 334140,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 190.435,
+            "previousGapTicks": 334066,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 223.6748,
+            "previousGapTicks": 332408,
+            "threadCpu100ns": 45781250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  },
+  {
+    "run": "reset-m2-inactive-warm",
+    "source": "fd45ecbb40a67fb0395bfb52e32baf9fc326f893",
+    "condition": "warm",
+    "earlyScroll": "immediate",
+    "appSha256": "D1594153A75171BB410D89FE2BA6AA3B92D45A44A618D70E4706290B1290B23A",
+    "coreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "driverSha256": "F2F55063E7C9AD9085D5F78D7C93854E2E08095D39DF5659C3327F2D3F79B7B3",
+    "seedSha256": "8053C5F52431CD95E855DF4A95429A9F6632A8341C198DB20301BFBE54EBD14C",
+    "seedCoreSha256": "68B9092FB751B6CCB37D23EADA83F85789C9C68D82F03C64DF492ADCBB4C777F",
+    "testCommand": [
+      "dotnet",
+      "test",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+      "--filter",
+      "FullyQualifiedName=GhProjectsBoards.E2E.Tests.SustainedInputDiagnosticTests.SustainedPlanningSheetInputAndScroll",
+      "--logger",
+      "trx;LogFileName=diagnostic.trx",
+      "--results-directory",
+      "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue61-65\\reset-m2-inactive-warm",
+      "--",
+      "NUnit.NumberOfTestWorkers=0",
+      "RunConfiguration.TestSessionTimeout=240000"
+    ],
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "sdk": "10.0.401",
+    "counts": {
+      "total": "1",
+      "executed": "1",
+      "passed": "1",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "lifetime": {
+      "normal": true,
+      "forced": false,
+      "pid": 39824
+    },
+    "durableReadback": {
+      "passed": true,
+      "expectedBuffers": [
+        {
+          "Row": 0,
+          "Column": 0,
+          "Value": "7"
+        },
+        {
+          "Row": 0,
+          "Column": 2,
+          "Value": "8"
+        }
+      ],
+      "historyOperations": 1,
+      "planningTasksUnchanged": 1000,
+      "endpoint": "Normal close and independent checkpoint content; ordinary restart is verified in the separate Gantt journey."
+    },
+    "traceComplete": true,
+    "captureCount": 56,
+    "captureMaxBeginGapMs": 47.5595,
+    "captureMaxDurationMs": 38.9484,
+    "inputToScrollSeparationMs": 0.9865,
+    "diagnosticWaitEvents": [],
+    "inputPhases": [
+      {
+        "kind": "input-phase-start",
+        "ticks": 5842218336861,
+        "detail": {
+          "phase": "warmup",
+          "measured": false
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5842318561837,
+        "detail": {
+          "phase": "warmup",
+          "samples": 49
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5842323549691,
+        "detail": {
+          "phase": "title",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5842525318873,
+        "detail": {
+          "phase": "title",
+          "samples": 99
+        }
+      },
+      {
+        "kind": "input-phase-start",
+        "ticks": 5842526802358,
+        "detail": {
+          "phase": "number",
+          "measured": true
+        }
+      },
+      {
+        "kind": "input-phase-end",
+        "ticks": 5842727153270,
+        "detail": {
+          "phase": "number",
+          "samples": 98
+        }
+      }
+    ],
+    "inactivePresentersCreated": 75,
+    "commands": [
+      {
+        "index": 0,
+        "begin": 5842727163135,
+        "end": 5842729315361,
+        "axis": "vertical",
+        "priorOffset": 0,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 2.682,
+        "viewportMs": 86.9984,
+        "unchangedThroughMs": 92.3353,
+        "changedByMs": 151.2859,
+        "before": "scroll-0023.png",
+        "lastUnchanged": "scroll-0027.png",
+        "firstChanged": "scroll-0028.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 13,
+        "rowRealizationMs": 28.4804,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5842727682456,
+            "End": 5842727856633,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5842726793536,
+            "End": 5842727861387,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-current-load-wall",
+            "Start": 5842726793206,
+            "End": 5842727861958,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-serialize-write-wall",
+            "Start": 5842727866194,
+            "End": 5842729140460,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-stream-flush-wall",
+            "Start": 5842729140469,
+            "End": 5842729141104,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-durable-flush-sync",
+            "Start": 5842729141106,
+            "End": 5842729144591,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-bytes",
+            "Start": 5842729144600,
+            "End": 5842729144600,
+            "Count": 16125097
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5842729202966,
+            "End": 5842730153576,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5842729145917,
+            "End": 5842730154108,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5842726761282,
+            "End": 5842730179583,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [
+          {
+            "id": 1003,
+            "parent": 0,
+            "kind": "realize-row",
+            "reason": null,
+            "start": 5842727682378,
+            "end": 5842727829287,
+            "elapsedTicks": 146909,
+            "thread": 2,
+            "endThread": 2,
+            "managedAllocatedBytesOnThread": 49728,
+            "gc0": 1,
+            "gc1": 1,
+            "gc2": 0
+          }
+        ],
+        "callbackSamples": [
+          {
+            "atMs": 89.9052,
+            "previousGapTicks": 1093278,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 95.5559,
+            "previousGapTicks": 56515,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 113.2734,
+            "previousGapTicks": 177172,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 146.9586,
+            "previousGapTicks": 336851,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 180.1476,
+            "previousGapTicks": 331894,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 213.6414,
+            "previousGapTicks": 334931,
+            "threadCpu100ns": 50156250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "begin": 5842729315361,
+        "end": 5842731339199,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 14591.999816894531,
+        "requestedReturn": false,
+        "postSave": false,
+        "wheelMs": 1.5161,
+        "viewportMs": 94.693,
+        "unchangedThroughMs": 108.6679,
+        "changedByMs": 169.8615,
+        "before": "scroll-0029.png",
+        "lastUnchanged": "scroll-0034.png",
+        "firstChanged": "scroll-0035.png",
+        "classification": "visible-delay-attribution-incomplete",
+        "realizedRows": 12,
+        "rowRealizationMs": 49.8451,
+        "overlappingCheckpointSpans": [
+          {
+            "Kind": "checkpoint-read-validation-sync",
+            "Start": 5842730116721,
+            "End": 5842730149113,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-deserialize-read-wall",
+            "Start": 5842729202966,
+            "End": 5842730153576,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-temp-readback-wall",
+            "Start": 5842729145917,
+            "End": 5842730154108,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-replace-sync",
+            "Start": 5842730154111,
+            "End": 5842730179370,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-commits",
+            "Start": 5842730179374,
+            "End": 5842730179374,
+            "Count": 1
+          },
+          {
+            "Kind": "checkpoint-save",
+            "Start": 5842726761282,
+            "End": 5842730179583,
+            "Count": 1
+          },
+          {
+            "Kind": "planning-inputs-and-schedule",
+            "Start": 5842730308312,
+            "End": 5842730308317,
+            "Count": 1
+          },
+          {
+            "Kind": "draft-settled-notification-sync",
+            "Start": 5842730305886,
+            "End": 5842730309411,
+            "Count": 1
+          }
+        ],
+        "gcOverlappingSpans": [
+          {
+            "id": 1019,
+            "parent": 0,
+            "kind": "realize-row",
+            "reason": null,
+            "start": 5842729721775,
+            "end": 5842730122047,
+            "elapsedTicks": 400272,
+            "thread": 2,
+            "endThread": 2,
+            "managedAllocatedBytesOnThread": 51944,
+            "gc0": 2,
+            "gc1": 2,
+            "gc2": 1
+          }
+        ],
+        "callbackSamples": [
+          {
+            "atMs": 96.0559,
+            "previousGapTicks": 976372,
+            "threadCpu100ns": 50468750,
+            "previousThreadCpu100ns": 312500
+          },
+          {
+            "atMs": 100.3959,
+            "previousGapTicks": 43404,
+            "threadCpu100ns": 50625000,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 131.6797,
+            "previousGapTicks": 312835,
+            "threadCpu100ns": 50625000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 165.1013,
+            "previousGapTicks": 334218,
+            "threadCpu100ns": 50625000,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 198.3679,
+            "previousGapTicks": 332665,
+            "threadCpu100ns": 50625000,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "begin": 5842731339199,
+        "end": 5842733354277,
+        "axis": "vertical",
+        "priorOffset": 14591.999816894531,
+        "requestedOffset": 7295.999908447266,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.3949,
+        "viewportMs": 39.5087,
+        "unchangedThroughMs": 46.4528,
+        "changedByMs": 100.5918,
+        "before": "scroll-0035.png",
+        "lastUnchanged": "scroll-0038.png",
+        "firstChanged": "scroll-0039.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 41.0284,
+            "previousGapTicks": 450438,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 62.6066,
+            "previousGapTicks": 215787,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 95.8424,
+            "previousGapTicks": 332355,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 129.3743,
+            "previousGapTicks": 335320,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 162.6453,
+            "previousGapTicks": 332705,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 196.0823,
+            "previousGapTicks": 334369,
+            "threadCpu100ns": 50781250,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "begin": 5842733354277,
+        "end": 5842735385302,
+        "axis": "vertical",
+        "priorOffset": 7295.999908447266,
+        "requestedOffset": 0,
+        "requestedReturn": true,
+        "postSave": true,
+        "wheelMs": 1.8211,
+        "viewportMs": 43.2407,
+        "unchangedThroughMs": 46.4204,
+        "changedByMs": 100.5803,
+        "before": "scroll-0041.png",
+        "lastUnchanged": "scroll-0044.png",
+        "firstChanged": "scroll-0045.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 45.1736,
+            "previousGapTicks": 505999,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 53.3777,
+            "previousGapTicks": 82045,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 61.0503,
+            "previousGapTicks": 76724,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 94.6057,
+            "previousGapTicks": 335550,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 127.8898,
+            "previousGapTicks": 332840,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 161.3517,
+            "previousGapTicks": 334621,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 194.583,
+            "previousGapTicks": 332314,
+            "threadCpu100ns": 50937500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "begin": 5842735385302,
+        "end": 5842737674825,
+        "axis": "horizontal",
+        "priorOffset": 0,
+        "requestedOffset": 634.4000244140625,
+        "requestedReturn": false,
+        "postSave": true,
+        "wheelMs": 1.6589,
+        "viewportMs": 25.4827,
+        "unchangedThroughMs": 77.5801,
+        "changedByMs": 129.5828,
+        "before": "scroll-0048.png",
+        "lastUnchanged": "scroll-0051.png",
+        "firstChanged": "scroll-0052.png",
+        "classification": "capture-bracket-crosses-100ms",
+        "realizedRows": 0,
+        "rowRealizationMs": 0,
+        "overlappingCheckpointSpans": [],
+        "gcOverlappingSpans": [],
+        "callbackSamples": [
+          {
+            "atMs": 76.8969,
+            "previousGapTicks": 854158,
+            "threadCpu100ns": 51406250,
+            "previousThreadCpu100ns": 468750
+          },
+          {
+            "atMs": 91.6606,
+            "previousGapTicks": 147640,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 156250
+          },
+          {
+            "atMs": 124.8006,
+            "previousGapTicks": 331402,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 158.1743,
+            "previousGapTicks": 333737,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 191.4586,
+            "previousGapTicks": 332844,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          },
+          {
+            "atMs": 224.8372,
+            "previousGapTicks": 333785,
+            "threadCpu100ns": 51562500,
+            "previousThreadCpu100ns": 0
+          }
+        ]
+      }
+    ],
+    "caveat": "Capture brackets are independent GDI observations, not exact presentation or scanout times. GC counts only establish overlap. Row spans and checkpoint spans are not additive CPU time. These five jumps do not establish continuous scrolling."
+  }
+]

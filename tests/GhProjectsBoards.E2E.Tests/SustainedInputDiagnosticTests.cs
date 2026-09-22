@@ -28,6 +28,9 @@ public sealed class SustainedInputDiagnosticTests
         var condition = Required("CONDITION");
         var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
         var traceDetail = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_TRACE_DETAIL") ?? "full";
+        var earlyScroll = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_EARLY_SCROLL") ?? "none";
+        Assert.That(earlyScroll, Is.AnyOf("none", "immediate", "settled"));
+        Assert.That(earlyScroll == "none" || mode == "standard", Is.True);
         Assert.That(traceDetail, Is.AnyOf("full", "light", "off"));
         Assert.That(mode, Is.AnyOf("standard", "ime", "scroll"));
         Assert.That(condition, Is.AnyOf("cold", "warm"));
@@ -40,7 +43,7 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, mode, traceDetail, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, data, tasks = 1000, people = 20,
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -53,7 +56,8 @@ public sealed class SustainedInputDiagnosticTests
                 : "60 seconds per condition: 20 title input, 20 NUMBER input, 20 alternating wheel/horizontal motion. Warm runs have an additional unmeasured 10 second title phase. Each condition starts a fresh process and fixture. A separate scrollbar-thumb probe remains required.",
             boundary = "Input start immediately before native key dispatch to first exact UIA native TextBox value readback, including UIA observer cost; not composited pixels. Independent best-effort GDI samples cover scrolling, with capture gaps reported; app rendering callbacks are separate pre-presentation signals. No physical scanout claim.",
             target = "Typed native-value readback p95 <=100 ms. Report all samples, capture gaps and app rendering gaps >=100 ms. No threshold asserted by this diagnostic test.",
-            humanAcceptance = "Failed prior evaluation; not re-evaluated by this diagnostic."
+            humanAcceptance = "Failed prior evaluation; not re-evaluated by this diagnostic.",
+            earlyScrollBoundary = "When selected: unchanged title/NUMBER prehistory; camera armed during last NUMBER second, buffered PNG encoding after the replay, 1 second of original scroll commands. Settled adds an explicit wait for saved status plus 250 ms and is a diagnostic control, never product acceptance."
         });
         var events = new List<object>();
         var expectedBuffers = new Dictionary<(int Row, int Column), string>();
@@ -99,7 +103,7 @@ public sealed class SustainedInputDiagnosticTests
             Record("workload-start", new { start });
             if (mode == "scroll") ScrollbarAndDistantEdit();
             else if (mode == "ime") Ime(60);
-            else { Input("title", 0, 20, true); Input("number", 2, 20, true); Scroll(20); }
+            else { Input("title", 0, 20, true); if (earlyScroll == "none") { Input("number", 2, 20, true); Scroll(20); } else EarlyScroll(); }
             Record("workload-end", new { elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds });
             Capture("after-workload");
             window.Close(); normal = process.WaitForExit(20000) && process.ExitCode == 0;
@@ -142,7 +146,7 @@ public sealed class SustainedInputDiagnosticTests
         }
         AutomationElement Element(string id) => WorkspaceUi.Element(window!, id);
         void Capture(string name) { using var image = FlaUI.Core.Capturing.Capture.Rectangle(window!.BoundingRectangle); image.ToFile(Path.Combine(output, name + ".png")); }
-        void Input(string phase, int column, int seconds, bool measured)
+        void Input(string phase, int column, int seconds, bool measured, Action? nearEnd = null)
         {
             var cell = Element("GridCell0_" + column).AsTextBox(); cell.Click();
             Wait(() => cell.Properties.HasKeyboardFocus.Value, "The intended native editor must own focus.");
@@ -150,6 +154,8 @@ public sealed class SustainedInputDiagnosticTests
             Record("input-phase-start", new { phase, measured });
             while (Stopwatch.GetElapsedTime(start).TotalSeconds < seconds)
             {
+                if (nearEnd is not null && Stopwatch.GetElapsedTime(start).TotalSeconds >= seconds - 1)
+                { nearEnd(); nearEnd = null; }
                 // Replace the pending buffer repeatedly without invalid NUMBER overflow.
                 using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
                 var key = index % 2 == 0 ? VirtualKeyShort.KEY_7 : VirtualKeyShort.KEY_8;
@@ -295,9 +301,57 @@ public sealed class SustainedInputDiagnosticTests
             Record("scroll-roundtrip-end", new { verticalPercent = scroll.VerticalScrollPercent.Value, horizontalPercent = scroll.HorizontalScrollPercent.Value });
             Thread.Sleep(250); Capture("scroll-return");
         });
-        void Scroll(int seconds) => WithScrollFrames(() =>
+        void EarlyScroll()
         {
-                var bounds = Element("ProjectItems").BoundingRectangle;
+            var bounds = Element("ProjectItems").BoundingRectangle;
+            using var armed = new ManualResetEventSlim();
+            using var stop = new CancellationTokenSource();
+            var frames = new List<(long Begin, long End, CaptureImage Image)>();
+            var camera = Task.Run(() =>
+            {
+                armed.Wait(stop.Token);
+                while (!stop.IsCancellationRequested && frames.Count < 512)
+                {
+                    var begin = Stopwatch.GetTimestamp();
+                    var image = FlaUI.Core.Capturing.Capture.Rectangle(bounds);
+                    frames.Add((begin, Stopwatch.GetTimestamp(), image));
+                    Thread.Sleep(1);
+                }
+            });
+            try
+            {
+                Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds }); armed.Set(); });
+                if (earlyScroll == "settled")
+                {
+                    Record("diagnostic-save-wait-start", new { diagnosticOnly = true });
+                    Wait(() => Element("DraftStatus").Name.Contains("保存済み"), "Diagnostic control requires settled saving.");
+                    Thread.Sleep(250);
+                    Record("diagnostic-save-wait-end", new { diagnosticOnly = true });
+                }
+                ScrollInputs(1, bounds);
+            }
+            finally
+            {
+                stop.Cancel(); armed.Set();
+                try
+                {
+                    try { camera.GetAwaiter().GetResult(); } catch (OperationCanceledException) { }
+                }
+                finally
+                {
+                    try
+                    {
+                        Write("scroll-captures.json", frames.Select((f, i) => new { index = i, begin = f.Begin, end = f.End, path = $"scroll-{i:D4}.png" }).ToArray());
+                        for (var i = 0; i < frames.Count; i++) frames[i].Image.ToFile(Path.Combine(output, $"scroll-{i:D4}.png"));
+                    }
+                    finally { foreach (var frame in frames) frame.Image.Dispose(); }
+                }
+            }
+            Assert.That(frames.Count, Is.LessThan(512), "A saturated camera is incomplete evidence.");
+        }
+        void Scroll(int seconds) => WithScrollFrames(() => ScrollInputs(seconds, Element("ProjectItems").BoundingRectangle));
+        void ScrollInputs(int seconds, Rectangle bounds)
+        {
                 Mouse.Position = new Point(bounds.Left + bounds.Width / 2, bounds.Top + 70);
                 var start = Stopwatch.GetTimestamp(); var index = 0;
                 Record("scroll-phase-start", new { bounds });
@@ -313,6 +367,6 @@ public sealed class SustainedInputDiagnosticTests
                     Thread.Sleep(200); index++;
                 }
                 Record("scroll-phase-end", new { samples = index });
-        });
+        }
     }
 }

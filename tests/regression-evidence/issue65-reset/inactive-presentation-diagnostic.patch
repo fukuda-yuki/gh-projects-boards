@@ -1,0 +1,85 @@
+diff --git a/src/GhProjectsBoards.App/EditingGrid.cs b/src/GhProjectsBoards.App/EditingGrid.cs
+index 6e2e922..fe52ccb 100644
+--- a/src/GhProjectsBoards.App/EditingGrid.cs
++++ b/src/GhProjectsBoards.App/EditingGrid.cs
+@@ -357,7 +357,10 @@ internal sealed partial class EditingGrid : Grid
+     {
+         var cell = rows[r].Cells[c];
+         FrameworkElement editor = cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable
+-            ? new ChoiceCell(this, r, c, cell) : new TitleCell(this, r, c, cell);
++            ? new ChoiceCell(this, r, c, cell)
++            : r >= 13 && !(active && currentRow == r) && session.Workspace.Buffer(cell) is null
++                ? new InactiveDiagnosticText(this, cell) : new TitleCell(this, r, c, cell);
++        if (editor is InactiveDiagnosticText) diagnostics?.Record("inactive-diagnostic-text", new { row = r, column = c });
+         AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
+         AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
+         if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
+@@ -366,7 +369,7 @@ internal sealed partial class EditingGrid : Grid
+     }
+     private void EnsureCell(int r, int c)
+     {
+-        if (controls[r][c] is TitleCell or ChoiceCell) return;
++        if (controls[r][c] is TitleCell or ChoiceCell or InactiveDiagnosticText) return;
+         var container = new Grid();
+         var editor = CreateCellEditor(r, c);
+         container.Children.Add(editor); controls[r][c] = editor;
+@@ -740,7 +743,7 @@ internal sealed partial class EditingGrid : Grid
+     }
+     private void UpdateCell(int r, int c)
+     {
+-        if (controls[r][c] is not (TitleCell or ChoiceCell)) return;
++        if (controls[r][c] is not (TitleCell or ChoiceCell or InactiveDiagnosticText)) return;
+         var cell = rows[r].Cells[c];
+         markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
+             + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
+@@ -767,6 +770,7 @@ internal sealed partial class EditingGrid : Grid
+         PaintCellState(r, c);
+         if (controls[r][c] is TitleCell { Composing: false } text) text.Refresh();
+         if (controls[r][c] is ChoiceCell choice) choice.Refresh();
++        if (controls[r][c] is InactiveDiagnosticText inactive) inactive.Refresh();
+     }
+     private void UpdateSelection()
+     {
+@@ -1125,6 +1129,29 @@ internal sealed partial class EditingGrid : Grid
+             choices.ShowAt(this);
+         }
+     }
++    // DIAGNOSTIC ONLY: preserve the initial 13 rows and every protected editor.
++    // This comparison has no arbitrary-cell editing/promotion contract and must not ship.
++    private sealed class InactiveDiagnosticText : Grid
++    {
++        private readonly EditingGrid owner;
++        private readonly EditCell cell;
++        private readonly TextBlock text = new() { Margin = new(8, 2, 8, 2), VerticalAlignment = VerticalAlignment.Center,
++            TextTrimming = TextTrimming.CharacterEllipsis };
++        public InactiveDiagnosticText(EditingGrid owner, EditCell cell)
++        {
++            this.owner = owner; this.cell = cell;
++            Children.Add(text);
++            Refresh();
++        }
++        public void Refresh()
++        {
++            var committed = owner.session.Workspace.Value(cell);
++            text.Text = owner.session.Workspace.Buffer(cell) ?? (cell.Key is null ? cell.Display
++                : cell.Key.Kind is "Select" or "LocalSelect"
++                    ? cell.Options.SingleOrDefault(o => o.Id == committed)?.Name ?? (committed is not null ? "保存された選択肢IDを確認できません（要照合）" : EditingWorkspace.AvailabilityText(cell.Availability))
++                    : committed ?? cell.Reason ?? (cell.Availability == ValueAvailability.Empty ? "" : "閲覧不可"));
++        }
++    }
+     private sealed class TitleCell : TextBox
+     {
+         private readonly EditingGrid owner; private readonly int row, column; private readonly EditCell cell;
+diff --git a/src/GhProjectsBoards.App/SheetInteraction.cs b/src/GhProjectsBoards.App/SheetInteraction.cs
+index f09f6ab..d1bec43 100644
+--- a/src/GhProjectsBoards.App/SheetInteraction.cs
++++ b/src/GhProjectsBoards.App/SheetInteraction.cs
+@@ -146,7 +146,7 @@ internal sealed partial class EditingGrid
+     }
+     private void PaintCellState(int row, int column)
+     {
+-        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length || controls[row][column] is not (TitleCell or ChoiceCell)) return;
++        if (row >= selectionFrames.Count || column >= selectionFrames[row].Length || controls[row][column] is not (TitleCell or ChoiceCell or InactiveDiagnosticText)) return;
+         var minRow = Math.Min(anchorRow, currentRow); var maxRow = Math.Max(anchorRow, currentRow);
+         var minColumn = Math.Min(anchorColumn, currentColumn); var maxColumn = Math.Max(anchorColumn, currentColumn);
+         var selected = active && row >= minRow && row <= maxRow && column >= minColumn && column <= maxColumn;

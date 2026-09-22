@@ -1,0 +1,164 @@
+[
+  {
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "uiTid": 37316,
+    "command": {
+      "index": 1,
+      "begin": 5633590468543,
+      "sent": 5633590474214,
+      "axis": "vertical",
+      "detents": -80
+    },
+    "frame": {
+      "op": "Frame",
+      "tid": 37316,
+      "start": 5633590855037,
+      "end": 5633592052934,
+      "ms": 119.7897,
+      "payload": {}
+    },
+    "rows": [
+      477,
+      478,
+      479,
+      480,
+      481,
+      482,
+      483,
+      484,
+      485,
+      486,
+      487,
+      488,
+      489,
+      490,
+      491,
+      492,
+      493,
+      494
+    ],
+    "nativeCreated": 1170,
+    "templateCounts": {
+      "Microsoft.UI.Xaml.Controls.ItemsStackPanel": 1,
+      "Microsoft.UI.Xaml.Controls.ListViewItem": 18,
+      "Microsoft.UI.Xaml.Controls.Primitives.ListViewItemPresenter": 18,
+      "Microsoft.UI.Xaml.Controls.Grid": 257,
+      "Microsoft.UI.Xaml.Controls.TextBlock": 72,
+      "Microsoft.UI.Xaml.Controls.Border": 144,
+      "Microsoft.UI.Xaml.Controls.TextBox": 54,
+      "Microsoft.UI.Xaml.Controls.ContentPresenter": 90,
+      "Microsoft.UI.Xaml.Controls.ScrollViewer": 54,
+      "Microsoft.UI.Xaml.Controls.ScrollContentPresenter": 54,
+      "Microsoft.UI.Xaml.Internal.TextBoxView": 54,
+      "Microsoft.UI.Xaml.Controls.Button": 36,
+      "Microsoft.UI.Xaml.Controls.FontIcon": 18,
+      "Microsoft.UI.Xaml.Controls.Primitives.RepeatButton": 2,
+      "Microsoft.UI.Xaml.Controls.Primitives.ScrollBar": 1
+    },
+    "totals": {
+      "ApplyTemplate": {
+        "count": 873,
+        "inclusiveMs": 42.7284,
+        "unionMs": 42.7284
+      },
+      "InitializeText": {
+        "count": 54,
+        "inclusiveMs": 10.5611,
+        "unionMs": 10.5611
+      },
+      "MeasureElement": {
+        "count": 873,
+        "inclusiveMs": 591.5674,
+        "unionMs": 106.2926
+      },
+      "GenerateItems": {
+        "count": 2,
+        "inclusiveMs": 90.3199,
+        "unionMs": 90.3199
+      }
+    },
+    "boundary": "Read from existing pre-CacheLength-correction extract; not a new trace or exact native attribution of the post-70 runs."
+  },
+  {
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "uiTid": 33044,
+    "command": {
+      "index": 0,
+      "begin": 5634355377396,
+      "sent": 5634355382039,
+      "axis": "vertical",
+      "detents": -80
+    },
+    "frame": {
+      "op": "Frame",
+      "tid": 33044,
+      "start": 5634355634242,
+      "end": 5634356834827,
+      "ms": 120.0585,
+      "payload": {}
+    },
+    "rows": [
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254
+    ],
+    "nativeCreated": 1170,
+    "templateCounts": {
+      "Microsoft.UI.Xaml.Controls.ItemsStackPanel": 1,
+      "Microsoft.UI.Xaml.Controls.ListViewItem": 18,
+      "Microsoft.UI.Xaml.Controls.Primitives.ListViewItemPresenter": 18,
+      "Microsoft.UI.Xaml.Controls.Grid": 261,
+      "Microsoft.UI.Xaml.Controls.TextBlock": 72,
+      "Microsoft.UI.Xaml.Controls.Border": 144,
+      "Microsoft.UI.Xaml.Controls.TextBox": 54,
+      "Microsoft.UI.Xaml.Controls.ContentPresenter": 90,
+      "Microsoft.UI.Xaml.Controls.ScrollViewer": 54,
+      "Microsoft.UI.Xaml.Controls.ScrollContentPresenter": 54,
+      "Microsoft.UI.Xaml.Internal.TextBoxView": 54,
+      "Microsoft.UI.Xaml.Controls.Button": 36,
+      "Microsoft.UI.Xaml.Controls.FontIcon": 18,
+      "Microsoft.UI.Xaml.Controls.Primitives.ScrollBar": 2,
+      "Microsoft.UI.Xaml.Controls.Primitives.RepeatButton": 2
+    },
+    "totals": {
+      "ApplyTemplate": {
+        "count": 878,
+        "inclusiveMs": 41.469500000000004,
+        "unionMs": 41.4695
+      },
+      "InitializeText": {
+        "count": 54,
+        "inclusiveMs": 12.2686,
+        "unionMs": 12.2686
+      },
+      "MeasureElement": {
+        "count": 878,
+        "inclusiveMs": 573.757,
+        "unionMs": 103.5427
+      },
+      "GenerateItems": {
+        "count": 2,
+        "inclusiveMs": 87.0042,
+        "unionMs": 87.0042
+      }
+    },
+    "boundary": "Read from existing pre-CacheLength-correction extract; not a new trace or exact native attribution of the post-70 runs."
+  }
+]
