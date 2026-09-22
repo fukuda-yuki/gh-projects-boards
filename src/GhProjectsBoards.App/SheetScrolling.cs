@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace GhProjectsBoards.App;
@@ -52,12 +51,14 @@ internal sealed partial class EditingGrid
     private void AttachWheel()
     {
         DetachWheel();
-        wheelSurface = recycledPresentation ? (UIElement)VisualTreeHelper.GetParent(list) : listScroll?.Content as UIElement;
+        wheelSurface = listScroll?.Content as UIElement;
         wheelSurface?.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel), true);
+        if (recycledPresentation) editorLayer.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel), true);
     }
     private void DetachWheel()
     {
         wheelSurface?.RemoveHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel));
+        if (recycledPresentation) editorLayer.RemoveHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel));
         wheelSurface = null; wheelHorizontal = wheelVertical = null;
     }
     private void ScrollWheel(object sender, PointerRoutedEventArgs args)
@@ -75,17 +76,23 @@ internal sealed partial class EditingGrid
         // Native wheel animation can outrun the UI thread and expose empty row slots.
         // Keep Windows' wheel amount, partial deltas and the original native editor.
         args.Handled = true;
+        double? requestedHorizontal = null, requestedVertical = null;
         if (horizontal)
         {
             wheelHorizontal = Math.Clamp((wheelHorizontal ?? listScroll.HorizontalOffset) + distance, 0, listScroll.ScrollableWidth);
+            requestedHorizontal = wheelHorizontal;
             listScroll.ChangeView(wheelHorizontal, null, null, true);
         }
         else
         {
             wheelVertical = Math.Clamp((wheelVertical ?? listScroll.VerticalOffset) + distance, 0, listScroll.ScrollableHeight);
+            requestedVertical = wheelVertical;
             listScroll.ChangeView(null, wheelVertical, null, true);
         }
-        diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units, wheelHorizontal, wheelVertical });
+        // A synchronous final ViewChanged can clear the accumulator before this
+        // observation. Retain the requested target, not the cleared accumulator.
+        diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units,
+            wheelHorizontal = requestedHorizontal, wheelVertical = requestedVertical });
     }
 
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]

@@ -32,7 +32,7 @@ public sealed partial class RegistrationTests
             var lastItem = list.Patterns.ItemContainer.Pattern.FindItemByProperty(null!, list.Automation.PropertyLibrary.Element.Name,
                 "行 1000 #1000  owner/repo 作業 1000");
             Assert.That(lastItem, Is.Not.Null, "Discover the last data item without enumerating 1,000 native editors.");
-            if (lastItem.Patterns.VirtualizedItem.IsSupported) lastItem.Patterns.VirtualizedItem.Pattern.Realize();
+            if (lastItem!.Patterns.VirtualizedItem.IsSupported) lastItem.Patterns.VirtualizedItem.Pattern.Realize();
             lastItem.Patterns.ScrollItem.Pattern.ScrollIntoView();
             Wait(() => WorkspaceUi.HasVisibleElement(w, "GridCell999_0"));
             var last = Activate(999, 0);

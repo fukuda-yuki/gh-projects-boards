@@ -17,6 +17,49 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed class SheetRecyclingHostedTests
 {
     [Test]
+    public async Task OnePhysicalWheelDetentMovesOnceOverPresentationAndProtectedInput()
+    {
+        var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
+        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", "1");
+        var (project, work) = GanttWorkload.Create();
+        var session = new DraftSession(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-recycle-wheel-" + Guid.NewGuid().ToString("N"))), work, 0);
+        EditingGrid grid = null!; ScrollViewer scroll = null!; double expected = 0;
+        var mounted = false;
+        try
+        {
+            await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
+            await Ui.Mount(grid); mounted = true; await Ui.Ready<Button>("GridCell0_0");
+            await Ui.Run(() =>
+            {
+                var list = Ui.Find<ListView>("ProjectItems"); scroll = Ui.Tree(list).OfType<ScrollViewer>().First();
+                var lines = SheetNativeInput.WheelLines();
+                expected = lines == uint.MaxValue ? scroll.ViewportHeight : ((ListViewItem)list.ContainerFromIndex(0)).ActualHeight * lines;
+            });
+            await MoveOneDetent();
+            await Ui.Run(() => scroll.ChangeView(null, 0, null, true));
+            await Ui.Until(() => scroll.VerticalOffset < 1);
+            await Ui.Run(() => Ui.Click("GridCell0_0"));
+            await Ui.Ready<TextBox>("GridCell0_0");
+            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").SelectedText = "pending-wheel");
+            await MoveOneDetent();
+            await Ui.Run(() => Assert.That(work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending-wheel")));
+        }
+        finally
+        {
+            if (mounted) await Ui.Unmount(grid);
+            await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+            Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", previous);
+        }
+        async Task MoveOneDetent()
+        {
+            SheetNativeInput.Move(await SheetNativeInput.PointFor("GridCell0_0", .3)); SheetNativeInput.Wheel(-120);
+            await Ui.Until(() => scroll.VerticalOffset > 0); await SheetNativeInput.Rendered();
+            await Ui.Run(() => Assert.That(scroll.VerticalOffset, Is.EqualTo(expected).Within(1),
+                "One OS-configured wheel detent must not also run the ScrollViewer's animated default handler."));
+        }
+    }
+
+    [Test]
     public async Task PendingNativeHostsSurviveDistantFirstInputHorizontalReturnAndStaleAutomation()
     {
         var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
