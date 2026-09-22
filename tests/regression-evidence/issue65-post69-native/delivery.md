@@ -1,6 +1,6 @@
 # Delivery boundary
 
-Branch: `codex/issue-65-post69-native`, based on `origin/main` at `1854d4b41315d2ea267d9813474e156a25851857`. Product source: `b66d8f9d4099d320f32465d7b6b183fb6efcc586`; the following commit contains evidence only. The branch was created with `--no-track`; it must never track `origin/main`. Repository-local `branch.autoSetupMerge=simple`, `push.default=simple` and `push.autoSetupRemote=true` support a same-name first push.
+Branch: `codex/issue-65-post69-native`, based on `origin/main` at `1854d4b41315d2ea267d9813474e156a25851857`. Product source: `b66d8f9d4099d320f32465d7b6b183fb6efcc586`; subsequent commits contain evidence only. The branch was created with `--no-track`; it must never track `origin/main`. Repository-local `branch.autoSetupMerge=simple`, `push.default=simple` and `push.autoSetupRemote=true` support a same-name first push.
 
 This handoff is local. No remote publication, PR, Issue update, CI, merge or main integration is claimed for this new correction. Prior #69 publication is complete and is not repeated. The old denied-push record belongs to that earlier execution; no new denied push occurred here. The current request was carried through its bounded implementation, validation and reviewable handoff without treating capture consent as permission for future automatic merge/main writes.
 

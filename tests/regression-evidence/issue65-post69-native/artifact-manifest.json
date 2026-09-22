@@ -11,8 +11,8 @@
   },
   {
     "path": "delivery.md",
-    "bytes": 1727,
-    "sha256": "e2248a229ddd1fcacb5ee553eea450075736e39821fc4ed635d807a68bd194b1"
+    "bytes": 1724,
+    "sha256": "18dd742b632a11456faec574ee644beb4a907f30e1250fabf8ba1a21252f1553"
   },
   {
     "path": "executions.json",
@@ -28,6 +28,11 @@
     "path": "native-comparison.json",
     "bytes": 67820,
     "sha256": "4913d050998c1ff17810ae22e5bb5eb30af90be2de16f7a0409246d04fd29a57"
+  },
+  {
+    "path": "packaging-notes.md",
+    "bytes": 1338,
+    "sha256": "1bb4407e8d0270c50cb13c1073e8e6f3b9597e179994aeb5ead89b0dfe57b50d"
   },
   {
     "path": "pixels/final-cold01-changed.png",
