@@ -1,0 +1,51 @@
+[
+  {
+    "path": "pixels/theme-light.png",
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-theme-9561a024cde14b2ea23151a1a60b2383\\workspace-light.png",
+    "sha256": "5c50111611855723d68d03739437337de426037b200b4b24a8545d1b037a0431",
+    "observation": "Actual hosted Light pending editor",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/theme-dark.png",
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-theme-5f3bfa7ec87a4a86ab97899704bc0478\\workspace-dark.png",
+    "sha256": "31ee6c0d3a372d10e1a1d1bbb21f3b1170793fc74ccb6b39b8610173e76bf147",
+    "observation": "Actual hosted Dark pending editor",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/focused-pending-return.png",
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-focused-scroll-1dbbd70478744d05a643c6e5e6ae220e\\04-return-top-left.png",
+    "sha256": "b2d8d22d7658d4f718a8f5126c662bad895a2691d077e2d14ed4f80598d8fc7e",
+    "observation": "Same pending title/caret after both-axis return",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/thumb-row1000-edit.png",
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\post69-viewport-thumb-01\\observations\\distant-edit.png",
+    "sha256": "87c96687619deb137a1451cde3acbcfcca5950e883f68279d89dad22925ab618",
+    "observation": "Ordinary native scrollbar journey and immediate row 1000 title input",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/final-cold01-unchanged.png",
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\post69-viewport-final-cold-01\\observations\\scroll-0002.png",
+    "sha256": "5ea74076f5c255c7fa8dc4cfef5029fd15f9a44a38b042d5fc10ee05c4bbf954",
+    "observation": "Command 0 unchanged viewport; timing comes from original capture/driver records",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/final-cold01-changed.png",
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\post69-viewport-final-cold-01\\observations\\scroll-0003.png",
+    "sha256": "61f57be2d0631843d0ad285f0f2f66055028c144bbf9b025cc5f0d20e6c31296",
+    "observation": "Command 0 first changed capture shows row 241 destination",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  },
+  {
+    "path": "pixels/native-candidate-first-destination.png",
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\post69-native-candidate-cold-01\\observations\\scroll-0040.png",
+    "sha256": "a99ff97d69daeea4d66f2535b7b224d8cb6c0b818ce19ca6e466f2c9dbf2f501",
+    "observation": "Profiled first destination visible rows 721 through 732",
+    "review": "Viewed original pixels; synthetic content; not human acceptance"
+  }
+]

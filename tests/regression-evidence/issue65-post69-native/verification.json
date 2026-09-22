@@ -1,0 +1,48 @@
+{
+  "archiveCrc": "PASS",
+  "restoredPngs": 3163,
+  "uniquePngObjects": 93,
+  "credentialPatternFindings": 0,
+  "systemTraceOrBinaryEntries": 0,
+  "nativeProcessScope": {
+    "baseline": {
+      "declaredExtractionPid": 32668,
+      "uiTid": 30760,
+      "events": {
+        "selected-frame-events.jsonl": 125732,
+        "selected-frame-events.jsonl.lifetimes.jsonl": 64474
+      },
+      "scopeEvidence": "Original decoder excludes other ProcessIDs; export omits that field. Frame UI identity and candidate sample ThreadIDs checked; baseline extractor filters exact PID/TID and omits both from records."
+    },
+    "cold": {
+      "declaredExtractionPid": 8132,
+      "uiTid": 37316,
+      "events": {
+        "selected-frame-events.jsonl": 74736,
+        "selected-frame-events.jsonl.lifetimes.jsonl": 40119
+      },
+      "scopeEvidence": "Original decoder excludes other ProcessIDs; export omits that field. Frame UI identity and candidate sample ThreadIDs checked; baseline extractor filters exact PID/TID and omits both from records."
+    },
+    "warm": {
+      "declaredExtractionPid": 2688,
+      "uiTid": 33044,
+      "events": {
+        "selected-frame-events.jsonl": 74757,
+        "selected-frame-events.jsonl.lifetimes.jsonl": 57953
+      },
+      "scopeEvidence": "Original decoder excludes other ProcessIDs; export omits that field. Frame UI identity and candidate sample ThreadIDs checked; baseline extractor filters exact PID/TID and omits both from records."
+    }
+  },
+  "relativeLinksChecked": 7,
+  "existingManifest": "PASS",
+  "finalCounts": "6 state passes; 17 slow callbacks; 3 corroborated commands; 4 incomplete visible delays; scroll FAIL",
+  "auditAttempts": [
+    "First auditor failed with KeyError: ProcessID; the original decoder filters by PID but omits that field in exported records.",
+    "Second auditor failed with KeyError: ThreadID; the retained baseline symbol extractor filters exact PID/TID but omits them, unlike the candidate extractor. Original exports were preserved; the audit now checks actual schemas and original source filters rather than adding fabricated fields.",
+    "Corrected archive/schema/hash/count/link audit completed."
+  ],
+  "limitations": [
+    "Pattern checks supplement synthetic provenance and representative pixel review; they do not prove arbitrary content safe.",
+    "No new product or native performance run occurred during evidence verification."
+  ]
+}

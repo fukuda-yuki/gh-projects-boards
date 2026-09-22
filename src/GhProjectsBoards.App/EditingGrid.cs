@@ -92,8 +92,8 @@ internal sealed partial class EditingGrid : Grid
         headerGrid.Style = (Style)Application.Current.Resources["SheetHeaderStyle"];
         detailsPane.Style = (Style)Application.Current.Resources["SheetDetailsStyle"];
         this.readClipboard = readClipboard is null ? ReadClipboardAsync : async () => new(await readClipboard(), null);
-        // A sheet row owns several native editors. Keep a small near-viewport
-        // buffer so a large wheel jump does not instantiate four extra viewports.
+        // Each row owns native editors. Realize the destination viewport without
+        // speculative offscreen rows; ReleaseRow separately retains visited editors.
         list.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["SheetRowsPanel"];
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);

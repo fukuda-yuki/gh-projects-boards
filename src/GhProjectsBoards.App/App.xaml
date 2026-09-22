@@ -27,7 +27,7 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <ItemsPanelTemplate x:Key="SheetRowsPanel">
-                <ItemsStackPanel CacheLength="0.5"/>
+                <ItemsStackPanel CacheLength="0"/>
             </ItemsPanelTemplate>
             <!-- Cell text scrolls natively, but never exposes its own scrollbars.
                  Avoid re-entering the unused scrollbar states on every row return. -->

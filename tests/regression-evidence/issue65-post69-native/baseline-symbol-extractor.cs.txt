@@ -1,0 +1,17 @@
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Symbols;
+using System.Text.Json;
+var path=args[0]; var output=Path.GetDirectoryName(path)!;
+using var trace=new TraceLog(Path.ChangeExtension(path,"etlx"));
+using var slog=new StreamWriter(Path.Combine(output,"symbols-xaml-only.log")){AutoFlush=true};
+using var reader=new SymbolReader(slog,"srv*"+Path.Combine(output,"symbols")+"*https://msdl.microsoft.com/download/symbols");
+reader.SecurityCheck=p=>true;
+foreach(var m in trace.ModuleFiles.Where(m=>m.FilePath.Contains("final-app")&& m.Name.Contains("xaml",StringComparison.OrdinalIgnoreCase) && !m.Name.Contains("controls",StringComparison.OrdinalIgnoreCase))) { try{trace.CodeAddresses.LookupSymbolsForModule(reader,m);}catch(Exception e){slog.WriteLine(e);} }
+using var writer=new StreamWriter(Path.Combine(output,"ui-samples-xaml.jsonl"));
+foreach(var e in trace.Events){
+ if(e.ProcessID!=32668||e.ThreadID!=30760||!e.EventName.Contains("Sample")||e.TimeStampQPC<5564100201197) continue;
+ var frames=new List<string>();
+ for(var s=trace.GetCallStackForEvent(e);s!=null;s=s.Caller) frames.Add(s.CodeAddress.ModuleName+"!"+s.CodeAddress.FullMethodName+"@"+s.CodeAddress.Address.ToString("x"));
+ writer.WriteLine(JsonSerializer.Serialize(new{e.TimeStampQPC,e.TimeStampRelativeMSec,e.EventName,frames}));
+}

@@ -1,0 +1,721 @@
+[
+  {
+    "run": "post69-native-candidate-cold-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": true,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 61.7849,
+          "count": 98,
+          "p50Ms": 16.7796,
+          "maxMs": 81.8047
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 66.3949,
+          "count": 98,
+          "p50Ms": 16.8107,
+          "maxMs": 80.3372
+        }
+      }
+    ],
+    "renderingGaps": {
+      "over100Ms": 14,
+      "p95Ms": 63.5405,
+      "count": 1871,
+      "p50Ms": 33.3176,
+      "maxMs": 148.5975
+    },
+    "captureGaps": {
+      "over100Ms": 0,
+      "p95Ms": 79.105,
+      "count": 300,
+      "p50Ms": 63.0568,
+      "maxMs": 80.2807
+    },
+    "scrollIntervals": 13,
+    "scrollIntervalMaxMs": 148.5975,
+    "commandCounts": {
+      "capture-bracket-crosses-100ms": 69,
+      "corroborated-app-delay": 1,
+      "changed-by-100ms": 20,
+      "clamped-or-no-op": 2,
+      "visible-delay-attribution-incomplete": 6
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 68,
+      "changed-by-100ms": 19,
+      "clamped-or-no-op": 2,
+      "visible-delay-attribution-incomplete": 6
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-native-candidate-warm-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": true,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 46.6266,
+          "count": 98,
+          "p50Ms": 16.3721,
+          "maxMs": 57.4223
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 61.3363,
+          "count": 98,
+          "p50Ms": 17.0336,
+          "maxMs": 72.1985
+        }
+      },
+      {
+        "measured": false,
+        "phase": "warmup",
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 62.6306,
+          "count": 49,
+          "p50Ms": 17.3815,
+          "maxMs": 71.8674
+        }
+      }
+    ],
+    "renderingGaps": {
+      "over100Ms": 12,
+      "p95Ms": 63.8702,
+      "count": 1872,
+      "p50Ms": 33.3223,
+      "maxMs": 176.9735
+    },
+    "captureGaps": {
+      "over100Ms": 3,
+      "p95Ms": 79.105,
+      "count": 299,
+      "p50Ms": 63.0797,
+      "maxMs": 163.7218
+    },
+    "scrollIntervals": 11,
+    "scrollIntervalMaxMs": 176.9735,
+    "commandCounts": {
+      "corroborated-app-delay": 2,
+      "changed-by-100ms": 16,
+      "capture-bracket-crosses-100ms": 76,
+      "clamped-or-no-op": 2,
+      "visible-delay-attribution-incomplete": 3
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 12,
+      "corroborated-app-delay": 1,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-before-short-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "phase": "number",
+        "measured": true,
+        "latency": {
+          "maxMs": 48.194,
+          "p50Ms": 15.0701,
+          "count": 98,
+          "p95Ms": 46.2356,
+          "over100Ms": 0
+        }
+      },
+      {
+        "phase": "title",
+        "measured": true,
+        "latency": {
+          "maxMs": 63.2661,
+          "p50Ms": 15.2906,
+          "count": 99,
+          "p95Ms": 47.1554,
+          "over100Ms": 0
+        }
+      },
+      {
+        "phase": "warmup",
+        "measured": false,
+        "latency": {
+          "maxMs": 64.8666,
+          "p50Ms": 15.0231,
+          "count": 49,
+          "p95Ms": 47.806,
+          "over100Ms": 0
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 137.2569,
+      "p50Ms": 33.331,
+      "count": 1886,
+      "p95Ms": 60.4249,
+      "over100Ms": 4
+    },
+    "captureGaps": {
+      "maxMs": 79.6306,
+      "p50Ms": 63.104,
+      "count": 302,
+      "p95Ms": 78.8257,
+      "over100Ms": 0
+    },
+    "scrollIntervals": 4,
+    "scrollIntervalMaxMs": 137.2569,
+    "commandCounts": {
+      "missing-before": 1,
+      "corroborated-app-delay": 2,
+      "capture-bracket-crosses-100ms": 74,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 18,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "postSaveCounts": {
+      "corroborated-app-delay": 2,
+      "capture-bracket-crosses-100ms": 74,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 18,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-after-short-01",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "phase": "number",
+        "measured": true,
+        "latency": {
+          "maxMs": 46.997,
+          "p50Ms": 15.1647,
+          "count": 98,
+          "p95Ms": 46.0561,
+          "over100Ms": 0
+        }
+      },
+      {
+        "phase": "title",
+        "measured": true,
+        "latency": {
+          "maxMs": 61.1974,
+          "p50Ms": 15.0568,
+          "count": 99,
+          "p95Ms": 46.8928,
+          "over100Ms": 0
+        }
+      },
+      {
+        "phase": "warmup",
+        "measured": false,
+        "latency": {
+          "maxMs": 60.7654,
+          "p50Ms": 14.9255,
+          "count": 50,
+          "p95Ms": 32.9731,
+          "over100Ms": 0
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 170.3013,
+      "p50Ms": 33.3321,
+      "count": 1943,
+      "p95Ms": 55.1459,
+      "over100Ms": 4
+    },
+    "captureGaps": {
+      "maxMs": 89.2215,
+      "p50Ms": 62.9571,
+      "count": 302,
+      "p95Ms": 78.6797,
+      "over100Ms": 0
+    },
+    "scrollIntervals": 4,
+    "scrollIntervalMaxMs": 170.3013,
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 39,
+      "capture-bracket-crosses-100ms": 57,
+      "clamped-or-no-op": 2
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 38,
+      "capture-bracket-crosses-100ms": 57,
+      "clamped-or-no-op": 2
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-cold-01",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "cold",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 60.5563,
+          "p50Ms": 15.0624,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 46.3768
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 65.6075,
+          "p50Ms": 15.0836,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 31.2286
+        },
+        "phase": "title"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 120.9981,
+      "p50Ms": 33.3334,
+      "over100Ms": 3,
+      "count": 1934,
+      "p95Ms": 55.4301
+    },
+    "captureGaps": {
+      "maxMs": 80.1721,
+      "p50Ms": 62.9364,
+      "over100Ms": 0,
+      "count": 302,
+      "p95Ms": 79.0217
+    },
+    "scrollIntervals": 3,
+    "scrollIntervalMaxMs": 120.9981,
+    "commandCounts": {
+      "corroborated-app-delay": 1,
+      "capture-bracket-crosses-100ms": 58,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 38
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 56,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 38
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-warm-01",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 51.9579,
+          "p50Ms": 15.1143,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 46.6424
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 50.2238,
+          "p50Ms": 15.0426,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 46.0773
+        },
+        "phase": "title"
+      },
+      {
+        "measured": false,
+        "latency": {
+          "maxMs": 65.9148,
+          "p50Ms": 15.1379,
+          "over100Ms": 0,
+          "count": 50,
+          "p95Ms": 46.9549
+        },
+        "phase": "warmup"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 127.1858,
+      "p50Ms": 33.3335,
+      "over100Ms": 2,
+      "count": 1939,
+      "p95Ms": 54.3959
+    },
+    "captureGaps": {
+      "maxMs": 80.0345,
+      "p50Ms": 63.0236,
+      "over100Ms": 0,
+      "count": 302,
+      "p95Ms": 78.7518
+    },
+    "scrollIntervals": 2,
+    "scrollIntervalMaxMs": 127.1858,
+    "commandCounts": {
+      "missing-before": 1,
+      "visible-delay-attribution-incomplete": 2,
+      "capture-bracket-crosses-100ms": 58,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 36
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 57,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 36,
+      "visible-delay-attribution-incomplete": 1
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-cold-02",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "cold",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 51.3481,
+          "p50Ms": 15.1062,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 47.0512
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 67.7131,
+          "p50Ms": 15.0816,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 46.936
+        },
+        "phase": "title"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 109.312,
+      "p50Ms": 33.33,
+      "over100Ms": 3,
+      "count": 1951,
+      "p95Ms": 54.6388
+    },
+    "captureGaps": {
+      "maxMs": 80.0284,
+      "p50Ms": 62.938,
+      "over100Ms": 0,
+      "count": 302,
+      "p95Ms": 78.605
+    },
+    "scrollIntervals": 3,
+    "scrollIntervalMaxMs": 109.312,
+    "commandCounts": {
+      "missing-before": 1,
+      "capture-bracket-crosses-100ms": 57,
+      "changed-by-100ms": 39,
+      "clamped-or-no-op": 2
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 57,
+      "changed-by-100ms": 39,
+      "clamped-or-no-op": 2
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-warm-02",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 65.2728,
+          "p50Ms": 15.1506,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 48.0545
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 63.0749,
+          "p50Ms": 15.0251,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 47.0544
+        },
+        "phase": "title"
+      },
+      {
+        "measured": false,
+        "latency": {
+          "maxMs": 66.88,
+          "p50Ms": 15.0075,
+          "over100Ms": 0,
+          "count": 50,
+          "p95Ms": 31.2915
+        },
+        "phase": "warmup"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 117.232,
+      "p50Ms": 33.3388,
+      "over100Ms": 3,
+      "count": 1933,
+      "p95Ms": 54.0508
+    },
+    "captureGaps": {
+      "maxMs": 79.7145,
+      "p50Ms": 63.0729,
+      "over100Ms": 0,
+      "count": 303,
+      "p95Ms": 78.9551
+    },
+    "scrollIntervals": 3,
+    "scrollIntervalMaxMs": 117.232,
+    "commandCounts": {
+      "missing-before": 1,
+      "visible-delay-attribution-incomplete": 1,
+      "capture-bracket-crosses-100ms": 51,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 44
+    },
+    "postSaveCounts": {
+      "visible-delay-attribution-incomplete": 1,
+      "capture-bracket-crosses-100ms": 51,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 44
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-cold-03",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "cold",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 68.5374,
+          "p50Ms": 14.9946,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 46.2363
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 79.6238,
+          "p50Ms": 15.1029,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 46.3289
+        },
+        "phase": "title"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 120.9303,
+      "p50Ms": 33.3387,
+      "over100Ms": 3,
+      "count": 1938,
+      "p95Ms": 53.3124
+    },
+    "captureGaps": {
+      "maxMs": 79.774,
+      "p50Ms": 62.9772,
+      "over100Ms": 0,
+      "count": 302,
+      "p95Ms": 78.7651
+    },
+    "scrollIntervals": 3,
+    "scrollIntervalMaxMs": 120.9303,
+    "commandCounts": {
+      "missing-before": 1,
+      "visible-delay-attribution-incomplete": 1,
+      "capture-bracket-crosses-100ms": 51,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 44
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 50,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 44
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  },
+  {
+    "run": "post69-viewport-final-warm-03",
+    "source": "b66d8f9d4099d320f32465d7b6b183fb6efcc586",
+    "condition": "warm",
+    "appSha256": "5D5243363C0A96D4193D35F17DD0A8DF4FA24DE946D5CFE9277FDD193EA3DDF6",
+    "executableSha256": "B16046C315F45EF7A6A095BA312C3E29748FFBDF7108AD907F1606E6E9F00320",
+    "coreSha256": "871FCAC37C4F70E083E78045889ABC38902235BF8C49664139C8C9BCFDC0C6BD",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "profiled": false,
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 68.4414,
+          "p50Ms": 15.1709,
+          "over100Ms": 0,
+          "count": 99,
+          "p95Ms": 47.1107
+        },
+        "phase": "number"
+      },
+      {
+        "measured": true,
+        "latency": {
+          "maxMs": 52.1406,
+          "p50Ms": 15.1971,
+          "over100Ms": 0,
+          "count": 98,
+          "p95Ms": 47.0444
+        },
+        "phase": "title"
+      },
+      {
+        "measured": false,
+        "latency": {
+          "maxMs": 83.2383,
+          "p50Ms": 15.1502,
+          "over100Ms": 0,
+          "count": 49,
+          "p95Ms": 47.448
+        },
+        "phase": "warmup"
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 148.393,
+      "p50Ms": 33.3349,
+      "over100Ms": 3,
+      "count": 1945,
+      "p95Ms": 54.4441
+    },
+    "captureGaps": {
+      "maxMs": 126.0402,
+      "p50Ms": 63.082,
+      "over100Ms": 1,
+      "count": 302,
+      "p95Ms": 79.0596
+    },
+    "scrollIntervals": 3,
+    "scrollIntervalMaxMs": 148.393,
+    "commandCounts": {
+      "corroborated-app-delay": 2,
+      "capture-bracket-crosses-100ms": 52,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 43
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 50,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 43
+    },
+    "state": "PASS",
+    "scroll": "See explicit final disposition in README; absence of classified failures is not screen-presentation acceptance."
+  }
+]
