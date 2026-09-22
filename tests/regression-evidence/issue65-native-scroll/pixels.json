@@ -1,0 +1,32 @@
+[
+  {
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\native-attribution-cold-01\\observations\\scroll-0233.png",
+    "file": "pixels/native-scroll-0233.png",
+    "sha256": "52ce0a44b17256a7970b2b5b086fd7e3a2f4c8fe1c1b1abad796a5330eb57d9f"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\native-attribution-cold-01\\observations\\scroll-0236.png",
+    "file": "pixels/native-scroll-0236.png",
+    "sha256": "52ce0a44b17256a7970b2b5b086fd7e3a2f4c8fe1c1b1abad796a5330eb57d9f"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.codex\\worktrees\\i65-residual\\TestResults\\issue61-65\\native-attribution-cold-01\\observations\\scroll-0237.png",
+    "file": "pixels/native-scroll-0237.png",
+    "sha256": "0b775ae5709e980e63a38796313da7a1ed7164e120bf7e73ce667c401846ce27"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-theme-ca15ceec80e64e978682060dd45033de\\workspace-light.png",
+    "file": "pixels/light.png",
+    "sha256": "f7b36fe661e0255566f85ea5c075c41321e769c1f5ba60052416190bb3f5d6f7"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-theme-03c007d361c74d5aab746712d4523c4c\\workspace-dark.png",
+    "file": "pixels/dark.png",
+    "sha256": "af3caacad2cf1bb1df94355f210c0793f92ebea60d78d62519eda3b2f6112bc1"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-focused-scroll-221ec0e289424b98a057208df70d40f9\\04-return-top-left.png",
+    "file": "pixels/focused-return.png",
+    "sha256": "5df4b78627f800dc1466a2322d5d4d37b5797e7601e7a2d935b76e2cf556f7c9"
+  }
+]
