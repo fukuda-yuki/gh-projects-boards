@@ -315,21 +315,20 @@ public sealed class SustainedInputDiagnosticTests
             var bounds = Element("ProjectItems").BoundingRectangle;
             using var armed = new ManualResetEventSlim();
             using var stop = new CancellationTokenSource();
-            var frames = new List<(long Begin, long End, CaptureImage Image)>();
+            var frames = new List<TimestampedScreenCopy.Frame>();
             var camera = Task.Run(() =>
             {
                 armed.Wait(stop.Token);
                 while (!stop.IsCancellationRequested && frames.Count < 512)
                 {
-                    var begin = Stopwatch.GetTimestamp();
-                    var image = FlaUI.Core.Capturing.Capture.Rectangle(bounds);
-                    frames.Add((begin, Stopwatch.GetTimestamp(), image));
+                    frames.Add(TimestampedScreenCopy.Rectangle(bounds));
                     Thread.Sleep(1);
                 }
             });
             try
             {
-                Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds }); armed.Set(); });
+                Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds,
+                    sampling = "FlaUI-equivalent full viewport GDI copy with nested BitBlt/GdiFlush timestamps; retained 1 ms sleep; PNG encoding after replay" }); armed.Set(); });
                 if (earlyScroll == "settled")
                 {
                     Record("diagnostic-save-wait-start", new { diagnosticOnly = true });
@@ -350,7 +349,8 @@ public sealed class SustainedInputDiagnosticTests
                 {
                     try
                     {
-                        Write("scroll-captures.json", frames.Select((f, i) => new { index = i, begin = f.Begin, end = f.End, path = $"scroll-{i:D4}.png" }).ToArray());
+                        Write("scroll-captures.json", frames.Select((f, i) => new { index = i, begin = f.Begin, end = f.End,
+                            copyBegin = f.CopyBegin, copyEnd = f.CopyEnd, path = $"scroll-{i:D4}.png" }).ToArray());
                         for (var i = 0; i < frames.Count; i++) frames[i].Image.ToFile(Path.Combine(output, $"scroll-{i:D4}.png"));
                     }
                     finally { foreach (var frame in frames) frame.Image.Dispose(); }
