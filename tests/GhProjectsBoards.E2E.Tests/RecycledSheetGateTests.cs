@@ -12,6 +12,16 @@ public sealed partial class RegistrationTests
     [Test, Category("GridIme")]
     public void RecycledSheetPublicRealizationAndDirectImeRetainPendingHostsAtThousandTasks()
     {
+        var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
+        try
+        {
+            Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", "1");
+            VerifyRecycledNativeLoop();
+        }
+        finally { Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", previous); }
+    }
+    private void VerifyRecycledNativeLoop()
+    {
         Assert.That(Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION"), Is.EqualTo("1"), "Gate A candidate must be explicitly selected.");
         using var f = new Fixture();
         var seed = new ProcessStartInfo(Environment.GetEnvironmentVariable("GHPB_E2E_FAKE_GH_PATH")!) { UseShellExecute = false, CreateNoWindow = true };

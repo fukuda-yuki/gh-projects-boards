@@ -29,6 +29,7 @@ public sealed class SustainedInputDiagnosticTests
         var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
         var traceDetail = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_TRACE_DETAIL") ?? "full";
         var earlyScroll = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_EARLY_SCROLL") ?? "none";
+        var desktopObserver = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_DESKTOP_OBSERVER") == "1";
         Assert.That(earlyScroll, Is.AnyOf("none", "immediate", "settled"));
         Assert.That(earlyScroll == "none" || mode == "standard", Is.True);
         Assert.That(traceDetail, Is.AnyOf("full", "light", "off"));
@@ -43,7 +44,7 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, desktopObserver, data, tasks = 1000, people = 20,
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -313,6 +314,7 @@ public sealed class SustainedInputDiagnosticTests
         void EarlyScroll()
         {
             var bounds = Element("ProjectItems").BoundingRectangle;
+            using var desktop = desktopObserver ? new DesktopFrameObserver(bounds, Path.Combine(output, "desktop")) : null;
             using var armed = new ManualResetEventSlim();
             using var stop = new CancellationTokenSource();
             var frames = new List<TimestampedScreenCopy.Frame>();
@@ -328,7 +330,7 @@ public sealed class SustainedInputDiagnosticTests
             try
             {
                 Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds,
-                    sampling = "FlaUI-equivalent full viewport GDI copy with nested BitBlt/GdiFlush timestamps; retained 1 ms sleep; PNG encoding after replay" }); armed.Set(); });
+                    sampling = "FlaUI-equivalent full viewport GDI copy with nested BitBlt/GdiFlush timestamps; retained 1 ms sleep; PNG encoding after replay" }); desktop?.Arm(); armed.Set(); });
                 if (earlyScroll == "settled")
                 {
                     Record("diagnostic-save-wait-start", new { diagnosticOnly = true });
