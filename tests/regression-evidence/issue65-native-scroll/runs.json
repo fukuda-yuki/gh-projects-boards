@@ -1,0 +1,642 @@
+[
+  {
+    "run": "native-attribution-cold-01",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "executableSha256": "DB105808EB9C9EB0429B66243FCDA7FA9A1442B18B5FF6B4FD73D0D00C60AC7B",
+    "appSha256": "0B7975F1D7739218CE9E5337014BEB40551A9FF0E36627E2553A7F524E749E50",
+    "coreSha256": "DA0DC36D54AB72B320294874C534410AEE94FDAAAC528860D36CEFF420610CB6",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 68.8876,
+          "maxMs": 86.5028,
+          "count": 98,
+          "p50Ms": 28.6663
+        },
+        "phase": "number",
+        "measured": true
+      },
+      {
+        "latency": {
+          "over100Ms": 0,
+          "p95Ms": 69.4176,
+          "maxMs": 95.0888,
+          "count": 98,
+          "p50Ms": 28.9588
+        },
+        "phase": "title",
+        "measured": true
+      }
+    ],
+    "renderingGaps": {
+      "over100Ms": 28,
+      "p95Ms": 72.3579,
+      "maxMs": 296.8798,
+      "count": 1783,
+      "p50Ms": 33.3136
+    },
+    "captureGaps": {
+      "over100Ms": 4,
+      "p95Ms": 79.5571,
+      "maxMs": 586.0076,
+      "count": 281,
+      "p50Ms": 63.5358
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "capture-bracket-crosses-100ms": 47,
+      "clamped-or-no-op": 3,
+      "visible-delay-attribution-incomplete": 7,
+      "changed-by-100ms": 22,
+      "corroborated-app-delay": 13,
+      "no-changed-capture": 5
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 22,
+      "clamped-or-no-op": 2,
+      "capture-bracket-crosses-100ms": 46,
+      "corroborated-app-delay": 13,
+      "no-changed-capture": 5,
+      "visible-delay-attribution-incomplete": 6
+    },
+    "scrollIntervals": 26,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": true
+  },
+  {
+    "run": "native-baseline-short-01",
+    "source": "da838adc2fcb5981b270bca615ff0aae186b7010",
+    "condition": "cold",
+    "executableSha256": "DB105808EB9C9EB0429B66243FCDA7FA9A1442B18B5FF6B4FD73D0D00C60AC7B",
+    "appSha256": "0B7975F1D7739218CE9E5337014BEB40551A9FF0E36627E2553A7F524E749E50",
+    "coreSha256": "DA0DC36D54AB72B320294874C534410AEE94FDAAAC528860D36CEFF420610CB6",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 70.6829,
+          "p50Ms": 15.0625,
+          "p95Ms": 49.4168,
+          "over100Ms": 0,
+          "count": 98
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 69.1233,
+          "p50Ms": 15.1351,
+          "p95Ms": 48.641,
+          "over100Ms": 0,
+          "count": 98
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 247.6988,
+      "p50Ms": 33.327,
+      "p95Ms": 66.6097,
+      "over100Ms": 20,
+      "count": 1852
+    },
+    "captureGaps": {
+      "maxMs": 79.6328,
+      "p50Ms": 63.0472,
+      "p95Ms": 78.9474,
+      "over100Ms": 0,
+      "count": 302
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 68,
+      "visible-delay-attribution-incomplete": 4,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 5
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 68,
+      "visible-delay-attribution-incomplete": 4,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 5
+    },
+    "scrollIntervals": 20,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-candidate-short-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "phase": "number",
+        "latency": {
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1074,
+          "maxMs": 47.6172,
+          "p95Ms": 46.6765
+        },
+        "measured": true
+      },
+      {
+        "phase": "title",
+        "latency": {
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.0928,
+          "maxMs": 80.6224,
+          "p95Ms": 47.2067
+        },
+        "measured": true
+      }
+    ],
+    "renderingGaps": {
+      "over100Ms": 6,
+      "count": 1874,
+      "p50Ms": 33.3258,
+      "maxMs": 162.9851,
+      "p95Ms": 61.0221
+    },
+    "captureGaps": {
+      "over100Ms": 0,
+      "count": 302,
+      "p50Ms": 63.1143,
+      "maxMs": 80.1598,
+      "p95Ms": 78.9932
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 20,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 1
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 20,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 1
+    },
+    "scrollIntervals": 6,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-cold-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 52.6713,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1912,
+          "p95Ms": 46.6109
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 65.505,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.0838,
+          "p95Ms": 49.1821
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 189.3126,
+      "over100Ms": 4,
+      "count": 1868,
+      "p50Ms": 33.3317,
+      "p95Ms": 60.4669
+    },
+    "captureGaps": {
+      "maxMs": 80.5577,
+      "over100Ms": 0,
+      "count": 300,
+      "p50Ms": 63.1685,
+      "p95Ms": 79.1253
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 1
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 18,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 1
+    },
+    "scrollIntervals": 4,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-warm-01",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 58.605,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.0414,
+          "p95Ms": 46.9576
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 61.4363,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1866,
+          "p95Ms": 47.2984
+        }
+      },
+      {
+        "measured": false,
+        "phase": "warmup",
+        "latency": {
+          "maxMs": 68.3092,
+          "over100Ms": 0,
+          "count": 49,
+          "p50Ms": 15.0745,
+          "p95Ms": 47.3956
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 148.9955,
+      "over100Ms": 5,
+      "count": 1883,
+      "p50Ms": 33.3309,
+      "p95Ms": 60.772
+    },
+    "captureGaps": {
+      "maxMs": 79.9303,
+      "over100Ms": 0,
+      "count": 301,
+      "p50Ms": 63.4625,
+      "p95Ms": 79.1227
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "corroborated-app-delay": 2,
+      "capture-bracket-crosses-100ms": 74,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 17,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 74,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 17,
+      "corroborated-app-delay": 1,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "scrollIntervals": 5,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-cold-02",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 48.8439,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.0494,
+          "p95Ms": 47.1898
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 68.9295,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.0299,
+          "p95Ms": 45.9827
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 151.9441,
+      "over100Ms": 4,
+      "count": 1870,
+      "p50Ms": 33.3281,
+      "p95Ms": 60.8739
+    },
+    "captureGaps": {
+      "maxMs": 93.6933,
+      "over100Ms": 0,
+      "count": 302,
+      "p50Ms": 63.1941,
+      "p95Ms": 79.0359
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "corroborated-app-delay": 2,
+      "capture-bracket-crosses-100ms": 78,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 14,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 76,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 14,
+      "corroborated-app-delay": 1,
+      "visible-delay-attribution-incomplete": 2
+    },
+    "scrollIntervals": 4,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-warm-02",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 52.3752,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 14.9658,
+          "p95Ms": 46.388
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 46.9421,
+          "over100Ms": 0,
+          "count": 99,
+          "p50Ms": 15.0949,
+          "p95Ms": 31.3813
+        }
+      },
+      {
+        "measured": false,
+        "phase": "warmup",
+        "latency": {
+          "maxMs": 64.0875,
+          "over100Ms": 0,
+          "count": 49,
+          "p50Ms": 15.086,
+          "p95Ms": 31.435
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 203.1784,
+      "over100Ms": 6,
+      "count": 1874,
+      "p50Ms": 33.3317,
+      "p95Ms": 61.3042
+    },
+    "captureGaps": {
+      "maxMs": 80.0862,
+      "over100Ms": 0,
+      "count": 302,
+      "p50Ms": 63.0423,
+      "p95Ms": 79.0559
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 2
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 72,
+      "visible-delay-attribution-incomplete": 3,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 18,
+      "corroborated-app-delay": 2
+    },
+    "scrollIntervals": 6,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-cold-03",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "cold",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 67.7843,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1302,
+          "p95Ms": 50.84
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 72.2182,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1208,
+          "p95Ms": 49.2361
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 213.6853,
+      "over100Ms": 12,
+      "count": 1847,
+      "p50Ms": 33.3385,
+      "p95Ms": 64.1003
+    },
+    "captureGaps": {
+      "maxMs": 281.8219,
+      "over100Ms": 4,
+      "count": 292,
+      "p50Ms": 63.5627,
+      "p95Ms": 79.577
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 16,
+      "capture-bracket-crosses-100ms": 71,
+      "clamped-or-no-op": 2,
+      "corroborated-app-delay": 2,
+      "visible-delay-attribution-incomplete": 4,
+      "no-changed-capture": 2
+    },
+    "postSaveCounts": {
+      "capture-bracket-crosses-100ms": 71,
+      "clamped-or-no-op": 2,
+      "changed-by-100ms": 15,
+      "corroborated-app-delay": 2,
+      "visible-delay-attribution-incomplete": 4,
+      "no-changed-capture": 2
+    },
+    "scrollIntervals": 12,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  },
+  {
+    "run": "native-final-warm-03",
+    "source": "94922ffd17489b464bf8f23376e702ad1ef8600f",
+    "condition": "warm",
+    "executableSha256": "B69F6C0ADB3658BE0FD3AEDF4AD0BAF064AB161871F389547B0927AD15D779E8",
+    "appSha256": "DEEB7F5387AD67C84E6476890738597740269E6CD5384B03201A3FB012AC7470",
+    "coreSha256": "E65CEEDC89CAD5C8D31EBEC2E13B7A9BC2A3ED600C05AA08BF1944ABB54CF585",
+    "driverSha256": "9035A4E6F8CCC458D093265618D652871338FA3F4574B69F698A64AC1222620D",
+    "traceComplete": true,
+    "typed": [
+      {
+        "measured": true,
+        "phase": "number",
+        "latency": {
+          "maxMs": 66.7687,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1349,
+          "p95Ms": 48.8962
+        }
+      },
+      {
+        "measured": true,
+        "phase": "title",
+        "latency": {
+          "maxMs": 70.6547,
+          "over100Ms": 0,
+          "count": 98,
+          "p50Ms": 15.1323,
+          "p95Ms": 48.2643
+        }
+      },
+      {
+        "measured": false,
+        "phase": "warmup",
+        "latency": {
+          "maxMs": 71.5205,
+          "over100Ms": 0,
+          "count": 49,
+          "p50Ms": 15.2774,
+          "p95Ms": 63.2126
+        }
+      }
+    ],
+    "renderingGaps": {
+      "maxMs": 131.2619,
+      "over100Ms": 5,
+      "count": 1864,
+      "p50Ms": 33.3286,
+      "p95Ms": 61.2746
+    },
+    "captureGaps": {
+      "maxMs": 83.2645,
+      "over100Ms": 0,
+      "count": 301,
+      "p50Ms": 63.0982,
+      "p95Ms": 79.0098
+    },
+    "commandCounts": {
+      "missing-before": 1,
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 73,
+      "clamped-or-no-op": 2,
+      "visible-delay-attribution-incomplete": 3,
+      "corroborated-app-delay": 1
+    },
+    "postSaveCounts": {
+      "changed-by-100ms": 19,
+      "capture-bracket-crosses-100ms": 73,
+      "clamped-or-no-op": 2,
+      "visible-delay-attribution-incomplete": 3,
+      "corroborated-app-delay": 1
+    },
+    "scrollIntervals": 5,
+    "state": "PASS",
+    "scroll": "FAIL",
+    "profiled": false
+  }
+]

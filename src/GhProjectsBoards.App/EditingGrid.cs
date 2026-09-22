@@ -1131,6 +1131,14 @@ internal sealed partial class EditingGrid : Grid
         private bool restoring; private bool composing;
         public bool Composing => composing;
         public bool Editing { get; private set; }
+        protected override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            // Keep the TextBox's native view, input and caret scrolling. Only
+            // the hidden inner scrollbar chrome is unnecessary in sheet cells.
+            if (GetTemplateChild("ContentElement") is ScrollViewer scroll)
+                scroll.Template = (ControlTemplate)Application.Current.Resources["SheetTextScrollTemplate"];
+        }
         public TitleCell(EditingGrid owner, int row, int column, EditCell cell)
         {
             this.owner = owner; this.row = row; this.column = column; this.cell = cell;

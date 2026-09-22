@@ -1,0 +1,78 @@
+{
+  "processId": 32668,
+  "osUiThreadId": 30760,
+  "managedThreadId": 2,
+  "frame": {
+    "name": "Frame",
+    "start": 5564683892392,
+    "end": 5564685060322,
+    "ms": 116.793,
+    "startPayload": {},
+    "endPayload": {}
+  },
+  "scheduling": {
+    "running": 116.37819999999999,
+    "ready": 0.4088,
+    "waiting": 0.006
+  },
+  "reuse": {
+    "frame": {
+      "name": "Frame",
+      "start": 5564683892392,
+      "end": 5564685060322,
+      "ms": 116.793,
+      "startPayload": {},
+      "endPayload": {}
+    },
+    "textBoxes": 54,
+    "seenBefore": 54,
+    "destroyedBetween": 0
+  },
+  "clock": {
+    "qpcFrequency": 10000000,
+    "driverSync": {
+      "before": 5564110624380,
+      "utc": "2026-09-22T06:03:42.209614+00:00",
+      "after": 5564110624399
+    },
+    "etlDerivedUtcLower": "2026-09-22T15:03:42.209612+09:00",
+    "etlDerivedUtcUpper": "2026-09-22T15:03:42.209614+09:00",
+    "utcMinusLowerMs": 0.002,
+    "utcMinusUpperMs": 0.0
+  },
+  "trace": {
+    "EventCount": 20838682,
+    "EventsLost": 0,
+    "HasCallStacks": true,
+    "SessionStartTime": "2026-09-22T15:03:05.7311508+09:00",
+    "SessionEndTime": "2026-09-22T15:05:05.7024524+09:00",
+    "FirstTimeInversion": 4294967295
+  },
+  "modules": [
+    {
+      "FilePath": "microsoft.ui.xaml.dll",
+      "FileVersion": "3.1.8.2608 (CD3AC2B906A4(ContainerAdministrator)-b497e527e22752d08aabb176820923028f16f003)",
+      "PdbName": "Microsoft.ui.xaml.pdb",
+      "PdbSignature": "72f0bfb0-e2d3-cb2c-5f24-fe090eae2608",
+      "PdbAge": 2,
+      "CodeAddressesInModule": 2352488
+    },
+    {
+      "FilePath": "microsoft.ui.xaml.controls.dll",
+      "FileVersion": "3.1.8.2608 (CD3AC2B906A4(ContainerAdministrator)-b497e527e22752d08aabb176820923028f16f003)",
+      "PdbName": "Microsoft.UI.Xaml.Controls.pdb",
+      "PdbSignature": "062993e3-315d-1944-a804-528ff733df63",
+      "PdbAge": 4,
+      "CodeAddressesInModule": 1488
+    }
+  ],
+  "symbols": {
+    "xamlAddresses": 10003,
+    "xamlMatched": 9969,
+    "xamlUnmatched": 34,
+    "controlsAddresses": 305,
+    "controlsMatched": 305,
+    "outOfRangeNames": "Preserved with ?? prefix; not trusted attribution"
+  },
+  "boundary": "Raw XAML analysis with installed TraceEvent, no WPA plugin claim. Full system ETL/ETLX and PDBs remain private. Candidate WPR start cancelled before recording."
+}
