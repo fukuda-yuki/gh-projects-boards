@@ -1,0 +1,2335 @@
+{
+  "baseline": {
+    "clock": {
+      "sync": {
+        "before": 5564110624380,
+        "utc": "2026-09-22T06:03:42.209614+00:00",
+        "after": 5564110624399
+      },
+      "lower": "2026-09-22T15:03:42.209612+09:00",
+      "upper": "2026-09-22T15:03:42.209614+09:00",
+      "utcMinusLowerMs": 0.002,
+      "utcMinusUpperMs": 0.0
+    },
+    "uiTid": 30760,
+    "commands": [
+      {
+        "index": 12,
+        "frameMs": 193.1495,
+        "schedulingMs": {
+          "running": 192.8855,
+          "ready": 0.08629999999999999,
+          "waiting": 0.17770000000000002
+        },
+        "nativeCreated": 1548,
+        "textboxes": 54,
+        "newTextBoxes": 54,
+        "previousTextBoxes": 0,
+        "rows": [
+          717,
+          718,
+          719,
+          720,
+          721,
+          722,
+          723,
+          724,
+          725,
+          726,
+          727,
+          728,
+          729,
+          730,
+          731,
+          732,
+          733,
+          734
+        ],
+        "createdRows": [],
+        "sampleCount": 193,
+        "paths": {
+          "Measure": 151,
+          "EnterImpl": 22,
+          "Other": 20
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            193
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            182
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            173
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            150
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            150
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            150
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            146
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            145
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            145
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            143
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            143
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            102
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            102
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            102
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::InvokeApplyTemplate",
+            94
+          ],
+          [
+            "microsoft.ui.xaml!BinaryFormatObjectWriter::WriteNode",
+            68
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::ApplyTemplate",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::Raise",
+            44
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::SyncScriptCallbackRequest",
+            44
+          ]
+        ],
+        "leaf": [
+          [
+            "ntdll!",
+            38
+          ],
+          [
+            "ntoskrnl!",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RemoveObject",
+            4
+          ],
+          [
+            "!",
+            4
+          ],
+          [
+            "winuiedit!",
+            4
+          ],
+          [
+            "dwrite!",
+            4
+          ],
+          [
+            "microsoft.ui.xaml!xref::weakref_ptr<VisualTree>::private_reset<VisualTree>",
+            3
+          ],
+          [
+            "ucrtbase!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::SetValue",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!Resources::ScopedResources::MarkAsOverride",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!BinaryFormatObjectWriter::SetValueOnCurrentInstance",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!ctl::ComBase::AddRefImpl",
+            2
+          ]
+        ],
+        "enterSamples": 22,
+        "themeReferenceSamples": 5
+      },
+      {
+        "index": 81,
+        "frameMs": 116.793,
+        "schedulingMs": {
+          "running": 116.37819999999999,
+          "ready": 0.4088,
+          "waiting": 0.006
+        },
+        "nativeCreated": 0,
+        "textboxes": 54,
+        "newTextBoxes": 0,
+        "previousTextBoxes": 54,
+        "rows": [
+          477,
+          478,
+          479,
+          480,
+          481,
+          482,
+          483,
+          484,
+          485,
+          486,
+          487,
+          488,
+          489,
+          490,
+          491,
+          492,
+          493,
+          494
+        ],
+        "createdRows": [],
+        "sampleCount": 117,
+        "paths": {
+          "Measure": 36,
+          "EnterImpl": 49,
+          "Other": 32
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            117
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            94
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::PlaceInValidElements",
+            52
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::AddToVisualChildren",
+            52
+          ],
+          [
+            "microsoft.ui.xaml!CCollection::InsertDO",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ObservablePresentationFrameworkCollection<ABI::Microsoft::UI::Xaml::Controls::ICommandBarElement *>::InsertAt",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::Insert",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CUIElementCollection::Insert",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::Collection_Insert",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::EnterImpl",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::EnterImpl",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::ChildEnter",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CContentControl::EnterImpl",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Enter",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CControl::EnterImpl",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::EnterImpl",
+            47
+          ],
+          [
+            "microsoft.ui.xaml!CTextBoxBase::EnterImpl",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!CScrollContentControl::EnterImpl",
+            30
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetermineWindowAndAnchors",
+            28
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetectAndHandleDisconnectedView",
+            28
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::EnterImpl",
+            24
+          ]
+        ],
+        "leaf": [
+          [
+            "ntdll!",
+            11
+          ],
+          [
+            "ntoskrnl!",
+            7
+          ],
+          [
+            "microsoft.ui.xaml!CInputServices::GetDMService",
+            7
+          ],
+          [
+            "!",
+            6
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RemoveObject",
+            6
+          ],
+          [
+            "dcompi!",
+            5
+          ],
+          [
+            "combase!",
+            3
+          ],
+          [
+            "marshal!",
+            3
+          ],
+          [
+            "dwrite!",
+            3
+          ],
+          [
+            "microsoft.directmanipulation!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::LeaveObjectProperty",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::Destroy,void,std::nullptr_t>",
+            2
+          ]
+        ],
+        "enterSamples": 49,
+        "themeReferenceSamples": 19
+      },
+      {
+        "index": 91,
+        "frameMs": 123.0507,
+        "schedulingMs": {
+          "running": 122.98159999999999,
+          "ready": 0.0296,
+          "waiting": 0.0395
+        },
+        "nativeCreated": 756,
+        "textboxes": 51,
+        "newTextBoxes": 27,
+        "previousTextBoxes": 24,
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "createdRows": [],
+        "sampleCount": 122,
+        "paths": {
+          "Measure": 74,
+          "EnterImpl": 31,
+          "Other": 17
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            111
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            105
+          ],
+          [
+            "microsoft.ui.xaml!??DirectUI::ModernCollectionBasePanel::RunGenerate",
+            78
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            78
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            71
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            49
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::InvokeApplyTemplate",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::ChildEnter",
+            31
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Enter",
+            31
+          ],
+          [
+            "microsoft.ui.xaml!BinaryFormatObjectWriter::WriteNode",
+            28
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::EnterImpl",
+            28
+          ]
+        ],
+        "leaf": [
+          [
+            "ntdll!",
+            19
+          ],
+          [
+            "ntoskrnl!",
+            11
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RemoveObject",
+            6
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::Destroy,void,std::nullptr_t>",
+            4
+          ],
+          [
+            "microsoft.ui.xaml!xref::weakref_ptr<VisualTree>::private_reset<VisualTree>",
+            3
+          ],
+          [
+            "winuiedit!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!Resources::ScopedResources::TraverseVisualTreeResources",
+            3
+          ],
+          [
+            "marshal!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!xpairlist<void *,IDirectManipulationViewport *>::Get",
+            2
+          ],
+          [
+            "!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::AddRequest",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::GetInheritanceParentInternal",
+            2
+          ]
+        ],
+        "enterSamples": 31,
+        "themeReferenceSamples": 16
+      }
+    ]
+  },
+  "cold": {
+    "clock": {
+      "sync": {
+        "before": 5633181529055,
+        "utc": "2026-09-22T07:58:48.0185319+00:00",
+        "after": 5633181529087
+      },
+      "lower": "2026-09-22T16:58:48.018530+09:00",
+      "upper": "2026-09-22T16:58:48.018533+09:00",
+      "utcMinusLowerMs": 0.001,
+      "utcMinusUpperMs": -0.002
+    },
+    "uiTid": 37316,
+    "commands": [
+      {
+        "index": 12,
+        "frameMs": 121.987,
+        "schedulingMs": {
+          "running": 121.62910000000002,
+          "ready": 0.16060000000000002,
+          "waiting": 0.19729999999999995
+        },
+        "nativeCreated": 1170,
+        "textboxes": 54,
+        "newTextBoxes": 54,
+        "previousTextBoxes": 0,
+        "rows": [
+          717,
+          718,
+          719,
+          720,
+          721,
+          722,
+          723,
+          724,
+          725,
+          726,
+          727,
+          728,
+          729,
+          730,
+          731,
+          732,
+          733,
+          734
+        ],
+        "createdRows": [],
+        "sampleCount": 120,
+        "paths": {
+          "Measure": 93,
+          "EnterImpl": 13,
+          "Other": 14
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            120
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            113
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            106
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            81
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RaiseHelper",
+            40
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::CEventSourceBase<DirectUI::IUntypedEventSource,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Xaml::XamlRoot *,ABI::Microsoft::UI::Xaml::XamlRootChangedEventArgs *>,ABI::Microsoft::UI::Xaml::IXamlRoot,ABI::Microsoft::UI::Xaml::IXamlRootChangedEventArgs>::Raise",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::Raise",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnWindowMessage",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnScriptCallback",
+            39
+          ]
+        ],
+        "leaf": [
+          [
+            "ntdll!",
+            24
+          ],
+          [
+            "ntoskrnl!",
+            12
+          ],
+          [
+            "!",
+            5
+          ],
+          [
+            "winuiedit!",
+            5
+          ],
+          [
+            "coreclr!",
+            4
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Release",
+            3
+          ],
+          [
+            "combase!",
+            3
+          ],
+          [
+            "dcompi!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::DXamlCore::GetPeerPrivate",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!xstring_ptr_view::Compare",
+            2
+          ],
+          [
+            "dwrite!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!_xvector_base<CStoryboard *>::clear",
+            1
+          ]
+        ],
+        "enterSamples": 13,
+        "themeReferenceSamples": 1
+      },
+      {
+        "index": 81,
+        "frameMs": 49.7785,
+        "schedulingMs": {
+          "running": 49.7235,
+          "ready": 0.0324,
+          "waiting": 0.0226
+        },
+        "nativeCreated": 0,
+        "textboxes": 54,
+        "newTextBoxes": 0,
+        "previousTextBoxes": 54,
+        "rows": [
+          477,
+          478,
+          479,
+          480,
+          481,
+          482,
+          483,
+          484,
+          485,
+          486,
+          487,
+          488,
+          489,
+          490,
+          491,
+          492,
+          493,
+          494
+        ],
+        "createdRows": [],
+        "sampleCount": 50,
+        "paths": {
+          "Other": 18,
+          "Measure": 16,
+          "EnterImpl": 16
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            50
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            37
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            32
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!CCollection::InsertDO",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ObservablePresentationFrameworkCollection<ABI::Microsoft::UI::Xaml::Controls::ICommandBarElement *>::InsertAt",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::PlaceInValidElements",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::AddToVisualChildren",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::Insert",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!CUIElementCollection::Insert",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::Collection_Insert",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::ChildEnter",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CContentControl::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Enter",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CControl::EnterImpl",
+            15
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetermineWindowAndAnchors",
+            11
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetectAndHandleDisconnectedView",
+            11
+          ],
+          [
+            "microsoft.ui.xaml!CTextBoxBase::EnterImpl",
+            10
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::RemoveAt",
+            9
+          ],
+          [
+            "microsoft.ui.xaml!??DirectUI::ModernCollectionBasePanel::ContainerManager::RemoveAllValidElements",
+            9
+          ]
+        ],
+        "leaf": [
+          [
+            "ntoskrnl!",
+            8
+          ],
+          [
+            "ntdll!",
+            7
+          ],
+          [
+            "dcompi!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CInputServices::GetDMService",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::AddRequest",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CValue::ReleaseAndReset",
+            2
+          ],
+          [
+            "dwrite!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!std::vector<ResourceKeyStorage,std::allocator<ResourceKeyStorage> >::erase",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Leave",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!xref::details::control_block::ReleaseWeak",
+            1
+          ],
+          [
+            "combase!",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::AddRef",
+            1
+          ]
+        ],
+        "enterSamples": 16,
+        "themeReferenceSamples": 5
+      },
+      {
+        "index": 91,
+        "frameMs": 75.928,
+        "schedulingMs": {
+          "running": 75.89410000000001,
+          "ready": 0.0216,
+          "waiting": 0.0123
+        },
+        "nativeCreated": 441,
+        "textboxes": 51,
+        "newTextBoxes": 21,
+        "previousTextBoxes": 30,
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "createdRows": [],
+        "sampleCount": 75,
+        "paths": {
+          "Measure": 41,
+          "EnterImpl": 19,
+          "Other": 15
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            65
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            60
+          ],
+          [
+            "microsoft.ui.xaml!??DirectUI::ModernCollectionBasePanel::RunGenerate",
+            44
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            44
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            36
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            21
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::EnterImpl",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::ChildEnter",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Enter",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::EnterImpl",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetermineWindowAndAnchors",
+            16
+          ]
+        ],
+        "leaf": [
+          [
+            "ntoskrnl!",
+            15
+          ],
+          [
+            "ntdll!",
+            4
+          ],
+          [
+            "coreclr!",
+            3
+          ],
+          [
+            "marshal!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RemoveObject",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::ConvertAndCopy,long,CValue const &>",
+            2
+          ],
+          [
+            "dwrite!",
+            2
+          ],
+          [
+            "winuiedit!",
+            2
+          ],
+          [
+            "!",
+            2
+          ],
+          [
+            "coremessagingxp!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::IsRightToLeft",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!Flyweight::Factory<CDOSharedState>::Create<CCoreServices * &,void (__cdecl*&)(CDependencyObject *,enum DirtyFlags),IPALUri *,xref::weakref_ptr<VisualTree> >",
+            2
+          ]
+        ],
+        "enterSamples": 19,
+        "themeReferenceSamples": 1
+      }
+    ]
+  },
+  "warm": {
+    "clock": {
+      "sync": {
+        "before": 5633947117630,
+        "utc": "2026-09-22T08:00:04.5773895+00:00",
+        "after": 5633947117661
+      },
+      "lower": "2026-09-22T17:00:04.577387+09:00",
+      "upper": "2026-09-22T17:00:04.577390+09:00",
+      "utcMinusLowerMs": 0.002,
+      "utcMinusUpperMs": -0.001
+    },
+    "uiTid": 33044,
+    "commands": [
+      {
+        "index": 12,
+        "frameMs": 121.4378,
+        "schedulingMs": {
+          "running": 121.27170000000001,
+          "ready": 0.056999999999999995,
+          "waiting": 0.1091
+        },
+        "nativeCreated": 1170,
+        "textboxes": 54,
+        "newTextBoxes": 54,
+        "previousTextBoxes": 0,
+        "rows": [
+          717,
+          718,
+          719,
+          720,
+          721,
+          722,
+          723,
+          724,
+          725,
+          726,
+          727,
+          728,
+          729,
+          730,
+          731,
+          732,
+          733,
+          734
+        ],
+        "createdRows": [],
+        "sampleCount": 122,
+        "paths": {
+          "Measure": 97,
+          "EnterImpl": 11,
+          "Other": 14
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            122
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            114
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            108
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            108
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            108
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            107
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            107
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            107
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            107
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            90
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            90
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            90
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            87
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            85
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            47
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            47
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            45
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::InvokeApplyTemplate",
+            40
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::Raise",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::RaiseHelper",
+            39
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::CEventSourceBase<DirectUI::IUntypedEventSource,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Xaml::XamlRoot *,ABI::Microsoft::UI::Xaml::XamlRootChangedEventArgs *>,ABI::Microsoft::UI::Xaml::IXamlRoot,ABI::Microsoft::UI::Xaml::IXamlRootChangedEventArgs>::Raise",
+            38
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnWindowMessage",
+            38
+          ]
+        ],
+        "leaf": [
+          [
+            "ntdll!",
+            18
+          ],
+          [
+            "ntoskrnl!",
+            16
+          ],
+          [
+            "dwrite!",
+            5
+          ],
+          [
+            "winuiedit!",
+            5
+          ],
+          [
+            "!",
+            4
+          ],
+          [
+            "marshal!",
+            3
+          ],
+          [
+            "coreclr!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::DXamlCore::GetPeerPrivate",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyProperty::GetDefaultValue",
+            2
+          ],
+          [
+            "combase!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::LayoutRoundHelper",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!REQUEST::Release",
+            1
+          ]
+        ],
+        "enterSamples": 11,
+        "themeReferenceSamples": 1
+      },
+      {
+        "index": 81,
+        "frameMs": 52.0271,
+        "schedulingMs": {
+          "running": 52.0088,
+          "ready": 0.0183
+        },
+        "nativeCreated": 0,
+        "textboxes": 54,
+        "newTextBoxes": 0,
+        "previousTextBoxes": 54,
+        "rows": [
+          477,
+          478,
+          479,
+          480,
+          481,
+          482,
+          483,
+          484,
+          485,
+          486,
+          487,
+          488,
+          489,
+          490,
+          491,
+          492,
+          493,
+          494
+        ],
+        "createdRows": [],
+        "sampleCount": 51,
+        "paths": {
+          "Measure": 18,
+          "EnterImpl": 16,
+          "Other": 17
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            51
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            38
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunGenerate",
+            22
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            22
+          ],
+          [
+            "microsoft.ui.xaml!CCollection::InsertDO",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ObservablePresentationFrameworkCollection<ABI::Microsoft::UI::Xaml::Controls::ICommandBarElement *>::InsertAt",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::PlaceInValidElements",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::ContainerManager::AddToVisualChildren",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::Insert",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CUIElementCollection::Insert",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::Collection_Insert",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDOCollection::ChildEnter",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CContentControl::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::Enter",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CControl::EnterImpl",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetermineWindowAndAnchors",
+            12
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetectAndHandleDisconnectedView",
+            12
+          ],
+          [
+            "microsoft.ui.xaml!CTextBoxBase::EnterImpl",
+            11
+          ],
+          [
+            "microsoft.ui.xaml!??DirectUI::ModernCollectionBasePanel::ContainerManager::RemoveAllValidElements",
+            10
+          ],
+          [
+            "microsoft.ui.xaml!CUIElementCollection::Remove",
+            10
+          ]
+        ],
+        "leaf": [
+          [
+            "ntoskrnl!",
+            9
+          ],
+          [
+            "ntdll!",
+            5
+          ],
+          [
+            "dcompi!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::AddRef",
+            3
+          ],
+          [
+            "dwrite!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::MapPropertyAndGroupOffsetToDO",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::Destroy,void,std::nullptr_t>",
+            2
+          ],
+          [
+            "!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ScrollViewer::RefreshScrollSnapPointsInfo",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!std::_Ref_count_base::_Decref",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!PrimitiveCompositionPropertyData::ClearRenderDataList",
+            1
+          ],
+          [
+            "microsoft.ui.xaml!FindNextSlotAndIterator<CUIElement *,IPALDirectManipulationService *>",
+            1
+          ]
+        ],
+        "enterSamples": 16,
+        "themeReferenceSamples": 3
+      },
+      {
+        "index": 91,
+        "frameMs": 76.1243,
+        "schedulingMs": {
+          "running": 76.109,
+          "waiting": 0.0001,
+          "ready": 0.0152
+        },
+        "nativeCreated": 441,
+        "textboxes": 51,
+        "newTextBoxes": 21,
+        "previousTextBoxes": 30,
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "createdRows": [],
+        "sampleCount": 76,
+        "paths": {
+          "Measure": 43,
+          "EnterImpl": 14,
+          "Other": 19
+        },
+        "inclusiveNative": [
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::StartDesktop",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplicationFactory::Start",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawMainTree",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::MessageTimerCallback",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!Microsoft::WRL::Details::DelegateArgTraits<long (__cdecl ABI::Windows::Foundation::ITypedEventHandler_impl<ABI::Windows::Foundation::Internal::AggregateType<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *>,IInspectable *>::*)(ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *)>::DelegateInvokeHelper<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<2>,ABI::Windows::Foundation::ITypedEventHandler<ABI::Microsoft::UI::Dispatching::DispatcherQueueTimer *,IInspectable *>,Microsoft::WRL::FtmBase>,`CXcpDispatcher::Init'::`46'::<lambda_1> &,1,ABI::Microsoft::UI::Dispatching::IDispatcherQueueTimer *,IInspectable *>::Invoke",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CCoreServices::NWDrawTree",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CWindowRenderTarget::Draw",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::Tick",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpBrowserHost::OnTick",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkApplication::RunDesktopWindowMessageLoop",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnReentrancyProtectedWindowMessage",
+            75
+          ],
+          [
+            "microsoft.ui.xaml!CLayoutManager::UpdateLayout",
+            63
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::MeasureOverride",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideFromCore",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::RunVirtualization",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverrideProtected",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::MeasureInternal",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureCore",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!CUIElement::Measure",
+            57
+          ],
+          [
+            "microsoft.ui.xaml!??DirectUI::ModernCollectionBasePanel::RunGenerate",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::Generate",
+            41
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElementGenerated::Measure",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureNewStyle",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::UIElement::MeasureImpl",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CListViewBaseItemChrome::MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ContentControl::MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::FrameworkElement_MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CoreImports::UIElement_Measure",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElement::MeasureOverrideImpl",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::FrameworkElementGenerated::MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CControl::MeasureOverride",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CFrameworkElement::MeasureOverrideForPInvoke",
+            34
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureOverride",
+            20
+          ],
+          [
+            "microsoft.ui.xaml!CGrid::MeasureCellsGroup",
+            20
+          ],
+          [
+            "microsoft.ui.xaml!CBorder::MeasureOverride",
+            19
+          ],
+          [
+            "microsoft.ui.xaml!CEventManager::Raise",
+            17
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetermineWindowAndAnchors",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!DirectUI::ModernCollectionBasePanel::DetectAndHandleDisconnectedView",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnWindowMessage",
+            16
+          ],
+          [
+            "microsoft.ui.xaml!CXcpDispatcher::OnScriptCallback",
+            16
+          ]
+        ],
+        "leaf": [
+          [
+            "ntoskrnl!",
+            9
+          ],
+          [
+            "dcompi!",
+            4
+          ],
+          [
+            "ntdll!",
+            4
+          ],
+          [
+            "microsoft.ui.xaml!xchainedmap<CDependencyObject *,xvector<REQUEST *> *>::Get",
+            3
+          ],
+          [
+            "dwrite!",
+            3
+          ],
+          [
+            "!",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CDependencyObject::AddRef",
+            3
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::ConvertAndCopy,long,CValue const &>",
+            2
+          ],
+          [
+            "coremessagingxp!",
+            2
+          ],
+          [
+            "combase!",
+            2
+          ],
+          [
+            "win32kfull.sys!",
+            2
+          ],
+          [
+            "microsoft.ui.xaml!CValue::Dispatch<CValueDetails::Handlers::Destroy,void,std::nullptr_t>",
+            2
+          ]
+        ],
+        "enterSamples": 14,
+        "themeReferenceSamples": 2
+      }
+    ]
+  }
+}

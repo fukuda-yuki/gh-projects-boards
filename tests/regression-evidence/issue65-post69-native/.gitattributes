@@ -1,0 +1,2 @@
+# Keep recorded SHA256 values stable across Windows and Unix checkouts.
+* -text whitespace=trailing-space,space-before-tab,cr-at-eol
