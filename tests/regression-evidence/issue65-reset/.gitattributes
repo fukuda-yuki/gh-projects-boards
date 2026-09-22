@@ -1,0 +1,2 @@
+# Keep evidence receipts identical to the bytes indexed on Windows.
+* -text whitespace=trailing-space,space-before-tab,cr-at-eol

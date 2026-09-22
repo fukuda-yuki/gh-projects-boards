@@ -1,0 +1,366 @@
+{
+  "base": "fd45ecbb40a67fb0395bfb52e32baf9fc326f893",
+  "diagnosticOnly": true,
+  "patch": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\regression-evidence\\issue65-reset\\inactive-presentation-diagnostic.patch",
+  "patchSha256": "b62fca5f075788d0abe170422c192de5e8350c91932b846a776b9033212ec718",
+  "binaries": [
+    {
+      "name": "GhProjectsBoards.App.exe",
+      "sha256": "e21dfdec738065e95f5aa4cfcdfeb7b2b5db290650c85e979aae77542b898e58"
+    },
+    {
+      "name": "GhProjectsBoards.App.dll",
+      "sha256": "d1594153a75171bb410d89fe2ba6aa3b92d45a44a618d70e4706290b1290b23a"
+    },
+    {
+      "name": "GhProjectsBoards.Core.dll",
+      "sha256": "68b9092fb751b6ccb37d23eada83f85789c9c68d82f03c64df492adcbb4c777f"
+    },
+    {
+      "name": "Microsoft.UI.Xaml.dll",
+      "sha256": "95f5f5b7cec1ca2fa30580121f5298122e32db96ed5f04d9d1a74224511e5f0c"
+    },
+    {
+      "name": "GhProjectsBoards.App.pri",
+      "sha256": "d67d8d4aefc66009653cbeb694ab6f8e453fa16385a15cac1fad9b786037549f"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "src\\GhProjectsBoards.App\\ActualCellEditor.cs",
+      "sha256": "4433c757d3e00e1f635fa0d9db2124ca2288235960fe191818d585d710e0ced2"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\App.xaml",
+      "sha256": "84a34afc35ad640ebffda0699411a3b1a70823b7e3cfc1b8ff3c39bd132720e7"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\App.xaml.cs",
+      "sha256": "b44a6d9d232c51ddc4fd6e45b429a9dabbda195cb6452b119738a24d9bd9d721"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ApplyConfirmationTable.xaml",
+      "sha256": "f5747f85867fb6e8dfc6c3fbb9306c812551fe1833c5234654b5413cddbb88f8"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ApplyConfirmationTable.xaml.cs",
+      "sha256": "e7e51ea14cd878e65f2dda565c719df55590c88d43028a0ea3e1371a0b2555f6"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ColumnSettings.cs",
+      "sha256": "8af3dfe3f25a8c5b0aa8bf67e89a4fa12445ff3247abb2411d7b71e6a6a3c784"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ConflictComparison.cs",
+      "sha256": "61f35e652127797ce76676707d429bd32aad346695d96e17efccb29ab9667044"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ConnectionPanel.xaml",
+      "sha256": "48527b3ffffa5c9a88749c81983a22809510c96cdf66e81b434346079a559c27"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\ConnectionPanel.xaml.cs",
+      "sha256": "d61bd1e50e73d549fb09f56e09976e62028eee4d8f54c1947675abba9bea6082"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\EditingGrid.ApplyResults.cs",
+      "sha256": "ecd622e8738a99cb87c2cb2b062ced341353d0397d5e46fdc76739011afd1dd9"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\EditingGrid.cs",
+      "sha256": "e11671c2f06dcf310c9df08fa6497e7818979e4bca91dd26a73de634117862c5"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\EditingGrid.Gantt.cs",
+      "sha256": "61efa4f3ee1e68de05fdb3ab7d153156cb18823bbe78b6f572306979b995b605"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\EditingGrid.Summary.cs",
+      "sha256": "3dc64776a028c9518114e7953b5121d17e0e8f455c9bf790e0cf0302792b4a35"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\GanttView.cs",
+      "sha256": "b06ca4ea290dee8acdae2ea4213d838adb37037bd2a81ccada18a54d200ea682"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\GhProjectsBoards.App.csproj",
+      "sha256": "bf79272fecc5da3edf83101ee606b37fd3b2c1d526a48ed385ffe96a2b855f05"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\InputCheckWindow.cs",
+      "sha256": "96b19c89cfa848e3fe648636e9e235993d22bc920bcfd122946c6d134b6caa8d"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\MainWindow.xaml",
+      "sha256": "5041670f8bd353d706dbd83b7ece1b26a4df9b02f535ce841ea3456594448042"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\MainWindow.xaml.cs",
+      "sha256": "f192fb660b4f591b540daa90e759e491e075614a55f5291908557be44d01f312"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\MinuteEditor.cs",
+      "sha256": "91dc9d1b4585c736f010ebaadad50b722e8420b5e594de25f75dbbf49a49edcc"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\PlanningBatch.cs",
+      "sha256": "9eee397ad3f798f83e045e5da1d2db8ca556eaa7ca1ad460e9151fd73a817a94"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\PlanningEditor.cs",
+      "sha256": "e521dbcf87af9cc05828000a9c3dbc384f91984813fb945d29f3202da2c6b747"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\PlanningSettings.cs",
+      "sha256": "e35a02772cd20a9a480920a34cfb1b64b9ecb1d1e4710ce054e2e83e30199e00"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\PlanningTaskDetails.cs",
+      "sha256": "d4878bfbdb0700ebb0facea393c3ee0736a259d7176dad67d6fcfa7a6eff57cc"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationApplyConfirmation.cs",
+      "sha256": "6fe67ed6ba2337ce836512f6d2893fc319f303cef6da8ba4ec5ea35802559333"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationApplyDialogs.cs",
+      "sha256": "486455842f19a03b687f8b4ac037a45ec212da1a9ab14a3d5c9ef4e1f2cbcdf6"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationApplyResults.cs",
+      "sha256": "4bc13433eb0b89bf39dd9146853a2fc4b4642f14254cb9ca5dd0d9a9569ca6fc"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationDiagnostics.cs",
+      "sha256": "b2968a8d4bddd3aff313487cb01bcc660171b549bbef6f69a09f6c3ee496d837"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationPanel.xaml",
+      "sha256": "24f6e772d93f8d8bafbfa9ed5393f91746ef184ae5e291badbaafbd6dc6d39f8"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RegistrationPanel.xaml.cs",
+      "sha256": "1e936d4282ef03d560fb024d4c9e311d085ba1525b07afcfeb6c80d30c61a27a"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\RowViewSettings.cs",
+      "sha256": "ce98bf4d80e3e42f137ac4e8b82b22bbb8e46cdbc41c61a7ee2db7c3232011a4"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SchedulingEditor.cs",
+      "sha256": "bfb7c4e4abc401314ddc79bbbb694234121e7d9864237b62d4e8f94353cbedd2"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SheetDiagnostics.cs",
+      "sha256": "0c03f5dd2f7d20989c34f0b22112e99ad4521a81872a9b003d933ac52bab630c"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SheetInteraction.cs",
+      "sha256": "7b8f1db0d748f2b7adabf68181d51b0be551ffb62dac081aa29e107c3690a28c"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SheetScrolling.cs",
+      "sha256": "9d9d23fd8d4e88bea3e633713b202c03b2a1f7dc303b4888c49ce141b7bf4375"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SheetViewCommands.cs",
+      "sha256": "85079f80276ef57d9c65d8a3479aac227ad300fc10bf39342ad5edca2091da5a"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\SummaryView.cs",
+      "sha256": "6b581fd8764dda9733558c6f33d964f8cc0033ee6f5c7ff695b0de360c77bf28"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\ConnectionViewModel.cs",
+      "sha256": "3ee921e65128f6e6f7a38a2cc4916efa94a9a61763ab8a08c67d7f35605840b8"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GhProjectsBoards.Core.csproj",
+      "sha256": "757ad0496a38de621ed32b9041247ebef4357584e028f8264c49b227f8ecfcec"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GitHub\\GhApi.cs",
+      "sha256": "7a46fd8978639f3baa1cd39d18ff5fd159b2e0e7c1662354a0a4151083946d78"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GitHub\\GhConnection.cs",
+      "sha256": "aa779953fe297463e702584df8a07e04e0117a5af4926bdabf718bdc9d7c3366"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GitHub\\GhProcess.cs",
+      "sha256": "980b86ea8410b088226a3dea7c44a3a1866caf032a8c04d669a720597b559418"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GitHub\\GitHubAddress.cs",
+      "sha256": "63aacb88af2b4fb61248d8ce26c694f917edd41c7ed8b8bf4b025806d7753966"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\GitHub\\TargetDiagnostics.cs",
+      "sha256": "e97d52b00a215923fc82fdcdd96fe11c36c55e4d385f669447f72571eb738605"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyCandidates.cs",
+      "sha256": "6ab02bb9c217a04d89c94bb37365a445ce67f5a1a64ad5391460bf33ac321a92"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyConfirmationPresentation.cs",
+      "sha256": "4109562c3b4b2b0da59fbbf76d528d4e1b7110b0132edce9fa4c1303b0d4d36e"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyExecutor.cs",
+      "sha256": "6f7b15825c07b9736fd5dbac1d556e72ce40445fbbfb41f7f8bee82994f0f2c3"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyJournal.cs",
+      "sha256": "e5fe64cb73cf355aac2b1041a4f57db802a27aedf99873662e6f874d37f89cbc"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyRemote.cs",
+      "sha256": "12bb528a0a3cd0a432d968d8fd0adc5b34647d624a107144eccbe4ebd9cfccd2"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ApplyResultsPresentation.cs",
+      "sha256": "171725f573e45740bf62b8c92cdc09413c5f1a10b53f98fb5205b97292afe36f"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\BulkEditing.cs",
+      "sha256": "da9b7e008801e4d99db4cf98c93d559c9ac678b45410e6d41310e07e7f72bb4a"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\CreationExecutor.cs",
+      "sha256": "cdb3169a5330e30b54782df84ed97d06eb2ed4c1d8ba77c36f51514464cbc357"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\CreationJournal.cs",
+      "sha256": "60b1a01893ecd9497ec64fb34c8a0cef2d507691eda194de83213a8c55899750"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\CreationPlanning.cs",
+      "sha256": "3085488b4302fb19ea15f7a3937a4ce8e963fa756ed026cc0edca4664405d65b"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\CreationRemote.cs",
+      "sha256": "c73c5a3270fefd021979c1ce842ac02bdfb1f95cefa241152590e3080881bbf4"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\DraftSnapshot.cs",
+      "sha256": "95f449e55ed68164f80934d89f6a425d72835ae1f1d080d51990d684739fbf08"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\DraftStore.cs",
+      "sha256": "f031205c64f4814b82be34d4d52b465f3c69dc5b89549afa051ced0aa5517fd3"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\EditingWorkspace.cs",
+      "sha256": "fef1a23b06b2c543ebe9a073288f0e81002225762d760225c6d4b4e0290a5265"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\GanttProjection.cs",
+      "sha256": "e1a6cbf11fbbf332cfc57f28f0ad94feb0f3f19f213f5e5f3624eefbd63d113a"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\LocalRows.cs",
+      "sha256": "2a9e8f3310e4a3ef3514ddc0a9647abe58eaab4d830baaa9a7ce45bb1e2cd5ed"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PerformanceTrace.cs",
+      "sha256": "212e397375a474f6f8d61b8373a9763e0ee455d995726ec17fc7cac707195d14"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningAssignment.cs",
+      "sha256": "2bf88fd93243cd45c5e52173f6958b88658b91a85a99013e155e9e5895cc7c5e"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningCellInput.cs",
+      "sha256": "685c1fe43ea625ba7dccb5f93c44743558171060acb455028cf98a24526761cb"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningContract.cs",
+      "sha256": "c6dd6a83b6a47a0755805f8aa99f647e3527012a9896caa1a4c7a2eea97884ec"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningDependencies.cs",
+      "sha256": "f26c61eeba277e2e254ba58f976f0470fd5905895bed19ccff5a26a785a9a86e"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningEngine.cs",
+      "sha256": "ecfa28f74834f5ff6f2ce9f87711221b4853998830aadf59abd564d472f6dcd1"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningReconciliation.cs",
+      "sha256": "1f2d831a22b21ee2a46f41a57967510a7a325b8b80e976acd24798e102e6d714"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningScalars.cs",
+      "sha256": "15619101a9001b7ed1f89e7e1d90e0ae0e7d78ecb686f4504354214202d0b611"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningValidation.cs",
+      "sha256": "dc64a7fbc2099c0e22d63c97d1d5e43ba4fafc24113d0c4ea0e8eb6cfa80feed"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\PlanningWorkspace.cs",
+      "sha256": "8237feee9336b6ffa7373eed4e7ea911f2129d37aeb2fb74405d6a2408d63f42"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectColumns.cs",
+      "sha256": "146f6e683f119d0c3d65ff14ad58a8de56428e6100fbd9773755f42783004228"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectDiscovery.cs",
+      "sha256": "2b2b86ab0c2ddd653f44a1a7694d803d0504815217df684c4a9d737d94e7f557"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectIssueIdentity.cs",
+      "sha256": "56cf5932fac4c95812220196ef22d3e8114c3d1b97895c9465d272c4d6502db2"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectQueries.cs",
+      "sha256": "27cf0dfe9014a1cc80a9b4e756ebdf8999eb0132734c253c986e6808a90edc21"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectReader.cs",
+      "sha256": "4d87a2d862cc9ef5b2b22f8fedbdcbbe11d22903e848f5d120b79a6469424604"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectReadModel.cs",
+      "sha256": "e8647ac2445baab047d1b84f753c481be44417a671cec01aecce8d98de78902b"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\ProjectRowViews.cs",
+      "sha256": "09ee56ff522a6413e98245d01520918258371cde1020cb3a90f9108e06094459"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\Reconciliation.cs",
+      "sha256": "b094aa46c1a3ead744c3130310846e0b45c973f20ef1d1bde67af12ab6741981"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\RegistrationApply.cs",
+      "sha256": "9245ed2872d4ffc9daef0a4bfb9649cb3d726eca9d5eaa5406fabc18dfab443e"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\RegistrationCreation.cs",
+      "sha256": "8052ca2c328c0cef15b0529f990811cf17cccbfe92af5298e707f182d1a2207f"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\RegistrationDiagnostics.cs",
+      "sha256": "92b8d30c8b8dd5b790b580892376a4633ae0cb70ab5a8d1b590b2866cbd67ab0"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\RegistrationStore.cs",
+      "sha256": "d7a40fe1fd01902e5ffa850086b7e7987751721350596489423938d7b74dcc42"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\RegistrationWorkspace.cs",
+      "sha256": "8922687ac9bac7dd58093b337b77d923d6ea5b0219974fd6801e592f37c1a53f"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\SummaryContract.cs",
+      "sha256": "1056988afdaa988c02f567a6769a0dddc9a14d71b837f17fd289c9296282af0f"
+    },
+    {
+      "path": "src\\GhProjectsBoards.Core\\Projects\\SummaryProjection.cs",
+      "sha256": "9d82122f8834436ca8b9bb9cd0a37614f2b536af9567360e4b453d809a3c1ec3"
+    }
+  ]
+}
