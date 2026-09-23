@@ -163,14 +163,33 @@ public sealed partial class PlanningHostedTests
         // host alone can leave the removed editor as the last focused element.
         Button destination = null!;
         await Ui.Run(() => destination = new Button { Content = "Next view" });
-        await Ui.Mount(destination); await Ui.Run(() => destination.Focus(FocusState.Keyboard));
-        await Report("next-view-focus");
-        Console.WriteLine("Released view after focus transfer: " + Retained(releasedView));
-        Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
-        await Ui.Unmount(destination);
-        // The fixture teardown still owns a mountable view and the isolated session.
-        await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid);
+        await Ui.Mount(destination);
+        try
+        {
+            await Ui.Run(() => {
+                Assert.That(destination.Focus(FocusState.Keyboard), Is.True);
+                Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Is.SameAs(destination));
+            });
+            await Report("next-view-focus");
+            // Native teardown can release the view on later dispatcher turns.
+            // Preserve the first census, then check bounded eventual reclamation;
+            // this diagnostic-only GC boundary is not an interaction latency.
+            Console.WriteLine("Released view after focus transfer: " + Retained(releasedView));
+            var releaseWait = System.Diagnostics.Stopwatch.StartNew();
+            for (var sample = 1; Retained(releasedView) && releaseWait.Elapsed < TimeSpan.FromSeconds(2); sample++)
+            {
+                await Report("release-" + sample);
+                Console.WriteLine($"View retained after {releaseWait.Elapsed.TotalMilliseconds:F1} ms: {Retained(releasedView)}");
+            }
+            Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
+        }
+        finally
+        {
+            await Ui.Unmount(destination);
+            // The fixture teardown still owns a mountable view and the isolated session.
+            await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+            await Ui.Mount(grid);
+        }
 
         async Task Report(string stage)
         {

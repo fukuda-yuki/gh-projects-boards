@@ -85,7 +85,7 @@ internal sealed partial class EditingGrid : Grid
     {
         summaryEnabled = allowSummary ?? SummaryEvaluationEnabled();
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
-        recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") == "1";
+        recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") != "0";
         showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
         using var measured = diagnostics?.Span("grid-constructor");
@@ -93,8 +93,8 @@ internal sealed partial class EditingGrid : Grid
         headerGrid.Style = (Style)Application.Current.Resources["SheetHeaderStyle"];
         detailsPane.Style = (Style)Application.Current.Resources["SheetDetailsStyle"];
         this.readClipboard = readClipboard is null ? ReadClipboardAsync : async () => new(await readClipboard(), null);
-        // Each row owns native editors. Realize the destination viewport without
-        // speculative offscreen rows; ReleaseRow separately retains visited editors.
+        // Realize the destination viewport without speculative offscreen rows.
+        // Input ownership is independent of the recycled presentation containers.
         list.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["SheetRowsPanel"];
         if (recycledPresentation) InitializeRecycling();
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);

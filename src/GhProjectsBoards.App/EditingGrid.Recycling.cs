@@ -12,7 +12,7 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid
 {
-    // Ownership map (#65 Gate A):
+    // Native input ownership:
     // - ListView owns generated/recycled row containers and presentation. A binding
     //   carries the Project/item/field identity and a generation; presentation owns
     //   no edits. Rebinding clears values, state, handlers and automation metadata.
@@ -24,7 +24,7 @@ internal sealed partial class EditingGrid
     //   unseen buffer does not instantiate an editor. Clean inactive editors can
     //   be released; visitation is not a retention reason. Hiding the sheet is not
     //   disposal. Native readiness is acquired on selection, before direct input.
-    // Gate A keeps the existing path frozen behind a process-local candidate opt-in.
+    // GHPB_RECYCLED_PRESENTATION=0 retains the earlier path for explicit comparisons.
     private readonly bool recycledPresentation;
     private readonly Canvas editorLayer = new() { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
     private readonly Dictionary<int, RecycledRow> recycledRows = [];

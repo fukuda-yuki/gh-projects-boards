@@ -297,6 +297,8 @@ public sealed class SustainedInputDiagnosticTests
         void WithScrollFrames(Action action)
         {
             var list = Element("ProjectItems"); var bounds = list.BoundingRectangle;
+            using var desktop = desktopObserver ? new DesktopFrameObserver(bounds, Path.Combine(output, "desktop")) : null;
+            desktop?.Arm();
             var captures = new List<object>();
             using var stop = new CancellationTokenSource();
             var camera = Task.Run(() => {

@@ -61,6 +61,8 @@ if (-not $RequiredSections) { $RequiredSections = @('functional', $(if($plan.mod
 function Result($status, $scope) { return @{status=$status; scope=$scope} }
 $evaluation = @{
     source=$plan.source; profile=$profile; condition=$plan.condition; required=$RequiredSections
+    acceptanceRole='100-ms improvement metric and observation completeness only. Daily-workflow engineering acceptance is a separate Issue #65 review; exceeding this target alone is not a reason to continue the implementation loop.'
+    targetMilliseconds=100
     functional=(Result 'INCONCLUSIVE' 'This run only: exact pending Title/NUMBER, normal close, independent checkpoint, preserved history and planning attribution. Broader G1/FLOW coverage is separate.')
     normal_scroll=(Result 'NOT_RUN' 'N1 +/-1 and +/-3 remain separate profiles; each demanded readable response <=100 ms.')
     stress_scroll=(Result 'NOT_RUN' 'S80 unchanged large-jump waveform; each readable response <=100 ms.')

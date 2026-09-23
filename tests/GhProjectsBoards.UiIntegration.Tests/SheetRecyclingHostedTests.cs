@@ -20,7 +20,7 @@ public sealed class SheetRecyclingHostedTests
     public async Task ProjectionChangesRetainPendingNativeHostAndItsTaskIdentity()
     {
         var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
-        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", "1");
+        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", null);
         var (project, work) = GanttWorkload.Create();
         var folder = Path.Combine(Path.GetTempPath(), "ghpb-recycle-projection-" + Guid.NewGuid().ToString("N"));
         var store = new DraftStore(folder); var session = new DraftSession(store, work, 0);

@@ -92,7 +92,7 @@ if ($FrozenLaunch) {
     Copy-Item -LiteralPath (Split-Path $seed -Parent) -Destination (Join-Path $buildRoot 'seed') -Recurse
     $app = Join-Path $buildRoot 'app/GhProjectsBoards.App.exe'; $seed = Join-Path $buildRoot 'seed/GhProjectsBoards.Tests.exe'
     $appFiles = BinaryFiles $app; $seedFiles = BinaryFiles $seed
-    $recycled = if ($env:GHPB_RECYCLED_PRESENTATION -eq '1') { '1' } else { '0' }
+    $recycled = if ($env:GHPB_RECYCLED_PRESENTATION -eq '0') { '0' } else { '1' }
 }
 if (-not $Resume) {
     & $seed --seed-planning-check $DataRoot $Scenario

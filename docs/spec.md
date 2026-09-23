@@ -8,6 +8,8 @@ The [planning data contract](planning.md) defines the selected ownership/operati
 
 ## Workspace presentation
 
+The application uses a fixed dark theme, independent of the OS light/dark preference. Theme switching and qualification of other themes are separately owned; they are not part of the current daily-planning workflow acceptance. Controls retain semantic theme resources and accessible names, state and focus indicators.
+
 Source: #31, with the functional contracts below. Ordinary startup opens the local workspace. The user explicitly selects a saved account and Project; this neither authenticates the account nor starts communication. The compact common area shows host, account, connection state and connection settings. The Project header shows its title, cached retrieval time, independent **最新を取得**, **GitHubに反映…** and **反映結果・履歴**. These Apply commands remain together when narrow layout reflows them. The default destination for new rows is available in Project settings and never changes existing row destinations. A cache timestamp does not claim that GitHub is current.
 
 The collapsible navigation pane groups Projects through their owner/repository associations without filtering Project contents. Routine draft saves preserve expanded/collapsed branches and visible keyboard focus. Collapsing an ancestor can clear the native tree's hidden selection without closing the active Project. Initial window sizing respects the display scale and available desktop work area. Narrow windows use overlay navigation and reflow Project commands, while the cache caption uses the width below the title and commands.
