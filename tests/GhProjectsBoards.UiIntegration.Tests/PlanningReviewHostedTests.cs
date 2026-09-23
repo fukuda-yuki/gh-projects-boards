@@ -50,8 +50,8 @@ public sealed partial class PlanningHostedTests
         await Ui.Unmount(grid);
         var prepared = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         await Ui.Run(() => grid = new(project, session, () => prepared.Task));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.ClickCommand("GridPlanning");
         await Ui.Run(() => { var views = Ui.Find<SelectorBar>("ProjectViews"); views.SelectedItem = views.Items[1]; prepared.SetResult(true); });
@@ -163,14 +163,33 @@ public sealed partial class PlanningHostedTests
         // host alone can leave the removed editor as the last focused element.
         Button destination = null!;
         await Ui.Run(() => destination = new Button { Content = "Next view" });
-        await Ui.Mount(destination); await Ui.Run(() => destination.Focus(FocusState.Keyboard));
-        await Report("next-view-focus");
-        Console.WriteLine("Released view after focus transfer: " + Retained(releasedView));
-        Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
-        await Ui.Unmount(destination);
-        // The fixture teardown still owns a mountable view and the isolated session.
-        await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid);
+        await Ui.Mount(destination);
+        try
+        {
+            await Ui.Run(() => {
+                Assert.That(destination.Focus(FocusState.Keyboard), Is.True);
+                Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Is.SameAs(destination));
+            });
+            await Report("next-view-focus");
+            // Native teardown can release the view on later dispatcher turns.
+            // Preserve the first census, then check bounded eventual reclamation;
+            // this diagnostic-only GC boundary is not an interaction latency.
+            Console.WriteLine("Released view after focus transfer: " + Retained(releasedView));
+            var releaseWait = System.Diagnostics.Stopwatch.StartNew();
+            for (var sample = 1; Retained(releasedView) && releaseWait.Elapsed < TimeSpan.FromSeconds(2); sample++)
+            {
+                await Report("release-" + sample);
+                Console.WriteLine($"View retained after {releaseWait.Elapsed.TotalMilliseconds:F1} ms: {Retained(releasedView)}");
+            }
+            Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
+        }
+        finally
+        {
+            await Ui.Unmount(destination);
+            // The fixture teardown still owns a mountable view and the isolated session.
+            await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+            await Ui.Mount(grid);
+        }
 
         async Task Report(string stage)
         {
@@ -201,13 +220,13 @@ public sealed partial class PlanningHostedTests
         project = p; var work = new EditingWorkspace(p.Snapshot.Id.Scope); work.SetRegistrations([p]); work.SetPlanning(plan, 0);
         session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-review-ui-" + Guid.NewGuid())), work, 0);
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
     }
     private async Task Schedule()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.ClickCommand("GridPlanning"); await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
     }
@@ -221,9 +240,11 @@ public sealed partial class PlanningHostedTests
     public async Task UnknownActualBreakdownUpdateShowsAnErrorAndPreservesTheObservedTotal()
     {
         await ReviewFixture(PlanningReviewRegressionTests.Observed("Actual", "5"), PlanningPathTests.Plan());
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual"); await Ui.Ready<Button>("ActualDetails");
         await Ui.Run(() => Ui.Click("ActualDetails")); await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor")?.IsLoaded == true);
+        await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor
+            && Ui.Find<Button>("ActualReportsUpdate", editor) is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ActualReportsUpdate", Ui.Popup<StackPanel>("ActualReportsEditor"))));
         await Ui.Run(() => {
             Assert.That(Ui.Popup<StackPanel>("ActualReportsEditor"), Is.Not.Null);
@@ -258,7 +279,7 @@ public sealed partial class PlanningHostedTests
     public async Task SelectingAnOutOfDomainObservedActualKeepsItsTextAndShowsACorrectionProblem()
     {
         await ReviewFixture(PlanningReviewRegressionTests.Observed("Actual", "-1"), PlanningPathTests.Plan());
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual");
         await Ui.Ready<TextBlock>("ActualInputHeading");
         await Ui.Run(() => {
@@ -299,7 +320,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleClose", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
         await ShowDateColumns();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("GridCell0_5").Text, Is.EqualTo("2026-10-05 12:07")));
+        await Ui.Run(() => Assert.That(CellText("GridCell0_5"), Is.EqualTo("2026-10-05 12:07")));
     }
     [Test, Category("ReviewRegression")]
     public async Task ClearingTheNativeDatePickerClearsTheEndpointTextAndRetainsTheOtherMinute()

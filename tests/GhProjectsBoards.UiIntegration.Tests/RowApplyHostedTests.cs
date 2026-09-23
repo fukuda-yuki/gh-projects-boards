@@ -1,6 +1,7 @@
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using NUnit.Framework;
 
@@ -44,24 +45,32 @@ public sealed partial class HostedTests
             Assert.That(await Workspace.Drafts!.CommitAsync(w => { w.SaveRowView(w.PrepareRowView(p) with { Definition = new("Title", Title: "A") }); return w; }, () => true), Is.True);
             Ui.Click("GridReapply");
         });
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
         await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Programmatic));
         await Ui.Run(async () => { await Workspace.PrepareApplyAsync(new HashSet<string> { local }); });
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
         await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Programmatic));
         await Ui.Run(async () => {
             h.AfterCreate = () => { var cell = Work.Open(Workspace.Selected!).Single(r => r.ItemId == local).Cells[0]; Work.Commit("P1", cell, "different"); Work.SetBuffer(cell, "pending"); };
             await Workspace.ConfirmApplyAsync(Workspace.ApplyReview!);
         });
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().DisplayedRowIds.Contains("item-created1"));
-        await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
         await Ui.Ready<Button>("GridReapply");
         await Ui.Run(() => {
             var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
             Assert.That(grid.DisplayedRowIds, Is.EqualTo(new[] { "item-created1" }));
             Assert.That(grid.SelectionIdentity?.Field, Is.EqualTo(new FieldKey("Title", "created1")));
-            Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("pending"));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("GridCell0_0")).OfType<TextBlock>().Select(text => text.Text), Does.Contain("pending"));
             Assert.That(Work.Creations.Single().Completed, Is.True);
+            FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus();
+        });
+        await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Run(() => {
+            var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
+            Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("pending"));
             Ui.Click("GridReapply"); Assert.That(grid.DisplayedRowIds, Is.Empty);
         });
         await Ui.OpenHistory();

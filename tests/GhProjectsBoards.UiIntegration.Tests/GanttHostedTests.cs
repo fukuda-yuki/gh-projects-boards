@@ -4,6 +4,7 @@ using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Path = System.IO.Path;
@@ -33,7 +34,7 @@ public sealed class GanttHostedTests
         session = new(new DraftStore(root), work, 0);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
         await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_2"); await Ui.Idle();
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2"); await Ui.Idle();
     }
     [TearDown]
     public async Task Teardown()
@@ -115,10 +116,12 @@ public sealed class GanttHostedTests
         });
     }
 
-    [TestCase(false), TestCase(true)]
-    public async Task SchedulingPopupKeepsDateInputAndItsActionsReachableAfterTheCommandMenuCloses(bool fromGantt)
+    [TestCase(false, 1400, 1000), TestCase(true, 1400, 1000)]
+    [TestCase(false, 800, 600), TestCase(true, 800, 600)]
+    public async Task SchedulingPopupKeepsDateInputAndItsActionsReachableAfterTheCommandMenuCloses(bool fromGantt, int width, int height)
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => Ui.Window.AppWindow.Resize(new(width, height)));
+        await SheetNativeInput.Click("GridCell0_0");
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         if (fromGantt)
         {
@@ -135,19 +138,33 @@ public sealed class GanttHostedTests
             while (parent is not null && parent is not ScrollViewer) parent = VisualTreeHelper.GetParent(parent);
             viewport = (ScrollViewer)parent!;
             var input = Ui.Find<TextBox>("ScheduleStart", panel);
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(input).GetName(), Is.EqualTo("開始日時"));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<CalendarDatePicker>("ScheduleStart-Date", panel)).GetName(), Is.EqualTo("開始日時の日付"));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TimePicker>("ScheduleStart-Time", panel)).GetName(), Is.EqualTo("開始日時の時刻"));
             var bounds = input.TransformToVisual(viewport).TransformBounds(new(0, 0, input.ActualWidth, input.ActualHeight));
             Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
             Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight), "The date input must be visibly usable, not merely present in the UI tree.");
             viewport.ChangeView(null, viewport.ScrollableHeight, null, true);
         });
         await SheetNativeInput.Rendered();
-        await Ui.Run(() => {
+        await Ui.Run(async () => {
             var close = Ui.Find<Button>("ScheduleClose", Schedule());
             var bounds = close.TransformToVisual(viewport).TransformBounds(new(0, 0, close.ActualWidth, close.ActualHeight));
             Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(viewport.ActualHeight));
-            Ui.Click(close);
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(close).GetName(), Is.EqualTo("閉じる"));
+            Assert.That(close.Focus(FocusState.Keyboard), Is.True);
+            await ApplyInformationEvidence.Capture(viewport, $"date-popup-{fromGantt}-{width}x{height}");
         });
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Enter);
         await Ui.Until(() => Schedule() is null);
+        await Ui.Run(() => Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1T1")));
+        if (!fromGantt)
+        {
+            await SheetNativeInput.Click("GridCell1_0");
+            await SheetNativeInput.Press(Windows.System.VirtualKey.Number7);
+            await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2"
+                && session.Workspace.Buffer(session.Workspace.Open(project)[1].Cells[0]) == "7");
+        }
     }
 
     [Test]

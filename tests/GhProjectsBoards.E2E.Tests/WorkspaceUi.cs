@@ -78,7 +78,11 @@ internal static class WorkspaceUi
         var description = string.Join("; ", candidates.Select(e => $"id={e.AutomationId}, class={e.ClassName}, runtime={string.Join(',', e.Properties.RuntimeId.Value)}, bounds={e.BoundingRectangle}, parent={e.Parent?.ClassName}"));
         throw new AssertionException("The visible Project tree did not become unique: " + description);
     }
-    internal static string ChoiceText(Window window, string id) => Element(window, id + "Value").Name;
+    internal static string ChoiceText(Window window, string id)
+    {
+        var cell = Element(window, id);
+        return cell.Patterns.Value.IsSupported ? cell.Patterns.Value.Pattern.Value.Value : Element(window, id + "Value").Name;
+    }
     internal static void HeaderCommand(Window window, int column, string id)
     {
         Element(window, "GridHeaderMenu" + column).AsButton().Invoke();
@@ -104,7 +108,10 @@ internal static class WorkspaceUi
     }
     private static void SelectChoice(Window window, string id, Func<AutomationElement[], AutomationElement?> choose)
     {
-        Element(window, id.Replace("GridCell", "GridChoiceArrow")).AsButton().Invoke();
+        Element(window, id).Focus();
+        var arrowId = id.Replace("GridCell", "GridChoiceArrow");
+        Wait(() => Visible(Find(window, arrowId)), "The selected cell's native choice arrow must be visible: " + id);
+        Element(window, arrowId).AsButton().Invoke();
         AutomationElement? choice = null;
         Wait(() => {
             try { choice = choose(window.FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.MenuItem))

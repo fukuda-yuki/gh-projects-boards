@@ -7,3 +7,4 @@ coveragereport/
 coverage-history/
 *.user
 *.suo
+__pycache__/

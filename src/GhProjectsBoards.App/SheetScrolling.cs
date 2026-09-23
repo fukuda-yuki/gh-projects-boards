@@ -63,8 +63,10 @@ internal sealed partial class EditingGrid
     }
     private void ScrollWheel(object sender, PointerRoutedEventArgs args)
     {
+        var handlerEntered = System.Diagnostics.Stopwatch.GetTimestamp();
         if (listScroll is null || (args.KeyModifiers & VirtualKeyModifiers.Control) != 0) return;
-        var pointer = args.GetCurrentPoint(wheelSurface).Properties;
+        var point = args.GetCurrentPoint(wheelSurface);
+        var pointer = point.Properties;
         var horizontal = pointer.IsHorizontalMouseWheel || (args.KeyModifiers & VirtualKeyModifiers.Shift) != 0;
         if (!(horizontal ? listScroll.ScrollableWidth > 0 : listScroll.ScrollableHeight > 0)) return;
         if (!SystemParametersInfo(horizontal ? 0x006Cu : 0x0068u, 0, out var units, 0)) units = 3;
@@ -72,6 +74,8 @@ internal sealed partial class EditingGrid
         var unit = horizontal ? 16 : RowPitch;
         var distance = pointer.MouseWheelDelta / 120d * (units == uint.MaxValue ? viewport : units * unit);
         if (!pointer.IsHorizontalMouseWheel) distance = -distance;
+        var priorHorizontal = listScroll.HorizontalOffset;
+        var priorVertical = listScroll.VerticalOffset;
         // A data sheet changes its viewport and realizes the destination together.
         // Native wheel animation can outrun the UI thread and expose empty row slots.
         // Keep Windows' wheel amount, partial deltas and the original native editor.
@@ -89,9 +93,18 @@ internal sealed partial class EditingGrid
             requestedVertical = wheelVertical;
             listScroll.ChangeView(null, wheelVertical, null, true);
         }
+        // Recycled presentation can realize this destination before another idle
+        // frame. Its native editors live outside the list. Doing this with in-row
+        // editors reorders a pending native caret reveal after the wheel and can
+        // snap the viewport back to the edited row.
+        if (recycledPresentation) listScroll.UpdateLayout();
         // A synchronous final ViewChanged can clear the accumulator before this
         // observation. Retain the requested target, not the cleared accumulator.
         diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units,
+            handlerEntered, pointerTimestampMicroseconds = point.Timestamp,
+            detentEquivalent = pointer.MouseWheelDelta / 120d, requestedDisplacement = distance,
+            priorHorizontal, priorVertical, horizontalAfterChangeView = listScroll.HorizontalOffset,
+            verticalAfterChangeView = listScroll.VerticalOffset,
             wheelHorizontal = requestedHorizontal, wheelVertical = requestedVertical });
     }
 

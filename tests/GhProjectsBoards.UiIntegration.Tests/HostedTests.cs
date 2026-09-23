@@ -3,6 +3,7 @@ using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using NUnit.Framework;
 
@@ -60,29 +61,97 @@ public sealed partial class HostedTests
         {
             var row = Work.Open(Workspace.Selected!).Single(r => r.ItemId == id);
             Assert.That(row.Cells[1].Key, Is.EqualTo(new FieldKey("LocalSelect", id, "P1", "P1-status")));
-            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("未指定（送信しない）"));
+            Assert.That(ChoiceText(), Does.Contain("未指定（送信しない）"));
         });
         await Ui.ChooseCell("GridCell2_1", "done");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Any(s => s.OptionId == "done"));
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().SelectionIdentity?.Field == new FieldKey("LocalSelect", id, "P1", "P1-status"));
         await Ui.Run(() =>
         {
-            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("Done"));
+            Assert.That(ChoiceText(), Does.Contain("Done"));
         });
         await Ui.ClickCommand("GridClear");
         await Ui.Until(() => Work.LocalRows.Single().Selects.Single().Intent.ToString() == "ExplicitClear");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア")));
+        await Ui.Run(() => Assert.That(ChoiceText(), Does.Contain("明示的にクリア")));
         await Ui.ClickCommand("GridRemoveRows");
         await Ui.Until(() => Work.LocalRows.Count == 0);
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Not.Contain("削除・変更")));
+        await Ui.Until(() => Workspace.Drafts!.DurableRevision == Work.Revision);
+        Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows, Is.Empty);
         await Ui.ClickCommand("GridUndo");
         await Ui.Until(() => Work.LocalRows.Count == 1);
         await Ui.Ready<Button>("GridCell2_1");
         await Ui.Run(() =>
         {
             Assert.That(Work.LocalRows.Single().Id, Is.EqualTo(id));
-            Assert.That(Ui.Find<TextBlock>("GridCell2_1Value").Text, Is.EqualTo("明示的にクリア"));
+            Assert.That(ChoiceText(), Does.Contain("明示的にクリア"));
             Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル新規 1行"));
         });
+        await Ui.Until(() => Workspace.Drafts!.DurableRevision == Work.Revision);
+        Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows!.Single().Id, Is.EqualTo(id));
+
+        static string[] ChoiceText() => Ui.Tree(Ui.Find<Button>("GridCell2_1")).OfType<TextBlock>().Select(text => text.Text).ToArray();
+    }
+
+    [TestCase("GridRemoveRows"), TestCase("GridUndo")]
+    public async Task RemovingSelectedLocalTitleSavesAndAllowsTheNextRowInput(string command)
+    {
+        await Ui.Run(() => Ui.Click("GridAddRow"));
+        await Ui.Until(() => Work.LocalRows.Count == 1 && Workspace.Drafts!.DurableRevision == Work.Revision);
+        await Ui.Ready<TextBox>("GridCell2_0");
+        TextBox removed = null!;
+        await Ui.Run(() => removed = Ui.Find<TextBox>("GridCell2_0"));
+
+        await Ui.ClickCommand(command);
+        await Ui.Until(() => Work.LocalRows.Count == 0);
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Not.Contain("削除・変更")));
+        await Ui.Until(() => !removed.IsLoaded && Workspace.Drafts!.DurableRevision == Work.Revision);
+        Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows, Is.Empty);
+
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
+        await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "continued after removal");
+        await Ui.Until(() => Workspace.Drafts!.DurableRevision == Work.Revision);
+        var saved = (await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!;
+        Assert.That(saved.Fields.Single(field => field.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("continued after removal"));
+        Assert.That(saved.Fields.Single(field => field.Key == new FieldKey("Title", "I2")).Buffer, Is.Null);
+        Assert.That(h.Writes, Is.Empty);
+    }
+
+    [Test]
+    public async Task HiddenLocalTitleKeepsItsPendingHostCaretAndDurableIdentity()
+    {
+        await Ui.Run(() => Ui.Click("GridAddRow"));
+        await Ui.Until(() => Work.LocalRows.Count == 1);
+        await Ui.Ready<TextBox>("GridCell2_0");
+        TextBox pending = null!;
+        var id = Work.LocalRows.Single().Id;
+        await Ui.Run(() =>
+        {
+            pending = Ui.Find<TextBox>("GridCell2_0"); pending.Text = "draft pending"; pending.Select(3, 0);
+            Ui.Find<TextBox>("GridQuickTitleFilter").Text = "Issue"; Ui.Click("GridQuickFilterApply");
+        });
+        await Ui.Until(() => !Ui.Tree(panel).OfType<EditingGrid>().Single().DisplayedRowIds.Contains(id));
+        await Ui.Run(() =>
+        {
+            Assert.That(pending.IsLoaded, Is.True);
+            Assert.That(pending.Text, Is.EqualTo("draft pending"));
+            Ui.Click("GridQuickFilterClear");
+        });
+        await Ui.Ready<TextBox>("GridCell2_0");
+        await Ui.Run(() =>
+        {
+            Assert.That(Ui.Find<TextBox>("GridCell2_0"), Is.SameAs(pending));
+            Assert.That(pending.SelectionStart, Is.EqualTo(3));
+            Assert.That(pending.SelectionLength, Is.Zero);
+            pending.Focus(FocusState.Keyboard); pending.SelectedText = "X";
+        });
+        await Ui.Until(() => Workspace.Drafts!.DurableRevision == Work.Revision);
+        Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows!.Single(row => row.Id == id).TitleBuffer,
+            Is.EqualTo("draXft pending"));
+        Assert.That(h.Writes, Is.Empty);
     }
 
     [Test]
@@ -422,8 +491,9 @@ public sealed partial class HostedTests
             var review = Workspace.ApplyReview!;
             Assert.That(await Workspace.Drafts!.CommitAsync(w => { w.ConfirmApply(review); return w; }, () => true), Is.True);
         });
-        // Arrange a durably approved, undispatched batch, then use the history UI to resume.
-        await ControlExternal("ProjectFields");
+        // Pause the current scoped pre-dispatch observation, including when its
+        // first response already contains all field definitions.
+        await ControlExternal("ApplyObservation");
         await Ui.OpenHistory() ;
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ResumeApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));

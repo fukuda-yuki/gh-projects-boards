@@ -142,7 +142,12 @@ internal static class Ui
     public static async Task ChooseCell(string id, string optionId)
     {
         await Ready<Button>(id);
-        await Run(() => { Find<Button>(id).Focus(FocusState.Keyboard); Click(id.Replace("GridCell", "GridChoiceArrow")); });
+        // Use the public focus provider so a presentation cell can activate its
+        // native editor, then operate that editor's real arrow.
+        await Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Find<Button>(id)).SetFocus());
+        var arrowId = id.Replace("GridCell", "GridChoiceArrow");
+        await Ready<Button>(arrowId);
+        await Run(() => Click(arrowId));
         MenuFlyoutItem? item = null;
         await Until(() => (item = VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child)).OfType<MenuFlyoutItem>()
             .SingleOrDefault(i => AutomationProperties.GetAutomationId(i) == "ChoiceOption-" + optionId)) is { IsLoaded: true });

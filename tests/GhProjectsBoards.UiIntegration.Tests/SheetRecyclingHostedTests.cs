@@ -17,10 +17,78 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed class SheetRecyclingHostedTests
 {
     [Test]
-    public async Task OnePhysicalWheelDetentMovesOnceOverPresentationAndProtectedInput()
+    public async Task ProjectionChangesRetainPendingNativeHostAndItsTaskIdentity()
     {
         var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
-        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", "1");
+        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", null);
+        var (project, work) = GanttWorkload.Create();
+        var folder = Path.Combine(Path.GetTempPath(), "ghpb-recycle-projection-" + Guid.NewGuid().ToString("N"));
+        var store = new DraftStore(folder); var session = new DraftSession(store, work, 0);
+        EditingGrid grid = null!; TextBox original = null!; DependencyObject parent = null!, host = null!;
+        IValueProvider retiredPresentation = null!;
+        var mounted = false;
+        try
+        {
+            await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
+            await Ui.Mount(grid); mounted = true; await Ui.Ready<Button>("GridCell5_0");
+            await Ui.Run(() =>
+            {
+                retiredPresentation = (IValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<Button>("GridCell3_0")).GetPattern(PatternInterface.Value);
+                Ui.Click("GridCell5_0"); original = Ui.Find<TextBox>("GridCell5_0"); original.Text = "6-pending"; original.Select(3, 0);
+                parent = VisualTreeHelper.GetParent(original); host = VisualTreeHelper.GetParent(parent);
+                Ui.Find<TextBox>("GridQuickTitleFilter").Text = "作業"; Ui.Click("GridQuickFilterApply");
+            });
+            await Ui.Until(() => grid.DisplayedRowIds.Length == 998);
+            await Ui.Run(() =>
+            {
+                Assert.That(original.IsLoaded, Is.True, "A projection rebuild must retain the attached pending native editor.");
+                Assert.That(Ui.Find<TextBox>("GridCell3_0"), Is.SameAs(original));
+                Assert.That(VisualTreeHelper.GetParent(original), Is.SameAs(parent));
+                Assert.That(VisualTreeHelper.GetParent(parent), Is.SameAs(host));
+                Assert.That(original.SelectionStart, Is.EqualTo(3));
+                Assert.That(() => retiredPresentation.SetValue("wrong-row"), Throws.TypeOf<ElementNotAvailableException>());
+                original.SelectedText = "X";
+                Assert.That(session.Workspace.Fields.Single(f => f.Key == new FieldKey("Title", "I6")).Buffer, Is.EqualTo("6-pXending"));
+                original.Select(4, 0);
+                Assert.That(session.Workspace.Fields.Any(f => f.Buffer == "wrong-row"), Is.False);
+                Ui.Find<TextBox>("GridQuickTitleFilter").Text = "作業 30"; Ui.Click("GridQuickFilterApply");
+            });
+            await Ui.Until(() => !grid.DisplayedRowIds.Contains("P1T6"));
+            await Ui.Run(() =>
+            {
+                Assert.That(VisualTreeHelper.GetParent(original), Is.SameAs(parent));
+                Assert.That(VisualTreeHelper.GetParent(parent), Is.SameAs(host));
+                Assert.That(original.Text, Is.EqualTo("6-pXending"));
+                Ui.Click("GridQuickFilterClear");
+            });
+            await Ui.Until(() => grid.DisplayedRowIds.Length == 1000);
+            await Ui.Run(async () =>
+            {
+                Assert.That(Ui.Find<TextBox>("GridCell5_0"), Is.SameAs(original));
+                Assert.That(original.SelectionStart, Is.EqualTo(4));
+                Assert.That(original.SelectionLength, Is.Zero);
+                original.Focus(FocusState.Keyboard); original.SelectedText = "Y";
+                Assert.That(session.Workspace.Fields.Single(f => f.Key == new FieldKey("Title", "I6")).Buffer, Is.EqualTo("6-pXYending"));
+                Assert.That(session.Workspace.Fields.Single(f => f.Key == new FieldKey("Title", "I4")).Buffer, Is.Null);
+                Assert.That(session.Workspace.Journal, Is.Empty);
+                Assert.That(await session.FlushAsync(), Is.True);
+            });
+            var restored = EditingWorkspace.Restore((await store.LoadAsync(work.Scope))!);
+            Assert.That(restored.Fields.Single(f => f.Key == new FieldKey("Title", "I6")).Buffer, Is.EqualTo("6-pXYending"));
+        }
+        finally
+        {
+            if (mounted) await Ui.Unmount(grid);
+            await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+            Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", previous);
+        }
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task OnePhysicalWheelDetentMovesOnceOverPresentationAndProtectedInput(bool recycled)
+    {
+        var previous = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION");
+        Environment.SetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION", recycled ? "1" : "0");
         var (project, work) = GanttWorkload.Create();
         var session = new DraftSession(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-recycle-wheel-" + Guid.NewGuid().ToString("N"))), work, 0);
         EditingGrid grid = null!; ScrollViewer scroll = null!; double expected = 0;
@@ -28,7 +96,7 @@ public sealed class SheetRecyclingHostedTests
         try
         {
             await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
-            await Ui.Mount(grid); mounted = true; await Ui.Ready<Button>("GridCell0_0");
+            await Ui.Mount(grid); mounted = true; await Ui.Ready<FrameworkElement>("GridCell0_0");
             await Ui.Run(() =>
             {
                 var list = Ui.Find<ListView>("ProjectItems"); scroll = Ui.Tree(list).OfType<ScrollViewer>().First();
@@ -38,8 +106,10 @@ public sealed class SheetRecyclingHostedTests
             await MoveOneDetent();
             await Ui.Run(() => scroll.ChangeView(null, 0, null, true));
             await Ui.Until(() => scroll.VerticalOffset < 1);
-            await Ui.Run(() => Ui.Click("GridCell0_0"));
+            SheetNativeInput.Move(await SheetNativeInput.PointFor("GridCell0_0", .3));
+            SheetNativeInput.Button(true); SheetNativeInput.Button(false);
             await Ui.Ready<TextBox>("GridCell0_0");
+            await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Find<TextBox>("GridCell0_0")));
             await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").SelectedText = "pending-wheel");
             await MoveOneDetent();
             await Ui.Run(() => Assert.That(work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending-wheel")));
@@ -76,6 +146,9 @@ public sealed class SheetRecyclingHostedTests
             await Ui.Run(() => { grid = new EditingGrid(project, session, () => Task.FromResult(true)); surface = new Grid { Width = 840, Height = 490 }; surface.Children.Add(grid); });
             await Ui.Mount(surface); mounted = true;
             await Ui.Ready<Button>("GridCell0_0");
+            // This journey selects through UIA before its first physical key;
+            // unlike a native click, Invoke does not establish foreground.
+            await SheetNativeInput.ActivateWindow();
             await Ui.Run(() =>
             {
                 list = Ui.Find<ListView>("ProjectItems"); scroll = Ui.Tree(list).OfType<ScrollViewer>().First();
@@ -230,6 +303,8 @@ public sealed class SheetRecyclingHostedTests
             {
                 Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("GridCell999_0")), Does.Contain("作業 1000"));
                 Assert.That(work.Buffer(work.Open(project)[999].Cells.Single(c => c.Key?.FieldId == "F-Estimate")), Is.EqualTo("24未確定"));
+                Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell999_2")), Does.Contain("編集中（未確定）"),
+                    "Stored input must remain accessible before allocating a native editor.");
                 Assert.That(work.Journal, Is.Empty);
             });
             foreach (var fraction in new[] { .1, .7, .2, .9, .3, .8, .4, .6, 0d, 1d })
@@ -243,6 +318,12 @@ public sealed class SheetRecyclingHostedTests
                     distinctContainers.UnionWith(containers); distinctContent.UnionWith(containers.Select(item => item.ContentTemplateRoot));
                     var native = Ui.Tree(grid).OfType<TextBox>().Count(text => AutomationProperties.GetAutomationId(text).StartsWith("GridCell"));
                     Assert.That(native, Is.Zero, "Visitation and stored pending data cannot allocate protected editors.");
+                    if (fraction == 0)
+                    {
+                        Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell0_2")), Does.Not.Contain("未確定"));
+                        Assert.That(Ui.Find<TextBlock>("GridMarker0_2").Visibility, Is.EqualTo(Visibility.Collapsed),
+                            "Reused presentation must not retain another task's state marker.");
+                    }
                     Console.WriteLine($"Reuse sample {fraction}: attachedContainers={containers.Length}; distinctContainers={distinctContainers.Count}; distinctContent={distinctContent.Count}; nativeEditors={native}");
                 });
             }

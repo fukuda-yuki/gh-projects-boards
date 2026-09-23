@@ -49,7 +49,8 @@ internal sealed partial class EditingGrid
         ToolTipService.SetToolTip(handle, "上下にドラッグしてコピー。Escで取消。範囲選択してCtrl+Dでも下へコピーできます。");
         handle.AddHandler(PointerPressedEvent, new PointerEventHandler((_, args) =>
         {
-            if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed || !CurrentEditor(row, column, controls[row][column])) return;
+            if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed || row >= fillHandles.Count
+                || column >= fillHandles[row].Length || !ReferenceEquals(fillHandles[row][column], handle)) return;
             args.Handled = true;
             try
             {

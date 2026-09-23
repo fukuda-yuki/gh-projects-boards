@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Input;
@@ -8,6 +9,44 @@ namespace GhProjectsBoards.E2E.Tests;
 
 internal static class NativePointer
 {
+    internal static void Position(Window window, Point point)
+    {
+        Assert.That(GetForegroundWindow(), Is.EqualTo(window.Properties.NativeWindowHandle.Value));
+        Move(point); FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+    }
+    internal static (long Begin, long? KeyBegin, long Sent) SelectAndType(ushort key, int keyDelayMs, bool batch = false)
+    {
+        // A declared physical key interval is inside the selection boundary.
+        // No focus polling, extra click or character replay hides activation.
+        var pointer = new[] {
+            new Input { Mouse = new() { Flags = 0x0002 } },
+            new Input { Mouse = new() { Flags = 0x0004 } }
+        };
+        var keyboard = new[] {
+            new Input { Type = 1, Keyboard = new() { Key = key } },
+            new Input { Type = 1, Keyboard = new() { Key = key, Flags = 0x0002 } }
+        };
+        if (batch)
+        {
+            Assert.That(keyDelayMs, Is.Zero, "A single native batch has no declared inter-call delay.");
+            var inputs = pointer.Concat(keyboard).ToArray();
+            var batchBegin = Stopwatch.GetTimestamp();
+            var batchSent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+            var batchEnd = Stopwatch.GetTimestamp();
+            Assert.That(batchSent, Is.EqualTo(inputs.Length), "The ordered pointer/key sequence must be sent exactly once.");
+            // SendInput preserves array order. It does not expose the individual
+            // key's actual delivery time; do not manufacture that timestamp.
+            return (batchBegin, null, batchEnd);
+        }
+        var begin = Stopwatch.GetTimestamp();
+        Assert.That(SendInput((uint)pointer.Length, pointer, Marshal.SizeOf<Input>()), Is.EqualTo(pointer.Length));
+        while (Stopwatch.GetElapsedTime(begin).TotalMilliseconds < keyDelayMs) Thread.Sleep(1);
+        var keyBegin = Stopwatch.GetTimestamp();
+        var sent = SendInput((uint)keyboard.Length, keyboard, Marshal.SizeOf<Input>());
+        var end = Stopwatch.GetTimestamp();
+        Assert.That(sent, Is.EqualTo(keyboard.Length), "Selection and first character must be delivered once.");
+        return (begin, keyBegin, end);
+    }
     internal static void Drag(Window window, Point from, Point to, Action? beforeRelease = null)
     {
         Assert.That(GetForegroundWindow(), Is.EqualTo(window.Properties.NativeWindowHandle.Value));
@@ -32,7 +71,13 @@ internal static class NativePointer
             Flags = 0x0001 | 0x4000 | 0x8000 } };
         Assert.That(SendInput(1, [input], Marshal.SizeOf<Input>()), Is.EqualTo(1), "Native mouse move must be delivered.");
     }
-    [StructLayout(LayoutKind.Sequential)] private struct Input { public uint Type; public MouseInput Mouse; }
+    [StructLayout(LayoutKind.Explicit, Size = 40)] private struct Input
+    {
+        [FieldOffset(0)] public uint Type;
+        [FieldOffset(8)] public MouseInput Mouse;
+        [FieldOffset(8)] public KeyboardInput Keyboard;
+    }
+    [StructLayout(LayoutKind.Sequential)] private struct KeyboardInput { public ushort Key, Scan; public uint Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public nuint ExtraInfo; }
     [DllImport("user32.dll")] private static extern uint SendInput(uint count, Input[] inputs, int size);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);

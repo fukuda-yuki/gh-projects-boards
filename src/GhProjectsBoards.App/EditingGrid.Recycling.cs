@@ -12,7 +12,7 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid
 {
-    // Ownership map (#65 Gate A):
+    // Native input ownership:
     // - ListView owns generated/recycled row containers and presentation. A binding
     //   carries the Project/item/field identity and a generation; presentation owns
     //   no edits. Rebinding clears values, state, handlers and automation metadata.
@@ -24,7 +24,7 @@ internal sealed partial class EditingGrid
     //   unseen buffer does not instantiate an editor. Clean inactive editors can
     //   be released; visitation is not a retention reason. Hiding the sheet is not
     //   disposal. Native readiness is acquired on selection, before direct input.
-    // Gate A keeps the existing path frozen behind a process-local candidate opt-in.
+    // GHPB_RECYCLED_PRESENTATION=0 retains the earlier path for explicit comparisons.
     private readonly bool recycledPresentation;
     private readonly Canvas editorLayer = new() { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
     private readonly Dictionary<int, RecycledRow> recycledRows = [];
@@ -37,13 +37,24 @@ internal sealed partial class EditingGrid
         public override string ToString() => Name;
     }
     private sealed record CellBinding(string Project, string Item, FieldKey? Key, ColumnIdentity Column, int Row, int Index, long Generation);
-    private sealed record OwnedEditor(CellBinding Identity, FrameworkElement Editor, Border Host, TextBlock Marker);
-    private sealed class RecycledRow(Grid line, TextBlock number, RecycledCell[] cells, Border[] borders, TextBlock identity)
+    private sealed class OwnedEditor(CellBinding identity, FrameworkElement editor, Border host, TextBlock marker, EditCell cell, bool isLocal)
+    {
+        public CellBinding Identity { get; } = identity;
+        public FrameworkElement Editor { get; } = editor;
+        public Border Host { get; } = host;
+        public TextBlock Marker { get; } = marker;
+        public EditCell Cell { get; set; } = cell;
+        public bool IsLocal { get; } = isLocal;
+        public int Row { get; set; } = identity.Row;
+        public int Column { get; set; } = identity.Index;
+    }
+    private sealed class RecycledRow(Grid line, TextBlock number, RecycledCell[] cells, Border[] borders, TextBlock[] stateMarkers, TextBlock identity)
     {
         public Grid Line { get; } = line;
         public TextBlock Number { get; } = number;
         public RecycledCell[] Cells { get; } = cells;
         public Border[] Borders { get; } = borders;
+        public TextBlock[] StateMarkers { get; } = stateMarkers;
         public TextBlock Identity { get; } = identity;
         public RowItem? Item { get; set; }
     }
@@ -55,8 +66,12 @@ internal sealed partial class EditingGrid
         list.ContainerContentChanging += (_, args) =>
         {
             if (args.ItemContainer.ContentTemplateRoot is not Grid line) return;
-            if (line.Tag is not RecycledRow presentation) line.Tag = presentation = CreateRecycledRow(line);
-            UnbindRecycledRow(presentation);
+            if (line.Tag is RecycledRow old) UnbindRecycledRow(old);
+            if (line.Tag is not RecycledRow presentation || presentation.Cells.Length != layout.Visible.Length)
+            {
+                line.Children.Clear(); line.ColumnDefinitions.Clear();
+                line.Tag = presentation = CreateRecycledRow(line);
+            }
             if (!args.InRecycleQueue && args.Item is RowItem item) BindRecycledRow(presentation, item);
             args.Handled = true;
         };
@@ -70,6 +85,7 @@ internal sealed partial class EditingGrid
         {
             rowLines.Add(null!); controls.Add([]); markers.Add([]); cellBorders.Add([]); selectionFrames.Add([]); fillHandles.Add([]);
         }
+        ReindexOwnedEditors();
         list.ItemsSource = rows.Select((row, r) => new RowItem(projectId, row.ItemId, r,
             $"行 {r + 1} {RowIdentity(row)} {session.Workspace.Value(row.Cells[0]) ?? row.Cells[0].Display}")).ToArray();
     }
@@ -81,6 +97,7 @@ internal sealed partial class EditingGrid
         var gutter = new Grid { Style = (Style)Application.Current.Resources["SheetHeaderStyle"] };
         gutter.Children.Add(number); line.Children.Add(gutter);
         var cells = new RecycledCell[layout.Visible.Length]; var borders = new Border[cells.Length];
+        var stateMarkers = new TextBlock[cells.Length];
         var identity = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new(4, 0, 8, 0), FontSize = 11 };
         for (var c = 0; c < cells.Length; c++)
         {
@@ -92,10 +109,14 @@ internal sealed partial class EditingGrid
                 content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
                 SetColumn(identity, 1); content.Children.Add(identity);
             }
+            var marker = stateMarkers[c] = new TextBlock { FontSize = 10, Width = 10, Height = 12,
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+                Margin = new(0, 0, 2, 0), Visibility = Visibility.Collapsed };
+            SetColumnSpan(marker, c == 0 ? 2 : 1); content.Children.Add(marker);
             borders[c] = new Border { BorderThickness = new(1), MinHeight = 30, Child = content, Style = cellStyle };
             SetColumn(borders[c], c + 1); line.Children.Add(borders[c]);
         }
-        return new(line, number, cells, borders, identity);
+        return new(line, number, cells, borders, stateMarkers, identity);
     }
 
     private void AllocateRowSlots(int r)
@@ -120,6 +141,7 @@ internal sealed partial class EditingGrid
         ToolTipService.SetToolTip(presentation.Identity, RowIdentity(rows[r]));
         for (var c = 0; c < presentation.Cells.Length; c++)
         {
+            presentation.Line.ColumnDefinitions[c + 1].Width = new(ColumnWidth(c));
             var binding = new CellBinding(projectId, item.Item, rows[r].Cells[c].Key, layout.Visible[c].Id, r, c, ++bindingGeneration);
             presentation.Cells[c].Bind(binding);
             if (ownedEditors.TryGetValue((item.Item, binding.Key, binding.Column), out var owned)) InstallOwnedSlots(owned);
@@ -145,6 +167,12 @@ internal sealed partial class EditingGrid
             }
         }
         foreach (var cell in presentation.Cells) cell.Unbind();
+        foreach (var marker in presentation.StateMarkers)
+        {
+            marker.Text = ""; marker.Tag = null; marker.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetAutomationId(marker, ""); AutomationProperties.SetName(marker, "");
+            ToolTipService.SetToolTip(marker, null);
+        }
         foreach (var border in presentation.Borders)
         {
             border.Style = cellStyle; border.Visibility = Visibility.Visible;
@@ -174,7 +202,11 @@ internal sealed partial class EditingGrid
             cell.Visibility = owned ? Visibility.Collapsed : Visibility.Visible;
             AutomationProperties.SetAutomationId(cell, owned ? "" : $"GridCell{r}_{c}");
             AutomationProperties.SetAccessibilityView(cell, owned ? AccessibilityView.Raw : AccessibilityView.Content);
-            if (!owned) { cell.Refresh(); PaintCellState(r, c); }
+            var marker = presentation.StateMarkers[c];
+            AutomationProperties.SetAutomationId(marker, owned ? "" : $"GridMarker{r}_{c}");
+            AutomationProperties.SetAccessibilityView(marker, owned ? AccessibilityView.Raw : AccessibilityView.Content);
+            if (owned) marker.Visibility = Visibility.Collapsed;
+            else { markers[r][c] = marker; UpdateCell(r, c); }
             presentation.Borders[c].Visibility = ColumnInViewport(c) ? Visibility.Visible : Visibility.Collapsed;
         }
     }
@@ -201,15 +233,35 @@ internal sealed partial class EditingGrid
         // Set an explicit identity once. Neither presenter binding nor inheritance
         // can ever replace the native editor's data context.
         host.DataContext = identity;
-        var owned = new OwnedEditor(identity, editor, host, marker); ownedEditors.Add(key, owned);
+        var owned = new OwnedEditor(identity, editor, host, marker, rows[r].Cells[c], rows[r].IsLocal); ownedEditors.Add(key, owned);
         InstallOwnedSlots(owned); editorLayer.Children.Add(host);
         RefreshRecycledRow(r); UpdateCell(r, c); PositionOwnedEditors();
     }
 
     private void InstallOwnedSlots(OwnedEditor owned)
     {
-        var r = owned.Identity.Row; var c = owned.Identity.Index;
+        var r = owned.Row; var c = owned.Column;
+        AllocateRowSlots(r);
         controls[r][c] = owned.Editor; cellBorders[r][c] = owned.Host; markers[r][c] = owned.Marker;
+    }
+
+    private void ReindexOwnedEditors()
+    {
+        var rowIndices = rows.Select((row, index) => (row.ItemId, index)).ToDictionary(pair => pair.ItemId, pair => pair.index);
+        foreach (var owned in ownedEditors.Values)
+        {
+            var c = Array.FindIndex(layout.Visible, column => column.Id == owned.Identity.Column);
+            if (!rowIndices.TryGetValue(owned.Identity.Item, out var r) || c < 0 || rows[r].Cells[c].Key != owned.Identity.Key) continue;
+            owned.Row = r; owned.Column = c; owned.Cell = rows[r].Cells[c];
+            if (owned.Editor is TitleCell title) title.Reindex(r, c, owned.Cell);
+            else if (owned.Editor is ChoiceCell choice) choice.Reindex(r, c, owned.Cell);
+            AutomationProperties.SetAutomationId(owned.Editor, $"GridCell{r}_{c}");
+            AutomationProperties.SetAutomationId(owned.Marker, $"GridMarker{r}_{c}");
+            AutomationProperties.SetAccessibilityView(owned.Editor, AccessibilityView.Content);
+            owned.Editor.IsHitTestVisible = true;
+            ((Control)owned.Editor).IsEnabled = true;
+            InstallOwnedSlots(owned);
+        }
     }
 
     private void PositionOwnedEditors()
@@ -220,7 +272,13 @@ internal sealed partial class EditingGrid
         editorLayer.Clip = new RectangleGeometry { Rect = viewport };
         foreach (var owned in ownedEditors.Values)
         {
-            var r = owned.Identity.Row; var c = owned.Identity.Index;
+            var r = owned.Row; var c = owned.Column;
+            if (r < 0 || c < 0)
+            {
+                Canvas.SetTop(owned.Host, -10000);
+                owned.Host.Clip = new RectangleGeometry { Rect = new(0, 0, 0, 0) };
+                continue;
+            }
             var x = origin.X + 44 + Enumerable.Range(0, c).Sum(ColumnWidth) - (c == 0 ? 0 : listScroll.HorizontalOffset);
             var y = origin.Y + r * RowPitch - listScroll.VerticalOffset;
             // A reused container can still report its previous arranged location
@@ -237,22 +295,52 @@ internal sealed partial class EditingGrid
     {
         foreach (var (key, owned) in ownedEditors.ToArray())
         {
-            var r = owned.Identity.Row; var c = owned.Identity.Index;
-            if (active && currentRow == r && currentColumn == c || drag is { } gesture && gesture.SourceRow == r
+            var r = owned.Row; var c = owned.Column;
+            // A removed local row has no buffer to query. A filtered-out row still
+            // owns its input, including when its presentation position is -1.
+            var removedLocal = owned.IsLocal && !session.Workspace.LocalRows.Any(row =>
+                row.Id == owned.Identity.Item && row.ProjectId == owned.Identity.Project);
+            if (!removedLocal && (active && currentRow == r && currentColumn == c || drag is { } gesture && gesture.SourceRow == r
                 || owned.Editor is TitleCell { Editing: true } or TitleCell { Composing: true }
-                || session.Workspace.Buffer(rows[r].Cells[c]) is not null
-                || XamlRoot is not null && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), owned.Editor)) continue;
+                || session.Workspace.Buffer(owned.Cell) is not null
+                || XamlRoot is not null && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), owned.Editor))) continue;
+            if (removedLocal)
+            {
+                if (owned.Editor is TitleCell title) title.Reindex(-1, -1, owned.Cell);
+                else if (owned.Editor is ChoiceCell choice) choice.Reindex(-1, -1, owned.Cell);
+            }
             ownedEditors.Remove(key); editorLayer.Children.Remove(owned.Host);
+            if (r < 0 || c < 0) continue;
             controls[r][c] = null!; cellBorders[r][c] = null!; markers[r][c] = null!; selectionFrames[r][c] = null; fillHandles[r][c] = null;
             if (recycledRows.TryGetValue(r, out var presentation))
-            { controls[r][c] = presentation.Cells[c]; cellBorders[r][c] = presentation.Borders[c]; RefreshRecycledRow(r); }
+            {
+                controls[r][c] = presentation.Cells[c]; cellBorders[r][c] = presentation.Borders[c];
+                if (!removedLocal) RefreshRecycledRow(r);
+            }
         }
     }
 
     private void ResetRecycling()
     {
+        // Retire presentation peers before changing the projection. Native editor
+        // ownership is the stable item/field key, not its previous array position.
+        foreach (var presentation in recycledRows.Values.ToArray()) UnbindRecycledRow(presentation);
+        foreach (var owned in ownedEditors.Values)
+        {
+            owned.Row = owned.Column = -1;
+            if (owned.Editor is TitleCell title) title.Reindex(-1, -1, owned.Cell);
+            else if (owned.Editor is ChoiceCell choice) choice.Reindex(-1, -1, owned.Cell);
+            AutomationProperties.SetAutomationId(owned.Editor, "");
+            AutomationProperties.SetAccessibilityView(owned.Editor, AccessibilityView.Raw);
+            owned.Editor.IsHitTestVisible = false;
+            ((Control)owned.Editor).IsEnabled = false;
+            // Range handles capture a projection position. Recreate only those
+            // adornments; the native editor, parent and pending caret stay owned.
+            var content = (Grid)owned.Host.Child;
+            foreach (var child in content.Children.Where(child => child is Border or FillHandle).ToArray()) content.Children.Remove(child);
+        }
         list.ItemsSource = null;
-        recycledRows.Clear(); ownedEditors.Clear(); editorLayer.Children.Clear();
+        recycledRows.Clear();
     }
 
     private string PresentationValue(EditCell cell)
@@ -318,7 +406,12 @@ internal sealed partial class EditingGrid
         }
         protected override void OnPointerPressed(PointerRoutedEventArgs args)
         {
-            if (binding is { } target) { Validate(target); owner.BeginRange(target.Row, target.Index, args); }
+            if (binding is { } target)
+            {
+                Validate(target);
+                owner.diagnostics?.Record("cell-pointer-pressed", new { row = target.Row, column = target.Index, pointerTimestampMicroseconds = args.GetCurrentPoint(this).Timestamp, editing = false });
+                owner.BeginRange(target.Row, target.Index, args);
+            }
         }
         protected override AutomationPeer OnCreateAutomationPeer() => new CellPeer(this);
         private sealed class CellPeer(RecycledCell cell) : FrameworkElementAutomationPeer(cell)
@@ -332,7 +425,7 @@ internal sealed partial class EditingGrid
         }
         private sealed class BoundProvider(RecycledCell cell, CellBinding target) : IInvokeProvider, IValueProvider, IScrollItemProvider
         {
-            public bool IsReadOnly { get { cell.Validate(target); var data = cell.owner.rows[target.Row].Cells[target.Index]; return !data.Editable && !cell.owner.TypedPlanning(data); } }
+            public bool IsReadOnly { get { cell.Validate(target); return cell.owner.CellInputReadOnly(cell.owner.rows[target.Row].Cells[target.Index]); } }
             public string Value { get { cell.Validate(target); return cell.owner.PresentationValue(cell.owner.rows[target.Row].Cells[target.Index]); } }
             public void Invoke() => cell.Activate(target);
             public void ScrollIntoView() { cell.Validate(target); cell.owner.EnsureRecycledRow(target.Row); }

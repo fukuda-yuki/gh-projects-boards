@@ -85,7 +85,7 @@ internal sealed partial class EditingGrid : Grid
     {
         summaryEnabled = allowSummary ?? SummaryEvaluationEnabled();
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
-        recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") == "1";
+        recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") != "0";
         showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
         diagnostics = SheetDiagnostics.Create();
         using var measured = diagnostics?.Span("grid-constructor");
@@ -93,8 +93,8 @@ internal sealed partial class EditingGrid : Grid
         headerGrid.Style = (Style)Application.Current.Resources["SheetHeaderStyle"];
         detailsPane.Style = (Style)Application.Current.Resources["SheetDetailsStyle"];
         this.readClipboard = readClipboard is null ? ReadClipboardAsync : async () => new(await readClipboard(), null);
-        // Each row owns native editors. Realize the destination viewport without
-        // speculative offscreen rows; ReleaseRow separately retains visited editors.
+        // Realize the destination viewport without speculative offscreen rows.
+        // Input ownership is independent of the recycled presentation containers.
         list.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["SheetRowsPanel"];
         if (recycledPresentation) InitializeRecycling();
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Auto);
@@ -234,7 +234,7 @@ internal sealed partial class EditingGrid : Grid
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
-            BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), args.AnimationDesired,
+            BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), targetType = args.TargetElement?.GetType().Name, originalType = args.OriginalSource?.GetType().Name, args.Handled, args.TargetRect, args.AnimationDesired,
                 args.HorizontalAlignmentRatio, args.VerticalAlignmentRatio, args.HorizontalOffset, args.VerticalOffset });
         }
         Update("constructor"); _ = FlushDraftsAsync("constructor");
@@ -715,7 +715,7 @@ internal sealed partial class EditingGrid : Grid
             if (projection.Problem is { } problem) viewNotice.Text += " / " + problem;
             if (deferredViewNotice is not null) viewNotice.Text = deferredViewNotice + "\n" + viewNotice.Text;
             bool needsReapply;
-            using (diagnostics?.Span("view-fingerprint")) needsReapply = projection.NeedsReapply(session.Workspace, registration);
+            using (diagnostics?.Span("view-fingerprint")) needsReapply = projection.NeedsReapply(session.Workspace, registration, canonicalRows);
             reapplyButton.Content = needsReapply ? "変更した値で再適用" : "再適用";
             if (needsReapply) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
             viewStrip.Visibility = needsReapply || projection.Problem is not null || deferredViewNotice is not null || temporary > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -751,8 +751,8 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateCell(int r, int c)
     {
-        if (controls[r][c] is RecycledCell presentation) { presentation.Refresh(); PaintCellState(r, c); return; }
-        if (controls[r][c] is not (TitleCell or ChoiceCell)) return;
+        if (controls[r][c] is not (TitleCell or ChoiceCell or RecycledCell)) return;
+        if (controls[r][c] is RecycledCell presentation) presentation.Refresh();
         var cell = rows[r].Cells[c];
         markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
             + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
@@ -813,6 +813,13 @@ internal sealed partial class EditingGrid : Grid
         if (session.Workspace.Field(cell)?.Change?.Clear == true) return "明示的にクリア";
         return cell.Availability == ValueAvailability.Empty ? "（空値）" : EditingWorkspace.AvailabilityText(cell.Availability);
     }
+    private bool CellInputReadOnly(EditCell cell)
+    {
+        var field = session.Workspace.Field(cell);
+        return !cell.Editable && !TypedPlanning(cell) || field?.Conflict == true
+            || field?.Observation?.Reason is { } reason
+                && (cell.Key?.Kind is "Select" or "LocalSelect" || !reason.StartsWith("未確定文字"));
+    }
     private void UpdateSelectedDetails()
     {
         UpdateActualInput();
@@ -828,7 +835,7 @@ internal sealed partial class EditingGrid : Grid
         var lines = new List<string> { $"行 {currentRow + 1} / {layout.Visible[currentColumn].Name}  —  {selectionMode.Text}",
             $"値: {(cell.Key is null ? cell.Display : Display(session.Workspace.Value(cell)))}" };
         if (pending is not null) lines.Add($"未確定文字: {pending}\nEnter / Tabでセル確定、Escで未確定文字を取り消します。IMEの確定とセル確定は別です。");
-        if (markers[currentRow][currentColumn].Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
+        if (markers[currentRow][currentColumn]?.Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
         if (field is not null)
         {
             var observed = field.Observation;
@@ -1054,15 +1061,16 @@ internal sealed partial class EditingGrid : Grid
     private sealed class ChoiceCell : Button
     {
         private readonly EditingGrid owner;
-        private readonly int row, column;
-        private readonly EditCell cell;
+        private int row, column;
+        private EditCell cell;
         private readonly TextBlock value = new() { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         private readonly Button arrow;
         private MenuFlyout? choices;
+        private int choicesGeneration = -1;
         private bool hovered, selected;
-        public ChoiceCell(EditingGrid owner, int row, int column, EditCell cell)
+        public ChoiceCell(EditingGrid owner, int initialRow, int initialColumn, EditCell initialCell)
         {
-            this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            this.owner = owner; row = initialRow; column = initialColumn; cell = initialCell;
             HorizontalAlignment = HorizontalAlignment.Stretch; HorizontalContentAlignment = HorizontalAlignment.Stretch;
             MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             // The sheet supplies the active-cell frame, including high contrast.
@@ -1088,6 +1096,14 @@ internal sealed partial class EditingGrid : Grid
                 if (e.Key is VirtualKey.F2 or VirtualKey.F4 or VirtualKey.Space) { OpenChoices(); e.Handled = true; }
                 else owner.NavigateKey(row, column, e);
             };
+        }
+        public void Reindex(int nextRow, int nextColumn, EditCell nextCell)
+        {
+            if (nextCell.Key != cell.Key) throw new InvalidOperationException("A native editor cannot change field identity.");
+            choices?.Hide(); choices = null;
+            row = nextRow; column = nextColumn; cell = nextCell;
+            AutomationProperties.SetAutomationId(value, $"GridCell{row}_{column}Value");
+            AutomationProperties.SetAutomationId(arrow, $"GridChoiceArrow{row}_{column}");
         }
         public void ShowArrow(bool isSelected) { selected = isSelected; arrow.Opacity = selected || hovered || FocusState != FocusState.Unfocused ? 1 : 0; }
         protected override void OnPointerPressed(PointerRoutedEventArgs e)
@@ -1117,8 +1133,10 @@ internal sealed partial class EditingGrid : Grid
             if (Down(VirtualKey.Shift)) return;
             // Definitions are fixed for this retained editor's generation. Reuse the
             // native presenter on repeated opens; refresh the current-value checkmark.
-            if (choices is null)
+            if (choices is null || choicesGeneration != owner.generation)
             {
+                var request = owner.generation;
+                choicesGeneration = request;
                 choices = new MenuFlyout { AreOpenCloseAnimationsEnabled = false };
                 foreach (var option in cell.Options)
                 {
@@ -1128,7 +1146,7 @@ internal sealed partial class EditingGrid : Grid
                     AutomationProperties.SetHelpText(item, option.Name);
                     item.Click += (_, _) =>
                     {
-                        if (owner.CurrentEditor(row, column, this)) owner.Run(() => owner.session.Workspace.Commit(owner.projectId, cell, option.Id, true));
+                        if (request == owner.generation && owner.CurrentEditor(row, column, this)) owner.Run(() => owner.session.Workspace.Commit(owner.projectId, cell, option.Id, true));
                     };
                     choices.Items.Add(item);
                 }
@@ -1140,7 +1158,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private sealed class TitleCell : TextBox
     {
-        private readonly EditingGrid owner; private readonly int row, column; private readonly EditCell cell;
+        private readonly EditingGrid owner; private int row, column; private EditCell cell;
         private bool restoring; private bool composing;
         public bool Composing => composing;
         public bool Editing { get; private set; }
@@ -1152,12 +1170,14 @@ internal sealed partial class EditingGrid : Grid
             if (GetTemplateChild("ContentElement") is ScrollViewer scroll)
                 scroll.Template = (ControlTemplate)Application.Current.Resources["SheetTextScrollTemplate"];
         }
-        public TitleCell(EditingGrid owner, int row, int column, EditCell cell)
+        public TitleCell(EditingGrid owner, int initialRow, int initialColumn, EditCell initialCell)
         {
-            this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            this.owner = owner; row = initialRow; column = initialColumn; cell = initialCell;
             MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             IsReadOnly = !cell.Editable && !owner.TypedPlanning(cell); Refresh();
+            if (owner.diagnostics is not null)
+                TextChanged += (_, _) => owner.diagnostics.Record("text-changed", new { row, column, length = Text.Length, restoring });
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
             TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.applyProblemTip.IsOpen = false; owner.selectionMode.Text = "IME変換中"; };
             TextCompositionEnded += (_, _) =>
@@ -1187,10 +1207,14 @@ internal sealed partial class EditingGrid : Grid
                 _ = owner.FlushDraftsAsync("text-changing");
             };
         }
+        public void Reindex(int nextRow, int nextColumn, EditCell nextCell)
+        {
+            if (nextCell.Key != cell.Key) throw new InvalidOperationException("A native editor cannot change field identity.");
+            row = nextRow; column = nextColumn; cell = nextCell;
+        }
         public void Refresh()
         {
-            var field = owner.session.Workspace.Field(cell);
-            IsReadOnly = !cell.Editable && !owner.TypedPlanning(cell) || field?.Conflict == true || field?.Observation?.Reason is { } reason && !reason.StartsWith("未確定文字");
+            IsReadOnly = owner.CellInputReadOnly(cell);
             var buffer = owner.session.Workspace.Buffer(cell);
             var committed = owner.session.Workspace.Value(cell);
             var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind is "Select" or "LocalSelect"
@@ -1202,12 +1226,14 @@ internal sealed partial class EditingGrid : Grid
         protected override void OnPointerPressed(PointerRoutedEventArgs e)
         {
             if (!owner.CurrentEditor(row, column, this)) return;
+            owner.diagnostics?.Record("cell-pointer-pressed", new { row, column, pointerTimestampMicroseconds = e.GetCurrentPoint(this).Timestamp, editing = Editing });
             if (!Editing) { owner.BeginRange(row, column, e); return; }
             owner.Select(row, column, false, false); base.OnPointerPressed(e);
         }
         protected override void OnPreviewKeyDown(KeyRoutedEventArgs e)
         {
             if (!owner.CurrentEditor(row, column, this)) return;
+            owner.diagnostics?.Record("editor-preview-key", new { row, column, Editing, composing });
             if (composing) { base.OnPreviewKeyDown(e); return; }
             if (!Editing && e.Key == VirtualKey.F2 && (cell.Editable || owner.TypedPlanning(cell))) { Editing = true; owner.SetCellBuffer(cell, owner.TypedDate(cell) ? owner.ExactDateText(cell, row) : Text); Refresh(); SelectAll(); owner.Update("pending-state"); _ = owner.FlushDraftsAsync("edit-start"); e.Handled = true; }
             else if (Editing && e.Key == VirtualKey.Escape)

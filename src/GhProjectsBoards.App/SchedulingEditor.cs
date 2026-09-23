@@ -102,7 +102,9 @@ internal sealed partial class EditingGrid
         actions.Children.Add(apply); actions.Children.Add(close); actions.Children.Add(settings); panel.Children.Add(actions);
         // Anchor to a stable toolbar or contextual control, never an overflow
         // item that disappears or the full-height workspace.
+        // The closing animation must not intercept the next task's first click.
         var flyout = new Flyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom,
+            AreOpenCloseAnimationsEnabled = false,
             Content = new ScrollViewer { Content = panel, MaxHeight = Math.Max(180, XamlRoot.Size.Height - 240), VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
         var expected = work.Revision; var editorGeneration = generation; var explicitAuto = false;
         ProjectPlanning Candidate() => work.SchedulingCandidate(registration, rowId,

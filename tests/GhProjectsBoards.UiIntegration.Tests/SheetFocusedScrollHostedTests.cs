@@ -5,6 +5,8 @@ using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
@@ -20,6 +22,49 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable]
 public sealed class SheetFocusedScrollHostedTests
 {
+    [Test]
+    public async Task ScrollingAwayFromAnEditedMiddleRowDoesNotSelectTheFirstRowOrLoseTheNextInput()
+    {
+        var registration = EditingTests.Registration(count: 1000);
+        var work = new EditingWorkspace(registration.Snapshot.Id.Scope); work.SetRegistrations([registration]);
+        var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-middle-scroll-" + Guid.NewGuid().ToString("N")));
+        var session = new DraftSession(store, work, 0);
+        EditingGrid grid = null!;
+        await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1100, 800)); grid = new(registration, session, () => Task.FromResult(true)); });
+        try
+        {
+            await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell5_0");
+            await SheetNativeInput.Click("GridCell5_0"); await SheetNativeInput.Press(Windows.System.VirtualKey.Number7);
+            await Ui.Until(() => Ui.Find<TextBox>("GridCell5_0").Text == "7");
+            TextBox original = null!; ScrollViewer viewport = null!; IScrollProvider scroll = null!;
+            await Ui.Run(() => {
+                original = Ui.Find<TextBox>("GridCell5_0");
+                Assert.That(original.Text, Is.EqualTo("7"));
+                var list = Ui.Find<ListView>("ProjectItems"); viewport = Ui.Tree(list).OfType<ScrollViewer>().First();
+                scroll = (IScrollProvider)FrameworkElementAutomationPeer.CreatePeerForElement(list).GetPattern(PatternInterface.Scroll);
+                scroll.SetScrollPercent(-1, 2.4);
+            });
+            await SheetNativeInput.Rendered();
+            await Task.Delay(300); // Observe an unwanted focus/caret reveal after the scroll settles; not a performance claim.
+            await Ui.Run(() => {
+                Assert.That(viewport.VerticalOffset, Is.GreaterThan(400), "Passive scroll must not snap back to the first row.");
+                Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1T6"));
+                Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(original));
+                FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell25_0")).SetFocus();
+            });
+            await SheetNativeInput.Press(Windows.System.VirtualKey.Number8);
+            await Ui.Until(() => work.Buffer(work.Open(registration)[25].Cells[0]) == "8");
+            await Ui.Run(() => scroll.SetScrollPercent(-1, 0)); await SheetNativeInput.Rendered();
+            await Ui.Run(() => {
+                FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell5_0")).SetFocus();
+                Assert.That(Ui.Find<TextBox>("GridCell5_0"), Is.SameAs(original));
+                Assert.That(original.Text, Is.EqualTo("7"));
+                Assert.That(work.Journal, Is.Empty);
+            });
+        }
+        finally { await Ui.Unmount(grid); Assert.That(await session.FlushAsync(), Is.True); }
+    }
+
     [Test]
     public async Task LongTitleCaretScrollsInsideCellWithoutMovingSheetOrCommitting()
     {

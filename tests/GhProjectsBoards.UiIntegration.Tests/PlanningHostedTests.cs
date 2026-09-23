@@ -2,6 +2,8 @@ using GhProjectsBoards.App;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using NUnit.Framework;
 
@@ -14,13 +16,21 @@ public sealed partial class PlanningHostedTests
     private DraftSession session = null!;
     private ProjectRegistration project = null!;
     private string clipboard = "16";
+    private static void FocusCell(string id) =>
+        FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(id)).SetFocus();
+    private static string CellText(string id) => Ui.Find<FrameworkElement>(id) switch
+    {
+        TextBox input => input.Text,
+        Button { Content: TextBlock text } => text.Text,
+        _ => throw new AssertionException("Expected a rendered text cell: " + id)
+    };
     private async Task ShowDateColumns()
     {
         await Ui.Run(() => {
             var scroll = EditingGrid.Descendants(Ui.Find<ListView>("ProjectItems")).OfType<ScrollViewer>().First();
             scroll.ChangeView(scroll.ScrollableWidth, null, null, true);
         });
-        await Ui.Ready<TextBox>("GridCell0_6");
+        await Ui.Ready<FrameworkElement>("GridCell0_6");
     }
     [Test]
     public async Task FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee()
@@ -30,8 +40,8 @@ public sealed partial class PlanningHostedTests
         var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
         session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-first-plan-" + Guid.NewGuid())), work, 0);
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_2");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => {
             var dialog = Ui.Dialog("PlanningDialog")!;
@@ -55,12 +65,12 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => {
             Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Project setup must not invent per-task owners or dates.");
             Assert.That(Ui.Tree(Ui.Find<Grid>("SheetHeader")).OfType<TextBlock>().Any(t => t.Text == "EndDate"), Is.True);
-            Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard);
+            FocusCell("GridCell0_2");
         });
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         clipboard = "8"; await Ui.ClickCommand("GridPaste");
         await ShowDateColumns();
-        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
+        await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
         await Ui.Run(() => {
             Assert.That(work.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
             Assert.That(work.Planning("P1")!.Tasks.Single().OwnerId, Is.EqualTo("U1")); Assert.That(work.Journal, Is.Empty);
@@ -70,9 +80,9 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task DateCellPasteShowsManualBeforeCommitAndCalendarTimeControlsRetainMinutePrecision()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard)); await Ui.ClickCommand("GridPaste");
+        await Ui.Run(() => FocusCell("GridCell0_2")); await Ui.ClickCommand("GridPaste");
         await ShowDateColumns();
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_5").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_5"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Start");
         clipboard = "2026-10-05 12:07"; await Ui.ClickCommand("GridPaste");
         await Ui.Run(() => {
@@ -101,8 +111,9 @@ public sealed partial class PlanningHostedTests
     public async Task MappedActualAcceptsPendingTextWithoutChangingItsReportOrNumberProjection()
     {
         await Ui.Run(() => {
+            FocusCell("GridCell0_4");
             var cell = Ui.Find<TextBox>("GridCell0_4");
-            Assert.That(cell.Focus(FocusState.Keyboard), Is.True);
+            Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(cell));
             Assert.That(cell.IsReadOnly, Is.False, "Mapped Actual needs the typed report input route.");
             cell.Text = "7";
         });
@@ -114,18 +125,20 @@ public sealed partial class PlanningHostedTests
             Assert.That(cell.Editable, Is.False, "Generic NUMBER writes must remain prohibited.");
         });
     }
-    [Test]
-    public async Task ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo()
+    [TestCase(2), TestCase(1000)]
+    public async Task ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo(int itemCount)
     {
         await Ui.Unmount(grid);
+        project = PlanningPathTests.Registration(itemCount);
         project = project with { Snapshot = project.Snapshot with { Issues = project.Snapshot.Issues.ToDictionary(p => p.Key, p => p.Value with {
             Native = p.Value.Native! with { Assignees = [new(new(project.Snapshot.Id.Scope, "U1"), "Owner")] } }) } };
         var w = session.Workspace; w.SetRegistrations([project]);
         w.CommitPlanning(project, w.Planning("P1")! with { Tasks = [w.Planning("P1")!.Tasks[0] with { Actuals = [new("U1", 5, new(2026, 10, 6))] }] }, w.Revision,
             [new("P1T1", "Remaining", "4")]);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_4");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_4");
+        await Ui.Run(() => Assert.That(Ui.Find<ListView>("ProjectItems").Items.Count, Is.EqualTo(itemCount)));
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => Ui.Find<StackPanel>("ActualCellEditor").Visibility == Visibility.Visible);
         await Ui.Ready<CalendarDatePicker>("ActualReportedThrough");
         await Ui.Run(() => {
@@ -153,17 +166,21 @@ public sealed partial class PlanningHostedTests
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Actuals![0].Hours, Is.EqualTo(7));
             Assert.That(w.Journal, Is.Empty);
         });
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_3").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_3"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Remaining");
         clipboard = "3"; await Ui.ClickCommand("GridPaste");
         await Ui.Run(() => {
             Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("3"));
             Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(CellText("GridCell0_3"), Is.EqualTo("3"));
+            Assert.That(CellText("GridCell0_4"), Is.EqualTo("7"));
         });
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
             Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("4"));
             Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(CellText("GridCell0_3"), Is.EqualTo("4"));
+            Assert.That(CellText("GridCell0_4"), Is.EqualTo("7"));
         });
     }
     [Test]
@@ -173,8 +190,8 @@ public sealed partial class PlanningHostedTests
         var original = new[] { new ActualContribution("U1", 3, new(2026, 10, 6)), new ActualContribution(null, 2, new(2026, 10, 6)) };
         w.CommitPlanning(project, w.Planning("P1")! with { Tasks = [w.Planning("P1")!.Tasks[0] with { Actuals = original }] }, w.Revision);
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_4");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_4");
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual");
         await Ui.Ready<Button>("ActualUpdate");
         await Ui.Run(() => { Ui.Find<TextBox>("GridCell0_4").Text = "7"; Assert.That(Ui.Find<Button>("ActualUpdate").IsEnabled, Is.False); Ui.Click("ActualDetails"); });
@@ -210,14 +227,15 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task TaskDetailsClosureRetainsTheNextActualInputAndItsFocus()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridTaskDetails"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => {
             // Supply the next public control input as soon as the modal boundary ends.
             // Reading an earlier UIA element can hide its replacement during close.
             Ui.Dialog("PlanningDialog")!.Closed += (_, _) => {
-                var input = Ui.Find<TextBox>("GridCell0_4"); input.Focus(FocusState.Keyboard); input.Text = "5";
+                FocusCell("GridCell0_4");
+                Ui.Find<TextBox>("GridCell0_4").Text = "5";
             };
             Ui.DialogButton("PlanningDialog", "PrimaryButton");
         });
@@ -257,7 +275,7 @@ public sealed partial class PlanningHostedTests
         work.CommitPlanning(project, PlanningPathTests.Plan() with { Tasks = [new("I1", PlanningMode.Auto, "U1")] }, work.Revision);
         session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-planning-ui-" + Guid.NewGuid().ToString("N"))), work, 0);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_2"); await Ui.Idle();
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2"); await Ui.Idle();
     }
     [TearDown]
     public async Task Teardown()
@@ -279,7 +297,7 @@ public sealed partial class PlanningHostedTests
             [new("P1T1", "Estimate", "8"), new("P1T2", "Estimate", "16"), new("P1T2", "Remaining", "3")]);
         var pending = w.Open(project)[0].Cells[2]; w.SetBuffer(pending, "24未確定");
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_2");
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
         await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => {
             Assert.That(w.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-12 18:00")));
@@ -308,7 +326,7 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task UnavailablePlanningFieldCanBeCanceledThroughComparisonAndUndoneWithItsPendingText()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1" && grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
         await Ui.Unmount(grid);
@@ -318,7 +336,7 @@ public sealed partial class PlanningHostedTests
             Items = project.Snapshot.Items.Select(i => i with { Values = i.Values.Where(v => v.FieldId?.NodeId != "F-Estimate").ToArray() }).ToArray() } };
         w.Reconcile(project, missing); w.SetRegistrations([missing]); project = missing;
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
         await Ui.ClickCommand("GridConflicts"); await Ui.DialogReady("ConflictDialog");
         await Ui.Run(() => Ui.Find<ComboBox>("ConflictField", Ui.Dialog("ConflictDialog")).SelectedIndex =
             w.Fields.Where(f => f.Conflict || f.Observation?.Reason is not null).ToList().FindIndex(f => f.Key == key));
@@ -337,7 +355,7 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task SelectedUnplannedRowUsesBatchPreviewAndOneUndo()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell1_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell1_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         await Ui.ClickCommand("GridPaste");
         await Ui.ClickCommand("GridInitializePlans"); await Ui.DialogReady("PlanningBatchDialog");
@@ -353,7 +371,7 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1" && grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
         await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
@@ -369,8 +387,8 @@ public sealed partial class PlanningHostedTests
         });
         await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-07 13:00"))));
-        await Ui.Ready<TextBox>("GridCell1_2");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell1_2").Focus(FocusState.Keyboard));
+        await Ui.Ready<FrameworkElement>("GridCell1_2");
+        await Ui.Run(() => FocusCell("GridCell1_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         clipboard = "4"; await Ui.ClickCommand("GridPaste");
         await Ui.Until(() => Ui.Find<TextBox>("GridCell1_2").Text == "4");
@@ -395,11 +413,11 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task WeeklyReportEditsIndependentRemainingAndActualAttributionThroughNativeControls()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
         await ShowDateColumns();
-        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
+        await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
         await Ui.ClickCommand("GridTaskDetails"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<ComboBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanProgress" && c.IsLoaded));
@@ -435,32 +453,35 @@ public sealed partial class PlanningHostedTests
     [Test]
     public async Task PasteRendersAutoDatesAndUndoRestoresInputAndDerivedDatesTogether()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
         await Ui.Until(() => session.Workspace.DifferenceCount > 0);
         await Ui.Run(() => Assert.That(session.Workspace.Value(session.Workspace.Open(project)[0].Cells[2]), Is.EqualTo("16"),
             System.Text.Json.JsonSerializer.Serialize(session.Workspace.Fields.Where(f => f.Change is not null))));
         await ShowDateColumns();
-        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
+        await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("GridCell0_6").IsReadOnly, Is.False);
+            var cell = Ui.Find<FrameworkElement>("GridCell0_6");
+            var readOnly = cell is TextBox input ? input.IsReadOnly
+                : ((IValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(cell).GetPattern(PatternInterface.Value)).IsReadOnly;
+            Assert.That(readOnly, Is.False);
             Assert.That(session.Workspace.Open(project)[0].Cells[6].Editable, Is.False, "Date input routes through typed planning, never a generic DATE write.");
             Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
             Assert.That(session.Workspace.Journal, Is.Empty);
         });
         await Ui.ClickCommand("GridUndo");
-        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_2").Text == "" && Ui.Find<TextBox>("GridCell0_6").Text == "");
+        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_2").Text == "" && CellText("GridCell0_6") == "");
         Assert.That(session.Workspace.DifferenceCount, Is.Zero);
     }
     [Test]
     public async Task PendingInputDoesNotRecalculateAndManualSaveRetainsTheOtherEndpoint()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1" && grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
         await ShowDateColumns();
-        await Ui.Until(() => Ui.Find<TextBox>("GridCell0_6").Text == "2026-10-06");
+        await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "24");
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00"))));
         await Ui.ClickCommand("GridPlanning"); await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);

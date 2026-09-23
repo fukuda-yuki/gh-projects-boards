@@ -2,6 +2,9 @@ using GhProjectsBoards.App;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
@@ -25,9 +28,12 @@ public sealed class ThemeHostedTests
             pair => pair.Value.Number == 6 ? pair.Value with { Capability = new(false, p.RetrievedAt) } : pair.Value) } };
         var w = new EditingWorkspace(p.Snapshot.Id.Scope); w.SetRegistrations([p]); var rows = w.Open(p);
         foreach (var index in new[] { 1, 2, 4 }) w.Commit("P1", rows[index].Cells[1], "done", true);
+        w.Commit("P1", rows[4].Cells[0], "Changed locally");
         var record = w.Snapshot();
-        w = EditingWorkspace.Restore(record with { Fields = record.Fields.Select(f => f.Key == rows[4].Cells[1].Key
-            ? f with { Conflict = true, Observation = new("theme-observation", p.Snapshot.Id, p.RetrievedAt, "dup1", ValueAvailability.Present, null, rows[4].Cells[1].Options) } : f).ToArray() });
+        w = EditingWorkspace.Restore(record with { Fields = record.Fields.Select(f => f.Key == rows[4].Cells[1].Key || f.Key == rows[4].Cells[0].Key
+            ? f with { Conflict = true, Observation = new("theme-observation", p.Snapshot.Id, p.RetrievedAt,
+                f.Key == rows[4].Cells[0].Key ? "Changed remotely" : "dup1", ValueAvailability.Present, null,
+                rows[4].Cells[f.Key == rows[4].Cells[0].Key ? 0 : 1].Options) } : f).ToArray() });
         var folder = Path.Combine(Path.GetTempPath(), "ghpb-states-" + Guid.NewGuid().ToString("N"));
         var session = new DraftSession(new DraftStore(folder), w, 0);
         ElementTheme old = default; Grid surface = null!; EditingGrid grid = null!;
@@ -45,10 +51,33 @@ public sealed class ThemeHostedTests
                 Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("2行・2セル"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker1_1").Text, Is.EqualTo("◆"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Text, Is.EqualTo("◆"));
+                Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell2_1")), Does.Contain("変更あり"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker4_1").Text, Is.EqualTo("!"));
-                Assert.That(Ui.Find<TextBox>("GridCell5_0").IsReadOnly, Is.True);
+                Assert.That(AutomationProperties.GetName(Ui.Find<TextBlock>("GridMarker4_1")), Does.Contain("競合"));
+                var conflictCell = Ui.Find<FrameworkElement>("GridCell4_0");
+                if (conflictCell is TextBox nativeConflict) Assert.That(nativeConflict.IsReadOnly, Is.True);
+                else
+                {
+                    var conflict = (IValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(conflictCell).GetPattern(PatternInterface.Value);
+                    Assert.That(conflict.IsReadOnly, Is.True, "An unselected conflict must report the same write protection as its native editor.");
+                    var selectionBefore = Ui.Find<TextBlock>("GridSelection").Text;
+                    Assert.Throws<InvalidOperationException>(() => conflict.SetValue("Must not replace the conflict"));
+                    Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Is.EqualTo(selectionBefore));
+                }
+                Assert.That(w.Buffer(rows[4].Cells[0]), Is.Null);
+                Assert.That(w.Field(rows[4].Cells[0])!.Change!.Value, Is.EqualTo("Changed locally"));
+                var readOnlyCell = Ui.Find<FrameworkElement>("GridCell5_0");
+                Assert.That(readOnlyCell is TextBox input ? input.IsReadOnly
+                    : ((IValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(readOnlyCell).GetPattern(PatternInterface.Value)).IsReadOnly, Is.True);
                 Assert.That(Ui.Find<TextBlock>("GridMarker5_0").Text, Is.EqualTo("▧"));
                 selectedCapture = await CaptureThemeAsync(Path.Combine(folder, "selected"), theme, surface);
+            });
+            await SheetNativeInput.Click("GridCell4_0"); await SheetNativeInput.Press(Windows.System.VirtualKey.X);
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBox>("GridCell4_0").Text, Is.EqualTo("Changed locally"));
+                Assert.That(w.Buffer(rows[4].Cells[0]), Is.Null);
+                Assert.That(w.Field(rows[4].Cells[0])!.Conflict, Is.True);
             });
             await SheetNativeInput.Click("GridCell3_0"); await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
             await SheetNativeInput.Press(Windows.System.VirtualKey.X);

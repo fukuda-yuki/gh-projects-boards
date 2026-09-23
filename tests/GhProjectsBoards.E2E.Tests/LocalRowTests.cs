@@ -63,7 +63,7 @@ public sealed partial class RegistrationTests
         });
         var calls = f.Calls().Length;
         f.Run(w => { OpenSaved(w, profile: true); Scroll(w, 100); Assert.That(CellText(w, 101), Is.EqualTo("Pending local"));
-            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("ローカル行 2").And.Contain("GitHub未反映")); });
+            Assert.That(CellText(w, 101, 2), Is.EqualTo("chosen/repo")); Assert.That(Text(w, "DraftStatus"), Does.Contain("ローカル新規 2行").And.Contain("GitHub未反映")); });
         Assert.That(Durable(f).GetProperty("LocalRows").GetRawText(), Is.EqualTo(saved));
         Assert.That(f.Calls().Length, Is.EqualTo(calls)); Assert.That(f.Calls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }

@@ -17,14 +17,17 @@ internal sealed class DesktopFrameObserver : IDisposable
     private readonly List<Frame> frames = [];
     private readonly string output;
     private readonly Rectangle bounds;
-    private sealed record Frame(long Begin, long Acquired, long Copied, long Present, uint Accumulated, bool Masked, byte[] Pixels);
+    private const int MaximumFrames = 2048;
+    private sealed record Frame(long Begin, long Acquired, long Copied, long Retained, long Present, uint Accumulated, bool Masked, byte[] Pixels,
+        long ObserverGcPauseTicks, int ObserverGen0, int ObserverGen1, int ObserverGen2);
     public DesktopFrameObserver(Rectangle bounds, string output)
     {
         this.bounds = bounds; this.output = output;
         if (Directory.Exists(output)) throw new InvalidOperationException("Retain prior desktop observations.");
         Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(output, "environment.json"), JsonSerializer.Serialize(new { bounds.X, bounds.Y, bounds.Width, bounds.Height,
-            frequency = Stopwatch.Frequency, boundary = "DXGI desktop LastPresentTime and independent CPU pixel-copy completion; not physical scanout" }));
+            frequency = Stopwatch.Frequency, observerGcPauseTickFrequency = TimeSpan.TicksPerSecond, observerCountersScope = "external observer process only",
+            boundary = "DXGI desktop LastPresentTime and independent CPU pixel-copy completion; not physical scanout" }));
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         capture = Task.Run(() => Capture(ready));
         ready.Task.WaitAsync(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
@@ -38,24 +41,31 @@ internal sealed class DesktopFrameObserver : IDisposable
         try
         {
             var index = new List<object>();
+            var images = new Dictionary<byte[], string>(ReferenceEqualityComparer.Instance);
             for (var i = 0; i < frames.Count; i++)
             {
                 var frame = frames[i]; var path = $"desktop-{i:D4}.png";
+                if (!images.TryGetValue(frame.Pixels, out var existing))
+                {
                 using var bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppRgb);
                 var pixels = bitmap.LockBits(new(0, 0, bounds.Width, bounds.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppRgb);
                 try { for (var y = 0; y < bounds.Height; y++) Marshal.Copy(frame.Pixels, y * bounds.Width * 4, pixels.Scan0 + y * pixels.Stride, bounds.Width * 4); }
                 finally { bitmap.UnlockBits(pixels); }
                 bitmap.Save(Path.Combine(output, path), ImageFormat.Png);
-                index.Add(new { index = i, begin = frame.Begin, acquired = frame.Acquired, copied = frame.Copied,
-                    present = frame.Present, accumulated = frame.Accumulated, masked = frame.Masked, path });
+                images.Add(frame.Pixels, path);
+                }
+                else path = existing;
+                index.Add(new { index = i, begin = frame.Begin, acquired = frame.Acquired, copied = frame.Copied, retained = frame.Retained,
+                    present = frame.Present, accumulated = frame.Accumulated, masked = frame.Masked, path,
+                    observerGcPauseTicks = frame.ObserverGcPauseTicks, observerGen0 = frame.ObserverGen0, observerGen1 = frame.ObserverGen1, observerGen2 = frame.ObserverGen2 });
             }
             File.WriteAllText(Path.Combine(output, "frames.json"), JsonSerializer.Serialize(index));
-            File.WriteAllText(Path.Combine(output, "lifetime.json"), JsonSerializer.Serialize(new { count = frames.Count, saturated = frames.Count >= 512,
-                error = failure?.ToString(), complete = failure is null && frames.Count is > 0 and < 512 }));
+            File.WriteAllText(Path.Combine(output, "lifetime.json"), JsonSerializer.Serialize(new { count = frames.Count, uniqueImages = images.Count,
+                saturated = frames.Count >= MaximumFrames, error = failure?.ToString(), complete = failure is null && frames.Count is > 0 and < MaximumFrames }));
         }
         finally { armed.Dispose(); stop.Dispose(); }
         if (failure is not null) throw new InvalidOperationException("Desktop observer failed; partial observations retained.", failure);
-        if (frames.Count is 0 or >= 512) throw new InvalidOperationException("Missing or saturated desktop observer.");
+        if (frames.Count is 0 or >= MaximumFrames) throw new InvalidOperationException("Missing or saturated desktop observer.");
     }
     private void Capture(TaskCompletionSource ready)
     {
@@ -89,7 +99,9 @@ internal sealed class DesktopFrameObserver : IDisposable
             var crop = new Box { Left = (uint)(bounds.Left - display.Left), Top = (uint)(bounds.Top - display.Top),
                 Right = (uint)(bounds.Right - display.Left), Bottom = (uint)(bounds.Bottom - display.Top), Back = 1 };
             ready.SetResult(); armed.Wait();
-            while (!stop.IsCancellationRequested && frames.Count < 512)
+            byte[]? previousPixels = null;
+            var scratch = new byte[checked(bounds.Width * bounds.Height * 4)];
+            while (!stop.IsCancellationRequested && frames.Count < MaximumFrames)
             {
                 var begin = Stopwatch.GetTimestamp();
                 var hr = Method<Acquire>(duplication, 8)(duplication, 50, out var info, out var resource);
@@ -103,10 +115,17 @@ internal sealed class DesktopFrameObserver : IDisposable
                     // 14/15 are Map/Unmap. These are the SDK's public COM layout.
                     Method<CopyRegion>(context, 46)(context, staging, 0, 0, 0, 0, texture, 0, in crop);
                     Check(Method<Map>(context, 14)(context, staging, 0, 1, 0, out var mapped));
-                    var pixels = new byte[checked(bounds.Width * bounds.Height * 4)];
+                    var pixels = scratch;
                     try { for (var y = 0; y < bounds.Height; y++) Marshal.Copy(mapped.Data + checked(y * (int)mapped.RowPitch), pixels, y * bounds.Width * 4, bounds.Width * 4); }
                     finally { Method<Unmap>(context, 15)(context, staging, 0); }
-                    frames.Add(new(begin, acquired, Stopwatch.GetTimestamp(), info.Present, info.Accumulated, info.Masked != 0, pixels));
+                    var copied = Stopwatch.GetTimestamp();
+                    if (previousPixels is not null && pixels.AsSpan().SequenceEqual(previousPixels)) pixels = previousPixels;
+                    else { previousPixels = pixels; scratch = new byte[pixels.Length]; }
+                    // These are counters from the observer process, not the product.
+                    // Retention/GC stalls must not be mistaken for missing app progress.
+                    var retained = Stopwatch.GetTimestamp();
+                    frames.Add(new(begin, acquired, copied, retained, info.Present, info.Accumulated, info.Masked != 0, pixels,
+                        GC.GetTotalPauseDuration().Ticks, GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)));
                 }
                 finally { Release(ref texture); Release(ref resource); Check(Method<Finish>(duplication, 14)(duplication)); }
             }
