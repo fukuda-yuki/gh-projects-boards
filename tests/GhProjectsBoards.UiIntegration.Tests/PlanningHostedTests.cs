@@ -125,10 +125,11 @@ public sealed partial class PlanningHostedTests
             Assert.That(cell.Editable, Is.False, "Generic NUMBER writes must remain prohibited.");
         });
     }
-    [Test]
-    public async Task ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo()
+    [TestCase(2), TestCase(1000)]
+    public async Task ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo(int itemCount)
     {
         await Ui.Unmount(grid);
+        project = PlanningPathTests.Registration(itemCount);
         project = project with { Snapshot = project.Snapshot with { Issues = project.Snapshot.Issues.ToDictionary(p => p.Key, p => p.Value with {
             Native = p.Value.Native! with { Assignees = [new(new(project.Snapshot.Id.Scope, "U1"), "Owner")] } }) } };
         var w = session.Workspace; w.SetRegistrations([project]);
@@ -136,6 +137,7 @@ public sealed partial class PlanningHostedTests
             [new("P1T1", "Remaining", "4")]);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
         await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_4");
+        await Ui.Run(() => Assert.That(Ui.Find<ListView>("ProjectItems").Items.Count, Is.EqualTo(itemCount)));
         await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => Ui.Find<StackPanel>("ActualCellEditor").Visibility == Visibility.Visible);
         await Ui.Ready<CalendarDatePicker>("ActualReportedThrough");
@@ -170,11 +172,15 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => {
             Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("3"));
             Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(CellText("GridCell0_3"), Is.EqualTo("3"));
+            Assert.That(CellText("GridCell0_4"), Is.EqualTo("7"));
         });
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
             Assert.That(w.Value(w.Open(project)[0].Cells[3]), Is.EqualTo("4"));
             Assert.That(w.Value(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(CellText("GridCell0_3"), Is.EqualTo("4"));
+            Assert.That(CellText("GridCell0_4"), Is.EqualTo("7"));
         });
     }
     [Test]
