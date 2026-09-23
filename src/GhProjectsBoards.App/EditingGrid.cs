@@ -751,8 +751,8 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateCell(int r, int c)
     {
-        if (controls[r][c] is RecycledCell presentation) { presentation.Refresh(); PaintCellState(r, c); return; }
-        if (controls[r][c] is not (TitleCell or ChoiceCell)) return;
+        if (controls[r][c] is not (TitleCell or ChoiceCell or RecycledCell)) return;
+        if (controls[r][c] is RecycledCell presentation) presentation.Refresh();
         var cell = rows[r].Cells[c];
         markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
             + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");

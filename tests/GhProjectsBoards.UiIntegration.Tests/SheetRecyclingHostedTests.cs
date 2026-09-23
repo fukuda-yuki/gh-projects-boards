@@ -300,6 +300,8 @@ public sealed class SheetRecyclingHostedTests
             {
                 Assert.That(AutomationProperties.GetName(Ui.Find<FrameworkElement>("GridCell999_0")), Does.Contain("作業 1000"));
                 Assert.That(work.Buffer(work.Open(project)[999].Cells.Single(c => c.Key?.FieldId == "F-Estimate")), Is.EqualTo("24未確定"));
+                Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell999_2")), Does.Contain("編集中（未確定）"),
+                    "Stored input must remain accessible before allocating a native editor.");
                 Assert.That(work.Journal, Is.Empty);
             });
             foreach (var fraction in new[] { .1, .7, .2, .9, .3, .8, .4, .6, 0d, 1d })
@@ -313,6 +315,12 @@ public sealed class SheetRecyclingHostedTests
                     distinctContainers.UnionWith(containers); distinctContent.UnionWith(containers.Select(item => item.ContentTemplateRoot));
                     var native = Ui.Tree(grid).OfType<TextBox>().Count(text => AutomationProperties.GetAutomationId(text).StartsWith("GridCell"));
                     Assert.That(native, Is.Zero, "Visitation and stored pending data cannot allocate protected editors.");
+                    if (fraction == 0)
+                    {
+                        Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell0_2")), Does.Not.Contain("未確定"));
+                        Assert.That(Ui.Find<TextBlock>("GridMarker0_2").Visibility, Is.EqualTo(Visibility.Collapsed),
+                            "Reused presentation must not retain another task's state marker.");
+                    }
                     Console.WriteLine($"Reuse sample {fraction}: attachedContainers={containers.Length}; distinctContainers={distinctContainers.Count}; distinctContent={distinctContent.Count}; nativeEditors={native}");
                 });
             }

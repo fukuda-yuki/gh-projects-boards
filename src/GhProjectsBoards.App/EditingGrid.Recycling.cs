@@ -47,12 +47,13 @@ internal sealed partial class EditingGrid
         public int Row { get; set; } = identity.Row;
         public int Column { get; set; } = identity.Index;
     }
-    private sealed class RecycledRow(Grid line, TextBlock number, RecycledCell[] cells, Border[] borders, TextBlock identity)
+    private sealed class RecycledRow(Grid line, TextBlock number, RecycledCell[] cells, Border[] borders, TextBlock[] stateMarkers, TextBlock identity)
     {
         public Grid Line { get; } = line;
         public TextBlock Number { get; } = number;
         public RecycledCell[] Cells { get; } = cells;
         public Border[] Borders { get; } = borders;
+        public TextBlock[] StateMarkers { get; } = stateMarkers;
         public TextBlock Identity { get; } = identity;
         public RowItem? Item { get; set; }
     }
@@ -95,6 +96,7 @@ internal sealed partial class EditingGrid
         var gutter = new Grid { Style = (Style)Application.Current.Resources["SheetHeaderStyle"] };
         gutter.Children.Add(number); line.Children.Add(gutter);
         var cells = new RecycledCell[layout.Visible.Length]; var borders = new Border[cells.Length];
+        var stateMarkers = new TextBlock[cells.Length];
         var identity = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new(4, 0, 8, 0), FontSize = 11 };
         for (var c = 0; c < cells.Length; c++)
         {
@@ -106,10 +108,14 @@ internal sealed partial class EditingGrid
                 content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
                 SetColumn(identity, 1); content.Children.Add(identity);
             }
+            var marker = stateMarkers[c] = new TextBlock { FontSize = 10, Width = 10, Height = 12,
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+                Margin = new(0, 0, 2, 0), Visibility = Visibility.Collapsed };
+            SetColumnSpan(marker, c == 0 ? 2 : 1); content.Children.Add(marker);
             borders[c] = new Border { BorderThickness = new(1), MinHeight = 30, Child = content, Style = cellStyle };
             SetColumn(borders[c], c + 1); line.Children.Add(borders[c]);
         }
-        return new(line, number, cells, borders, identity);
+        return new(line, number, cells, borders, stateMarkers, identity);
     }
 
     private void AllocateRowSlots(int r)
@@ -160,6 +166,12 @@ internal sealed partial class EditingGrid
             }
         }
         foreach (var cell in presentation.Cells) cell.Unbind();
+        foreach (var marker in presentation.StateMarkers)
+        {
+            marker.Text = ""; marker.Tag = null; marker.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetAutomationId(marker, ""); AutomationProperties.SetName(marker, "");
+            ToolTipService.SetToolTip(marker, null);
+        }
         foreach (var border in presentation.Borders)
         {
             border.Style = cellStyle; border.Visibility = Visibility.Visible;
@@ -189,7 +201,11 @@ internal sealed partial class EditingGrid
             cell.Visibility = owned ? Visibility.Collapsed : Visibility.Visible;
             AutomationProperties.SetAutomationId(cell, owned ? "" : $"GridCell{r}_{c}");
             AutomationProperties.SetAccessibilityView(cell, owned ? AccessibilityView.Raw : AccessibilityView.Content);
-            if (!owned) { cell.Refresh(); PaintCellState(r, c); }
+            var marker = presentation.StateMarkers[c];
+            AutomationProperties.SetAutomationId(marker, owned ? "" : $"GridMarker{r}_{c}");
+            AutomationProperties.SetAccessibilityView(marker, owned ? AccessibilityView.Raw : AccessibilityView.Content);
+            if (owned) marker.Visibility = Visibility.Collapsed;
+            else { markers[r][c] = marker; UpdateCell(r, c); }
             presentation.Borders[c].Visibility = ColumnInViewport(c) ? Visibility.Visible : Visibility.Collapsed;
         }
     }

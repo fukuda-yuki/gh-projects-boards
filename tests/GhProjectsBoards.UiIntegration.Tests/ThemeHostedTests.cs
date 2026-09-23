@@ -2,6 +2,9 @@ using GhProjectsBoards.App;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
@@ -45,8 +48,13 @@ public sealed class ThemeHostedTests
                 Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("2行・2セル"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker1_1").Text, Is.EqualTo("◆"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Text, Is.EqualTo("◆"));
+                Assert.That(Ui.Find<TextBlock>("GridMarker2_1").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(AutomationProperties.GetHelpText(Ui.Find<FrameworkElement>("GridCell2_1")), Does.Contain("変更あり"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker4_1").Text, Is.EqualTo("!"));
-                Assert.That(Ui.Find<TextBox>("GridCell5_0").IsReadOnly, Is.True);
+                Assert.That(AutomationProperties.GetName(Ui.Find<TextBlock>("GridMarker4_1")), Does.Contain("競合"));
+                var readOnlyCell = Ui.Find<FrameworkElement>("GridCell5_0");
+                Assert.That(readOnlyCell is TextBox input ? input.IsReadOnly
+                    : ((IValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(readOnlyCell).GetPattern(PatternInterface.Value)).IsReadOnly, Is.True);
                 Assert.That(Ui.Find<TextBlock>("GridMarker5_0").Text, Is.EqualTo("▧"));
                 selectedCapture = await CaptureThemeAsync(Path.Combine(folder, "selected"), theme, surface);
             });
