@@ -20,6 +20,7 @@ internal sealed partial class EditingGrid
     {
         var viewport = new Grid(); viewport.ColumnDefinitions.Add(new()); viewport.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         viewport.Children.Add(list);
+        if (recycledPresentation) viewport.Children.Add(editorLayer);
         AutomationProperties.SetAutomationId(verticalScroll, "SheetVerticalScroll");
         AutomationProperties.SetName(verticalScroll, "表の縦スクロール");
         SetColumn(verticalScroll, 1); viewport.Children.Add(verticalScroll);
@@ -39,7 +40,7 @@ internal sealed partial class EditingGrid
         {
             verticalScroll.Maximum = listScroll.ScrollableHeight;
             verticalScroll.ViewportSize = listScroll.ViewportHeight;
-            verticalScroll.SmallChange = rowLines.FirstOrDefault(line => line.IsLoaded && line.ActualHeight > 0)?.ActualHeight ?? 30;
+            verticalScroll.SmallChange = RowPitch;
             verticalScroll.LargeChange = listScroll.ViewportHeight;
             verticalScroll.Value = listScroll.VerticalOffset;
             verticalScroll.Visibility = listScroll.ScrollableHeight > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -52,10 +53,12 @@ internal sealed partial class EditingGrid
         DetachWheel();
         wheelSurface = listScroll?.Content as UIElement;
         wheelSurface?.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel), true);
+        if (recycledPresentation) editorLayer.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel), true);
     }
     private void DetachWheel()
     {
         wheelSurface?.RemoveHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel));
+        if (recycledPresentation) editorLayer.RemoveHandler(PointerWheelChangedEvent, new PointerEventHandler(ScrollWheel));
         wheelSurface = null; wheelHorizontal = wheelVertical = null;
     }
     private void ScrollWheel(object sender, PointerRoutedEventArgs args)
@@ -66,24 +69,30 @@ internal sealed partial class EditingGrid
         if (!(horizontal ? listScroll.ScrollableWidth > 0 : listScroll.ScrollableHeight > 0)) return;
         if (!SystemParametersInfo(horizontal ? 0x006Cu : 0x0068u, 0, out var units, 0)) units = 3;
         var viewport = horizontal ? listScroll.ViewportWidth : listScroll.ViewportHeight;
-        var unit = horizontal ? 16 : rowLines.FirstOrDefault(line => line.IsLoaded && line.ActualHeight > 0)?.ActualHeight ?? 30;
+        var unit = horizontal ? 16 : RowPitch;
         var distance = pointer.MouseWheelDelta / 120d * (units == uint.MaxValue ? viewport : units * unit);
         if (!pointer.IsHorizontalMouseWheel) distance = -distance;
         // A data sheet changes its viewport and realizes the destination together.
         // Native wheel animation can outrun the UI thread and expose empty row slots.
         // Keep Windows' wheel amount, partial deltas and the original native editor.
         args.Handled = true;
+        double? requestedHorizontal = null, requestedVertical = null;
         if (horizontal)
         {
             wheelHorizontal = Math.Clamp((wheelHorizontal ?? listScroll.HorizontalOffset) + distance, 0, listScroll.ScrollableWidth);
+            requestedHorizontal = wheelHorizontal;
             listScroll.ChangeView(wheelHorizontal, null, null, true);
         }
         else
         {
             wheelVertical = Math.Clamp((wheelVertical ?? listScroll.VerticalOffset) + distance, 0, listScroll.ScrollableHeight);
+            requestedVertical = wheelVertical;
             listScroll.ChangeView(null, wheelVertical, null, true);
         }
-        diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units, wheelHorizontal, wheelVertical });
+        // A synchronous final ViewChanged can clear the accumulator before this
+        // observation. Retain the requested target, not the cleared accumulator.
+        diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units,
+            wheelHorizontal = requestedHorizontal, wheelVertical = requestedVertical });
     }
 
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]

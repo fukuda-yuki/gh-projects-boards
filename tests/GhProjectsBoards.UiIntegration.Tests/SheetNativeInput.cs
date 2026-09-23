@@ -42,6 +42,12 @@ internal static class SheetNativeInput
         X = (int)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1)),
         Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)), Flags = 0x0001 | 0x4000 | 0x8000 } });
     internal static void Button(bool down) => Send(new() { Mouse = new() { Flags = down ? 0x0002u : 0x0004u } });
+    internal static void Wheel(int delta) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = 0x0800 } });
+    internal static uint WheelLines()
+    {
+        Assert.That(SystemParametersInfo(0x0068, 0, out var lines, 0), Is.True);
+        return lines;
+    }
     internal static void Key(VirtualKey key, bool down) => Send(new() { Type = 1, Key = new() { VirtualKey = (ushort)key,
         Flags = (down ? 0u : 2u) | (key is VirtualKey.Left or VirtualKey.Right or VirtualKey.Up or VirtualKey.Down ? 1u : 0u) } });
     internal static async Task Press(VirtualKey key, params VirtualKey[] modifiers)
@@ -94,4 +100,5 @@ internal static class SheetNativeInput
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(nint hwnd, ref NativePoint point);
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] private static extern bool SystemParametersInfo(uint action, uint parameter, out uint value, uint flags);
 }

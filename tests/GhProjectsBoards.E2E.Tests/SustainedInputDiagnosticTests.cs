@@ -29,6 +29,7 @@ public sealed class SustainedInputDiagnosticTests
         var mode = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_MODE") ?? "standard";
         var traceDetail = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_TRACE_DETAIL") ?? "full";
         var earlyScroll = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_EARLY_SCROLL") ?? "none";
+        var desktopObserver = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_DESKTOP_OBSERVER") == "1";
         Assert.That(earlyScroll, Is.AnyOf("none", "immediate", "settled"));
         Assert.That(earlyScroll == "none" || mode == "standard", Is.True);
         Assert.That(traceDetail, Is.AnyOf("full", "light", "off"));
@@ -43,7 +44,7 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, desktopObserver, data, tasks = 1000, people = 20,
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -145,11 +146,22 @@ public sealed class SustainedInputDiagnosticTests
             TestContext.AddTestAttachment(Path.Combine(output, "driver.jsonl"));
         }
         AutomationElement Element(string id) => WorkspaceUi.Element(window!, id);
+        TextBox AcquireNativeEditor(string id)
+        {
+            var begin = Stopwatch.GetTimestamp();
+            Element(id).Click();
+            // A recyclable presentation can hand focus to an identity-owned native
+            // editor. Reacquire that public target; an old peer is not its identity.
+            Wait(() => Element(id).Properties.HasKeyboardFocus.Value, "The intended native editor must own focus.");
+            var editor = Element(id).AsTextBox();
+            Record("selection-readiness", new { id, begin, end = Stopwatch.GetTimestamp(),
+                boundary = "Click dispatch through fresh native-focus readback; includes UIA observer overhead, before the retained input phase." });
+            return editor;
+        }
         void Capture(string name) { using var image = FlaUI.Core.Capturing.Capture.Rectangle(window!.BoundingRectangle); image.ToFile(Path.Combine(output, name + ".png")); }
         void Input(string phase, int column, int seconds, bool measured, Action? nearEnd = null)
         {
-            var cell = Element("GridCell0_" + column).AsTextBox(); cell.Click();
-            Wait(() => cell.Properties.HasKeyboardFocus.Value, "The intended native editor must own focus.");
+            var cell = AcquireNativeEditor("GridCell0_" + column);
             var start = Stopwatch.GetTimestamp(); var index = 0;
             Record("input-phase-start", new { phase, measured });
             while (Stopwatch.GetElapsedTime(start).TotalSeconds < seconds)
@@ -180,8 +192,7 @@ public sealed class SustainedInputDiagnosticTests
         }
         void Ime(int seconds)
         {
-            var cell = Element("GridCell0_0").AsTextBox(); cell.Click();
-            Wait(() => cell.Properties.HasKeyboardFocus.Value, "Japanese input target must own focus.");
+            var cell = AcquireNativeEditor("GridCell0_0");
             var start = Stopwatch.GetTimestamp(); var index = 0; var testedFailure = false;
             try
             {
@@ -211,7 +222,7 @@ public sealed class SustainedInputDiagnosticTests
                         WorkspaceUi.Element(window!, "GridSave").AsButton().Invoke();
                         Wait(() => Element("DraftStatus").Name.Contains("保存済み"), "Explicit retry must clear the save failure.");
                         Thread.Sleep(250);
-                        Capture("ime-save-recovered"); cell = Element("GridCell0_0").AsTextBox(); cell.Click();
+                        Capture("ime-save-recovered"); cell = AcquireNativeEditor("GridCell0_0");
                     }
                     index++;
                 }
@@ -274,8 +285,7 @@ public sealed class SustainedInputDiagnosticTests
             var scroll = Element("ProjectItems").Patterns.Scroll.Pattern;
             Wait(() => scroll.VerticalScrollPercent.Value >= 99 && WorkspaceUi.HasVisibleElement(window!, "GridCell999_0"), "Thumb must reach the last task.");
             var reached = Stopwatch.GetTimestamp();
-            var far = Element("GridCell999_0").AsTextBox(); far.Click();
-            Wait(() => far.Properties.HasKeyboardFocus.Value, "The newly visible last task must own input.");
+            var far = AcquireNativeEditor("GridCell999_0");
             Keyboard.Type(VirtualKeyShort.F2);
             using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
             var begin = Stopwatch.GetTimestamp(); Keyboard.Type(VirtualKeyShort.KEY_9);
@@ -304,23 +314,23 @@ public sealed class SustainedInputDiagnosticTests
         void EarlyScroll()
         {
             var bounds = Element("ProjectItems").BoundingRectangle;
+            using var desktop = desktopObserver ? new DesktopFrameObserver(bounds, Path.Combine(output, "desktop")) : null;
             using var armed = new ManualResetEventSlim();
             using var stop = new CancellationTokenSource();
-            var frames = new List<(long Begin, long End, CaptureImage Image)>();
+            var frames = new List<TimestampedScreenCopy.Frame>();
             var camera = Task.Run(() =>
             {
                 armed.Wait(stop.Token);
                 while (!stop.IsCancellationRequested && frames.Count < 512)
                 {
-                    var begin = Stopwatch.GetTimestamp();
-                    var image = FlaUI.Core.Capturing.Capture.Rectangle(bounds);
-                    frames.Add((begin, Stopwatch.GetTimestamp(), image));
+                    frames.Add(TimestampedScreenCopy.Rectangle(bounds));
                     Thread.Sleep(1);
                 }
             });
             try
             {
-                Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds }); armed.Set(); });
+                Input("number", 2, 20, true, () => { Record("early-camera-armed", new { bounds,
+                    sampling = "FlaUI-equivalent full viewport GDI copy with nested BitBlt/GdiFlush timestamps; retained 1 ms sleep; PNG encoding after replay" }); desktop?.Arm(); armed.Set(); });
                 if (earlyScroll == "settled")
                 {
                     Record("diagnostic-save-wait-start", new { diagnosticOnly = true });
@@ -341,7 +351,8 @@ public sealed class SustainedInputDiagnosticTests
                 {
                     try
                     {
-                        Write("scroll-captures.json", frames.Select((f, i) => new { index = i, begin = f.Begin, end = f.End, path = $"scroll-{i:D4}.png" }).ToArray());
+                        Write("scroll-captures.json", frames.Select((f, i) => new { index = i, begin = f.Begin, end = f.End,
+                            copyBegin = f.CopyBegin, copyEnd = f.CopyEnd, path = $"scroll-{i:D4}.png" }).ToArray());
                         for (var i = 0; i < frames.Count; i++) frames[i].Image.ToFile(Path.Combine(output, $"scroll-{i:D4}.png"));
                     }
                     finally { foreach (var frame in frames) frame.Image.Dispose(); }
