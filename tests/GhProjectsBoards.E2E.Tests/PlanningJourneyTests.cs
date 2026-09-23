@@ -58,12 +58,16 @@ public sealed partial class RegistrationTests
             Element(w, "PlanProgress").Focus(); Key(VirtualKeyShort.HOME, VirtualKeyShort.DOWN, VirtualKeyShort.TAB);
             Set(w, "PlanWork-Remaining", "3"); Set(w, "PlanActualStart", "2026-10-05 09:00");
             Invoke(w, "PrimaryButton"); Wait(() => !WorkspaceUi.HasVisibleElement(w, "PlanningDialog"));
-            var actual = Element(w, "GridCell0_4").AsTextBox(); actual.Focus(); Wait(() => actual.Properties.HasKeyboardFocus.Value); Key(VirtualKeyShort.F2); Keyboard.Type("5");
+            Element(w, "GridCell0_4").Focus(); Wait(() => Element(w, "GridCell0_4").Properties.HasKeyboardFocus.Value);
+            // Activation can replace a recyclable presentation peer with the native
+            // editor. Read the current stable target, without adding another click.
+            var actual = Element(w, "GridCell0_4").AsTextBox(); Key(VirtualKeyShort.F2); Keyboard.Type("5");
             Wait(() => actual.Text == "5"); Capture(w, f.Root, "planning-first-actual-context");
             Assert.That(Element(w, "GridCell0_4").AsTextBox().Text, Is.EqualTo("5"), "The currently displayed editor must retain the first actual input after dialog closure.");
             Assert.That(Element(w, "GridCell0_4").Properties.HasKeyboardFocus.Value, Is.True, "Closing the preceding dialog must not steal later typing focus.");
             Invoke(w, "ActualUpdate");
-            actual = Element(w, "GridCell0_4").AsTextBox(); actual.Focus(); Wait(() => actual.Properties.HasKeyboardFocus.Value); Key(VirtualKeyShort.F2);
+            Element(w, "GridCell0_4").Focus(); Wait(() => Element(w, "GridCell0_4").Properties.HasKeyboardFocus.Value);
+            actual = Element(w, "GridCell0_4").AsTextBox(); Key(VirtualKeyShort.F2);
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A); Keyboard.Type("7");
             Wait(() => actual.Text == "7"); Capture(w, f.Root, "planning-weekly-report"); Invoke(w, "ActualUpdate");
             Element(w, "GridCell0_2").Focus();

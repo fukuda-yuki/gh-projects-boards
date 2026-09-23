@@ -224,6 +224,8 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual"); await Ui.Ready<Button>("ActualDetails");
         await Ui.Run(() => Ui.Click("ActualDetails")); await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor")?.IsLoaded == true);
+        await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor
+            && Ui.Find<Button>("ActualReportsUpdate", editor) is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ActualReportsUpdate", Ui.Popup<StackPanel>("ActualReportsEditor"))));
         await Ui.Run(() => {
             Assert.That(Ui.Popup<StackPanel>("ActualReportsEditor"), Is.Not.Null);

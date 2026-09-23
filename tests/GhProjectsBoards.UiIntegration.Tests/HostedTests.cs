@@ -422,8 +422,9 @@ public sealed partial class HostedTests
             var review = Workspace.ApplyReview!;
             Assert.That(await Workspace.Drafts!.CommitAsync(w => { w.ConfirmApply(review); return w; }, () => true), Is.True);
         });
-        // Arrange a durably approved, undispatched batch, then use the history UI to resume.
-        await ControlExternal("ProjectFields");
+        // Pause the current scoped pre-dispatch observation, including when its
+        // first response already contains all field definitions.
+        await ControlExternal("ApplyObservation");
         await Ui.OpenHistory() ;
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ResumeApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));

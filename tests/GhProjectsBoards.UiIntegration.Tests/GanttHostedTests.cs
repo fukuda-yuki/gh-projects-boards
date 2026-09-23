@@ -33,7 +33,7 @@ public sealed class GanttHostedTests
         session = new(new DraftStore(root), work, 0);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
         await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_2"); await Ui.Idle();
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2"); await Ui.Idle();
     }
     [TearDown]
     public async Task Teardown()
