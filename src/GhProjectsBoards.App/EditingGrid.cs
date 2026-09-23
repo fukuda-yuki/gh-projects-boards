@@ -1218,6 +1218,7 @@ internal sealed partial class EditingGrid : Grid
         protected override void OnPointerPressed(PointerRoutedEventArgs e)
         {
             if (!owner.CurrentEditor(row, column, this)) return;
+            owner.diagnostics?.Record("cell-pointer-pressed", new { row, column, pointerTimestampMicroseconds = e.GetCurrentPoint(this).Timestamp, editing = Editing });
             if (!Editing) { owner.BeginRange(row, column, e); return; }
             owner.Select(row, column, false, false); base.OnPointerPressed(e);
         }

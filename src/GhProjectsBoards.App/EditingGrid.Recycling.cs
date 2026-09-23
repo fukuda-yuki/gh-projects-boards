@@ -377,7 +377,12 @@ internal sealed partial class EditingGrid
         }
         protected override void OnPointerPressed(PointerRoutedEventArgs args)
         {
-            if (binding is { } target) { Validate(target); owner.BeginRange(target.Row, target.Index, args); }
+            if (binding is { } target)
+            {
+                Validate(target);
+                owner.diagnostics?.Record("cell-pointer-pressed", new { row = target.Row, column = target.Index, pointerTimestampMicroseconds = args.GetCurrentPoint(this).Timestamp, editing = false });
+                owner.BeginRange(target.Row, target.Index, args);
+            }
         }
         protected override AutomationPeer OnCreateAutomationPeer() => new CellPeer(this);
         private sealed class CellPeer(RecycledCell cell) : FrameworkElementAutomationPeer(cell)
