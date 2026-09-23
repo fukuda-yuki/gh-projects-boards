@@ -813,6 +813,13 @@ internal sealed partial class EditingGrid : Grid
         if (session.Workspace.Field(cell)?.Change?.Clear == true) return "明示的にクリア";
         return cell.Availability == ValueAvailability.Empty ? "（空値）" : EditingWorkspace.AvailabilityText(cell.Availability);
     }
+    private bool CellInputReadOnly(EditCell cell)
+    {
+        var field = session.Workspace.Field(cell);
+        return !cell.Editable && !TypedPlanning(cell) || field?.Conflict == true
+            || field?.Observation?.Reason is { } reason
+                && (cell.Key?.Kind is "Select" or "LocalSelect" || !reason.StartsWith("未確定文字"));
+    }
     private void UpdateSelectedDetails()
     {
         UpdateActualInput();
@@ -1207,8 +1214,7 @@ internal sealed partial class EditingGrid : Grid
         }
         public void Refresh()
         {
-            var field = owner.session.Workspace.Field(cell);
-            IsReadOnly = !cell.Editable && !owner.TypedPlanning(cell) || field?.Conflict == true || field?.Observation?.Reason is { } reason && !reason.StartsWith("未確定文字");
+            IsReadOnly = owner.CellInputReadOnly(cell);
             var buffer = owner.session.Workspace.Buffer(cell);
             var committed = owner.session.Workspace.Value(cell);
             var value = buffer ?? (cell.Key is null ? cell.Display : cell.Key.Kind is "Select" or "LocalSelect"

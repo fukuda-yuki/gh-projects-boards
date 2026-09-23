@@ -412,7 +412,7 @@ internal sealed partial class EditingGrid
         }
         private sealed class BoundProvider(RecycledCell cell, CellBinding target) : IInvokeProvider, IValueProvider, IScrollItemProvider
         {
-            public bool IsReadOnly { get { cell.Validate(target); var data = cell.owner.rows[target.Row].Cells[target.Index]; return !data.Editable && !cell.owner.TypedPlanning(data); } }
+            public bool IsReadOnly { get { cell.Validate(target); return cell.owner.CellInputReadOnly(cell.owner.rows[target.Row].Cells[target.Index]); } }
             public string Value { get { cell.Validate(target); return cell.owner.PresentationValue(cell.owner.rows[target.Row].Cells[target.Index]); } }
             public void Invoke() => cell.Activate(target);
             public void ScrollIntoView() { cell.Validate(target); cell.owner.EnsureRecycledRow(target.Row); }
