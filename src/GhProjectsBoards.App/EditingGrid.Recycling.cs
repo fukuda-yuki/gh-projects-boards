@@ -37,13 +37,14 @@ internal sealed partial class EditingGrid
         public override string ToString() => Name;
     }
     private sealed record CellBinding(string Project, string Item, FieldKey? Key, ColumnIdentity Column, int Row, int Index, long Generation);
-    private sealed class OwnedEditor(CellBinding identity, FrameworkElement editor, Border host, TextBlock marker, EditCell cell)
+    private sealed class OwnedEditor(CellBinding identity, FrameworkElement editor, Border host, TextBlock marker, EditCell cell, bool isLocal)
     {
         public CellBinding Identity { get; } = identity;
         public FrameworkElement Editor { get; } = editor;
         public Border Host { get; } = host;
         public TextBlock Marker { get; } = marker;
         public EditCell Cell { get; set; } = cell;
+        public bool IsLocal { get; } = isLocal;
         public int Row { get; set; } = identity.Row;
         public int Column { get; set; } = identity.Index;
     }
@@ -232,7 +233,7 @@ internal sealed partial class EditingGrid
         // Set an explicit identity once. Neither presenter binding nor inheritance
         // can ever replace the native editor's data context.
         host.DataContext = identity;
-        var owned = new OwnedEditor(identity, editor, host, marker, rows[r].Cells[c]); ownedEditors.Add(key, owned);
+        var owned = new OwnedEditor(identity, editor, host, marker, rows[r].Cells[c], rows[r].IsLocal); ownedEditors.Add(key, owned);
         InstallOwnedSlots(owned); editorLayer.Children.Add(host);
         RefreshRecycledRow(r); UpdateCell(r, c); PositionOwnedEditors();
     }
@@ -295,15 +296,27 @@ internal sealed partial class EditingGrid
         foreach (var (key, owned) in ownedEditors.ToArray())
         {
             var r = owned.Row; var c = owned.Column;
-            if (active && currentRow == r && currentColumn == c || drag is { } gesture && gesture.SourceRow == r
+            // A removed local row has no buffer to query. A filtered-out row still
+            // owns its input, including when its presentation position is -1.
+            var removedLocal = owned.IsLocal && !session.Workspace.LocalRows.Any(row =>
+                row.Id == owned.Identity.Item && row.ProjectId == owned.Identity.Project);
+            if (!removedLocal && (active && currentRow == r && currentColumn == c || drag is { } gesture && gesture.SourceRow == r
                 || owned.Editor is TitleCell { Editing: true } or TitleCell { Composing: true }
                 || session.Workspace.Buffer(owned.Cell) is not null
-                || XamlRoot is not null && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), owned.Editor)) continue;
+                || XamlRoot is not null && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), owned.Editor))) continue;
+            if (removedLocal)
+            {
+                if (owned.Editor is TitleCell title) title.Reindex(-1, -1, owned.Cell);
+                else if (owned.Editor is ChoiceCell choice) choice.Reindex(-1, -1, owned.Cell);
+            }
             ownedEditors.Remove(key); editorLayer.Children.Remove(owned.Host);
             if (r < 0 || c < 0) continue;
             controls[r][c] = null!; cellBorders[r][c] = null!; markers[r][c] = null!; selectionFrames[r][c] = null; fillHandles[r][c] = null;
             if (recycledRows.TryGetValue(r, out var presentation))
-            { controls[r][c] = presentation.Cells[c]; cellBorders[r][c] = presentation.Borders[c]; RefreshRecycledRow(r); }
+            {
+                controls[r][c] = presentation.Cells[c]; cellBorders[r][c] = presentation.Borders[c];
+                if (!removedLocal) RefreshRecycledRow(r);
+            }
         }
     }
 
