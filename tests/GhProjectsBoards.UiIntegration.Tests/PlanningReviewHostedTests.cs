@@ -50,8 +50,8 @@ public sealed partial class PlanningHostedTests
         await Ui.Unmount(grid);
         var prepared = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         await Ui.Run(() => grid = new(project, session, () => prepared.Task));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.ClickCommand("GridPlanning");
         await Ui.Run(() => { var views = Ui.Find<SelectorBar>("ProjectViews"); views.SelectedItem = views.Items[1]; prepared.SetResult(true); });
@@ -201,13 +201,13 @@ public sealed partial class PlanningHostedTests
         project = p; var work = new EditingWorkspace(p.Snapshot.Id.Scope); work.SetRegistrations([p]); work.SetPlanning(plan, 0);
         session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-review-ui-" + Guid.NewGuid())), work, 0);
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
     }
     private async Task Schedule()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_0"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.ClickCommand("GridPlanning"); await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
     }
@@ -221,7 +221,7 @@ public sealed partial class PlanningHostedTests
     public async Task UnknownActualBreakdownUpdateShowsAnErrorAndPreservesTheObservedTotal()
     {
         await ReviewFixture(PlanningReviewRegressionTests.Observed("Actual", "5"), PlanningPathTests.Plan());
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual"); await Ui.Ready<Button>("ActualDetails");
         await Ui.Run(() => Ui.Click("ActualDetails")); await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor")?.IsLoaded == true);
         await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor
@@ -260,7 +260,7 @@ public sealed partial class PlanningHostedTests
     public async Task SelectingAnOutOfDomainObservedActualKeepsItsTextAndShowsACorrectionProblem()
     {
         await ReviewFixture(PlanningReviewRegressionTests.Observed("Actual", "-1"), PlanningPathTests.Plan());
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_4").Focus(FocusState.Keyboard));
+        await Ui.Run(() => FocusCell("GridCell0_4"));
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual");
         await Ui.Ready<TextBlock>("ActualInputHeading");
         await Ui.Run(() => {
@@ -301,7 +301,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleClose", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
         await ShowDateColumns();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("GridCell0_5").Text, Is.EqualTo("2026-10-05 12:07")));
+        await Ui.Run(() => Assert.That(CellText("GridCell0_5"), Is.EqualTo("2026-10-05 12:07")));
     }
     [Test, Category("ReviewRegression")]
     public async Task ClearingTheNativeDatePickerClearsTheEndpointTextAndRetainsTheOtherMinute()
