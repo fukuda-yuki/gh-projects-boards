@@ -36,7 +36,13 @@ public sealed partial class RegistrationTests
     { foreach (var key in keys) { Keyboard.Type(key); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(100); } }
     private static string CellText(Window w, int row, int col = 0) => Element(w, $"GridCell{row}_{col}").AsTextBox().Text;
     private static void Edit(Window w, int row, string text)
-    { var c = Element(w, $"GridCell{row}_0").AsTextBox(); c.Click(); c.Text = text; Key(VirtualKeyShort.RETURN); }
+    {
+        var id = $"GridCell{row}_0";
+        Element(w, id).Click();
+        Wait(() => Element(w, id).Properties.HasKeyboardFocus.Value);
+        // Activation replaces the presentation peer with the native editor.
+        Set(w, id, text); Key(VirtualKeyShort.RETURN);
+    }
     private static void Scroll(Window w, double percent) => ScrollEndpoint(w, percent, horizontal: false);
     private static void ScrollEndpoint(Window w, double percent, bool horizontal)
     {
