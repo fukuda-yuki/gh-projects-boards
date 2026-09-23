@@ -29,7 +29,8 @@ $sourceFiles = @(git -C $repo ls-files --cached --others --exclude-standard | So
 @{
     sourceRevision=$SourceRevision; driverHead=(git -C $repo rev-parse HEAD); driverChanges=@(git -C $repo status --porcelain)
     sourceFiles=$sourceFiles; executable=$Executable; condition=$Condition; mode=$Mode; traceDetail=$TraceDetail; earlyScroll=$EarlyScroll; scrollProfile=$ScrollProfile; dataRoot=$data; dataKind='isolated synthetic Gantt fixture'
-    flags=@{recycledPresentation=$env:GHPB_RECYCLED_PRESENTATION; desktopObserver=$env:GHPB_SUSTAINED_DESKTOP_OBSERVER; threadTiming=$env:GHPB_SHEET_THREAD_TIMING}
+    flags=@{recycledPresentation=$env:GHPB_RECYCLED_PRESENTATION; desktopObserver=$env:GHPB_SUSTAINED_DESKTOP_OBSERVER; threadTiming=$env:GHPB_SHEET_THREAD_TIMING;
+        renderingCallbacks=$env:GHPB_SHEET_RENDER_CALLBACKS}
     os=[Environment]::OSVersion.VersionString; architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
     sdk=(dotnet --version); powershell=$PSVersionTable.PSVersion.ToString(); command=@('dotnet')+$command
     seedCommand=@($seed,'--seed-gantt',$data); seedSha256=(Get-FileHash -LiteralPath $seed).Hash

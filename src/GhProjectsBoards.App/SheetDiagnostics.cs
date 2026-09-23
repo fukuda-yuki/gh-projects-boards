@@ -22,6 +22,7 @@ internal sealed class SheetDiagnostics
     private long previousRendering;
     private long? previousThreadCpu;
     private readonly bool threadTiming = Environment.GetEnvironmentVariable("GHPB_SHEET_THREAD_TIMING") == "1";
+    private readonly bool renderingCallbacks = Environment.GetEnvironmentVariable("GHPB_SHEET_RENDER_CALLBACKS") != "0";
     private sealed record RenderRequest(long Span, long End);
 
     internal static SheetDiagnostics? Create() => sink is null ? null : new();
@@ -40,7 +41,7 @@ internal sealed class SheetDiagnostics
         snapshot = state;
         if (attached) return;
         attached = true; visualCounts = visualWalk; previousRendering = 0; previousThreadCpu = null;
-        CompositionTarget.Rendering += Rendering;
+        if (renderingCallbacks) CompositionTarget.Rendering += Rendering;
         Record("grid-loaded", state(false));
     }
     internal void Detach()
@@ -95,7 +96,7 @@ internal sealed class SheetDiagnostics
             owner.Record("ui-span", new { id, parent, kind, reason, start, end, elapsedTicks = end - start, thread,
                 endThread = Environment.CurrentManagedThreadId, managedAllocatedBytesOnThread = bytes,
                 gc0 = GC.CollectionCount(0) - gc0, gc1 = GC.CollectionCount(1) - gc1, gc2 = GC.CollectionCount(2) - gc2 });
-            if (kind is "build" or "rebuild" or "select" or "run" or "update")
+            if (owner.renderingCallbacks && kind is ("build" or "rebuild" or "select" or "run" or "update"))
             {
                 if (owner.rendering.Count < 256) owner.rendering.Add(new(id, end));
                 else owner.Record("rendering-request-dropped");
