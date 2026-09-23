@@ -7,7 +7,8 @@ param(
     [ValidateSet('standard','ime','scroll')][string]$Mode = 'standard',
     [string]$SeedExecutable,
     [ValidateSet('full','light','off')][string]$TraceDetail = 'full',
-    [ValidateSet('none','immediate','settled')][string]$EarlyScroll = 'none'
+    [ValidateSet('none','immediate','settled')][string]$EarlyScroll = 'none',
+    [ValidateSet('stress','near1','near3','continuous')][string]$ScrollProfile = 'stress'
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -27,7 +28,8 @@ $sourceFiles = @(git -C $repo ls-files --cached --others --exclude-standard | So
 })
 @{
     sourceRevision=$SourceRevision; driverHead=(git -C $repo rev-parse HEAD); driverChanges=@(git -C $repo status --porcelain)
-    sourceFiles=$sourceFiles; executable=$Executable; condition=$Condition; mode=$Mode; traceDetail=$TraceDetail; earlyScroll=$EarlyScroll; dataRoot=$data; dataKind='isolated synthetic Gantt fixture'
+    sourceFiles=$sourceFiles; executable=$Executable; condition=$Condition; mode=$Mode; traceDetail=$TraceDetail; earlyScroll=$EarlyScroll; scrollProfile=$ScrollProfile; dataRoot=$data; dataKind='isolated synthetic Gantt fixture'
+    flags=@{recycledPresentation=$env:GHPB_RECYCLED_PRESENTATION; desktopObserver=$env:GHPB_SUSTAINED_DESKTOP_OBSERVER; threadTiming=$env:GHPB_SHEET_THREAD_TIMING}
     os=[Environment]::OSVersion.VersionString; architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
     sdk=(dotnet --version); powershell=$PSVersionTable.PSVersion.ToString(); command=@('dotnet')+$command
     seedCommand=@($seed,'--seed-gantt',$data); seedSha256=(Get-FileHash -LiteralPath $seed).Hash
@@ -41,7 +43,7 @@ $diagnostics = Join-Path $data 'diagnostics'
 New-Item -ItemType Directory -Path $diagnostics | Out-Null
 Move-Item -LiteralPath (Join-Path $data 'gantt-fixture.json') -Destination (Join-Path $diagnostics 'gantt-fixture.json')
 Copy-Item -LiteralPath (Get-ChildItem -LiteralPath (Join-Path $data 'Drafts') -Filter '*.json').FullName -Destination (Join-Path $run 'synthetic-initial-checkpoint.json')
-$values=@{ GHPB_SUSTAINED_APP=$Executable; GHPB_SUSTAINED_DATA=$data; GHPB_SUSTAINED_OUTPUT=$output; GHPB_SUSTAINED_SOURCE=$SourceRevision; GHPB_SUSTAINED_CONDITION=$Condition; GHPB_SUSTAINED_MODE=$Mode; GHPB_SUSTAINED_TRACE_DETAIL=$TraceDetail; GHPB_SUSTAINED_EARLY_SCROLL=$EarlyScroll }
+$values=@{ GHPB_SUSTAINED_APP=$Executable; GHPB_SUSTAINED_DATA=$data; GHPB_SUSTAINED_OUTPUT=$output; GHPB_SUSTAINED_SOURCE=$SourceRevision; GHPB_SUSTAINED_CONDITION=$Condition; GHPB_SUSTAINED_MODE=$Mode; GHPB_SUSTAINED_TRACE_DETAIL=$TraceDetail; GHPB_SUSTAINED_EARLY_SCROLL=$EarlyScroll; GHPB_SUSTAINED_SCROLL_PROFILE=$ScrollProfile }
 $previous=@{}
 try {
     foreach($name in $values.Keys) { $previous[$name]=[Environment]::GetEnvironmentVariable($name,'Process'); [Environment]::SetEnvironmentVariable($name,$values[$name],'Process') }

@@ -30,6 +30,10 @@ public sealed class SustainedInputDiagnosticTests
         var traceDetail = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_TRACE_DETAIL") ?? "full";
         var earlyScroll = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_EARLY_SCROLL") ?? "none";
         var desktopObserver = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_DESKTOP_OBSERVER") == "1";
+        var scrollProfile = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_SCROLL_PROFILE") ?? "stress";
+        Assert.That(scrollProfile, Is.AnyOf("stress", "near1", "near3", "continuous"));
+        Assert.That(scrollProfile == "stress" || mode == "standard" && earlyScroll == "immediate" && desktopObserver, Is.True,
+            "Ordinary profiles retain immediate post-input prehistory and require the independent desktop observer.");
         Assert.That(earlyScroll, Is.AnyOf("none", "immediate", "settled"));
         Assert.That(earlyScroll == "none" || mode == "standard", Is.True);
         Assert.That(traceDetail, Is.AnyOf("full", "light", "off"));
@@ -44,7 +48,9 @@ public sealed class SustainedInputDiagnosticTests
         var checkpoint = Directory.GetFiles(Path.Combine(data, "Drafts"), "*.json").Single();
         using var before = JsonDocument.Parse(File.ReadAllText(checkpoint));
         Write("plan.json", new {
-            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, desktopObserver, data, tasks = 1000, people = 20,
+            app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, desktopObserver, scrollProfile,
+            recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") == "1", data, tasks = 1000, people = 20,
+            scrollSchedule = scrollProfile == "stress" ? null : OrdinaryScrollSchedule(scrollProfile),
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
             undoOperations = before.RootElement.GetProperty("History").GetArrayLength(),
@@ -318,7 +324,7 @@ public sealed class SustainedInputDiagnosticTests
             using var armed = new ManualResetEventSlim();
             using var stop = new CancellationTokenSource();
             var frames = new List<TimestampedScreenCopy.Frame>();
-            var camera = Task.Run(() =>
+            var camera = scrollProfile != "stress" ? Task.CompletedTask : Task.Run(() =>
             {
                 armed.Wait(stop.Token);
                 while (!stop.IsCancellationRequested && frames.Count < 512)
@@ -338,7 +344,8 @@ public sealed class SustainedInputDiagnosticTests
                     Thread.Sleep(250);
                     Record("diagnostic-save-wait-end", new { diagnosticOnly = true });
                 }
-                ScrollInputs(1, bounds);
+                if (scrollProfile == "stress") ScrollInputs(1, bounds);
+                else OrdinaryScrollInputs(bounds);
             }
             finally
             {
@@ -361,6 +368,27 @@ public sealed class SustainedInputDiagnosticTests
             Assert.That(frames.Count, Is.LessThan(512), "A saturated camera is incomplete evidence.");
         }
         void Scroll(int seconds) => WithScrollFrames(() => ScrollInputs(seconds, Element("ProjectItems").BoundingRectangle));
+        void OrdinaryScrollInputs(Rectangle bounds)
+        {
+            Mouse.Position = new Point(bounds.Left + bounds.Width / 2, bounds.Top + 70);
+            var schedule = OrdinaryScrollSchedule(scrollProfile);
+            var start = Stopwatch.GetTimestamp();
+            Record("scroll-phase-start", new { bounds, scrollProfile, start, schedule });
+            foreach (var command in schedule)
+            {
+                while (Stopwatch.GetElapsedTime(start).TotalMilliseconds < command.DueMs) Thread.Sleep(1);
+                var begin = Stopwatch.GetTimestamp();
+                if (command.Axis == "horizontal") Mouse.HorizontalScroll(command.ApiArgument);
+                else Mouse.Scroll(command.ApiArgument);
+                Record("scroll-input", new { index = command.Index, begin, sent = Stopwatch.GetTimestamp(),
+                    axis = command.Axis, detents = command.ApiArgument, apiArgument = command.ApiArgument,
+                    driverWheelDelta = command.ApiArgument * 120, dueMs = command.DueMs,
+                    actualMs = Stopwatch.GetElapsedTime(start, begin).TotalMilliseconds, scrollProfile });
+            }
+            // Keep the final response observable; this is after input, not a pre-input save wait.
+            Thread.Sleep(350);
+            Record("scroll-phase-end", new { samples = schedule.Length });
+        }
         void ScrollInputs(int seconds, Rectangle bounds)
         {
                 Mouse.Position = new Point(bounds.Left + bounds.Width / 2, bounds.Top + 70);
@@ -374,10 +402,27 @@ public sealed class SustainedInputDiagnosticTests
                     else Mouse.Scroll(index % 4 < 2 ? -80 : 80);
                     Record("scroll-input", new { index, begin, sent = Stopwatch.GetTimestamp(),
                         axis = index % 6 is 4 or 5 ? "horizontal" : "vertical",
-                        detents = index % 6 == 4 ? 120 : index % 6 == 5 ? -120 : index % 4 < 2 ? -80 : 80 });
+                        detents = index % 6 == 4 ? 120 : index % 6 == 5 ? -120 : index % 4 < 2 ? -80 : 80,
+                        apiArgument = index % 6 == 4 ? 120 : index % 6 == 5 ? -120 : index % 4 < 2 ? -80 : 80,
+                        driverWheelDelta = (index % 6 == 4 ? 120 : index % 6 == 5 ? -120 : index % 4 < 2 ? -80 : 80) * 120,
+                        scrollProfile = "stress" });
                     Thread.Sleep(200); index++;
                 }
                 Record("scroll-phase-end", new { samples = index });
         }
+    }
+
+    private sealed record ScrollCommand(int Index, string Axis, int ApiArgument, int DueMs);
+    private static ScrollCommand[] OrdinaryScrollSchedule(string profile)
+    {
+        var continuous = profile == "continuous";
+        var magnitude = profile == "near3" ? 3 : 1;
+        return Enumerable.Range(0, continuous ? 200 : 24).Select(i =>
+        {
+            var step = i % 8;
+            var horizontal = step >= 4;
+            var sign = step is 0 or 1 or 6 or 7 ? -1 : 1;
+            return new ScrollCommand(i, horizontal ? "horizontal" : "vertical", sign * magnitude, i * (continuous ? 100 : 250));
+        }).ToArray();
     }
 }
