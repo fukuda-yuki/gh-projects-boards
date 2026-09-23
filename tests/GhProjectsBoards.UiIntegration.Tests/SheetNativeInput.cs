@@ -12,17 +12,22 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // are called by this driver; coordinates come from currently rendered controls.
 internal static class SheetNativeInput
 {
+    internal static Task ActivateWindow() => Ui.Run(() => {
+        var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
+        Ui.Window.Activate();
+        if (GetForegroundWindow() != hwnd) { Key(VirtualKey.Menu, true); Key(VirtualKey.Menu, false); SetForegroundWindow(hwnd); }
+        Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
+    });
     internal static async Task<Point> PointFor(string id, double x = .5, double y = .5)
     {
         await Rendered();
+        await ActivateWindow();
         Point result = default;
         await Ui.Run(() => {
             var control = Ui.Find<FrameworkElement>(id);
             Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
             var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
             var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
-            Ui.Window.Activate();
-            if (GetForegroundWindow() != hwnd) { Key(VirtualKey.Menu, true); Key(VirtualKey.Menu, false); SetForegroundWindow(hwnd); }
             Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
             var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
             var scale = Ui.Root.XamlRoot.RasterizationScale;
@@ -52,6 +57,8 @@ internal static class SheetNativeInput
         Flags = (down ? 0u : 2u) | (key is VirtualKey.Left or VirtualKey.Right or VirtualKey.Up or VirtualKey.Down ? 1u : 0u) } });
     internal static async Task Press(VirtualKey key, params VirtualKey[] modifiers)
     {
+        await Ui.Run(() => Assert.That(GetForegroundWindow(), Is.EqualTo(Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id)),
+            "The UI host must own foreground before physical keys are sent."));
         foreach (var modifier in modifiers) Key(modifier, true);
         try { Key(key, true); Key(key, false); }
         finally { foreach (var modifier in modifiers.Reverse()) Key(modifier, false); }

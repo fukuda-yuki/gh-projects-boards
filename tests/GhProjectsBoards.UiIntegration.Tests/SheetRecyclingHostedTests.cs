@@ -146,6 +146,9 @@ public sealed class SheetRecyclingHostedTests
             await Ui.Run(() => { grid = new EditingGrid(project, session, () => Task.FromResult(true)); surface = new Grid { Width = 840, Height = 490 }; surface.Children.Add(grid); });
             await Ui.Mount(surface); mounted = true;
             await Ui.Ready<Button>("GridCell0_0");
+            // This journey selects through UIA before its first physical key;
+            // unlike a native click, Invoke does not establish foreground.
+            await SheetNativeInput.ActivateWindow();
             await Ui.Run(() =>
             {
                 list = Ui.Find<ListView>("ProjectItems"); scroll = Ui.Tree(list).OfType<ScrollViewer>().First();
