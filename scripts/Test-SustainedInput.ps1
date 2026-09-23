@@ -4,11 +4,13 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{40}$')][string]$SourceRevision,
     [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$RunId,
     [ValidateSet('cold','warm')][string]$Condition = 'cold',
-    [ValidateSet('standard','ime','scroll')][string]$Mode = 'standard',
+    [ValidateSet('standard','ime','scroll','readiness')][string]$Mode = 'standard',
     [string]$SeedExecutable,
     [ValidateSet('full','light','off')][string]$TraceDetail = 'full',
     [ValidateSet('none','immediate','settled')][string]$EarlyScroll = 'none',
-    [ValidateSet('stress','near1','near3','continuous')][string]$ScrollProfile = 'stress'
+    [ValidateSet('stress','near1','near3','continuous')][string]$ScrollProfile = 'stress',
+    [ValidateRange(0, 100)][int]$ReadinessKeyDelayMs = 20,
+    [ValidateSet('sheet','filter-control')][string]$ReadinessSurface = 'sheet'
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -29,6 +31,8 @@ $sourceFiles = @(git -C $repo ls-files --cached --others --exclude-standard | So
 @{
     sourceRevision=$SourceRevision; driverHead=(git -C $repo rev-parse HEAD); driverChanges=@(git -C $repo status --porcelain)
     sourceFiles=$sourceFiles; executable=$Executable; condition=$Condition; mode=$Mode; traceDetail=$TraceDetail; earlyScroll=$EarlyScroll; scrollProfile=$ScrollProfile; dataRoot=$data; dataKind='isolated synthetic Gantt fixture'
+    readinessKeyDelayMs=$ReadinessKeyDelayMs
+    readinessSurface=$ReadinessSurface
     flags=@{recycledPresentation=$env:GHPB_RECYCLED_PRESENTATION; desktopObserver=$env:GHPB_SUSTAINED_DESKTOP_OBSERVER; threadTiming=$env:GHPB_SHEET_THREAD_TIMING;
         renderingCallbacks=$env:GHPB_SHEET_RENDER_CALLBACKS}
     os=[Environment]::OSVersion.VersionString; architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
@@ -46,6 +50,8 @@ Move-Item -LiteralPath (Join-Path $data 'gantt-fixture.json') -Destination (Join
 Copy-Item -LiteralPath (Get-ChildItem -LiteralPath (Join-Path $data 'Drafts') -Filter '*.json').FullName -Destination (Join-Path $run 'synthetic-initial-checkpoint.json')
 $values=@{ GHPB_SUSTAINED_APP=$Executable; GHPB_SUSTAINED_DATA=$data; GHPB_SUSTAINED_OUTPUT=$output; GHPB_SUSTAINED_SOURCE=$SourceRevision; GHPB_SUSTAINED_CONDITION=$Condition; GHPB_SUSTAINED_MODE=$Mode; GHPB_SUSTAINED_TRACE_DETAIL=$TraceDetail; GHPB_SUSTAINED_EARLY_SCROLL=$EarlyScroll; GHPB_SUSTAINED_SCROLL_PROFILE=$ScrollProfile }
 $previous=@{}
+$values.GHPB_SUSTAINED_READINESS_KEY_DELAY_MS = $ReadinessKeyDelayMs.ToString()
+$values.GHPB_SUSTAINED_READINESS_SURFACE = $ReadinessSurface
 try {
     foreach($name in $values.Keys) { $previous[$name]=[Environment]::GetEnvironmentVariable($name,'Process'); [Environment]::SetEnvironmentVariable($name,$values[$name],'Process') }
     & dotnet @command *> (Join-Path $run 'test.log')

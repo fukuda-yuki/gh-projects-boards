@@ -57,7 +57,7 @@ $summary | Select-Object source,condition,traceComplete,typed,flushRequests,dura
 # and make the caller select the sections whose acceptance it is evaluating.
 $profile = if($plan.scrollProfile) { $plan.scrollProfile } else { 'stress' }
 $scrollSection = switch($profile) { 'stress' { 'stress_scroll' }; 'continuous' { 'continuous_progress' }; default { 'normal_scroll' } }
-if (-not $RequiredSections) { $RequiredSections = @('functional', $scrollSection, 'observation_quality') }
+if (-not $RequiredSections) { $RequiredSections = @('functional', $(if($plan.mode -eq 'readiness'){'editor_readiness'}else{$scrollSection}), 'observation_quality') }
 function Result($status, $scope) { return @{status=$status; scope=$scope} }
 $evaluation = @{
     source=$plan.source; profile=$profile; condition=$plan.condition; required=$RequiredSections
@@ -88,6 +88,16 @@ if (Test-Path -LiteralPath (Join-Path $Observations 'desktop/frames.json')) {
         $evaluation[$scrollSection].counts=$desktop.counts
         $evaluation.observation_quality.status=if($complete -and $desktop.observationQuality -eq 'PASS' -and
             $eligible.Count -gt 0 -and @($eligible | Where-Object { $_.status -eq 'INCONCLUSIVE' }).Count -eq 0){'PASS'}else{'INCONCLUSIVE'}
+    }
+}
+if ($plan.mode -eq 'readiness' -and (Test-Path -LiteralPath (Join-Path $Observations 'readiness-desktop/frames.json'))) {
+    & python (Join-Path $PSScriptRoot 'Measure-SustainedDesktop.py') $Observations
+    if ($LASTEXITCODE -eq 0) {
+        $readiness=Get-Content -Raw -LiteralPath (Join-Path $Observations 'editor-readiness-measurements.json') | ConvertFrom-Json
+        $evaluation.editor_readiness=@{status=$readiness.status; scope=$readiness.boundary; selectionVisibleP95Ms=$readiness.selectionVisibleP95Ms;
+            continuingNativeP95Ms=$readiness.continuingNativeP95Ms; selectionSamples=$readiness.selectionSamples; continuingSamples=$readiness.continuingSamples; keyDelayMs=$readiness.keyDelayMs}
+        $evaluation.observation_quality.status=if($complete -and $readiness.observationQuality -eq 'PASS' -and
+            @($readiness.trials | Where-Object { -not $_.contentReviewed }).Count -eq 0){'PASS'}else{'INCONCLUSIVE'}
     }
 }
 $evaluation.overall=if(@($RequiredSections | Where-Object { $evaluation[$_].status -eq 'FAIL' }).Count -gt 0){'FAIL'}

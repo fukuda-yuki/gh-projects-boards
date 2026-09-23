@@ -2,7 +2,8 @@
 
 Exact viewport-content matches use settled images for the same requested offsets.
 They remain INCONCLUSIVE until their task/value content is independently reviewed.
-The review file records the exact image digest, so a different run cannot inherit it.
+Reviews identify exact original RGB crops. Identical reviewed content can be
+recognized in another run; its timestamps and capture quality remain independent.
 """
 import argparse
 import bisect
@@ -17,6 +18,100 @@ import numpy as np
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def analyze_readiness(root):
+    plan = read(root / "plan.json")
+    frequency = plan["frequency"]
+    driver = [json.loads(line) for line in (root / "driver.jsonl").read_text(encoding="utf-8-sig").splitlines()]
+    trials = [event["detail"] for event in driver if event["kind"] == "editor-readiness"]
+    frames = read(root / "readiness-desktop/frames.json")
+    lifetime = read(root / "readiness-desktop/lifetime.json")
+    times = [frame["present"] for frame in frames]
+    reviews = read(root / "editor-content-review.json") if (root / "editor-content-review.json").exists() else {}
+    quality = bool(lifetime["complete"] and not lifetime["saturated"] and frames
+                   and len(trials) == len(plan["readinessSchedule"])
+                   and all(0 < f["present"] <= f["acquired"] <= f["copied"] and not f["masked"] for f in frames)
+                   and all(a < b for a, b in zip(times, times[1:])))
+    records = []
+    for trial, declared in zip(trials, plan["readinessSchedule"]):
+        quality &= all(trial[key] == declared[key] for key in ("Index", "Row", "Column", "Text"))
+        rect, viewport = trial["rectangle"], trial["viewport"]
+        x, y = rect["X"] - viewport["X"], rect["Y"] - viewport["Y"]
+        crop = (x + 2, y + 2, x + rect["Width"] - 2, y + rect["Height"] - 2)
+        selected = [frame for frame in frames if trial["begin"] - frequency / 5 <= frame["present"] <= trial["end"]]
+        hashes = {}
+        dark = True
+        for frame in selected:
+            if frame["path"] in hashes:
+                continue
+            with Image.open(root / "readiness-desktop" / frame["path"]) as image:
+                pixels = image.crop(crop).convert("RGB")
+                rgb = np.asarray(pixels)
+                dark &= bool(np.mean(rgb.max(axis=2) < 100) > .5)
+                hashes[frame["path"]] = (hashlib.sha256(pixels.tobytes()).hexdigest(),
+                                         hashlib.sha256((rgb.min(axis=2) > 160).tobytes()).hexdigest())
+        before = next((f for f in reversed(selected) if f["present"] <= trial["begin"]), None)
+        after = [f for f in selected if f["present"] > trial["begin"]]
+        # These are review candidates, not presumed correct results. A passive
+        # observer may have no new desktop frame after the delayed UIA readback.
+        references = {hashes[f["path"]][0]: f["path"] for f in after}
+        known, incorrect = set(), set()
+        for frame in selected:
+            digest, ink = hashes[frame["path"]]
+            review = reviews.get(f'{trial["Index"]}:{digest}', {})
+            if review.get("frame") != frame["path"] or review.get("expected") != trial["expected"]:
+                continue
+            if review.get("correct") is True:
+                known.add(ink)
+            elif review.get("correct") is False:
+                incorrect.add(ink)
+        quality &= dark and not bool(known & incorrect)
+        expected = next((f for f in after if hashes[f["path"]][1] in known), None)
+        changed = next((f for f in after if before and hashes[f["path"]][0] != hashes[before["path"]][0]), None)
+        expected_ms = (expected["present"] - trial["begin"]) * 1000 / frequency if expected else None
+        changed_ms = (changed["present"] - trial["begin"]) * 1000 / frequency if changed else None
+        complete = bool(after) and all(f["accumulated"] == 1 for f in after if expected is None or f["present"] <= expected["present"])
+        # A focus/caret frame may still contain the old value. Only independently
+        # rejected content and the unchanged pre-input value exclude an earlier
+        # result; an unreviewed changed frame remains a possible early result.
+        rejected = incorrect | ({hashes[before["path"]][1]} if before else set())
+        quality &= not bool(known & rejected)
+        possible = next((f for f in after if hashes[f["path"]][1] not in rejected), None)
+        earliest_possible_ms = (possible["present"] - trial["begin"]) * 1000 / frequency if possible and complete else None
+        records.append(dict(index=trial["Index"], row=trial["Row"], column=trial["Column"], expectedText=trial["expected"],
+                            matched=trial["matched"], classBefore=trial["classBefore"], crop=crop,
+                            nativeMs=trial.get("nativeMilliseconds"), delayedNativeReadbackMs=trial.get("delayedNativeReadbackMs"),
+                            expectedAtMs=expected_ms, firstChangedAtMs=changed_ms,
+                            earliestPossibleExpectedAtMs=earliest_possible_ms,
+                            completeUpdates=complete, contentReviewed=expected is not None, before=before["path"] if before else None,
+                            expected=expected["path"] if expected else None, references=references))
+    def percentile(values):
+        import math
+        return sorted(values)[math.ceil(len(values) * .95) - 1] if values else None
+    pixels = [r["expectedAtMs"] for r in records if r["expectedAtMs"] is not None]
+    earliest = [r["earliestPossibleExpectedAtMs"] for r in records if r["earliestPossibleExpectedAtMs"] is not None]
+    native = [event["detail"]["milliseconds"] for event in driver if event["kind"] == "typed-value" and event["detail"]["measured"]]
+    visible_p95, native_p95 = percentile(pixels), percentile(native)
+    if any(not r["matched"] for r in records):
+        status = "FAIL"
+    elif not quality or len(pixels) != len(plan["readinessSchedule"]) or not native:
+        status = "INCONCLUSIVE"
+    elif visible_p95 <= 100 and native_p95 <= 100:
+        status = "PASS"
+    elif native_p95 > 100 or (len(earliest) == len(records) and percentile(earliest) > 100):
+        status = "FAIL"
+    else:
+        status = "INCONCLUSIVE"
+    control = plan.get("readinessSurface") == "filter-control"
+    result = dict(source=plan["source"], condition=plan["condition"], status="NOT_RUN" if control else status,
+                  diagnosticOnly=control, surface=plan.get("readinessSurface", "sheet"),
+                  observationQuality="PASS" if quality else "INCONCLUSIVE", selectionVisibleP95Ms=visible_p95,
+                  continuingNativeP95Ms=native_p95, selectionSamples=len(records), continuingSamples=len(native),
+                  keyDelayMs=plan.get("readinessKeyDelayMs", 0), trials=records,
+                  boundary="Native selection dispatch including fixed click-to-key interval and activation, to independently reviewed DXGI cell pixels. Continuing native-value input is a separate distribution; no physical scanout claim.")
+    (root / "editor-readiness-measurements.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    return result
 
 
 def analyze(root):
@@ -113,7 +208,15 @@ def analyze(root):
         begin, end = record["begin"], record["end"]
         before_index = bisect.bisect_right(times, begin) - 1
         before = frames[before_index] if before_index >= 0 else None
-        after = [f for f in frames[max(0, before_index + 1):] if begin < f["present"] < end]
+        response_end = end
+        if profile == "continuous":
+            deadline_frame = bisect.bisect_left(times, begin + frequency / 10)
+            if deadline_frame < len(frames):
+                # The next scheduled input can arrive just before this deadline.
+                # Retain the first desktop update at/after 100 ms so a late prior
+                # response is not censored into an inconclusive empty window.
+                response_end = max(end, frames[deadline_frame]["present"] + 1)
+        after = [f for f in frames[max(0, before_index + 1):] if begin < f["present"] < response_end]
         expected = next((f for f in after if f["inkHash"] in known_ink[record["state"]]), None)
         changed = next((f for f in after if before and f["contentHash"] != before["contentHash"]), None)
         unchanged = [f for f in after if changed is None or f["present"] < changed["present"]]
@@ -137,7 +240,7 @@ def analyze(root):
             status = "FAIL"
         else:
             status = "INCONCLUSIVE"
-        record.update(status=status, noOp=no_op, lastOldAtMs=old_ms, expectedAtMs=expected_ms,
+        record.update(status=status, noOp=no_op, responseWindowEnd=response_end, lastOldAtMs=old_ms, expectedAtMs=expected_ms,
                       firstChangedAtMs=(changed["present"] - begin) * 1000 / frequency if changed else None,
                       completeUpdates=complete_updates, contentReviewed=reviewed,
                       incorrectAfterDeadline=incorrect["path"] if incorrect else None,
@@ -158,5 +261,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("observations", type=Path)
     args = parser.parse_args()
-    result = analyze(args.observations)
-    print(json.dumps({k: v for k, v in result.items() if k not in ("commands", "references")}, indent=2))
+    result = analyze_readiness(args.observations) if read(args.observations / "plan.json")["mode"] == "readiness" else analyze(args.observations)
+    print(json.dumps({k: v for k, v in result.items() if k not in ("commands", "references", "trials")}, indent=2))
