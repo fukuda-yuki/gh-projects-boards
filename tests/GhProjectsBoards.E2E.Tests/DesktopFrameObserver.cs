@@ -18,14 +18,16 @@ internal sealed class DesktopFrameObserver : IDisposable
     private readonly string output;
     private readonly Rectangle bounds;
     private const int MaximumFrames = 2048;
-    private sealed record Frame(long Begin, long Acquired, long Copied, long Present, uint Accumulated, bool Masked, byte[] Pixels);
+    private sealed record Frame(long Begin, long Acquired, long Copied, long Retained, long Present, uint Accumulated, bool Masked, byte[] Pixels,
+        long ObserverGcPauseTicks, int ObserverGen0, int ObserverGen1, int ObserverGen2);
     public DesktopFrameObserver(Rectangle bounds, string output)
     {
         this.bounds = bounds; this.output = output;
         if (Directory.Exists(output)) throw new InvalidOperationException("Retain prior desktop observations.");
         Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(output, "environment.json"), JsonSerializer.Serialize(new { bounds.X, bounds.Y, bounds.Width, bounds.Height,
-            frequency = Stopwatch.Frequency, boundary = "DXGI desktop LastPresentTime and independent CPU pixel-copy completion; not physical scanout" }));
+            frequency = Stopwatch.Frequency, observerGcPauseTickFrequency = TimeSpan.TicksPerSecond, observerCountersScope = "external observer process only",
+            boundary = "DXGI desktop LastPresentTime and independent CPU pixel-copy completion; not physical scanout" }));
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         capture = Task.Run(() => Capture(ready));
         ready.Task.WaitAsync(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
@@ -53,8 +55,9 @@ internal sealed class DesktopFrameObserver : IDisposable
                 images.Add(frame.Pixels, path);
                 }
                 else path = existing;
-                index.Add(new { index = i, begin = frame.Begin, acquired = frame.Acquired, copied = frame.Copied,
-                    present = frame.Present, accumulated = frame.Accumulated, masked = frame.Masked, path });
+                index.Add(new { index = i, begin = frame.Begin, acquired = frame.Acquired, copied = frame.Copied, retained = frame.Retained,
+                    present = frame.Present, accumulated = frame.Accumulated, masked = frame.Masked, path,
+                    observerGcPauseTicks = frame.ObserverGcPauseTicks, observerGen0 = frame.ObserverGen0, observerGen1 = frame.ObserverGen1, observerGen2 = frame.ObserverGen2 });
             }
             File.WriteAllText(Path.Combine(output, "frames.json"), JsonSerializer.Serialize(index));
             File.WriteAllText(Path.Combine(output, "lifetime.json"), JsonSerializer.Serialize(new { count = frames.Count, uniqueImages = images.Count,
@@ -118,7 +121,11 @@ internal sealed class DesktopFrameObserver : IDisposable
                     var copied = Stopwatch.GetTimestamp();
                     if (previousPixels is not null && pixels.AsSpan().SequenceEqual(previousPixels)) pixels = previousPixels;
                     else { previousPixels = pixels; scratch = new byte[pixels.Length]; }
-                    frames.Add(new(begin, acquired, copied, info.Present, info.Accumulated, info.Masked != 0, pixels));
+                    // These are counters from the observer process, not the product.
+                    // Retention/GC stalls must not be mistaken for missing app progress.
+                    var retained = Stopwatch.GetTimestamp();
+                    frames.Add(new(begin, acquired, copied, retained, info.Present, info.Accumulated, info.Masked != 0, pixels,
+                        GC.GetTotalPauseDuration().Ticks, GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)));
                 }
                 finally { Release(ref texture); Release(ref resource); Check(Method<Finish>(duplication, 14)(duplication)); }
             }

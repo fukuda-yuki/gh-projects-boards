@@ -195,7 +195,8 @@ def analyze(root):
     # still tied to the original RGB image, never inferred from a changed gutter.
     known_ink = defaultdict(dict)
     incorrect_ink = defaultdict(dict)
-    for digest, review in reviews.items():
+    for key, review in reviews.items():
+        digest = review.get("sha256", key)
         path = review.get("frame")
         if path not in hashes or hashes[path][0] != digest or not review.get("state"):
             continue
@@ -220,6 +221,11 @@ def analyze(root):
         after = [f for f in frames[max(0, before_index + 1):] if begin < f["present"] < response_end]
         expected = next((f for f in after if f["inkHash"] in known_ink[record["state"]]), None)
         changed = next((f for f in after if before and f["contentHash"] != before["contentHash"]), None)
+        # A hover fade changes both RGB and antialiased glyph edges. An explicitly
+        # reviewed old/wrong viewport cannot count as an earlier possible result.
+        # Unreviewed changed content must continue to leave that possibility open.
+        rejected = set(incorrect_ink[record["state"]]) | ({before["inkHash"]} if before else set())
+        possible = next((f for f in after if f["inkHash"] not in rejected), None)
         unchanged = [f for f in after if changed is None or f["present"] < changed["present"]]
         old_ms = (unchanged[-1]["present"] - begin) * 1000 / frequency if unchanged else None
         expected_ms = (expected["present"] - begin) * 1000 / frequency if expected else None
@@ -237,12 +243,13 @@ def analyze(root):
             status = "FAIL"
         elif expected_ms is not None and expected_ms <= 100 and reviewed:
             status = "PASS"
-        elif changed is not None and (changed["present"] - begin) * 1000 / frequency > 100 and complete_updates and reviewed:
+        elif possible is not None and (possible["present"] - begin) * 1000 / frequency > 100 and complete_updates and reviewed:
             status = "FAIL"
         else:
             status = "INCONCLUSIVE"
         record.update(status=status, noOp=no_op, responseWindowEnd=response_end, lastOldAtMs=old_ms, expectedAtMs=expected_ms,
                       firstChangedAtMs=(changed["present"] - begin) * 1000 / frequency if changed else None,
+                      earliestPossibleExpectedAtMs=(possible["present"] - begin) * 1000 / frequency if possible and complete_updates else None,
                       completeUpdates=complete_updates, contentReviewed=reviewed,
                       incorrectAfterDeadline=incorrect["path"] if incorrect else None,
                       before=before["path"] if before else None, expected=expected["path"] if expected else None,
