@@ -66,13 +66,13 @@ internal sealed class RowViewTests
         View(w, p, new()); projection.Reapply(w, p); Assert.That(projection.Generation, Is.Not.EqualTo(generation));
         w.Undo("P1"); foreach (var row in rows) { Assert.That(w.Value(row.Cells[1]), Is.EqualTo("A0")); Assert.That(w.Value(row.Cells[3]), Is.EqualTo("C0")); }
     }
-    [Test]
-    public void CommittedAndPendingEditsDoNotReorderNewRowsStayUntilReapply()
+    [TestCase(false), TestCase(true)]
+    public void CommittedAndPendingEditsDoNotReorderNewRowsStayUntilReapply(bool retainCanonicalRows)
     {
         var p = EditingTests.Registration(count: 2); var w = Work(p); View(w, p, new("Title", Title: "Issue"));
         var view = new RowProjection(p.Snapshot.Id); view.Reapply(w, p); var rows = w.Open(p);
-        w.SetBuffer(rows[0].Cells[0], "pending"); Assert.That(view.NeedsReapply(w, p), Is.False);
-        w.Commit("P1", rows[1].Cells[0], "hidden"); Assert.That(view.NeedsReapply(w, p), Is.True);
+        w.SetBuffer(rows[0].Cells[0], "pending"); Assert.That(view.NeedsReapply(w, p, retainCanonicalRows ? rows : null), Is.False);
+        w.Commit("P1", rows[1].Cells[0], "hidden"); Assert.That(view.NeedsReapply(w, p, retainCanonicalRows ? rows : null), Is.True);
         Assert.That(view.Resolve(w.Open(p)).Select(r => r.ItemId), Is.EqualTo(new[] { "P1T1", "P1T2" }));
         var id = w.AddRow(p); view.IncludeNew(w.Open(p), [id]); Assert.That(view.Ids.Last(), Is.EqualTo(id)); Assert.That(view.Temporary, Does.Contain(id));
         view.Reapply(w, p); Assert.That(view.Ids, Is.EqualTo(new[] { "P1T1" })); Assert.That(view.Temporary, Is.Empty);

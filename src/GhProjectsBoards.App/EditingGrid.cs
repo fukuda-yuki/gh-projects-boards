@@ -715,7 +715,7 @@ internal sealed partial class EditingGrid : Grid
             if (projection.Problem is { } problem) viewNotice.Text += " / " + problem;
             if (deferredViewNotice is not null) viewNotice.Text = deferredViewNotice + "\n" + viewNotice.Text;
             bool needsReapply;
-            using (diagnostics?.Span("view-fingerprint")) needsReapply = projection.NeedsReapply(session.Workspace, registration);
+            using (diagnostics?.Span("view-fingerprint")) needsReapply = projection.NeedsReapply(session.Workspace, registration, canonicalRows);
             reapplyButton.Content = needsReapply ? "変更した値で再適用" : "再適用";
             if (needsReapply) viewNotice.Text += " / 値が変わりました。行表示の再適用が必要です（Undoは非表示行にも反映）。";
             viewStrip.Visibility = needsReapply || projection.Problem is not null || deferredViewNotice is not null || temporary > 0 ? Visibility.Visible : Visibility.Collapsed;

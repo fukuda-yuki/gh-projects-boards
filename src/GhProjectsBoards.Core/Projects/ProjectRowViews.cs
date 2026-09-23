@@ -29,7 +29,8 @@ internal sealed class RowProjection(ScopedId project)
         Ids = Problem is null ? w.EvaluateRows(p).Select(r => r.ItemId).ToArray() : [];
         fingerprint = w.ViewFingerprint(p); Temporary.Clear(); Generation++;
     }
-    public bool NeedsReapply(EditingWorkspace w, ProjectRegistration p) => fingerprint != w.ViewFingerprint(p);
+    public bool NeedsReapply(EditingWorkspace w, ProjectRegistration p, EditRow[]? canonicalRows = null)
+        => fingerprint != w.ViewFingerprint(p, canonicalRows);
     public void Promote(EditingWorkspace w)
     {
         var mapping = w.Journal.Where(b => b.Project == Project).SelectMany(b => b.Creations ?? []).Where(c => c.Completed && c.ItemId is not null && !w.LocalRows.Any(r => r.Id == c.LocalId)).DistinctBy(c => c.LocalId).ToDictionary(c => c.LocalId, c => c.ItemId!);
@@ -146,14 +147,17 @@ internal sealed partial class EditingWorkspace
         });
         return result;
     }
-    public string ViewFingerprint(ProjectRegistration p)
+    public string ViewFingerprint(ProjectRegistration p, EditRow[]? canonicalRows = null)
     {
         var definition = RowView(p);
         var fieldIds = (definition.Filters ?? []).Select(f => f.FieldId).ToHashSet();
         if (definition.Sort == "Field") fieldIds.Add(definition.FieldId!);
         var title = definition.Sort == "Title" || definition.Title.Length > 0;
         return JsonSerializer.Serialize(new { Definition = definition, Definitions = ColumnDefinitions(p),
-            Rows = Open(p).Select(r => new { r.ItemId, Values = r.Cells.Where(c => c.Key is not null
+            // The sheet already owns the current canonical row identities. A
+            // pending-text transition must not reconstruct all native field
+            // descriptions just to compare committed sort/filter values.
+            Rows = (canonicalRows ?? Open(p)).Select(r => new { r.ItemId, Values = r.Cells.Where(c => c.Key is not null
                 && (c.Key.Kind is "Title" or "LocalTitle" ? title : c.Key.FieldId is { } id && fieldIds.Contains(id))).Select(EffectiveRowValue) }) });
     }
     public bool RowHasWork(EditRow row) => row.IsLocal || row.Cells.Any(c => Changed(c) || Buffer(c) is not null || Field(c)?.Conflict == true);
