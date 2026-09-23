@@ -109,6 +109,7 @@ def analyze_readiness(root):
                   observationQuality="PASS" if quality else "INCONCLUSIVE", selectionVisibleP95Ms=visible_p95,
                   continuingNativeP95Ms=native_p95, selectionSamples=len(records), continuingSamples=len(native),
                   keyDelayMs=plan.get("readinessKeyDelayMs", 0), trials=records,
+                  dispatch=plan.get("readinessDispatch", "separate"),
                   boundary="Native selection dispatch including fixed click-to-key interval and activation, to independently reviewed DXGI cell pixels. Continuing native-value input is a separate distribution; no physical scanout claim.")
     (root / "editor-readiness-measurements.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result

@@ -10,9 +10,11 @@ param(
     [ValidateSet('none','immediate','settled')][string]$EarlyScroll = 'none',
     [ValidateSet('stress','near1','near3','continuous')][string]$ScrollProfile = 'stress',
     [ValidateRange(0, 100)][int]$ReadinessKeyDelayMs = 20,
-    [ValidateSet('sheet','filter-control')][string]$ReadinessSurface = 'sheet'
+    [ValidateSet('sheet','filter-control')][string]$ReadinessSurface = 'sheet',
+    [ValidateSet('separate','batch')][string]$ReadinessDispatch = 'separate'
 )
 $ErrorActionPreference = 'Stop'
+if ($ReadinessDispatch -eq 'batch' -and $ReadinessKeyDelayMs -ne 0) { throw 'Batch selection uses a declared zero key delay.' }
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not [IO.Path]::IsPathFullyQualified($Executable) -or -not (Test-Path -LiteralPath $Executable)) { throw 'Use an existing absolute executable path.' }
 $run = Join-Path $repo "TestResults/issue61-65/$RunId"
@@ -33,6 +35,7 @@ $sourceFiles = @(git -C $repo ls-files --cached --others --exclude-standard | So
     sourceFiles=$sourceFiles; executable=$Executable; condition=$Condition; mode=$Mode; traceDetail=$TraceDetail; earlyScroll=$EarlyScroll; scrollProfile=$ScrollProfile; dataRoot=$data; dataKind='isolated synthetic Gantt fixture'
     readinessKeyDelayMs=$ReadinessKeyDelayMs
     readinessSurface=$ReadinessSurface
+    readinessDispatch=$ReadinessDispatch
     flags=@{recycledPresentation=$env:GHPB_RECYCLED_PRESENTATION; desktopObserver=$env:GHPB_SUSTAINED_DESKTOP_OBSERVER; threadTiming=$env:GHPB_SHEET_THREAD_TIMING;
         renderingCallbacks=$env:GHPB_SHEET_RENDER_CALLBACKS}
     os=[Environment]::OSVersion.VersionString; architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
@@ -52,6 +55,7 @@ $values=@{ GHPB_SUSTAINED_APP=$Executable; GHPB_SUSTAINED_DATA=$data; GHPB_SUSTA
 $previous=@{}
 $values.GHPB_SUSTAINED_READINESS_KEY_DELAY_MS = $ReadinessKeyDelayMs.ToString()
 $values.GHPB_SUSTAINED_READINESS_SURFACE = $ReadinessSurface
+$values.GHPB_SUSTAINED_READINESS_DISPATCH = $ReadinessDispatch
 try {
     foreach($name in $values.Keys) { $previous[$name]=[Environment]::GetEnvironmentVariable($name,'Process'); [Environment]::SetEnvironmentVariable($name,$values[$name],'Process') }
     & dotnet @command *> (Join-Path $run 'test.log')

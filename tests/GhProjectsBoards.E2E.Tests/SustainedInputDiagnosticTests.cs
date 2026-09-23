@@ -33,6 +33,9 @@ public sealed class SustainedInputDiagnosticTests
         var scrollProfile = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_SCROLL_PROFILE") ?? "stress";
         var readinessKeyDelayMs = int.Parse(Environment.GetEnvironmentVariable("GHPB_SUSTAINED_READINESS_KEY_DELAY_MS") ?? "20");
         var readinessSurface = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_READINESS_SURFACE") ?? "sheet";
+        var readinessDispatch = Environment.GetEnvironmentVariable("GHPB_SUSTAINED_READINESS_DISPATCH") ?? "separate";
+        Assert.That(readinessDispatch, Is.AnyOf("separate", "batch"));
+        Assert.That(readinessDispatch != "batch" || readinessKeyDelayMs == 0, Is.True);
         Assert.That(readinessSurface, Is.AnyOf("sheet", "filter-control"));
         Assert.That(scrollProfile, Is.AnyOf("stress", "near1", "near3", "continuous"));
         Assert.That(scrollProfile == "stress" || mode == "standard" && earlyScroll == "immediate" && desktopObserver, Is.True,
@@ -55,7 +58,7 @@ public sealed class SustainedInputDiagnosticTests
             app, source = Required("SOURCE"), condition, mode, traceDetail, earlyScroll, desktopObserver, scrollProfile,
             recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") == "1", data, tasks = 1000, people = 20,
             scrollSchedule = scrollProfile == "stress" ? null : OrdinaryScrollSchedule(scrollProfile),
-            readinessSchedule = mode == "readiness" ? ReadinessSchedule() : null, readinessKeyDelayMs, readinessSurface,
+            readinessSchedule = mode == "readiness" ? ReadinessSchedule() : null, readinessKeyDelayMs, readinessSurface, readinessDispatch,
             selectionObservation = "Passive DXGI throughout selection; native-value/focus readback is delayed 350 ms and cannot supply selection latency.",
             fields = 6, checkpointBytes = new FileInfo(checkpoint).Length,
             pending = before.RootElement.GetProperty("Fields").EnumerateArray().Count(f => f.GetProperty("Buffer").ValueKind != JsonValueKind.Null),
@@ -197,7 +200,7 @@ public sealed class SustainedInputDiagnosticTests
                     if (control) Element("GridQuickFilterApply").Focus();
                     NativePointer.Position(window!, new Point(rectangle.Left + rectangle.Width / 2, rectangle.Top + rectangle.Height / 2));
                     Thread.Sleep(200); // Retained old pixels; selection has not begun.
-                    var (begin, keyBegin, sent) = NativePointer.SelectAndType((ushort)(trial.Text[0]), readinessKeyDelayMs);
+                    var (begin, keyBegin, sent) = NativePointer.SelectAndType((ushort)(trial.Text[0]), readinessKeyDelayMs, readinessDispatch == "batch");
                     // E1 selection ends at independent visible pixels. Tree/value
                     // polling in that interval would itself contend with rendering.
                     // Validate identity once afterwards; sustained input below owns
@@ -209,7 +212,7 @@ public sealed class SustainedInputDiagnosticTests
                     var matched = classAfter == "TextBox" && current.Properties.HasKeyboardFocus.Value && actual == expected;
                     var native = Stopwatch.GetTimestamp();
                     Thread.Sleep(70); // Retain the independently checked final reference.
-                    Record("editor-readiness", new { trial.Index, trial.Row, trial.Column, trial.Text, id, readinessSurface, begin, keyBegin, sent, native, readinessKeyDelayMs,
+                    Record("editor-readiness", new { trial.Index, trial.Row, trial.Column, trial.Text, id, readinessSurface, readinessDispatch, begin, keyBegin, sent, native, readinessKeyDelayMs,
                         end = Stopwatch.GetTimestamp(), matched, expected, actual, textBefore, classBefore, classAfter,
                         viewport = bounds, rectangle, delayedNativeReadbackMs = Stopwatch.GetElapsedTime(begin, native).TotalMilliseconds,
                         boundary = "Native mouse-down dispatch through independent visible pixels. Fixed key interval and editor activation are included. Native identity/value readback is deliberately delayed and is not a latency sample." });

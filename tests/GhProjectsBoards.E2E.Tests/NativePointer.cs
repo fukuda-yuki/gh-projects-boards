@@ -14,7 +14,7 @@ internal static class NativePointer
         Assert.That(GetForegroundWindow(), Is.EqualTo(window.Properties.NativeWindowHandle.Value));
         Move(point); FlaUI.Core.Input.Wait.UntilInputIsProcessed();
     }
-    internal static (long Begin, long KeyBegin, long Sent) SelectAndType(ushort key, int keyDelayMs)
+    internal static (long Begin, long? KeyBegin, long Sent) SelectAndType(ushort key, int keyDelayMs, bool batch = false)
     {
         // A declared physical key interval is inside the selection boundary.
         // No focus polling, extra click or character replay hides activation.
@@ -26,6 +26,18 @@ internal static class NativePointer
             new Input { Type = 1, Keyboard = new() { Key = key } },
             new Input { Type = 1, Keyboard = new() { Key = key, Flags = 0x0002 } }
         };
+        if (batch)
+        {
+            Assert.That(keyDelayMs, Is.Zero, "A single native batch has no declared inter-call delay.");
+            var inputs = pointer.Concat(keyboard).ToArray();
+            var batchBegin = Stopwatch.GetTimestamp();
+            var batchSent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+            var batchEnd = Stopwatch.GetTimestamp();
+            Assert.That(batchSent, Is.EqualTo(inputs.Length), "The ordered pointer/key sequence must be sent exactly once.");
+            // SendInput preserves array order. It does not expose the individual
+            // key's actual delivery time; do not manufacture that timestamp.
+            return (batchBegin, null, batchEnd);
+        }
         var begin = Stopwatch.GetTimestamp();
         Assert.That(SendInput((uint)pointer.Length, pointer, Marshal.SizeOf<Input>()), Is.EqualTo(pointer.Length));
         while (Stopwatch.GetElapsedTime(begin).TotalMilliseconds < keyDelayMs) Thread.Sleep(1);
