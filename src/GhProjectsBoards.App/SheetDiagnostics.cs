@@ -41,12 +41,12 @@ internal sealed class SheetDiagnostics
         snapshot = state;
         if (attached) return;
         attached = true; visualCounts = visualWalk; previousRendering = 0; previousThreadCpu = null;
-        if (renderingCallbacks) CompositionTarget.Rendering += Rendering;
+        if (renderingCallbacks) { CompositionTarget.Rendering += Rendering; CompositionTarget.Rendered += Rendered; }
         Record("grid-loaded", state(false));
     }
     internal void Detach()
     {
-        if (attached) CompositionTarget.Rendering -= Rendering;
+        if (attached) { CompositionTarget.Rendering -= Rendering; CompositionTarget.Rendered -= Rendered; }
         attached = false;
         Record("grid-unloaded", new { pendingRenderingBoundaries = rendering.Count });
         rendering.Clear(); snapshot = null;
@@ -69,6 +69,9 @@ internal sealed class SheetDiagnostics
         var countVisuals = visualCounts; visualCounts = false;
         Record("rendering-boundary", new { spans = pending, state = snapshot?.Invoke(countVisuals), includesVisualWalk = countVisuals });
     }
+    private void Rendered(object? sender, RenderedEventArgs args) => Record("rendered-callback", new {
+        frameDurationTicks = args.FrameDuration.Ticks,
+        boundary = "XAML reports its completed frame work; not desktop presentation or physical scanout." });
 
     [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentThread();
     [DllImport("kernel32.dll")]

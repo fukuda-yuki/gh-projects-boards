@@ -1169,6 +1169,8 @@ internal sealed partial class EditingGrid : Grid
             MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             IsReadOnly = !cell.Editable && !owner.TypedPlanning(cell); Refresh();
+            if (owner.diagnostics is not null)
+                TextChanged += (_, _) => owner.diagnostics.Record("text-changed", new { row, column, length = Text.Length, restoring });
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
             TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.applyProblemTip.IsOpen = false; owner.selectionMode.Text = "IME変換中"; };
             TextCompositionEnded += (_, _) =>
@@ -1225,6 +1227,7 @@ internal sealed partial class EditingGrid : Grid
         protected override void OnPreviewKeyDown(KeyRoutedEventArgs e)
         {
             if (!owner.CurrentEditor(row, column, this)) return;
+            owner.diagnostics?.Record("editor-preview-key", new { row, column, Editing, composing });
             if (composing) { base.OnPreviewKeyDown(e); return; }
             if (!Editing && e.Key == VirtualKey.F2 && (cell.Editable || owner.TypedPlanning(cell))) { Editing = true; owner.SetCellBuffer(cell, owner.TypedDate(cell) ? owner.ExactDateText(cell, row) : Text); Refresh(); SelectAll(); owner.Update("pending-state"); _ = owner.FlushDraftsAsync("edit-start"); e.Handled = true; }
             else if (Editing && e.Key == VirtualKey.Escape)
