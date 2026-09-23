@@ -61,12 +61,19 @@ internal static class SheetNativeInput
     {
         var point = await PointFor(id, .3); Move(point);
         foreach (var modifier in modifiers) Key(modifier, true);
+        var pressed = false;
         try
         {
-            await PointerStep(UIElement.PointerPressedEvent, () => Button(true));
-            await PointerStep(UIElement.PointerReleasedEvent, () => Button(false));
+            await PointerStep(UIElement.PointerPressedEvent, () => { Button(true); pressed = true; });
+            await PointerStep(UIElement.PointerReleasedEvent, () => { Button(false); pressed = false; });
         }
-        finally { foreach (var modifier in modifiers.Reverse()) Key(modifier, false); }
+        finally
+        {
+            // A missing routed event can time out after SendInput succeeded.
+            // Release the owned press before another test uses the desktop.
+            if (pressed) Button(false);
+            foreach (var modifier in modifiers.Reverse()) Key(modifier, false);
+        }
         await Ui.Run(() => { });
     }
     internal static async Task Drag(string from, string to, Func<Task>? beforeRelease = null)
