@@ -233,7 +233,11 @@ def analyze(root):
         complete_updates = bool(through) and all(f["accumulated"] == 1 for f in through)
         no_op = record["requestedOffset"] is not None and abs(record["requestedOffset"] - record["priorOffset"]) < 1
         reviewed = expected is not None
-        incorrect = next((f for f in after if (f["present"] - begin) * 1000 / frequency >= 100
+        # The extended window can include the next command's correct response.
+        # That later destination must not invalidate a completed prior command.
+        # Keep wrong-content failures before the next request and late first
+        # responses in the extended window as distinct evidence.
+        incorrect = next((f for f in after if f["present"] < end and (f["present"] - begin) * 1000 / frequency >= 100
                           and f["inkHash"] in incorrect_ink[record["state"]]), None)
         if not quality or record["deliveredCount"] != 1 or not before:
             status = "INCONCLUSIVE"
