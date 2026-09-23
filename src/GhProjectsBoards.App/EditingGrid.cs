@@ -234,7 +234,7 @@ internal sealed partial class EditingGrid : Grid
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
-            BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), args.AnimationDesired,
+            BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), targetType = args.TargetElement?.GetType().Name, originalType = args.OriginalSource?.GetType().Name, args.Handled, args.TargetRect, args.AnimationDesired,
                 args.HorizontalAlignmentRatio, args.VerticalAlignmentRatio, args.HorizontalOffset, args.VerticalOffset });
         }
         Update("constructor"); _ = FlushDraftsAsync("constructor");
@@ -828,7 +828,7 @@ internal sealed partial class EditingGrid : Grid
         var lines = new List<string> { $"行 {currentRow + 1} / {layout.Visible[currentColumn].Name}  —  {selectionMode.Text}",
             $"値: {(cell.Key is null ? cell.Display : Display(session.Workspace.Value(cell)))}" };
         if (pending is not null) lines.Add($"未確定文字: {pending}\nEnter / Tabでセル確定、Escで未確定文字を取り消します。IMEの確定とセル確定は別です。");
-        if (markers[currentRow][currentColumn].Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
+        if (markers[currentRow][currentColumn]?.Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
         if (field is not null)
         {
             var observed = field.Observation;
@@ -1054,15 +1054,16 @@ internal sealed partial class EditingGrid : Grid
     private sealed class ChoiceCell : Button
     {
         private readonly EditingGrid owner;
-        private readonly int row, column;
-        private readonly EditCell cell;
+        private int row, column;
+        private EditCell cell;
         private readonly TextBlock value = new() { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         private readonly Button arrow;
         private MenuFlyout? choices;
+        private int choicesGeneration = -1;
         private bool hovered, selected;
-        public ChoiceCell(EditingGrid owner, int row, int column, EditCell cell)
+        public ChoiceCell(EditingGrid owner, int initialRow, int initialColumn, EditCell initialCell)
         {
-            this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            this.owner = owner; row = initialRow; column = initialColumn; cell = initialCell;
             HorizontalAlignment = HorizontalAlignment.Stretch; HorizontalContentAlignment = HorizontalAlignment.Stretch;
             MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             // The sheet supplies the active-cell frame, including high contrast.
@@ -1088,6 +1089,14 @@ internal sealed partial class EditingGrid : Grid
                 if (e.Key is VirtualKey.F2 or VirtualKey.F4 or VirtualKey.Space) { OpenChoices(); e.Handled = true; }
                 else owner.NavigateKey(row, column, e);
             };
+        }
+        public void Reindex(int nextRow, int nextColumn, EditCell nextCell)
+        {
+            if (nextCell.Key != cell.Key) throw new InvalidOperationException("A native editor cannot change field identity.");
+            choices?.Hide(); choices = null;
+            row = nextRow; column = nextColumn; cell = nextCell;
+            AutomationProperties.SetAutomationId(value, $"GridCell{row}_{column}Value");
+            AutomationProperties.SetAutomationId(arrow, $"GridChoiceArrow{row}_{column}");
         }
         public void ShowArrow(bool isSelected) { selected = isSelected; arrow.Opacity = selected || hovered || FocusState != FocusState.Unfocused ? 1 : 0; }
         protected override void OnPointerPressed(PointerRoutedEventArgs e)
@@ -1117,8 +1126,10 @@ internal sealed partial class EditingGrid : Grid
             if (Down(VirtualKey.Shift)) return;
             // Definitions are fixed for this retained editor's generation. Reuse the
             // native presenter on repeated opens; refresh the current-value checkmark.
-            if (choices is null)
+            if (choices is null || choicesGeneration != owner.generation)
             {
+                var request = owner.generation;
+                choicesGeneration = request;
                 choices = new MenuFlyout { AreOpenCloseAnimationsEnabled = false };
                 foreach (var option in cell.Options)
                 {
@@ -1128,7 +1139,7 @@ internal sealed partial class EditingGrid : Grid
                     AutomationProperties.SetHelpText(item, option.Name);
                     item.Click += (_, _) =>
                     {
-                        if (owner.CurrentEditor(row, column, this)) owner.Run(() => owner.session.Workspace.Commit(owner.projectId, cell, option.Id, true));
+                        if (request == owner.generation && owner.CurrentEditor(row, column, this)) owner.Run(() => owner.session.Workspace.Commit(owner.projectId, cell, option.Id, true));
                     };
                     choices.Items.Add(item);
                 }
@@ -1140,7 +1151,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private sealed class TitleCell : TextBox
     {
-        private readonly EditingGrid owner; private readonly int row, column; private readonly EditCell cell;
+        private readonly EditingGrid owner; private int row, column; private EditCell cell;
         private bool restoring; private bool composing;
         public bool Composing => composing;
         public bool Editing { get; private set; }
@@ -1152,9 +1163,9 @@ internal sealed partial class EditingGrid : Grid
             if (GetTemplateChild("ContentElement") is ScrollViewer scroll)
                 scroll.Template = (ControlTemplate)Application.Current.Resources["SheetTextScrollTemplate"];
         }
-        public TitleCell(EditingGrid owner, int row, int column, EditCell cell)
+        public TitleCell(EditingGrid owner, int initialRow, int initialColumn, EditCell initialCell)
         {
-            this.owner = owner; this.row = row; this.column = column; this.cell = cell;
+            this.owner = owner; row = initialRow; column = initialColumn; cell = initialCell;
             MinHeight = 26; Padding = new(8, 2, 8, 2); BorderThickness = new(0); CornerRadius = new(0);
             Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             IsReadOnly = !cell.Editable && !owner.TypedPlanning(cell); Refresh();
@@ -1186,6 +1197,11 @@ internal sealed partial class EditingGrid : Grid
                 }
                 _ = owner.FlushDraftsAsync("text-changing");
             };
+        }
+        public void Reindex(int nextRow, int nextColumn, EditCell nextCell)
+        {
+            if (nextCell.Key != cell.Key) throw new InvalidOperationException("A native editor cannot change field identity.");
+            row = nextRow; column = nextColumn; cell = nextCell;
         }
         public void Refresh()
         {

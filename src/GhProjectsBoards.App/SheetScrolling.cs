@@ -93,6 +93,11 @@ internal sealed partial class EditingGrid
             requestedVertical = wheelVertical;
             listScroll.ChangeView(null, wheelVertical, null, true);
         }
+        // Recycled presentation can realize this destination before another idle
+        // frame. Its native editors live outside the list. Doing this with in-row
+        // editors reorders a pending native caret reveal after the wheel and can
+        // snap the viewport back to the edited row.
+        if (recycledPresentation) listScroll.UpdateLayout();
         // A synchronous final ViewChanged can clear the accumulator before this
         // observation. Retain the requested target, not the cleared accumulator.
         diagnostics?.Record("sheet-wheel", new { horizontal, pointer.MouseWheelDelta, units,
