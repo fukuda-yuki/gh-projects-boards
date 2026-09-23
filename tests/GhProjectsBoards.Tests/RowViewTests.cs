@@ -9,6 +9,16 @@ internal sealed class RowViewTests
     private static EditingWorkspace Work(params ProjectRegistration[] projects)
     { var w = new EditingWorkspace(projects[0].Snapshot.Id.Scope); w.SetRegistrations(projects); foreach (var p in projects) w.Open(p); return w; }
     private static void View(EditingWorkspace w, ProjectRegistration p, RowViewDefinition d) => w.SaveRowView(w.PrepareRowView(p) with { Definition = d });
+    [TestCase(false), TestCase(true)]
+    public void ForeignProfileCannotFingerprintRetainedRows(bool retainCanonicalRows)
+    {
+        var p = EditingTests.Registration(count: 1); var w = Work(p);
+        var foreign = EditingTests.Registration(viewer: 43, count: 1);
+        var foreignRows = Work(foreign).Open(foreign);
+
+        Assert.Throws<InvalidOperationException>(() => w.ViewFingerprint(foreign, retainCanonicalRows ? foreignRows : null));
+        Assert.That(w.Open(p).Select(r => w.Value(r.Cells[0])), Is.EqualTo(new[] { "Issue 1" }));
+    }
     [Test]
     public void CheckpointExplicitlyVersionsRowDefinitions()
     {
