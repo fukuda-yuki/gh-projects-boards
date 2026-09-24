@@ -7,6 +7,32 @@ namespace GhProjectsBoards.Tests;
 internal sealed class ApplyRecoveryTests
 {
     [Test]
+    public async Task CachedReviewExplainsUnconfirmedConnectionWithoutInventingAnIdentityChange()
+    {
+        var h = await ApplyTests.Harness.Create(2);
+        var project = h.Workspace.Selected!;
+        var draft = h.Workspace.Drafts!;
+        var title = draft.Workspace.Open(project)[0].Cells[0];
+        draft.Workspace.Commit("P1", title, "Saved local change");
+        Assert.That(await draft.FlushAsync(), Is.True);
+        var restored = new RegistrationWorkspace(new RegistrationStore(h.Root));
+        await restored.RestoreAsync(); await restored.SelectProfileAsync(project.Snapshot.Id.Scope);
+        Assert.That(await restored.SelectAsync(project.Snapshot.Id), Is.True);
+
+        await restored.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
+
+        Assert.Multiple(() => {
+            Assert.That(restored.Status, Does.Contain("接続は未確認").And.Not.Contain("変更を検出"));
+            Assert.That(restored.ApplyReview, Is.Null);
+            Assert.That(restored.ApplyBlockReason(null), Is.Not.Null);
+            Assert.That(restored.ApplyNeedsConnectionRecovery, Is.True);
+            Assert.That(restored.Drafts!.Workspace.Value(restored.Drafts.Workspace.Open(restored.Selected!)[0].Cells[0]), Is.EqualTo("Saved local change"));
+            Assert.That(restored.Drafts.Workspace.Journal, Is.Empty);
+            Assert.That(h.Writes, Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task InterruptedApprovalExplainsTheBlockBeforeAnotherSelection()
     {
         var h = await Interrupted();

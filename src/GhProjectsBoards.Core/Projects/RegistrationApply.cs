@@ -37,7 +37,13 @@ internal sealed partial class RegistrationWorkspace
         => PrepareApplyCoreAsync(items, viewSelection, restart: false);
     private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart) => RunAsync(async token =>
     {
-        ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false; RequireConnection();
+        ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false;
+        if (context is null)
+        {
+            Status = "接続は未確認です。接続設定を確認してから、反映内容を再確認してください。保存済みの変更は保持しています。";
+            return;
+        }
+        RequireConnection();
         if (Selected is not { } selected || Drafts is not { } session) return;
         if (restart && !CanRestartApplyReview)
         { Status = "このProjectの既存フィールドの反映だけをやり直せます。「反映結果・履歴」で対象を確認してください。"; return; }
