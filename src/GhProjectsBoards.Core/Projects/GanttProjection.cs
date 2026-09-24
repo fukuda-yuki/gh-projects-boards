@@ -5,7 +5,7 @@ internal sealed record GanttRow(string RowId, string TaskId, string Title, strin
     TaskPlan? Plan, PlanningInput? Input, GanttState State, bool HiddenOnBoards)
 {
     public bool HasBar => State == GanttState.Scheduled;
-    public string StateText => State switch { GanttState.Scheduled => Plan!.Mode.ToString(), GanttState.Unplanned => "未計画",
+    public string StateText => State switch { GanttState.Scheduled => Plan!.Mode == PlanningMode.Manual ? "日時を指定" : "自動計算", GanttState.Unplanned => "未計画",
         GanttState.Partial => "片側のみ", GanttState.Unresolved => "未解決", GanttState.Stale => "古い結果", _ => "未確認" };
 }
 internal sealed record GanttProjection(GanttRow[] Rows, AdoptedPlan Plan)

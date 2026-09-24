@@ -54,7 +54,7 @@ internal sealed partial class EditingWorkspace
             {
                 var value = role == "Start" ? start : finish;
                 var binding = plan.Fields.SingleOrDefault(f => f.Role == role);
-                var cell = row.Cells.SingleOrDefault(c => c.Key?.FieldId == binding?.FieldId);
+                var cell = binding is null ? null : row.Cells.SingleOrDefault(c => c.Key?.FieldId == binding.FieldId);
                 // A GitHub day does not establish its exact time or authorize its
                 // deletion when the other endpoint is edited.
                 if (value is null && cell is not null && Value(cell) is not null

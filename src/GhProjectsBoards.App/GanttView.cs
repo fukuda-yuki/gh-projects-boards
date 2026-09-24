@@ -77,9 +77,9 @@ internal sealed class GanttView : Grid
         edit = Tool("日程を編集", "GanttEdit", Symbol.Edit, () => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); });
         board = Tool("表で開く", "GanttBoards", Symbol.ViewAll, () => { if (SelectedRowId is { } id) BoardsRequested?.Invoke(id); });
         reveal = Tool("選択へ移動", "GanttReveal", Symbol.Find, RevealSelection);
-        context = Tool("詳細", "GanttDetails", Symbol.List, ShowDetails);
+        context = Tool("日程の理由", "GanttDetails", Symbol.List, ShowDetails);
         Tool("元に戻す", "GanttUndo", Symbol.Undo, () => UndoRequested?.Invoke());
-        Tool("計画設定", "GanttSettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
+        Tool("計画の前提", "GanttSettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
         Tool("タスクの詳細", "GanttTaskDetailsEdit", Symbol.Edit, () => { if (SelectedRowId is { } id) TaskDetailsRequested?.Invoke(id); }, true);
         Children.Add(commands);
         var filter = new Grid { ColumnSpacing = 8, Padding = new(8, 2, 8, 4) };
@@ -191,7 +191,8 @@ internal sealed class GanttView : Grid
         if (!shown.SequenceEqual(next)) { shown = next; list.ItemsSource = shown; }
         list.SelectedItem = shown.FirstOrDefault(r => r.RowId == selected);
         updating = false;
-        summary.Text = $"{shown.Length}/{projection.Rows.Length}件 · {projection.Rows.Count(r => !r.HasBar)}件は日程未確定";
+        summary.Text = $"{shown.Length}/{projection.Rows.Length}件" + string.Concat(projection.Rows.Where(r => !r.HasBar)
+            .GroupBy(r => r.State).OrderBy(g => g.Key).Select(g => $" · {g.First().StateText}{g.Count()}件"));
         UpdateSelection(); Draw();
     }
     private bool MatchesSearch(GanttRow row) => search.Text.Length == 0 || (row.Title + " " + row.Identity).Contains(search.Text, StringComparison.OrdinalIgnoreCase);
@@ -218,8 +219,12 @@ internal sealed class GanttView : Grid
         board.IsEnabled = reveal.IsEnabled = context.IsEnabled = row is not null;
         selectedText.Text = row is null ? "タスクを選ぶと、正確な日時と変更理由を確認できます。" : $"{row.Identity}  {row.Title}\n{row.StateText}  {Dates(row)}";
         var p = row?.Plan;
+        var warnings = p?.Warnings.Where(w => !IsEffortBreakdown(w)).ToArray() ?? [];
         notice.Text = row is null ? (projection.Rows.Length == 0 ? "Projectにタスクがありません。" : "")
-            : string.Join(" / ", new[] { p?.Problem, p?.Warnings.Length > 0 ? "注意: " + string.Join(" / ", p.Warnings) : null,
+            : string.Join(" / ", new[] { p?.Mode == PlanningMode.Manual ? p.Resolved ? null
+                : p.Start is null ? p.Finish is null ? "開始・終了日時が未設定です。" : "開始日時が未設定です。" : "終了日時が未設定です。"
+                : Explain(p?.Problem), warnings.Length > 0 ? $"日程の注意 {warnings.Length}件（日程の理由で確認）" : null,
+                p?.Warnings.Any(IsEffortBreakdown) == true ? "担当者別集計の内訳に不足（日程の理由で確認）" : null,
                 row.HiddenOnBoards ? "表のフィルター外 · 表で開くとこの行を一時表示" : null }.Where(text => text is not null));
         var relations = row is null ? [] : Relations(row);
         updating = true; related.ItemsSource = relations; related.SelectedIndex = -1; updating = false;
@@ -242,37 +247,74 @@ internal sealed class GanttView : Grid
     {
         if (list.SelectedItem is not GanttRow row) return;
         var p = row.Plan; var input = row.Input; var config = projection.Plan.Configuration;
-        var panel = new StackPanel { Spacing = 8, MaxWidth = 560 };
+        var panel = new StackPanel { Spacing = 8 };
         void Text(string text) => panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
-        Text($"{row.Identity}\n{row.Title}\n{row.TaskId}\n{row.StateText}: {Dates(row)}");
+        Text($"{row.Identity}  {row.Title}\n{row.StateText}: {Dates(row)}");
+        var presenter = new Style(typeof(FlyoutPresenter));
+        presenter.Setters.Add(new Setter(MaxWidthProperty, Math.Min(560, XamlRoot.Size.Width - 32)));
+        presenter.Setters.Add(new Setter(MinWidthProperty, 0d));
+        var flyout = new Flyout { FlyoutPresenterStyle = presenter, Content = new ScrollViewer { Content = panel,
+            Width = Math.Min(520, XamlRoot.Size.Width - 80), MaxHeight = Math.Max(180, XamlRoot.Size.Height - 160),
+            HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        void Action(string text, string id, Action action)
+        {
+            var button = new Button { Content = text }; AutomationProperties.SetAutomationId(button, id);
+            button.Click += (_, _) => { flyout.Hide(); action(); }; actions.Children.Add(button);
+        }
+        Action("見積・進捗を編集", "GanttExplanationTask", () => TaskDetailsRequested?.Invoke(row.RowId));
+        Action("計画の前提", "GanttExplanationSettings", () => SettingsRequested?.Invoke());
         if (input is not null && config is not null)
         {
             var owner = config.People.FirstOrDefault(o => o.Id == input.Task.OwnerId);
             var provisional = input.Task.Assignment is not { Legacy: false } && input.Task.OwnerId is null && input.Assignees.Length == 0;
             var ownerText = owner?.Name ?? (provisional ? "共通・暫定" : input.Task.OwnerId is null ? "担当者の選択が必要" : input.Task.OwnerId + "（未確認）");
             var weightText = owner is not null ? owner.WeightPercent + "%" : provisional ? "100%" : "未確認";
-            Text($"担当: {ownerText} / 配賦: {weightText}\n見積 {input.Estimate?.ToString() ?? "不明"} / 残時間 {input.Remaining?.ToString() ?? "不明"} / 実績 {input.ActualTotal?.ToString() ?? "不明"} 人時\n進捗: {input.Task.Progress}");
-            Text($"採用理由: {(p?.Mode == PlanningMode.Manual ? "PMOのManual日時" : p?.Controller)}\n自動案: {Exact(p?.SuggestedStart)} → {Exact(p?.SuggestedFinish)}\n{p?.Problem}\n{string.Join("\n", p?.Warnings ?? [])}");
-            Text($"カレンダー: {config.Calendar.Revision}\n祝日: {config.Calendar.Holidays.Version} / {config.Calendar.Holidays.FirstYear}–{config.Calendar.Holidays.LastYear}" +
+            var progress = input.Task.Progress switch { PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中", PlanningProgress.Completed => "完了", _ => "再開" };
+            string Hours(decimal? value) => value is { } hours ? PlanningContract.CanonicalHours(hours) + "人時" : "未入力";
+            var remaining = input.Task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened;
+            Text(input.Task.Progress == PlanningProgress.Completed ? "完了：実績開始・終了日時を採用"
+                : $"計算に使用：{(remaining ? "残時間 " + Hours(input.Remaining) : "見積 " + Hours(input.Estimate))}（{progress}）");
+            if (input.Task.Progress == PlanningProgress.Unstarted && input.ActualTotal > 0)
+                Text("実績がありますが、進捗は未着手です。実績の入力だけでは進捗を変更しません。進捗を確認してください。");
+            Text($"日程計算の担当: {ownerText} / 配賦: {weightText}");
+            if (remaining) Text($"残作業の基準: {Exact(config.Cutoff)}（Project共通）");
+            Text(p?.Mode == PlanningMode.Manual ? "指定した日時を採用しています。工数や前提の変更で上書きしません。"
+                : StartReason(p?.Controller, config));
+            panel.Children.Add(actions);
+            if (p?.Problem is { } problem) Text((p.Mode == PlanningMode.Manual ? "自動計算の不足条件: " : "日程を決められない理由: ") + Explain(problem));
+            var breakdown = (p?.Warnings ?? []).Where(IsEffortBreakdown).ToArray();
+            var warnings = (p?.Warnings ?? []).Except(breakdown).ToArray();
+            if (warnings.Length > 0) Text("日程の注意\n" + string.Join("\n", warnings.Select(Explain)));
+            if (breakdown.Length > 0) Text("担当者別集計の内訳\n" + string.Join("\n", breakdown));
+            var records = new StackPanel { Spacing = 8 };
+            void Record(string text) => records.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
+            Record($"見積 {Hours(input.Estimate)} / 残時間 {Hours(input.Remaining)} / 実績 {Hours(input.ActualTotal)}");
+            Record($"自動案: {Exact(p?.SuggestedStart)} → {Exact(p?.SuggestedFinish)}\nタスクID: {row.TaskId}\nカレンダー: {config.Calendar.Revision}\n祝日: {config.Calendar.Holidays.Version} / {config.Calendar.Holidays.FirstYear}–{config.Calendar.Holidays.LastYear}" +
                 (config.Calendar.HolidaysNotConsidered ? "（祝日を考慮しない）" : "") + "\n軸の網掛けはProject共通。個人例外は下記の採用区間に従います。");
             var calendar = new WorkingCalendar(config.Calendar);
             foreach (var date in new[] { p?.Start, p?.Finish }.Where(d => d.HasValue).Select(d => DateOnly.FromDateTime(d!.Value)).Distinct())
             {
-                try { Text($"{date:yyyy-MM-dd}: " + string.Join(" / ", calendar.Intervals(date, input.Task.OwnerId).Select(i => $"{i.StartMinute / 60:00}:{i.StartMinute % 60:00}–{i.EndMinute / 60:00}:{i.EndMinute % 60:00}"))); }
-                catch (InvalidOperationException e) { Text(e.Message); }
+                try { Record($"{date:yyyy-MM-dd}: " + string.Join(" / ", calendar.Intervals(date, input.Task.OwnerId).Select(i => $"{i.StartMinute / 60:00}:{i.StartMinute % 60:00}–{i.EndMinute / 60:00}:{i.EndMinute % 60:00}"))); }
+                catch (InvalidOperationException e) { Record(e.Message); }
             }
+            panel.Children.Add(new Expander { Header = "計算の記録", Content = records, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch });
         }
+        else { Text("計画の前提から開始日時と使う列を設定し、タスクの日程を選んでください。"); panel.Children.Add(actions); }
         if (config?.Summary?.Baseline is { } baseline)
         {
             var captured = baseline.Tasks.SingleOrDefault(t => t.TaskId == row.TaskId);
             Text($"基準 {baseline.CapturedAt.LocalDateTime:g} / {baseline.Calendar.Revision}\n"
                 + SummaryText.Comparison(new(captured, row, captured is null ? "基準なし（追加）" : "基準と現在")));
         }
-        var flyout = new Flyout { Content = new ScrollViewer { Content = panel, MaxHeight = 480, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         foreach (var relation in Relations(row))
         {
             if (relation.RowId is not { } id) { Text(relation.Label); continue; }
-            var link = new HyperlinkButton { Content = relation.Label, HorizontalAlignment = HorizontalAlignment.Left };
+            var previous = projection.Rows.FirstOrDefault(r => r.RowId == id);
+            var label = relation.Label + (previous is null ? "" : " · " + previous.StateText);
+            if (previous?.Plan is { } prior && previous.State != GanttState.Unplanned && prior.Problem is not null)
+                label += "\n関係先の状態：" + Explain(prior.Problem);
+            var link = new HyperlinkButton { Content = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap }, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
             AutomationProperties.SetName(link, relation.Label);
             link.Click += (_, _) => { FlyoutBaseHide(); SelectRow(id, true); };
             panel.Children.Add(link);
@@ -280,6 +322,29 @@ internal sealed class GanttView : Grid
         AutomationProperties.SetAutomationId(panel, "GanttTaskDetails");
         context.Flyout = flyout; flyout.ShowAt(context);
         void FlyoutBaseHide() => flyout.Hide();
+    }
+    private static bool IsEffortBreakdown(string warning) => warning.StartsWith("見積の未割当", StringComparison.Ordinal)
+        || warning.StartsWith("残時間の未割当", StringComparison.Ordinal) || warning.Contains("内訳", StringComparison.Ordinal);
+    private string StartReason(string? controller, ProjectPlanning config)
+    {
+        // These controller values mean no stronger task or predecessor constraint
+        // replaced the engine's initial anchor. Compare those inputs, not output dates.
+        var anchor = controller switch {
+            "見積工数・配賦・カレンダー" => "Project開始 " + Exact(config.Start),
+            "残工数・基準日時・配賦・カレンダー" when config.Cutoff > config.Start => "再計画の基準日時 " + Exact(config.Cutoff),
+            "残工数・基準日時・配賦・カレンダー" when config.Cutoff == config.Start => "Project開始・再計画の基準日時 " + Exact(config.Start),
+            "残工数・基準日時・配賦・カレンダー" => "Project開始 " + Exact(config.Start),
+            null => "未確認",
+            _ => Explain(controller)
+        };
+        return "開始基準：" + anchor + "\n稼働カレンダーに合わせて配置します。";
+    }
+    private string? Explain(string? text)
+    {
+        if (text is null) return null;
+        foreach (var row in projection.Rows.DistinctBy(r => r.TaskId).OrderByDescending(r => r.TaskId.Length))
+            text = text.Replace("先行 " + row.TaskId, "先行 " + row.Identity, StringComparison.Ordinal);
+        return text.Replace("Auto または Manual", "自動計算または日時を指定", StringComparison.Ordinal).Replace("Manual日時", "指定日時", StringComparison.Ordinal);
     }
     private void Draw()
     {
@@ -363,7 +428,7 @@ internal sealed class GanttView : Grid
             ColumnDefinitions.Add(new() { Width = new(owner.identityWidth) }); ColumnDefinitions.Add(new());
             var identity = new StackPanel { Margin = new(12, 3, 8, 3), VerticalAlignment = VerticalAlignment.Center };
             identity.Children.Add(new TextBlock { Text = $"{row.Identity}  {row.Title}", TextTrimming = TextTrimming.CharacterEllipsis });
-            identity.Children.Add(new TextBlock { Text = row.StateText + (row.Plan?.Warnings.Length > 0 ? " · 注意" : "") + "  " +
+            identity.Children.Add(new TextBlock { Text = row.StateText + (row.Plan?.Warnings.Any(w => !IsEffortBreakdown(w)) == true ? " · 注意" : "") + "  " +
                 (row.HasBar ? $"{row.Plan!.Start:M/d HH:mm} → {row.Plan.Finish:M/d HH:mm}" : "日程を確認") + (row.HiddenOnBoards ? " · 表の範囲外" : ""),
                 Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], TextTrimming = TextTrimming.CharacterEllipsis });
             Children.Add(identity); SetColumn(canvas, 1); Children.Add(canvas);

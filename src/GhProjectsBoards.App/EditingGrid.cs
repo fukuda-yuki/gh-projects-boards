@@ -17,6 +17,8 @@ internal sealed partial class EditingGrid : Grid
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.None, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0) };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private string? operationProblem;
+    private const string SelectSchedulingTask = "日程を変更するタスクを選択してください。";
+    private Button? firstPlanning;
     private readonly TextBlock selection = new();
     private readonly TextBlock columnNotice = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly List<FrameworkElement[]> controls = [];
@@ -136,6 +138,13 @@ internal sealed partial class EditingGrid : Grid
                 Run(() => { var added = action(targets); projection.IncludeNew(session.Workspace.Open(registration), added ?? []); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
             };
         }
+        var startPlanning = new Button { Content = "計画を始める", Margin = new(8, 4, 8, 4),
+            HorizontalAlignment = HorizontalAlignment.Left, Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        AutomationProperties.SetAutomationId(startPlanning, "GridStartPlanning");
+        firstPlanning = startPlanning;
+        startPlanning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowPlanningSettingsAsync(); };
+        var planning = Tool("日程を編集", "GridPlanning", Symbol.Calendar);
+        planning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowSchedulingEditorAsync(toolbar); };
         RowCommand("新規行を追加", "GridAddRow", _ => [session.Workspace.AddRow(registration)]);
         RowCommand("選択行を複製", "GridDuplicateRows", targets => session.Workspace.DuplicateRows(registration, targets));
         RowCommand("新規行を削除", "GridRemoveRows", targets => { session.Workspace.RemoveRows(projectId, targets); return null; });
@@ -152,11 +161,9 @@ internal sealed partial class EditingGrid : Grid
         Command("下へコピー (Ctrl+D)", "GridFillDown", Symbol.Download, FillDown);
         Command("元に戻す", "GridUndo", Symbol.Undo, Undo);
         Command("値をクリア", "GridClear", Symbol.Clear, ClearSelected, true);
-        var planning = Tool("計画", "GridPlanning", Symbol.Calendar);
-        planning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowSchedulingEditorAsync(toolbar); };
         var taskDetails = Tool("タスクの詳細", "GridTaskDetails", Symbol.Edit, true);
         taskDetails.Click += async (_, _) => await PlanningDialogAsync(false);
-        var planningSettings = Tool("計画設定", "GridPlanningSettings", Symbol.Setting, true);
+        var planningSettings = Tool("計画の前提", "GridPlanningSettings", Symbol.Setting, true);
         planningSettings.Click += async (_, _) => await PlanningDialogAsync(true);
         var initializePlans = Tool("自動計算を設定", "GridInitializePlans", Symbol.Calendar, true);
         initializePlans.Click += async (_, _) => await InitializeSelectedPlansAsync();
@@ -663,6 +670,8 @@ internal sealed partial class EditingGrid : Grid
     }
     private void Update(string updateReason = "caller")
     {
+        if (PlanningSettingsOpen) return;
+        if (firstPlanning is not null) firstPlanning.Visibility = session.Workspace.Planning(projectId) is not { Start: not null, Fields.Length: > 0 } ? Visibility.Visible : Visibility.Collapsed;
         using var measured = diagnostics?.Span("update", updateReason);
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) { deferredRefresh = true; return; }
@@ -858,6 +867,7 @@ internal sealed partial class EditingGrid : Grid
         diagnostics?.Record("select-request", new { row = r, column = c, extend, focus, item = rows[r].ItemId, key = rows[r].Cells[c].Key });
         EnsureRow(r);
         currentRow = r; currentColumn = c; active = true;
+        if (operationProblem == SelectSchedulingTask) operationProblem = null;
         if (!extend) { anchorRow = r; anchorColumn = c; }
         if (focus)
         {

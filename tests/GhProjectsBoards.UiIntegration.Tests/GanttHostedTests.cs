@@ -47,7 +47,8 @@ public sealed class GanttHostedTests
     {
         var work = session.Workspace;
         await Ui.Run(() => {
-            var title = Ui.Find<TextBox>("GridCell0_0"); title.Focus(FocusState.Keyboard); title.Text = "未確定のタイトル";
+            FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus();
+            Ui.Find<TextBox>("GridCell0_0").Text = "未確定のタイトル";
         });
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
@@ -69,12 +70,12 @@ public sealed class GanttHostedTests
         await Ui.Until(() => Schedule() is null);
         await Ui.Until(() => Ui.Find<TextBlock>("GanttSelected").Text.Contains("2026-10-08 12:07"));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("2026-10-08 12:07"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("2026-10-08 12:07"));
             Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
         });
         await Ui.ClickCommand("GanttUndo");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Auto").And.Contain("2026-10-07 13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("自動計算").And.Contain("2026-10-07 13:00"));
             Views().SelectedItem = Views().Items[0];
         });
         await Ui.Ready<TextBox>("GridCell0_0");
@@ -328,18 +329,18 @@ public sealed class GanttHostedTests
         });
         await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("12:07").And.Contain("13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("12:07").And.Contain("13:00"));
             Ui.Find<ListView>("GanttTasks").SelectedIndex = 2;
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-05 14:00").And.Contain("18:00"));
             Ui.Find<ListView>("GanttTasks").SelectedIndex = 0;
         });
         await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
         await Ui.Run(() => { Ui.Find<RadioButtons>("ScheduleMethod", Schedule()).SelectedIndex = 0; Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())); });
-        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("Auto"));
+        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("自動計算"));
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-09 13:00")));
         await Ui.ClickCommand("GanttUndo");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("12:07").And.Contain("13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("12:07").And.Contain("13:00"));
             Assert.That(session.Workspace.Planning("P1")!.People[0].WeightPercent, Is.EqualTo(50));
             Assert.That(session.Workspace.PlanFor(project).Tasks.Single(t => t.Id == "I3").Start, Is.EqualTo(At("2026-10-05 14:00")));
             Assert.That(session.Workspace.Journal, Is.Empty);

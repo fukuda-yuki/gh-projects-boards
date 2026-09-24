@@ -24,14 +24,14 @@ internal sealed partial class EditingGrid
     }
     private async Task PlanningDialogAsync(bool settings)
     {
+        if (settings || session.Workspace.Planning(projectId) is null) { await ShowPlanningSettingsAsync(); return; }
         if (!CanRefresh) { ShowOperationProblem("IME入力を確定・取消してから計画を開いてください。"); return; }
         var request = generation;
         if (!await prepareLocalRows() || request != generation || !IsLoaded) return;
         var work = session.Workspace;
         var saved = work.Planning(projectId);
-        if (saved is null) settings = true;
-        if (!settings && (!active || currentRow >= rows.Length)) { ShowOperationProblem("計画する行を選択してください。"); return; }
-        if (!settings && !rows[currentRow].IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == rows[currentRow].ItemId
+        if (!active || currentRow >= rows.Length) { ShowOperationProblem("計画する行を選択してください。"); return; }
+        if (!rows[currentRow].IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == rows[currentRow].ItemId
             && i.Kind == ProjectItemKind.Issue && i.ContentId is not null)) { ShowOperationProblem("計画はIssueまたは新規行で設定してください。"); return; }
         var plan = saved ?? new(3, projectId, 0, null, null, [], new("official-2025-2027", PlanningContract.BundledHolidays(), false, []), [], []);
         var expected = work.Revision;
@@ -42,31 +42,6 @@ internal sealed partial class EditingGrid
         Func<PlanningValueEdit[]> values = () => [];
         Func<PlanningDependencyEdit[]> dependencies = () => [];
         Func<PlanningProjectionDecision[]> decisions = () => [];
-        if (settings)
-        {
-            var start = PlanningText(content, "Project開始（日本時間）", "PlanProjectStart", DateText(plan.Start));
-            var cutoff = PlanningText(content, "再計画の基準日時（日本時間）", "PlanCutoff", DateText(plan.Cutoff));
-            var mappings = new Dictionary<string, ComboBox>();
-            foreach (var role in PlanningContract.Roles)
-            {
-                var name = role switch { "Estimate" => "見積時間", "Remaining" => "残時間", "Actual" => "実績合計", "Start" => "開始日", _ => "終了日" };
-                var box = new ComboBox { Header = name + " のGitHubフィールド", HorizontalAlignment = HorizontalAlignment.Stretch };
-                AutomationProperties.SetAutomationId(box, "PlanField-" + role);
-                box.Items.Add(new ComboBoxItem { Content = "未設定", Tag = "" });
-                foreach (var f in registration.Snapshot.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem
-                    && f.DataType == (role is "Start" or "Finish" ? "DATE" : "NUMBER") && f.Availability == ValueAvailability.Present))
-                    box.Items.Add(new ComboBoxItem { Content = f.Name + (registration.Snapshot.Fields.Count(other => other.Name == f.Name) > 1 ? " [" + f.Id.NodeId + "]" : ""), Tag = f.Id.NodeId });
-                var id = plan.Fields.SingleOrDefault(f => f.Role == role)?.FieldId ?? "";
-                box.SelectedItem = box.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == id) ?? box.Items[0];
-                content.Children.Add(box); mappings.Add(role, box);
-            }
-            content.Children.Add(new TextBlock { Text = $"採用祝日: {plan.Calendar.Holidays.FirstYear}–{plan.Calendar.Holidays.LastYear} / {plan.Calendar.Holidays.Dates.Length}日。平日9–13時・14–18時。", TextWrapping = TextWrapping.Wrap });
-            var settingsValues = PlanningSettings(content, plan);
-            candidate = () => { var extra = settingsValues(); return EditingWorkspace.UpgradeAssignmentContract(plan) with { Start = PlanningDate(start.Text), Cutoff = PlanningDate(cutoff.Text), People = extra.People, Calendar = extra.Calendar,
-                Fields = mappings.Where(x => (string)((ComboBoxItem)x.Value.SelectedItem).Tag != "").Select(x =>
-                    new PlanningFieldBinding(x.Key, (string)((ComboBoxItem)x.Value.SelectedItem).Tag, x.Key is "Start" or "Finish" ? "DATE" : "NUMBER")).ToArray() }; };
-        }
-        else
         {
             var id = work.TaskId(registration, rows[currentRow].ItemId);
             var task = plan.Tasks.SingleOrDefault(t => t.Id == id) ?? (plan.Version >= 3 ? EditingWorkspace.WithObservedAssignment(registration, new(id)) : new PlanningTask(id));
@@ -76,7 +51,7 @@ internal sealed partial class EditingGrid
             candidate = () => plan with { Tasks = plan.Tasks.Where(t => t.Id != id).Append(details.Task()).ToArray() };
         }
         content.Children.Add(status);
-        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = settings ? "計画設定" : "タスクの詳細", PrimaryButtonText = "保存", CloseButtonText = "キャンセル",
+        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "タスクの詳細", PrimaryButtonText = "保存", CloseButtonText = "キャンセル",
             Content = new ScrollViewer { Content = content, MaxHeight = 560, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         AutomationProperties.SetAutomationId(dialog, "PlanningDialog");
         dialog.PrimaryButtonClick += (_, args) =>
@@ -91,12 +66,9 @@ internal sealed partial class EditingGrid
                 if (coreTrace is not null) diagnostics!.Record("planning-core", new { samples = coreTrace.Samples.ToArray() });
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { status.Text = e.Message; args.Cancel = true; return; }
-            // Only settings can change the column mapping. A task-value edit
-            // refreshes the existing controls, preserving pending native input.
-            // Finish any mapping replacement while the modal still owns focus.
+            // A task-value edit preserves the existing controls and pending native input.
             using (diagnostics?.Span("planning-view-refresh"))
             {
-                if (settings) { layout = work.Columns(registration); RebuildRows(); }
                 Update();
             }
         };

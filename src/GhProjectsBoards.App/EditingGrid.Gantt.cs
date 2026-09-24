@@ -21,7 +21,7 @@ internal sealed partial class EditingGrid
     private long ganttProjectionGeneration = -1;
     internal bool ShowingGantt => gantt?.Visibility == Visibility.Visible;
     internal bool ShowingSummary => summaryView?.Visibility == Visibility.Visible;
-    internal ProjectView CurrentProjectView => ShowingGantt ? ProjectView.Gantt : ShowingSummary ? ProjectView.Summary : ProjectView.Boards;
+    internal ProjectView CurrentProjectView => PlanningSettingsOpen ? planningReturnView : ShowingGantt ? ProjectView.Gantt : ShowingSummary ? ProjectView.Summary : ProjectView.Boards;
     internal string? SummaryPersonId => summaryView?.SelectedPersonId;
     internal (string Item, FieldKey? Field)? ViewSelection => ShowingGantt && gantt?.SelectedRowId is { } id
         ? (id, SelectionIdentity is { } selected && selected.Item == id ? selected.Field : canonicalRows.FirstOrDefault(r => r.ItemId == id)?.Cells[0].Key)
@@ -34,6 +34,7 @@ internal sealed partial class EditingGrid
         // Adding a second full row would consume the sheet's working viewport.
         Children.Remove(commandRow);
         var header = new Grid();
+        header.RowDefinitions.Add(new() { Height = GridLength.Auto }); header.RowDefinitions.Add(new() { Height = GridLength.Auto });
         header.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new());
         SetColumn(commandRow, 1); header.Children.Add(commandRow);
         projectViews = new SelectorBar { Padding = new(8, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -52,13 +53,15 @@ internal sealed partial class EditingGrid
             if (!CanRefresh) { switchingView = true; projectViews.SelectedItem = ShowingGantt ? ganttView : ShowingSummary ? summaryItem : boardsView; switchingView = false; return; }
             ShowProjectView(projectViews.SelectedItem == ganttView ? ProjectView.Gantt : projectViews.SelectedItem == summaryItem ? ProjectView.Summary : ProjectView.Boards);
         };
-        header.Children.Add(projectViews); Children.Add(header);
+        header.Children.Add(projectViews);
+        if (firstPlanning is not null) { SetRow(firstPlanning, 1); SetColumnSpan(firstPlanning, 2); header.Children.Add(firstPlanning); }
+        Children.Add(header);
     }
     internal void ShowProjectView(bool showGantt, string? selectedRowId = null)
         => ShowProjectView(showGantt ? ProjectView.Gantt : ProjectView.Boards, selectedRowId);
     internal void ShowProjectView(ProjectView view, string? selectedRowId = null, string? personId = null)
     {
-        if (!CanRefresh || projectViews is null) return;
+        if (!CanRefresh || PlanningSettingsOpen || projectViews is null) return;
         if (view == ProjectView.Summary && !summaryEnabled) view = ProjectView.Boards;
         var prior = CurrentProjectView; var id = selectedRowId ?? ViewSelection?.Item;
         switchingView = true; projectViews.SelectedItem = view == ProjectView.Gantt ? ganttView : view == ProjectView.Summary ? summaryItem : boardsView; switchingView = false;

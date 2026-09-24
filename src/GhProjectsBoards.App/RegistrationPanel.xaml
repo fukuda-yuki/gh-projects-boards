@@ -76,13 +76,13 @@
                                 <Button x:Name="Refresh" Content="最新を取得" MinHeight="28" Padding="10,4" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
                                 <Button x:Name="Apply" Grid.Column="1" Content="GitHubに反映…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
                                 <Button x:Name="ApplyHistory" Grid.Column="2" Content="反映結果・履歴" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
-                                <Button x:Name="ProjectSettings" Grid.Column="3" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Projectの情報と設定" AutomationProperties.AutomationId="ProjectSettingsButton">
-                                    <SymbolIcon Symbol="Setting"/>
+                                <Button x:Name="ProjectSettings" Grid.Column="3" Content="Project設定" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
                                     <Button.Flyout>
                                         <Flyout x:Name="ProjectSettingsFlyout" Placement="BottomEdgeAlignedRight">
                                             <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
                                                 <StackPanel Width="380" Spacing="12">
                                                     <TextBlock Text="Projectの情報と設定" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                                                    <Button Content="計画の前提" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
                                                     <TextBlock x:Name="ProjectInformation" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ProjectInformation"/>
                                                     <Button Content="対象のアクセス権限を確認…" Click="ShowTargetDiagnostics" AutomationProperties.AutomationId="ProjectTargetDiagnostics"/>
                                                     <Button Content="処理状況・診断…" Click="ShowStatusDetails" AutomationProperties.AutomationId="ProjectStatusDetailsButton"/>

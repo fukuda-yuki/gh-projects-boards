@@ -55,6 +55,19 @@ public sealed partial class RegistrationPanel : UserControl
         workspace.CanRefresh = CanRefreshEditors;
     }
     private bool CanRefreshEditors() => EditorHost.Children.OfType<EditingGrid>().All(grid => grid.CanRefresh);
+    internal async Task<bool> ConfirmPlanningNavigationAsync(ConnectionScope? scope = null, ScopedId? project = null)
+    {
+        if (workspace is null) return true;
+        if (scope == Workspace.Profile && scope is not null && (project is null || project == Workspace.Selected?.Snapshot.Id)) return true;
+        foreach (var grid in EditorHost.Children.OfType<EditingGrid>())
+            if (!await grid.ConfirmLeavePlanningSettingsAsync()) { Update(); return false; }
+        return true;
+    }
+    private async void ShowPlanningSettings(object sender, RoutedEventArgs e)
+    {
+        ProjectSettingsFlyout.Hide();
+        if (EditorHost.Children.OfType<EditingGrid>().FirstOrDefault() is { } grid) await grid.ShowPlanningSettingsAsync();
+    }
     private void CancelGridWork()
     {
         if (!DispatcherQueue.HasThreadAccess)
@@ -130,11 +143,12 @@ public sealed partial class RegistrationPanel : UserControl
             Progress.Visibility = workspace.IsBusy ? Visibility.Visible : Visibility.Collapsed;
             Register.IsEnabled = choice is not null && workspace.CanRead && choice.Id.Scope == workspace.Profile && !workspace.IsBusy;
             DiscoveryForm.IsEnabled = !workspace.IsBusy;
-            Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy;
-            Apply.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
+            var settingsOpen = EditorHost.Children.OfType<EditingGrid>().Any(g => g.PlanningSettingsOpen);
+            Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy && !settingsOpen;
+            Apply.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog && !settingsOpen;
             ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
             Remove.IsEnabled = workspace.Selected is not null;
-            ProjectSettings.IsEnabled = workspace.Selected is not null;
+            ProjectSettings.IsEnabled = workspace.Selected is not null && !settingsOpen;
             SaveSetting.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
             DefaultRepository.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
             PartialNotice.IsOpen = workspace.Incomplete is not null;
@@ -166,7 +180,8 @@ public sealed partial class RegistrationPanel : UserControl
                     EditorHost.Children.Clear();
                     if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection,
                         temporaryColumns: previousGrid?.RowProjection.Project == selected.Snapshot.Id ? previousGrid.TemporaryApplyColumns : null);
-                        grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.RestoreSelection(selection); EditorHost.Children.Add(grid); grid.ShowProjectView(position.View, selection?.Item, position.Person); Items.Visibility = Visibility.Collapsed; }
+                        grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.PlanningSettingsChanged += Update;
+                        grid.RestoreSelection(selection); EditorHost.Children.Add(grid); grid.ShowProjectView(position.View, selection?.Item, position.Person); Items.Visibility = Visibility.Collapsed; }
                     else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
                 }
                 var p = selected.Snapshot;
@@ -319,7 +334,9 @@ public sealed partial class RegistrationPanel : UserControl
     {
         if (updating || Profiles.SelectedIndex < 0) return;
         var owner = Workspace; var expected = lifetime;
-        await owner.SelectProfileAsync(profileChoices[Profiles.SelectedIndex]);
+        var profile = profileChoices[Profiles.SelectedIndex];
+        if (!await ConfirmPlanningNavigationAsync(profile) || !IsCurrent(owner, expected)) return;
+        await owner.SelectProfileAsync(profile);
         if (!IsCurrent(owner, expected)) return;
         choice = null; ShowPreview();
     }
@@ -327,6 +344,7 @@ public sealed partial class RegistrationPanel : UserControl
     {
         var owner = Workspace; var expected = lifetime;
         if (e.InvokedItem is not TreeViewNode { Content: NavigationEntry entry }) return;
+        if (!await ConfirmPlanningNavigationAsync(entry.Id.Scope, entry.Id) || !IsCurrent(owner, expected)) return;
         if (!await owner.SelectAsync(entry.Id) || !IsCurrent(owner, expected) || owner.Selected?.Snapshot.Id != entry.Id) return;
         ShowPreview();
         if (WorkspaceSplitView.DisplayMode == SplitViewDisplayMode.Overlay)
@@ -377,6 +395,7 @@ public sealed partial class RegistrationPanel : UserControl
     {
         if (choice is null) return;
         var owner = Workspace; var expected = lifetime;
+        if (!await ConfirmPlanningNavigationAsync(choice.Id.Scope, choice.Id) || !IsCurrent(owner, expected)) return;
         await owner.RegisterAsync(choice, InitialRepository.Text);
         if (IsCurrent(owner, expected) && (owner.Selected is not null || owner.Incomplete is not null)) ShowPreview();
     }

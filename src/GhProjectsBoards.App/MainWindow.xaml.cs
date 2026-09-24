@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ProjectsPage.ConnectionRequested += (_, _) => ShowConnection();
         ConnectionPage.ReturnRequested += (_, _) => ShowProjects();
+        ConnectionPage.ConfirmWorkspaceChangeAsync = scope => ProjectsPage.ConfirmPlanningNavigationAsync(scope);
         ConnectionPage.WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         try
         {
@@ -90,6 +91,7 @@ public sealed partial class MainWindow : Window
         args.Cancel = true;
         if (closingRequested) return;
         closingRequested = true;
+        if (!await ProjectsPage.ConfirmPlanningNavigationAsync()) { closingRequested = false; return; }
         workspace?.CancelPendingEdits();
         if (ProjectsPage.Visibility == Visibility.Visible) ProjectsPage.FocusHeader();
 

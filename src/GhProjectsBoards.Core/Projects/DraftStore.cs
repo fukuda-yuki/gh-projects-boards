@@ -300,7 +300,7 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
             using (PerformanceTrace.Span("draft-candidate-snapshot-sync")) snapshot = candidate.Snapshot();
             await store.SaveAsync(snapshot, DurableRevision, () => canCommit() && Workspace == original && original.Revision == revision);
             Workspace = candidate; DurableRevision = candidate.Revision;
-            Status = "照合結果をローカル保存しました（GitHub未反映）";
+            Status = "ローカル保存済み";
             committed = true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or InvalidOperationException)

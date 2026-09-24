@@ -14,6 +14,7 @@ public sealed partial class ConnectionPanel : UserControl
     private Task? operation;
     private bool rendering, pickerOpen, closingRequested, checking;
     internal IntPtr WindowHandle { get; set; }
+    internal Func<ConnectionScope, Task<bool>>? ConfirmWorkspaceChangeAsync { get; set; }
     public event EventHandler? ReturnRequested;
     public ConnectionPanel()
     {
@@ -100,7 +101,11 @@ public sealed partial class ConnectionPanel : UserControl
         model.ProjectUrl = "";
         await model.CheckAsync(newConnection);
         if (workspace is not null && !closingRequested && model.Connection is { IsConnected: true })
-            await workspace.BindAsync(model.Connection.Context, model.Service);
+        {
+            if (ConfirmWorkspaceChangeAsync is { } confirm && !await confirm(ConnectionScope.From(model.Connection.Context!)))
+            { UiMessage.Text = "作業中のProjectと設定候補を保持しています。ワークスペースへ戻って編集を続けられます。"; return; }
+            if (!closingRequested) await workspace.BindAsync(model.Connection.Context, model.Service);
+        }
     }
     private void Cancel_Click(object sender, RoutedEventArgs args) => model.Cancel();
     private void Detect_Click(object sender, RoutedEventArgs args) => ExecutableInput.Text = ConnectionViewModel.FindGh();

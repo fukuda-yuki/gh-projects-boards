@@ -7,6 +7,24 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanningAssignmentTests
 {
+    [Test]
+    public void ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped()
+    {
+        var project = Assigned("U1"); var work = new EditingWorkspace(project.Snapshot.Id.Scope);
+        work.SetRegistrations([project]);
+        work.SetPlanning(PlanningPathTests.Plan() with { Version = 3, Fields = [] }, 0);
+        var start = PlanningContractTests.At("2026-10-05 09:00");
+        var finish = PlanningContractTests.At("2026-10-05 13:00");
+
+        var candidate = work.SchedulingCandidate(project, "P1T1", PlanningMode.Manual, start, finish, false);
+        work.CommitPlanning(project, candidate, work.Revision);
+
+        Assert.That(work.PlanFor(project).Tasks.Single(t => t.Id == "I1"),
+            Has.Property("Start").EqualTo(start).And.Property("Finish").EqualTo(finish));
+        Assert.That(work.Planning("P1")!.Fields, Is.Empty);
+        Assert.That(work.Journal, Is.Empty);
+    }
+
     internal static ProjectRegistration Assigned(params string[] people)
     {
         var p = PlanningPathTests.Registration();

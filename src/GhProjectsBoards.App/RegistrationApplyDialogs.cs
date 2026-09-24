@@ -36,6 +36,7 @@ public sealed partial class RegistrationPanel
     private async void ShowApplyHistory(object sender, RoutedEventArgs e)
     {
         if (applyDialog || Workspace.Drafts is not { } session) return;
+        var readOnly = EditorHost.Children.OfType<EditingGrid>().Any(grid => grid.PlanningSettingsOpen);
         ProjectSettingsFlyout.Hide();
         var owner = Workspace; var expected = lifetime;
         applyDialog = true; ApplyHistory.IsEnabled = false;
@@ -56,6 +57,7 @@ public sealed partial class RegistrationPanel
             var help = ApplyHelp("履歴を開くだけでは送信しません。「確認して再開」は未完了の結果を照合してから続けます。不確定な送信は自動で繰り返しません。「承認を撤回」は試行を保存したまま承認を取り消します。再度反映するには新しいレビューが必要です。", "ApplyHistoryHelp");
             Grid.SetColumn(help, 1); heading.Children.Add(help); content.Children.Add(heading);
             content.Children.Add(allHistory); content.Children.Add(historyContent);
+            if (readOnly) content.Children.Insert(0, ApplyText("計画の前提を編集中のため、履歴は閲覧のみです。保存または取消して戻ると操作できます。"));
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "反映結果・履歴", Content = content,
                 CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
             AutomationProperties.SetAutomationId(dialog, "ApplyHistoryDialog");
@@ -72,11 +74,11 @@ public sealed partial class RegistrationPanel
                     || (b.Creations ?? []).Any(c => !c.Completed && c.Authorized))
                 {
                     var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-                    var resume = new Button { Content = "確認して再開", IsEnabled = Workspace.CanRead };
+                    var resume = new Button { Content = "確認して再開", IsEnabled = Workspace.CanRead && !readOnly };
                     AutomationProperties.SetAutomationId(resume, ((b.Creations ?? []).Any() ? "ResumeCreationBatch-" : "ResumeApplyBatch-") + b.Id);
                     AutomationProperties.SetName(resume, $"確認して再開：{b.ProjectName} / {b.ReviewedAt.LocalDateTime:g}");
                     resume.Click += (_, _) => { resumeBatch = b.Id; dialog.Hide(); };
-                    var withdraw = new Button { Content = "承認を撤回" };
+                    var withdraw = new Button { Content = "承認を撤回", IsEnabled = !readOnly };
                     AutomationProperties.SetAutomationId(withdraw, "WithdrawApplyBatch-" + b.Id);
                     withdraw.Click += (_, _) => { withdrawBatch = b.Id; dialog.Hide(); };
                     actions.Children.Add(resume); actions.Children.Add(withdraw); entry.Children.Add(actions);
@@ -88,7 +90,7 @@ public sealed partial class RegistrationPanel
                     var creation = CreationHistory(c);
                     if (c.Dispatched && !c.Completed && session.Workspace.Creations.Last(x => x.LocalId == c.LocalId).Id == c.Id)
                     {
-                        var resolve = new Button { Content = c.Verified is null ? "作成の不確定結果を解決" : "既知Issueの設定を再比較", IsEnabled = Workspace.CanRead };
+                        var resolve = new Button { Content = c.Verified is null ? "作成の不確定結果を解決" : "既知Issueの設定を再比較", IsEnabled = Workspace.CanRead && !readOnly };
                         AutomationProperties.SetAutomationId(resolve, "ResolveCreation-" + c.Id);
                         AutomationProperties.SetName(resolve, $"{resolve.Content}: {c.Repository.Name} / {c.Title}");
                         resolve.Click += (_, _) => { resolutionBatch = b.Id; resolutionOperation = c.Id; setupReview = c.Verified is not null; dialog.Hide(); };
