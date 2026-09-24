@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="62ed8d73-5ee0-4dae-a65e-e1a5dbf2f7f3" name="mwam0@RTX5070 2026-09-24 22:05:56" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-24T22:05:56.0376820+09:00" queuing="2026-09-24T22:05:56.0376822+09:00" start="2026-09-24T22:05:54.7877832+09:00" finish="2026-09-24T22:05:56.0447840+09:00" />
+  <TestSettings name="default" id="c433ea07-b84a-4a1f-842b-843a14eb1899">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-09-24_22_05_56" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="3ae6f19d-f65f-4f1a-9656-3dcdafdb27a7" testId="7d34d996-2909-5c37-c177-432864c80820" testName="ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped" computerName="RTX5070" duration="00:00:00.0879080" startTime="2026-09-24T22:05:55.8294327+09:00" endTime="2026-09-24T22:05:55.9173060+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3ae6f19d-f65f-4f1a-9656-3dcdafdb27a7">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Sequence contains more than one matching element</Message>
+          <StackTrace>   at System.Linq.ThrowHelper.ThrowMoreThanOneMatchException()&#xD;
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Func`2 predicate, Boolean&amp; found)&#xD;
+   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source, Func`2 predicate)&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.SchedulingCandidate(ProjectRegistration project, String rowId, PlanningMode mode, Nullable`1 start, Nullable`1 finish, Boolean adoptAssignment, String[] clearedEndpoints) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningAssignment.cs:line 57&#xD;
+   at GhProjectsBoards.Tests.PlanningAssignmentTests.ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningAssignmentTests.cs:line 19&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at System.Linq.ThrowHelper.ThrowMoreThanOneMatchException()&#xD;
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Func`2 predicate, Boolean&amp; found)&#xD;
+   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source, Func`2 predicate)&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.SchedulingCandidate(ProjectRegistration project, String rowId, PlanningMode mode, Nullable`1 start, Nullable`1 finish, Boolean adoptAssignment, String[] clearedEndpoints) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningAssignment.cs:line 57&#xD;
+   at GhProjectsBoards.Tests.PlanningAssignmentTests.ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningAssignmentTests.cs:line 19&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="7d34d996-2909-5c37-c177-432864c80820">
+      <Execution id="3ae6f19d-f65f-4f1a-9656-3dcdafdb27a7" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.PlanningAssignmentTests" name="ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="7d34d996-2909-5c37-c177-432864c80820" executionId="3ae6f19d-f65f-4f1a-9656-3dcdafdb27a7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" passed="0" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-09-24.22_05_55.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

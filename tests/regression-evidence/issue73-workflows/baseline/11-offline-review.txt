@@ -1,0 +1,176 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				755 window ポップアップ Secondary Actions: Raise
+				756 window 反映内容の確認 Secondary Actions: Raise ID: ApplyReviewDialog
+					757 pane ID: ContentScrollViewer
+						758 テキスト 反映内容の確認
+						759 テキスト P1 / github.com / viewer
+						760 テキスト 0件中0件を選択 ID: ApplyTargetCounts
+						761 テキスト 利用者・ホスト・実行ファイルの変更を検出し、接続を停止しました。対象を確認して「新しい接続として確認」を選んでください。（表示は保存済み・最新未確認） ID: ApplyCheckStatus
+						762 テキスト GitHubの値 → 反映する値（Projectフィールド）
+						763 テキスト 接続を確認してください。保存済みの変更は保持しています。 ID: ApplyBlockReason
+						764 button 接続設定 ID: ApplyConnectionSettings
+						765 チェック ボックス (disabled) 候補をすべて選択または解除 ID: ApplySelectAll
+						766 テキスト Issue
+						767 テキスト
+						768 リスト 反映候補と変更前後 ID: ApplyTargetRows
+						769 button 最新状態を再確認 ID: ApplyCheckAgain
+							770 テキスト 最新状態を再確認
+						771 button 確認情報 ID: ApplyReviewIdentity
+							772 テキスト 確認情報
+						773 button 反映結果・履歴 ID: ApplyReviewHistory
+							774 テキスト 反映結果・履歴
+					775 button (disabled) GitHubに反映（確認が必要） ID: PrimaryButton
+					776 button 編集へ戻る ID: CloseButton
+				49 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				50 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				51 button 接続設定 ID: ConnectionPageButton
+				52 window Secondary Actions: Raise ID: PaneRoot
+					53 combo box 保存済みアカウント ID: SavedProfiles
+					54 テキスト 登録済みProject
+					55 tree ID: ListControl
+						106 tree item (selectable) owner
+							107 テキスト owner
+						108 tree item (selectable) Repository関連付けなし
+							109 テキスト Repository関連付けなし
+						110 tree item (selectable) P1
+							111 テキスト P1
+						112 tree item (selectable) P2
+							113 テキスト P2
+					56 button Projectを追加… ID: AddProjectButton
+				93 テキスト P1 ID: ProjectSummary
+				114 テキスト キャッシュ 2026/09/24 21:18 ID: ProjectCacheDestination
+				94 button (disabled) 最新を取得 ID: RefreshProjectButton
+				95 button (disabled) GitHubに反映… ID: ReviewApplyButton
+				96 button (disabled) 反映結果・履歴 ID: ApplyHistoryButton
+				97 button Projectの情報と設定 Description: 利用者・ホスト・実行ファイルの変更を検出し、接続を停止しました。対象を確認して「新しい接続として確認」を選んでください。 ID: ProjectSettingsButton
+				334 リスト ID: PART_ItemsView
+					335 pane ID: PART_ScrollPresenter
+						336 SelectorBarItem (selectable) Boards ID: ProjectViewBoards
+							337 テキスト Boards ID: PART_TextVisual
+						338 SelectorBarItem (selectable) Gantt ID: ProjectViewGantt
+							339 テキスト Gantt ID: PART_TextVisual
+						340 SelectorBarItem (selectable, disabled) Summary（準備中） ID: ProjectViewSummary
+							341 テキスト Summary（準備中） ID: PART_TextVisual
+				636 アプリ バー ID: GanttCommands
+					637 アプリバー ボタン 日程を編集 ID: GanttEdit
+					638 アプリバー ボタン 表で開く ID: GanttBoards
+					639 アプリバー ボタン 選択へ移動 ID: GanttReveal
+					640 アプリバー ボタン 詳細 ID: GanttDetails
+					641 アプリバー ボタン 元に戻す ID: GanttUndo
+					642 button その他のオプション ID: MoreButton
+				643 combo box 時間軸の日・週 ID: GanttScale
+				644 edit (settable, string) タスク検索 ID: GanttSearch
+				645 テキスト 20/20件 · 20件は日程未確定 ID: GanttSummary
+				646 テキスト タスク / 採用日程（日本時間）
+				647 テキスト 10/1 木
+				648 テキスト 10/2 金
+				649 テキスト 10/3 土
+				650 テキスト 休
+				651 テキスト 10/4 日
+				652 テキスト 休
+				653 テキスト 10/5 月
+				654 テキスト 10/6 火
+				655 テキスト 10/7 水
+				656 テキスト 10/8 木
+				657 テキスト 10/9 金
+				658 リスト 採用計画のタスク ID: GanttTasks
+					659 list item (selectable) owner/repo #1 週次計画の確認 未計画 未設定 → 未設定 ID: GanttRow-P1T1
+						660 テキスト owner/repo #1 週次計画の確認
+						661 テキスト 未計画 日程を確認
+						662 テキスト 未計画
+					663 list item (selectable) owner/repo #2 週次計画の確認 未計画 未設定 → 未設定 ID: GanttRow-P1T2
+						664 テキスト owner/repo #2 週次計画の確認
+						665 テキスト 未計画 日程を確認
+						666 テキスト 未計画
+					667 list item (selectable) owner/repo #3 作業 3 未計画 未設定 → 未設定 ID: GanttRow-P1T3
+						668 テキスト owner/repo #3 作業 3
+						669 テキスト 未計画 日程を確認
+						670 テキスト 未計画
+					671 list item (selectable) owner/repo #4 作業 4 未計画 未設定 → 未設定 ID: GanttRow-P1T4
+						672 テキスト owner/repo #4 作業 4
+						673 テキスト 未計画 日程を確認
+						674 テキスト 未計画
+					675 list item (selectable) owner/repo #5 作業 5 未計画 未設定 → 未設定 ID: GanttRow-P1T5
+						676 テキスト owner/repo #5 作業 5
+						677 テキスト 未計画 日程を確認
+						678 テキスト 未計画
+					679 list item (selectable) owner/repo #6 作業 6 未計画 未設定 → 未設定 ID: GanttRow-P1T6
+						680 テキスト owner/repo #6 作業 6
+						681 テキスト 未計画 日程を確認
+						682 テキスト 未計画
+					683 list item (selectable) owner/repo #7 作業 7 未計画 未設定 → 未設定 ID: GanttRow-P1T7
+						684 テキスト owner/repo #7 作業 7
+						685 テキスト 未計画 日程を確認
+						686 テキスト 未計画
+					687 list item (selectable) owner/repo #8 作業 8 未計画 未設定 → 未設定 ID: GanttRow-P1T8
+						688 テキスト owner/repo #8 作業 8
+						689 テキスト 未計画 日程を確認
+						705 テキスト 未計画
+					691 list item (selectable) owner/repo #9 作業 9 未計画 未設定 → 未設定 ID: GanttRow-P1T9
+						692 テキスト owner/repo #9 作業 9
+						693 テキスト 未計画 日程を確認
+						706 テキスト 未計画
+					695 list item (selectable) owner/repo #10 作業 10 未計画 未設定 → 未設定 ID: GanttRow-P1T10
+						707 テキスト owner/repo #10 作業 10
+						708 テキスト 未計画 日程を確認
+						709 テキスト 未計画
+					710 list item (selectable) owner/repo #11 作業 11 未計画 未設定 → 未設定 ID: GanttRow-P1T11
+						711 テキスト owner/repo #11 作業 11
+						712 テキスト 未計画 日程を確認
+						713 テキスト 未計画
+					714 list item (selectable) owner/repo #12 作業 12 未計画 未設定 → 未設定 ID: GanttRow-P1T12
+						715 テキスト owner/repo #12 作業 12
+						716 テキスト 未計画 日程を確認
+						717 テキスト 未計画
+					718 list item (selectable) owner/repo #13 作業 13 未計画 未設定 → 未設定 ID: GanttRow-P1T13
+						719 テキスト owner/repo #13 作業 13
+						720 テキスト 未計画 日程を確認
+						721 テキスト 未計画
+					722 list item (selectable) owner/repo #14 作業 14 未計画 未設定 → 未設定 ID: GanttRow-P1T14
+						723 テキスト owner/repo #14 作業 14
+						724 テキスト 未計画 日程を確認
+						731 テキスト 未計画
+					726 list item (selectable) owner/repo #15 作業 15 未計画 未設定 → 未設定 ID: GanttRow-P1T15
+						727 テキスト owner/repo #15 作業 15
+						728 テキスト 未計画 日程を確認
+						732 テキスト 未計画
+					730 list item (selectable) owner/repo #16 作業 16 未計画 未設定 → 未設定 ID: GanttRow-P1T16
+						733 テキスト owner/repo #16 作業 16
+						734 テキスト 未計画 日程を確認
+						735 テキスト 未計画
+					736 list item (selectable) owner/repo #17 作業 17 未計画 未設定 → 未設定 ID: GanttRow-P1T17
+						737 テキスト owner/repo #17 作業 17
+						738 テキスト 未計画 日程を確認
+						745 テキスト 未計画
+					740 list item (selectable) owner/repo #18 作業 18 未計画 未設定 → 未設定 ID: GanttRow-P1T18
+						741 テキスト owner/repo #18 作業 18
+						742 テキスト 未計画 日程を確認
+						746 テキスト 未計画
+					744 list item (selectable) owner/repo #19 作業 19 未計画 未設定 → 未設定 ID: GanttRow-P1T19
+						747 テキスト owner/repo #19 作業 19
+						748 テキスト 未計画 日程を確認
+						751 テキスト 未計画
+					750 list item (selectable) owner/repo #20 作業 20 未計画 未設定 → 未設定 ID: GanttRow-P1T20
+						752 テキスト owner/repo #20 作業 20
+						753 テキスト 未計画 日程を確認
+						754 テキスト 未計画
+				696 pane 時間軸の横スクロール ID: GanttHorizontal
+					697 scroll bar (settable, float) 水平 Value: 0 ID: HorizontalScrollBar
+				698 テキスト owner/repo #1 週次計画の確認 未計画 未設定 → 未設定 ID: GanttSelected
+				699 combo box 先行 → 選択 → 後続 Description: 関係を選択 ID: GanttRelated
+				700 テキスト Auto または Manual を選んでください。 ID: GanttNotice
+				701 ステータス バー ID: GanttOperationStatus
+					702 テキスト エラー アイコン ID: StandardIcon
+					703 テキスト ID: Title
+					704 テキスト 日程を変更するタスクを選択してください。 ID: Message
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+The focused UI element is 759 テキスト P1 / github.com / viewer.

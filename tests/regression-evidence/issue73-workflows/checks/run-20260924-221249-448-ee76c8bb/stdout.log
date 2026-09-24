@@ -1,0 +1,39 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 13:12:59Z
+    End time: 2026-09-24 13:12:59Z
+    Duration: 0.031 seconds
+
+Test Filters
+    Where: cat == WorkflowPlanning or test =~ FreshProjectConfiguresMappings or test =~ ExplicitHolidayAdoption or test =~ NativeSettingsReplanAuto or test =~ BoardsPendingTextAndExactPlanRemain
+
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1245-f8892959e1f2498d8467edf6f4ab7706\gantt-early-connected.png
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(False)
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-d32cc9ce-6bab-47b3-87b8-63a75631b883; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(True)
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-369f4858-4e6c-467b-bbbf-3e65dfc069af; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-44077ddb-c801-4cb9-80d8-9fb7ed58f4bb; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-e4518942-f4de-4043-9fa0-525b12175e75; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Passed
+  Test Count: 12, Passed: 12, Failed: 0, Warnings: 0, Inconclusive: 0, Skipped: 0
+  Start time: 2026-09-24 13:12:59Z
+    End time: 2026-09-24 13:13:07Z
+    Duration: 7.978 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-221249-448-ee76c8bb\results.xml
+

@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="190" result="Passed" start-time="2026-09-24T13:12:59.1016561Z" end-time="2026-09-24T13:13:07.0793266Z" duration="7.977654" total="12" initiated="12" passed="12" failed="0" warnings="0" completed="12" skipped="0" inconclusive="0" asserts="3" random-seed="524634974">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == WorkflowPlanning or test =~ FreshProjectConfiguresMappings or test =~ ExplicitHolidayAdoption or test =~ NativeSettingsReplanAuto or test =~ BoardsPendingTextAndExactPlanRemain" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-221249-448-ee76c8bb\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>WorkflowPlanning</cat>
+      <test re="1">FreshProjectConfiguresMappings</test>
+      <test re="1">ExplicitHolidayAdoption</test>
+      <test re="1">NativeSettingsReplanAuto</test>
+      <test re="1">BoardsPendingTextAndExactPlanRemain</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1240" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="190" result="Passed" start-time="2026-09-24T13:12:59.1016561Z" end-time="2026-09-24T13:13:07.0793266Z" duration="7.977654" total="12" initiated="12" passed="12" failed="0" warnings="0" completed="12" skipped="0" inconclusive="0" asserts="3">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="32300" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1241" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="190" result="Passed" start-time="2026-09-24T13:12:59.1043628Z" end-time="2026-09-24T13:13:07.0793244Z" duration="7.974961" total="12" initiated="12" passed="12" failed="0" warnings="0" completed="12" skipped="0" inconclusive="0" asserts="3">
+      <test-suite type="TestSuite" id="1242" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="190" result="Passed" start-time="2026-09-24T13:12:59.1045716Z" end-time="2026-09-24T13:13:07.0793219Z" duration="7.974750" total="12" initiated="12" passed="12" failed="0" warnings="0" completed="12" skipped="0" inconclusive="0" asserts="3">
+        <test-suite type="TestSuite" id="1243" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="190" result="Passed" start-time="2026-09-24T13:12:59.1045796Z" end-time="2026-09-24T13:13:07.0793174Z" duration="7.974738" total="12" initiated="12" passed="12" failed="0" warnings="0" completed="12" skipped="0" inconclusive="0" asserts="3">
+          <test-suite type="TestFixture" id="1109" name="GanttHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-24T13:12:59.1045813Z" end-time="2026-09-24T13:13:00.9946295Z" duration="1.890048" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1110" name="BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" methodname="BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="694692498" result="Passed" start-time="2026-09-24T13:12:59.1057049Z" end-time="2026-09-24T13:13:00.9932442Z" duration="1.887617" asserts="1" />
+          </test-suite>
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="61" result="Passed" start-time="2026-09-24T13:13:00.9948083Z" end-time="2026-09-24T13:13:03.5633661Z" duration="2.568558" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1057" name="ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-24T13:13:00.9948711Z" end-time="2026-09-24T13:13:02.1698197Z" duration="1.174949" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <test-case id="1055" name="ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(False)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(False)" methodname="ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1078635458" result="Passed" start-time="2026-09-24T13:13:00.9950053Z" end-time="2026-09-24T13:13:01.4940225Z" duration="0.499018" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-d32cc9ce-6bab-47b3-87b8-63a75631b883; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+]]></output>
+              </test-case>
+              <test-case id="1056" name="ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(True)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard(True)" methodname="ConnectionRoundtripRetainsSettingsAndAnotherAccountNeedsAnExplicitDiscard" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="866058886" result="Passed" start-time="2026-09-24T13:13:01.4940537Z" end-time="2026-09-24T13:13:02.1697464Z" duration="0.675693" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-369f4858-4e6c-467b-bbbf-3e65dfc069af; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1059" name="FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" methodname="FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="603945965" result="Passed" start-time="2026-09-24T13:13:02.1698330Z" end-time="2026-09-24T13:13:02.6278901Z" duration="0.458058" asserts="2">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-44077ddb-c801-4cb9-80d8-9fb7ed58f4bb; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+]]></output>
+            </test-case>
+            <test-case id="1058" name="ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" methodname="ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="525149126" result="Passed" start-time="2026-09-24T13:13:02.6279199Z" end-time="2026-09-24T13:13:03.5633345Z" duration="0.935415" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-e4518942-f4de-4043-9fa0-525b12175e75; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 35b70b5f-c6a7-4d06-b35b-e301063c636f
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1131" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="34" result="Passed" start-time="2026-09-24T13:13:03.5633772Z" end-time="2026-09-24T13:13:07.0793070Z" duration="3.515930" total="7" initiated="7" passed="7" failed="0" warnings="0" completed="7" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1141" name="ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" methodname="ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="56816625" result="Passed" start-time="2026-09-24T13:13:03.5634608Z" end-time="2026-09-24T13:13:04.1765587Z" duration="0.613099" asserts="0" />
+            <test-case id="1169" name="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" methodname="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="645297916" result="Passed" start-time="2026-09-24T13:13:04.1765912Z" end-time="2026-09-24T13:13:04.6114746Z" duration="0.434884" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+            <test-case id="1132" name="FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" methodname="FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1690118849" result="Passed" start-time="2026-09-24T13:13:04.6115064Z" end-time="2026-09-24T13:13:05.2376890Z" duration="0.626184" asserts="0" />
+            <test-suite type="ParameterizedMethod" id="1167" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-24T13:13:05.2377407Z" end-time="2026-09-24T13:13:05.8698449Z" duration="0.632104" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <test-case id="1165" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="338513913" result="Passed" start-time="2026-09-24T13:13:05.2378187Z" end-time="2026-09-24T13:13:05.5607429Z" duration="0.322925" asserts="0" />
+              <test-case id="1166" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="746225300" result="Passed" start-time="2026-09-24T13:13:05.5607771Z" end-time="2026-09-24T13:13:05.8698050Z" duration="0.309028" asserts="0" />
+            </test-suite>
+            <test-case id="1168" name="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" methodname="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1242513331" result="Passed" start-time="2026-09-24T13:13:05.8698640Z" end-time="2026-09-24T13:13:06.1786230Z" duration="0.308760" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+            <test-case id="1144" name="NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" methodname="NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1906431395" result="Passed" start-time="2026-09-24T13:13:06.1786614Z" end-time="2026-09-24T13:13:07.0792715Z" duration="0.900610" asserts="0" />
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

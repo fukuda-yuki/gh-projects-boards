@@ -1,0 +1,65 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				3 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				5 button 接続設定 ID: ConnectionPageButton
+				6 window Secondary Actions: Raise ID: PaneRoot
+					7 combo box 保存済みアカウント ID: SavedProfiles
+					8 テキスト 登録済みProject
+					9 tree ID: ListControl
+						32 tree item (selectable) owner
+							33 テキスト owner
+						34 tree item (selectable) Repository関連付けなし
+							35 テキスト Repository関連付けなし
+						36 tree item (selectable) P1
+							37 テキスト P1
+						38 tree item (selectable) P2
+							39 テキスト P2
+					10 button Projectを追加… ID: AddProjectButton
+				11 テキスト P1 ID: ProjectSummary
+				40 テキスト キャッシュ 2026/09/24 23:17 ID: ProjectCacheDestination
+				12 button (disabled) 最新を取得 ID: RefreshProjectButton
+				13 button (disabled) GitHubに反映… ID: ReviewApplyButton
+				14 button 反映結果・履歴 ID: ApplyHistoryButton
+				15 button (disabled) Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton
+				186 テキスト 計画の前提
+				187 テキスト Project「P1」全体に適用します。保存すると自動計算の日程を見直します。
+				188 pane
+					189 テキスト Project開始（日本時間）
+					226 edit (settable, string) Project開始（日本時間） Value: 2026-10-01 09:00 ID: PlanProjectStart
+					194 リンク 日付と時刻を選ぶ ID: PlanProjectStart-Direct
+					195 テキスト 自動計算の開始点です。日時を指定するタスクは、タスクの日程から編集できます。
+					196 テキスト 再計画の基準日時（日本時間）
+					197 カレンダー日付の選択 再計画の基準日時（日本時間）の日付 Value: 日付 ID: PlanCutoff-Date
+						198 テキスト 日付 ID: DateText
+					199 グループ 再計画の基準日時（日本時間）の時刻 ID: PlanCutoff-Time
+						200 button 再計画の基準日時（日本時間）の時刻 時刻の選択 ID: FlyoutButton
+					201 リンク 文字で入力 ID: PlanCutoff-Direct
+					202 テキスト 進行中・再開したタスクの残作業を、いつ以降に計画するか。実績の報告日とは別です。
+					203 テキスト GitHubの列との対応
+					204 テキスト 見積時間を対応づけると表で入力できます。既存の列を確認して選んでください。その他の列は必要になった時に設定できます。
+					205 combo box 見積時間 ID: PlanField-Estimate
+					206 combo box 残時間 ID: PlanField-Remaining
+					207 combo box 実績合計 ID: PlanField-Actual
+					208 combo box 開始日 ID: PlanField-Start
+					209 combo box 終了日 ID: PlanField-Finish
+					210 テキスト 通常は平日9–13時・14–18時。採用祝日 2025–2027。
+					211 button 担当者・配賦 ID: PlanSection-担当者・配賦
+						212 テキスト 担当者・配賦
+					213 button カレンダー・祝日 ID: PlanSection-カレンダー・祝日
+						214 テキスト カレンダー・祝日
+					215 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar
+				220 button 保存して戻る ID: PlanSettingsSave
+				221 button 取消して戻る ID: PlanSettingsCancel
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+Document text: ```
+2026-10-01 09:00
+```

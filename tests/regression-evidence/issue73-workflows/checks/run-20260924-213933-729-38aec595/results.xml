@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="182" result="Passed" start-time="2026-09-24T12:39:39.7747098Z" end-time="2026-09-24T12:39:41.8154660Z" duration="2.040736" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1" random-seed="1808521942">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-213933-729-38aec595\results.xml]]></command-line>
+  <filter>
+    <test re="1">BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip</test>
+  </filter>
+  <test-suite type="Assembly" id="1230" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="182" result="Passed" start-time="2026-09-24T12:39:39.7747098Z" end-time="2026-09-24T12:39:41.8154660Z" duration="2.040736" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="38412" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1231" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="182" result="Passed" start-time="2026-09-24T12:39:39.7774489Z" end-time="2026-09-24T12:39:41.8154633Z" duration="2.038014" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+      <test-suite type="TestSuite" id="1232" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="182" result="Passed" start-time="2026-09-24T12:39:39.7776454Z" end-time="2026-09-24T12:39:41.8154603Z" duration="2.037815" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+        <test-suite type="TestSuite" id="1233" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="182" result="Passed" start-time="2026-09-24T12:39:39.7776601Z" end-time="2026-09-24T12:39:41.8154501Z" duration="2.037790" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+          <test-suite type="TestFixture" id="1104" name="GanttHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" testcasecount="15" result="Passed" start-time="2026-09-24T12:39:39.7776615Z" end-time="2026-09-24T12:39:41.8152867Z" duration="2.037625" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1105" name="BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" methodname="BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="2113045448" result="Passed" start-time="2026-09-24T12:39:39.7788552Z" end-time="2026-09-24T12:39:41.8137199Z" duration="2.034966" asserts="1" />
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="184" result="Failed" start-time="2026-09-24T13:00:28.2345740Z" end-time="2026-09-24T13:00:51.2588349Z" duration="23.024238" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0" random-seed="1066839038">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == WorkflowPlanning or test =~ FreshProjectConfiguresMappings or test =~ ExplicitHolidayAdoption or test =~ NativeSettingsReplanAuto" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-220018-131-7972a662\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>WorkflowPlanning</cat>
+      <test re="1">FreshProjectConfiguresMappings</test>
+      <test re="1">ExplicitHolidayAdoption</test>
+      <test re="1">NativeSettingsReplanAuto</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1232" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="184" result="Failed" site="Child" start-time="2026-09-24T13:00:28.2345740Z" end-time="2026-09-24T13:00:51.2588349Z" duration="23.024238" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="41500" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1233" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="184" result="Failed" site="Child" start-time="2026-09-24T13:00:28.2371626Z" end-time="2026-09-24T13:00:51.2588318Z" duration="23.021669" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1234" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="184" result="Failed" site="Child" start-time="2026-09-24T13:00:28.2373210Z" end-time="2026-09-24T13:00:51.2588294Z" duration="23.021508" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1235" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="184" result="Failed" site="Child" start-time="2026-09-24T13:00:28.2373259Z" end-time="2026-09-24T13:00:51.2588198Z" duration="23.021494" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1126" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="32" result="Failed" site="Child" start-time="2026-09-24T13:00:28.2373274Z" end-time="2026-09-24T13:00:51.2585545Z" duration="23.021227" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1136" name="ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" methodname="ExplicitHolidayAdoptionReplansAutoAndRetainsManualExceptionsActualsAndPendingText" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1900479416" result="Passed" start-time="2026-09-24T13:00:28.2383867Z" end-time="2026-09-24T13:00:29.0241424Z" duration="0.785803" asserts="0" />
+            <test-case id="1161" name="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" methodname="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1111855070" result="Failed" label="Error" start-time="2026-09-24T13:00:29.0251735Z" end-time="2026-09-24T13:00:49.4023086Z" duration="20.377135" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <failure>
+                <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 66
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+              </failure>
+              <assertions>
+                <assertion result="Error">
+                  <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 66
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+            <test-case id="1127" name="FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" methodname="FreshProjectConfiguresMappingsAndWeightOnceThenEstimateCreatesDatesForItsNativeAssignee" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1166733870" result="Passed" start-time="2026-09-24T13:00:49.4024550Z" end-time="2026-09-24T13:00:50.0776213Z" duration="0.675167" asserts="0" />
+            <test-case id="1160" name="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" methodname="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1173739471" result="Passed" start-time="2026-09-24T13:00:50.0776505Z" end-time="2026-09-24T13:00:50.3988929Z" duration="0.321243" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+            <test-case id="1139" name="NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" methodname="NativeSettingsReplanAutoAndDependencySelectorUsesTheWholePlan" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1184882719" result="Passed" start-time="2026-09-24T13:00:50.3989260Z" end-time="2026-09-24T13:00:51.2575146Z" duration="0.858589" asserts="0" />
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
