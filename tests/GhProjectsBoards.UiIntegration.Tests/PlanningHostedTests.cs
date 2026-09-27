@@ -170,7 +170,7 @@ public sealed partial class PlanningHostedTests
         });
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
-            Assert.That(w.Value(w.Open(project)[1].Cells[4]), Is.Null); Assert.That(w.Buffer(w.Open(project)[1].Cells[4]), Is.EqualTo("9"));
+            Assert.That(w.Value(w.Open(project)[1].Cells[4]), Is.Null); Assert.That(w.Buffer(w.Open(project)[1].Cells[4]), Is.Null);
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Actuals![0].Hours, Is.EqualTo(7));
             Assert.That(w.Journal, Is.Empty);
         });
@@ -228,7 +228,7 @@ public sealed partial class PlanningHostedTests
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
             Assert.That(w.Planning("P1")!.Tasks[0].Actuals, Is.EqualTo(original));
-            Assert.That(w.Buffer(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(w.Buffer(w.Open(project)[0].Cells[4]), Is.Null);
         });
     }
 

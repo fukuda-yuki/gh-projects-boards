@@ -26,12 +26,20 @@ public sealed partial class RegistrationPanel
         var expected = lifetime;
         if (!dialog.Resources.ContainsKey("ContentDialogMaxWidth")) dialog.Resources["ContentDialogMaxWidth"] = 760d;
         activeDialog = dialog;
+        foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.SuppressApplyProblemPopup(true);
         try
         {
             var result = await dialog.ShowAsync();
             return expected == lifetime && IsLoaded ? result : ContentDialogResult.None;
         }
-        finally { if (ReferenceEquals(activeDialog, dialog)) activeDialog = null; }
+        finally
+        {
+            if (ReferenceEquals(activeDialog, dialog))
+            {
+                activeDialog = null;
+                foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.SuppressApplyProblemPopup(false);
+            }
+        }
     }
     private async void ShowApplyHistory(object sender, RoutedEventArgs e)
     {
@@ -39,6 +47,9 @@ public sealed partial class RegistrationPanel
         var readOnly = EditorHost.Children.OfType<EditingGrid>().Any(grid => grid.PlanningSettingsOpen);
         ProjectSettingsFlyout.Hide();
         var owner = Workspace; var expected = lifetime;
+        var profile = owner.Profile; var project = owner.Selected?.Snapshot.Id;
+        bool Current() => IsCurrent(owner, expected) && owner.Profile == profile
+            && owner.Selected?.Snapshot.Id == project && ReferenceEquals(owner.Drafts, session);
         applyDialog = true; ApplyHistory.IsEnabled = false;
         string? resolutionBatch = null; string? resolutionOperation = null; bool setupReview = false;
         string? resumeBatch = null; string? withdrawBatch = null;
@@ -61,15 +72,20 @@ public sealed partial class RegistrationPanel
             var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "反映結果・履歴", Content = content,
                 CloseButtonText = "閉じる", DefaultButton = ContentDialogButton.Close };
             AutomationProperties.SetAutomationId(dialog, "ApplyHistoryDialog");
+            var refreshActions = new List<Action>();
+            bool goConnection = false;
+            TaskCompletionSource? returning = null;
             void Populate()
             {
-                historyContent.Items.Clear();
+                historyContent.Items.Clear(); refreshActions.Clear();
                 foreach (var b in session.Workspace.Journal.Reverse())
                 {
                 var pending = attention.Where(a => a.BatchId == b.Id).ToArray();
                 if (allHistory.IsChecked != true && pending.Length == 0) continue;
                 var entry = ApplyPanel(12);
                 entry.Children.Add(ApplyText($"{b.ProjectName} / {b.ReviewedAt.LocalDateTime:g}", emphasis: true));
+                var remoteActions = new List<Button>();
+                var localActions = new List<Button>();
                 if (b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))
                     || (b.Creations ?? []).Any(c => !c.Completed && c.Authorized))
                 {
@@ -81,6 +97,7 @@ public sealed partial class RegistrationPanel
                     var withdraw = new Button { Content = "承認を撤回", IsEnabled = !readOnly };
                     AutomationProperties.SetAutomationId(withdraw, "WithdrawApplyBatch-" + b.Id);
                     withdraw.Click += (_, _) => { withdrawBatch = b.Id; dialog.Hide(); };
+                    remoteActions.Add(resume); localActions.Add(withdraw);
                     actions.Children.Add(resume); actions.Children.Add(withdraw); entry.Children.Add(actions);
                 }
                 foreach (var operation in b.Operations.Where(o => allHistory.IsChecked == true || pending.Any(a => a.OperationId == o.Id)))
@@ -94,9 +111,37 @@ public sealed partial class RegistrationPanel
                         AutomationProperties.SetAutomationId(resolve, "ResolveCreation-" + c.Id);
                         AutomationProperties.SetName(resolve, $"{resolve.Content}: {c.Repository.Name} / {c.Title}");
                         resolve.Click += (_, _) => { resolutionBatch = b.Id; resolutionOperation = c.Id; setupReview = c.Verified is not null; dialog.Hide(); };
+                        remoteActions.Add(resolve);
                         creation.Children.Add(resolve);
                     }
                     entry.Children.Add(creation);
+                }
+                if (remoteActions.Count > 0)
+                {
+                    var prerequisite = ApplyPanel(4);
+                    var hint = ApplyText("このアカウントへの接続が確認されていません。");
+                    AutomationProperties.SetAutomationId(hint, "ApplyHistoryConnectionHint-" + b.Id);
+                    var connection = new Button { Content = "接続設定", HorizontalAlignment = HorizontalAlignment.Left };
+                    AutomationProperties.SetAutomationId(connection, "ApplyHistoryConnection-" + b.Id);
+                    AutomationProperties.SetName(connection, "接続設定：" + b.ProjectName);
+                    connection.Click += (_, _) => {
+                        if (!Current() || readOnly || owner.IsBusy || owner.CanRead || !CanLeaveForConnection()) return;
+                        goConnection = true; dialog.Hide();
+                    };
+                    prerequisite.Children.Add(hint); prerequisite.Children.Add(connection);
+                    entry.Children.Insert(1, prerequisite);
+                    void RefreshActions()
+                    {
+                        var available = Current() && !readOnly && !owner.IsBusy;
+                        foreach (var action in remoteActions) action.IsEnabled = available && owner.CanRead;
+                        foreach (var action in localActions) action.IsEnabled = available;
+                        hint.Text = owner.IsBusy ? "処理中です。完了後に操作してください。" : "このアカウントへの接続が確認されていません。";
+                        hint.Visibility = !readOnly && (owner.IsBusy || !owner.CanRead) ? Visibility.Visible : Visibility.Collapsed;
+                        connection.Visibility = !readOnly && !owner.IsBusy && !owner.CanRead ? Visibility.Visible : Visibility.Collapsed;
+                        connection.IsEnabled = available && !owner.CanRead;
+                        prerequisite.Visibility = hint.Visibility;
+                    }
+                    refreshActions.Add(RefreshActions); RefreshActions();
                 }
                 entry.Children.Add(ApplyDetails("実行とProjectの識別情報", ApplyText($"実行 {b.Id}\nProject {b.Project.NodeId}\nアカウント ID {b.Project.Scope.ViewerId}"), "ApplyBatchIdentity-" + b.Id));
                 historyContent.Items.Add(entry);
@@ -105,10 +150,40 @@ public sealed partial class RegistrationPanel
                 historyContent.Visibility = historyContent.Items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             }
             allHistory.Checked += (_, _) => Populate(); allHistory.Unchecked += (_, _) => Populate(); Populate();
-            await ShowDialogAsync(dialog);
+            void Changed()
+            {
+                if (!DispatcherQueue.HasThreadAccess) { DispatcherQueue.TryEnqueue(Changed); return; }
+                if (!Current()) { if (ReferenceEquals(activeDialog, dialog)) dialog.Hide(); returning?.TrySetResult(); return; }
+                foreach (var refresh in refreshActions) refresh();
+            }
+            void UnloadedHistory(object sender, RoutedEventArgs args)
+            { if (ReferenceEquals(activeDialog, dialog)) dialog.Hide(); returning?.TrySetResult(); }
+            owner.Changed += Changed; Unloaded += UnloadedHistory;
+            try
+            {
+                while (Current())
+                {
+                    Changed();
+                    await ShowDialogAsync(dialog);
+                    if (!goConnection || !Current()) break;
+                    goConnection = false;
+                    returning = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    connectionReturn = returning;
+                    ConnectionRequested?.Invoke(this, EventArgs.Empty);
+                    await returning.Task;
+                    if (ReferenceEquals(connectionReturn, returning)) connectionReturn = null;
+                    returning = null;
+                    // Keep the same controls so history disclosure and position survive connection checks.
+                }
+            }
+            finally
+            {
+                owner.Changed -= Changed; Unloaded -= UnloadedHistory;
+                if (returning is not null && ReferenceEquals(connectionReturn, returning)) connectionReturn = null;
+            }
         }
         finally { applyDialog = false; if (IsLoaded) Update(); }
-        if (!IsCurrent(owner, expected) || !ReferenceEquals(owner.Drafts, session)) return;
+        if (!Current()) return;
         if (resumeBatch is not null)
         {
             var generation = applyViewGeneration;
@@ -169,11 +244,13 @@ public sealed partial class RegistrationPanel
         if (includeHistory)
         {
             var uncertain = ApplyResultsPresentation.Kind(operation) == ApplyAttentionKind.Uncertain;
-            panel.Children.Add(ApplyText($"{(uncertain ? "結果の確認が必要" : ApplyStateText(operation.State))} / {operation.Reason}"));
+            var reason = ApplyResultsPresentation.OutcomeReason(operation);
+            panel.Children.Add(ApplyText($"{(uncertain ? "結果の確認が必要" : ApplyStateText(operation.State))} / {reason}"));
             if (operation.NotBefore is { } wait) panel.Children.Add(ApplyText($"再開可能時刻: {wait.LocalDateTime:g}"));
             var verification = operation.Verification;
             values.Children.Add(ApplyText($"読み戻し: {(verification is null ? "未確認" : verification.Availability is ValueAvailability.Present or ValueAvailability.Empty ? ApplyValue(operation, verification.Value) : $"未確認（{verification.Availability}）")}"));
             values.Children.Add(ApplyText($"試行 {operation.Attempts.Length} / {operation.Id}\nIssue {operation.IssueId} / 項目 {operation.ItemId}"));
+            if (reason != operation.Reason) values.Children.Add(ApplyText("保存された診断: " + operation.Reason));
             foreach (var attempt in operation.Attempts)
                 values.Children.Add(ApplyText($"{attempt.Number}: {attempt.At.LocalDateTime:g} / {ApplyStateText(attempt.State)} / {attempt.Reason}"));
             panel.Children.Add(ApplyDetails("値・読み戻し・試行の詳細", values, "ApplyOperationDetails-" + operation.Id));
@@ -209,12 +286,21 @@ public sealed partial class RegistrationPanel
         var panel = ApplyPanel(4);
         panel.Children.Add(ApplyText($"{creation.Repository.Name} / {creation.Title}", emphasis: true));
         var state = creation.Completed ? "完了" : creation.Verified is not null ? "既知IssueのProject設定を確認" : creation.Dispatched ? "作成結果が不確定" : "未送信";
-        panel.Children.Add(ApplyText($"{state} / {creation.Reason}"));
-        panel.Children.Add(ApplyText($"Issue確認: {(creation.Verified is null ? "未確認" : "確認済み")} / Project所属: {(creation.ItemId is null ? "未確認" : "確認済み")} / フィールド: {(creation.Fields is null ? "未観測" : $"確認済み {creation.Fields.Count(f => f.State == ApplyState.Succeeded)} / {creation.Fields.Length}")}"));
+        var completedBinding = CreationJournal.IsCompletedOriginalBinding(creation);
+        panel.Children.Add(ApplyText(completedBinding
+            ? ApplyResultsPresentation.BindingCompletionText(ApplyResultsPresentation.HasApprovedCreationFields(creation))
+            : $"{state} / {creation.Reason}"));
+        var stages = $"Issue確認: {(creation.Verified is null ? "未確認" : "確認済み")} / Project所属: {(creation.ItemId is null ? "未確認" : "確認済み")}";
+        if (creation.Fields is null || ApplyResultsPresentation.HasApprovedCreationFields(creation))
+            stages += $" / フィールド: {(creation.Fields is null ? "未観測" : $"確認済み {creation.Fields.Count(f => f.State == ApplyState.Succeeded)} / {creation.Fields.Length}")}";
+        panel.Children.Add(ApplyText(stages));
         if (creation.Verified is { } issue) panel.Children.Add(ApplyText("検証済みIssue: " + issue.Url));
         if (creation.EarlierUncertain)
-            panel.Children.Add(ApplyMessage("以前の試行に不確定な結果があります", "現在の結果から、以前の試行でIssueが作成されなかったとは判断できません。", InfoBarSeverity.Warning));
+            panel.Children.Add(completedBinding
+                ? ApplyText("元の作成要求は結果不明のまま保存されています。")
+                : ApplyMessage("以前の試行に不確定な結果があります", "現在の結果から、以前の試行でIssueが作成されなかったとは判断できません。", InfoBarSeverity.Warning));
         var details = ApplyPanel(4);
+        if (completedBinding) details.Children.Add(ApplyText(creation.Reason));
         details.Children.Add(ApplyText($"ローカル行 {creation.LocalId}\n試行 {creation.Id}\nRepository ID {creation.Repository.Id}\n受信ID: {creation.ReceivedId ?? creation.Received?.Id ?? "未確認"}\nIssue ID: {creation.Verified?.Id ?? "未確認"}\nProject項目: {creation.ItemId ?? "未確認"}\n以前の試行不確定: {creation.EarlierUncertain}"));
         if (creation.PreviousAttempt is { } previous) details.Children.Add(ApplyText("以前の試行: " + previous));
         if (creation.UserBound) details.Children.Add(ApplyText("利用者が確認したURLを関連付けました。元の作成成功の証明ではありません。"));

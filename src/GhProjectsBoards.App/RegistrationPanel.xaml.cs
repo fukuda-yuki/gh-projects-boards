@@ -25,6 +25,10 @@ public sealed partial class RegistrationPanel : UserControl
     internal RegistrationWorkspace Workspace => workspace!;
     public event EventHandler? ConnectionRequested;
     internal bool FocusHeader() => ConnectionSettings.Focus(FocusState.Programmatic);
+    internal void ShowCloseProblem(string message)
+    {
+        Status.Text = message; WorkspaceStatusBar.Visibility = Visibility.Visible;
+    }
     private void RequestConnection(object sender, RoutedEventArgs e)
     {
         if (CanLeaveForConnection()) ConnectionRequested?.Invoke(this, EventArgs.Empty);
@@ -173,16 +177,19 @@ public sealed partial class RegistrationPanel : UserControl
                     var previousGrid = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault();
                     if (previousGrid is not null) projectViewPositions[previousGrid.RowProjection.Project] = (previousGrid.ViewSelection, previousGrid.CurrentProjectView, previousGrid.SummaryPersonId);
                     var previousProjection = previousGrid?.RowProjection.Project == selected.Snapshot.Id && renderedRefreshGeneration == workspace.AcceptedRefreshGeneration ? previousGrid?.RowProjection : null;
-                    renderedRefreshGeneration = workspace.AcceptedRefreshGeneration;
-                    rendered = selected; DefaultRepository.Text = selected.DefaultRepository ?? "";
                     var position = projectViewPositions.GetValueOrDefault(selected.Snapshot.Id);
                     var selection = position.Selection;
-                    EditorHost.Children.Clear();
                     if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection,
                         temporaryColumns: previousGrid?.RowProjection.Project == selected.Snapshot.Id ? previousGrid.TemporaryApplyColumns : null);
                         grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.PlanningSettingsChanged += Update;
-                        grid.RestoreSelection(selection); EditorHost.Children.Add(grid); grid.ShowProjectView(position.View, selection?.Item, position.Person); Items.Visibility = Visibility.Collapsed; }
-                    else { Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
+                        grid.SuppressApplyProblemPopup(activeDialog is not null);
+                        // Retain the usable view until the replacement and its
+                        // identity-based selection have been constructed.
+                        grid.RestoreSelection(selection); EditorHost.Children.Clear(); EditorHost.Children.Add(grid);
+                        grid.ShowProjectView(position.View, selection?.Item, position.Person); Items.Visibility = Visibility.Collapsed; }
+                    else { EditorHost.Children.Clear(); Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }
+                    rendered = selected; renderedRefreshGeneration = workspace.AcceptedRefreshGeneration;
+                    DefaultRepository.Text = selected.DefaultRepository ?? "";
                 }
                 var p = selected.Snapshot;
                 Summary.Text = p.Title;

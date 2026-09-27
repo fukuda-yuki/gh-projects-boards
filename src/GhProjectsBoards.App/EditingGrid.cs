@@ -17,6 +17,7 @@ internal sealed partial class EditingGrid : Grid
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.None, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0) };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private string? operationProblem;
+    private HashSet<FieldKey>? operationProblemFields;
     private const string SelectSchedulingTask = "日程を変更するタスクを選択してください。";
     private Button? firstPlanning;
     private readonly TextBlock selection = new();
@@ -237,7 +238,16 @@ internal sealed partial class EditingGrid : Grid
         ActualThemeChanged += (_, _) => Update("theme");
         InitializeDrag();
         Unloaded += (_, _) => { generation++; CancelDrag(); session.Changed -= SessionChanged; DetachWheel(); if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; diagnostics?.Detach(); };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; AttachSheetScroll(); diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
+        Loaded += (_, _) => {
+            session.Changed -= SessionChanged; session.Changed += SessionChanged; AttachSheetScroll();
+            diagnostics?.Attach(CaptureDiagnosticState); Update("loaded");
+            // A replacement restores identity before mounting; its scroll request
+            // can only reach an offscreen row once the native viewport exists.
+            if (active && RowStillPresent(currentRow) && CurrentProjectView == ProjectView.Boards) {
+                EnsureRow(currentRow); RevealColumn(currentRow, currentColumn);
+                list.ScrollIntoView(list.Items[currentRow]);
+            }
+        };
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
@@ -370,6 +380,7 @@ internal sealed partial class EditingGrid : Grid
         var cell = rows[r].Cells[c];
         FrameworkElement editor = cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable
             ? new ChoiceCell(this, r, c, cell) : new TitleCell(this, r, c, cell);
+        editor.Loaded += ApplyProblemTargetLoaded;
         AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
         AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
         if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
@@ -555,7 +566,7 @@ internal sealed partial class EditingGrid : Grid
     private string statusBeforeSave = "", statusAfterSave = "";
     private readonly HashSet<(int Row, int Column)> paintedSelection = [];
     private (int Row, int Column)? paintedCurrent;
-    private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count
+    private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count && RowStillPresent(r)
         && c >= 0 && c < controls[r].Length && ReferenceEquals(controls[r][c], editor);
     private static string? DiagnosticId(DependencyObject? element) => element is null ? null : AutomationProperties.GetAutomationId(element);
     private object CaptureDiagnosticState(bool includeVisuals)
@@ -758,8 +769,15 @@ internal sealed partial class EditingGrid : Grid
         }
         finally { updating = false; }
     }
+    // A durable creation promotion removes the local row before the panel mounts
+    // its fetched replacement. Layout/focus callbacks can still reach the old
+    // grid in that interval; it must not query or edit the retired local identity.
+    private bool RowStillPresent(int row) => !rows[row].IsLocal
+        || session.Workspace.LocalRows.Any(local => local.Id == rows[row].ItemId && local.ProjectId == projectId);
+
     private void UpdateCell(int r, int c)
     {
+        if (!RowStillPresent(r)) return;
         if (controls[r][c] is not (TitleCell or ChoiceCell or RecycledCell)) return;
         if (controls[r][c] is RecycledCell presentation) presentation.Refresh();
         var cell = rows[r].Cells[c];
@@ -831,6 +849,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateSelectedDetails()
     {
+        if (active && currentRow < rows.Length && !RowStillPresent(currentRow)) return;
         UpdateActualInput();
         UpdateDateInput();
         UpdateApplyProblemText();
@@ -863,6 +882,7 @@ internal sealed partial class EditingGrid : Grid
     }
     private void Select(int r, int c, bool extend, bool focus = true)
     {
+        if (!RowStillPresent(r)) return;
         using var measured = diagnostics?.Span("select");
         diagnostics?.Record("select-request", new { row = r, column = c, extend, focus, item = rows[r].ItemId, key = rows[r].Cells[c].Key });
         EnsureRow(r);
@@ -923,11 +943,18 @@ internal sealed partial class EditingGrid : Grid
         using var measured = diagnostics?.Span("run");
         try { action(); operationProblem = null; Update("run"); _ = FlushDraftsAsync("run"); }
         catch (Exception ex) when (ex is InvalidOperationException or System.Runtime.InteropServices.COMException)
-        { diagnostics?.Record("command-failure", new { type = ex.GetType().Name, ex.HResult }); ShowOperationProblem(ex is InvalidOperationException ? ex.Message : "クリップボードを利用できません。"); }
+        { diagnostics?.Record("command-failure", new { type = ex.GetType().Name, ex.HResult }); ShowOperationProblem(ex is InvalidOperationException ? ex.Message : "クリップボードを利用できません。", (ex as UndoRejectedException)?.Fields); }
     }
-    private void ShowOperationProblem(string message)
+    private void ShowOperationProblem(string message, IEnumerable<FieldKey>? fields = null)
     {
-        operationProblem = message; RefreshStatus(); UpdateSelectedDetails();
+        operationProblem = message; operationProblemFields = fields?.ToHashSet(); RefreshStatus(); UpdateSelectedDetails();
+    }
+    private void ClearCellOperationProblem(FieldKey? key)
+    {
+        // A successful cell correction resolves only that cell's failure. An
+        // unrelated clipboard/command problem and session save failure remain.
+        if (operationProblem is null || key is null || operationProblemFields?.Remove(key) != true) return;
+        if (operationProblemFields.Count == 0) { operationProblem = null; operationProblemFields = null; }
     }
     private void RefreshStatus()
     {
@@ -1252,8 +1279,8 @@ internal sealed partial class EditingGrid : Grid
             {
                 if (owner.TypedActual(cell)) { owner.CommitActualCell(confirmContext: false); e.Handled = true; return; }
                 if (owner.TypedDate(cell)) { if (owner.CommitDateCell()) owner.NavigateKey(row, column, e); e.Handled = true; return; }
-                try { owner.session.Workspace.Commit(owner.projectId, cell, Text); Editing = false; owner.NavigateKey(row, column, e); _ = owner.FlushDraftsAsync("cell-commit"); }
-                catch (InvalidOperationException ex) { owner.status.Text = ex.Message; e.Handled = true; }
+                try { owner.session.Workspace.Commit(owner.projectId, cell, Text); owner.ClearCellOperationProblem(cell.Key); Editing = false; owner.NavigateKey(row, column, e); _ = owner.FlushDraftsAsync("cell-commit"); }
+                catch (InvalidOperationException ex) { owner.ShowOperationProblem(ex.Message, cell.Key is { } key ? [key] : null); e.Handled = true; }
             }
             else if (!Editing) owner.NavigateKey(row, column, e);
             // Native text Undo stays inside the editing/composition path.

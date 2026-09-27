@@ -88,6 +88,7 @@ public sealed partial class RegistrationPanel
         reviewRoot.Changed += RootChanged;
         AutomationProperties.SetAutomationId(dialog, "ApplyReviewDialog");
         bool open = true, suspended = false, checking = false, goConnection = false, goHistory = false, restartRequested = false;
+        string? checkProblem = null;
         int request = 0, nextProblem = 0;
         ApplyReview? review = null;
         ApplyConfirmationPresentation? presentation = null;
@@ -101,7 +102,7 @@ public sealed partial class RegistrationPanel
         {
             if (!open) return;
             var reason = checking ? null : !Current() ? "接続先またはProjectが変わりました。元の作業を保持しました。対象を確認し直してください。"
-                : owner.ApplyBlockReason(review);
+                : checkProblem ?? owner.ApplyBlockReason(review);
             dialog.IsPrimaryButtonEnabled = !checking && Current() && reason is null;
             var problemIds = ProblemIds();
             reasons.Text = reason ?? "";
@@ -138,29 +139,40 @@ public sealed partial class RegistrationPanel
         }
         async Task CheckLoop()
         {
-            while (Current())
+            try
             {
-                var thisRequest = request;
-                var restartThisCheck = restartRequested; restartRequested = false;
-                checking = true; review = null;
-                status.Text = "GitHubの最新状態を確認中…"; Populate();
-                var ids = selectedIds.ToHashSet();
-                var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
-                if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
-                else await owner.PrepareApplyAsync(ids, targets);
-                if (!Current()) break;
-                if (thisRequest != request) continue;
-                checking = false; review = owner.ApplyReview;
-                status.Text = review is null ? owner.Status + "（表示は保存済み・最新未確認）" : "最新確認済み";
-                if (review is null && owner.ApplySelectionInvalidated)
+                while (Current())
                 {
-                    selectedIds.Clear();
-                    visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
-                    status.Text += " 対象を広げず、選択を解除しました。行を選び直してください。";
+                    var thisRequest = request;
+                    var restartThisCheck = restartRequested; restartRequested = false;
+                    checking = true; review = null; checkProblem = null;
+                    status.Text = "GitHubの最新状態を確認中…"; Populate();
+                    var ids = selectedIds.ToHashSet();
+                    var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
+                    if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
+                    else await owner.PrepareApplyAsync(ids, targets);
+                    if (!Current()) break;
+                    if (thisRequest != request) continue;
+                    checking = false; review = owner.ApplyReview;
+                    status.Text = review is null ? owner.Status + "（表示は保存済み・最新未確認）" : "最新確認済み";
+                    if (review is null && owner.ApplySelectionInvalidated)
+                    {
+                        selectedIds.Clear();
+                        visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
+                        status.Text += " 対象を広げず、選択を解除しました。行を選び直してください。";
+                    }
+                    Populate(); break;
                 }
-                Populate(); break;
             }
-            checking = false; UpdateApproval();
+            catch (Exception)
+            {
+                // A failed presentation notification can fault a completed read.
+                // It must not leave an enabled approval or an endless busy view.
+                review = null;
+                checkProblem = "確認を完了できませんでした。再確認するか、編集へ戻ってください。";
+                if (Current()) status.Text = "最新状態は未確認です。変更は送信していません。";
+            }
+            finally { checking = false; UpdateApproval(); }
         }
         void QueueCheck(bool restartApproval = false)
         {

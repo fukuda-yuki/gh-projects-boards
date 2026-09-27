@@ -6,6 +6,10 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class EditingTests
 {
+    // Historical fixtures predate the schema-13 declaration. Do not relabel a
+    // current operation footprint as an older persisted contract.
+    internal static DraftRecord LegacyHistory(DraftRecord record) => record with {
+        History = record.History.Select(t => t with { BufferWrites = null }).ToArray() };
     internal static ProjectRegistration Registration(string projectId = "P1", long viewer = 42, string titlePrefix = "Issue ", int count = 101)
     {
         var scope = new ConnectionScope("github.com", viewer);
@@ -42,7 +46,7 @@ internal sealed class EditingTests
         w.Commit("P2", b[0].Cells[0], "Issue 1");
         Assert.That(w.Changed(a[0].Cells[0]), Is.False);
         w.Undo("P1"); // An independent select operation remains safe to undo.
-        Assert.Throws<InvalidOperationException>(() => w.Undo("P1"));
+        Assert.That(Assert.Throws<UndoRejectedException>(() => w.Undo("P1"))!.Fields, Is.EqualTo(new[] { a[0].Cells[0].Key }));
         Assert.That(w.Value(a[0].Cells[1]), Is.EqualTo("todo"));
     }
     [Test]
@@ -131,6 +135,7 @@ internal sealed class EditingTests
         Assert.That(File.Exists(file + ".interrupted.tmp"), Is.True);
     }
     [TestCase("schema"), TestCase("scope"), TestCase("select-owner"), TestCase("history-owner"), TestCase("json"), TestCase("null-history-change")]
+    [TestCase("missing-footprint"), TestCase("duplicate-footprint"), TestCase("foreign-footprint"), TestCase("null-footprint-key"), TestCase("unversioned-footprint")]
     public async Task CorruptionBlocksLoadAndOverwriteWithoutReset(string corruption)
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-draft-" + Guid.NewGuid()); var store = new DraftStore(root);
@@ -142,6 +147,11 @@ internal sealed class EditingTests
         if (corruption == "select-owner") node["Fields"]![1]!["SourceProject"]!["NodeId"] = "P2";
         if (corruption == "history-owner") node["History"]![0]!["ProjectId"] = "P2";
         if (corruption == "null-history-change") node["History"]![0]!["Changes"]!.AsArray().Add((System.Text.Json.Nodes.JsonNode?)null);
+        if (corruption == "missing-footprint") node["History"]![0]!.AsObject().Remove("BufferWrites");
+        if (corruption == "duplicate-footprint") node["History"]![0]!["BufferWrites"]!.AsArray().Add(node["History"]![0]!["BufferWrites"]![0]!.DeepClone());
+        if (corruption == "foreign-footprint") node["History"]![0]!["BufferWrites"]![0]!["NodeId"] = "foreign";
+        if (corruption == "null-footprint-key") node["History"]![0]!["BufferWrites"]!.AsArray().Add((System.Text.Json.Nodes.JsonNode?)null);
+        if (corruption == "unversioned-footprint") node["Version"] = 12;
         await File.WriteAllTextAsync(file, corruption == "json" ? "{" : node.ToJsonString()); var bytes = await File.ReadAllBytesAsync(file);
         Assert.That(async () => await store.LoadAsync(w.Scope), Throws.Exception);
         Assert.That(await new DraftSession(store, w, 0).FlushAsync(), Is.False);

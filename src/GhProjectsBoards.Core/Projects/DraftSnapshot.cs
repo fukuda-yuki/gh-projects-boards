@@ -13,6 +13,7 @@ internal static class DraftSnapshot
         {
             Changes = t.Changes.Select(c => c with { Before = Field(c.Before), After = Field(c.After) }).ToArray(),
             Rows = t.Rows?.ToArray(),
+            BufferWrites = t.BufferWrites?.ToArray(),
             Plan = t.Plan is { } p ? new(p.Before is null ? null : Plan(p.Before), Plan(p.After)) : null
         }).ToArray(),
         Registrations = record.Registrations?.Select(r => r with

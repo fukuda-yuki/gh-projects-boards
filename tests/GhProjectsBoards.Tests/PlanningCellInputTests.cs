@@ -35,7 +35,7 @@ internal sealed class PlanningCellInputTests
         Assert.That(w.Value(row.Cells.Single(c => c.Key?.FieldId == "F-Estimate")), Is.EqualTo("16"));
         Assert.That(w.Value(row.Cells.Single(c => c.Key?.FieldId == "F-Remaining")), Is.EqualTo("4"));
         w.Undo("P1");
-        Assert.That(w.Value(cell), Is.EqualTo("5")); Assert.That(w.Buffer(cell), Is.EqualTo(text));
+        Assert.That(w.Value(cell), Is.EqualTo("5")); Assert.That(w.Buffer(cell), Is.Null);
         Assert.That(w.Planning("P1")!.Tasks.Single().Actuals![0].ReportedThrough, Is.EqualTo(new DateOnly(2026, 10, 6)));
         Assert.That(w.Journal, Is.Empty);
     }

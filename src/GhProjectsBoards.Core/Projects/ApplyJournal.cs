@@ -20,6 +20,10 @@ internal sealed record ApplyReviewProblem(string RowId, FieldKey? Field, string 
 
 internal static class ApplyJournal
 {
+    public static bool HasUnresolvedDispatch(ApplyOperation operation) => operation.State != ApplyState.Succeeded
+        && (operation.State is ApplyState.Unknown or ApplyState.Running
+            || operation.Attempts.Any(attempt => attempt.State is ApplyState.Unknown or ApplyState.Running));
+
     public static void Validate(DraftRecord record)
     {
         if (record.Version < 3 && record.Journal is { Length: > 0 }) throw new InvalidDataException("Unversioned execution history.");
@@ -61,8 +65,11 @@ internal sealed partial class EditingWorkspace
 {
     private readonly List<ApplyBatch> journal = [];
     public IReadOnlyList<ApplyBatch> Journal => journal;
-    public bool HasUnresolvedApply => journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded)))
-        || Creations.Any(c => !c.Completed && (c.Authorized || c.Dispatched) || c.EarlierUncertain);
+    public bool HasUnresolvedApply => journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded)
+            || ApplyJournal.HasUnresolvedDispatch(o)))
+        || Creations.Any(c => !c.Completed && (c.Authorized || c.Dispatched)
+            || c.EarlierUncertain && !CreationJournal.IsCompletedOriginalBinding(c)
+            || (c.EarlierFields ?? []).Any(ApplyJournal.HasUnresolvedDispatch));
     public IEnumerable<ProjectRegistration> CheckpointRegistrations => (registrations ?? []).Select(RegistrationStore.FromRecord);
     public void SupersedeApply(string batchId)
     {

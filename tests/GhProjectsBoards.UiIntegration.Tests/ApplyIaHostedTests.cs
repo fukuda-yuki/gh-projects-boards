@@ -9,6 +9,64 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
+    [Test, Category("ApplyCheckRecovery")]
+    public async Task FailedVerificationNotificationKeepsApprovalDisabledAndTheSameReviewCanRetry()
+    {
+        await Ui.Run(() => Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[0], "Retain this reviewed change"));
+        await Ui.Ready<FrameworkElement>("GridCell1_0");
+        await Ui.Run(() => Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer
+            .CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell1_0")).SetFocus());
+        await Ui.Ready<TextBox>("GridCell1_0");
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("GridCell1_0").Text = "Keep this separate unfinished input";
+            Ui.Click("ReviewApplyButton");
+        });
+        await Ui.DialogReady("ApplyReviewDialog");
+        await Ui.Until(() => !Workspace.IsBusy && Workspace.ApplyReview is not null);
+        ContentDialog dialog = null!;
+        var failure = new InvalidOperationException("Controlled verification observer failure");
+        void FailSettledVerification()
+        {
+            if (Workspace.IsBusy || Workspace.ApplyReview?.SelectedRows is not > 0) return;
+            Workspace.Changed -= FailSettledVerification;
+            throw failure;
+        }
+        try
+        {
+            await Ui.Run(() => {
+                dialog = Ui.Dialog("ApplyReviewDialog")!;
+                Workspace.Changed += FailSettledVerification;
+                var targets = Ui.Find<ListView>("ApplyTargetRows", dialog);
+                targets.SelectedItems.Add(targets.Items[0]);
+            });
+            await Ui.Until(() => !Workspace.IsBusy && Ui.Find<Button>("ApplyCheckAgain", dialog).IsEnabled);
+            await Ui.Run(() => {
+                Assert.That(Ui.Dialog("ApplyReviewDialog"), Is.SameAs(dialog));
+                Assert.That(Ui.Find<TextBlock>("ApplyCheckStatus", dialog).Text, Does.Contain("未確認").And.Not.Contain("確認中"));
+                Assert.That(Ui.Find<TextBlock>("ApplyBlockReason", dialog).Text, Does.Contain("再確認").And.Contain("編集へ戻"));
+                Assert.That(dialog.IsPrimaryButtonEnabled, Is.False);
+                Assert.That(Ui.Find<ListView>("ApplyTargetRows", dialog).SelectedItems, Has.Count.EqualTo(1));
+                Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Change?.Value, Is.EqualTo("Retain this reviewed change"));
+                Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I2")).Buffer, Is.EqualTo("Keep this separate unfinished input"));
+                Assert.That(Work.Journal, Is.Empty);
+                Assert.That(h.Writes, Is.Empty);
+                Ui.Click(Ui.Find<Button>("ApplyCheckAgain", dialog));
+            });
+            await Ui.Until(() => !Workspace.IsBusy && dialog.IsPrimaryButtonEnabled);
+            await Ui.Run(() => {
+                Assert.That(Ui.Dialog("ApplyReviewDialog"), Is.SameAs(dialog));
+                Assert.That(Ui.Find<TextBlock>("ApplyCheckStatus", dialog).Text, Is.EqualTo("最新確認済み"));
+                Assert.That(Ui.Find<ListView>("ApplyTargetRows", dialog).SelectedItems, Has.Count.EqualTo(1));
+                Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I2")).Buffer, Is.EqualTo("Keep this separate unfinished input"));
+                Assert.That(Work.Journal, Is.Empty);
+                Assert.That(h.Writes, Is.Empty);
+                Ui.DialogButton("ApplyReviewDialog", "CloseButton");
+            });
+            await Ui.Until(() => Ui.Dialog("ApplyReviewDialog") is null);
+        }
+        finally { await Ui.Run(() => Workspace.Changed -= FailSettledVerification); }
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task OneConfirmationShowsConflictAndPermitsExplicitExclusionOrLocalResolution(bool resolve)
     {

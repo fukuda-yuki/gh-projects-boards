@@ -23,7 +23,7 @@ internal sealed class RowViewTests
     public void CheckpointExplicitlyVersionsRowDefinitions()
     {
         var w = new EditingWorkspace(EditingTests.Registration().Snapshot.Id.Scope);
-        Assert.That(w.Snapshot().Version, Is.EqualTo(12));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(13));
     }
     [TestCase(false), TestCase(true)]
     public void OptionOrderAndDistinctMissingStatesSortAfterValues(bool descending)
@@ -112,12 +112,12 @@ internal sealed class RowViewTests
     public async Task EarlierCheckpointMigratesWithDefaultView(int version)
     {
         var p = ColumnTests.Project(); var w = Work(p); if (version == 6) w.SaveColumns(ColumnTests.Reordered(w, p));
-        var record = w.Snapshot() with { Version = version, RowPreferences = null, ColumnPreferences = version == 6 ? w.Snapshot().ColumnPreferences : null, LocalRows = version >= 4 ? [] : null };
+        var record = EditingTests.LegacyHistory(w.Snapshot()) with { Version = version, RowPreferences = null, ColumnPreferences = version == 6 ? w.Snapshot().ColumnPreferences : null, LocalRows = version >= 4 ? [] : null };
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "row-migrate-" + Guid.NewGuid().ToString("N")));
         await store.SaveAsync(record, 0); var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         Assert.That(restored.RowView(p), Is.EqualTo(new RowViewDefinition()));
         await store.SaveAsync(restored.Snapshot(), record.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(12));
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(13));
         Assert.That(restored.Columns(p).Visible[1].Id.FieldId, Is.EqualTo(version == 6 ? "P1C" : "P1A"));
     }
     [Test]

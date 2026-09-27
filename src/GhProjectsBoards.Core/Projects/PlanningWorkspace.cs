@@ -121,6 +121,7 @@ internal sealed partial class EditingWorkspace
         SetPlanning(candidate, before?.Stamp ?? 0);
         var rows = Open(registration);
         var changes = new Dictionary<FieldKey, FieldChange>();
+        var bufferWrites = consumeBuffers.ToHashSet();
         foreach (var key in consumeBuffers)
         {
             if (fields.TryGetValue(key, out var old) && old.Observation is { Reason: PendingObservationReason } observation)
@@ -137,7 +138,11 @@ internal sealed partial class EditingWorkspace
                 var field = candidate.Fields.Single(f => f.Role == v.Role).FieldId;
                 return (rows.Single(r => r.ItemId == v.RowId).Cells.Single(c => c.Key?.FieldId == field), v.Value ?? "", v.Value is null, false);
             }).ToArray());
-            foreach (var c in history.Skip(start).SelectMany(t => t.Changes)) changes[c.Key] = c;
+            foreach (var transaction in history.Skip(start))
+            {
+                bufferWrites.UnionWith(transaction.BufferWrites!);
+                foreach (var c in transaction.Changes) changes[c.Key] = c;
+            }
             history.RemoveRange(start, history.Count - start);
         }
         ChangeDependencies(registration, dependencies, changes);
@@ -149,7 +154,8 @@ internal sealed partial class EditingWorkspace
             if (cell is null || PlanningInputRole(cell) is null || key.ProjectId != candidate.ProjectId)
                 throw new InvalidOperationException("確定する計画セルの入力状態を確認してください。");
             var old = fields[key];
-            if (old.Buffer is null) continue;
+            // Exact time or report metadata may change without a new projected
+            // scalar. Its explicitly confirmed field still guards later input.
             var next = old with { Buffer = null, Stamp = Revision };
             fields[key] = next;
             changes[key] = new(key, changes.TryGetValue(key, out var prior) ? prior.Before : old, next);
@@ -160,7 +166,22 @@ internal sealed partial class EditingWorkspace
             if (input is not null && (input.Remaining != 0 || task.ActualStart is null || task.ActualFinish is null))
                 throw new InvalidOperationException("完了にするには残時間0と実際の開始・終了日時を入力してください。");
         }
-        history.Add(new(Guid.NewGuid().ToString("N"), candidate.ProjectId, changes.Values.ToArray(), Plan: new(before, Planning(candidate.ProjectId)!)));
+        foreach (var key in consumeBuffers)
+            if (changes.TryGetValue(key, out var change)) changes[key] = change with { Before = change.Before with { Buffer = null } };
+        // A contextual confirmation can finish input without changing its
+        // report, exact endpoints, or derived projections. Keep earlier Undo
+        // guards intact while the workspace revision persists input completion.
+        if (consumeBuffers.Length != 0 && projectionDecisions.Length == 0 && before is not null
+            && PlanningContract.SameAdoptedPlan(before, Planning(candidate.ProjectId)!)
+            && changes.Values.All(c => c.Before == c.After with { Stamp = c.Before.Stamp }))
+        {
+            foreach (var c in changes.Values) fields[c.Key] = c.After with { Stamp = c.Before.Stamp };
+            planning.RemoveAll(p => p.ProjectId == before.ProjectId); planning.Add(before);
+            InvalidatePlan(before.ProjectId);
+            return;
+        }
+        history.Add(WithHistoryParts(new(Guid.NewGuid().ToString("N"), candidate.ProjectId, [],
+            Plan: new(before, Planning(candidate.ProjectId)!), BufferWrites: bufferWrites.ToArray()), changes.Values.ToArray(), null));
     }
     private void ProjectPlan(ProjectRegistration registration, Dictionary<FieldKey, FieldChange> changes,
         ProjectPlanning? previous = null, HashSet<FieldKey>? explicitEndpoints = null)

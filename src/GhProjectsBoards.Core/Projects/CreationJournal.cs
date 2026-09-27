@@ -22,6 +22,11 @@ internal sealed record CreationSetupReview(string BatchId, string OperationId, l
 
 internal static class CreationJournal
 {
+    public static bool IsCompletedOriginalBinding(CreationOperation creation) => creation.UserBound
+        && creation.PreviousAttempt is null && creation.Completed && creation.Verified is not null
+        && creation.ItemId is not null && creation.Fields is not null
+        && creation.Fields.All(field => field.State == ApplyState.Succeeded);
+
     public static void Validate(DraftRecord record)
     {
         if ((record.Journal ?? []).Any(b => b is null)) throw new InvalidDataException("Missing creation batch.");
@@ -212,9 +217,9 @@ internal sealed partial class EditingWorkspace
                     continue;
                 }
                 var unaffected = transaction.Rows!.Where(r => r.Id != local.Id).ToArray();
-                history[index] = transaction with { Rows = transaction.Rows!.Where(r => r.Id == local.Id).ToArray(), Changes = [], InvalidReason = "作成済み行の以前のUndoは復元できません。" };
+                history[index] = WithHistoryParts(transaction, [], transaction.Rows!.Where(r => r.Id == local.Id).ToArray()) with { InvalidReason = "作成済み行の以前のUndoは復元できません。" };
                 if (unaffected.Length > 0 || transaction.Changes.Length > 0)
-                    history.Insert(index + 1, new(transaction.Id + "-remaining", transaction.ProjectId, transaction.Changes, Rows: unaffected));
+                    history.Insert(index + 1, WithHistoryParts(transaction, transaction.Changes, unaffected) with { Id = transaction.Id + "-remaining", InvalidReason = null });
             }
             localRows.Remove(local); Revision++;
         }

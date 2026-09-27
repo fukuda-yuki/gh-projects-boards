@@ -119,7 +119,8 @@ internal sealed partial class EditingWorkspace
             fields[key] = after; fieldChanges.Add(new(key, before, after));
         }
         InvalidatePlan(project.Snapshot.Id.NodeId);
-        history.Add(new(Guid.NewGuid().ToString("N"), project.Snapshot.Id.NodeId, fieldChanges.ToArray(), Rows: changes));
+        history.Add(new(Guid.NewGuid().ToString("N"), project.Snapshot.Id.NodeId, fieldChanges.ToArray(), Rows: changes,
+            BufferWrites: fieldChanges.Select(c => c.Key).ToArray()));
     }
     public string AddRow(ProjectRegistration project)
     {
@@ -235,8 +236,9 @@ internal sealed partial class EditingWorkspace
         }
         localRows.RemoveAll(r => removed.Contains(r.Id));
         if (planChange is null) Revision++;
+        var bufferWrites = fieldChanges.Keys.ToArray();
         InvalidatePlan(projectId); ProjectCommittedPlan(projectId, fieldChanges);
-        history.Add(new(Guid.NewGuid().ToString("N"), projectId, fieldChanges.Values.ToArray(), Rows: changes, Plan: planChange));
+        history.Add(new(Guid.NewGuid().ToString("N"), projectId, fieldChanges.Values.ToArray(), Rows: changes, Plan: planChange, BufferWrites: bufferWrites));
     }
     private void PrepareLocalEdit(string projectId, EditCell cell, string text, bool clear, bool optionId, Dictionary<string, LocalRowChange> changes)
     {
@@ -267,7 +269,8 @@ internal sealed partial class EditingWorkspace
         {
             if (CreationLocked(c.Id)) throw new InvalidOperationException("作成履歴に関連する行のUndoは実行できません。履歴と入力を保持しています。");
             var current = localRows.SingleOrDefault(r => r.Id == c.Id);
-            if (c.After is null ? current is not null : current is null || !SameLocal(current, c.After))
+            if (c.After is null ? current is not null : current is null || !SameLocal(current,
+                c.Before is null ? c.After : MergeUnwrittenBuffers(transaction, c.After, current)))
                 throw new InvalidOperationException("後続の新規行編集・未確定文字があるため、この操作は元に戻せません。");
             if (c.Before is null || c.After is null)
             {
@@ -296,16 +299,18 @@ internal sealed partial class EditingWorkspace
                 Revision++; continue;
             }
             if (remaining.Length == 0 && t.Changes.Length == 0) continue;
-            history[index] = t with { Changes = [], Rows = locked, InvalidReason = "作成履歴のある行を保持しました。無関係なUndo部分は有効です。" };
-            history.Insert(index + 1, new(t.Id + "-unlocked", t.ProjectId, t.Changes, Rows: remaining));
+            history[index] = WithHistoryParts(t, [], locked) with { InvalidReason = "作成履歴のある行を保持しました。無関係なUndo部分は有効です。" };
+            history.Insert(index + 1, WithHistoryParts(t, t.Changes, remaining) with { Id = t.Id + "-unlocked", InvalidReason = null });
             Revision++;
         }
     }
     private void UndoLocal(EditTransaction transaction)
     {
         if (transaction.Rows is not { Length: > 0 }) return;
+        var restored = transaction.Rows.Where(c => c.Before is not null).Select(c => c with {
+            Before = c.After is null ? c.Before : MergeUnwrittenBuffers(transaction, c.Before!, localRows.Single(r => r.Id == c.Id)) }).ToArray();
         foreach (var c in transaction.Rows ?? []) localRows.RemoveAll(r => r.Id == c.Id);
-        foreach (var c in (transaction.Rows ?? []).Where(c => c.Before is not null).OrderBy(c => c.Position))
+        foreach (var c in restored.OrderBy(c => c.Position))
             localRows.Insert(Math.Min(c.Position, localRows.Count), c.Before!);
         localRows.Sort((a, b) => a.CreatedRevision != b.CreatedRevision ? a.CreatedRevision.CompareTo(b.CreatedRevision) : a.Ordinal.CompareTo(b.Ordinal));
     }
@@ -315,10 +320,10 @@ internal sealed partial class EditingWorkspace
         // Typed local work and its adopted plan form one operation with the row.
         // A stale graph cannot safely restore only one part of that operation.
         if (CoupledPlanningRows(transaction)) { history[index] = transaction with { InvalidReason = reason }; return; }
-        history[index] = transaction with { InvalidReason = reason, Rows = null };
+        history[index] = WithHistoryParts(transaction, transaction.Changes, null) with { InvalidReason = reason };
         // Remote acknowledgement cannot revoke recoverable local-row work from a mixed paste.
         if (transaction.Rows is { Length: > 0 })
-            history.Insert(index + 1, new(transaction.Id + "-local", transaction.ProjectId, [], Rows: transaction.Rows));
+            history.Insert(index + 1, WithHistoryParts(transaction, [], transaction.Rows) with { Id = transaction.Id + "-local", InvalidReason = null });
     }
     private static bool CoupledPlanningRows(EditTransaction transaction) => transaction.Rows is { Length: > 0 }
         && (transaction.Plan is not null || transaction.Changes.Any(c => c.Key.Kind is "Number" or "Date"

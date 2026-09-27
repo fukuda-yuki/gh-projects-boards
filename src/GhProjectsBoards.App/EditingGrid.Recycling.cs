@@ -370,7 +370,7 @@ internal sealed partial class EditingGrid
                 // cell UIA, pointer and keyboard activation go through Select.
                 if (!owner.CanRefresh || owner.ownedEditors.Values.Any(owned => ReferenceEquals(args.OldFocusedElement, owned.Editor)))
                 { args.Cancel = true; return; }
-                if (binding is not { } target) { args.Cancel = true; return; }
+                if (binding is not { } target || !owner.RowStillPresent(target.Row)) { args.Cancel = true; return; }
                 owner.Select(target.Row, target.Index, false, false);
                 owner.EnsureOwnedEditor(target.Row, target.Index); owner.PositionOwnedEditors();
                 args.TrySetNewFocusedElement(owner.controls[target.Row][target.Index]);
@@ -387,6 +387,7 @@ internal sealed partial class EditingGrid
         public void Refresh()
         {
             if (binding is not { } target) return;
+            if (!owner.RowStillPresent(target.Row)) return;
             var cell = owner.rows[target.Row].Cells[target.Index];
             text.Text = owner.PresentationValue(cell);
             AutomationProperties.SetName(this, $"行 {target.Row + 1} 列 {target.Index + 1} {owner.layout.Visible[target.Index].Name} {text.Text} {cell.Reason}");
@@ -394,7 +395,7 @@ internal sealed partial class EditingGrid
         }
         private void Validate(CellBinding target)
         {
-            if (binding != target || !owner.IsLoaded || owner.rows[target.Row].ItemId != target.Item
+            if (binding != target || !owner.IsLoaded || !owner.RowStillPresent(target.Row) || owner.rows[target.Row].ItemId != target.Item
                 || owner.rows[target.Row].Cells[target.Index].Key != target.Key || owner.layout.Visible[target.Index].Id != target.Column)
                 throw new ElementNotAvailableException();
         }

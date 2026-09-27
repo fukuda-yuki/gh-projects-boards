@@ -16,11 +16,22 @@ internal sealed record ApplyAttention(string BatchId, ScopedId Project, string R
 // Read-only presentation of durable evidence. Neither disclosure nor navigation authorizes work.
 internal static class ApplyResultsPresentation
 {
+    public static bool HasApprovedCreationFields(CreationOperation creation) =>
+        (creation.SetupIntents ?? creation.Selects.ToArray()).Any(select => select.OptionId is not null || select.ExplicitClear)
+        || (creation.SetupPlanningIntents ?? creation.PlanningIntents ?? []).Length > 0
+        || (creation.Fields?.Length ?? 0) > 0;
+
+    public static string BindingCompletionText(bool hasFields) => hasFields
+        ? "Issueの確認とProject設定が完了しました。" : "Issueの確認とProjectへの追加が完了しました。";
+
+    public static string CompletionAnnouncement(ApplyBatch batch) => batch.Operations.Length == 0
+        && batch.Creations is { Length: > 0 } creations && creations.All(CreationJournal.IsCompletedOriginalBinding)
+            ? BindingCompletionText(creations.Any(HasApprovedCreationFields)) : "GitHubへの反映が完了しました。";
+
     public static ApplyAttentionKind? Kind(ApplyOperation operation)
     {
         if (operation.State == ApplyState.Succeeded) return null;
-        if (operation.State is ApplyState.Unknown or ApplyState.Running
-            || operation.Attempts.Any(a => a.State is ApplyState.Unknown or ApplyState.Running)) return ApplyAttentionKind.Uncertain;
+        if (ApplyJournal.HasUnresolvedDispatch(operation)) return ApplyAttentionKind.Uncertain;
         return operation.State switch {
             ApplyState.Superseded => null,
             ApplyState.Failed => ApplyAttentionKind.Failed,
@@ -39,15 +50,17 @@ internal static class ApplyResultsPresentation
             foreach (var operation in batch.Operations)
                 if (Kind(operation) is { } kind)
                     result.Add(new(batch.Id, batch.Project, operation.ItemId, operation.Key, Identity(operation),
-                        operation.Key.Kind == "Title" ? "タイトル" : operation.FieldName, kind, Reason(operation.Reason),
+                        operation.Key.Kind == "Title" ? "タイトル" : operation.FieldName, kind, Reason(OutcomeReason(operation)),
                         operation.Id, Withdrawn: operation.State == ApplyState.Superseded));
             foreach (var c in batch.Creations ?? [])
             {
                 if (latestCreations[c.LocalId].Id != c.Id) continue;
                 var promoted = c.Completed && c.ItemId is not null;
                 var row = promoted ? c.ItemId! : c.LocalId;
-                var title = promoted && c.Verified is { } issue ? new FieldKey("Title", issue.Id) : new FieldKey("LocalTitle", c.LocalId);
-                if (c.EarlierUncertain)
+                var title = promoted && c.Verified is { } issue ? new FieldKey("Title", issue.Id) : new FieldKey("LocalTitle", c.LocalId, batch.Project.NodeId);
+                // Binding the original attempt completes current work without proving the lost request succeeded.
+                // A separate retry still carries possible duplicate creation and remains actionable.
+                if (c.EarlierUncertain && !CreationJournal.IsCompletedOriginalBinding(c))
                     result.Add(new(batch.Id, batch.Project, row, title, c.Repository.Name + " / " + c.Title,
                         "新規Issue", ApplyAttentionKind.Uncertain, "以前の作成試行の結果が未確認です。", CreationId: c.Id));
                 foreach (var retired in c.EarlierFields ?? [])
@@ -66,7 +79,7 @@ internal static class ApplyResultsPresentation
                         CreationId: c.Id, Withdrawn: !c.Authorized));
                 foreach (var field in fields)
                     result.Add(new(batch.Id, batch.Project, row, new("LocalSelect", c.LocalId, batch.Project.NodeId, field.Key.FieldId),
-                        c.Repository.Name + " / " + c.Title, field.FieldName, Kind(field)!.Value, Reason(field.Reason), field.Id, c.Id, !c.Authorized));
+                        c.Repository.Name + " / " + c.Title, field.FieldName, Kind(field)!.Value, Reason(OutcomeReason(field)), field.Id, c.Id, !c.Authorized));
             }
         }
         return result.ToArray();
@@ -92,6 +105,16 @@ internal static class ApplyResultsPresentation
 
     public static string Identity(ApplyOperation operation) => operation.Identity.EndsWith(" / " + operation.IssueId, StringComparison.Ordinal)
         ? operation.Identity[..^(operation.IssueId.Length + 3)] : operation.Identity;
+
+    public static string OutcomeReason(ApplyOperation operation)
+    {
+        // Only this legacy summary contradicts definite failed-attempt evidence; the saved diagnostic stays intact.
+        if (operation.State == ApplyState.Blocked
+            && operation.Reason == "以前の送信結果が不確定です。明示的な再照合・新規レビューが必要です。"
+            && operation.Attempts.Length > 0 && operation.Attempts.All(attempt => attempt.State == ApplyState.Failed))
+            return "前回の送信は失敗しました。残った変更を再確認し、新しいレビューで承認してください。";
+        return operation.Reason;
+    }
 
     private static string Reason(string reason) => reason switch {
         "PermissionDenied" => "更新する権限を確認してください。",

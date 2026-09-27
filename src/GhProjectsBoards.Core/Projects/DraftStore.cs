@@ -155,7 +155,9 @@ internal sealed class DraftStore(string registrationRoot)
             var root = document.RootElement;
             record = root.Deserialize<DraftRecord>(Json) ?? throw new InvalidDataException("Missing draft record.");
             using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
-            if (record.Version is 10 or 12)
+            if (record.Version >= 13 && root.GetProperty("History").EnumerateArray().Any(t => !t.TryGetProperty("BufferWrites", out _)))
+                throw new InvalidDataException("Missing Undo input ownership; preserve the source.");
+            if (record.Version is 10 or 12 or 13)
             {
                 void CheckPlan(JsonElement plan)
                 {
@@ -208,7 +210,7 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 or 13) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
@@ -220,7 +222,7 @@ internal sealed class DraftStore(string registrationRoot)
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
         var plans = (r.Planning ?? []).Concat(r.History.Where(t => t?.Plan is not null)
             .SelectMany(t => new[] { t.Plan!.Before, t.Plan.After }.OfType<ProjectPlanning>())).ToArray();
-        if (plans.Any(p => p.Version == 2 && r.Version is not (10 or 12)
+        if (plans.Any(p => p.Version == 2 && r.Version is not (10 or 12 or 13)
             || p.Version == 3 && r.Version < 11 || p.Version == 4 && r.Version < 12))
             throw new InvalidDataException("Unversioned Summary or assignment metadata.");
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
@@ -256,6 +258,18 @@ internal sealed class DraftStore(string registrationRoot)
             if (t.Plan.Before is not null) PlanningContract.Validate(t.Plan.Before, r.Revision);
             if (t.Plan.After.ProjectId != t.ProjectId || t.Plan.Before is { } before && (before.ProjectId != t.ProjectId || before.Stamp >= t.Plan.After.Stamp))
                 throw new InvalidDataException("Invalid planning history.");
+        }
+        foreach (var t in r.History.Where(t => t.BufferWrites is not null))
+        {
+            var writes = t.BufferWrites!;
+            if (r.Version < 13 || writes.Distinct().Count() != writes.Length || writes.Any(k => k is null
+                || !(Key(k) && t.Changes.Any(c => c.Key == k)
+                    || k.ProjectId == t.ProjectId && (t.Rows ?? []).Any(c => c.Id == k.NodeId)
+                        && (k.Kind is "LocalTitle" or "LocalRepository" && k.FieldId is null
+                            || k.Kind == "LocalSelect" && !string.IsNullOrWhiteSpace(k.FieldId)
+                                && (t.Rows ?? []).Where(c => c.Id == k.NodeId).SelectMany(c => new[] { c.Before, c.After })
+                                    .OfType<LocalRow>().Any(row => row.Selects.Any(s => s.FieldId == k.FieldId))))))
+                throw new InvalidDataException("Invalid Undo input ownership.");
         }
         foreach (var f in r.Fields.Concat(r.History.SelectMany(t => t.Changes.SelectMany(c => new[] { c.Before, c.After }))))
         {

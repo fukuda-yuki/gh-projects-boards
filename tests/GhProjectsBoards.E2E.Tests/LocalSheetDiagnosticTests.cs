@@ -175,8 +175,20 @@ public sealed class LocalSheetDiagnosticTests
             Checkpoint("after-commit");
             Measure("undo-title", 0, () => WorkspaceUi.Invoke(window, "GridUndo"));
             Wait(() => { var field = FirstTitle(ReadCheckpoint()); return field.GetProperty("Change").ValueKind == JsonValueKind.Null
-                && field.GetProperty("Buffer").GetString() == "diagnostic"; }, "Undo must restore I1's preceding buffer before the next phase.");
+                && field.GetProperty("Buffer").ValueKind == JsonValueKind.Null; }, "Undo must restore I1's confirmed title without reopening its consumed input.");
+            ClickCell(0);
+            Wait(() => Element("GridCell0_0").AsTextBox().Text == "Issue 1", "The restored confirmed title must be visible after Undo.");
             Snapshot("after-undo"); Checkpoint("after-undo");
+
+            // The remaining viewport and IME phases require independent pending
+            // work; confirming and undoing an edit no longer recreates that input.
+            NativeKey(VirtualKeyShort.F2);
+            foreach (var key in new[] { VirtualKeyShort.KEY_D, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_A, VirtualKeyShort.KEY_G,
+                VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_S, VirtualKeyShort.KEY_T, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_C })
+                NativeKey(key);
+            Wait(() => { var field = FirstTitle(ReadCheckpoint()); return field.GetProperty("Change").ValueKind == JsonValueKind.Null
+                && field.GetProperty("Buffer").GetString() == "diagnostic"; }, "New independent pending input must be durable before the remaining viewport phases.");
+            Snapshot("independent-pending-after-undo", expectedIssue: "I1"); Checkpoint("independent-pending-after-undo");
 
             Resize(1400, 900); Snapshot("wide-workspace");
             ClickCell(0); Wheel("wide-down", 100, false); Snapshot("wide-bottom", expectedIssue: "I1");
@@ -241,7 +253,7 @@ public sealed class LocalSheetDiagnosticTests
             Assert.That(GetForegroundWindow(), Is.EqualTo(window!.Properties.NativeWindowHandle.Value));
             Keyboard.TypeVirtualKeyCode(0x1A);
             NativeKey(VirtualKeyShort.ESCAPE, imePacing: true);
-            Wait(() => Element("GridCell0_0").AsTextBox().Text == "Issue 1", "Cancel the restored ASCII pending buffer before direct IME input.");
+            Wait(() => Element("GridCell0_0").AsTextBox().Text == "Issue 1", "Cancel the independent ASCII pending buffer before direct IME input.");
             Wait(() => FirstTitle(ReadCheckpoint()).GetProperty("Buffer").ValueKind == JsonValueKind.Null,
                 "The cancellation must be durable before the IME probe.");
             Snapshot("ime-selected-first-title", "I1");

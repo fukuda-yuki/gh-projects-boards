@@ -18,7 +18,13 @@ internal sealed partial class EditingGrid
     private object? replacedApplyToolTip;
     private ApplyAttention? activeApplyProblem;
     private string? unavailableApplyTarget;
+    private bool applyProblemPopupSuppressed;
     internal event EventHandler? ApplyHistoryRequested;
+    internal void SuppressApplyProblemPopup(bool suppressed)
+    {
+        applyProblemPopupSuppressed = suppressed;
+        if (suppressed) CloseApplyProblemTip();
+    }
 
     private void InitializeApplyProblems(StackPanel footer)
     {
@@ -63,11 +69,15 @@ internal sealed partial class EditingGrid
         applyProblemText.Text = selected is null ? ApplyResultsPresentation.Summary(applyAttention)
             : $"{selected.FieldName} — {selected.Description}";
         if (temporaryApplyColumns.Count > 0) applyProblemText.Text += "（問題の列を一時表示中）";
-        if (selected is not null && CanRefresh && controls[currentRow].Length > currentColumn
-            && controls[currentRow][currentColumn] is not TitleCell { Editing: true })
+        // Selection is restored before a replacement grid is mounted. Recycled
+        // rows may have slots but no native controls yet; the footer still
+        // explains the problem until Loaded updates the popup's actual target.
+        if (selected is not null && !applyProblemPopupSuppressed && CanRefresh && IsLoaded && XamlRoot is { } root
+            && controls[currentRow].Length > currentColumn
+            && controls[currentRow][currentColumn] is FrameworkElement { IsLoaded: true } target
+            && target is not TitleCell { Editing: true })
         {
-            var target = controls[currentRow][currentColumn];
-            applyProblemTip.XamlRoot = XamlRoot;
+            applyProblemTip.XamlRoot = root;
             if (applyProblemTip.PlacementTarget != target)
             {
                 CloseApplyProblemTip();
@@ -76,9 +86,17 @@ internal sealed partial class EditingGrid
                 ToolTipService.SetToolTip(target, applyProblemTip);
             }
             applyProblemTip.Content = new TextBlock { Text = selected.Description, TextWrapping = TextWrapping.Wrap, MaxWidth = 280 };
-            applyProblemTip.IsOpen = target.IsLoaded;
+            applyProblemTip.IsOpen = true;
         }
         else CloseApplyProblemTip();
+    }
+
+    private void ApplyProblemTargetLoaded(object sender, RoutedEventArgs e)
+    {
+        // Native input can be created by selection after the grid itself loaded.
+        // Resolve today's selection instead of retaining a recycled row position.
+        if (active && currentRow < controls.Count && currentColumn < controls[currentRow].Length
+            && ReferenceEquals(controls[currentRow][currentColumn], sender)) UpdateApplyProblemText();
     }
 
     private void CloseApplyProblemTip()

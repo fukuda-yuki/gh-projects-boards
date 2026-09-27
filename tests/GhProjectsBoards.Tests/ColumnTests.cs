@@ -30,7 +30,7 @@ internal sealed class ColumnTests
     public void CheckpointUsesExplicitColumnSchema()
     {
         var w = new EditingWorkspace(EditingTests.Registration().Snapshot.Id.Scope);
-        Assert.That(w.Snapshot().Version, Is.EqualTo(12));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(13));
     }
     [TestCase(false), TestCase(true)]
     public void VisibleRectangleUsesOriginalKeysAndUndoAfterReordering(bool mixed)
@@ -122,12 +122,12 @@ internal sealed class ColumnTests
     {
         var p = Project(); var w = Work(p); var row = w.Open(p)[0]; w.Commit("P1", row.Cells[1], "Done"); w.SetBuffer(row.Cells[0], "pending");
         if (version >= 4) w.AddRow(p);
-        var original = w.Snapshot() with { Version = version, ColumnPreferences = null, LocalRows = version >= 4 ? w.Snapshot().LocalRows : null };
+        var original = EditingTests.LegacyHistory(w.Snapshot()) with { Version = version, ColumnPreferences = null, LocalRows = version >= 4 ? w.Snapshot().LocalRows : null };
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-columns-migration-" + Guid.NewGuid().ToString("N")));
         await store.SaveAsync(original, 0); var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         restored.SaveColumns(Reordered(restored, p)); await store.SaveAsync(restored.Snapshot(), original.Revision);
         var record = (await store.LoadAsync(w.Scope))!;
-        Assert.That(record.Version, Is.EqualTo(12)); Assert.That(Json(record.Fields), Is.EqualTo(Json(original.Fields)));
+        Assert.That(record.Version, Is.EqualTo(13)); Assert.That(Json(record.Fields), Is.EqualTo(Json(original.Fields)));
         Assert.That(Json(record.History), Is.EqualTo(Json(original.History))); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
@@ -167,7 +167,7 @@ internal sealed class ColumnTests
         Assert.That(await s.CommitAsync(w => { w.SaveColumns(reset); return w; }, () => true), Is.True);
         Assert.That(Json(s.Workspace.Journal), Is.EqualTo(history)); await h.Restart();
         Assert.That(Json(h.Session.Workspace.Journal), Is.EqualTo(history));
-        var v5 = h.Session.Workspace.Snapshot() with { Version = 5, ColumnPreferences = null };
+        var v5 = EditingTests.LegacyHistory(h.Session.Workspace.Snapshot()) with { Version = 5, ColumnPreferences = null };
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-v5-columns-history-" + Guid.NewGuid().ToString("N")));
         await store.SaveAsync(v5, 0); var migrated = EditingWorkspace.Restore((await store.LoadAsync(s.Workspace.Scope))!);
         await store.SaveAsync(migrated.Snapshot(), v5.Revision);

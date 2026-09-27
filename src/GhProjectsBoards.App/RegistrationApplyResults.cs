@@ -37,9 +37,10 @@ public sealed partial class RegistrationPanel
         if (Workspace.IsBusy || applyDialog || activeDialog is not null || !CanRefreshEditors()) return;
         outcomeTimer?.Stop(); outcomeTimer = null; pendingOutcome = null;
         var attention = ApplyResultsPresentation.Attention(outcome.Session.Workspace.Journal).Where(a => a.BatchId == outcome.Batch).ToArray();
+        var batch = outcome.Session.Workspace.Journal.Single(b => b.Id == outcome.Batch);
         var peer = FrameworkElementAutomationPeer.FromElement(Status) ?? FrameworkElementAutomationPeer.CreatePeerForElement(Status);
         peer?.RaiseNotificationEvent(AutomationNotificationKind.ActionCompleted, AutomationNotificationProcessing.ImportantMostRecent,
-            attention.Length == 0 ? "GitHubへの反映が完了しました。" : ApplyResultsPresentation.Summary(attention), "ApplyOutcome");
+            attention.Length == 0 ? ApplyResultsPresentation.CompletionAnnouncement(batch) : ApplyResultsPresentation.Summary(attention), "ApplyOutcome");
         if (attention.Length == 0) return;
         var content = ApplyPanel();
         content.Children.Add(ApplyText(ApplyResultsPresentation.Summary(attention), emphasis: true));

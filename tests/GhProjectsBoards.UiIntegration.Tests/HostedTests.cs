@@ -97,7 +97,7 @@ public sealed partial class HostedTests
     [TestCase("GridRemoveRows"), TestCase("GridUndo")]
     public async Task RemovingSelectedLocalTitleSavesAndAllowsTheNextRowInput(string command)
     {
-        await Ui.Run(() => Ui.Click("GridAddRow"));
+        await Ui.ClickCommand("GridAddRow");
         await Ui.Until(() => Work.LocalRows.Count == 1 && Workspace.Drafts!.DurableRevision == Work.Revision);
         await Ui.Ready<TextBox>("GridCell2_0");
         TextBox removed = null!;
@@ -106,10 +106,12 @@ public sealed partial class HostedTests
         await Ui.ClickCommand(command);
         await Ui.Until(() => Work.LocalRows.Count == 0);
         await Ui.Idle();
+        await Ui.Ready<TextBlock>("DraftStatus");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Not.Contain("削除・変更")));
         await Ui.Until(() => !removed.IsLoaded && Workspace.Drafts!.DurableRevision == Work.Revision);
         Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows, Is.Empty);
 
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
         await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
         await Ui.Ready<TextBox>("GridCell0_0");
         await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "continued after removal");

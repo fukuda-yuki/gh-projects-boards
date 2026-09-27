@@ -11,6 +11,56 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
+    [TestCase(false), TestCase(true), Category("ApplyProblemRefresh")]
+    public async Task RefreshKeepsTheSelectedFailedOrBlockedTitleAndItsProblemVisible(bool resumeFailedAttempt)
+    {
+        await Ui.Run(async () =>
+        {
+            Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[0], "Retained failed title");
+            h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+            await h.Apply("P1-T1");
+            if (resumeFailedAttempt) await Workspace.ResumeApplyAsync(Work.Journal.Single().Id);
+            Assert.That(Work.Journal.Single().Operations.Single().State,
+                Is.EqualTo(resumeFailedAttempt ? ApplyState.Blocked : ApplyState.Failed));
+        });
+        await Ui.Ready<Button>("NextApplyProblem");
+        await Ui.Run(() => Ui.Click("NextApplyProblem"));
+        await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().SelectionIdentity?.Field == new FieldKey("Title", "I1"));
+        var writesBeforeRefresh = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+        var refreshGeneration = Workspace.AcceptedRefreshGeneration;
+        var expectedRows = new[] { "P1-T1", "P1-T2" };
+        await Ui.Run(async () =>
+        {
+            Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus").Text, Does.Contain(resumeFailedAttempt ? "要確認" : "失敗"));
+            await ApplyInformationEvidence.Capture(panel, $"selected-problem-before-refresh-{resumeFailedAttempt}");
+            Ui.Click("RefreshProjectButton");
+        });
+
+        await Ui.Until(() => !Workspace.IsBusy && Workspace.AcceptedRefreshGeneration > refreshGeneration);
+        await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Any(g => g.IsLoaded));
+        await Ui.Run(async () =>
+        {
+            var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
+            Assert.That(grid.DisplayedRowIds, Is.EqualTo(expectedRows));
+            Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1-T1"));
+            Assert.That(grid.SelectionIdentity?.Field, Is.EqualTo(new FieldKey("Title", "I1")));
+            var title = Ui.Find<FrameworkElement>("GridCell0_0", grid) switch
+            {
+                TextBox editor => editor.Text,
+                Button { Content: TextBlock text } => text.Text,
+                _ => throw new AssertionException("The retained title needs a rendered value.")
+            };
+            Assert.That(title, Is.EqualTo("Retained failed title"));
+            Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus", grid).Text, Does.Contain(resumeFailedAttempt ? "要確認" : "失敗"));
+            Assert.That(Work.Journal.Single().Operations.Single().State,
+                Is.EqualTo(resumeFailedAttempt ? ApplyState.Blocked : ApplyState.Failed));
+            Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Change?.Value, Is.EqualTo("Retained failed title"));
+            Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writesBeforeRefresh),
+                "Refreshing the selected problem must not dispatch another update.");
+            await ApplyInformationEvidence.Capture(panel, $"selected-problem-after-refresh-{resumeFailedAttempt}");
+        });
+    }
+
     [Test]
     public async Task WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover()
     {
@@ -30,6 +80,12 @@ public sealed partial class HostedTests
             await ApplyInformationEvidence.Capture(panel, "problem-before-withdrawal");
         });
         await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(async () =>
+        {
+            Assert.That(problem.IsOpen, Is.False, "A selected-cell error popup must not cover its result history.");
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")), Is.Not.SameAs(problem));
+            await ApplyInformationEvidence.Capture(Ui.Dialog("ApplyHistoryDialog")!, "problem-history-without-obscuring-tooltip");
+        });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("WithdrawApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));
         await Ui.Until(() => Work.Journal.Single().Operations.Single().State == ApplyState.Superseded && Ui.Dialog("ApplyHistoryDialog") is null);
         SheetNativeInput.Move(await SheetNativeInput.PointFor("GridCell1_1"));

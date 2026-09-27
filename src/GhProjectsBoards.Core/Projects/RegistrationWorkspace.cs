@@ -130,7 +130,16 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
     {
         generation++;
         cancellation?.Cancel();
-        if (owned is { } task) await task;
+        if (owned is { } task)
+        {
+            try { await task; }
+            finally
+            {
+                // Report a settled failure to this caller without trapping
+                // every later stop, or detaching work started by an observer.
+                if (ReferenceEquals(owned, task) && task.IsCompleted) owned = null;
+            }
+        }
     }
     public void Cancel() => cancellation?.Cancel();
     public Task DiscoverAsync(Func<ProjectDiscovery, ConnectionContext, CancellationToken, Task> action)

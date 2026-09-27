@@ -24,10 +24,15 @@ internal sealed class LocalRowTests
     {
         var h = await ApplyTests.Harness.Create(); var s = h.Workspace.Drafts!; var p = h.Workspace.Selected!;
         Assert.That(await h.Workspace.PrepareLocalRowsAsync(), Is.True); var id = s.Workspace.AddRow(p);
-        var rows = s.Workspace.Open(p); s.Workspace.Paste("P1", rows, 99, 0, "Remote\nLocal");
+        var rows = s.Workspace.Open(p); var repository = rows.Single(r => r.ItemId == id).Cells[^1];
+        s.Workspace.SetBuffer(repository, "before paste");
+        s.Workspace.Paste("P1", rows, 99, 0, "Remote\nLocal");
+        s.Workspace.SetBuffer(repository, "later independent input");
         await h.Workspace.PrepareApplyAsync(new HashSet<string> { rows[99].ItemId }); await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
-        Assert.That(h.Writes, Has.Count.EqualTo(1)); s.Workspace.Undo("P1");
-        Assert.That(s.Workspace.LocalRows.Single().Title, Is.Empty); Assert.That(s.Workspace.Value(rows[99].Cells[0]), Is.EqualTo("Remote"));
+        var restored = EditingWorkspace.Restore((await new DraftStore(h.Root).LoadAsync(s.Workspace.Scope))!);
+        Assert.That(h.Writes, Has.Count.EqualTo(1)); restored.Undo("P1");
+        Assert.That(restored.LocalRows.Single().Title, Is.Empty); Assert.That(restored.Value(rows[99].Cells[0]), Is.EqualTo("Remote"));
+        Assert.That(restored.Buffer(repository), Is.EqualTo("later independent input"));
         var first = EditingTests.Registration(); var second = EditingTests.Registration("P2"); var w = Workspace(first);
         w.Open(second); w.AddRow(first); w.Paste("P1", w.Open(first), 100, 0, "Shared\nNew");
         w.Discard(first.Snapshot, [second.Snapshot]); Assert.DoesNotThrow(() => EditingWorkspace.Restore(w.Snapshot()));
@@ -106,7 +111,7 @@ internal sealed class LocalRowTests
         s.Workspace.SetBuffer(remote[3].Cells[0], "Pending");
         h.Titles["I3"] = "External conflict";
         await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T3" });
-        var v3 = s.Workspace.Snapshot() with { Version = 3, LocalRows = null };
+        var v3 = EditingTests.LegacyHistory(s.Workspace.Snapshot()) with { Version = 3, LocalRows = null };
         Assert.That(v3.Fields.Any(f => f.Conflict), Is.True);
         Assert.That(v3.Journal![0].Operations.Select(o => o.State), Is.EqualTo(new[] { ApplyState.Succeeded, ApplyState.Unknown }));
         var root = Path.Combine(Path.GetTempPath(), "ghpb-local-v3-" + Guid.NewGuid()); var store = new DraftStore(root);
@@ -115,7 +120,7 @@ internal sealed class LocalRowTests
         var final = (await store.LoadAsync(v3.Scope))!;
         Assert.That(Json(final.Journal), Is.EqualTo(Json(v3.Journal))); Assert.That(Json(final.Fields), Is.EqualTo(Json(v3.Fields)));
         Assert.That(Json(final.History[..v3.History.Length]), Is.EqualTo(Json(v3.History)));
-        Assert.That(final.Version, Is.EqualTo(12)); Assert.That(EditingWorkspace.Restore(final).HasUnresolvedApply, Is.True);
+        Assert.That(final.Version, Is.EqualTo(13)); Assert.That(EditingWorkspace.Restore(final).HasUnresolvedApply, Is.True);
     }
     [Test]
     public async Task LastUnregistrationRetainRestartAndReregisterRecoversLocalRows()
@@ -225,7 +230,7 @@ internal sealed class LocalRowTests
     {
         var p = EditingTests.Registration(); var w = Workspace(p); var rows = w.Open(p);
         w.Commit("P1", rows[0].Cells[0], "Committed"); w.SetBuffer(rows[1].Cells[0], "Pending");
-        var legacy = w.Snapshot() with { Version = version, LocalRows = null };
+        var legacy = EditingTests.LegacyHistory(w.Snapshot()) with { Version = version, LocalRows = null };
         var root = Path.Combine(Path.GetTempPath(), "ghpb-local-migrate-" + Guid.NewGuid()); var store = new DraftStore(root);
         await store.SaveAsync(legacy, 0); w = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         w.AddRow(p); await store.SaveAsync(w.Snapshot(), legacy.Revision);
@@ -249,6 +254,6 @@ internal sealed class LocalRowTests
         var p = EditingTests.Registration();
         var w = new EditingWorkspace(p.Snapshot.Id.Scope);
         Assert.That(w.Open(p), Has.Length.EqualTo(101));
-        Assert.That(w.Snapshot().Version, Is.EqualTo(12));
+        Assert.That(w.Snapshot().Version, Is.EqualTo(13));
     }
 }

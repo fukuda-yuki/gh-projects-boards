@@ -194,7 +194,7 @@ internal sealed class ReconciliationTests
     {
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-v1-" + Guid.NewGuid())); var a = EditingTests.Registration(count: 1);
         var w = new EditingWorkspace(a.Snapshot.Id.Scope); var rows = w.Open(a); w.Commit("P1", rows[0].Cells[0], "Original local");
-        await store.SaveAsync(w.Snapshot() with { Version = 1 }, 0); var file = store.FileFor(w.Scope);
+        await store.SaveAsync(EditingTests.LegacyHistory(w.Snapshot()) with { Version = 1 }, 0); var file = store.FileFor(w.Scope);
         var json = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(file))!;
         json.AsObject().Remove("Registrations"); json.AsObject().Remove("StructuralChanges");
         foreach (var f in json["Fields"]!.AsArray()) { f!.AsObject().Remove("Observation"); f.AsObject().Remove("Conflict"); }

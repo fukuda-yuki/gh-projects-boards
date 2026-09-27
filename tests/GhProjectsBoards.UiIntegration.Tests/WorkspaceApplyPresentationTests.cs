@@ -12,6 +12,104 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed partial class HostedTests
 {
     [Test]
+    public async Task LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic()
+    {
+        const string legacy = "以前の送信結果が不確定です。明示的な再照合・新規レビューが必要です。";
+        string operationId = "";
+        await Ui.Run(async () =>
+        {
+            Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[0], "Unsent retry review");
+            h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+            await h.Apply("P1-T1");
+            var batch = Work.Journal.Single(); var operation = batch.Operations.Single(); operationId = operation.Id;
+            Assert.That(operation.Attempts.Single().State, Is.EqualTo(ApplyState.Failed));
+            Assert.That(await Workspace.Drafts!.CommitAsync(w => {
+                w.RecordApply(batch.Id, operation with { State = ApplyState.Blocked, Reason = legacy }); return w;
+            }, () => true), Is.True);
+        });
+        var before = await File.ReadAllBytesAsync(new DraftStore(h.Existing.Root).FileFor(Work.Scope));
+        var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+
+        await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() =>
+        {
+            Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("前回の送信は失敗しました。")
+                .And.Not.Contain("以前の送信結果が不確定です"));
+            Ui.Find<Expander>("ApplyOperationDetails-" + operationId, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true;
+        });
+        await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(legacy));
+        await Ui.Run(() =>
+        {
+            Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("PermissionDenied"));
+            Ui.DialogButton("ApplyHistoryDialog", "CloseButton");
+        });
+        Assert.That(await File.ReadAllBytesAsync(new DraftStore(h.Existing.Root).FileFor(Work.Scope)), Is.EqualTo(before));
+        Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
+    }
+
+    [Test]
+    public async Task BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory()
+    {
+        string batchId = "", attempt = "";
+        await Ui.Run(async () =>
+        {
+            var local = h.Add("Recovered response-loss Issue");
+            h.LoseCreate = true;
+            await h.Apply(local);
+            batchId = Work.Journal.Single().Id; attempt = Work.Creations.Single().Id;
+            await Workspace.InspectCreationBindingAsync(batchId, attempt, "https://github.com/sample-user/first/issues/1001");
+            Assert.That(Workspace.CreationBindingPreview, Is.Not.Null);
+            await Workspace.ConfirmCreationBindingAsync(batchId, attempt, Workspace.CreationBindingPreview!, Workspace.CreationBindingRevision);
+            Assert.That(Work.Creations.Single().Completed, Is.False);
+        });
+
+        await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ResolveCreation-" + attempt, Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.DialogReady("CreationSetupReviewDialog");
+        await Ui.Run(() => Ui.DialogButton("CreationSetupReviewDialog", "PrimaryButton"));
+        await Ui.Until(() => !Workspace.IsBusy && Work.Creations.Single().Completed
+            && Workspace.Drafts!.DurableRevision == Work.Revision);
+        await Ui.Until(() => Ui.Dialog("CreationSetupReviewDialog") is null);
+        await Task.Delay(400);
+        await Ui.Run(async () =>
+        {
+            Assert.That(Ui.Dialog("ApplyOutcomeWarning"), Is.Null, "The original lost response must not reopen an incomplete-work warning.");
+            Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus").Text, Is.EqualTo("対応が必要な項目はありません。"));
+            Assert.That(Work.Creations.Single().Fields, Is.Empty);
+            Assert.That(h.Issues.Keys, Is.EquivalentTo(new[] { "created1" }));
+            Assert.That(h.Members, Is.EquivalentTo(new[] { "created1" }));
+            await ApplyInformationEvidence.Capture(panel, "bound-creation-completed-editing");
+        });
+
+        var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+        await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() =>
+        {
+            Assert.That(Ui.Find<ListView>("ApplyResultBatches", Ui.Dialog("ApplyHistoryDialog")).Items, Is.Empty);
+            Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("対応が必要な項目はありません。"));
+            Ui.Toggle(Ui.Find<CheckBox>("ApplyShowAllHistory", Ui.Dialog("ApplyHistoryDialog")));
+        });
+        await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains("Recovered response-loss Issue"));
+        await Ui.Run(async () =>
+        {
+            var dialog = Ui.Dialog("ApplyHistoryDialog")!;
+            Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("Issueの確認とProjectへの追加が完了しました。")
+                .And.Contain("元の作成要求は結果不明のまま保存されています。")
+                .And.Not.Contain("フィールド: 確認済み 0 / 0"));
+            Assert.That(Ui.Tree(dialog).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "ResolveCreation-" + attempt), Is.False);
+            await ApplyInformationEvidence.Capture(dialog, "bound-creation-full-history");
+            Ui.Find<Expander>("CreationHistoryDetails-" + attempt, dialog).IsExpanded = true;
+        });
+        await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains("元の作成成功の証明ではありません"));
+        await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton"));
+        Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
+        var saved = await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope);
+        var retained = saved!.Journal!.Single(b => b.Id == batchId).Creations!.Single();
+        Assert.That(retained.Completed && retained.UserBound && retained.EarlierUncertain, Is.True);
+        Assert.That(retained.Received, Is.Null, "Completion and history inspection must not manufacture the original response.");
+    }
+
+    [Test]
     public async Task UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying()
     {
         string local = "", attempt = "";

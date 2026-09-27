@@ -12,7 +12,7 @@ internal sealed class PlanningContractTests
     public void NewCheckpointVersionsPlanningWithoutInventingAPlan()
     {
         var work = new EditingWorkspace(new("github.com", 42));
-        Assert.That(work.Snapshot().Version, Is.EqualTo(12));
+        Assert.That(work.Snapshot().Version, Is.EqualTo(13));
         Assert.That(work.Snapshot().Planning, Is.Empty);
     }
 
@@ -56,17 +56,17 @@ internal sealed class PlanningContractTests
     {
         var root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "planning-version-" + Guid.NewGuid().ToString("N"));
         var w = new EditingWorkspace(new("github.com", 42)); var store = new DraftStore(root);
-        var legacy = w.Snapshot() with { Version = 7, Planning = null };
+        var legacy = EditingTests.LegacyHistory(w.Snapshot()) with { Version = 7, Planning = null };
         await store.SaveAsync(legacy, 0);
         w = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         Assert.That(w.Planning("P1"), Is.Null);
         w.SetPlanning(Plan(), 0); await store.SaveAsync(w.Snapshot(), 0);
         var bytes = await File.ReadAllBytesAsync(store.FileFor(w.Scope));
         Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Planning = [Plan() with { Version = 5 }] }, w.Revision));
-        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Version = 13 }, w.Revision));
+        Assert.ThrowsAsync<InvalidDataException>(() => store.SaveAsync(w.Snapshot() with { Version = 14 }, w.Revision));
         Assert.That(await File.ReadAllBytesAsync(store.FileFor(w.Scope)), Is.EqualTo(bytes));
         Assert.Throws<InvalidOperationException>(() => w.SetPlanning(Plan(), 0));
-        foreach (var unknown in new[] { w.Snapshot() with { Version = 13 }, w.Snapshot() with { Planning = [Plan() with { Version = 5 }] } })
+        foreach (var unknown in new[] { w.Snapshot() with { Version = 14 }, w.Snapshot() with { Planning = [Plan() with { Version = 5 }] } })
         {
             var raw = JsonSerializer.Serialize(unknown);
             await File.WriteAllTextAsync(store.FileFor(w.Scope), raw);
