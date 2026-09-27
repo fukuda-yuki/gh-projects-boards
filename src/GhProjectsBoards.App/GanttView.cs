@@ -42,6 +42,7 @@ internal sealed class GanttView : Grid
     private WorkingCalendar? calendar;
     internal event Action<string>? EditRequested;
     internal event Action<string>? TaskDetailsRequested;
+    internal event Action<string>? ProgressRequested;
     internal event Action<string>? BoardsRequested;
     internal event Action? UndoRequested;
     internal event Action? SettingsRequested;
@@ -260,9 +261,16 @@ internal sealed class GanttView : Grid
         void Action(string text, string id, Action action)
         {
             var button = new Button { Content = text }; AutomationProperties.SetAutomationId(button, id);
-            button.Click += (_, _) => { flyout.Hide(); action(); }; actions.Children.Add(button);
+            button.Click += (_, _) => {
+                // Let the old popup finish restoring focus before opening the
+                // correction surface; otherwise it can steal the new focus.
+                void Closed(object? sender, object args) { flyout.Closed -= Closed; action(); }
+                flyout.Closed += Closed; flyout.Hide();
+            }; actions.Children.Add(button);
         }
-        Action("見積・進捗を編集", "GanttExplanationTask", () => TaskDetailsRequested?.Invoke(row.RowId));
+        if (input?.Task.Progress == PlanningProgress.Unstarted && input.ActualTotal > 0)
+            Action("進捗を確認", "GanttExplanationProgress", () => ProgressRequested?.Invoke(row.RowId));
+        else Action("見積・進捗を編集", "GanttExplanationTask", () => TaskDetailsRequested?.Invoke(row.RowId));
         Action("計画の前提", "GanttExplanationSettings", () => SettingsRequested?.Invoke());
         if (input is not null && config is not null)
         {
@@ -273,7 +281,8 @@ internal sealed class GanttView : Grid
             var progress = input.Task.Progress switch { PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中", PlanningProgress.Completed => "完了", _ => "再開" };
             string Hours(decimal? value) => value is { } hours ? PlanningContract.CanonicalHours(hours) + "人時" : "未入力";
             var remaining = input.Task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened;
-            Text(input.Task.Progress == PlanningProgress.Completed ? "完了：実績開始・終了日時を採用"
+            Text(p?.Mode == PlanningMode.Manual ? $"日時を指定：指定した開始・終了を採用（{progress}）"
+                : input.Task.Progress == PlanningProgress.Completed ? "完了：実績開始・終了日時を採用"
                 : $"計算に使用：{(remaining ? "残時間 " + Hours(input.Remaining) : "見積 " + Hours(input.Estimate))}（{progress}）");
             if (input.Task.Progress == PlanningProgress.Unstarted && input.ActualTotal > 0)
                 Text("実績がありますが、進捗は未着手です。実績の入力だけでは進捗を変更しません。進捗を確認してください。");

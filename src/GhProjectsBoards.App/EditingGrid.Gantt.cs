@@ -84,6 +84,7 @@ internal sealed partial class EditingGrid
                 SetRow(gantt, 1); SetRowSpan(gantt, RowDefinitions.Count - 1); Children.Add(gantt);
                 gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(); } };
                 gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(); } };
+                gantt.ProgressRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false, progressCorrection: true); UpdateGantt(); } };
                 gantt.BoardsRequested += id => { if (SelectGanttRow(id)) ShowProjectView(false); };
                 gantt.UndoRequested += () => { Run(Undo); UpdateGantt(); };
                 gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(); };
