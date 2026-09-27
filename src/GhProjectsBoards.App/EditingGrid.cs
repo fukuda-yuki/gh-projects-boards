@@ -380,7 +380,6 @@ internal sealed partial class EditingGrid : Grid
         var cell = rows[r].Cells[c];
         FrameworkElement editor = cell.Key?.Kind is "Select" or "LocalSelect" && cell.Editable
             ? new ChoiceCell(this, r, c, cell) : new TitleCell(this, r, c, cell);
-        editor.Loaded += ApplyProblemTargetLoaded;
         AutomationProperties.SetAutomationId(editor, $"GridCell{r}_{c}");
         AutomationProperties.SetName(editor, $"行 {r + 1} 列 {c + 1} {layout.Visible[c].Name} {cell.Display} {cell.Reason}");
         if (cell.Reason is { } reason && reason != "参照専用") ToolTipService.SetToolTip(editor, reason);
@@ -1216,7 +1215,7 @@ internal sealed partial class EditingGrid : Grid
             if (owner.diagnostics is not null)
                 TextChanged += (_, _) => owner.diagnostics.Record("text-changed", new { row, column, length = Text.Length, restoring });
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
-            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.applyProblemTip.IsOpen = false; owner.selectionMode.Text = "IME変換中"; };
+            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.selectionMode.Text = "IME変換中"; };
             TextCompositionEnded += (_, _) =>
             {
                 composing = false;

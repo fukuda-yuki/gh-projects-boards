@@ -26,7 +26,6 @@ public sealed partial class RegistrationPanel
         var expected = lifetime;
         if (!dialog.Resources.ContainsKey("ContentDialogMaxWidth")) dialog.Resources["ContentDialogMaxWidth"] = 760d;
         activeDialog = dialog;
-        foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.SuppressApplyProblemPopup(true);
         try
         {
             var result = await dialog.ShowAsync();
@@ -37,7 +36,6 @@ public sealed partial class RegistrationPanel
             if (ReferenceEquals(activeDialog, dialog))
             {
                 activeDialog = null;
-                foreach (var grid in EditorHost.Children.OfType<EditingGrid>()) grid.SuppressApplyProblemPopup(false);
             }
         }
     }

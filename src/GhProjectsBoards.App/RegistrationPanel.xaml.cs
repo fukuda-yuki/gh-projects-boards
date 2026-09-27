@@ -182,7 +182,6 @@ public sealed partial class RegistrationPanel : UserControl
                     if (workspace.Drafts is { } drafts) { var grid = new EditingGrid(selected, drafts, workspace.PrepareLocalRowsAsync, previousProjection,
                         temporaryColumns: previousGrid?.RowProjection.Project == selected.Snapshot.Id ? previousGrid.TemporaryApplyColumns : null);
                         grid.ApplyHistoryRequested += (_, _) => ShowApplyHistory(this, new RoutedEventArgs()); grid.PlanningSettingsChanged += Update;
-                        grid.SuppressApplyProblemPopup(activeDialog is not null);
                         // Retain the usable view until the replacement and its
                         // identity-based selection have been constructed.
                         grid.RestoreSelection(selection); EditorHost.Children.Clear(); EditorHost.Children.Add(grid);

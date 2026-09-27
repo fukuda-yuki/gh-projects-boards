@@ -4,14 +4,18 @@ using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using NUnit.Framework;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
-    [TestCase(false), TestCase(true), Category("ApplyProblemRefresh")]
+    [TestCase(false), TestCase(true), Category("ApplyProblemRefresh"), Category("ApplyProblemPresentation")]
     public async Task RefreshKeepsTheSelectedFailedOrBlockedTitleAndItsProblemVisible(bool resumeFailedAttempt)
     {
         await Ui.Run(async () =>
@@ -33,6 +37,7 @@ public sealed partial class HostedTests
         {
             Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus").Text, Does.Contain(resumeFailedAttempt ? "要確認" : "失敗"));
             await ApplyInformationEvidence.Capture(panel, $"selected-problem-before-refresh-{resumeFailedAttempt}");
+            AssertProblemUsesFixedStrip(Ui.Tree(panel).OfType<EditingGrid>().Single(), "GridCell0_0");
             Ui.Click("RefreshProjectButton");
         });
 
@@ -58,10 +63,11 @@ public sealed partial class HostedTests
             Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writesBeforeRefresh),
                 "Refreshing the selected problem must not dispatch another update.");
             await ApplyInformationEvidence.Capture(panel, $"selected-problem-after-refresh-{resumeFailedAttempt}");
+            AssertProblemUsesFixedStrip(grid, "GridCell0_0");
         });
     }
 
-    [Test]
+    [Test, Category("ApplyProblemPresentation")]
     public async Task WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover()
     {
         await Ui.Run(async () =>
@@ -72,18 +78,28 @@ public sealed partial class HostedTests
         });
         await Ui.Ready<Button>("NextApplyProblem");
         await Ui.Run(() => Ui.Click("NextApplyProblem"));
-        ToolTip problem = null!;
-        await Ui.Until(() => ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")) is ToolTip { IsOpen: true });
+        await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().SelectionIdentity?.Field == new FieldKey("Select", "P1-T1", "P1", "P1-status"));
         await Ui.Run(async () =>
         {
-            problem = (ToolTip)ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1"));
             await ApplyInformationEvidence.Capture(panel, "problem-before-withdrawal");
+            var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
+            Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus", grid).Text, Does.Contain("失敗"));
+            AssertProblemUsesFixedStrip(grid, "GridCell0_1");
+            Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(Ui.Find<Button>("GridCell0_1", grid)),
+                "The problem explanation must leave focus on the selected field.");
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<TextBlock>("GridRowIdentity0", grid)), Is.Not.Null,
+                "The ordinary Issue identity tooltip remains available.");
+            Ui.Click("GridApplyHistory");
         });
-        await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(async () =>
         {
-            Assert.That(problem.IsOpen, Is.False, "A selected-cell error popup must not cover its result history.");
-            Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")), Is.Not.SameAs(problem));
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")), Is.Null);
+            var details = Ui.Find<Expander>("ApplyOperationDetails-" + Work.Journal.Single().Operations.Single().Id, Ui.Dialog("ApplyHistoryDialog"));
+            Assert.That(details.Focus(FocusState.Keyboard), Is.True);
+            ((IExpandCollapseProvider)FrameworkElementAutomationPeer.CreatePeerForElement(details)
+                .GetPattern(PatternInterface.ExpandCollapse)).Expand();
+            Assert.That(details.IsExpanded, Is.True, "The complete attempt history remains reachable from the problem strip.");
             await ApplyInformationEvidence.Capture(Ui.Dialog("ApplyHistoryDialog")!, "problem-history-without-obscuring-tooltip");
         });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("WithdrawApplyBatch-" + Work.Journal.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));
@@ -94,7 +110,8 @@ public sealed partial class HostedTests
         await Task.Delay(1000);
         await Ui.Run(async () =>
         {
-            Assert.That(problem.IsOpen, Is.False, "A retired problem must not return when the user hovers its cell.");
+            Assert.That(ToolTipService.GetToolTip(Ui.Find<Button>("GridCell0_1")), Is.Null,
+                "A retired problem must not remain associated with the native hover service.");
             Assert.That(Ui.Find<TextBlock>("GridMarker0_1").Text, Does.Not.Contain("!"));
             Assert.That(Work.Journal.Single().Operations.Single().Attempts, Is.Not.Empty);
             await ApplyInformationEvidence.Capture(panel, "problem-withdrawn-after-native-hover");
@@ -165,7 +182,7 @@ public sealed partial class HostedTests
         Assert.That(h.Writes.Count, Is.EqualTo(1));
     }
 
-    [Test]
+    [Test, Category("ApplyProblemPresentation")]
     public async Task CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord()
     {
         await Ui.Run(async () =>
@@ -223,7 +240,7 @@ public sealed partial class HostedTests
         });
     }
 
-    [TestCase(false, false), TestCase(true, false), TestCase(true, true)]
+    [TestCase(false, false), TestCase(true, false), TestCase(true, true), Category("ApplyProblemPresentation")]
     public async Task MixedResultsReturnToExactProblemAndPreservePendingInputAndView(bool hidden, bool uncertain)
     {
         string batch = "";
@@ -271,10 +288,10 @@ public sealed partial class HostedTests
         await Ui.Run(async () =>
         {
             Assert.That(Ui.Find<TextBlock>("ApplyProblemStatus").Text, Does.Contain(uncertain ? "結果の確認が必要" : "失敗"));
-            // The native recycling pool also retains offscreen containers. Inspect the current item.
             var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
-            var list = Ui.Find<ListView>("ProjectItems", grid);
-            var marker = Ui.Find<TextBlock>("GridMarker1_1", (ListViewItem)list.Items[1]);
+            var selectedCell = Ui.Find<Button>("GridCell1_1", grid);
+            // The selected native editor owns its marker outside the recycled row container.
+            var marker = Ui.Find<TextBlock>("GridMarker1_1", VisualTreeHelper.GetParent(selectedCell));
             Assert.That(marker.Text, Is.EqualTo(uncertain ? "?" : "!"));
             Assert.That(marker.TransformToVisual(grid).TransformPoint(new(0, 0)).Y, Is.InRange(0, grid.ActualHeight));
             Assert.That(Work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending text is not sent"));
@@ -282,6 +299,8 @@ public sealed partial class HostedTests
             Assert.That(Work.Columns(Workspace.Selected!).Hidden("P1-status"), Is.EqualTo(hidden));
             Assert.That(Work.RowView(Workspace.Selected!).Title, Is.EqualTo(hidden ? "keep" : ""));
             await ApplyInformationEvidence.Capture(panel, $"apply-problem-{hidden}-{uncertain}");
+            AssertProblemUsesFixedStrip(grid, "GridCell1_1");
+            Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(selectedCell));
             if (hidden)
             {
                 Ui.Click("GridReapply");
@@ -290,5 +309,19 @@ public sealed partial class HostedTests
             }
         });
         Assert.That(h.Writes.Count, Is.EqualTo(3), "Showing results and navigating must not dispatch another update.");
+    }
+
+    private static void AssertProblemUsesFixedStrip(EditingGrid grid, string cellId)
+    {
+        var status = Ui.Find<TextBlock>("ApplyProblemStatus", grid);
+        var target = Ui.Find<FrameworkElement>(cellId, grid);
+        Assert.That(status.ActualHeight, Is.GreaterThan(0));
+        var origin = status.TransformToVisual(grid).TransformPoint(new(0, 0));
+        Assert.That(origin.Y, Is.GreaterThanOrEqualTo(0));
+        Assert.That(origin.Y + status.ActualHeight, Is.LessThanOrEqualTo(grid.ActualHeight));
+        Assert.That(ToolTipService.GetToolTip(target), Is.Null,
+            "Selection must not associate a duplicate problem tooltip with the cell; closing it alone allows hover to reopen it.");
+        Assert.That(VisualTreeHelper.GetOpenPopupsForXamlRoot(grid.XamlRoot)
+            .SelectMany(p => Ui.Tree(p.Child)).OfType<ToolTip>().Any(t => ReferenceEquals(t.PlacementTarget, target)), Is.False);
     }
 }

@@ -14,17 +14,9 @@ internal sealed partial class EditingGrid
     private readonly Grid applyProblemStrip = new() { ColumnSpacing = 8, Visibility = Visibility.Collapsed };
     private readonly HashSet<string> temporaryApplyColumns = [];
     internal IEnumerable<string> TemporaryApplyColumns => temporaryApplyColumns;
-    private readonly ToolTip applyProblemTip = new() { Placement = Microsoft.UI.Xaml.Controls.Primitives.PlacementMode.Bottom };
-    private object? replacedApplyToolTip;
     private ApplyAttention? activeApplyProblem;
     private string? unavailableApplyTarget;
-    private bool applyProblemPopupSuppressed;
     internal event EventHandler? ApplyHistoryRequested;
-    internal void SuppressApplyProblemPopup(bool suppressed)
-    {
-        applyProblemPopupSuppressed = suppressed;
-        if (suppressed) CloseApplyProblemTip();
-    }
 
     private void InitializeApplyProblems(StackPanel footer)
     {
@@ -46,7 +38,6 @@ internal sealed partial class EditingGrid
         history.Click += (_, _) => { if (CanRefresh) ApplyHistoryRequested?.Invoke(this, EventArgs.Empty); };
         SetColumn(next, 1); SetColumn(history, 2); applyProblemStrip.Children.Add(next); applyProblemStrip.Children.Add(history);
         footer.Children.Add(applyProblemStrip);
-        Unloaded += (_, _) => CloseApplyProblemTip();
     }
 
     private void RefreshApplyProblems()
@@ -64,50 +55,11 @@ internal sealed partial class EditingGrid
 
     private void UpdateApplyProblemText()
     {
-        if (unavailableApplyTarget is not null) { CloseApplyProblemTip(); applyProblemText.Text = unavailableApplyTarget; return; }
+        if (unavailableApplyTarget is not null) { applyProblemText.Text = unavailableApplyTarget; return; }
         var selected = active ? ApplyProblem(rows[currentRow].Cells[currentColumn]) : null;
         applyProblemText.Text = selected is null ? ApplyResultsPresentation.Summary(applyAttention)
             : $"{selected.FieldName} — {selected.Description}";
         if (temporaryApplyColumns.Count > 0) applyProblemText.Text += "（問題の列を一時表示中）";
-        // Selection is restored before a replacement grid is mounted. Recycled
-        // rows may have slots but no native controls yet; the footer still
-        // explains the problem until Loaded updates the popup's actual target.
-        if (selected is not null && !applyProblemPopupSuppressed && CanRefresh && IsLoaded && XamlRoot is { } root
-            && controls[currentRow].Length > currentColumn
-            && controls[currentRow][currentColumn] is FrameworkElement { IsLoaded: true } target
-            && target is not TitleCell { Editing: true })
-        {
-            applyProblemTip.XamlRoot = root;
-            if (applyProblemTip.PlacementTarget != target)
-            {
-                CloseApplyProblemTip();
-                replacedApplyToolTip = ToolTipService.GetToolTip(target);
-                applyProblemTip.PlacementTarget = target;
-                ToolTipService.SetToolTip(target, applyProblemTip);
-            }
-            applyProblemTip.Content = new TextBlock { Text = selected.Description, TextWrapping = TextWrapping.Wrap, MaxWidth = 280 };
-            applyProblemTip.IsOpen = true;
-        }
-        else CloseApplyProblemTip();
-    }
-
-    private void ApplyProblemTargetLoaded(object sender, RoutedEventArgs e)
-    {
-        // Native input can be created by selection after the grid itself loaded.
-        // Resolve today's selection instead of retaining a recycled row position.
-        if (active && currentRow < controls.Count && currentColumn < controls[currentRow].Length
-            && ReferenceEquals(controls[currentRow][currentColumn], sender)) UpdateApplyProblemText();
-    }
-
-    private void CloseApplyProblemTip()
-    {
-        applyProblemTip.IsOpen = false;
-        // Closing alone leaves the native hover service able to reopen stale results.
-        if (applyProblemTip.PlacementTarget is DependencyObject previous
-            && ReferenceEquals(ToolTipService.GetToolTip(previous), applyProblemTip))
-            ToolTipService.SetToolTip(previous, replacedApplyToolTip);
-        applyProblemTip.PlacementTarget = null;
-        replacedApplyToolTip = null;
     }
 
     private ApplyAttention? ApplyProblem(EditCell cell) => cell.Key is { } key ? applyFields.GetValueOrDefault(key) : null;
@@ -117,7 +69,6 @@ internal sealed partial class EditingGrid
         if (!IsLoaded || target.Project != registration.Snapshot.Id) return false;
         if (!CanRefresh) { applyProblemText.Text = "IME変換中です。確定・取消後に「次の問題へ」で移動できます。"; return false; }
         activeApplyProblem = target;
-        CloseApplyProblemTip();
         unavailableApplyTarget = null;
         var canonical = session.Workspace.Open(registration);
         var row = canonical.SingleOrDefault(r => r.ItemId == target.RowId);
