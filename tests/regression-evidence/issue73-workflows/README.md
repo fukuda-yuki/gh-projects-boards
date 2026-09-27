@@ -74,4 +74,10 @@ ChatGPT kept the whole-product structure but rejected candidate v1: setup lacked
 
 This is implementation plus bounded technical and ordinary-executable evidence. Human acceptance is not run; W1-H is still FAIL / NOT_ACCEPTED and #61/#65 stay open. Repository-column semantics remain a cross-product defect, not an approved design. Live authentication/registration and full weekly publish/partial-failure/recovery acceptance, physical IME, performance, themes and packaging remain outside this slice's evidence.
 
+## Weekly progress correction
+
+The [weekly evidence record](weekly/README.md) continues the same Issue with the adopted job: correct progress/actual dates, understand the adopted calculation, and continue the same task. It preserves the baseline, failed attempts, original ordinary screenshots, source/build receipts, targeted checks and independent checkpoint readback. The first-planning v5 candidate and its scoped design PASS remain unchanged.
+
+Final weekly implementation source is `dd34eee4a48f6708710e0259866206168f1cd4a0` on `codex/issue-73-weekly-recovery`. Normal execution covers visible correction, candidate continuation/discard, same-cell return and restart without promoting pending `3x` into a confirmed calculation value. ChatGPT's text review maintains the design direction; final image review is pending browser reconnection. This is neither full weekly acceptance nor W1 acceptance, and no remote branch/PR/main integration is claimed.
+
 

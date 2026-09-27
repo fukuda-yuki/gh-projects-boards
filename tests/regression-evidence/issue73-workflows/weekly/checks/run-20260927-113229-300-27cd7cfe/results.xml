@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="205" result="Passed" start-time="2026-09-27T02:32:39.0845899Z" end-time="2026-09-27T02:32:40.1904435Z" duration="1.105835" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0" random-seed="1834536938">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ ReasonLeadsToProgress" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260927-113229-300-27cd7cfe\results.xml]]></command-line>
+  <filter>
+    <test re="1">ReasonLeadsToProgress</test>
+  </filter>
+  <test-suite type="Assembly" id="1257" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="205" result="Passed" start-time="2026-09-27T02:32:39.0845899Z" end-time="2026-09-27T02:32:40.1904435Z" duration="1.105835" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="7996" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1258" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="205" result="Passed" start-time="2026-09-27T02:32:39.0869276Z" end-time="2026-09-27T02:32:40.1904414Z" duration="1.103514" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+      <test-suite type="TestSuite" id="1259" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="205" result="Passed" start-time="2026-09-27T02:32:39.0870908Z" end-time="2026-09-27T02:32:40.1904387Z" duration="1.103348" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+        <test-suite type="TestSuite" id="1260" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="205" result="Passed" start-time="2026-09-27T02:32:39.0871032Z" end-time="2026-09-27T02:32:40.1904275Z" duration="1.103324" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+          <test-suite type="TestFixture" id="1132" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-09-27T02:32:39.0871047Z" end-time="2026-09-27T02:32:40.1902965Z" duration="1.103192" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1170" name="ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" methodname="ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="991346820" result="Passed" start-time="2026-09-27T02:32:39.0882518Z" end-time="2026-09-27T02:32:40.1891859Z" duration="1.100973" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

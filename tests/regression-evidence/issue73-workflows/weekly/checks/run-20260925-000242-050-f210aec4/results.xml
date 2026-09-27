@@ -1,0 +1,220 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="200" result="Failed" start-time="2026-09-24T15:02:48.0197165Z" end-time="2026-09-24T15:02:49.9512198Z" duration="1.931473" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0" random-seed="444103048">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == WeeklyRecovery" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260925-000242-050-f210aec4\results.xml]]></command-line>
+  <filter>
+    <cat>WeeklyRecovery</cat>
+  </filter>
+  <test-suite type="Assembly" id="1252" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="200" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0197165Z" end-time="2026-09-24T15:02:49.9512198Z" duration="1.931473" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="41348" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1253" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="200" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0222117Z" end-time="2026-09-24T15:02:49.9512173Z" duration="1.929005" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1254" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="200" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0223737Z" end-time="2026-09-24T15:02:49.9512151Z" duration="1.928841" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1255" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="200" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0224366Z" end-time="2026-09-24T15:02:49.9512118Z" duration="1.928775" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1132" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="43" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0224383Z" end-time="2026-09-24T15:02:49.9512044Z" duration="1.928766" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1169" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="3" result="Failed" site="Child" start-time="2026-09-24T15:02:48.0236236Z" end-time="2026-09-24T15:02:49.9510237Z" duration="1.927401" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1166" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanActualStart&quot;,&quot;工数・進捗・実績&quot;,&quot;実績開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanActualStart&quot;,&quot;工数・進捗・実績&quot;,&quot;実績開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1451627859" result="Failed" label="Error" start-time="2026-09-24T15:02:48.0237145Z" end-time="2026-09-24T15:02:48.9501935Z" duration="0.926529" asserts="0">
+                <failure>
+                  <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                  <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                    <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+              <test-case id="1167" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanFixedStart&quot;,&quot;日程の制約&quot;,&quot;固定開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanFixedStart&quot;,&quot;日程の制約&quot;,&quot;固定開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="71680032" result="Failed" label="Error" start-time="2026-09-24T15:02:48.9513575Z" end-time="2026-09-24T15:02:49.4477559Z" duration="0.496399" asserts="0">
+                <failure>
+                  <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                  <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                    <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+              <test-case id="1168" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanWork-Remaining&quot;,&quot;工数・進捗・実績&quot;,&quot;残時間&quot;,&quot;3x&quot;,&quot;3&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanWork-Remaining&quot;,&quot;工数・進捗・実績&quot;,&quot;残時間&quot;,&quot;3x&quot;,&quot;3&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="847306580" result="Failed" label="Error" start-time="2026-09-24T15:02:49.4478053Z" end-time="2026-09-24T15:02:49.9501649Z" duration="0.502360" asserts="0">
+                <failure>
+                  <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                  <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.ArgumentException : Expected: IEnumerable But was: null (Parameter 'actual')
+  ParamName: actual]]></message>
+                    <stack-trace><![CDATA[   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName, Boolean allowNull)
+   at NUnit.Framework.Internal.ConstraintUtils.RequireActual[T](Object actual, String paramName)
+   at NUnit.Framework.Constraints.SomeItemsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Constraints.ContainsConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,0 +1,413 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1036 ウィンドウ PopupHost
+			1037 ウィンドウ
+				1038 window ポップアップ Secondary Actions: Raise
+					1039 tool tip タイトル Title
+						1040 テキスト タイトル Title
+		1 ウィンドウ
+			2 ウィンドウ
+				3 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				5 button 接続設定 ID: ConnectionPageButton
+				6 window Secondary Actions: Raise ID: PaneRoot
+					7 combo box 保存済みアカウント ID: SavedProfiles
+					8 テキスト 登録済みProject
+					9 tree ID: ListControl
+						32 tree item (selectable) owner
+							33 テキスト owner
+						34 tree item (selectable) Repository関連付けなし
+							35 テキスト Repository関連付けなし
+						36 tree item (selectable) P1
+							37 テキスト P1
+						38 tree item (selectable) P2
+							39 テキスト P2
+					10 button Projectを追加… ID: AddProjectButton
+				11 テキスト P1 ID: ProjectSummary
+				40 テキスト キャッシュ 2026/09/24 21:23 ID: ProjectCacheDestination
+				12 button (disabled) 最新を取得 ID: RefreshProjectButton
+				13 button GitHubに反映… ID: ReviewApplyButton
+				14 button 反映結果・履歴 ID: ApplyHistoryButton
+				15 button Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton
+				679 pane
+					680 テキスト 行
+					681 button タイトル の列操作 ID: GridHeaderMenu0
+						682 テキスト タイトル ID: GridHeader0
+					683 thumb タイトル の幅を変更 ID: GridColumnResize0
+					684 button Renamed workflow の列操作 ID: GridHeaderMenu1
+						685 テキスト Renamed workflow ID: GridHeader1
+					686 thumb Renamed workflow の幅を変更 ID: GridColumnResize1
+					687 button Estimate の列操作 ID: GridHeaderMenu2
+						688 テキスト Estimate ID: GridHeader2
+					689 thumb Estimate の幅を変更 ID: GridColumnResize2
+					690 button Remaining の列操作 ID: GridHeaderMenu3
+						691 テキスト Remaining ID: GridHeader3
+					692 thumb Remaining の幅を変更 ID: GridColumnResize3
+					693 button Actual の列操作 ID: GridHeaderMenu4
+						694 テキスト Actual ID: GridHeader4
+					695 thumb Actual の幅を変更 ID: GridColumnResize4
+					696 button Start の列操作 ID: GridHeaderMenu5
+						697 テキスト Start ID: GridHeader5
+					698 thumb Start の幅を変更 ID: GridColumnResize5
+					699 button EndDate の列操作 ID: GridHeaderMenu6
+						700 テキスト EndDate ID: GridHeader6
+					701 thumb EndDate の幅を変更 ID: GridColumnResize6
+					702 button Repository の列操作 ID: GridHeaderMenu7
+						703 テキスト Repository ID: GridHeader7
+					704 thumb Repository の幅を変更 ID: GridColumnResize7
+				705 リスト ID: ProjectItems
+					706 list item 行 1 #1 owner/repo 週次計画の確認
+						707 テキスト 1 ID: GridRowNumber0
+						708 テキスト #1 ID: GridRowIdentity0
+						709 edit (settable, string) 行 1 列 2 Renamed workflow Todo Value: Todo ID: GridCell0_1
+							710 テキスト Todo
+						711 edit (settable, string) 行 1 列 3 Estimate 4 Value: 4 ID: GridCell0_2
+							712 テキスト 4
+						713 edit (settable, string) 行 1 列 4 Remaining 3x Description: 変更あり 編集中（未確定） Value: 3x ID: GridCell0_3
+							714 テキスト 3x
+						715 テキスト 変更あり 編集中（未確定） ID: GridMarker0_3
+						716 edit (settable, string) 行 1 列 5 Actual 7 Description: 変更あり Value: 7 ID: GridCell0_4
+							717 テキスト 7
+						718 テキスト 変更あり ID: GridMarker0_4
+						719 edit (settable, string) 行 1 列 6 Start 2026-10-13 Description: 変更あり Value: 2026-10-13 ID: GridCell0_5
+							720 テキスト 2026-10-13
+						721 テキスト 変更あり ID: GridMarker0_5
+					722 list item 行 2 #2 owner/repo 週次計画の確認
+						723 テキスト 2 ID: GridRowNumber1
+						724 edit (settable, string) 行 2 列 1 タイトル 週次計画の確認 Value: 週次計画の確認 ID: GridCell1_0
+							725 テキスト 週次計画の確認
+						726 テキスト #2 ID: GridRowIdentity1
+						727 edit (settable, string) 行 2 列 2 Renamed workflow Todo Value: Todo ID: GridCell1_1
+							728 テキスト Todo
+						729 edit (settable, string) 行 2 列 3 Estimate 4 Value: 4 ID: GridCell1_2
+							730 テキスト 4
+						731 edit (settable, string) 行 2 列 4 Remaining 1 Description: 変更あり Value: 1 ID: GridCell1_3
+							732 テキスト 1
+						733 テキスト 変更あり ID: GridMarker1_3
+						734 edit (settable, string) 行 2 列 5 Actual 2 Description: 変更あり Value: 2 ID: GridCell1_4
+							735 テキスト 2
+						736 テキスト 変更あり ID: GridMarker1_4
+						737 edit (settable, string) 行 2 列 6 Start 2026-10-14 Description: 変更あり Value: 2026-10-14 ID: GridCell1_5
+							738 テキスト 2026-10-14
+						739 テキスト 変更あり ID: GridMarker1_5
+					740 list item 行 3 #3 owner/repo 作業 3
+						741 テキスト 3 ID: GridRowNumber2
+						742 edit (settable, string) 行 3 列 1 タイトル 作業 3 Value: 作業 3 ID: GridCell2_0
+							743 テキスト 作業 3
+						744 テキスト #3 ID: GridRowIdentity2
+						745 edit (settable, string) 行 3 列 2 Renamed workflow Todo Value: Todo ID: GridCell2_1
+							746 テキスト Todo
+						747 edit (settable, string) 行 3 列 3 Estimate 4 Value: 4 ID: GridCell2_2
+							748 テキスト 4
+						749 edit (settable, string) 行 3 列 4 Remaining 4 Value: 4 ID: GridCell2_3
+							750 テキスト 4
+						751 edit (settable, string) 行 3 列 5 Actual ID: GridCell2_4
+							752 テキスト
+						753 edit (settable, string) 行 3 列 6 Start 2026-10-14 Description: 変更あり Value: 2026-10-14 ID: GridCell2_5
+							754 テキスト 2026-10-14
+						755 テキスト 変更あり ID: GridMarker2_5
+					756 list item 行 4 #4 owner/repo 作業 4
+						757 テキスト 4 ID: GridRowNumber3
+						758 edit (settable, string) 行 4 列 1 タイトル 作業 4 Value: 作業 4 ID: GridCell3_0
+							759 テキスト 作業 4
+						760 テキスト #4 ID: GridRowIdentity3
+						761 edit (settable, string) 行 4 列 2 Renamed workflow Todo Value: Todo ID: GridCell3_1
+							762 テキスト Todo
+						763 edit (settable, string) 行 4 列 3 Estimate 4 Value: 4 ID: GridCell3_2
+							764 テキスト 4
+						765 edit (settable, string) 行 4 列 4 Remaining 4 Value: 4 ID: GridCell3_3
+							766 テキスト 4
+						767 edit (settable, string) 行 4 列 5 Actual ID: GridCell3_4
+							768 テキスト
+						769 edit (settable, string) 行 4 列 6 Start 2026-10-15 Description: 変更あり Value: 2026-10-15 ID: GridCell3_5
+							770 テキスト 2026-10-15
+						771 テキスト 変更あり ID: GridMarker3_5
+					772 list item 行 5 #5 owner/repo 作業 5
+						773 テキスト 5 ID: GridRowNumber4
+						774 edit (settable, string) 行 5 列 1 タイトル 作業 5 Value: 作業 5 ID: GridCell4_0
+							775 テキスト 作業 5
+						776 テキスト #5 ID: GridRowIdentity4
+						777 edit (settable, string) 行 5 列 2 Renamed workflow Todo Value: Todo ID: GridCell4_1
+							778 テキスト Todo
+						779 edit (settable, string) 行 5 列 3 Estimate 4 Value: 4 ID: GridCell4_2
+							780 テキスト 4
+						781 edit (settable, string) 行 5 列 4 Remaining 4 Value: 4 ID: GridCell4_3
+							782 テキスト 4
+						783 edit (settable, string) 行 5 列 5 Actual ID: GridCell4_4
+							784 テキスト
+						785 edit (settable, string) 行 5 列 6 Start 2026-10-16 Description: 変更あり Value: 2026-10-16 ID: GridCell4_5
+							786 テキスト 2026-10-16
+						787 テキスト 変更あり ID: GridMarker4_5
+					788 list item 行 6 #6 owner/repo 作業 6
+						789 テキスト 6 ID: GridRowNumber5
+						790 edit (settable, string) 行 6 列 1 タイトル 作業 6 Value: 作業 6 ID: GridCell5_0
+							791 テキスト 作業 6
+						792 テキスト #6 ID: GridRowIdentity5
+						793 edit (settable, string) 行 6 列 2 Renamed workflow Todo Value: Todo ID: GridCell5_1
+							794 テキスト Todo
+						795 edit (settable, string) 行 6 列 3 Estimate 4 Value: 4 ID: GridCell5_2
+							796 テキスト 4
+						797 edit (settable, string) 行 6 列 4 Remaining 4 Value: 4 ID: GridCell5_3
+							798 テキスト 4
+						799 edit (settable, string) 行 6 列 5 Actual ID: GridCell5_4
+							800 テキスト
+						801 edit (settable, string) 行 6 列 6 Start 2026-10-16 Description: 変更あり Value: 2026-10-16 ID: GridCell5_5
+							802 テキスト 2026-10-16
+						803 テキスト 変更あり ID: GridMarker5_5
+					804 list item 行 7 #7 owner/repo 作業 7
+						805 テキスト 7 ID: GridRowNumber6
+						806 edit (settable, string) 行 7 列 1 タイトル 作業 7 Value: 作業 7 ID: GridCell6_0
+							807 テキスト 作業 7
+						808 テキスト #7 ID: GridRowIdentity6
+						809 edit (settable, string) 行 7 列 2 Renamed workflow Todo Value: Todo ID: GridCell6_1
+							810 テキスト Todo
+						811 edit (settable, string) 行 7 列 3 Estimate 4 Value: 4 ID: GridCell6_2
+							812 テキスト 4
+						813 edit (settable, string) 行 7 列 4 Remaining 4 Value: 4 ID: GridCell6_3
+							814 テキスト 4
+						815 edit (settable, string) 行 7 列 5 Actual 5 Description: 変更あり Value: 5 ID: GridCell6_4
+							816 テキスト 5
+						817 テキスト 変更あり ID: GridMarker6_4
+						818 edit (settable, string) 行 7 列 6 Start 2026-10-19 Description: 変更あり Value: 2026-10-19 ID: GridCell6_5
+							819 テキスト 2026-10-19
+						820 テキスト 変更あり ID: GridMarker6_5
+					821 list item 行 8 #8 owner/repo 作業 8
+						822 テキスト 8 ID: GridRowNumber7
+						823 edit (settable, string) 行 8 列 1 タイトル 作業 8 Value: 作業 8 ID: GridCell7_0
+							824 テキスト 作業 8
+						825 テキスト #8 ID: GridRowIdentity7
+						826 edit (settable, string) 行 8 列 2 Renamed workflow Todo Value: Todo ID: GridCell7_1
+							827 テキスト Todo
+						828 edit (settable, string) 行 8 列 3 Estimate 4 Value: 4 ID: GridCell7_2
+							829 テキスト 4
+						830 edit (settable, string) 行 8 列 4 Remaining 4 Value: 4 ID: GridCell7_3
+							831 テキスト 4
+						832 edit (settable, string) 行 8 列 5 Actual ID: GridCell7_4
+							833 テキスト
+						834 edit (settable, string) 行 8 列 6 Start 2026-10-20 Description: 変更あり Value: 2026-10-20 ID: GridCell7_5
+							835 テキスト 2026-10-20
+						836 テキスト 変更あり ID: GridMarker7_5
+					837 list item 行 9 #9 owner/repo 作業 9
+						838 テキスト 9 ID: GridRowNumber8
+						839 edit (settable, string) 行 9 列 1 タイトル 作業 9 Value: 作業 9 ID: GridCell8_0
+							840 テキスト 作業 9
+						841 テキスト #9 ID: GridRowIdentity8
+						842 edit (settable, string) 行 9 列 2 Renamed workflow Todo Value: Todo ID: GridCell8_1
+							843 テキスト Todo
+						844 edit (settable, string) 行 9 列 3 Estimate 4 Value: 4 ID: GridCell8_2
+							845 テキスト 4
+						846 edit (settable, string) 行 9 列 4 Remaining 4 Value: 4 ID: GridCell8_3
+							847 テキスト 4
+						848 edit (settable, string) 行 9 列 5 Actual ID: GridCell8_4
+							849 テキスト
+						850 edit (settable, string) 行 9 列 6 Start 2026-10-20 Description: 変更あり Value: 2026-10-20 ID: GridCell8_5
+							851 テキスト 2026-10-20
+						852 テキスト 変更あり ID: GridMarker8_5
+					853 list item 行 10 #10 owner/repo 作業 10
+						854 テキスト 10 ID: GridRowNumber9
+						855 edit (settable, string) 行 10 列 1 タイトル 作業 10 Value: 作業 10 ID: GridCell9_0
+							856 テキスト 作業 10
+						857 テキスト #10 ID: GridRowIdentity9
+						858 edit (settable, string) 行 10 列 2 Renamed workflow Todo Value: Todo ID: GridCell9_1
+							859 テキスト Todo
+						860 edit (settable, string) 行 10 列 3 Estimate 4 Value: 4 ID: GridCell9_2
+							861 テキスト 4
+						862 edit (settable, string) 行 10 列 4 Remaining 4 Value: 4 ID: GridCell9_3
+							863 テキスト 4
+						864 edit (settable, string) 行 10 列 5 Actual ID: GridCell9_4
+							865 テキスト
+						866 edit (settable, string) 行 10 列 6 Start 2026-10-21 Description: 変更あり Value: 2026-10-21 ID: GridCell9_5
+							867 テキスト 2026-10-21
+						868 テキスト 変更あり ID: GridMarker9_5
+					869 list item 行 11 #11 owner/repo 作業 11
+						870 テキスト 11 ID: GridRowNumber10
+						871 edit (settable, string) 行 11 列 1 タイトル 作業 11 Value: 作業 11 ID: GridCell10_0
+							872 テキスト 作業 11
+						873 テキスト #11 ID: GridRowIdentity10
+						874 edit (settable, string) 行 11 列 2 Renamed workflow Todo Value: Todo ID: GridCell10_1
+							875 テキスト Todo
+						876 edit (settable, string) 行 11 列 3 Estimate 4 Value: 4 ID: GridCell10_2
+							877 テキスト 4
+						878 edit (settable, string) 行 11 列 4 Remaining 4 Value: 4 ID: GridCell10_3
+							879 テキスト 4
+						880 edit (settable, string) 行 11 列 5 Actual ID: GridCell10_4
+							881 テキスト
+						882 edit (settable, string) 行 11 列 6 Start 2026-10-22 Description: 変更あり Value: 2026-10-22 ID: GridCell10_5
+							883 テキスト 2026-10-22
+						884 テキスト 変更あり ID: GridMarker10_5
+					885 list item 行 12 #12 owner/repo 作業 12
+						886 テキスト 12 ID: GridRowNumber11
+						887 edit (settable, string) 行 12 列 1 タイトル 作業 12 Value: 作業 12 ID: GridCell11_0
+							888 テキスト 作業 12
+						889 テキスト #12 ID: GridRowIdentity11
+						890 edit (settable, string) 行 12 列 2 Renamed workflow Todo Value: Todo ID: GridCell11_1
+							891 テキスト Todo
+						892 edit (settable, string) 行 12 列 3 Estimate 4 Value: 4 ID: GridCell11_2
+							893 テキスト 4
+						894 edit (settable, string) 行 12 列 4 Remaining 4 Value: 4 ID: GridCell11_3
+							895 テキスト 4
+						896 edit (settable, string) 行 12 列 5 Actual ID: GridCell11_4
+							897 テキスト
+						898 edit (settable, string) 行 12 列 6 Start 2026-10-23 Description: 変更あり Value: 2026-10-23 ID: GridCell11_5
+							899 テキスト 2026-10-23
+						900 テキスト 変更あり ID: GridMarker11_5
+					901 list item 行 13 #13 owner/repo 作業 13
+						902 テキスト 13 ID: GridRowNumber12
+						903 edit (settable, string) 行 13 列 1 タイトル 作業 13 Value: 作業 13 ID: GridCell12_0
+							904 テキスト 作業 13
+						905 テキスト #13 ID: GridRowIdentity12
+						906 edit (settable, string) 行 13 列 2 Renamed workflow Todo Value: Todo ID: GridCell12_1
+							907 テキスト Todo
+						908 edit (settable, string) 行 13 列 3 Estimate 4 Value: 4 ID: GridCell12_2
+							909 テキスト 4
+						910 edit (settable, string) 行 13 列 4 Remaining 4 Value: 4 ID: GridCell12_3
+							911 テキスト 4
+						912 edit (settable, string) 行 13 列 5 Actual ID: GridCell12_4
+							913 テキスト
+						914 edit (settable, string) 行 13 列 6 Start 2026-10-26 Description: 変更あり Value: 2026-10-26 ID: GridCell12_5
+							915 テキスト 2026-10-26
+						916 テキスト 変更あり ID: GridMarker12_5
+					917 list item 行 14 #14 owner/repo 作業 14
+						918 テキスト 14 ID: GridRowNumber13
+						919 edit (settable, string) 行 14 列 1 タイトル 作業 14 Value: 作業 14 ID: GridCell13_0
+							920 テキスト 作業 14
+						921 テキスト #14 ID: GridRowIdentity13
+						922 edit (settable, string) 行 14 列 2 Renamed workflow Todo Value: Todo ID: GridCell13_1
+							923 テキスト Todo
+						924 edit (settable, string) 行 14 列 3 Estimate 4 Value: 4 ID: GridCell13_2
+							925 テキスト 4
+						926 edit (settable, string) 行 14 列 4 Remaining 4 Value: 4 ID: GridCell13_3
+							927 テキスト 4
+						928 edit (settable, string) 行 14 列 5 Actual 5 Description: 変更あり Value: 5 ID: GridCell13_4
+							929 テキスト 5
+						930 テキスト 変更あり ID: GridMarker13_4
+						931 edit (settable, string) 行 14 列 6 Start 2026-10-26 Description: 変更あり Value: 2026-10-26 ID: GridCell13_5
+							932 テキスト 2026-10-26
+						933 テキスト 変更あり ID: GridMarker13_5
+					934 list item 行 15 #15 owner/repo 作業 15
+						935 テキスト 15 ID: GridRowNumber14
+						936 edit (settable, string) 行 15 列 1 タイトル 作業 15 Value: 作業 15 ID: GridCell14_0
+							937 テキスト 作業 15
+						938 テキスト #15 ID: GridRowIdentity14
+						939 edit (settable, string) 行 15 列 2 Renamed workflow Todo Value: Todo ID: GridCell14_1
+							940 テキスト Todo
+						941 edit (settable, string) 行 15 列 3 Estimate 4 Value: 4 ID: GridCell14_2
+							942 テキスト 4
+						943 edit (settable, string) 行 15 列 4 Remaining 4 Value: 4 ID: GridCell14_3
+							944 テキスト 4
+						945 edit (settable, string) 行 15 列 5 Actual ID: GridCell14_4
+							946 テキスト
+						947 edit (settable, string) 行 15 列 6 Start 2026-10-27 Description: 変更あり Value: 2026-10-27 ID: GridCell14_5
+							948 テキスト 2026-10-27
+						949 テキスト 変更あり ID: GridMarker14_5
+					950 list item 行 16 #16 owner/repo 作業 16
+						951 テキスト 16 ID: GridRowNumber15
+						952 edit (settable, string) 行 16 列 1 タイトル 作業 16 Value: 作業 16 ID: GridCell15_0
+							953 テキスト 作業 16
+						954 テキスト #16 ID: GridRowIdentity15
+						955 edit (settable, string) 行 16 列 2 Renamed workflow Todo Value: Todo ID: GridCell15_1
+							956 テキスト Todo
+						957 edit (settable, string) 行 16 列 3 Estimate 4 Value: 4 ID: GridCell15_2
+							958 テキスト 4
+						959 edit (settable, string) 行 16 列 4 Remaining 4 Value: 4 ID: GridCell15_3
+							960 テキスト 4
+						961 edit (settable, string) 行 16 列 5 Actual ID: GridCell15_4
+							962 テキスト
+						963 edit (settable, string) 行 16 列 6 Start 2026-10-28 Description: 変更あり Value: 2026-10-28 ID: GridCell15_5
+							964 テキスト 2026-10-28
+						965 テキスト 変更あり ID: GridMarker15_5
+					966 list item 行 17 #17 owner/repo 作業 17
+						967 テキスト 17 ID: GridRowNumber16
+						968 edit (settable, string) 行 17 列 1 タイトル 作業 17 Value: 作業 17 ID: GridCell16_0
+							969 テキスト 作業 17
+						970 テキスト #17 ID: GridRowIdentity16
+						971 edit (settable, string) 行 17 列 2 Renamed workflow Todo Value: Todo ID: GridCell16_1
+							972 テキスト Todo
+						973 edit (settable, string) 行 17 列 3 Estimate 4 Value: 4 ID: GridCell16_2
+							974 テキスト 4
+						975 edit (settable, string) 行 17 列 4 Remaining 4 Value: 4 ID: GridCell16_3
+							976 テキスト 4
+						977 edit (settable, string) 行 17 列 5 Actual ID: GridCell16_4
+							978 テキスト
+						979 edit (settable, string) 行 17 列 6 Start 2026-10-28 Description: 変更あり Value: 2026-10-28 ID: GridCell16_5
+							980 テキスト 2026-10-28
+						981 テキスト 変更あり ID: GridMarker16_5
+					982 list item 行 18 #18 owner/repo 作業 18
+						983 テキスト 18 ID: GridRowNumber17
+						984 edit (settable, string) 行 18 列 1 タイトル 作業 18 Value: 作業 18 ID: GridCell17_0
+							985 テキスト 作業 18
+						986 テキスト #18 ID: GridRowIdentity17
+						987 edit (settable, string) 行 18 列 2 Renamed workflow Todo Value: Todo ID: GridCell17_1
+							988 テキスト Todo
+						989 edit (settable, string) 行 18 列 3 Estimate 4 Value: 4 ID: GridCell17_2
+							990 テキスト 4
+						991 edit (settable, string) 行 18 列 4 Remaining 4 Value: 4 ID: GridCell17_3
+							992 テキスト 4
+						993 edit (settable, string) 行 18 列 5 Actual ID: GridCell17_4
+							994 テキスト
+						995 edit (settable, string) 行 18 列 6 Start 2026-10-29 Description: 変更あり Value: 2026-10-29 ID: GridCell17_5
+							996 テキスト 2026-10-29
+						997 テキスト 変更あり ID: GridMarker17_5
+					998 list item 行 19 #19 owner/repo 作業 19
+						999 テキスト 19 ID: GridRowNumber18
+						1000 edit (settable, string) 行 19 列 1 タイトル 作業 19 Value: 作業 19 ID: GridCell18_0
+							1001 テキスト 作業 19
+						1002 テキスト #19 ID: GridRowIdentity18
+						1003 edit (settable, string) 行 19 列 2 Renamed workflow Todo Value: Todo ID: GridCell18_1
+							1004 テキスト Todo
+						1005 edit (settable, string) 行 19 列 3 Estimate 4 Value: 4 ID: GridCell18_2
+							1006 テキスト 4
+						1007 edit (settable, string) 行 19 列 4 Remaining 4 Value: 4 ID: GridCell18_3
+							1008 テキスト 4
+						1009 edit (settable, string) 行 19 列 5 Actual ID: GridCell18_4
+							1010 テキスト
+						1011 edit (settable, string) 行 19 列 6 Start 2026-10-30 Description: 変更あり Value: 2026-10-30 ID: GridCell18_5
+							1012 テキスト 2026-10-30
+						1013 テキスト 変更あり ID: GridMarker18_5
+				1014 edit (settable, string) 行 1 列 1 タイトル 週次計画の確認 Value: 週次計画の確認 ID: GridCell0_0
+				1015 テキスト #1
+				1016 button 上下にドラッグして同じ列へコピー ID: GridFillHandle0_0
+				1017 scroll bar (settable, float) 表の縦スクロール Value: 0 ID: SheetVerticalScroll
+					1018 button 垂直方向に小さく戻る ID: VerticalSmallDecrease
+					1019 button 垂直方向に大きく戻る ID: VerticalLargeDecrease
+					1020 button 垂直方向に大きく進む ID: VerticalLargeIncrease
+					1021 button 垂直方向に小さく進む ID: VerticalSmallIncrease
+				1022 テキスト #1 owner/repo · 自動計算（採用済み） 2026-10-13 09:00 → 2026-10-13 12:00 ID: DateInputState
+				1023 button 日時を編集 ID: DateInputEditor
+				1024 テキスト タイトル：1行・1セル Description: 先頭 P1T1 / アクティブ P1T1 ID: GridSelection
+				1025 テキスト 20/20行 · GitHub未反映 46セル · 未確定入力 1セル · ローカル保存済み ID: DraftStatus
+				1026 button 選択内容の詳細 ID: GridDetails
+				1027 アプリ バー ID: GridCommandBar
+					1028 アプリバー ボタン 日程を編集 ID: GridPlanning
+					1029 アプリバー ボタン 新規行を追加 ID: GridAddRow
+					1030 アプリバー ボタン 貼り付け ID: GridPaste
+					1031 button その他のオプション ID: MoreButton
+				1032 テキスト タイトル
+				1033 edit (settable, string) タイトルに含む文字 ID: GridQuickTitleFilter
+				1034 button 絞り込み ID: GridQuickFilterApply
+				1035 button タイトルの絞り込みを解除 ID: GridQuickFilterClear
+				395 リスト ID: PART_ItemsView
+					396 pane ID: PART_ScrollPresenter
+						397 SelectorBarItem (selectable) Boards ID: ProjectViewBoards
+							398 テキスト Boards ID: PART_TextVisual
+						399 SelectorBarItem (selectable) Gantt ID: ProjectViewGantt
+							400 テキスト Gantt ID: PART_TextVisual
+						401 SelectorBarItem (selectable, disabled) Summary（準備中） ID: ProjectViewSummary
+							402 テキスト Summary（準備中） ID: PART_TextVisual
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+		1036 ウィンドウ PopupHost
+			1037 ウィンドウ
+				1038 window ポップアップ Secondary Actions: Raise
+					1039 tool tip タイトル Title
+						1040 テキスト タイトル Title
+
+Selected text: ```
+週次計画の確認
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).
