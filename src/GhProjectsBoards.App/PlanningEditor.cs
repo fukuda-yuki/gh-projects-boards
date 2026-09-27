@@ -42,7 +42,9 @@ internal sealed partial class EditingGrid
         surface.RowDefinitions.Add(new() { Height = GridLength.Auto });
         surface.RowDefinitions.Add(new());
         surface.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        var identity = new TextBlock { Text = RowIdentity(rows[currentRow]), TextWrapping = TextWrapping.Wrap };
+        var title = work.Value(rows[currentRow].Cells[0]) ?? rows[currentRow].Cells[0].Display;
+        var identity = new TextBlock { Text = $"{RowIdentity(rows[currentRow])}  {title}", TextWrapping = TextWrapping.Wrap };
+        AutomationProperties.SetAutomationId(identity, "PlanTaskIdentity");
         surface.Children.Add(identity);
         var feedback = new StackPanel { Spacing = 4 };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
@@ -124,12 +126,33 @@ internal sealed partial class EditingGrid
         if (progressCorrection)
         {
             details.Reveal(details.Progress);
-            RoutedEventHandler? loaded = null;
-            loaded = (_, _) => {
-                details.Progress.Loaded -= loaded;
-                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => FocusInput(details.Progress));
-            };
-            details.Progress.Loaded += loaded;
+            // Loaded and modal opening can arrive in either order. Keep the
+            // initial focus request until both are ready, then apply it once.
+            var opened = false; var pending = true; var queued = false;
+            void Detach()
+            {
+                pending = false;
+                dialog.Opened -= Opened; dialog.Closed -= Closed;
+                surface.Loaded -= Loaded; details.Progress.Loaded -= Loaded;
+            }
+            void QueueFocus()
+            {
+                if (!pending || queued || !opened || !surface.IsLoaded || !details.Progress.IsLoaded) return;
+                queued = DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+                    queued = false;
+                    if (!pending || !opened || !surface.IsLoaded || !details.Progress.IsLoaded) return;
+                    if (details.Progress.Focus(FocusState.Programmatic))
+                    {
+                        Detach();
+                        details.Progress.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
+                    }
+                });
+            }
+            void Opened(ContentDialog sender, ContentDialogOpenedEventArgs args) { opened = true; QueueFocus(); }
+            void Closed(ContentDialog sender, ContentDialogClosedEventArgs args) => Detach();
+            void Loaded(object sender, RoutedEventArgs args) => QueueFocus();
+            dialog.Opened += Opened; dialog.Closed += Closed;
+            surface.Loaded += Loaded; details.Progress.Loaded += Loaded;
         }
         dialog.PrimaryButtonClick += (_, args) =>
         {
