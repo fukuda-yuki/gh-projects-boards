@@ -2,6 +2,8 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace GhProjectsBoards.App;
 
@@ -15,11 +17,14 @@ public sealed partial class RegistrationPanel : UserControl
     private DispatcherTimer? deferredRendering;
     private int revision = -1;
     private ConnectionScope? displayedProfile;
+    private ScopedId? displayedProjectIdentity;
     private bool subscribed;
     private int lifetime;
     private ContentDialog? activeDialog;
     private ConnectionScope[] profileChoices = [];
     private NavigationKey[] navigationKeys = [];
+    private RepositoryChoice[] navigationRepositories = [];
+    private ScopedId? navigationRepository;
     private readonly Dictionary<TreeViewNode, NavigationKey> nodeKeys = [];
     private readonly Dictionary<ScopedId, ((string Item, FieldKey? Field)? Selection, ProjectView View, string? Person)> projectViewPositions = [];
     internal RegistrationWorkspace Workspace => workspace!;
@@ -45,7 +50,7 @@ public sealed partial class RegistrationPanel : UserControl
         Detach();
         workspace = value;
         rendered = null; revision = -1; displayedProfile = null;
-        profileChoices = []; navigationKeys = []; nodeKeys.Clear();
+        profileChoices = []; navigationKeys = []; nodeKeys.Clear(); navigationRepositories = []; navigationRepository = null;
         Navigation.RootNodes.Clear(); Profiles.ItemsSource = null;
         if (IsLoaded) Attach();
         Update();
@@ -92,6 +97,7 @@ public sealed partial class RegistrationPanel : UserControl
         activeDialog?.Hide();
         ProjectSettingsFlyout.Hide();
         StatusDetailsFlyout.Hide();
+        ProjectIdentityButton.Flyout.Hide();
         CancelGridWork();
         if (workspace is null || !subscribed) return;
         workspace.Changed -= Update;
@@ -112,6 +118,14 @@ public sealed partial class RegistrationPanel : UserControl
         updating = true;
         try
         {
+            var currentProjectIdentity = workspace.Selected?.Snapshot.Id;
+            if (displayedProjectIdentity != currentProjectIdentity)
+            {
+                ProjectIdentityButton.Flyout.Hide();
+                ProjectIdentityCopyStatus.Text = "";
+                displayedProjectIdentity = currentProjectIdentity;
+            }
+            ProjectIdentityContext.Visibility = currentProjectIdentity is null ? Visibility.Collapsed : Visibility.Visible;
             if (displayedProfile != workspace.Profile)
             {
                 revision = workspace.ConnectionRevision; displayedProfile = workspace.Profile;
@@ -192,6 +206,8 @@ public sealed partial class RegistrationPanel : UserControl
                 }
                 var p = selected.Snapshot;
                 Summary.Text = p.Title;
+                ProjectIdentityButton.Content = $"{selected.OwnerLogin} / Project #{p.Number}";
+                if (ProjectIdentityUrl.Text != p.Url) ProjectIdentityUrl.Text = p.Url;
                 ProjectContext.Text = $"キャッシュ {selected.RetrievedAt.LocalDateTime:g}";
                 ProjectContext.Visibility = Visibility.Visible;
                 ToolTipService.SetToolTip(ProjectContext, ProjectContext.Text);
@@ -211,6 +227,7 @@ public sealed partial class RegistrationPanel : UserControl
                 EditorHost.Children.Clear(); Items.Visibility = Visibility.Visible; rendered = null; Items.ItemsSource = workspace.Incomplete is { } partial ? PreviewRows(partial).ToArray() : Array.Empty<string>();
                 Summary.Text = workspace.Incomplete is { } p ? $"未登録・一部取得のプレビュー：{p.Title} / 項目 {p.Items.Count}。完全な保存ではありません。" : "ワークスペース";
                 ProjectInformation.Text = "Project未選択";
+                ProjectIdentityButton.Content = ""; ProjectIdentityUrl.Text = "";
                 ProjectContext.Text = ""; ProjectContext.Visibility = Visibility.Collapsed;
                 EmptyWorkspace.Visibility = workspace.Incomplete is null ? Visibility.Visible : Visibility.Collapsed;
                 EmptyHint.Text = workspace.Profile is null
@@ -232,42 +249,69 @@ public sealed partial class RegistrationPanel : UserControl
         }
         var profileIndex = Array.IndexOf(profileChoices, Workspace.Profile);
         if (Profiles.SelectedIndex != profileIndex) Profiles.SelectedIndex = profileIndex;
-        var entries = Workspace.Registrations.Where(r => r.Snapshot.Id.Scope == Workspace.Profile)
-            .SelectMany(r => (r.Repositories.Count == 0 ? new[] { "Repository関連付けなし" } : r.Repositories.Select(repo => repo.NameWithOwner))
-                .Select(repo => new NavigationKey(r.OwnerLogin, repo, r.Snapshot.Id, r.Snapshot.Title))).ToArray();
+        var registered = Workspace.Registrations.Where(r => r.Snapshot.Id.Scope == Workspace.Profile)
+            .OrderBy(r => r.OwnerLogin, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Snapshot.Number).ToArray();
+        if (navigationRepository?.Scope != Workspace.Profile) navigationRepository = null;
+        var repositories = registered.SelectMany(r => r.Repositories).DistinctBy(r => r.Id)
+            .OrderBy(r => r.NameWithOwner, StringComparer.OrdinalIgnoreCase).Select(r => new RepositoryChoice(r.Id, r.NameWithOwner)).ToList();
+        if (navigationRepository is { } missing && repositories.All(r => r.Id != missing))
+        {
+            var previous = navigationRepositories.FirstOrDefault(r => r.Id == missing);
+            if (previous is not null) repositories.Add(previous);
+        }
+        var choices = new[] { new RepositoryChoice(null, "すべて") }.Concat(repositories).ToArray();
+        if (!navigationRepositories.SequenceEqual(choices))
+        {
+            navigationRepositories = choices; NavigationRepository.ItemsSource = choices;
+        }
+        NavigationRepository.SelectedItem = navigationRepositories.First(r => r.Id == navigationRepository);
+        ClearNavigationRepository.Visibility = navigationRepository is null ? Visibility.Collapsed : Visibility.Visible;
+        var matching = registered.Where(r => navigationRepository is null || r.Repositories.Any(repo => repo.Id == navigationRepository)).ToArray();
+        NavigationFilterNotice.Text = navigationRepository is not null && Workspace.Selected is { } open
+            && matching.All(r => r.Snapshot.Id != open.Snapshot.Id) ? "表示中のProjectは一覧の条件外です。" : matching.Length == 0 ? "条件に合う登録済みProjectはありません。" : "";
+        NavigationFilterNotice.Visibility = NavigationFilterNotice.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        var entries = matching.Select(r => new NavigationKey(r.OwnerLogin, r.Snapshot.Id,
+            registered.Count(other => other.OwnerLogin == r.OwnerLogin
+                && string.Equals(other.Snapshot.Title, r.Snapshot.Title, StringComparison.OrdinalIgnoreCase)) > 1
+                ? $"{r.Snapshot.Title} · #{r.Snapshot.Number}" : r.Snapshot.Title)).ToArray();
         // Autosave changes draft status, not navigation membership. Replacing the nodes
         // here would discard the user's collapsed branches and keyboard focus.
-        if (!navigationKeys.Select(e => (e.Owner, e.Repository, e.Project)).SequenceEqual(entries.Select(e => (e.Owner, e.Repository, e.Project))))
+        if (!navigationKeys.Select(e => (e.Owner, e.Project)).SequenceEqual(entries.Select(e => (e.Owner, e.Project))))
         {
+            var focused = IsLoaded && XamlRoot is not null ? FocusManager.GetFocusedElement(XamlRoot) : null;
+            var focusedProject = focused is null ? null : nodeKeys.FirstOrDefault(pair => ReferenceEquals(Navigation.ContainerFromNode(pair.Key), focused)).Value?.Project;
+            var focusedOwner = focused is null ? null : Navigation.RootNodes.FirstOrDefault(node => ReferenceEquals(Navigation.ContainerFromNode(node), focused))?.Content as string;
             var expandedOwners = Navigation.RootNodes.ToDictionary(n => (string)n.Content, n => n.IsExpanded);
-            var expandedRepositories = Navigation.RootNodes.SelectMany(owner => owner.Children.Select(repo => ((Owner: (string)owner.Content, Repository: (string)repo.Content), repo.IsExpanded))).ToDictionary(p => p.Item1, p => p.IsExpanded);
             var selectedKey = Navigation.SelectedNode is { } current && nodeKeys.TryGetValue(current, out var key) ? key : null;
             Navigation.RootNodes.Clear(); nodeKeys.Clear();
             foreach (var owner in entries.GroupBy(e => e.Owner))
             {
                 var root = new TreeViewNode { Content = owner.Key, IsExpanded = !expandedOwners.TryGetValue(owner.Key, out var expanded) || expanded };
-                foreach (var group in owner.GroupBy(e => e.Repository))
+                foreach (var entry in owner)
                 {
-                    var repository = new TreeViewNode { Content = group.Key, IsExpanded = !expandedRepositories.TryGetValue((owner.Key, group.Key), out var repoExpanded) || repoExpanded };
-                    foreach (var entry in group)
-                    {
-                        var node = new TreeViewNode { Content = new NavigationEntry(entry.Project, entry.Title) };
-                        repository.Children.Add(node); nodeKeys.Add(node, entry);
-                    }
-                    root.Children.Add(repository);
+                    var node = new TreeViewNode { Content = new NavigationEntry(entry.Project, entry.Title) };
+                    root.Children.Add(node); nodeKeys.Add(node, entry);
                 }
                 Navigation.RootNodes.Add(root);
             }
             if (selectedKey is not null)
-                Navigation.SelectedNode = nodeKeys.FirstOrDefault(p => p.Value.Owner == selectedKey.Owner && p.Value.Repository == selectedKey.Repository && p.Value.Project == selectedKey.Project).Key;
+                Navigation.SelectedNode = nodeKeys.FirstOrDefault(p => p.Value.Project == selectedKey.Project).Key;
+            if (focusedProject is not null || focusedOwner is not null)
+            {
+                Navigation.UpdateLayout();
+                var target = focusedProject is not null ? nodeKeys.FirstOrDefault(pair => pair.Value.Project == focusedProject).Key
+                    : Navigation.RootNodes.FirstOrDefault(node => (string)node.Content == focusedOwner);
+                if (target is null || Navigation.ContainerFromNode(target) is not TreeViewItem { IsLoaded: true } item
+                    || !item.Focus(FocusState.Programmatic)) NavigationRepository.Focus(FocusState.Programmatic);
+            }
         }
         else if (!navigationKeys.SequenceEqual(entries))
         {
-            var updated = entries.ToDictionary(e => (e.Owner, e.Repository, e.Project));
+            var updated = entries.ToDictionary(e => e.Project);
             foreach (var node in nodeKeys.Keys.ToArray())
             {
                 var previous = nodeKeys[node];
-                var current = updated[(previous.Owner, previous.Repository, previous.Project)];
+                var current = updated[previous.Project];
                 if (current.Title == previous.Title) continue;
                 node.Content = new NavigationEntry(current.Project, current.Title); nodeKeys[node] = current;
             }
@@ -282,6 +326,31 @@ public sealed partial class RegistrationPanel : UserControl
     {
         WorkspaceSplitView.IsPaneOpen = !WorkspaceSplitView.IsPaneOpen;
         AutomationProperties.SetName(NavigationToggle, WorkspaceSplitView.IsPaneOpen ? "Project一覧を折りたたむ" : "Project一覧を表示");
+    }
+    private void NavigationRepositoryChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (updating || NavigationRepository.SelectedItem is not RepositoryChoice choice) return;
+        navigationRepository = choice.Id;
+        Update();
+    }
+    private void ClearNavigationRepositoryFilter(object sender, RoutedEventArgs e)
+    {
+        var returnFocus = XamlRoot is not null && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), ClearNavigationRepository);
+        navigationRepository = null;
+        Update();
+        if (returnFocus) NavigationRepository.Focus(FocusState.Programmatic);
+    }
+    private void CopyProjectUrl(object sender, RoutedEventArgs e)
+    {
+        if (Workspace.Selected is not { } selected || displayedProjectIdentity != selected.Snapshot.Id
+            || ProjectIdentityUrl.Text != selected.Snapshot.Url) return;
+        try
+        {
+            var content = new DataPackage(); content.SetText(ProjectIdentityUrl.Text);
+            Clipboard.SetContent(content); Clipboard.Flush();
+            ProjectIdentityCopyStatus.Text = "URLをコピーしました。";
+        }
+        catch (Exception) { ProjectIdentityCopyStatus.Text = "コピーできませんでした。URLを選択してコピーしてください。"; }
     }
     private void ShowStatusDetails(object sender, RoutedEventArgs e)
     {
@@ -303,7 +372,7 @@ public sealed partial class RegistrationPanel : UserControl
         Grid.SetRow(ProjectCommands, narrow ? 1 : 0);
         Grid.SetColumnSpan(ProjectCommands, narrow ? 2 : 1);
         Grid.SetColumnSpan(ProjectHeading, narrow ? 2 : 1);
-        Grid.SetRow(ProjectContext, narrow ? 2 : 1);
+        Grid.SetRow(ProjectIdentityContext, narrow ? 2 : 1);
         var compact = e.NewSize.Width < 420;
         ProjectCommands.RowSpacing = compact ? 4 : 0;
         Grid.SetColumn(ApplyHistory, compact ? 0 : 2);
@@ -428,7 +497,11 @@ public sealed partial class RegistrationPanel : UserControl
         if (result == ContentDialogResult.Primary) await owner.UnregisterAsync(retainDrafts: true);
         if (result == ContentDialogResult.Secondary) await owner.UnregisterAsync(discardDrafts: true);
     }
-    private sealed record NavigationKey(string Owner, string Repository, ScopedId Project, string Title);
+    private sealed record NavigationKey(string Owner, ScopedId Project, string Title);
+    private sealed record RepositoryChoice(ScopedId? Id, string Name)
+    {
+        public override string ToString() => Name;
+    }
     private sealed record NavigationEntry(ScopedId Id, string Title)
     {
         public override string ToString() => Title;

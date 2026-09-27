@@ -61,12 +61,12 @@ public sealed partial class HostedTests
         await OpenNavigation(mode);
         await InvokeProjectNode(selected.Snapshot.Title);
         await Ui.Until(() => Workspace.Selected?.Snapshot.Id == selected.Snapshot.Id);
-        await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
         await Ui.Idle();
         await Ui.Run(() =>
         {
             Assert.That(Ui.Find<TextBlock>("ProjectSummary").Text, Does.StartWith(selected.Snapshot.Title));
-            Assert.That(Ui.Find<TextBox>("GridCell0_0").IsLoaded, Is.True);
+            Assert.That(Ui.Find<FrameworkElement>("GridCell0_0").IsLoaded, Is.True);
             Assert.That(Ui.Tree(panel).OfType<SplitView>().Single().IsPaneOpen, Is.EqualTo(mode == SplitViewDisplayMode.Inline));
             if (mode == SplitViewDisplayMode.Overlay)
             {
@@ -83,10 +83,11 @@ public sealed partial class HostedTests
     {
         var selected = Workspace.Selected!;
         await Ui.Run(async () => Assert.That(await Workspace.FlushDraftsAsync(), Is.True));
-        await OpenNavigation(SplitViewDisplayMode.Overlay);
         using (var competing = new FileStream(Path.Combine(h.Existing.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
+            await FocusFirstTitle();
             await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "retain this pending title");
+            await OpenNavigation(SplitViewDisplayMode.Overlay);
             await InvokeProjectNode(selected.Snapshot.Title);
             await Ui.Until(() => Workspace.Status.StartsWith("ローカル保存失敗"));
             await Ui.Idle();
@@ -110,13 +111,19 @@ public sealed partial class HostedTests
             if (!Ui.Tree(panel).OfType<SplitView>().Single().IsPaneOpen) Ui.Click("ToggleProjectNavigation");
         });
     }
+    private static async Task FocusFirstTitle()
+    {
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
+        await Ui.Ready<TextBox>("GridCell0_0");
+    }
     private async Task InvokeProjectNode(string title)
     {
         TreeViewItem? item = null;
         await Ui.Until(() =>
         {
             var tree = Ui.Find<TreeView>("ProjectNavigation");
-            var node = tree.RootNodes.SelectMany(owner => owner.Children).SelectMany(repository => repository.Children)
+            var node = tree.RootNodes.SelectMany(owner => owner.Children)
                 .First(candidate => candidate.Content.ToString() == title);
             item = tree.ContainerFromNode(node) as TreeViewItem;
             return item?.IsLoaded == true;
@@ -138,6 +145,8 @@ public sealed partial class HostedTests
         var selectedTitle = Workspace.Selected.Snapshot.Title;
         object? focused = null;
         string? collapsedSelection = null;
+        await FocusFirstTitle();
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "pending local text");
         await Ui.Until(() => Ui.Find<TreeView>("ProjectNavigation").ContainerFromNode(Ui.Find<TreeView>("ProjectNavigation").RootNodes[0]) is TreeViewItem { IsLoaded: true });
         await Ui.Run(() =>
         {
@@ -151,7 +160,6 @@ public sealed partial class HostedTests
         await Ui.Run(() =>
         {
             collapsedSelection = Ui.Find<TreeView>("ProjectNavigation").SelectedNode?.Content.ToString();
-            Ui.Find<TextBox>("GridCell0_0").Text = "pending local text";
         });
         TestContext.Out.WriteLine($"Native TreeView selection after collapsing the ancestor, before editing: {collapsedSelection ?? "(none)"}");
 

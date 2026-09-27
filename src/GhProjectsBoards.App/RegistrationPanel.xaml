@@ -22,12 +22,20 @@
             <SplitView.Pane>
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                     <Grid Padding="8,12,8,8" RowSpacing="12">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <ComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
                                   SelectionChanged="ProfileChanged" AutomationProperties.AutomationId="SavedProfiles"/>
                         <TextBlock Grid.Row="1" Text="登録済みProject" FontWeight="SemiBold" Margin="8,0"/>
-                        <TreeView x:Name="Navigation" Grid.Row="2" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
-                        <Button x:Name="Add" Grid.Row="3" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
+                        <StackPanel Grid.Row="2" Spacing="4">
+                            <ComboBox x:Name="NavigationRepository" Header="関連Repositoryで探す" HorizontalAlignment="Stretch"
+                                      SelectionChanged="NavigationRepositoryChanged" AutomationProperties.AutomationId="NavigationRepositoryFilter"/>
+                            <Button x:Name="ClearNavigationRepository" Content="絞り込みを解除" Click="ClearNavigationRepositoryFilter"
+                                    MinHeight="28" Padding="8,4" Visibility="Collapsed" AutomationProperties.AutomationId="ClearNavigationRepositoryFilter"/>
+                            <TextBlock x:Name="NavigationFilterNotice" TextWrapping="Wrap" Visibility="Collapsed"
+                                       AutomationProperties.AutomationId="NavigationFilterNotice" AutomationProperties.LiveSetting="Polite"/>
+                        </StackPanel>
+                        <TreeView x:Name="Navigation" Grid.Row="3" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
+                        <Button x:Name="Add" Grid.Row="4" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
                     </Grid>
                 </Border>
             </SplitView.Pane>
@@ -69,7 +77,24 @@
                             <StackPanel x:Name="ProjectHeading" VerticalAlignment="Center">
                                 <TextBlock x:Name="Summary" Style="{StaticResource SubtitleTextBlockStyle}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectSummary"/>
                             </StackPanel>
-                            <TextBlock x:Name="ProjectContext" Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
+                            <Grid x:Name="ProjectIdentityContext" Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="8" Visibility="Collapsed" AutomationProperties.AutomationId="ProjectIdentityContext">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Button x:Name="ProjectIdentityButton" MinHeight="24" Padding="4,0" MaxWidth="420"
+                                        AutomationProperties.AutomationId="ProjectIdentityButton" ToolTipService.ToolTip="ProjectのURLを確認・コピー">
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedLeft">
+                                            <StackPanel MaxWidth="480" Spacing="8">
+                                                <TextBox x:Name="ProjectIdentityUrl" Header="Project URL" IsReadOnly="True" TextWrapping="Wrap"
+                                                         AutomationProperties.AutomationId="ProjectIdentityUrl"/>
+                                                <Button Content="URLをコピー" Click="CopyProjectUrl" AutomationProperties.AutomationId="CopyProjectUrlButton"/>
+                                                <TextBlock x:Name="ProjectIdentityCopyStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+                                            </StackPanel>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <TextBlock x:Name="ProjectContext" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
+                            </Grid>
                             <Grid x:Name="ProjectCommands" Grid.Column="1" ColumnSpacing="6" RowSpacing="4" HorizontalAlignment="Left" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
