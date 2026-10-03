@@ -8,6 +8,44 @@ namespace GhProjectsBoards.Tests;
 internal sealed class DraftLifetimeTests
 {
     [Test]
+    public async Task NewerInputDuringSnapshotWriteIsNotAnnouncedAsSavedBeforeItIsDurable()
+    {
+        var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-save-status-" + Guid.NewGuid()));
+        var project = EditingTests.Registration(count: 1);
+        var workspace = new EditingWorkspace(project.Snapshot.Id.Scope);
+        var cell = workspace.Open(project)[0].Cells[0];
+        workspace.SetBuffer(cell, "Earlier input");
+        var session = new DraftSession(store, workspace, 0);
+        var notifications = new List<(string Status, long Durable, long Current)>();
+        session.Changed += () => notifications.Add((session.Status, session.DurableRevision, workspace.Revision));
+        using var caller = new QueuedSaveContext();
+        var originalContext = SynchronizationContext.Current;
+        Task<bool> flush;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(caller);
+            flush = session.FlushAsync();
+            // The real store writes the detached earlier snapshot on its worker.
+            // Hold its caller continuation so newer input arrives before acknowledgement.
+            workspace.SetBuffer(cell, "Newer input");
+            while (!flush.IsCompleted) caller.RunNext();
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(originalContext); }
+
+        Assert.That(await flush, Is.True);
+        var saved = (await store.LoadAsync(workspace.Scope))!;
+        Assert.That(saved.Revision, Is.EqualTo(workspace.Revision));
+        Assert.That(saved.Fields.Single(field => field.Key == cell.Key).Buffer, Is.EqualTo("Newer input"));
+        Assert.That(saved.History, Is.Empty);
+        TestContext.WriteLine(JsonSerializer.Serialize(notifications.Select(value => new {
+            value.Status, value.Durable, value.Current })));
+        Assert.That(notifications.Where(value => value.Status.StartsWith("ローカル保存済み"))
+            .All(value => value.Durable == value.Current), Is.True,
+            "A saved notification must acknowledge all current input, not only an older snapshot.");
+        Assert.That(notifications.Last().Status, Does.StartWith("ローカル保存済み"));
+    }
+
+    [Test]
     public async Task RetryRequestedDuringFailedSavePersistsTheLatestBuffer()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-save-retry-" + Guid.NewGuid());
@@ -65,5 +103,17 @@ internal sealed class DraftLifetimeTests
         first.Fields[0] = first.Fields[0] with { Buffer = "foreign mutation" };
         Assert.That(JsonSerializer.Serialize(captured), Is.EqualTo(before));
         Assert.That(JsonSerializer.Serialize(w.Snapshot()), Is.EqualTo(before));
+    }
+
+    private sealed class QueuedSaveContext : SynchronizationContext, IDisposable
+    {
+        private readonly System.Collections.Concurrent.BlockingCollection<(SendOrPostCallback Callback, object? State)> callbacks = new();
+        public override void Post(SendOrPostCallback callback, object? state) => callbacks.Add((callback, state));
+        internal void RunNext()
+        {
+            Assert.That(callbacks.TryTake(out var next, TimeSpan.FromSeconds(10)), Is.True, "The real save must complete.");
+            next.Callback(next.State);
+        }
+        public void Dispose() => callbacks.Dispose();
     }
 }

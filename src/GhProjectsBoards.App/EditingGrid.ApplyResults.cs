@@ -12,11 +12,13 @@ internal sealed partial class EditingGrid
     private readonly Dictionary<FieldKey, ApplyAttention> applyFields = [];
     private readonly TextBlock applyProblemText = new() { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     private readonly Grid applyProblemStrip = new() { ColumnSpacing = 8, Visibility = Visibility.Collapsed };
-    private readonly HashSet<string> temporaryApplyColumns = [];
-    internal IEnumerable<string> TemporaryApplyColumns => temporaryApplyColumns;
     private ApplyAttention? activeApplyProblem;
     private string? unavailableApplyTarget;
     internal event EventHandler? ApplyHistoryRequested;
+    private ApplyAttention? DisplayedApplyProblem => unavailableApplyTarget is not null ? activeApplyProblem
+        : active && ApplyProblem(rows[currentRow].Cells[currentColumn]) is { } selected ? selected
+        : applyAttention.FirstOrDefault(item => item.CreationId is not null && item.OperationId is not null && item.Kind == ApplyAttentionKind.Unsent);
+    internal ApplyAttention? CurrentApplyProblem => DisplayedApplyProblem ?? activeApplyProblem ?? applyAttention.FirstOrDefault();
 
     private void InitializeApplyProblems(StackPanel footer)
     {
@@ -42,7 +44,7 @@ internal sealed partial class EditingGrid
 
     private void RefreshApplyProblems()
     {
-        applyAttention = ApplyResultsPresentation.Attention(session.Workspace.Journal).Where(a => a.Project == registration.Snapshot.Id).ToArray();
+        applyAttention = ApplyResultsPresentation.Attention(session.Workspace).Where(a => a.Project == registration.Snapshot.Id).ToArray();
         applyFields.Clear();
         foreach (var item in applyAttention.Where(a => a.Field is not null)) applyFields.TryAdd(item.Field!, item);
         if (activeApplyProblem is not null)
@@ -56,10 +58,10 @@ internal sealed partial class EditingGrid
     private void UpdateApplyProblemText()
     {
         if (unavailableApplyTarget is not null) { applyProblemText.Text = unavailableApplyTarget; return; }
-        var selected = active ? ApplyProblem(rows[currentRow].Cells[currentColumn]) : null;
-        applyProblemText.Text = selected is null ? ApplyResultsPresentation.Summary(applyAttention)
-            : $"{selected.FieldName} — {selected.Description}";
-        if (temporaryApplyColumns.Count > 0) applyProblemText.Text += "（問題の列を一時表示中）";
+        var setup = DisplayedApplyProblem;
+        applyProblemText.Text = setup is null ? ApplyResultsPresentation.Summary(applyAttention)
+            : $"{setup.Identity} / {setup.FieldName} — {setup.Description}";
+        if (temporaryContextColumns.Count > 0) applyProblemText.Text += "（対象の列を一時表示中）";
     }
 
     private ApplyAttention? ApplyProblem(EditCell cell) => cell.Key is { } key ? applyFields.GetValueOrDefault(key) : null;
@@ -77,20 +79,7 @@ internal sealed partial class EditingGrid
             applyProblemText.Text = unavailableApplyTarget = $"{target.Identity} / {target.FieldName}：対象を現在のProjectで確認できません。「反映結果」で確認してください。";
             return false;
         }
-        var changed = !rows.Any(r => r.ItemId == target.RowId);
-        projection.IncludeNew(canonical, [target.RowId]);
-        if (target.Field?.FieldId is { } fieldId && layout.Hidden(fieldId))
-        {
-            temporaryApplyColumns.Add(fieldId);
-            layout = new(layout.Columns.Select(c => temporaryApplyColumns.Contains(c.Id.FieldId ?? "")
-                ? c with { Preference = c.Preference with { Visible = true } } : c).ToArray());
-            changed = true;
-        }
-        if (changed) RebuildRows();
-        var r = Array.FindIndex(rows, r => r.ItemId == target.RowId);
-        var c = target.Field is null ? 0 : Array.FindIndex(rows[r].Cells, c => c.Key == target.Field);
-        if (c < 0) return false;
-        Select(r, c, false);
+        if (!RevealContextCell(canonical, target.RowId, target.Field)) return false;
         UpdateApplyProblemText();
         return true;
     }

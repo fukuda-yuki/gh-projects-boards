@@ -44,7 +44,8 @@ public sealed partial class ConnectionPanel : UserControl
     {
         if (Visibility != Visibility.Visible || workspace is null || entered && enteredProfile == workspace.Profile) return;
         entered = true; enteredProfile = workspace.Profile;
-        model.EnterWorkspace(enteredProfile);
+        var savedLogin = workspace.Registrations.FirstOrDefault(registration => registration.Snapshot.Id.Scope == enteredProfile)?.ViewerLogin;
+        model.EnterWorkspace(enteredProfile, savedLogin);
         // Prefill only when entering another workspace. Status renders and a
         // round trip to the same profile must retain unfinished user input.
         rendering = true;

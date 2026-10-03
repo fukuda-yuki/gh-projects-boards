@@ -52,7 +52,7 @@ internal sealed partial class EditingGrid
         {
             var row = new StackPanel { Spacing = 6 }; exceptionList.Children.Add(row);
             var day = PlanningText(row, "日付 yyyy-MM-dd", "PlanExceptionDay-" + exceptions.Count, existing?.Date.ToString("yyyy-MM-dd"));
-            var owner = new ComboBox { Header = "対象", HorizontalAlignment = HorizontalAlignment.Stretch };
+            var owner = new FormComboBox { Header = "対象", HorizontalAlignment = HorizontalAlignment.Stretch };
             owner.Items.Add(new ComboBoxItem { Content = "Project共通", Tag = "" });
             foreach (var person in people) owner.Items.Add(new ComboBoxItem { Content = person.Name, Tag = person.Id });
             if (existing?.PersonId is { } retained && !people.Any(p => p.Id == retained)) owner.Items.Add(new ComboBoxItem { Content = retained, Tag = retained });

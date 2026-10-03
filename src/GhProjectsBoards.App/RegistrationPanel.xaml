@@ -2,6 +2,7 @@
     x:Class="GhProjectsBoards.App.RegistrationPanel"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GhProjectsBoards.App"
     SizeChanged="PanelSizeChanged">
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -23,11 +24,11 @@
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                     <Grid Padding="8,12,8,8" RowSpacing="12">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <ComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
+                        <local:FormComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
                                   SelectionChanged="ProfileChanged" AutomationProperties.AutomationId="SavedProfiles"/>
                         <TextBlock Grid.Row="1" Text="登録済みProject" FontWeight="SemiBold" Margin="8,0"/>
                         <StackPanel Grid.Row="2" Spacing="4">
-                            <ComboBox x:Name="NavigationRepository" Header="関連Repositoryで探す" HorizontalAlignment="Stretch"
+                            <local:FormComboBox x:Name="NavigationRepository" Header="関連Repositoryで探す" HorizontalAlignment="Stretch"
                                       SelectionChanged="NavigationRepositoryChanged" AutomationProperties.AutomationId="NavigationRepositoryFilter"/>
                             <Button x:Name="ClearNavigationRepository" Content="絞り込みを解除" Click="ClearNavigationRepositoryFilter"
                                     MinHeight="28" Padding="8,4" Visibility="Collapsed" AutomationProperties.AutomationId="ClearNavigationRepositoryFilter"/>
@@ -51,11 +52,11 @@
                         <Button Content="URLを確認" Click="ResolveUrl" AutomationProperties.AutomationId="ResolveProjectButton"/>
                         <Expander Header="所有者・Repositoryから探す" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectDiscoverySearchExpander">
                             <StackPanel Spacing="12">
-                                <ComboBox x:Name="Owners" Header="接続アカウントの所有者候補" HorizontalAlignment="Stretch" SelectionChanged="OwnerSelected" AutomationProperties.AutomationId="DiscoveryOwners"/>
+                                <local:FormComboBox x:Name="Owners" Header="接続アカウントの所有者候補" HorizontalAlignment="Stretch" SelectionChanged="OwnerSelected" AutomationProperties.AutomationId="DiscoveryOwners"/>
                                 <Button Content="所有者候補を取得" Click="LoadOwners" AutomationProperties.AutomationId="LoadOwnersButton"/>
                                 <TextBox x:Name="Owner" Header="所有者・Organization（直接入力も可）" AutomationProperties.AutomationId="DiscoveryOwner"/>
                                 <Button Content="所有者のRepositoryを取得" Click="LoadRepositories" AutomationProperties.AutomationId="LoadRepositoriesButton"/>
-                                <ComboBox x:Name="Repositories" Header="Repository（未選択なら所有者の全Project）" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="DiscoveryRepositories"/>
+                                <local:FormComboBox x:Name="Repositories" Header="Repository（未選択なら所有者の全Project）" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="DiscoveryRepositories"/>
                                 <TextBox x:Name="Search" Header="Project検索語（任意）" AutomationProperties.AutomationId="DiscoverySearch"/>
                                 <Button Content="Projectを検索" Click="SearchProjects" AutomationProperties.AutomationId="SearchProjectsButton"/>
                             </StackPanel>

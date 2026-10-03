@@ -14,7 +14,7 @@ public sealed partial class HostedTests
     public async Task CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(long authenticatedViewer)
     {
         string batchId = "", operationId = "";
-        ScrollViewer historyScroll = null!; double historyOffset = 0;
+        ScrollViewer evidenceScroll = null!; double evidenceOffset = 0;
         await Ui.Run(async () => {
             Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[0], "Only after a new review");
             h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
@@ -38,22 +38,27 @@ public sealed partial class HostedTests
             await ApplyInformationEvidence.Capture(dialog, $"history-connection-needed-{authenticatedViewer}");
             Ui.Toggle(Ui.Find<CheckBox>("ApplyShowAllHistory", dialog));
         });
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("ApplyHistoryDialog")!).OfType<Expander>().Any(expander =>
-            Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(expander) == "ApplyOperationDetails-" + operationId && expander.IsLoaded));
-        await Ui.Run(() => Ui.Find<Expander>("ApplyOperationDetails-" + operationId, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
+        await Ui.Until(() => Ui.Popup<Button>("ApplyOperationDetails-" + operationId) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("ApplyOperationDetails-" + operationId, Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.Until(() => Ui.Popup<ScrollViewer>("ApplyHistoryEvidence") is { IsLoaded: true });
+        await Ui.Until(() => Ui.Popup<Expander>("ApplyOperationEvidence-" + operationId) is { IsLoaded: true });
+        await Ui.Run(() => Ui.Find<Expander>("ApplyOperationEvidence-" + operationId, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(operationId));
-        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("ApplyResultBatches", Ui.Dialog("ApplyHistoryDialog")))
-            .OfType<ScrollViewer>().Any(scroll => scroll.ScrollableHeight > 0));
         await Ui.Run(() => {
-            historyScroll = Ui.Tree(Ui.Find<ListView>("ApplyResultBatches", Ui.Dialog("ApplyHistoryDialog"))).OfType<ScrollViewer>().Single();
-            historyOffset = Math.Min(24, historyScroll.ScrollableHeight);
-            Assert.That(historyScroll.ChangeView(null, historyOffset, null, true), Is.True);
+            var dialog = Ui.Dialog("ApplyHistoryDialog")!;
+            evidenceScroll = Ui.Find<ScrollViewer>("ApplyHistoryEvidence", dialog);
+            evidenceOffset = Math.Min(24, evidenceScroll.ScrollableHeight);
+            if (evidenceOffset > 0) evidenceScroll.ChangeView(null, evidenceOffset, null, true);
         });
-        await Ui.Until(() => Math.Abs(historyScroll.VerticalOffset - historyOffset) < 0.5);
+        await Ui.Until(() => Math.Abs(evidenceScroll.VerticalOffset - evidenceOffset) < 0.5);
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ApplyHistoryConnection-" + batchId, Ui.Dialog("ApplyHistoryDialog"))));
         await Ui.Until(() => connection.Visibility == Visibility.Visible);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("HostInput", connection).Text, Is.EqualTo(originalProject.Scope.Host));
+            Assert.That(Ui.Find<TextBlock>("AccountValue", connection).Text,
+                Does.Contain("保存済み").And.Contain(Workspace.ProfileLogin).And.Contain("現在の認証：未確認"));
+            Assert.That(Ui.Find<TextBlock>("ConnectionStatus", connection).Text,
+                Does.Contain("保存済みの接続先").And.Not.Contain("入力が変わりました"));
             Ui.Click(Ui.Find<Button>("CheckConnectionButton", connection));
         });
         await Ui.Until(() => Ui.Find<Button>("CheckConnectionButton", connection).IsEnabled);
@@ -63,15 +68,20 @@ public sealed partial class HostedTests
             var dialog = Ui.Dialog("ApplyHistoryDialog")!;
             Assert.That(Workspace.Selected!.Snapshot.Id, Is.EqualTo(originalProject));
             Assert.That(Workspace.Profile, Is.EqualTo(originalProject.Scope));
-            Assert.That(Ui.Find<CheckBox>("ApplyShowAllHistory", dialog).IsChecked, Is.True);
-            Assert.That(Ui.Find<Expander>("ApplyOperationDetails-" + operationId, dialog).IsExpanded, Is.True);
-            Assert.That(historyScroll.VerticalOffset, Is.EqualTo(historyOffset).Within(0.5));
+            Assert.That(Ui.Find<ScrollViewer>("ApplyHistoryEvidence", dialog), Is.SameAs(evidenceScroll));
+            Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain(operationId));
+            Assert.That(evidenceScroll.VerticalOffset, Is.EqualTo(evidenceOffset).Within(0.5));
             Assert.That(Ui.Find<Button>("ResumeApplyBatch-" + batchId, dialog).IsEnabled, Is.EqualTo(authenticatedViewer == 42));
             Assert.That(Ui.Find<TextBlock>("ApplyHistoryConnectionHint-" + batchId, dialog).Visibility,
                 Is.EqualTo(authenticatedViewer == 42 ? Visibility.Collapsed : Visibility.Visible));
             Assert.That(System.Text.Json.JsonSerializer.Serialize(Work.Journal), Is.EqualTo(journal));
             Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
             await ApplyInformationEvidence.Capture(dialog, $"history-connection-return-{authenticatedViewer}");
+            Ui.DialogButton("ApplyHistoryDialog", "SecondaryButton");
+        });
+        await Ui.Until(() => Ui.Popup<CheckBox>("ApplyShowAllHistory") is { IsLoaded: true });
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<CheckBox>("ApplyShowAllHistory", Ui.Dialog("ApplyHistoryDialog")).IsChecked, Is.True);
             Ui.DialogButton("ApplyHistoryDialog", "CloseButton");
         });
     }

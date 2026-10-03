@@ -14,6 +14,10 @@ internal sealed class ProjectReader(GhConnectionService service)
         ApplyBatch batch, ApplyOperation operation, CancellationToken token)
         => new ReadSession(service, context, batch.Project, token, null).ObserveFieldAsync(operation);
 
+    public Task<(HistoricalFieldObservation? Observation, ApiResult Result)> ObserveHistoricalFieldAsync(ConnectionContext context,
+        ApplyBatch batch, ApplyOperation operation, CancellationToken token)
+        => new ReadSession(service, context, batch.Project, token, null).ObserveFieldCoreAsync(operation, historical: true);
+
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
         ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress)
     {
@@ -56,6 +60,12 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ApplyOperation operation)
         {
+            var result = await ObserveFieldCoreAsync(operation, historical: false);
+            return (result.Observation?.Current, result.Result);
+        }
+
+        public async Task<(HistoricalFieldObservation? Observation, ApiResult Result)> ObserveFieldCoreAsync(ApplyOperation operation, bool historical)
+        {
             using var measured = PerformanceTrace.Span("scoped-item-observation");
             var key = operation.Key;
             if (projectId.Scope != ConnectionScope.From(context)
@@ -87,6 +97,8 @@ internal sealed class ProjectReader(GhConnectionService service)
                 string? value;
                 ValueAvailability availability;
                 IReadOnlyList<SelectOption> options = [];
+                var fieldName = operation.FieldName;
+                string? dataType = null;
                 if (key.Kind is "Title" or "Dependency")
                 {
                     var issue = issues[item.ContentId];
@@ -101,25 +113,37 @@ internal sealed class ProjectReader(GhConnectionService service)
                 }
                 else
                 {
-                    if (project.Capability?.CanUpdate != true || !fields.TryGetValue(new(projectId.Scope, key.FieldId!), out var field)
-                        || field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
+                    if (project.Capability?.CanUpdate != true)
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
+                    if (!fields.TryGetValue(new(projectId.Scope, key.FieldId!), out var field))
+                        return historical
+                            ? (Evidence(HistoricalFieldEvidenceKind.ProjectFieldAbsent, null, null), new(ApiOutcome.Success))
+                            : (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
+                    if (field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
+                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
+                    fieldName = field.Name; dataType = field.DataType;
                     options = field.Options;
                     if (field.DataType != PlanningScalars.DataType(key.Kind)
-                        || key.Kind == "Select" && !operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value)
-                        || !PlanningScalars.Publishable(key.Kind, operation.Intended))
+                        || !historical && (key.Kind == "Select" && !operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value)
+                        || !PlanningScalars.Publishable(key.Kind, operation.Intended)))
                         return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
                     var observed = item.Values.Single(v => v.FieldId == field.Id);
                     value = key.Kind == "Select" ? observed.OptionId : observed.Scalar; availability = observed.Availability;
                 }
                 if (availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return Failure();
                 // This is evidence for one field only. No complete Project snapshot is published.
-                return (new(Guid.NewGuid().ToString("N"), projectId, DateTimeOffset.UtcNow, value, availability, null, options.ToArray()), new(ApiOutcome.Success));
+                var observation = new FieldObservation(Guid.NewGuid().ToString("N"), projectId, DateTimeOffset.UtcNow,
+                    value, availability, null, options.ToArray());
+                return (Evidence(HistoricalFieldEvidenceKind.CurrentValue, observation, dataType), new(ApiOutcome.Success));
+
+                HistoricalFieldObservation Evidence(HistoricalFieldEvidenceKind kind, FieldObservation? current, string? type) =>
+                    new(current?.Id ?? Guid.NewGuid().ToString("N"), projectId, operation.ItemId, operation.IssueId, key,
+                        current?.At ?? DateTimeOffset.UtcNow, kind, fieldName, type, current, fields.Keys.Select(id => id.NodeId).ToArray());
             }
             catch (ReadException) { return Failure(); }
             catch (OperationCanceledException) { return (null, new(ApiOutcome.Failed, FailureKind.Cancelled)); }
 
-            (FieldObservation?, ApiResult) Failure() => (null, new(ApiOutcome.Failed,
+            (HistoricalFieldObservation?, ApiResult) Failure() => (null, new(ApiOutcome.Failed,
                 problems.FirstOrDefault()?.Failure ?? FailureKind.InvalidResponse, retryAfter: problems.FirstOrDefault()?.RetryAfter));
         }
 

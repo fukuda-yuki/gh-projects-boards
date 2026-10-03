@@ -2,6 +2,7 @@ using GhProjectsBoards.App;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using NUnit.Framework;
@@ -22,7 +23,9 @@ public sealed class ColumnHostedTests
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-ui-columns-" + Guid.NewGuid().ToString("N")));
         session = new(store, w, 0);
         await Ui.Run(() => grid = new EditingGrid(p, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
+        await Ui.Ready<TextBox>("GridCell0_0");
     }
     [TearDown]
     public async Task Teardown()
@@ -178,10 +181,12 @@ public sealed class ColumnHostedTests
             session.Workspace.SetBuffer(cell, "recoverable pending select"); await session.FlushAsync();
         });
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = false); await Close("PrimaryButton");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("非表示列の作業 1セル")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("RowViewStatus").Text, Does.Contain("非表示列の作業 1セル")));
         await Open(); await Ui.Run(() => Setting<CheckBox>("ColumnVisible-P1B").IsChecked = true); await Close("PrimaryButton");
         await Ui.Ready<Button>("GridCell0_2");
-        await Ui.Run(() => { Ui.Find<Button>("GridCell0_2").Focus(FocusState.Programmatic); Ui.Click("GridDetails"); });
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<Button>("GridCell0_2")).SetFocus());
+        await Ui.Until(() => grid.SelectionIdentity?.Field == session.Workspace.Open(p)[0].Cells[2].Key);
+        await Ui.Run(() => Ui.Click("GridDetails"));
         await Ui.Ready<TextBlock>("SelectedCellDetails");
         await Ui.Until(() => Ui.Find<TextBlock>("SelectedCellDetails").Text.Contains("recoverable pending select"));
         await Ui.Run(() => { var cell = session.Workspace.Open(p)[0].Cells[2]; Assert.That(session.Workspace.Value(cell), Is.EqualTo(alreadyChanged ? "B1" : "B0")); Assert.That(session.Workspace.Buffer(cell), Is.EqualTo("recoverable pending select")); });

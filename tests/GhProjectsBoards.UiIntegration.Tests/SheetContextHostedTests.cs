@@ -31,6 +31,8 @@ public sealed class SheetContextHostedTests
         await Ui.Mount(grid);
         try
         {
+            await Ui.Ready<FrameworkElement>("GridCell0_0");
+            await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
             await Ui.Ready<TextBox>("GridCell0_0");
             await Ui.Run(() =>
             {
@@ -47,7 +49,19 @@ public sealed class SheetContextHostedTests
                 Assert.That(work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending title"));
                 Assert.That(work.DifferenceCount, Is.Zero);
             });
-            await Ui.Until(() => Ui.Tree(grid).OfType<TextBlock>().Any(t => t.IsLoaded && t.Text.Contains("#1  owner/repo\nProject:")));
+            await Ui.Ready<TextBlock>("SelectedCellDetails");
+            await Ui.Until(() => Ui.Find<TextBlock>("SelectedCellDetails").Text.Contains("#1  owner/repo · Issue 1"));
+            await Ui.Run(() => {
+                var disclosure = Ui.Find<Expander>("SelectedCellDisclosure");
+                FrameworkElementAutomationPeer.CreatePeerForElement(disclosure).SetFocus();
+                ((IExpandCollapseProvider)FrameworkElementAutomationPeer.CreatePeerForElement(disclosure).GetPattern(PatternInterface.ExpandCollapse)).Expand();
+            });
+            await Ui.Ready<TextBlock>("SelectedCellDiagnostics");
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("SelectedCellDiagnostics").Text, Does.Contain("Project: P1").And.Contain("ID: I1"));
+                Assert.That(work.Fields.Single(f => f.Key == new FieldKey("Title", "I1")).Buffer, Is.EqualTo("pending title"));
+                Assert.That(work.DifferenceCount, Is.Zero);
+            });
         }
         finally { await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle(); }
     }

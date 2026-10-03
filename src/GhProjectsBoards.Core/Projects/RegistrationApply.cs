@@ -24,8 +24,9 @@ internal sealed partial class RegistrationWorkspace
         if (review is null || !ReferenceEquals(review, ApplyReview) || applyConnectionRevision != ConnectionRevision
             || Selected?.Snapshot.Id != review.Batch.Project) return "GitHubの最新状態の確認が必要です。";
         if (Drafts?.Workspace.Revision != review.Batch.ReviewedRevision) return "確認後に変更がありました。最新状態を再確認してください。";
+        if (Drafts?.Workspace.HistoricalFollowUpProblem(review) is { } historicalProblem) return historicalProblem;
         if (UnfinishedApplyBatches is { Length: > 0 } unfinished)
-            return "前回の反映が未完了です。" + ApplyResultsPresentation.Summary(ApplyResultsPresentation.Attention(unfinished))
+            return "前回の反映が未完了です。" + ApplyResultsPresentation.Summary(ApplyResultsPresentation.Attention(Drafts!.Workspace).Where(a => unfinished.Any(b => b.Id == a.BatchId)))
                 + (CanRestartApplyReview ? "。"
                     : "。「反映結果・履歴」で対象のProjectと結果を確認してください。");
         if (review.SelectedRows == 0) return "反映する行を選択してください。";
@@ -35,7 +36,7 @@ internal sealed partial class RegistrationWorkspace
     }
     public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null)
         => PrepareApplyCoreAsync(items, viewSelection, restart: false);
-    private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart) => RunAsync(async token =>
+    private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart, string? historicalDecisionId = null) => RunAsync(async token =>
     {
         ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false;
         if (context is null)
@@ -45,6 +46,8 @@ internal sealed partial class RegistrationWorkspace
         }
         RequireConnection();
         if (Selected is not { } selected || Drafts is not { } session) return;
+        if (historicalDecisionId is not null && session.Workspace.HistoricalFollowUpProblem(historicalDecisionId, selected.Snapshot.Id) is { } historicalProblem)
+        { Status = historicalProblem; return; }
         if (restart && !CanRestartApplyReview)
         { Status = "このProjectの既存フィールドの反映だけをやり直せます。「反映結果・履歴」で対象を確認してください。"; return; }
         var previousApprovals = restart ? UnfinishedApplyBatches.Select(b => b.Id).ToArray() : [];
@@ -64,9 +67,9 @@ internal sealed partial class RegistrationWorkspace
         if (!await session.CommitAsync(w =>
         {
             w.Reconcile(selected, fetched);
-            // Withdraw only after a complete, same-context observation, in the same durable checkpoint.
+            // End the old approval only after a complete, same-context observation, in the same durable checkpoint.
             // Attempts and verified successes survive; this action never executes the old or new payload.
-            foreach (var id in previousApprovals) w.SupersedeApply(id);
+            foreach (var id in previousApprovals) w.SupersedeApply(id, preparingReview: true);
             w.SetRegistrations(registrations.Select(r => r == selected ? fetched : r)); return w;
         }, () => Selected == selected && Current()
             && (session.Workspace.HasCheckpoint || store.MatchesLegacy(selected.Snapshot.Id.Scope, registrations))))
@@ -89,7 +92,7 @@ internal sealed partial class RegistrationWorkspace
             if (destination is not null) destinations[row.Id] = destination;
         }
         if (!Current() || Selected != fetched) return;
-        ApplyReview = session.Workspace.ReviewApply(fetched, items, destinations);
+        ApplyReview = session.Workspace.ReviewApply(fetched, items, destinations) with { HistoricalDecisionId = historicalDecisionId };
         applyConnectionRevision = connection;
         Status = ApplyBlockReason(ApplyReview) ?? "反映する値と送信先を確認して「GitHubに反映」を押してください。未確定入力は送信しません。";
     });
@@ -134,7 +137,7 @@ internal sealed partial class RegistrationWorkspace
             registrations.AddRange(session.Workspace.CheckpointRegistrations);
             Selected = registrations.SingleOrDefault(r => r.Snapshot.Id == selectedId);
         }
-        var attention = ApplyResultsPresentation.Attention(session.Workspace.Journal).Where(a => a.BatchId == batchId).ToArray();
+        var attention = ApplyResultsPresentation.Attention(session.Workspace).Where(a => a.BatchId == batchId).ToArray();
         Status = attention.Length == 0 ? "反映完了" : ApplyResultsPresentation.Summary(attention);
     }
 }

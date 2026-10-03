@@ -52,7 +52,7 @@ internal sealed partial class EditingGrid
         if (issue is not null) parent.Children.Add(new TextBlock { Text = $"GitHub: {issue.State.Value} / 担当: {string.Join("、", native?.Assignees.Select(a => a.Login) ?? [])}"
             + (native?.Parent.Value is { } p ? $" / 親: {p.NodeId}（先行関係とは別）" : ""), TextWrapping = TextWrapping.Wrap });
         var effort = Section(parent, "工数・進捗・実績");
-        var laborKind = new ComboBox { Header = "親タスクの工数区分", HorizontalAlignment = HorizontalAlignment.Stretch,
+        var laborKind = new FormComboBox { Header = "親タスクの工数区分", HorizontalAlignment = HorizontalAlignment.Stretch,
             ItemsSource = new[] { "未指定（子を持つ場合は要確認）", "このタスクの直接工数", "子の集計（合計へ加算しない）" }, SelectedIndex = (int)task.LaborKind };
         AutomationProperties.SetAutomationId(laborKind, "PlanLaborKind"); effort.Children.Add(laborKind);
         edits.Add(() => laborKind.SelectedIndex != (int)task.LaborKind); laborKind.SelectionChanged += (_, _) => changed();
@@ -83,7 +83,7 @@ internal sealed partial class EditingGrid
             seed.Click += (_, _) => { var remaining = numbers.Single(n => n.Role == "Remaining"); if (!remaining.Input.IsReadOnly) remaining.Input.Text = numbers.Single(n => n.Role == "Estimate").Input.Text; };
             effort.Children.Add(seed);
         }
-        var progress = new ComboBox { Header = "採用する進捗", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var progress = new FormComboBox { Header = "計画上の進捗（日程計算）", HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetAutomationId(progress, "PlanProgress");
         foreach (var value in Enum.GetValues<PlanningProgress>()) progress.Items.Add(new ComboBoxItem { Content = value switch {
             PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中", PlanningProgress.Completed => "完了", _ => "再開" }, Tag = value });
@@ -112,6 +112,7 @@ internal sealed partial class EditingGrid
                 : $"保存後の計算：{(number.Input?.IsReadOnly == true ? "確定済みの" : "")}{(role == "Remaining" ? "残時間" : "見積")} {amount}"
                     + (role == "Remaining" ? $"\nProject共通の再計画基準：{(plan.Cutoff is null ? "未設定" : DateText(plan.Cutoff))}" : "");
             if (selectedProgress == PlanningProgress.Completed) effect.Text += "\n完了には残時間0と実績開始・終了を入力してください。";
+            effect.Text += "\nProjectの項目は連動しません。変更する場合は「実績・進捗」か表で選択してください。";
         }
         progress.SelectionChanged += (_, _) => { ExplainProgress(); changed(); };
         foreach (var number in numbers) number.Input.TextChanged += (_, _) => ExplainProgress();
@@ -140,30 +141,51 @@ internal sealed partial class EditingGrid
         edits.Add(() => removeActuals && task.Actuals is not { Length: 0 });
         var removeReports = new Button { Content = "実績を削除" };
         AutomationProperties.SetAutomationId(removeReports, "PlanRemoveReports"); reports.Children.Add(removeReports);
-        reports.Children.Add(new TextBlock { Text = "累計人時と報告対象最終日。残時間は独立した見積です。", TextWrapping = TextWrapping.Wrap });
+        reports.Children.Add(new TextBlock { Text = "累計人時と報告対象最終日。残時間は独立した見積です。記録のない担当者は追加して入力します。", TextWrapping = TextWrapping.Wrap });
         var reportRows = new List<(string? Id, TextBox Hours, TextBox Day)>();
         var shareRows = new List<(string Id, TextBox Estimate, TextBox Remaining)>();
-        var people = plan.People.Select(p => (Id: p.Id, Name: p.Name)).Concat((task.Actuals ?? []).Where(a => a.PersonId is not null).Select(a => (a.PersonId!, a.PersonId!)))
+        var people = plan.People.Select(p => (Id: p.Id, Name: p.Name)).Concat((native?.Assignees ?? []).Select(p => (p.Id.NodeId, p.Login)))
+            .Concat((task.Actuals ?? []).Where(a => a.PersonId is not null).Select(a => (a.PersonId!, a.PersonId!)))
             .Concat((task.Contributions ?? []).Select(a => (a.PersonId, a.PersonId))).DistinctBy(p => p.Item1).ToArray();
-        foreach (var person in new[] { (Id: (string?)null, Name: "未割当") }.Concat(people.Select(p => (Id: (string?)p.Item1, Name: p.Item2))))
+        void AddReport(string? personId, string name)
         {
-            var saved = task.Actuals?.SingleOrDefault(a => a.PersonId == person.Id);
-            var hours = Text(reports, person.Name + " 累積実績（人時）", "PlanActualHours-" + (person.Id ?? "Unattributed"), saved is null ? "" : PlanningContract.CanonicalHours(saved.Hours));
-            var day = Text(reports, person.Name + " 報告対象最終日 yyyy-MM-dd", "PlanReportedThrough-" + (person.Id ?? "Unattributed"), saved?.ReportedThrough.ToString("yyyy-MM-dd"));
+            if (reportRows.Any(r => r.Id == personId)) return;
+            var saved = task.Actuals?.SingleOrDefault(a => a.PersonId == personId);
+            var hours = Text(reports, name + " 累積実績（人時）", "PlanActualHours-" + (personId ?? "Unattributed"), saved is null ? "" : PlanningContract.CanonicalHours(saved.Hours));
+            var day = Text(reports, name + " 報告対象最終日 yyyy-MM-dd", "PlanReportedThrough-" + (personId ?? "Unattributed"), saved?.ReportedThrough.ToString("yyyy-MM-dd"));
             bool EmptyReport() => string.IsNullOrWhiteSpace(hours.Text) && string.IsNullOrWhiteSpace(day.Text);
-            Check(hours, person.Name + " 累積実績：0以上10億以下の人時を小数8桁以内で入力してください。", () => EmptyReport() || ValidPlanningInput(() => PlanningContract.ParseHours(hours.Text)));
-            Check(day, person.Name + " 報告対象最終日：yyyy-MM-ddで入力してください。", () => EmptyReport()
+            Check(hours, name + " 累積実績：0以上10億以下の人時を小数8桁以内で入力してください。", () => EmptyReport() || ValidPlanningInput(() => PlanningContract.ParseHours(hours.Text)));
+            Check(day, name + " 報告対象最終日：yyyy-MM-ddで入力してください。", () => EmptyReport()
                 || DateOnly.TryParseExact(day.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) && value != default);
-            if (saved is not null) Check(hours, person.Name + "の実績：担当者別の削除は表の「内訳」、全実績の削除は「実績を削除」を選んでください。", () => removeActuals || !EmptyReport());
-            reportRows.Add((person.Id, hours, day));
+            if (saved is not null) Check(hours, name + "の実績：担当者別の削除は表の「内訳」、全実績の削除は「実績を削除」を選んでください。", () => removeActuals || !EmptyReport());
+            reportRows.Add((personId, hours, day));
             hours.TextChanged += (_, _) => { if (hours.Text.Length != 0) removeActuals = false; };
             day.TextChanged += (_, _) => { if (day.Text.Length != 0) removeActuals = false; };
-            if (person.Id is null) continue;
-            var share = task.Contributions?.SingleOrDefault(c => c.PersonId == person.Id);
-            var estimateShare = Text(reports, person.Name + " 見積内訳（人時、空欄は不明）", "PlanShareEstimate-" + person.Id, share?.EstimateHours?.ToString(CultureInfo.InvariantCulture));
-            var remainingShare = Text(reports, person.Name + " 残時間内訳（人時、空欄は不明）", "PlanShareRemaining-" + person.Id, share?.RemainingHours?.ToString(CultureInfo.InvariantCulture));
-            HoursRule(estimateShare, person.Name + " 見積内訳", whitespaceIsEmpty: true); HoursRule(remainingShare, person.Name + " 残時間内訳", whitespaceIsEmpty: true);
-            shareRows.Add((person.Id, estimateShare, remainingShare));
+        }
+        foreach (var actual in task.Actuals ?? []) AddReport(actual.PersonId,
+            actual.PersonId is null ? "担当者未割当" : people.FirstOrDefault(p => p.Item1 == actual.PersonId).Item2 ?? actual.PersonId);
+        var addWorker = new FormComboBox { Header = "実績の担当者を追加", HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemsSource = people.Select(p => new ActualWorkerChoice(p.Item1, p.Item2)).Append(new(null, "担当者未割当")).ToArray(), DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
+        var addReport = new Button { Content = "追加" };
+        AutomationProperties.SetAutomationId(addWorker, "PlanActualAddWorker"); AutomationProperties.SetAutomationId(addReport, "PlanActualAdd");
+        reports.Children.Add(addWorker); reports.Children.Add(addReport);
+        addReport.Click += (_, _) => {
+            if (addWorker.SelectedItem is not ActualWorkerChoice person) return;
+            AddReport(person.Id, person.Label);
+            reports.Children.Remove(addWorker); reports.Children.Remove(addReport); reports.Children.Add(addWorker); reports.Children.Add(addReport);
+            reports.UpdateLayout();
+            var input = reportRows.Single(r => r.Id == person.Id).Hours;
+            input.Focus(FocusState.Programmatic); input.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
+        };
+        var attribution = Section(effort, "担当者別の工数集計（任意）");
+        attribution.Children.Add(new TextBlock { Text = "日程計算の担当・配賦とは別の記録です。空欄は不明、差額は担当者別に未配分のまま保持します。", TextWrapping = TextWrapping.Wrap });
+        foreach (var person in people)
+        {
+            var share = task.Contributions?.SingleOrDefault(c => c.PersonId == person.Item1);
+            var estimateShare = Text(attribution, person.Item2 + " 見積内訳（人時、空欄は不明）", "PlanShareEstimate-" + person.Item1, share?.EstimateHours?.ToString(CultureInfo.InvariantCulture));
+            var remainingShare = Text(attribution, person.Item2 + " 残時間内訳（人時、空欄は不明）", "PlanShareRemaining-" + person.Item1, share?.RemainingHours?.ToString(CultureInfo.InvariantCulture));
+            HoursRule(estimateShare, person.Item2 + " 見積内訳", whitespaceIsEmpty: true); HoursRule(remainingShare, person.Item2 + " 残時間内訳", whitespaceIsEmpty: true);
+            shareRows.Add((person.Item1, estimateShare, remainingShare));
         }
         removeReports.Click += (_, _) => { removeActuals = true; foreach (var r in reportRows) { r.Hours.Text = ""; r.Day.Text = ""; } changed(); };
         foreach (var number in numbers)
@@ -174,7 +196,7 @@ internal sealed partial class EditingGrid
                 !ValidPlanningInput(() => Hours(number.Input)) || parts.Any(p => !ValidPlanningInput(() => Hours(p)))
                 || Hours(number.Input) is not { } total || parts.Sum(p => Hours(p) ?? 0) <= total);
         }
-        reports.Children.Add(new TextBlock { Text = "内訳の合計をタスク工数以下にします。差額は未割当のまま保持します。", TextWrapping = TextWrapping.Wrap });
+        attribution.Children.Add(new TextBlock { Text = "内訳の合計をタスク工数以下にします。担当者へ自動配分しません。", TextWrapping = TextWrapping.Wrap });
         var constraints = Section(parent, "日程の制約");
         var earliest = Date(constraints, "最早開始", "PlanEarliest", task.EarliestStart);
         var fixedStart = Date(constraints, "固定開始", "PlanFixedStart", task.FixedStart);
@@ -205,7 +227,7 @@ internal sealed partial class EditingGrid
         foreach (var field in work.PlanningDecisions(projectId, row.ItemId))
         {
             var role = plan.Fields.Single(f => f.FieldId == field.Key.FieldId).Role;
-            var choice = new ComboBox { Header = $"{role}: 基準 {field.Baseline ?? "空"} / ローカル {work.Value(row.Cells.Single(c => c.Key == field.Key)) ?? "空"} / GitHub {field.Observation!.Value ?? "空"}", HorizontalAlignment = HorizontalAlignment.Stretch };
+            var choice = new FormComboBox { Header = $"{role}: 基準 {field.Baseline ?? "空"} / ローカル {work.Value(row.Cells.Single(c => c.Key == field.Key)) ?? "空"} / GitHub {field.Observation!.Value ?? "空"}", HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetAutomationId(choice, "PlanReconcile-" + role);
             foreach (var label in new[] { "判断を保留", "ローカルを採用", "GitHubを採用（正確な日時・内訳を入力）" }) choice.Items.Add(label);
             choice.SelectedIndex = 0; parent.Children.Add(choice); decisions.Add((field, choice));

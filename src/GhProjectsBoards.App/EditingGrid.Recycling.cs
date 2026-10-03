@@ -45,6 +45,7 @@ internal sealed partial class EditingGrid
         public TextBlock Marker { get; } = marker;
         public EditCell Cell { get; set; } = cell;
         public bool IsLocal { get; } = isLocal;
+        public TextBlock? RowIdentityLabel { get; init; }
         public int Row { get; set; } = identity.Row;
         public int Column { get; set; } = identity.Index;
     }
@@ -219,11 +220,13 @@ internal sealed partial class EditingGrid
         var identity = new CellBinding(projectId, key.ItemId, key.Key, key.Id, r, c, ++bindingGeneration);
         var editor = CreateCellEditor(r, c);
         var content = new Grid(); content.Children.Add(editor);
+        TextBlock? identityLabel = null;
         if (c == 0)
         {
             content.ColumnDefinitions.Add(new()); content.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-            var label = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4),
+            var label = identityLabel = new TextBlock { Text = RowIdentity(rows[r], compact: true), MaxWidth = Math.Min(132, ColumnWidth(0) * .4),
                 TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 8, 0), FontSize = 11 };
+            AutomationProperties.SetAutomationId(label, $"GridEditorRowIdentity{r}");
             SetColumn(label, 1); content.Children.Add(label); ToolTipService.SetToolTip(label, RowIdentity(rows[r]));
         }
         var marker = new TextBlock { FontSize = 10, Width = 10, Height = 12, HorizontalAlignment = HorizontalAlignment.Right,
@@ -233,7 +236,7 @@ internal sealed partial class EditingGrid
         // Set an explicit identity once. Neither presenter binding nor inheritance
         // can ever replace the native editor's data context.
         host.DataContext = identity;
-        var owned = new OwnedEditor(identity, editor, host, marker, rows[r].Cells[c], rows[r].IsLocal); ownedEditors.Add(key, owned);
+        var owned = new OwnedEditor(identity, editor, host, marker, rows[r].Cells[c], rows[r].IsLocal) { RowIdentityLabel = identityLabel }; ownedEditors.Add(key, owned);
         InstallOwnedSlots(owned); editorLayer.Children.Add(host);
         RefreshRecycledRow(r); UpdateCell(r, c); PositionOwnedEditors();
     }
@@ -242,6 +245,16 @@ internal sealed partial class EditingGrid
     {
         var r = owned.Row; var c = owned.Column;
         AllocateRowSlots(r);
+        if (!ReferenceEquals(cellBorders[r][c], owned.Host))
+        {
+            // Selection may paint the recycled cell before its native editor is
+            // installed. Adornments must follow the current presentation host.
+            if (selectionFrames[r][c] is { } frame && VisualTreeHelper.GetParent(frame) is Panel frameParent)
+                frameParent.Children.Remove(frame);
+            if (fillHandles[r][c] is { } handle && VisualTreeHelper.GetParent(handle) is Panel handleParent)
+                handleParent.Children.Remove(handle);
+            selectionFrames[r][c] = null; fillHandles[r][c] = null;
+        }
         controls[r][c] = owned.Editor; cellBorders[r][c] = owned.Host; markers[r][c] = owned.Marker;
     }
 
@@ -257,6 +270,12 @@ internal sealed partial class EditingGrid
             else if (owned.Editor is ChoiceCell choice) choice.Reindex(r, c, owned.Cell);
             AutomationProperties.SetAutomationId(owned.Editor, $"GridCell{r}_{c}");
             AutomationProperties.SetAutomationId(owned.Marker, $"GridMarker{r}_{c}");
+            if (owned.RowIdentityLabel is { } label)
+            {
+                AutomationProperties.SetAutomationId(label, $"GridEditorRowIdentity{r}");
+                label.Text = RowIdentity(rows[r], compact: true);
+                ToolTipService.SetToolTip(label, RowIdentity(rows[r]));
+            }
             AutomationProperties.SetAccessibilityView(owned.Editor, AccessibilityView.Content);
             owned.Editor.IsHitTestVisible = true;
             ((Control)owned.Editor).IsEnabled = true;
@@ -331,6 +350,7 @@ internal sealed partial class EditingGrid
             if (owned.Editor is TitleCell title) title.Reindex(-1, -1, owned.Cell);
             else if (owned.Editor is ChoiceCell choice) choice.Reindex(-1, -1, owned.Cell);
             AutomationProperties.SetAutomationId(owned.Editor, "");
+            if (owned.RowIdentityLabel is { } label) AutomationProperties.SetAutomationId(label, "");
             AutomationProperties.SetAccessibilityView(owned.Editor, AccessibilityView.Raw);
             owned.Editor.IsHitTestVisible = false;
             ((Control)owned.Editor).IsEnabled = false;

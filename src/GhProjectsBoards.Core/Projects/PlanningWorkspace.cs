@@ -1,6 +1,7 @@
 namespace GhProjectsBoards.Core.Projects;
 
 internal sealed record PlanningChange(ProjectPlanning? Before, ProjectPlanning After);
+internal sealed record ProjectSelectEdit(string RowId, string FieldId, string? OptionId);
 
 internal sealed partial class EditingWorkspace
 {
@@ -67,7 +68,7 @@ internal sealed partial class EditingWorkspace
     }
     public void CommitPlanning(ProjectRegistration registration, ProjectPlanning candidate, long expectedRevision,
         PlanningValueEdit[]? values = null, PlanningDependencyEdit[]? dependencies = null, PlanningProjectionDecision[]? decisions = null,
-        FieldKey[]? consumeBuffers = null)
+        FieldKey[]? consumeBuffers = null, ProjectSelectEdit[]? projectFields = null)
     {
         using var measured = PerformanceTrace.Span("planning-validation-and-commit");
         if (!HasCheckpoint || registration.Snapshot.Id.Scope != Scope || registration.Snapshot.Id.NodeId != candidate.ProjectId || expectedRevision != Revision)
@@ -106,22 +107,35 @@ internal sealed partial class EditingWorkspace
             throw new InvalidOperationException("計画対象のIssueを確認できません。");
         EditingWorkspace staged;
         using (PerformanceTrace.Span("planning-stage-snapshot-restore")) staged = Restore(Snapshot());
-        staged.AcceptProjectionBaselines(registration, candidate, decisions ?? []);
-        staged.CommitPlanningCore(registration, candidate, values ?? [], dependencies ?? [], consumeBuffers ?? [],
-            (decisions ?? []).Select(d => d.Key).ToArray());
+        if (projectFields is not null && existing is not null && PlanningContract.SameAdoptedPlan(existing, candidate)
+            && (values ?? []).Length == 0 && (dependencies ?? []).Length == 0 && (decisions ?? []).Length == 0 && (consumeBuffers ?? []).Length == 0)
+        {
+            // A Project option is independent of scheduling. It must not create
+            // a plan stamp or refresh unrelated date projections when edited alone.
+            staged.ApplyProjectSelects(registration, projectFields ?? []);
+        }
+        else
+        {
+            staged.AcceptProjectionBaselines(registration, candidate, decisions ?? []);
+            staged.CommitPlanningCore(registration, candidate, values ?? [], dependencies ?? [], consumeBuffers ?? [],
+                (decisions ?? []).Select(d => d.Key).ToArray(), projectFields ?? []);
+        }
         fields.Clear(); foreach (var pair in staged.fields) fields.Add(pair.Key, pair.Value);
+        localRows.Clear(); localRows.AddRange(staged.localRows);
         planning.Clear(); planning.AddRange(staged.planning);
         history.Clear(); history.AddRange(staged.history);
         Revision = staged.Revision; InvalidatePlan(candidate.ProjectId);
     }
     private void CommitPlanningCore(ProjectRegistration registration, ProjectPlanning candidate, PlanningValueEdit[] values,
-        PlanningDependencyEdit[] dependencies, FieldKey[] consumeBuffers, FieldKey[] projectionDecisions)
+        PlanningDependencyEdit[] dependencies, FieldKey[] consumeBuffers, FieldKey[] projectionDecisions, ProjectSelectEdit[] projectFields)
     {
         var before = Planning(candidate.ProjectId);
         SetPlanning(candidate, before?.Stamp ?? 0);
         var rows = Open(registration);
         var changes = new Dictionary<FieldKey, FieldChange>();
+        var rowChanges = new Dictionary<string, LocalRowChange>();
         var bufferWrites = consumeBuffers.ToHashSet();
+        var writtenScalars = new HashSet<FieldKey>();
         foreach (var key in consumeBuffers)
         {
             if (fields.TryGetValue(key, out var old) && old.Observation is { Reason: PendingObservationReason } observation)
@@ -133,15 +147,30 @@ internal sealed partial class EditingWorkspace
         if (values.Length != 0)
         {
             var start = history.Count;
-            Apply(candidate.ProjectId, values.Select(v => {
+            var scalarWrites = values.Select(v => {
                 if (v.Role is not ("Estimate" or "Remaining")) throw new InvalidOperationException("工数の入力先が無効です。");
                 var field = candidate.Fields.Single(f => f.Role == v.Role).FieldId;
                 return (rows.Single(r => r.ItemId == v.RowId).Cells.Single(c => c.Key?.FieldId == field), v.Value ?? "", v.Value is null, false);
-            }).ToArray());
+            }).ToArray();
+            Apply(candidate.ProjectId, scalarWrites);
+            writtenScalars.UnionWith(scalarWrites.Select(write => write.Item1.Key!));
             foreach (var transaction in history.Skip(start))
             {
                 bufferWrites.UnionWith(transaction.BufferWrites!);
                 foreach (var c in transaction.Changes) changes[c.Key] = c;
+            }
+            history.RemoveRange(start, history.Count - start);
+        }
+        if (projectFields.Length != 0)
+        {
+            var start = history.Count;
+            ApplyProjectSelects(registration, projectFields);
+            foreach (var transaction in history.Skip(start))
+            {
+                bufferWrites.UnionWith(transaction.BufferWrites!);
+                foreach (var c in transaction.Changes)
+                    changes[c.Key] = c with { Before = changes.TryGetValue(c.Key, out var prior) ? prior.Before : c.Before };
+                foreach (var c in transaction.Rows ?? []) rowChanges[c.Id] = c;
             }
             history.RemoveRange(start, history.Count - start);
         }
@@ -151,7 +180,10 @@ internal sealed partial class EditingWorkspace
         foreach (var key in consumeBuffers)
         {
             var cell = rows.SelectMany(r => r.Cells).FirstOrDefault(c => c.Key == key);
-            if (cell is null || PlanningInputRole(cell) is null || key.ProjectId != candidate.ProjectId)
+            // Ordinary effort input belongs to this confirmation only when its
+            // exact row/field was also validated and written in the scalar batch.
+            if (cell is null || key.ProjectId != candidate.ProjectId
+                || PlanningInputRole(cell) is null && !(cell.Editable && writtenScalars.Contains(key)))
                 throw new InvalidOperationException("確定する計画セルの入力状態を確認してください。");
             var old = fields[key];
             // Exact time or report metadata may change without a new projected
@@ -173,15 +205,43 @@ internal sealed partial class EditingWorkspace
         // guards intact while the workspace revision persists input completion.
         if (consumeBuffers.Length != 0 && projectionDecisions.Length == 0 && before is not null
             && PlanningContract.SameAdoptedPlan(before, Planning(candidate.ProjectId)!)
-            && changes.Values.All(c => c.Before == c.After with { Stamp = c.Before.Stamp }))
+            && rowChanges.Count == 0 && changes.Values.All(c => c.Before == c.After with { Stamp = c.Before.Stamp }))
         {
             foreach (var c in changes.Values) fields[c.Key] = c.After with { Stamp = c.Before.Stamp };
             planning.RemoveAll(p => p.ProjectId == before.ProjectId); planning.Add(before);
             InvalidatePlan(before.ProjectId);
             return;
         }
+        // Scalar and optional Project-field writes are staged separately, but
+        // this confirmation is one durable operation with one final stamp.
+        foreach (var (key, change) in changes.ToArray())
+        {
+            var after = change.After with { Stamp = Revision };
+            fields[key] = after; changes[key] = change with { After = after };
+        }
         history.Add(WithHistoryParts(new(Guid.NewGuid().ToString("N"), candidate.ProjectId, [],
-            Plan: new(before, Planning(candidate.ProjectId)!), BufferWrites: bufferWrites.ToArray()), changes.Values.ToArray(), null));
+            Plan: new(before, Planning(candidate.ProjectId)!), BufferWrites: bufferWrites.ToArray()), changes.Values.ToArray(), rowChanges.Values.ToArray()));
+    }
+    private void ApplyProjectSelects(ProjectRegistration registration, ProjectSelectEdit[] edits)
+    {
+        if (edits.Length == 0) return;
+        if (edits.GroupBy(edit => (edit.RowId, edit.FieldId)).Any(group => group.Count() != 1))
+            throw new InvalidOperationException("同じProject項目への変更が重複しています。");
+        var rows = Open(registration);
+        var writes = edits.Select(edit => {
+            var definition = registration.Snapshot.Fields.SingleOrDefault(f => f.Id.NodeId == edit.FieldId);
+            var cell = rows.SingleOrDefault(r => r.ItemId == edit.RowId)?.Cells.SingleOrDefault(c => c.Key?.FieldId == edit.FieldId);
+            if (definition is not { DataType: "SINGLE_SELECT", ValueOwner: FieldOwner.ProjectItem, Availability: ValueAvailability.Present }
+                || definition.Id.Scope != Scope || definition.ProjectId != registration.Snapshot.Id
+                || cell is not { Editable: true, Key.Kind: "Select" or "LocalSelect" }
+                || cell.Availability is not (ValueAvailability.Present or ValueAvailability.Empty)
+                || Buffer(cell) is not null || Field(cell)?.Conflict == true || Field(cell)?.Observation?.Reason is not null)
+                throw new InvalidOperationException("選択したProject項目を変更できません。現在の値と入力状態を確認してください。");
+            if (edit.OptionId is not null && definition.Options.Count(o => o.Id == edit.OptionId) != 1)
+                throw new InvalidOperationException("選択したProject項目の選択肢IDを確認できません。");
+            return (cell, edit.OptionId ?? "", edit.OptionId is null, true);
+        }).ToArray();
+        Apply(registration.Snapshot.Id.NodeId, writes, projectPlan: false);
     }
     private void ProjectPlan(ProjectRegistration registration, Dictionary<FieldKey, FieldChange> changes,
         ProjectPlanning? previous = null, HashSet<FieldKey>? explicitEndpoints = null)

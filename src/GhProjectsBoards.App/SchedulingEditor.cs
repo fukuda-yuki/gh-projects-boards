@@ -2,6 +2,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using System.Globalization;
 
 namespace GhProjectsBoards.App;
 
@@ -35,15 +36,17 @@ internal sealed partial class EditingGrid
         var plan = config is null ? null : work.PlanFor(registration);
         var estimate = config?.Fields.SingleOrDefault(f => f.Role == "Estimate");
         planningHint.Text = estimate is null ? "" : $"タスクの「{registration.Snapshot.Fields.FirstOrDefault(f => f.Id.NodeId == estimate.FieldId)?.Name ?? "見積"}」に見積（人時）を入力。確定すると日程を自動計算します。";
-        planningHint.Visibility = !ShowingGantt && config is not null && estimate is not null && plan?.Tasks.Any(t => t.Resolved) != true ? Visibility.Visible : Visibility.Collapsed;
-        if (!active || currentRow >= rows.Length || ShowingGantt || plan is null || TypedActual(rows[currentRow].Cells[currentColumn])) { dateInputPane.Visibility = Visibility.Collapsed; return; }
+        var selectingRange = HasSelectedRange && !CurrentCellInputActive;
+        planningHint.Visibility = !ShowingGantt && !selectingRange && config is not null && estimate is not null && plan?.Tasks.Any(t => t.Resolved) != true ? Visibility.Visible : Visibility.Collapsed;
+        if (!active || currentRow >= rows.Length || ShowingGantt || plan is null || selectingRange || TypedActual(rows[currentRow].Cells[currentColumn])) { dateInputPane.Visibility = Visibility.Collapsed; return; }
+        var identity = (HasSelectedRange ? "現在のセル · " : "") + RowIdentity(rows[currentRow]);
         dateInputState.MaxWidth = Math.Max(120, ActualWidth - 240);
         var item = registration.Snapshot.Items.FirstOrDefault(i => i.Id.NodeId == rows[currentRow].ItemId);
         dateEdit.IsEnabled = rows[currentRow].IsLocal || item is { Kind: ProjectItemKind.Issue, ContentId: not null };
         if (!dateEdit.IsEnabled)
         {
             dateInputPane.Visibility = Visibility.Visible; dateCommit.Visibility = Visibility.Collapsed;
-            dateInputState.Text = RowIdentity(rows[currentRow]) + " · " + (item?.Kind is ProjectItemKind.Issue or ProjectItemKind.Unavailable
+            dateInputState.Text = identity + " · " + (item?.Kind is ProjectItemKind.Issue or ProjectItemKind.Unavailable
                 ? "Issue情報を確認できません。取得状態を確認してください。" : "この行は計画対象外です。Issueまたは新規行で計画できます。");
             return;
         }
@@ -54,12 +57,12 @@ internal sealed partial class EditingGrid
         dateCommit.Visibility = TypedDate(cell) && work.Buffer(cell) is not null ? Visibility.Visible : Visibility.Collapsed;
         if (!TypedDate(cell))
         {
-            dateInputState.Text = RowIdentity(rows[currentRow]) + " · " + (current.Resolved ? (current.Mode == PlanningMode.Manual ? "日時を指定" : "自動計算")
+            dateInputState.Text = identity + " · " + (current.Resolved ? (current.Mode == PlanningMode.Manual ? "日時を指定" : "自動計算")
                 + $"（採用済み） {DateText(current.Start)} → {DateText(current.Finish)}" : current.Mode == PlanningMode.Unplanned ? "未計画 · 見積を入力するか、日時を指定"
                 : current.Mode == PlanningMode.Manual ? MissingManualDate(current) : current.Problem ?? "日程を確認してください。");
             return;
         }
-        dateInputState.Text = (session.Workspace.Buffer(cell) is not null ? "日時を指定（入力中）" : current.Mode switch
+        dateInputState.Text = (HasSelectedRange ? identity + " · " : "") + (session.Workspace.Buffer(cell) is not null ? "日時を指定（入力中）" : current.Mode switch
             { PlanningMode.Manual => "日時を指定", PlanningMode.Auto => "自動計算", _ => "日程未設定" })
             + " · " + (role == "Start" ? "開始日時" : "終了日時") + " · 日本時間・分単位";
     }
@@ -126,8 +129,8 @@ internal sealed partial class EditingGrid
             : $"GitHub担当者: {person.Login} · Project配賦: {(weight is null ? "未設定" : weight.WeightPercent + "%")}", TextWrapping = TextWrapping.Wrap });
         if (oldTask is not null && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
         { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? oldTask.OwnerId ?? "未割当"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
-        if (dateCells.Any(c => work.Value(c) is not null && work.SchedulingEndpoint(registration, rowId, work.PlanningInputRole(c)!) is null))
-            panel.Children.Add(new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap });
+        var dateOnlyWarning = new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap };
+        panel.Children.Add(dateOnlyWarning);
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(preview, "SchedulePreview");
         panel.Children.Add(preview);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -149,6 +152,10 @@ internal sealed partial class EditingGrid
             dateCells.Where(c => work.Buffer(c) == "").Select(c => work.PlanningInputRole(c)!).ToArray());
         void Preview()
         {
+            dateOnlyWarning.Visibility = method.SelectedIndex != 0 &&
+                (DateOnly.TryParseExact(start.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+                 DateOnly.TryParseExact(finish.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                ? Visibility.Visible : Visibility.Collapsed;
             try
             {
                 var staged = EditingWorkspace.Restore(work.Snapshot());

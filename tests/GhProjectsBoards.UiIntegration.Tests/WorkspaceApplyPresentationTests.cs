@@ -35,8 +35,10 @@ public sealed partial class HostedTests
         {
             Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("前回の送信は失敗しました。")
                 .And.Not.Contain("以前の送信結果が不確定です"));
-            Ui.Find<Expander>("ApplyOperationDetails-" + operationId, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true;
+            Ui.Click(Ui.Find<Button>("ApplyOperationDetails-" + operationId, Ui.Dialog("ApplyHistoryDialog")));
         });
+        await Ui.Until(() => Ui.Popup<Expander>("ApplyOperationEvidence-" + operationId) is { IsLoaded: true });
+        await Ui.Run(() => Ui.Find<Expander>("ApplyOperationEvidence-" + operationId, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(legacy));
         await Ui.Run(() =>
         {
@@ -83,6 +85,14 @@ public sealed partial class HostedTests
 
         var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
         await Ui.OpenHistory(); await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => {
+            if (Ui.Popup<ScrollViewer>("ApplyHistoryEvidence") is not null)
+            {
+                Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("Recovered response-loss Issue").And.Contain("Issueの確認とProjectへの追加が完了しました。"));
+                Ui.DialogButton("ApplyHistoryDialog", "SecondaryButton");
+            }
+        });
+        await Ui.Until(() => Ui.Popup<CheckBox>("ApplyShowAllHistory") is { IsLoaded: true });
         await Ui.Run(() =>
         {
             Assert.That(Ui.Find<ListView>("ApplyResultBatches", Ui.Dialog("ApplyHistoryDialog")).Items, Is.Empty);
@@ -98,8 +108,10 @@ public sealed partial class HostedTests
                 .And.Not.Contain("フィールド: 確認済み 0 / 0"));
             Assert.That(Ui.Tree(dialog).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "ResolveCreation-" + attempt), Is.False);
             await ApplyInformationEvidence.Capture(dialog, "bound-creation-full-history");
-            Ui.Find<Expander>("CreationHistoryDetails-" + attempt, dialog).IsExpanded = true;
+            Ui.Click(Ui.Find<Button>("CreationHistoryDetails-" + attempt, dialog));
         });
+        await Ui.Until(() => Ui.Popup<Expander>("CreationEvidence-" + attempt) is { IsLoaded: true });
+        await Ui.Run(() => Ui.Find<Expander>("CreationEvidence-" + attempt, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains("元の作成成功の証明ではありません"));
         await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton"));
         Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
@@ -122,14 +134,16 @@ public sealed partial class HostedTests
         });
         await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
-        await Ui.Run(() => Ui.Find<Expander>("CreationHistoryDetails-" + attempt, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("CreationHistoryDetails-" + attempt, Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.Until(() => Ui.Popup<Expander>("CreationEvidence-" + attempt) is { IsLoaded: true });
+        await Ui.Run(() => Ui.Find<Expander>("CreationEvidence-" + attempt, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(local));
         await Ui.Run(() =>
         {
             var dialog = Ui.Dialog("ApplyHistoryDialog")!;
             Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain("Investigate deployment")
-                .And.Contain("sample-user/first").And.Contain("作成結果が不確定")
-                .And.Contain("Issue確認").And.Contain("Project所属").And.Contain(local));
+                .And.Contain("sample-user/first").And.Contain("作成結果未確認")
+                .And.Contain("Issue作成：送信済み・結果未確認").And.Contain("への追加：未実行（Issueの確認待ち）").And.Contain(local));
             Ui.Click(Ui.Find<Button>("ResolveCreation-" + attempt, dialog));
         });
         await Ui.DialogReady("CreationResolutionDialog");

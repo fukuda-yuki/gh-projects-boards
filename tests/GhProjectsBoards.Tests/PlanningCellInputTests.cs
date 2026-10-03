@@ -76,4 +76,45 @@ internal sealed class PlanningCellInputTests
         Assert.That(w.Planning("P1")!.Tasks.Single().Actuals![0].Hours, Is.EqualTo(7));
         Assert.That(w.Buffer(cell), Is.Null); Assert.That(w.Field(cell)!.Observation!.Reason, Is.Null);
     }
+
+    [TestCase("Remaining"), TestCase("Estimate")]
+    public void CompoundConfirmationConsumesItsExplicitScalarAndActualInputWithoutReopeningThemOnUndo(string role)
+    {
+        var (p, w, actual) = Work([new("U1", 5, new(2026, 10, 6))]);
+        var row = w.Open(p)[0]; var scalar = row.Cells.Single(c => c.Key?.FieldId == "F-" + role);
+        var scalarBefore = w.Value(scalar); var planBefore = w.Planning("P1")!;
+        w.SetPlanningBuffer(actual, "7"); w.SetBuffer(scalar, "3"); w.SetBuffer(row.Cells[0], "independent title");
+        var next = planBefore.Tasks.Single() with { Progress = PlanningProgress.InProgress,
+            ActualStart = new(2026, 10, 5, 9, 0, 0), Actuals = [new("U1", 7, new(2026, 10, 13))] };
+
+        w.CommitPlanning(p, planBefore with { Tasks = [next] }, w.Revision,
+            values: [new(row.ItemId, role, "3")], consumeBuffers: [actual.Key!, scalar.Key!]);
+
+        Assert.That(w.Value(actual), Is.EqualTo("7")); Assert.That(w.Value(scalar), Is.EqualTo("3"));
+        Assert.That(w.Buffer(actual), Is.Null); Assert.That(w.Buffer(scalar), Is.Null);
+        w.Undo("P1");
+        Assert.Multiple(() => {
+            Assert.That(w.Value(actual), Is.EqualTo("5")); Assert.That(w.Value(scalar), Is.EqualTo(scalarBefore));
+            Assert.That(w.Buffer(actual), Is.Null); Assert.That(w.Buffer(scalar), Is.Null);
+            Assert.That(w.Buffer(row.Cells[0]), Is.EqualTo("independent title"));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(w.Planning("P1")), Is.EqualTo(System.Text.Json.JsonSerializer.Serialize(planBefore)));
+            Assert.That(w.Journal, Is.Empty);
+        });
+    }
+
+    [TestCase("missing"), TestCase("other-row"), TestCase("other-role")]
+    public void CompoundConfirmationRejectsScalarConsumptionWithoutItsExactValueWrite(string condition)
+    {
+        var (p, w, actual) = Work([new("U1", 5, new(2026, 10, 6))]);
+        var rows = w.Open(p); var remaining = rows[0].Cells.Single(c => c.Key?.FieldId == "F-Remaining");
+        w.SetPlanningBuffer(actual, "7"); w.SetBuffer(remaining, "3");
+        var before = System.Text.Json.JsonSerializer.Serialize(w.Snapshot());
+        PlanningValueEdit[] values = condition == "missing" ? []
+            : [new(condition == "other-row" ? rows[1].ItemId : rows[0].ItemId, condition == "other-role" ? "Estimate" : "Remaining", "3")];
+
+        Assert.Throws<InvalidOperationException>(() => w.CommitPlanning(p, w.Planning("P1")!, w.Revision,
+            values: values, consumeBuffers: [remaining.Key!]));
+
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(w.Snapshot()), Is.EqualTo(before));
+    }
 }

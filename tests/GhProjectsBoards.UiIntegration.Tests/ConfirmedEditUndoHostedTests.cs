@@ -98,7 +98,7 @@ public sealed partial class PlanningHostedTests
                 Assert.That(session.Workspace.Value(estimate), Is.EqualTo("8"));
                 Assert.That(session.Workspace.Buffer(estimate), Is.EqualTo("9"));
                 Assert.That(CellText("GridCell0_2"), Is.EqualTo("9"));
-                if (holdWriterLock) Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル保存失敗"));
+                if (holdWriterLock) Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Text, Does.Contain("ローカル保存失敗"));
             });
 
             await FocusEstimateInput("GridCell0_2");
@@ -108,7 +108,8 @@ public sealed partial class PlanningHostedTests
                 await SheetNativeInput.Press(VirtualKey.Enter);
                 await Ui.Until(() => Ui.Find<TextBlock>("DraftStatus").Text.Contains("工数") && session.Status.StartsWith("ローカル保存失敗"));
                 await Ui.Run(() => {
-                    Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("工数").And.Contain("ローカル保存失敗").And.Not.Contain("元に戻せません"));
+                    Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("工数").And.Not.Contain("元に戻せません"));
+                    Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Text, Does.Contain("ローカル保存失敗"));
                     Assert.That(CellText("GridCell0_2"), Is.EqualTo("8x"));
                     Assert.That(session.Workspace.Value(session.Workspace.Open(project)[0].Cells[2]), Is.EqualTo("8"));
                 });
@@ -122,7 +123,7 @@ public sealed partial class PlanningHostedTests
             await Ui.Run(() => {
                 var status = Ui.Find<TextBlock>("DraftStatus").Text;
                 Assert.That(status, Does.Not.Contain("元に戻せません").And.Not.Contain("工数"));
-                if (holdWriterLock) Assert.That(status, Does.Contain("ローカル保存失敗"));
+                if (holdWriterLock) Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Text, Does.Contain("ローカル保存失敗"));
                 Assert.That(session.Workspace.Journal, Is.Empty);
             });
             await AssertNextEstimateSelected();
@@ -133,7 +134,10 @@ public sealed partial class PlanningHostedTests
         {
             await Ui.ClickCommand("GridSave");
             await Ui.Until(() => session.Status.StartsWith("ローカル保存済み") && session.DurableRevision == session.Workspace.Revision);
-            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル保存済み").And.Not.Contain("失敗").And.Not.Contain("元に戻せません")));
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Text, Does.Contain("ローカル保存済み").And.Not.Contain("失敗"));
+                Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Not.Contain("元に戻せません"));
+            });
             var saved = await store!.LoadAsync(project.Snapshot.Id.Scope);
             Assert.That(saved, Is.Not.Null);
             var estimate = saved!.Fields.Single(f => f.Key == new FieldKey("Number", "P1T1", "P1", "F-Estimate"));

@@ -6,7 +6,7 @@ internal sealed record ResolutionDecision(FieldKey Key, long Revision, string Ob
 
 internal sealed partial class EditingWorkspace
 {
-    private const string PendingObservationReason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。";
+    internal const string PendingObservationReason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。";
     private RegistrationStore.RegistrationRecord[]? registrations;
     private string[] structuralChanges = [];
     public IReadOnlyList<string> StructuralChanges => structuralChanges;

@@ -15,7 +15,7 @@ internal sealed class ApplyTests
     public void CheckpointExplicitlyVersionsExecutionHistory()
     {
         var workspace = new EditingWorkspace(new("github.com", 42));
-        Assert.That(workspace.Snapshot().Version, Is.EqualTo(13));
+        Assert.That(workspace.Snapshot().Version, Is.EqualTo(14));
     }
     [Test]
     public async Task TenOfOneHundredTitlesDispatchExactlyTenTitleOnlyPayloads()
@@ -148,7 +148,7 @@ internal sealed class ApplyTests
         await store.SaveAsync(EditingTests.LegacyHistory(w.Snapshot()) with { Version = version, Journal = null }, 0);
         var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!); restored.SetRegistrations([registration]);
         await store.SaveAsync(restored.Snapshot(), w.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(13)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(14)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
     public async Task CorruptJournalCannotRestoreOrOverwriteRecoveredData()
@@ -205,10 +205,10 @@ internal sealed class ApplyTests
         Assert.That(resumed[1].Attempts, Is.EqualTo(ops[1].Attempts), "The original dispatch evidence remains unchanged.");
         Assert.That(resumed[1].State, Is.EqualTo(mode == "verification" ? ApplyState.Succeeded : ApplyState.Blocked));
         if (mode == "permission")
-            Assert.That(ApplyResultsPresentation.Attention(s.Workspace.Journal).Single().Reason,
+            Assert.That(ApplyResultsPresentation.Attention(s.Workspace).Single().Reason,
                 Does.Contain("失敗").And.Contain("再確認").And.Not.Contain("不確定"));
         else if (mode != "verification")
-            Assert.That(ApplyResultsPresentation.Attention(s.Workspace.Journal).Single().Reason, Does.Contain("不確定"));
+            Assert.That(ApplyResultsPresentation.Attention(s.Workspace).Single().Reason, Does.Contain("不確定"));
     }
     [TestCase("failed"), TestCase("conflict")]
     public async Task FailedResumeObservationCannotMakeBlockedApprovalDispatchable(string origin)

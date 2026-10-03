@@ -10,7 +10,7 @@ internal sealed record EditTransaction(string Id, string ProjectId, FieldChange[
 internal sealed record DraftRecord(int Version, ConnectionScope Scope, long Revision, DraftField[] Fields, EditTransaction[] History,
     RegistrationStore.RegistrationRecord[]? Registrations = null, string[]? StructuralChanges = null, ApplyBatch[]? Journal = null,
     LocalRow[]? LocalRows = null, ProjectColumnPreferences[]? ColumnPreferences = null, ProjectRowPreference[]? RowPreferences = null,
-    ProjectPlanning[]? Planning = null);
+    ProjectPlanning[]? Planning = null, HistoricalFieldDecision[]? HistoricalDispositions = null);
 internal sealed record EditCell(FieldKey? Key, string Display, string? Baseline, string? Reason, SelectOption[] Options,
     ValueAvailability Availability = ValueAvailability.Present, ConnectionScope? Scope = null, bool InputLocked = false)
 {
@@ -38,7 +38,7 @@ internal sealed partial class EditingWorkspace
     public IReadOnlyCollection<DraftField> Fields => fields.Values;
     public int DifferenceCount => fields.Values.Count(f => f.Change is not null);
     // Older readers must refuse history whose declared input writes they cannot preserve.
-    public DraftRecord Snapshot() => DraftSnapshot.Copy(new(13, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray()));
+    public DraftRecord Snapshot() => DraftSnapshot.Copy(new(14, Scope, Revision, fields.Values.ToArray(), history.ToArray(), registrations, structuralChanges, journal.ToArray(), localRows.ToArray(), columnPreferences.ToArray(), rowPreferences.ToArray(), planning.ToArray(), historicalDispositions.ToArray()));
     public static EditingWorkspace Restore(DraftRecord record)
     {
         DraftStore.Validate(record);
@@ -47,6 +47,7 @@ internal sealed partial class EditingWorkspace
         result.history.AddRange(record.History);
         result.registrations = record.Registrations; result.structuralChanges = record.StructuralChanges ?? [];
         result.journal.AddRange(record.Journal ?? []);
+        result.historicalDispositions.AddRange(record.HistoricalDispositions ?? []);
         result.localRows.AddRange(record.LocalRows ?? []);
         result.columnPreferences.AddRange(record.ColumnPreferences ?? []);
         result.rowPreferences.AddRange(record.RowPreferences ?? []);
@@ -136,7 +137,7 @@ internal sealed partial class EditingWorkspace
         if (rows.Any(r => r.Length != rows[0].Length)) throw new InvalidOperationException("TSVの列数が一致していません。");
         return rows;
     }
-    private void Apply(string projectId, (EditCell Cell, string Text, bool Clear, bool OptionId)[] batch, HashSet<FieldKey>? consumeBuffers = null)
+    private void Apply(string projectId, (EditCell Cell, string Text, bool Clear, bool OptionId)[] batch, HashSet<FieldKey>? consumeBuffers = null, bool projectPlan = true)
     {
         var changes = new Dictionary<FieldKey, FieldChange>();
         var rowChanges = new Dictionary<string, LocalRowChange>();
@@ -181,7 +182,7 @@ internal sealed partial class EditingWorkspace
         foreach (var change in changes.Values) fields[change.Key] = change.After;
         foreach (var change in rowChanges.Values) ReplaceLocal(change.After!);
         var planChange = InitializeEstimatedTasks(projectId, changes);
-        ProjectCommittedPlan(projectId, changes);
+        if (projectPlan) ProjectCommittedPlan(projectId, changes);
         foreach (var (key, change) in changes.ToArray())
             if (consumeBuffers?.Contains(key) == true) changes[key] = change with { Before = change.Before with { Buffer = null } };
         foreach (var (id, change) in rowChanges.ToArray())

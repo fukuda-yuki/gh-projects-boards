@@ -10,7 +10,7 @@ internal sealed partial class EditingGrid
     private readonly StackPanel actualInputPane = new() { Spacing = 4, Visibility = Visibility.Collapsed, Margin = new(0, 4, 0, 4) };
     private readonly TextBlock actualInputHeading = new() { TextWrapping = TextWrapping.Wrap };
     private readonly CalendarDatePicker actualThrough = new() { Header = "報告対象最終日", PlaceholderText = "日付を確認", Width = 168 };
-    private readonly ComboBox actualWorker = new() { Header = "実績担当者", Width = 184, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
+    private readonly ComboBox actualWorker = new FormComboBox() { Header = "実績担当者", Width = 184, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
     private readonly Button actualUpdate = new() { Content = "更新", VerticalAlignment = VerticalAlignment.Bottom };
     private DateOnly? confirmedActualThrough;
     private bool updatingActualContext;
@@ -62,12 +62,12 @@ internal sealed partial class EditingGrid
         { actualInputPane.Visibility = Visibility.Collapsed; actualContext = null; return; }
         actualInputPane.Visibility = Visibility.Visible;
         var work = session.Workspace; var row = rows[currentRow]; var plan = work.Planning(projectId)!;
-        if (actualContext == (work, row.ItemId, plan.Stamp)) return;
-        actualContext = (work, row.ItemId, plan.Stamp);
         var context = work.ActualInput(registration, row.ItemId);
-        actualInputHeading.Text = $"{RowIdentity(row)} · 累計実績（人時）" + (context.Historical ? " · 過去の報告担当者を保持" : "")
+        actualInputHeading.Text = $"{(HasSelectedRange ? "現在のセル · " : "")}{RowIdentity(row)} · 累計実績（人時）" + (context.Historical ? " · 過去の報告担当者を保持" : "")
             + (context.MultipleReports ? " · 複数人の実績は内訳で更新" : "")
             + (context.Problem is { } problem ? "\n" + problem : "");
+        if (actualContext == (work, row.ItemId, plan.Stamp)) return;
+        actualContext = (work, row.ItemId, plan.Stamp);
         var choices = context.Historical
             ? new[] { new ActualWorkerChoice(context.PersonId, PersonName(context.PersonId)) }
             : plan.People.Select(p => new ActualWorkerChoice(p.Id, p.Name))
@@ -155,7 +155,7 @@ internal sealed partial class EditingGrid
         var people = plan.People.Select(p => new ActualWorkerChoice(p.Id, p.Name))
             .Concat((registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, taskId))?.Native?.Assignees ?? []).Select(a => new ActualWorkerChoice(a.Id.NodeId, a.Login)))
             .DistinctBy(p => p.Id).Append(new(null, "未割当")).ToArray();
-        var choose = new ComboBox { Header = "担当者を追加", ItemsSource = people, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
+        var choose = new FormComboBox { Header = "担当者を追加", ItemsSource = people, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
         var add = new Button { Content = "追加" }; AutomationProperties.SetAutomationId(choose, "ActualReportAddWorker"); AutomationProperties.SetAutomationId(add, "ActualReportAdd");
         add.Click += (_, _) => { if (choose.SelectedItem is ActualWorkerChoice person) { dirty = true; Add(person.Id, person.Label, null, confirmedActualThrough); } };
         content.Children.Add(choose); content.Children.Add(add); content.Children.Add(error);

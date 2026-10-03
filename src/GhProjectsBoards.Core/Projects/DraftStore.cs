@@ -157,7 +157,7 @@ internal sealed class DraftStore(string registrationRoot)
             using (PerformanceTrace.Span("checkpoint-read-validation-sync")) Validate(record);
             if (record.Version >= 13 && root.GetProperty("History").EnumerateArray().Any(t => !t.TryGetProperty("BufferWrites", out _)))
                 throw new InvalidDataException("Missing Undo input ownership; preserve the source.");
-            if (record.Version is 10 or 12 or 13)
+            if (record.Version is 10 or 12 or 13 or 14)
             {
                 void CheckPlan(JsonElement plan)
                 {
@@ -210,10 +210,11 @@ internal sealed class DraftStore(string registrationRoot)
     }
     internal static void Validate(DraftRecord r)
     {
-        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 or 13) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
+        if (r.Version is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 or 11 or 12 or 13 or 14) || r.Revision < 0 || r.Scope is null || !GitHubAddress.TryHost(r.Scope.Host, out var host)
             || host != r.Scope.Host || r.Scope.ViewerId <= 0 || r.Fields is null || r.History is null)
             throw new InvalidDataException("Invalid draft schema.");
         ApplyJournal.Validate(r);
+        HistoricalFieldHandling.Validate(r);
         if (r.Version >= 6 && r.ColumnPreferences is null || r.Version < 6 && r.ColumnPreferences is { Length: > 0 }) throw new InvalidDataException("Invalid column schema version.");
         EditingWorkspace.ValidateColumns(r.ColumnPreferences ?? []);
         if (r.Version >= 7 && r.RowPreferences is null || r.Version < 7 && r.RowPreferences is { Length: > 0 }) throw new InvalidDataException("Invalid row schema version.");
@@ -222,7 +223,7 @@ internal sealed class DraftStore(string registrationRoot)
         foreach (var plan in r.Planning ?? []) PlanningContract.Validate(plan, r.Revision);
         var plans = (r.Planning ?? []).Concat(r.History.Where(t => t?.Plan is not null)
             .SelectMany(t => new[] { t.Plan!.Before, t.Plan.After }.OfType<ProjectPlanning>())).ToArray();
-        if (plans.Any(p => p.Version == 2 && r.Version is not (10 or 12 or 13)
+        if (plans.Any(p => p.Version == 2 && r.Version is not (10 or 12 or 13 or 14)
             || p.Version == 3 && r.Version < 11 || p.Version == 4 && r.Version < 12))
             throw new InvalidDataException("Unversioned Summary or assignment metadata.");
         if ((r.Planning ?? []).Select(p => p.ProjectId).Distinct().Count() != (r.Planning ?? []).Length) throw new InvalidDataException("Duplicate Project plan.");
@@ -364,7 +365,10 @@ internal sealed class DraftSession(DraftStore store, EditingWorkspace workspace,
                     await Task.Run(() => store.SaveAsync(snapshot, expectedRevision));
                     DurableRevision = snapshot.Revision;
                 }
-                Status = "ローカル保存済み（GitHub未反映）" + recoveryNotice;
+                // New input can arrive while the detached snapshot is written.
+                // Its older acknowledgement must not describe current work as saved.
+                Status = DurableRevision == Workspace.Revision
+                    ? "ローカル保存済み（GitHub未反映）" + recoveryNotice : "ローカル保存中…";
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
             { Status = "ローカル保存失敗。文字は保持しています。保存先を確認し再試行してください。"; saved = false; }

@@ -164,14 +164,44 @@ internal sealed partial class EditingGrid
             if (r >= 0) Select(r, Array.FindIndex(rows[r].Cells, c => c.Key == cellKey), false);
         }
     }
-    private string PlanningSummary(EditRow row)
+    private (string Routine, string Required, string Diagnostics) PlanningSummary(EditRow row)
     {
-        if (session.Workspace.Planning(projectId) is null) return "";
-        if (!row.IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == row.ItemId && i.Kind == ProjectItemKind.Issue && i.ContentId is not null)) return "";
+        if (session.Workspace.Planning(projectId) is null) return ("", "", "");
+        if (!row.IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == row.ItemId && i.Kind == ProjectItemKind.Issue && i.ContentId is not null)) return ("", "", "");
         var id = session.Workspace.TaskId(registration, row.ItemId);
-        var result = session.Workspace.PlanFor(registration).Tasks.SingleOrDefault(t => t.Id == id);
-        return result is null ? "" : $"\n{result.Mode}: {DateText(result.Start)} → {DateText(result.Finish)}\n{result.Problem ?? result.Controller}"
-            + (result.Mode == PlanningMode.Auto && !result.Resolved ? "\n表の以前の日付は今回の計算結果ではありません。" : "")
-            + $"\n{string.Join(" / ", result.Warnings)}";
+        var plan = session.Workspace.PlanFor(registration);
+        var task = plan.Inputs?.SingleOrDefault(input => input.Task.Id == id)?.Task;
+        var progress = task?.Progress switch { PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中",
+            PlanningProgress.Completed => "完了", PlanningProgress.Reopened => "再開", _ => null };
+        var result = plan.Tasks.SingleOrDefault(t => t.Id == id);
+        if (result is null) return ("", "", "");
+        if (result.SourceRevision != plan.SourceRevision) return ("", "\n採用計画の日程を確認できません。", "");
+        var warnings = PlanningWarningPresentation.Create(plan, id);
+        var mode = result.Mode switch { PlanningMode.Auto => "自動計算", PlanningMode.Manual => "日時を指定", _ => "未計画" };
+        static string ImpactLabel(PlanningWarningImpact impact) => impact switch {
+            PlanningWarningImpact.EffortBreakdown => "担当者別集計（任意）",
+            PlanningWarningImpact.ContributionInconsistency => "内訳と合計の不一致",
+            PlanningWarningImpact.ActualReport => "実績の反映前に記録を確認",
+            PlanningWarningImpact.Schedule => "日程の注意",
+            _ => "原因を確認できない注意"
+        };
+        var diagnostics = $"\n採用計画の記録: {mode} / {result.Controller} / リビジョン {plan.SourceRevision}"
+            + string.Concat(warnings.Causes.Select(cause => $"\n{ImpactLabel(cause.Impact)}: {cause.SourceTaskId} / {cause.Message}"));
+        var owner = task?.OwnerId is { } ownerId ? plan.Configuration?.People.SingleOrDefault(person => person.Id == ownerId)?.Name ?? $"未確認 [{ownerId}]" : "未設定";
+        var dates = result.Resolved ? $"{DateText(result.Start)} → {DateText(result.Finish)}" : "未確定";
+        string Warning(PlanningWarningCause cause)
+        {
+            var message = $"{ImpactLabel(cause.Impact)}: {cause.Message}";
+            if (!cause.Inherited) return message;
+            var issue = registration.Snapshot.Issues.GetValueOrDefault(new(registration.Snapshot.Id.Scope, cause.SourceTaskId));
+            var identity = issue is not null ? $"#{issue.Number} {issue.Repository.NameWithOwner}"
+                : session.Workspace.LocalRows.SingleOrDefault(local => local.Id == cause.SourceTaskId && local.ProjectId == projectId)?.Title ?? cause.SourceTaskId;
+            return $"先行 {identity} — {message}";
+        }
+        var routine = $"\n計画担当: {owner}" + (progress is null ? "" : $" · 計画上の進捗: {progress}")
+            + $"\n日程（{mode}）: {dates}";
+        var required = string.Concat(warnings.Causes.Where(cause => cause.Impact != PlanningWarningImpact.EffortBreakdown).Select(cause => $"\n{Warning(cause)}"))
+            + (result.Mode == PlanningMode.Auto && !result.Resolved ? "\n表の以前の日付は今回の計算結果ではありません。" : "");
+        return (routine, required, diagnostics);
     }
 }

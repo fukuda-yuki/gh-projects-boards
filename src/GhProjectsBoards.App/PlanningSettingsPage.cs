@@ -110,7 +110,7 @@ internal sealed partial class EditingGrid
         foreach (var role in PlanningContract.Roles)
         {
             var name = role switch { "Estimate" => "見積時間", "Remaining" => "残時間", "Actual" => "実績合計", "Start" => "開始日", _ => "終了日" };
-            var box = new ComboBox { Header = name, HorizontalAlignment = HorizontalAlignment.Stretch };
+            var box = new FormComboBox { Header = name, HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetAutomationId(box, "PlanField-" + role);
             box.Items.Add(new ComboBoxItem { Content = "未設定", Tag = "" });
             foreach (var f in registration.Snapshot.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem

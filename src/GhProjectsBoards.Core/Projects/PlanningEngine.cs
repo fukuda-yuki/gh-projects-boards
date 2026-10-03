@@ -5,7 +5,7 @@ internal sealed record PlanningInput(PlanningTask Task, decimal? Estimate, decim
     string? SourceProblem = null);
 internal sealed record TaskPlan(string Id, PlanningMode Mode, long SourceRevision, decimal? RawHours,
     decimal? ScheduledMinutes, DateTime? Start, DateTime? Finish, DateTime? SuggestedStart, DateTime? SuggestedFinish,
-    string? Problem, string[] Warnings, string? Controller)
+    string? Problem, string[] Warnings, string? Controller, PlanningWarningDetail[]? WarningDetails = null)
 {
     public bool Resolved => Start is not null && Finish is not null;
     public decimal? RawDays => RawHours / 8;
@@ -19,13 +19,23 @@ internal sealed class WorkingCalendar(PlanningCalendar calendar)
     private readonly HashSet<DateOnly> holidays = calendar.Holidays.Dates.Select(d => d.Date).ToHashSet();
     private readonly Dictionary<(DateOnly, string?), WorkingInterval[]> exceptions = calendar.Exceptions.ToDictionary(e => (e.Date, e.PersonId), e => e.Intervals);
     private static readonly WorkingInterval[] Regular = [new(540, 780), new(840, 1080)];
-    public WorkingInterval[] Intervals(DateOnly day, string? person)
+    public WorkingInterval[] Intervals(DateOnly day, string? person) => Intervals(day, person, out _);
+    public EffectiveWorkingDay Explain(DateOnly day, string? person)
     {
-        if (person is not null && exceptions.TryGetValue((day, person), out var own)) return own;
-        if (exceptions.TryGetValue((day, null), out var common)) return common;
+        var intervals = Intervals(day, person, out var source);
+        return new(day, intervals.ToArray(), source);
+    }
+    private WorkingInterval[] Intervals(DateOnly day, string? person, out WorkingDaySource source)
+    {
+        if (person is not null && exceptions.TryGetValue((day, person), out var own))
+        { source = WorkingDaySource.PersonalException; return own; }
+        if (exceptions.TryGetValue((day, null), out var common))
+        { source = WorkingDaySource.ProjectException; return common; }
         if (!calendar.HolidaysNotConsidered && (day.Year < calendar.Holidays.FirstYear || day.Year > calendar.Holidays.LastYear))
             throw new InvalidOperationException($"{day.Year}年の祝日を採用していません。例外日または祝日を考慮しない設定が必要です。");
-        return day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || !calendar.HolidaysNotConsidered && holidays.Contains(day) ? [] : Regular;
+        source = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? WorkingDaySource.Weekend
+            : !calendar.HolidaysNotConsidered && holidays.Contains(day) ? WorkingDaySource.Holiday : WorkingDaySource.Regular;
+        return source is WorkingDaySource.Weekend or WorkingDaySource.Holiday ? [] : Regular;
     }
     public (DateTime Start, DateTime Finish) Place(DateTime anchor, decimal minutes, string? person)
     {
@@ -86,17 +96,22 @@ internal static class PlanningEngine
         TaskPlan CalculateOne(PlanningInput input)
         {
             if (results.TryGetValue(input.Task.Id, out var known)) return known;
-            var task = input.Task; var warnings = new List<string>(); string? problem = null;
+            var task = input.Task; var warnings = new List<string>(); var warningDetails = new List<PlanningWarningDetail>(); string? problem = null;
+            void Warn(string message, PlanningWarningKind kind = PlanningWarningKind.DirectSchedule, string? predecessorId = null)
+            {
+                warnings.Add(message); warningDetails.Add(new(message, kind, predecessorId));
+            }
             var work = task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened ? input.Remaining : input.Estimate;
             decimal? minutes = null; DateTime? start = null, finish = null;
             var controller = task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened ? "残工数・基準日時・配賦・カレンダー" : "見積工数・配賦・カレンダー";
-            if (project.Calendar.HolidaysNotConsidered) warnings.Add("祝日を考慮しない計画");
+            if (project.Calendar.HolidaysNotConsidered) Warn("祝日を考慮しない計画");
             if ((task.Assignment is null || task.Assignment.Legacy) && task.Mode != PlanningMode.Unplanned)
-                warnings.Add(task.OwnerId is null ? "以前の共通カレンダーによる暫定計画を保持" : "以前の独立した計画担当者を保持。変更時は日程を比較してください。");
-            if (input.ActualTotal is not null && task.Actuals is null) warnings.Add("実績合計の内訳・報告対象日が未入力です。");
+                Warn(task.OwnerId is null ? "以前の共通カレンダーによる暫定計画を保持" : "以前の独立した計画担当者を保持。変更時は日程を比較してください。");
+            if (input.ActualTotal is not null && task.Actuals is null) Warn("実績合計の内訳・報告対象日が未入力です。", PlanningWarningKind.DirectActualReport);
             foreach (var (name, total, sum) in new[] { ("見積", input.Estimate, (task.Contributions ?? []).Sum(c => c.EstimateHours ?? 0)), ("残時間", input.Remaining, (task.Contributions ?? []).Sum(c => c.RemainingHours ?? 0)) })
-                if (total is { } knownHours && knownHours != sum) warnings.Add(sum > knownHours ? $"{name}の内訳が合計を超えています。" : $"{name}の未割当: {PlanningContract.CanonicalHours(knownHours - sum)}人時");
-            if (input.RemoteClosed is { } closed && closed != (task.Progress == PlanningProgress.Completed)) warnings.Add("GitHub状態と採用進捗が不一致です。進捗と実績を確認してください。");
+                if (total is { } knownHours && knownHours != sum) Warn(sum > knownHours ? $"{name}の内訳が合計を超えています。" : $"{name}の未割当: {PlanningContract.CanonicalHours(knownHours - sum)}人時",
+                    sum > knownHours ? PlanningWarningKind.DirectContributionInconsistency : PlanningWarningKind.DirectEffortBreakdown);
+            if (input.RemoteClosed is { } closed && closed != (task.Progress == PlanningProgress.Completed)) Warn("GitHub状態と採用進捗が不一致です。進捗と実績を確認してください。");
             try
             {
                 if (input.SourceProblem is { } sourceProblem) throw new InvalidOperationException(sourceProblem);
@@ -125,19 +140,19 @@ internal static class PlanningEngine
                 if (task.OwnerId is null)
                 {
                     if (input.Assignees.Length != 0) throw new InvalidOperationException("計画担当者を明示的に選んでください。");
-                    weight = 100; warnings.Add("担当未設定・共通カレンダー100%の暫定計画");
+                    weight = 100; Warn("担当未設定・共通カレンダー100%の暫定計画");
                 }
                 else if (!people.TryGetValue(task.OwnerId, out var owner)) throw new InvalidOperationException("計画担当者の配賦が未設定です。");
                 else weight = owner.WeightPercent;
                 if (work > 0 && weight == 0) throw new InvalidOperationException("配賦0%のため自動終了を計算できません。");
                 minutes = work == 0 ? 0 : work * 6000 / weight;
-                if (minutes != decimal.Ceiling(minutes.Value)) warnings.Add($"終了境界を{decimal.Ceiling(minutes.Value) - minutes:0.########}分切り上げ（工数は保持）");
+                if (minutes != decimal.Ceiling(minutes.Value)) Warn($"終了境界を{decimal.Ceiling(minutes.Value) - minutes:0.########}分切り上げ（工数は保持）");
                 var anchor = project.Start.Value;
                 if (task.Progress is PlanningProgress.InProgress or PlanningProgress.Reopened)
                 {
                     if (project.Cutoff is null) throw new InvalidOperationException("再計画の基準日時が必要です。");
                     if (anchor < project.Cutoff) anchor = project.Cutoff.Value;
-                    if (task.ActualStart is null) warnings.Add("実績開始が未入力です。");
+                    if (task.ActualStart is null) Warn("実績開始が未入力です。");
                 }
                 if (task.EarliestStart is { } earliest && earliest > anchor) { anchor = earliest; controller = "最早開始"; }
                 foreach (var link in input.Predecessors)
@@ -147,7 +162,7 @@ internal static class PlanningEngine
                     if (byId.TryGetValue(link.PredecessorId, out var predecessor))
                     {
                         var previous = CalculateOne(predecessor); boundary = previous.Finish;
-                        if (previous.Problem is not null || previous.Warnings.Length != 0) warnings.Add($"先行 {link.PredecessorId} に警告があります。");
+                        if (previous.Problem is not null || previous.Warnings.Length != 0) Warn($"先行 {link.PredecessorId} に警告があります。", PlanningWarningKind.Inherited, link.PredecessorId);
                     }
                     if (boundary is null) throw new InvalidOperationException($"先行 {link.PredecessorId} の採用終了を確認できません。");
                     if (boundary > anchor) { anchor = boundary.Value; controller = "先行 " + link.PredecessorId; }
@@ -172,20 +187,20 @@ internal static class PlanningEngine
             catch (Exception e) when (e is ArgumentOutOfRangeException or OverflowException) { problem = "計画範囲を超えています。工数・配賦・日時を確認してください。"; start = finish = null; }
             if (task.Mode == PlanningMode.Manual)
             {
-                if (problem is not null) warnings.Add(problem);
-                if (task.ManualStart != start || task.ManualFinish != finish) warnings.Add("Manual日時を保持。自動案と異なります。");
+                if (problem is not null) Warn(problem);
+                if (task.ManualStart != start || task.ManualFinish != finish) Warn("Manual日時を保持。自動案と異なります。");
                 try
                 {
                     if (task.ManualStart is { } first && !calendar.IsStart(first, task.OwnerId)
-                        || task.ManualFinish is { } last && !calendar.IsFinish(last, task.OwnerId)) warnings.Add("Manual日時に稼働区間外の境界があります。");
+                        || task.ManualFinish is { } last && !calendar.IsFinish(last, task.OwnerId)) Warn("Manual日時に稼働区間外の境界があります。");
                 }
-                catch (InvalidOperationException e) { warnings.Add(e.Message); }
+                catch (InvalidOperationException e) { Warn(e.Message); }
             }
             var effectiveFinish = task.Mode == PlanningMode.Manual ? task.ManualFinish : finish;
-            if (task.Deadline is { } deadline && effectiveFinish > deadline) warnings.Add("期限を超えています。工数と依存関係は保持しています。");
+            if (task.Deadline is { } deadline && effectiveFinish > deadline) Warn("期限を超えています。工数と依存関係は保持しています。");
             return results[task.Id] = new(task.Id, task.Mode, revision, work, minutes,
                 task.Mode == PlanningMode.Manual ? task.ManualStart : start, task.Mode == PlanningMode.Manual ? task.ManualFinish : finish,
-                start, finish, problem, warnings.Distinct().ToArray(), controller);
+                start, finish, problem, warnings.Distinct().ToArray(), controller, warningDetails.Distinct().ToArray());
         }
         return new(project.ProjectId, revision, inputs.Select(CalculateOne).ToArray(), inputs, project);
     }

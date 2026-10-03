@@ -12,6 +12,7 @@ internal sealed record ApplyBatch(string Id, ScopedId Project, string ProjectNam
 internal sealed record ApplyReview(ApplyBatch Batch, string[] Blocked, int SelectedRows, int PendingBuffers)
 {
     public ApplyReviewProblem[] Problems { get; init; } = [];
+    public string? HistoricalDecisionId { get; init; }
     public int UpdatedIssues => Batch.Operations.Select(o => o.IssueId).Distinct().Count();
     public int CreatedIssues => Batch.Creations?.Length ?? 0;
     public int IssueCount => UpdatedIssues + CreatedIssues;
@@ -20,6 +21,11 @@ internal sealed record ApplyReviewProblem(string RowId, FieldKey? Field, string 
 
 internal static class ApplyJournal
 {
+    // New causes must remain distinguishable from the old wording shared by both paths.
+    public const string LegacySupersessionReason = "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。";
+    public const string ReviewSupersessionReason = "未反映の変更を再確認するため、以前の承認を終了しました。";
+    public const string WithdrawalReason = "利用者が以前の承認を撤回しました。";
+
     public static bool HasUnresolvedDispatch(ApplyOperation operation) => operation.State != ApplyState.Succeeded
         && (operation.State is ApplyState.Unknown or ApplyState.Running
             || operation.Attempts.Any(attempt => attempt.State is ApplyState.Unknown or ApplyState.Running));
@@ -66,17 +72,18 @@ internal sealed partial class EditingWorkspace
     private readonly List<ApplyBatch> journal = [];
     public IReadOnlyList<ApplyBatch> Journal => journal;
     public bool HasUnresolvedApply => journal.Any(b => b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded)
-            || ApplyJournal.HasUnresolvedDispatch(o)))
-        || Creations.Any(c => !c.Completed && (c.Authorized || c.Dispatched)
+            || ApplyJournal.HasUnresolvedDispatch(o) && !HistoricalFieldHandling.IsSettled(journal, historicalDispositions, new(b.Id, null, o.Id))))
+        || journal.Any(b => (b.Creations ?? []).Any(c => !c.Completed && (c.Authorized || c.Dispatched)
             || c.EarlierUncertain && !CreationJournal.IsCompletedOriginalBinding(c)
-            || (c.EarlierFields ?? []).Any(ApplyJournal.HasUnresolvedDispatch));
+            || (c.EarlierFields ?? []).Any(o => ApplyJournal.HasUnresolvedDispatch(o)
+                && !HistoricalFieldHandling.IsSettled(journal, historicalDispositions, new(b.Id, c.Id, o.Id)))));
     public IEnumerable<ProjectRegistration> CheckpointRegistrations => (registrations ?? []).Select(RegistrationStore.FromRecord);
-    public void SupersedeApply(string batchId)
+    public void SupersedeApply(string batchId, bool preparingReview = false)
     {
         var index = journal.FindIndex(b => b.Id == batchId);
         if (index < 0) throw new InvalidOperationException("Unknown batch.");
-        journal[index] = journal[index] with { Creations = (journal[index].Creations ?? []).Select(c => c with { Authorized = false }).ToArray(), Operations = journal[index].Operations.Select(o => o.State == ApplyState.Succeeded ? o :
-            o with { State = ApplyState.Superseded, Reason = "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。" }).ToImmutableArray() };
+        journal[index] = journal[index] with { Creations = (journal[index].Creations ?? []).Select(c => c with { Authorized = false }).ToArray(), Operations = journal[index].Operations.Select(o => o.State is ApplyState.Succeeded or ApplyState.Superseded ? o :
+            o with { State = ApplyState.Superseded, Reason = preparingReview ? ApplyJournal.ReviewSupersessionReason : ApplyJournal.WithdrawalReason }).ToImmutableArray() };
         Revision++;
     }
 
@@ -123,6 +130,7 @@ internal sealed partial class EditingWorkspace
     }
     public void ConfirmApply(ApplyReview review)
     {
+        if (HistoricalFollowUpProblem(review) is { } followUpProblem) throw new InvalidOperationException(followUpProblem);
         if (review.IssueCount == 0) throw new InvalidOperationException("反映できる変更がありません。");
         if (review.Batch.Project.Scope != Scope || review.Batch.ReviewedRevision != Revision || review.Blocked.Length != 0)
             throw new InvalidOperationException("比較後に変更がありました。再レビューしてください。");
@@ -131,7 +139,16 @@ internal sealed partial class EditingWorkspace
         foreach (var c in review.Batch.Creations ?? [])
             if (CreationLocked(c.LocalId) || !localRows.Any(r => r.Id == c.LocalId && r.Stamp == c.Stamp && r.Repository == c.Repository.Name))
                 throw new InvalidOperationException("作成履歴・宛先が変わっています。");
-        journal.Add(review.Batch); Revision++;
+        journal.Add(review.Batch);
+        if (review.HistoricalDecisionId is { } decisionId)
+        {
+            var index = historicalDispositions.FindIndex(d => d.Id == decisionId);
+            var decision = historicalDispositions[index];
+            var source = HistoricalFieldHandling.Resolve(journal, decision.Target)!;
+            var operation = review.Batch.Operations.Single(o => HistoricalOperationMatches(source, review.Batch, o));
+            historicalDispositions[index] = decision with { FollowUp = new(review.Batch.Id, operation.Id) };
+        }
+        Revision++;
     }
     public void RecordApply(string batchId, ApplyOperation operation, bool acknowledge = false)
     {

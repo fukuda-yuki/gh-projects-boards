@@ -136,7 +136,7 @@ internal static class Ui
         .Single(button => AutomationProperties.GetAutomationId(button) == id);
     public static async Task OpenHistory()
     {
-        await Until(() => ProjectCommand("ApplyHistoryButton").IsLoaded);
+        await Until(() => ProjectCommand("ApplyHistoryButton") is { IsLoaded: true, IsEnabled: true });
         await Run(() => Click(ProjectCommand("ApplyHistoryButton")));
     }
     public static async Task ChooseCell(string id, string optionId)

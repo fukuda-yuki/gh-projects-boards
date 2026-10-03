@@ -21,9 +21,9 @@ internal sealed partial class EditingWorkspace
             observed.Contains(pred) ? "present" : null, reason, [], native?.Complete != true ? ValueAvailability.NotLoaded
                 : observed.Contains(pred) ? ValueAvailability.Present : ValueAvailability.Empty, Scope)).ToArray();
     }
-    private EditRow[] OperationRows(ProjectRegistration registration)
+    private EditRow[] OperationRows(ProjectRegistration registration, bool initializeFields = true)
     {
-        var rows = Open(registration);
+        var rows = initializeFields ? Open(registration) : ReadRows(registration);
         var items = registration.Snapshot.Items.ToDictionary(i => i.Id.NodeId);
         var keys = fields.Keys.Where(k => k.Kind == "Dependency" && k.ProjectId == registration.Snapshot.Id.NodeId).ToLookup(k => k.NodeId);
         return rows.Select(row => items.GetValueOrDefault(row.ItemId) is { } item

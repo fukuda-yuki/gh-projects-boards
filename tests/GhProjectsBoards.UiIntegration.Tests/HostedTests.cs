@@ -53,7 +53,7 @@ public sealed partial class HostedTests
     [Test]
     public async Task LoadedGridAddChoiceClearRemoveUndoPreservesStableIdentity()
     {
-        await Ui.Run(() => Ui.Click("GridAddRow"));
+        await Ui.ClickCommand("GridAddRow");
         await Ui.Until(() => Work.LocalRows.Count == 1);
         var id = Work.LocalRows.Single().Id;
         await Ui.Ready<Button>("GridCell2_1");
@@ -86,7 +86,7 @@ public sealed partial class HostedTests
         {
             Assert.That(Work.LocalRows.Single().Id, Is.EqualTo(id));
             Assert.That(ChoiceText(), Does.Contain("明示的にクリア"));
-            Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain("ローカル新規 1行"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<Button>("WorkspaceUnpublished")), Does.Contain("新規 1行"));
         });
         await Ui.Until(() => Workspace.Drafts!.DurableRevision == Work.Revision);
         Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows!.Single().Id, Is.EqualTo(id));
@@ -106,7 +106,7 @@ public sealed partial class HostedTests
         await Ui.ClickCommand(command);
         await Ui.Until(() => Work.LocalRows.Count == 0);
         await Ui.Idle();
-        await Ui.Ready<TextBlock>("DraftStatus");
+        await Ui.Ready<TextBlock>("WorkspaceSaveStatus");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Not.Contain("削除・変更")));
         await Ui.Until(() => !removed.IsLoaded && Workspace.Drafts!.DurableRevision == Work.Revision);
         Assert.That((await new DraftStore(h.Existing.Root).LoadAsync(Work.Scope))!.LocalRows, Is.Empty);
@@ -223,6 +223,8 @@ public sealed partial class HostedTests
         var context = (await service.ConnectAsync()).Context!;
         await Ui.Run(async () => { await Workspace.BindAsync(context, service); await Workspace.SelectAsync(new(new("github.com", 42), "P1")); });
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Any(g => g.IsLoaded));
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
         await Ui.Ready<TextBox>("GridCell0_0");
         gate.Armed = true;
     }
@@ -464,7 +466,8 @@ public sealed partial class HostedTests
         await Ui.Run(() =>
         {
             var text = Ui.DialogText("ApplyReviewDialog");
-            Assert.That(text, Does.Contain("表では非表示").And.Contain("未作成 → Done").And.Contain("Todo → Done"));
+            Assert.That(text, Does.Contain("表では非表示").And.Contain("新規・未送信 → Done").And.Contain("Todo → Done")
+                .And.Contain(Workspace.Selected!.Snapshot.Title + "へ追加予定"));
             Assert.That(Workspace.ApplyReview!.Batch.Operations.Single().Key.FieldId, Is.EqualTo("P1-status"));
             Assert.That(Workspace.ApplyReview.Batch.Creations!.Single().Selects.Single().FieldId, Is.EqualTo("P1-status"));
             Assert.That(h.Writes, Is.Empty); Ui.DialogButton("ApplyReviewDialog", "CloseButton");

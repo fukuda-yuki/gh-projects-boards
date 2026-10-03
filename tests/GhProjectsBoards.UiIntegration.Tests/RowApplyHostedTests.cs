@@ -59,11 +59,14 @@ public sealed partial class HostedTests
         await Ui.Until(() => Ui.Tree(panel).OfType<EditingGrid>().Single().DisplayedRowIds.Contains("item-created1"));
         await Ui.Ready<FrameworkElement>("GridCell0_0");
         await Ui.Ready<Button>("GridReapply");
+        await Ui.Until(() => Ui.Tree(Ui.Find<FrameworkElement>("GridCell0_0"))
+            .Any(element => element is TextBox { Text: "pending" } or TextBlock { Text: "pending" }));
         await Ui.Run(() => {
             var grid = Ui.Tree(panel).OfType<EditingGrid>().Single();
             Assert.That(grid.DisplayedRowIds, Is.EqualTo(new[] { "item-created1" }));
             Assert.That(grid.SelectionIdentity?.Field, Is.EqualTo(new FieldKey("Title", "created1")));
-            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("GridCell0_0")).OfType<TextBlock>().Select(text => text.Text), Does.Contain("pending"));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("GridCell0_0"))
+                .Any(element => element is TextBox { Text: "pending" } or TextBlock { Text: "pending" }), Is.True);
             Assert.That(Work.Creations.Single().Completed, Is.True);
             FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus();
         });
@@ -76,8 +79,10 @@ public sealed partial class HostedTests
         await Ui.OpenHistory();
         await Ui.DialogReady("ApplyHistoryDialog");
         await Ui.Run(() => Ui.Toggle(Ui.Find<CheckBox>("ApplyShowAllHistory", Ui.Dialog("ApplyHistoryDialog"))));
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("ApplyHistoryDialog")!).OfType<Expander>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "CreationHistoryDetails-" + Work.Creations.Single().Id));
-        await Ui.Run(() => Ui.Find<Expander>("CreationHistoryDetails-" + Work.Creations.Single().Id, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
+        await Ui.Until(() => Ui.Popup<Button>("CreationHistoryDetails-" + Work.Creations.Single().Id) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click(Ui.Find<Button>("CreationHistoryDetails-" + Work.Creations.Single().Id, Ui.Dialog("ApplyHistoryDialog"))));
+        await Ui.Until(() => Ui.Popup<Expander>("CreationEvidence-" + Work.Creations.Single().Id) is { IsLoaded: true });
+        await Ui.Run(() => Ui.Find<Expander>("CreationEvidence-" + Work.Creations.Single().Id, Ui.Dialog("ApplyHistoryDialog")).IsExpanded = true);
         await Ui.Until(() => Ui.DialogText("ApplyHistoryDialog").Contains(local));
         await Ui.Run(() => { Assert.That(Ui.DialogText("ApplyHistoryDialog"), Does.Contain(local)); Ui.DialogButton("ApplyHistoryDialog", "CloseButton"); });
     }

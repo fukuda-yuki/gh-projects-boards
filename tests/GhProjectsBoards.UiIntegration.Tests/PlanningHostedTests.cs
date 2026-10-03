@@ -115,6 +115,50 @@ public sealed partial class PlanningHostedTests
             Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1T1"));
         });
     }
+    [TestCase("minute"), TestCase("clear"), TestCase("auto")]
+    public async Task ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(string correction)
+    {
+        await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+        project = project with { Snapshot = project.Snapshot with {
+            Items = project.Snapshot.Items.Select(i => i with { Values = i.Values.Select(v =>
+                v.FieldId?.NodeId is "F-Start" or "F-Finish"
+                    ? v with { Scalar = "2026-10-05", Availability = ValueAvailability.Present } : v).ToArray() }).ToArray() } };
+        var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
+        work.CommitPlanning(project, PlanningPathTests.Plan(), work.Revision);
+        session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-schedule-warning-" + Guid.NewGuid().ToString("N"))), work, 0);
+        await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
+        await Ui.Run(() => FocusCell("GridCell0_2"));
+        await Ui.ClickCommand("GridPlanning");
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
+        await Ui.Run(async () => {
+            var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
+            bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
+                t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
+            Assert.That(HasWarning(), Is.True, "Fetched dates without a time need an actionable explanation.");
+            if (correction == "auto")
+            {
+                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0;
+                Assert.That(HasWarning(), Is.False, "Automatic scheduling does not require manually completing fetched dates.");
+                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 1;
+                Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates.");
+            }
+            else
+            {
+                Ui.Find<TextBox>("ScheduleStart", editor).Text = correction == "minute" ? "2026-10-05 12:07" : "";
+                Assert.That(HasWarning(), Is.True, "The other endpoint still has no time.");
+                Ui.Find<TextBox>("ScheduleFinish", editor).Text = correction == "minute" ? "2026-10-05 12:08" : "";
+                Assert.That(HasWarning(), Is.False, "Completed or cleared input must not retain a stale warning.");
+                await ApplyInformationEvidence.Capture(editor, "schedule-warning-" + correction);
+                Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-06";
+                Assert.That(HasWarning(), Is.True, "A newly incomplete date needs the warning again.");
+            }
+            Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Preview and input do not adopt a task schedule.");
+            Assert.That(work.Journal, Is.Empty, "Correction must not publish anything.");
+            Ui.Click(Ui.Find<Button>("ScheduleClose", editor));
+        });
+    }
+
     [Test]
     public async Task MappedActualAcceptsPendingTextWithoutChangingItsReportOrNumberProjection()
     {
@@ -288,7 +332,7 @@ public sealed partial class PlanningHostedTests
     [TearDown]
     public async Task Teardown()
     {
-        await Ui.Run(() => { Ui.Dialog("PlanningDialog")?.Hide(); Ui.Dialog("PlanningBatchDialog")?.Hide(); Ui.Dialog("ConflictDialog")?.Hide(); }); await Ui.Unmount(grid);
+        await Ui.Run(() => { Ui.Dialog("PlanningDialog")?.Hide(); Ui.Dialog("DailyProgressDialog")?.Hide(); Ui.Dialog("PlanningBatchDialog")?.Hide(); Ui.Dialog("ConflictDialog")?.Hide(); }); await Ui.Unmount(grid);
         await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle();
     }
     [Test]
@@ -435,6 +479,12 @@ public sealed partial class PlanningHostedTests
             Ui.Find<TextBox>("PlanWork-Remaining", dialog).Text = "3";
             Ui.Find<TextBox>("PlanActualStart", dialog).Text = "2026-10-05 09:00";
             Ui.Tree(dialog).OfType<Expander>().Single(e => (string)e.Header == "累積実績・担当者別内訳").IsExpanded = true;
+        });
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<ComboBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanActualAddWorker" && c.IsLoaded));
+        await Ui.Run(() => {
+            var dialog = Ui.Dialog("PlanningDialog")!;
+            Ui.Find<ComboBox>("PlanActualAddWorker", dialog).SelectedIndex = 0;
+            Ui.Click(Ui.Find<Button>("PlanActualAdd", dialog));
         });
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanActualHours-U1" && c.IsLoaded));
         await Ui.Run(() => {

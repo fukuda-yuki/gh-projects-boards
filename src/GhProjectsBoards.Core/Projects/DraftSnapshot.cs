@@ -45,7 +45,9 @@ internal static class DraftSnapshot
         {
             Filters = p.Definition.Filters?.Select(f => f with { OptionIds = f.OptionIds.ToArray(), States = f.States.ToArray() }).ToArray()
         } }).ToArray(),
-        Planning = record.Planning?.Select(Plan).ToArray()
+        Planning = record.Planning?.Select(Plan).ToArray(),
+        HistoricalDispositions = record.HistoricalDispositions?.Select(d => d with
+        { Observation = d.Observation with { Current = Observation(d.Observation.Current), ProjectFieldIds = d.Observation.ProjectFieldIds.ToArray() } }).ToArray()
     };
 
     private static FieldObservation? Observation(FieldObservation? value) => value is null ? null : value with { Options = value.Options.ToArray() };

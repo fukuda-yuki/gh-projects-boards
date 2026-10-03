@@ -9,8 +9,14 @@ internal sealed record ApplyCandidate(string Id, string Identity, EditRow Row, D
 internal sealed partial class EditingWorkspace
 {
     public ApplyCandidate[] ApplyCandidates(ProjectRegistration project)
+        => ApplyCandidates(project, initializeFields: true);
+
+    public ApplyCandidate[] ReadApplyCandidates(ProjectRegistration project)
+        => ApplyCandidates(project, initializeFields: false);
+
+    private ApplyCandidate[] ApplyCandidates(ProjectRegistration project, bool initializeFields)
     {
-        var rows = OperationRows(project);
+        var rows = OperationRows(project, initializeFields);
         var candidates = new List<ApplyCandidate>();
         var included = new HashSet<FieldKey>();
         foreach (var row in rows)
