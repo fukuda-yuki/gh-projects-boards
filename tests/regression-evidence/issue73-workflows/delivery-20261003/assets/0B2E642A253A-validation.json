@@ -1,0 +1,31 @@
+{
+  "atUtc": "2026-09-27T15:49:32.471272+00:00",
+  "sourceHashesUnchanged": true,
+  "events143Preserved": true,
+  "onlyChangedEventLines": [
+    13,
+    15,
+    134,
+    136
+  ],
+  "allOtherEventFieldsStructurallyUnchanged": true,
+  "inventoryDerivativesExactTargetSubsets": true,
+  "stateDerivativeOnlyExactImageUrlChanged": true,
+  "evaluatorProseUnchangedExceptLinksAndNotices": true,
+  "originalFigures": 58,
+  "publishableOriginalFigures": 57,
+  "rawImageEmbeds": 58,
+  "eventImageEmbeds": 58,
+  "frozenSourceInputs": 264,
+  "matchingSourceInputs": 264,
+  "readbackChecksObservedFromOriginal": 16,
+  "readbackChecksPassed": 16,
+  "readbackRerun": false,
+  "appSha256": "A391A0EB08BA739BD747074432DCC179A1D8CFD4EDA2B09C6C9DB3A35EAD672B",
+  "coreSha256": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+  "rawPrivateExclusions": 6,
+  "binaryLockExclusions": 3,
+  "credentialScanMatches": 0,
+  "unrelatedInventoryValuesInPortable": 0,
+  "scope": "Completed T1 artifacts and copied close1 output only; no mutable storage, segment2/current events, UI, process or build execution."
+}

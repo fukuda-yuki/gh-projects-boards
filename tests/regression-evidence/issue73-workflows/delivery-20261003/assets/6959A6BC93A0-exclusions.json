@@ -1,0 +1,85 @@
+{
+  "files": [
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/phase1/data/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/phase1/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/phase1/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/current/data/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/current/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/reader-input/current/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/data/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/references/phase1/data/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/references/phase1/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/references/phase1/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/originals/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original manifest identity retained."
+    }
+  ],
+  "notSelected": [
+    "V4 observations, actual close and 203738 reader failure run",
+    "W",
+    "Current mutable data, endpoint and gh-config",
+    "Private CLI events or internal reasoning"
+  ],
+  "releaseAfterStateContents": "Receipt metadata only in this block",
+  "humanAcceptance": "not_run",
+  "fifthFinalized": false
+}

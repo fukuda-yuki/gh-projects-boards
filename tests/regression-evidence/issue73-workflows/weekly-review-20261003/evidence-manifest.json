@@ -1,0 +1,610 @@
+{
+  "createdAtUtc": "2026-10-03T04:23:26.9755134Z",
+  "purpose": "Original-byte evidence copies for bounded weekly native-app review",
+  "originalEvidenceRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003",
+  "fileCount": 86,
+  "files": [
+    {
+      "relativePath": "checks/warning-red/results.xml",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124823-372-0ec319b2\\results.xml",
+      "sha256": "56D50CAED6BAFDDE3AD4C8781257CF68DAE46CAB96ADD93AF2D6E703025959D8",
+      "bytes": 14292,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-red/metadata.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124823-372-0ec319b2\\metadata.json",
+      "sha256": "E84BAF17CACB7C2B3820EB0002945DAEE5DB85CF0A864C44684D0B829E6BB279",
+      "bytes": 17490,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-red/build.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124823-372-0ec319b2\\build.log",
+      "sha256": "C4F34A329A0DC625E39D01904B5D65625B711A0B859C4B1C5F82936B83708ECF",
+      "bytes": 4216,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-red/stdout.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124823-372-0ec319b2\\stdout.log",
+      "sha256": "638ED9E13E2C4C48BF476AA9DB82BBB5AC48D87A464490FF0C737EDEC0928A71",
+      "bytes": 7806,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-red/stderr.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124823-372-0ec319b2\\stderr.log",
+      "sha256": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "bytes": 2,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-green/results.xml",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124922-137-80868df6\\results.xml",
+      "sha256": "B77A548602009415CEF4CD0CF9CBC61640A0125014EEEC5112D703D50F56CE4C",
+      "bytes": 8315,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-green/metadata.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124922-137-80868df6\\metadata.json",
+      "sha256": "A8D65A3EF2ACA7AD07EE61E725389C7796050EFF115D7C978FCE9629E10B184E",
+      "bytes": 17839,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-green/build.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124922-137-80868df6\\build.log",
+      "sha256": "05459FA22D7E308E57EB54D7F235277147537E3E1AE40A21321E23B87E21342A",
+      "bytes": 4216,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-green/stdout.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124922-137-80868df6\\stdout.log",
+      "sha256": "9DD1DC5A1AB05D3A6A38680D9F68065130943AB2B36ED56A70F132AEF3C5B7F2",
+      "bytes": 1571,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-green/stderr.log",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261003-124922-137-80868df6\\stderr.log",
+      "sha256": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "bytes": 2,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/warning-candidate-source-review.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\warning-candidate-source-review.json",
+      "sha256": "47F7C1E883D1257A85A3CD92A2DA0B43B3370EA51BB207684F41FD70090C52B4",
+      "bytes": 913,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/app-baseline-stored.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\app-baseline-stored.json",
+      "sha256": "3200F9F4E81591E9A861511FCFA8D5D6C61B0D2C07D75487BA7A167565497C61",
+      "bytes": 87483,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/app-weekly-after-restart-stored.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\app-weekly-after-restart-stored.json",
+      "sha256": "5B9BBE49A44D0DD96670689CADB453D3A37EFF67CF1935660BDBFA7F1CB0A11B",
+      "bytes": 89304,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/weekly-normal-close.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\weekly-normal-close.json",
+      "sha256": "E45D815306A14DC7CA1A4C83B24E964635C1402FF91BEAA6496DBAD9499A0845",
+      "bytes": 235,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/app-final-independent-readback.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\app-final-independent-readback.json",
+      "sha256": "39D11B7CCBA1A2770E96F45D9C2DA17D574DF94EE37C228E7E6A93DB58ED7FB7",
+      "bytes": 91992,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/app-final-stored.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\app-final-stored.json",
+      "sha256": "B1FDCC488CA04D5095DC1FFC239CD9C13DB4D83D815DEF1F2E683CE0A9B77A5C",
+      "bytes": 107023,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/review-candidate-running.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\review-candidate-running.json",
+      "sha256": "B1D4C42521219E0D33AD6F7751A2AB360D45BB1B80EEAA5DE0F1D117CA21110C",
+      "bytes": 348,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "receipts/review-candidate.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\review-candidate\\diagnostics\\launch-4d8af16624c14a24ad97ba9879ae313c.json",
+      "sha256": "843E6F4634D4FFD8FC7CE89402E38DA1F57739841472775F347F93E670484257",
+      "bytes": 235884,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/independent-packet.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\independent-packet.json",
+      "sha256": "E39432096292C175C013862A07CAF8AFB0BEEEE6150EAF06F07BB561EE40E22B",
+      "bytes": 10905,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/check-final-readback.py",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\check-final-readback.py",
+      "sha256": "21A3DC2ADC08D83D12EF2F1EFAFDCC10A4B4DE22CE3B2C0FC6B9F799C5DD38D8",
+      "bytes": 6982,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "launch-review-candidate.ps1",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\launch-review-candidate.ps1",
+      "sha256": "998D4815E38A8831BDAB26D763620B13E6AC3B1E063FB19327D85081CF4F81BC",
+      "bytes": 4308,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/app-final-remote.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\sandbox-fixture\\runs\\20261003T040755Z-snapshot-3c31f0b23d34487badc8f60fadd99b65\\app-final.json",
+      "sha256": "A49162467D006B9D9E6EFED7987C5362AEFC8924CB2DB9F1F089A82C9917FE7D",
+      "bytes": 36315,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/source-inputs/after-init-remote.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\sandbox-fixture\\runs\\20261003T030505Z-init-8008a5929c7645fa9c90b9c624724bb7\\after-init.json",
+      "sha256": "A564030DED963A23AB745EEA48A125569B5C70CEBE8A72FC9EAFC1D547DD9B9B",
+      "bytes": 35829,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/source-inputs/app-final-checkpoint.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\app-final-checkpoint.json",
+      "sha256": "2CD82B135BAC6EB3BCBA1D546143247FD2CD3BD787F68E9F0D9534558F68E143",
+      "bytes": 406262,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/source-inputs/baseline-checkpoint.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\checks\\baseline-checkpoint.json",
+      "sha256": "63673BB9C9B5A2D3DDCBBD628325C33ADF05244FB098ED468763A38F8EBBD361",
+      "bytes": 278773,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/source-inputs/state.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\sandbox-fixture\\state.json",
+      "sha256": "4EE4585893B4926E042C82E9226E29D6B30070F1E252BE66AA1C4C5FA9F2933E",
+      "bytes": 8291,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "checks/source-inputs/materialization.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\sandbox-fixture\\materialization.json",
+      "sha256": "49EE6C9AEC8ACD56EB837D710E560868AADF666A4581453B3E4BBCF39CCEC51B",
+      "bytes": 7933,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/101-resume-after-interruption-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\101-resume-after-interruption-0.png",
+      "sha256": "DA951E0AB50BB98E9817B61A202F6AA3882E2592BB6FF6A264FA471CDCA760E0",
+      "bytes": 97523,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/101-resume-after-interruption.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\101-resume-after-interruption.json",
+      "sha256": "90190455949D1FA81CE641488670053B33F98831F2107CCC80E288127202D408",
+      "bytes": 12443,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/102-review-candidate-restored-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\102-review-candidate-restored-0.png",
+      "sha256": "6BDF5DBF54BF6EB43FA6A39F218B6A8FA8976030E8BD6C6A2B9AA49AEF485DAF",
+      "bytes": 59629,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/102-review-candidate-restored.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\102-review-candidate-restored.json",
+      "sha256": "8AB12A415525F524FB3C73FE5C12CA2FD1A87FF174EAB5CD475CC8C507CB2615",
+      "bytes": 2943,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/103-project-reopened-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\103-project-reopened-0.png",
+      "sha256": "511BC9811D5DFAAF9CAA0D757C6EE51B986E63B32C74D33E8C2349C4769E96EA",
+      "bytes": 75867,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/103-project-reopened.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\103-project-reopened.json",
+      "sha256": "8F8671D3F81985878BCA5D600B06926C50D238A08329B95C75467C42DB246A3B",
+      "bytes": 11766,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/104-carryover-daily-open.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\104-carryover-daily-open.json",
+      "sha256": "3FE3338149A7EF45C2793F631BECBDDDCBF2C5E29689F6FF5B08732C245E9FF7",
+      "bytes": 15150,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/105-weekly-report-ready-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\105-weekly-report-ready-0.png",
+      "sha256": "5084F5D13448C8FDB289600C9760D93F7869EF77ED9A5E9C667A26E574F774C1",
+      "bytes": 107196,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/105-weekly-report-ready.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\105-weekly-report-ready.json",
+      "sha256": "CEC7EF5C9811A4A98A1ECA9A8AC818C77179B2C5BD1F6E4A3F93038D29455727",
+      "bytes": 15700,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/106-weekly-report-confirmed.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\106-weekly-report-confirmed.json",
+      "sha256": "62AD53F2160576FB6966060E3B386782D69601FD3B90C334D72BD63D3A80D530",
+      "bytes": 15484,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/107-weekly-report-saved.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\107-weekly-report-saved.json",
+      "sha256": "75336945BADC60D268A1C46D4524A1FEA652DCEE386B1C59C54E843AA41685E3",
+      "bytes": 12614,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/108-settings-before-calendar-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\108-settings-before-calendar-0.png",
+      "sha256": "ED8DE590F4C8FE8BCA6A13D5482C512FD3086689670DD5E042603BAF65AC475C",
+      "bytes": 87554,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/108-settings-before-calendar.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\108-settings-before-calendar.json",
+      "sha256": "83217D43E09941C411773720D060CE836A978D4193E1CEC4824683ED157FB6CD",
+      "bytes": 5299,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/109-calendar-exception-ready-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\109-calendar-exception-ready-0.png",
+      "sha256": "EDD884EB25372F9E8A1C6E523ED5F903F9A88C3437F3B972F4D8D42D5F9BCAB9",
+      "bytes": 82107,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/109-calendar-exception-ready.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\109-calendar-exception-ready.json",
+      "sha256": "E9AD401D144159F569C4D9104CBE775B740579C7134749AAB1041C03850FE851",
+      "bytes": 6684,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/110-calendar-replanned-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\110-calendar-replanned-0.png",
+      "sha256": "9A39D54A6315E10801B68835763D74DACA0C4AFE47786AC759BBBEA6A9C9ABBC",
+      "bytes": 93452,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/110-calendar-replanned.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\110-calendar-replanned.json",
+      "sha256": "01AB4A2AEC0E5EDA79A265782BB6856B2B910EE982681EE86DCC9A3ACB27FB8D",
+      "bytes": 12802,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/111-successor-dependency-ready-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\111-successor-dependency-ready-0.png",
+      "sha256": "94B3A8BA8066B929FBEF61E6C5C5F890F327950FD22C1CD24A5E3301FFB4D4FA",
+      "bytes": 98435,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/111-successor-dependency-ready.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\111-successor-dependency-ready.json",
+      "sha256": "22E6D138D48398C31D82E8DE547E626DA18CD58D7CCAFC2015436702AC2CD3D0",
+      "bytes": 15278,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/112-successor-replanned-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\112-successor-replanned-0.png",
+      "sha256": "B236B7AB546AEF83E3CDA115B5312AFB848AEFA4A1FD60D68B444780B6BAB715",
+      "bytes": 97580,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/112-successor-replanned.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\112-successor-replanned.json",
+      "sha256": "EB33F361BFE7A19C554D40BCC85A3D0C3A5F33AD14C494B23A7FCA4D1DA45A59",
+      "bytes": 13022,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/113-successor-estimate-pending-20.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\113-successor-estimate-pending-20.json",
+      "sha256": "55F712AE76ED219F1E003B61941E4C8FBF8412578D10421A2F77079983DBEF01",
+      "bytes": 12734,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/114-successor-estimate-20-committed-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\114-successor-estimate-20-committed-0.png",
+      "sha256": "F7D34722F13C220638F3DC61B29BCC8184F84366F4AAEEA44AF46A3218490703",
+      "bytes": 98953,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/114-successor-estimate-20-committed.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\114-successor-estimate-20-committed.json",
+      "sha256": "D9F01827F65E7DE3F3CB68661ED224A7B8062239E7C8AA6AA35B3993CC71F4E0",
+      "bytes": 12845,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/115-successor-mistake-endpoint.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\115-successor-mistake-endpoint.json",
+      "sha256": "067ADEC235ECE2525D9833884F6B44438ED69640AEC6EC9FE6010538CC0C3AED",
+      "bytes": 12691,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/116-successor-corrected-one-undo-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\116-successor-corrected-one-undo-0.png",
+      "sha256": "C11E17ABB278F74885566EDB14325DCC2EDAC44E36970C519F2998A77D4DABE3",
+      "bytes": 97039,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/116-successor-corrected-one-undo.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\116-successor-corrected-one-undo.json",
+      "sha256": "4A9F7C8C382165BA4004D15B7D86A0058A8BEC5BFDF5F919E5DEB3D346545EF8",
+      "bytes": 12497,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/117-manual-preserved.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\117-manual-preserved.json",
+      "sha256": "DE917A9E5110EDF7A6BB420D683F336033A7E1B98467606800DC4EC294C6C0D2",
+      "bytes": 12819,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/118-weekly-gantt-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\118-weekly-gantt-0.png",
+      "sha256": "5B5DC4ABC82539B93B4554E955A6392D3BCA1E6EEA7AEE58A02B0C653489FE8F",
+      "bytes": 91055,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/118-weekly-gantt.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\118-weekly-gantt.json",
+      "sha256": "8D86297E6D1C3F87632D1B1D71A69190EA8FFCB06D243A794EB62CE3F2C00205",
+      "bytes": 7420,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/119-weekly-schedule-reasons-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\119-weekly-schedule-reasons-0.png",
+      "sha256": "21E5D7A0371C42B60305EF00D5E09343EA326F93CA4F34332E62F26041B38BE9",
+      "bytes": 123902,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/119-weekly-schedule-reasons.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\119-weekly-schedule-reasons.json",
+      "sha256": "7D09F92C21773A6AEBD80DBAAFC41D0376699DD4067FE3896CA81EEA57FE8116",
+      "bytes": 10202,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/120-weekly-reasons-settled-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\120-weekly-reasons-settled-0.png",
+      "sha256": "7907939BFBA1122962C3C1E71F7FB0774D24201740F00A79204D8DAE319E3C8B",
+      "bytes": 117646,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/120-weekly-reasons-settled.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\120-weekly-reasons-settled.json",
+      "sha256": "D8ED8D62A47AAA108D91C6A4E91323BB2810F04345506FB7C1E6A6C7C9947BD3",
+      "bytes": 10204,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/121-weekly-restart.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\121-weekly-restart.json",
+      "sha256": "5E03D276196819B8B14063EBD4C5EAE2DFBCDE7D1C4E8B2FA46762D4F15DCC6C",
+      "bytes": 2760,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/122-weekly-after-restart-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\122-weekly-after-restart-0.png",
+      "sha256": "A0DDF8C4C98AFCF39E029EB50DED6F00F94EC760BCAC7B51A6E910A53CB0A93D",
+      "bytes": 89474,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/122-weekly-after-restart.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\122-weekly-after-restart.json",
+      "sha256": "A806D142167FE3C61F440F62DB86E145F854166FE2EC5A42BA315A97635824A8",
+      "bytes": 7390,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/123-connection-rechecked.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\123-connection-rechecked.json",
+      "sha256": "A292CFA9F20A4874E4BE1A405BEFD5E5F51ADC769F9090AB91E4673A75A24B35",
+      "bytes": 2669,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/124-publication-review-start.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\124-publication-review-start.json",
+      "sha256": "8D8A702025C4C22D360CE1BA9215D672C3DA896DC45DD27BD711168A9080EC80",
+      "bytes": 12108,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/125-publication-check-complete-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\125-publication-check-complete-0.png",
+      "sha256": "15AE14F0E3860AD1754CE9251E929527E8200952C3748BC252FCFEEC37427DB5",
+      "bytes": 69725,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/125-publication-check-complete.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\125-publication-check-complete.json",
+      "sha256": "6F4E91CD940920BC480D9D9E312486ACFF8C4F3DAC263FEA300AF93DF0B73B7A",
+      "bytes": 11907,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/126-publication-two-owned-selected.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\126-publication-two-owned-selected.json",
+      "sha256": "120242443A7FF8185DB9971EFFE1B77C8C8062776DE897B2038FC83A1C3AEBE6",
+      "bytes": 12110,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/127-publication-successor-review-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\127-publication-successor-review-0.png",
+      "sha256": "1A6256EE062EB6774F845A7D7A71D869A36C1E01C7EE6687FA4BB58ECC34CB5C",
+      "bytes": 72415,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/127-publication-successor-review.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\127-publication-successor-review.json",
+      "sha256": "C466DE92C0AEE899A5357263ADED2ADB7D1662C2FCEC5E41B4D205F3BF3C4C24",
+      "bytes": 11882,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/128-before-dispatch-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\128-before-dispatch-0.png",
+      "sha256": "1A6256EE062EB6774F845A7D7A71D869A36C1E01C7EE6687FA4BB58ECC34CB5C",
+      "bytes": 72415,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/128-before-dispatch.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\128-before-dispatch.json",
+      "sha256": "93FF73EC3DB0A3E6CDA5E79685D302A3A0A9E87E77ACF870F20477D5E090E344",
+      "bytes": 11948,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/129-dispatch-started.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\129-dispatch-started.json",
+      "sha256": "6C66BC9E9ED3BD99FDE1B2FEDBD54AFDD0C7B028CF6984A70DFD7533EF10F0D5",
+      "bytes": 7312,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/130-live-result-observation-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\130-live-result-observation-0.png",
+      "sha256": "35BEE47C74D8D6DEF0FED846866A22F74A5C72A977FAE7D793CC72AFFB917732",
+      "bytes": 89790,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/130-live-result-observation.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\130-live-result-observation.json",
+      "sha256": "8F96F08525F8D9990F9C4F85C3D28187392482821C840AF91D40741CD5495D81",
+      "bytes": 7008,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/131-live-verified-history-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\131-live-verified-history-0.png",
+      "sha256": "2AEC63EF3F306495A257AD8C9BBCF9FB435758A7857D9A7F24F274E120F24F9C",
+      "bytes": 102394,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/131-live-verified-history.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\131-live-verified-history.json",
+      "sha256": "4AF6BAC62787D04766653FFB9695BC68E1D5FAF33886C18B420018FF494C9FF4",
+      "bytes": 8841,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/132-live-history-list-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\132-live-history-list-0.png",
+      "sha256": "F4C11DA68B5C5B90CB7A3BAE2765E9CECE8362887C9C6688542AE0BCA9775300",
+      "bytes": 84533,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/132-live-history-list.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\132-live-history-list.json",
+      "sha256": "F66CD2674615FFEA0F4021263093B4A9726300C9A101D3F56437525AC89E1FD4",
+      "bytes": 7643,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/133-live-completed-history-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\133-live-completed-history-0.png",
+      "sha256": "88E84D594479930DE312B8C37ECEDA045B9EADC6D3A3F5C47A07F0F4BCCA85F9",
+      "bytes": 107798,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/133-live-completed-history.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\133-live-completed-history.json",
+      "sha256": "891B0AC3B3C300FCF510BD156E86564DBF9B8C49E2EC7E27602F19D814B6BB3D",
+      "bytes": 10602,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/134-final-week-overview-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\134-final-week-overview-0.png",
+      "sha256": "05BB4BFC1527B6E27B59E6D30F5AAA520011ACDA3F43809AAE08F862EF9EE15D",
+      "bytes": 90302,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/134-final-week-overview.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\134-final-week-overview.json",
+      "sha256": "269F65F5D862D49984C8236A45009904DAFA541C2B3AFBD548B0BF046E5A6BF1",
+      "bytes": 7650,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/96-manual-minute-preview-0.png",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\96-manual-minute-preview-0.png",
+      "sha256": "F1FD4682CA2FDF507677C1E55BF1BF7330BF99C6FACDAA46BCC3A12D1FDE69DB",
+      "bytes": 116797,
+      "copyHashVerified": true
+    },
+    {
+      "relativePath": "observations/96-manual-minute-preview.json",
+      "originalPath": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\app-observations\\96-manual-minute-preview.json",
+      "sha256": "D1A61C4F2B85A7F9596D4888D8C651E55A23F13619AA58A65E9B814E5DFAF508",
+      "bytes": 14347,
+      "copyHashVerified": true
+    }
+  ]
+}

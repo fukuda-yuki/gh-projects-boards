@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="312" result="Failed" start-time="2026-10-02T20:41:02.5883118Z" end-time="2026-10-02T20:41:16.9503322Z" duration="14.361930" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5" random-seed="2102333724">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == ApplyPublicationPresentation or test =~ '(PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget|KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination)'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-054101-936-3c5bcff0\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>ApplyPublicationPresentation</cat>
+      <test re="1">(PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget|KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination)</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1392" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="312" result="Failed" site="Child" start-time="2026-10-02T20:41:02.5883118Z" end-time="2026-10-02T20:41:16.9503322Z" duration="14.361930" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="44756" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1393" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="312" result="Failed" site="Child" start-time="2026-10-02T20:41:02.5917041Z" end-time="2026-10-02T20:41:16.9503304Z" duration="14.358626" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1394" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="312" result="Failed" site="Child" start-time="2026-10-02T20:41:02.5919362Z" end-time="2026-10-02T20:41:16.9503282Z" duration="14.358392" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1395" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="312" result="Failed" site="Child" start-time="2026-10-02T20:41:02.5919469Z" end-time="2026-10-02T20:41:16.9503252Z" duration="14.358378" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="102" result="Failed" site="Child" start-time="2026-10-02T20:41:02.5919489Z" end-time="2026-10-02T20:41:16.9503191Z" duration="14.358370" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="5">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1028" name="KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" methodname="KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="36294726" result="Passed" start-time="2026-10-02T20:41:02.5933941Z" end-time="2026-10-02T20:41:07.6801537Z" duration="5.086800" asserts="4">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-914f78aa-d0d8-48f8-8184-e3f5336c5e5f; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1027" name="PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" methodname="PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1527795592" result="Passed" start-time="2026-10-02T20:41:07.6810550Z" end-time="2026-10-02T20:41:13.6482741Z" duration="5.967219" asserts="1">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a2782159-ee74-4d87-93df-ad62584a3d10; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1014" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-02T20:41:13.6483385Z" end-time="2026-10-02T20:41:16.9501625Z" duration="3.301824" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="ApplyPublicationPresentation" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1012" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="985094084" result="Failed" start-time="2026-10-02T20:41:13.6485915Z" end-time="2026-10-02T20:41:15.3493063Z" duration="1.700716" asserts="0">
+                <failure>
+                  <message><![CDATA[  Assert.That(bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0, Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.ApplyInformationEvidence.Capture(FrameworkElement view, String name) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationEvidence.cs:line 25
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass5_2.<<ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds>b__5>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 61
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(Int32 width, Int32 height) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 39
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(Int32 width, Int32 height) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 69
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-211fccab-d4de-477d-894e-f97b5c21755a; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1013" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="295117004" result="Failed" start-time="2026-10-02T20:41:15.3494594Z" end-time="2026-10-02T20:41:16.9493944Z" duration="1.599936" asserts="0">
+                <failure>
+                  <message><![CDATA[  Assert.That(bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0, Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.ApplyInformationEvidence.Capture(FrameworkElement view, String name) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationEvidence.cs:line 25
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass5_2.<<ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds>b__5>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 61
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(Int32 width, Int32 height) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 39
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(Int32 width, Int32 height) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ApplyInformationHostedTests.cs:line 69
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-61c06bfe-7386-4ba9-9262-0b9c6122ca41; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

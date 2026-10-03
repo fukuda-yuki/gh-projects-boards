@@ -1,0 +1,14 @@
+{
+  "normalCloseObserved": true,
+  "forcedTermination": false,
+  "pid": 66348,
+  "dataRoot": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/round8-apply-t/data",
+  "launchReceiptSha256": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+  "observedAt": "2026-09-27T15:29:46.64Z",
+  "observer": "root reviewing unfamiliar T original native observations and OS process absence",
+  "observationArtifact": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\099-list_windows.json",
+  "closeActionArtifact": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\api-calls.jsonl",
+  "preActionArtifact": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\096-get_window_state.json",
+  "method": "click observed native title-bar Close element27, sequence97; refreshed absent inventory99",
+  "processAbsentVerifiedAt": "2026-09-27T15:31:31.5135456+00:00"
+}

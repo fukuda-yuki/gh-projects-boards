@@ -1,0 +1,78 @@
+{
+  "hashedExcludedFiles": [
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-after-close-v2-20261003/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Non-durable empty writer lock; original remains retained locally"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-after-close-v2-20261003/inputs/evaluator-post-close-inventory.json",
+      "length": 214,
+      "sha256": "160EBC7190760C0A09A4FBD23F82CD596E120FBA04FFD4C16CB8D0EEBA62D343",
+      "reason": "Raw native inventory may include unrelated apps; preserve locally and retain target-only absence evidence instead"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-evaluator/actual-close/2026-10-02T21-09-20-327Z-112-list_windows-result.json",
+      "length": 214,
+      "sha256": "160EBC7190760C0A09A4FBD23F82CD596E120FBA04FFD4C16CB8D0EEBA62D343",
+      "reason": "Raw native inventory may include unrelated apps; preserve locally and retain target-only absence evidence instead"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/round17-dense-w/diagnostics/w-baseline/inputs/original-u-close/inputs/close-fresh-inventory.json",
+      "length": 457,
+      "sha256": "58CDF7597122C939FBE275B708D889795945CB3D00038CE754ADF4AC7631AE4E",
+      "reason": "Raw native inventory may include unrelated apps; preserve locally and retain target-only absence evidence instead"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-001-list_windows-result.json",
+      "length": 449,
+      "sha256": "7F75231D99D167564FF8268D277ECDB24C4C3C1FAEBF3A29978C9720A807C9A7",
+      "reason": "Raw native inventory contains other-application identities; local original only."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-112-list_windows-result.json",
+      "length": 214,
+      "sha256": "160EBC7190760C0A09A4FBD23F82CD596E120FBA04FFD4C16CB8D0EEBA62D343",
+      "reason": "Raw native inventory contains other-application identities; local original only."
+    }
+  ],
+  "unreadUnhashedPrivateOutputs": [
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-evaluator/business/events.private.jsonl",
+      "reason": "Private model event/stderr output; not inspected or hashed",
+      "read": false,
+      "hashed": false
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-evaluator/business/stderr.private.log",
+      "reason": "Private model event/stderr output; not inspected or hashed",
+      "read": false,
+      "hashed": false
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-evaluator/context-gate/events.private.jsonl",
+      "reason": "Private model event/stderr output; not inspected or hashed",
+      "read": false,
+      "hashed": false
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/w-dense-evaluator/context-gate/stderr.private.log",
+      "reason": "Private model event/stderr output; not inspected or hashed",
+      "read": false,
+      "hashed": false
+    }
+  ],
+  "rawInventoryFilesExcluded": 5,
+  "emptyLocksExcluded": 1,
+  "privateOutputsExcluded": 4,
+  "intentionalOriginalReportLinks": 4,
+  "historicalSourceMarkdownExcludedFromNavigationAudit": [
+    "checks/w-after-close-v2-20261003/inputs/source-package/source/README.md",
+    "checks/w-dense-evaluator/helper-source-ready/copies/source/README.md",
+    "checks/w-dense-evaluator/source/README.md",
+    "round17-dense-w/diagnostics/w-baseline/inputs/source/README.md"
+  ],
+  "standaloneCompleteOriginalReaderRerunPromised": false,
+  "fifthFinalized": false
+}

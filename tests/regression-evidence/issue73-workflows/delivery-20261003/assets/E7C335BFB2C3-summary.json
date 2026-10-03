@@ -1,0 +1,25 @@
+{
+  "counts": {
+    "pass": 62,
+    "fail": 0,
+    "missing": 0
+  },
+  "failed": [],
+  "missing": [],
+  "originalUClosedDataUnchanged": true,
+  "closedWSourceUnchangedByReader": true,
+  "preservedReadbackCopyUnchanged": true,
+  "closeActor": "W evaluator",
+  "rootPerformedClose": false,
+  "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+  "appSha256": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+  "sourceManifestSha256": "8E0A77130B865EBB211CD292E34C5A421A34CCC6E484E6AFAE9D3B770CA757C4",
+  "preparationSha256": "45C694EC316674255A38E5D54719E9408243C31412F98AAA85F1E75F64B23D9A",
+  "actualLaunchReceiptSha256": "C1ECCAFDE5089E347C2FC5346B4BF9822B8A53B5ABD5FACD2D19FD7705EE5EA4",
+  "executedReader": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\w-dense-evaluator\\source\\Read-WAfterCloseV2.ps1",
+  "executedReaderSha256": "1ACBC0710F78491AA5AA18445C644E952006DF573515162424526A6F61434D21",
+  "scope": "Confirmed values, independent buffers, full business records, candidate-attributed derived dates and stored Undo preservation only",
+  "intermediateOneUndo": "Requires evaluator evidence; not inferred from this comparison",
+  "visibleUsability": "Requires evaluator evidence",
+  "humanAcceptance": "not_run"
+}

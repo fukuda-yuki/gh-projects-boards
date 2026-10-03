@@ -1,0 +1,698 @@
+{
+  "kind": "Independent read-only inspection after evaluator D recorded normal close; no new product execution",
+  "readAtUtc": "2026-09-27T08:10:16.4839169+00:00",
+  "sourceAtRead": "498840b1eea42bfb344c53195f7e5473fe68e020",
+  "originalPath": "TestResults/issue73/blind-review/round1-weekly-d/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json",
+  "copyPath": "TestResults/issue73/blind-review/coordinator-readback/weekly-d/source-checkpoint.json",
+  "originalSha256Before": "C0E2C7528EDCA2BC6820919E0B67FEB16F6448EB5A73075BCB0278ACAEA58E33",
+  "originalSha256After": "C0E2C7528EDCA2BC6820919E0B67FEB16F6448EB5A73075BCB0278ACAEA58E33",
+  "copySha256": "C0E2C7528EDCA2BC6820919E0B67FEB16F6448EB5A73075BCB0278ACAEA58E33",
+  "checkpointSchema": 12,
+  "scope": {
+    "Host": "github.com",
+    "ViewerId": 42
+  },
+  "revision": 189,
+  "historyCount": 3,
+  "applyJournalCount": 0,
+  "pendingFields": [
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "Change": {
+        "Value": "1",
+        "Clear": false
+      },
+      "Buffer": "1?",
+      "Stamp": 165
+    }
+  ],
+  "p1ChangedFieldCount": 46,
+  "selectedFields": [
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "Baseline": "4",
+      "Change": null,
+      "Buffer": null,
+      "Stamp": 0,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "Baseline": "4",
+      "Change": {
+        "Value": "3",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Actual"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "7",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Date",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "2026-10-13",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Date",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "2026-10-13",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "Baseline": "4",
+      "Change": null,
+      "Buffer": null,
+      "Stamp": 0,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "Baseline": "4",
+      "Change": {
+        "Value": "1",
+        "Clear": false
+      },
+      "Buffer": "1?",
+      "Stamp": 165,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Actual"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "2",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 165,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Date",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "2026-10-14",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Date",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "Baseline": null,
+      "Change": {
+        "Value": "2026-10-14",
+        "Clear": false
+      },
+      "Buffer": null,
+      "Stamp": 163,
+      "Conflict": false
+    }
+  ],
+  "planning": {
+    "version": 3,
+    "projectId": "P1",
+    "stamp": 164,
+    "start": "2026-10-05T09:00:00",
+    "cutoff": "2026-10-09T18:00:00",
+    "fields": [
+      {
+        "Role": "Estimate",
+        "FieldId": "F-Estimate",
+        "DataType": "NUMBER"
+      },
+      {
+        "Role": "Remaining",
+        "FieldId": "F-Remaining",
+        "DataType": "NUMBER"
+      },
+      {
+        "Role": "Actual",
+        "FieldId": "F-Actual",
+        "DataType": "NUMBER"
+      },
+      {
+        "Role": "Start",
+        "FieldId": "F-Start",
+        "DataType": "DATE"
+      },
+      {
+        "Role": "Finish",
+        "FieldId": "F-Finish",
+        "DataType": "DATE"
+      }
+    ],
+    "people": [
+      {
+        "Id": "U1",
+        "Name": "Owner",
+        "WeightPercent": 100
+      },
+      {
+        "Id": "U2",
+        "Name": "Owner2",
+        "WeightPercent": 80
+      }
+    ],
+    "tasks": [
+      {
+        "Id": "I1",
+        "Mode": 1,
+        "OwnerId": "U1",
+        "ManualStart": null,
+        "ManualFinish": null,
+        "Progress": 1,
+        "ActualStart": "2026-10-05T09:00:00",
+        "ActualFinish": null,
+        "EarliestStart": null,
+        "FixedStart": null,
+        "FixedFinish": null,
+        "Deadline": null,
+        "Actuals": [
+          {
+            "PersonId": "U1",
+            "Hours": 7,
+            "ReportedThrough": "2026-10-09"
+          }
+        ],
+        "Contributions": null,
+        "LocalLinks": null,
+        "LaborKind": 0,
+        "Assignment": {
+          "Assignees": [
+            "U1"
+          ],
+          "Complete": true,
+          "Legacy": false
+        }
+      },
+      {
+        "Id": "I2",
+        "Mode": 1,
+        "OwnerId": "U2",
+        "ManualStart": null,
+        "ManualFinish": null,
+        "Progress": 1,
+        "ActualStart": "2026-10-07T09:00:00",
+        "ActualFinish": null,
+        "EarliestStart": null,
+        "FixedStart": null,
+        "FixedFinish": null,
+        "Deadline": null,
+        "Actuals": [
+          {
+            "PersonId": "U2",
+            "Hours": 2,
+            "ReportedThrough": "2026-10-09"
+          }
+        ],
+        "Contributions": null,
+        "LocalLinks": null,
+        "LaborKind": 0,
+        "Assignment": {
+          "Assignees": [
+            "U2"
+          ],
+          "Complete": true,
+          "Legacy": false
+        }
+      }
+    ],
+    "calendar": {
+      "revision": "official-2025-2027",
+      "holidayVersion": "cao-2025-2027-CEC37A743C96",
+      "holidaysNotConsidered": false,
+      "relevantHoliday": [
+        {
+          "Date": "2026-10-12",
+          "Name": "スポーツの日"
+        }
+      ],
+      "exceptions": [
+        {
+          "Date": "2026-10-13",
+          "PersonId": "U2",
+          "Intervals": [
+            {
+              "StartMinute": 600,
+              "EndMinute": 720
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "firstHistoryComparison": {
+    "firstHistoryId": "38d85d9fce3a412ca8906fa57f03c004",
+    "firstHistoryChangedFieldCount": 43,
+    "calendarMatchesFirstHistoryPlanAfter": true,
+    "peopleMatchFirstHistoryPlanAfter": true,
+    "meaning": "The first history entry is inherited fixture planning work. This is a read-only serialized comparison of people/calendar values, not a new scheduling execution."
+  },
+  "history": [
+    {
+      "id": "38d85d9fce3a412ca8906fa57f03c004",
+      "projectId": "P1",
+      "invalidReason": null,
+      "hasPlan": true,
+      "changeCount": 43,
+      "selectedChanges": [
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Actual"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "5",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-06",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          }
+        }
+      ]
+    },
+    {
+      "id": "5dfc66c6e5594a3398783d25686e391e",
+      "projectId": "P1",
+      "invalidReason": null,
+      "hasPlan": true,
+      "changeCount": 42,
+      "selectedChanges": [
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Remaining"
+          },
+          "before": {
+            "baseline": "4",
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": "4",
+            "change": {
+              "Value": "3",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        },
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Actual"
+          },
+          "before": {
+            "baseline": null,
+            "change": {
+              "Value": "5",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "7",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "before": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-13",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "before": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-13",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "before": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-05",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-14",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "before": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-06",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 161
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2026-10-14",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 163
+          }
+        }
+      ]
+    },
+    {
+      "id": "bdeadb8829ce4a019299545c0e565083",
+      "projectId": "P1",
+      "invalidReason": null,
+      "hasPlan": true,
+      "changeCount": 19,
+      "selectedChanges": [
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Remaining"
+          },
+          "before": {
+            "baseline": "4",
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": "4",
+            "change": {
+              "Value": "1",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 165
+          }
+        },
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T2",
+            "ProjectId": "P1",
+            "FieldId": "F-Actual"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": null,
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "2",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 165
+          }
+        }
+      ]
+    }
+  ],
+  "interpretation": "The final durable report stores I1 Actual 7 / Remaining 3 with actual start 2026-10-05 09:00, and I2 Actual 2 / confirmed Remaining 1 with actual start 2026-10-07 09:00. Both reports are through 2026-10-09; I2 Remaining independently retains Buffer 1?. Both tasks have Progress=1 and retain their observed current assignments. Project cutoff is 2026-10-09 18:00; Owner is 100 percent and Owner2 80 percent. The mapped Start/Finish fields are date-only projections, not minute-precision adopted schedule records.",
+  "limitations": [
+    "This after-close readback is separate from the blind evaluator UI observations and does not establish usability or human acceptance.",
+    "No intermediate task-details Cancel or paste attempt checkpoint was captured.",
+    "Exact adopted remaining-work intervals are evidenced by original screenshots 20 and 34, not independently recomputed here.",
+    "43 initial and 46 final GitHub-pending cells include inherited fixture work; neither count is a remote dispatch count.",
+    "An empty Apply journal does not independently audit network calls or remote state."
+  ],
+  "normalCloseEvidence": {
+    "path": "TestResults/issue73/blind-review/round1-weekly-d/observations/step-health.md",
+    "steps": [
+      35,
+      40
+    ],
+    "sha256": "2C22C5D1E187A5690298B8EF6DDD4CD05F1EF3248AC1E79D9B1875714D4C6535",
+    "boundary": "Evaluator recorded public window listing with no matching app after title-bar close; no new process/window query performed by this reviewer."
+  },
+  "screenshotReview": {
+    "path": "TestResults/issue73/blind-review/round1-weekly-d/observations/32-restarted-landing.png",
+    "sha256": "78902E3EF63F2CC7010EB8EEDAB30BBC4B80E5B1D7446BB3CC083A51EAC0294E",
+    "result": "Original local image visually inspected before retention: only target app landing screen, no unrelated foreground app visible.",
+    "excludedFiles": [],
+    "boundary": "The evaluator mentions an earlier occluded capture, but no separate such file exists in the completed observations directory. No original was altered or deleted."
+  }
+}

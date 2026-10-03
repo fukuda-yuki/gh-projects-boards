@@ -1,0 +1,26 @@
+{
+  "source": {
+    "path": "093-result.json",
+    "length": 297,
+    "sha256": "A2B7032CD9553EE8732AE27C473649ABA1FEAEFA52EEB8EC28E71F7679FCA519"
+  },
+  "callSource": {
+    "path": "093-call.json",
+    "length": 117,
+    "sha256": "01321ADD921E67F0FAF90ED008E30C5FD0A22D1008175A8C9E6DAFAC7808647D"
+  },
+  "call": {
+    "sequence": "093",
+    "method": "sky.list_windows",
+    "arguments": {},
+    "startedAt": "2026-10-02T20:32:48.427Z",
+    "completedAt": "2026-10-02T20:32:48.487Z",
+    "outcome": "returned"
+  },
+  "result": [],
+  "derivativeKind": "Target-only inventory projection",
+  "removedEntries": 2,
+  "removedContentClass": "Generic ChatGPT and ChatGPT Classic app identity/title only; no conversation content.",
+  "rawOriginalRetained": "../originals/093-result.json",
+  "targetPresent": false
+}

@@ -1,0 +1,118 @@
+{
+  "schema": "X-post-close-readback-v1",
+  "stage": "TitleRecovered",
+  "startedAt": "2026-10-02T22:20:40.0621657+00:00",
+  "input": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round18-publication-x",
+  "run": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf",
+  "status": "completed",
+  "passed": true,
+  "frozenReceiptSha256": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+  "candidateReceiptSha256": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+  "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+  "appSha256": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+  "launchReceiptSha256": "44B17D1A6357D05A70BA7DA5ABDA69354138B0432359EFFB84B110B805D11E0B",
+  "preparationSha256": "9F5DC70FD4B90244F72A26ACCCC57CBD7F36353B12099EC25421386A55B75058",
+  "dataFiles": [
+    {
+      "path": ".writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 112001,
+      "sha256": "9CE0FF1AB96413AD6EA5DF4406A2E370C1B4F765AB0A88F9D149D4F3688FA59E"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 111486,
+      "sha256": "5D2E6F59DEA904D47CD542E7AABD14DB216605ACE6D8F91B2FA6BF0989ADF1EF"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54036,
+      "sha256": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679"
+    }
+  ],
+  "serviceFiles": [
+    {
+      "path": "apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "calls.jsonl",
+      "length": 6751,
+      "sha256": "3156FA3674B1FF95924DEAB25C7E649B9A31E5CC663A69898F6F5B776DA060F4"
+    },
+    {
+      "path": "scenario.json",
+      "length": 104,
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8"
+    }
+  ],
+  "appExecution": "not_run",
+  "uiExecution": "not_run",
+  "endpointExecution": "not_run",
+  "ordinaryClose": {
+    "observer": "root",
+    "observedAt": "2026-10-03T07:20:13.0488545+09:00",
+    "normalCloseObserved": true,
+    "forcedTermination": false,
+    "actor": "X evaluator",
+    "rootPerformedClose": false,
+    "pid": 208620,
+    "dataRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round18-publication-x\\data",
+    "launchReceiptSha256": "44B17D1A6357D05A70BA7DA5ABDA69354138B0432359EFFB84B110B805D11E0B",
+    "observationArtifact": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\x-publication-evaluator\\actual-segment2\\close-observation.json",
+    "observationArtifactSha256": "1D560BE37B179E88212BEC9FD265AF4E052BC51C8C96C748F47B7B6519D152B1"
+  },
+  "artifacts": {
+    "preservation": {
+      "sha256": "29B4E14C042102A62E41ADFEE999ABFA5844D2E508F153415DEEE99EDB38E534",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\preservation.json"
+    },
+    "requests": {
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\originals\\gh-config\\apply-requests.jsonl"
+    },
+    "scenario": {
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\originals\\gh-config\\scenario.json"
+    },
+    "calls": {
+      "sha256": "3156FA3674B1FF95924DEAB25C7E649B9A31E5CC663A69898F6F5B776DA060F4",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\originals\\gh-config\\calls.jsonl"
+    },
+    "findings": {
+      "sha256": "0456780A5C96D5508A0D01027AF82F8EFADC393562EC592738BDDDEC67139590",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\findings.json"
+    },
+    "decodedCheckpoint": {
+      "sha256": "679D2971EDC03766B576412F41A86187ECC024DE1859BF4E93E747D1B6AF9CD8",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-x-proposal\\readback\\runs\\20261002-222040-b28ae4d0d0254cb2800dd48809b766cf\\decoded-checkpoint.json"
+    }
+  },
+  "priorReadbackSha256": "851173B69AEBBB9F0371368315926406E52F2969E957907C19F55FEAD4BD4927",
+  "checkCount": 17,
+  "originalBytesUnchanged": true,
+  "checkpointRevision": 66,
+  "checkpointVersion": 14,
+  "productionDraftStore": "LoadAsync using exact candidate Core on a second disposable copy; original evidence copies remain read-only.",
+  "finishedAt": "2026-10-02T22:20:43.0212120+00:00"
+}

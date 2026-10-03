@@ -1,0 +1,21 @@
+{
+  "at": "2026-09-27T15:21:14.6603114+00:00",
+  "preparedOnly": false,
+  "pid": 66348,
+  "resume": false,
+  "candidateReceiptOrigin": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round9-candidate-weekly\\diagnostics\\launch-ffde07379ffd4fd994cd2e04f9b1224f.json",
+  "candidateReceiptCopy": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\diagnostics\\candidate-binding-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json",
+  "candidateReceiptSha256": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+  "app": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-96673ba0d89441e6a36677ee838a2d18\\app\\GhProjectsBoards.App.exe",
+  "appSha256": "A391A0EB08BA739BD747074432DCC179A1D8CFD4EDA2B09C6C9DB3A35EAD672B",
+  "coreSha256": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+  "fakeGh": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\fake-gh\\gh.exe",
+  "fakeGhSha256": "A44487295058FB49027EF1D9DC34E2A09A403AAEF6AA5B712810191E7E7A36DA",
+  "dataRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data",
+  "ghConfig": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\gh-config",
+  "scenarioSha256": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+  "appFilesVerified": 516,
+  "fakeFilesVerified": 504,
+  "appDataFileCountBefore": 0,
+  "scope": "Isolated ordinary App with frozen fake endpoint. No seed, driver, hidden navigation or E2E run. No live GitHub or human acceptance."
+}

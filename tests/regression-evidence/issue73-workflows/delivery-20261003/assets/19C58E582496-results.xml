@@ -1,0 +1,306 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="306" result="Failed" start-time="2026-10-02T18:25:42.3231206Z" end-time="2026-10-02T18:27:10.6325976Z" duration="88.309453" total="28" initiated="28" passed="25" failed="3" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="239" random-seed="878813406">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == RangeInputRepair or cat == RangeCommands or cat == ContextRevealViewport or cat == SelectionGesture or method == ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits or method == BodyDragSelectsAndEscCancelsFillWithoutUndoingTheSource or method == FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease or method == UpwardFillUsesTheSourceBelowAndKeepsItsEarlierEditOnUndo or method == NativeTextUndoKeepsTheEarlierConfirmedEstimateAndItsPlan or method == BulkFailureShowsTheMiddleTargetAndPreservesPendingInputAndHistory" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-032537-743-a0313c50\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>RangeInputRepair</cat>
+      <cat>RangeCommands</cat>
+      <cat>ContextRevealViewport</cat>
+      <cat>SelectionGesture</cat>
+      <method>ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits</method>
+      <method>BodyDragSelectsAndEscCancelsFillWithoutUndoingTheSource</method>
+      <method>FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease</method>
+      <method>UpwardFillUsesTheSourceBelowAndKeepsItsEarlierEditOnUndo</method>
+      <method>NativeTextUndoKeepsTheEarlierConfirmedEstimateAndItsPlan</method>
+      <method>BulkFailureShowsTheMiddleTargetAndPreservesPendingInputAndHistory</method>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1383" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="306" result="Failed" site="Child" start-time="2026-10-02T18:25:42.3231206Z" end-time="2026-10-02T18:27:10.6325976Z" duration="88.309453" total="28" initiated="28" passed="25" failed="3" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="239">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="32980" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1384" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="306" result="Failed" site="Child" start-time="2026-10-02T18:25:42.3254018Z" end-time="2026-10-02T18:27:10.6325951Z" duration="88.307193" total="28" initiated="28" passed="25" failed="3" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="239">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1385" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="306" result="Failed" site="Child" start-time="2026-10-02T18:25:42.3255612Z" end-time="2026-10-02T18:27:10.6325934Z" duration="88.307032" total="28" initiated="28" passed="25" failed="3" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="239">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1386" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="306" result="Failed" site="Child" start-time="2026-10-02T18:25:42.3255724Z" end-time="2026-10-02T18:27:10.6325893Z" duration="88.307017" total="28" initiated="28" passed="25" failed="3" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="239">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1206" name="BulkEditingHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="28" result="Failed" site="Child" start-time="2026-10-02T18:25:42.3255759Z" end-time="2026-10-02T18:26:50.7867362Z" duration="68.461160" total="18" initiated="18" passed="15" failed="3" warnings="0" completed="18" skipped="0" inconclusive="0" asserts="199">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1224" name="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-10-02T18:25:42.3266219Z" end-time="2026-10-02T18:25:44.1090367Z" duration="1.782415" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="24">
+              <test-case id="1221" name="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;fill&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;fill&quot;)" methodname="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="371617655" result="Passed" start-time="2026-10-02T18:25:42.3267039Z" end-time="2026-10-02T18:25:43.0712326Z" duration="0.744569" asserts="4">
+                <output><![CDATA[Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+              </test-case>
+              <test-case id="1222" name="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;paste&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;paste&quot;)" methodname="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="4910689" result="Passed" start-time="2026-10-02T18:25:43.0720691Z" end-time="2026-10-02T18:25:43.6227657Z" duration="0.550697" asserts="8">
+                <output><![CDATA[Final selection: Renamed workflow：10行・10セル; state: ; focus: ChoiceCell
+]]></output>
+              </test-case>
+              <test-case id="1223" name="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;down&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits(&quot;down&quot;)" methodname="ActualRangeAndBulkCommandsKeepTwoIndependentUndoUnits" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="771627934" result="Passed" start-time="2026-10-02T18:25:43.6227947Z" end-time="2026-10-02T18:25:44.1084349Z" duration="0.485641" asserts="12">
+                <output><![CDATA[Final selection: Renamed workflow：10行・10セル; state: ; focus: ChoiceCell
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1226" name="BodyDragSelectsAndEscCancelsFillWithoutUndoingTheSource" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.BodyDragSelectsAndEscCancelsFillWithoutUndoingTheSource" methodname="BodyDragSelectsAndEscCancelsFillWithoutUndoingTheSource" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="693242848" result="Passed" start-time="2026-10-02T18:25:44.1091786Z" end-time="2026-10-02T18:25:44.5871289Z" duration="0.477950" asserts="10">
+              <output><![CDATA[Final selection: Renamed workflow：1行・1セル; state: フィルを取り消しました。値は変更していません。; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-case id="1225" name="BodyRangeDragCanReturnToItsPressedCellWithoutChangingWork" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.BodyRangeDragCanReturnToItsPressedCellWithoutChangingWork" methodname="BodyRangeDragCanReturnToItsPressedCellWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1881959730" result="Passed" start-time="2026-10-02T18:25:44.5871526Z" end-time="2026-10-02T18:25:44.9422243Z" duration="0.355072" asserts="5">
+              <properties>
+                <property name="Category" value="SelectionGesture" />
+              </properties>
+              <output><![CDATA[Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-case id="1239" name="BulkFailureShowsTheMiddleTargetAndPreservesPendingInputAndHistory" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.BulkFailureShowsTheMiddleTargetAndPreservesPendingInputAndHistory" methodname="BulkFailureShowsTheMiddleTargetAndPreservesPendingInputAndHistory" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="468716920" result="Passed" start-time="2026-10-02T18:25:44.9422626Z" end-time="2026-10-02T18:25:45.4630882Z" duration="0.520826" asserts="8">
+              <output><![CDATA[Final selection: Renamed workflow：10行・10セル; state: 行 5 [P1T5] / Renamed workflow [P1-status]: 未確定入力があります。セルを確定または取消してから実行してください。; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1213" name="CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-02T18:25:45.4631139Z" end-time="2026-10-02T18:26:06.6101140Z" duration="21.147000" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="34">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1211" name="CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(False)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(False)" methodname="CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1592323100" result="Passed" start-time="2026-10-02T18:25:45.4631692Z" end-time="2026-10-02T18:25:45.9427942Z" duration="0.479626" asserts="17">
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+              <test-case id="1212" name="CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(True)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(True)" methodname="CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="47719964" result="Failed" label="Error" start-time="2026-10-02T18:25:45.9428232Z" end-time="2026-10-02T18:26:06.6098666Z" duration="20.667044" asserts="17">
+                <failure>
+                  <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(Boolean reject) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 124
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                    <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(Boolean reject) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 124
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+            </test-suite>
+            <test-case id="1234" name="FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease" methodname="FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1902433763" result="Failed" label="Error" start-time="2026-10-02T18:26:06.6101485Z" end-time="2026-10-02T18:26:15.1735236Z" duration="8.563376" asserts="4">
+              <failure>
+                <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Find[T](String id, DependencyObject root)
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.<>c__DisplayClass31_0.<FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease>b__2() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 519
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 518
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+              </failure>
+              <output><![CDATA[Held fill: Renamed workflow：100行へコピー予定 · 離して確定 / Escで取消; edge=653.89996,929.87006; offset=2460/2469.5999755859375; viewport=570.4000244140625; actual=570.4000244140625; root=762.4000244140625; scale=1.25
+Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+              <assertions>
+                <assertion result="Error">
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Find[T](String id, DependencyObject root)
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.<>c__DisplayClass31_0.<FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease>b__2() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 519
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.FillAtViewportEdgeScrollsToHundredthRowAndCommitsOnlyOnRelease() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 518
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+            <test-case id="1218" name="MultiColumnRangeExplainsFillDownWithoutChangingTheSelection" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.MultiColumnRangeExplainsFillDownWithoutChangingTheSelection" methodname="MultiColumnRangeExplainsFillDownWithoutChangingTheSelection" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="900940956" result="Passed" start-time="2026-10-02T18:26:15.1735555Z" end-time="2026-10-02T18:26:18.0792311Z" duration="2.905676" asserts="13">
+              <properties>
+                <property name="Category" value="RangeCommands" />
+              </properties>
+              <output><![CDATA[Final selection: タイトル ～ Renamed workflow：3行・6セル; state: ; focus: Button
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1217" name="NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T18:26:18.0792631Z" end-time="2026-10-02T18:26:23.9374695Z" duration="5.858206" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="22">
+              <properties>
+                <property name="Category" value="RangeCommands" />
+              </properties>
+              <test-case id="1215" name="NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo(&quot;GridRangePaste&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo(&quot;GridRangePaste&quot;)" methodname="NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="845122281" result="Passed" start-time="2026-10-02T18:26:18.0792967Z" end-time="2026-10-02T18:26:21.0371658Z" duration="2.957870" asserts="11">
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+              <test-case id="1216" name="NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo(&quot;GridRangeFillDown&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo(&quot;GridRangeFillDown&quot;)" methodname="NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="754338278" result="Passed" start-time="2026-10-02T18:26:21.0371961Z" end-time="2026-10-02T18:26:23.9374252Z" duration="2.900230" asserts="11">
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1209" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-02T18:26:23.9374875Z" end-time="2026-10-02T18:26:46.4088599Z" duration="22.471373" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="40">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1207" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="2059953339" result="Passed" start-time="2026-10-02T18:26:23.9375288Z" end-time="2026-10-02T18:26:25.8605856Z" duration="1.923058" asserts="21">
+                <output><![CDATA[Focus after native menu closure: Button#GridRangeCommands
+Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+              <test-case id="1208" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="2051383635" result="Failed" label="Error" start-time="2026-10-02T18:26:25.8606137Z" end-time="2026-10-02T18:26:46.4088280Z" duration="20.548215" asserts="19">
+                <failure>
+                  <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 69
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                    <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 69
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+            </test-suite>
+            <test-case id="1214" name="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" methodname="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1133937648" result="Passed" start-time="2026-10-02T18:26:46.4088764Z" end-time="2026-10-02T18:26:49.4738024Z" duration="3.064926" asserts="7">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <output><![CDATA[Handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Hit ancestry: ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Handle press: captured=True; source=ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Root press source: ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Held: directPress=True; capturedOnPress=True; captureLost=False; captures=1; selection=Renamed workflow：10行へコピー予定 · 離して確定 / Escで取消
+Handle pointer capture lost
+Final handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-case id="1210" name="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" methodname="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1633204127" result="Passed" start-time="2026-10-02T18:26:49.4738405Z" end-time="2026-10-02T18:26:50.0518044Z" duration="0.577964" asserts="17">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: TextBox
+]]></output>
+            </test-case>
+            <test-case id="1219" name="SingleCellAndUnconfirmedNativeEditHideRangeCommandsEvenAfterToolbarFocus" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.SingleCellAndUnconfirmedNativeEditHideRangeCommandsEvenAfterToolbarFocus" methodname="SingleCellAndUnconfirmedNativeEditHideRangeCommandsEvenAfterToolbarFocus" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1411263348" result="Passed" start-time="2026-10-02T18:26:50.0518429Z" end-time="2026-10-02T18:26:50.3810091Z" duration="0.329166" asserts="11">
+              <properties>
+                <property name="Category" value="RangeCommands" />
+              </properties>
+              <output><![CDATA[Final selection: タイトル：2行・2セル; state: ; focus: TitleCell
+]]></output>
+            </test-case>
+            <test-case id="1235" name="UpwardFillUsesTheSourceBelowAndKeepsItsEarlierEditOnUndo" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.UpwardFillUsesTheSourceBelowAndKeepsItsEarlierEditOnUndo" methodname="UpwardFillUsesTheSourceBelowAndKeepsItsEarlierEditOnUndo" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="673329800" result="Passed" start-time="2026-10-02T18:26:50.3810370Z" end-time="2026-10-02T18:26:50.7866972Z" duration="0.405660" asserts="4">
+              <output><![CDATA[Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1292" name="ContextRevealHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-10-02T18:26:50.7867513Z" end-time="2026-10-02T18:27:09.9651388Z" duration="19.178387" total="9" initiated="9" passed="9" failed="0" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="26">
+            <properties>
+              <property name="ParallelScope" value="None" />
+              <property name="Category" value="ContextRevealViewport" />
+            </properties>
+            <test-case id="1298" name="ArrowIntoPendingTitleAtViewportBottomKeepsTheWholeInputVisibleWithoutChangingWork" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ArrowIntoPendingTitleAtViewportBottomKeepsTheWholeInputVisibleWithoutChangingWork" methodname="ArrowIntoPendingTitleAtViewportBottomKeepsTheWholeInputVisibleWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="2125727726" result="Passed" start-time="2026-10-02T18:26:50.7871755Z" end-time="2026-10-02T18:26:52.0606539Z" duration="1.273479" asserts="2">
+              <properties>
+                <property name="Category" value="PendingNavigationViewport" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1303" name="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-10-02T18:26:52.0606891Z" end-time="2026-10-02T18:26:58.4634762Z" duration="6.402787" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+              <test-case id="1299" name="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(False,False)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(False,False)" methodname="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="1200950232" result="Passed" start-time="2026-10-02T18:26:52.0607328Z" end-time="2026-10-02T18:26:53.9261151Z" duration="1.865383" asserts="2" />
+              <test-case id="1300" name="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(True,False)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(True,False)" methodname="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="679836591" result="Passed" start-time="2026-10-02T18:26:53.9261417Z" end-time="2026-10-02T18:26:55.3292067Z" duration="1.403065" asserts="2" />
+              <test-case id="1301" name="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(False,True)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(False,True)" methodname="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="1019472601" result="Passed" start-time="2026-10-02T18:26:55.3292334Z" end-time="2026-10-02T18:26:56.6939531Z" duration="1.364720" asserts="2" />
+              <test-case id="1302" name="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(True,True)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.ContextJumpRevealsTheWholePendingTargetWithoutChangingWork(True,True)" methodname="ContextJumpRevealsTheWholePendingTargetWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="866734820" result="Passed" start-time="2026-10-02T18:26:56.6939801Z" end-time="2026-10-02T18:26:58.4634457Z" duration="1.769466" asserts="2" />
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1297" name="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-10-02T18:26:58.4634890Z" end-time="2026-10-02T18:27:09.9651226Z" duration="11.501634" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="16">
+              <properties>
+                <property name="Category" value="ContextFocus" />
+              </properties>
+              <test-case id="1293" name="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;jump&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;jump&quot;)" methodname="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="1684062110" result="Passed" start-time="2026-10-02T18:26:58.4635148Z" end-time="2026-10-02T18:27:01.1964555Z" duration="2.732941" asserts="2" />
+              <test-case id="1294" name="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;pointer&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;pointer&quot;)" methodname="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="270835377" result="Passed" start-time="2026-10-02T18:27:01.1964812Z" end-time="2026-10-02T18:27:04.0302221Z" duration="2.833741" asserts="5" />
+              <test-case id="1295" name="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;shift&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;shift&quot;)" methodname="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="1163410114" result="Passed" start-time="2026-10-02T18:27:04.0302493Z" end-time="2026-10-02T18:27:07.2332077Z" duration="3.202964" asserts="7" />
+              <test-case id="1296" name="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;uia&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests.FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell(&quot;uia&quot;)" methodname="FilteredPendingRecoveryAndFollowingTitleSelectionKeepNativeInputOnTheVisibleCell" classname="GhProjectsBoards.UiIntegration.Tests.ContextRevealHostedTests" runstate="Runnable" seed="151912734" result="Passed" start-time="2026-10-02T18:27:07.2332654Z" end-time="2026-10-02T18:27:09.9650717Z" duration="2.731807" asserts="2" />
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1124" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="72" result="Passed" start-time="2026-10-02T18:27:09.9651540Z" end-time="2026-10-02T18:27:10.6325820Z" duration="0.667428" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="14">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1129" name="NativeTextUndoKeepsTheEarlierConfirmedEstimateAndItsPlan" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeTextUndoKeepsTheEarlierConfirmedEstimateAndItsPlan" methodname="NativeTextUndoKeepsTheEarlierConfirmedEstimateAndItsPlan" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="84811026" result="Passed" start-time="2026-10-02T18:27:09.9652129Z" end-time="2026-10-02T18:27:10.6325422Z" duration="0.667330" asserts="14">
+              <properties>
+                <property name="Category" value="ConfirmedEditUndo" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

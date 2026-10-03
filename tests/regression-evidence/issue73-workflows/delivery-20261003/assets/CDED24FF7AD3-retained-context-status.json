@@ -1,0 +1,29 @@
+{
+  "checkedAtUtc": "2026-10-02T21:27:03.257073+00:00",
+  "scope": "Existing ledger metadata only; no current W/X folder or evaluator data read",
+  "workingLedgerSha256": "05DE6C04DCA1AEFA7420349FDCE14805A9CBA18461ABD9B44315781D0259A771",
+  "priorManifests": [
+    {
+      "path": "manifest.json",
+      "sha256": "925D4CCE4C912E3205D4B92282012FBBCAD0695673B660D3EB020E3AFEE4E6A7"
+    },
+    {
+      "path": "manifest-additions-20260927.json",
+      "sha256": "AD5E00B6EA3A8045D86B4773C4A59E3A5D05AC4E5D1A2CEBD898B2E832F7149F"
+    },
+    {
+      "path": "manifest-additions-daily-final-20260927.json",
+      "sha256": "BD7E63C0B9788275DEC885F0F865D311EDC020222E4F3913543F659C43855583"
+    },
+    {
+      "path": "manifest-additions-round5-20260927.json",
+      "sha256": "9F0B15D469053A01ACA18B03DFC334361FADD670C550D41037DDD61F746767FF"
+    }
+  ],
+  "retainedEntriesInspected": 16528,
+  "WOrXRetainedContextEntries": [],
+  "matches": 0,
+  "selectionRule": "W/X-named path segments or named suffixes and round17/round18 across all retained records",
+  "falsePositiveExcluded": "checks/publication-v-fixture/evaluator-workspace.txt belongs to V, not W",
+  "newWOrXArtifactsSelected": false
+}

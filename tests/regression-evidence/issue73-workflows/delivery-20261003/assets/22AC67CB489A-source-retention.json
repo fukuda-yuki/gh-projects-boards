@@ -1,0 +1,1416 @@
+{
+  "at": "2026-09-27T09:11:49.0671153+00:00",
+  "entries": [
+    {
+      "path": "GhProjectsBoards.sln",
+      "expected": "8313C03A5E5F021EB3249E5EDF7D185E6F589FDA2EE05103A91340FBEA47AC28",
+      "observed": "8313C03A5E5F021EB3249E5EDF7D185E6F589FDA2EE05103A91340FBEA47AC28",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ActualCellEditor.cs",
+      "expected": "4433C757D3E00E1F635FA0D9DB2124CA2288235960FE191818D585D710E0CED2",
+      "observed": "4433C757D3E00E1F635FA0D9DB2124CA2288235960FE191818D585D710E0CED2",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/app.manifest",
+      "expected": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D",
+      "observed": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/App.xaml",
+      "expected": "FBECF6C41E4B78FA46DD9A69AC04CBFC015B52ACE3B3331F4E0EDEE244828EC2",
+      "observed": "FBECF6C41E4B78FA46DD9A69AC04CBFC015B52ACE3B3331F4E0EDEE244828EC2",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/App.xaml.cs",
+      "expected": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721",
+      "observed": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ApplyConfirmationTable.xaml",
+      "expected": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8",
+      "observed": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ApplyConfirmationTable.xaml.cs",
+      "expected": "E7E51EA14CD878E65F2DDA565C719DF55590C88D43028A0EA3E1371A0B2555F6",
+      "observed": "E7E51EA14CD878E65F2DDA565C719DF55590C88D43028A0EA3E1371A0B2555F6",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ColumnSettings.cs",
+      "expected": "8AF3DFE3F25A8C5B0AA8BF67E89A4FA12445FF3247ABB2411D7B71E6A6A3C784",
+      "observed": "8AF3DFE3F25A8C5B0AA8BF67E89A4FA12445FF3247ABB2411D7B71E6A6A3C784",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConflictComparison.cs",
+      "expected": "61F35E652127797CE76676707D429BD32AAD346695D96E17EFCCB29AB9667044",
+      "observed": "61F35E652127797CE76676707D429BD32AAD346695D96E17EFCCB29AB9667044",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConnectionPanel.xaml",
+      "expected": "48527B3FFFFA5C9A88749C81983A22809510C96CDF66E81B434346079A559C27",
+      "observed": "48527B3FFFFA5C9A88749C81983A22809510C96CDF66E81B434346079A559C27",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConnectionPanel.xaml.cs",
+      "expected": "79B05CEF02C5FBC7709FFD7EA415E49CAB8AD2AE28819E1D82A7CD5D27AF13A5",
+      "observed": "79B05CEF02C5FBC7709FFD7EA415E49CAB8AD2AE28819E1D82A7CD5D27AF13A5",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.ApplyResults.cs",
+      "expected": "005A919A6306A06EA75CA7356143684CDAC95F2C09C401DD9F4C5FB228C57486",
+      "observed": "005A919A6306A06EA75CA7356143684CDAC95F2C09C401DD9F4C5FB228C57486",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.cs",
+      "expected": "5BEB18E1C6D01BE04695EEAF6CB825B6AA7D69F7270DBFF94C152B9F819017EB",
+      "observed": "5BEB18E1C6D01BE04695EEAF6CB825B6AA7D69F7270DBFF94C152B9F819017EB",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "expected": "A824905208FA5987B4CA45F2E63FA467639B40BA91E1D0E70FCAE0D6BE6A9208",
+      "observed": "A824905208FA5987B4CA45F2E63FA467639B40BA91E1D0E70FCAE0D6BE6A9208",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Recycling.cs",
+      "expected": "2CA5FC5B965178E2B25DADE3C78F376CB0FFE801C4E012FA406883C8831F5FC5",
+      "observed": "2CA5FC5B965178E2B25DADE3C78F376CB0FFE801C4E012FA406883C8831F5FC5",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Summary.cs",
+      "expected": "3DC64776A028C9518114E7953B5121D17E0E8F455C9BF790E0CF0302792B4A35",
+      "observed": "3DC64776A028C9518114E7953B5121D17E0E8F455C9BF790E0CF0302792B4A35",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/GanttView.cs",
+      "expected": "75F24441F5A98377F70F5F051307A2CE02F8D33579F476E275FDD2DEFA9A19FF",
+      "observed": "75F24441F5A98377F70F5F051307A2CE02F8D33579F476E275FDD2DEFA9A19FF",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/GhProjectsBoards.App.csproj",
+      "expected": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05",
+      "observed": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/InputCheckWindow.cs",
+      "expected": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D",
+      "observed": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MainWindow.xaml",
+      "expected": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042",
+      "observed": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MainWindow.xaml.cs",
+      "expected": "218A2DB0447A59D18DCC45693063FB39BDC4E57D241F02CD68DDF196FFC52AF6",
+      "observed": "218A2DB0447A59D18DCC45693063FB39BDC4E57D241F02CD68DDF196FFC52AF6",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MinuteEditor.cs",
+      "expected": "6AC302B90EFD15EDA098607D30EE965CECB6AE9E469425F5CD3BA6958B6A5299",
+      "observed": "6AC302B90EFD15EDA098607D30EE965CECB6AE9E469425F5CD3BA6958B6A5299",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningBatch.cs",
+      "expected": "9EEE397AD3F798F83E045E5DA1D2DB8CA556EAA7CA1AD460E9151FD73A817A94",
+      "observed": "9EEE397AD3F798F83E045E5DA1D2DB8CA556EAA7CA1AD460E9151FD73A817A94",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningEditor.cs",
+      "expected": "B7EDD150D5EA8C377B539C644F2263D74BE22C447074B8642325F632A9BA9984",
+      "observed": "B7EDD150D5EA8C377B539C644F2263D74BE22C447074B8642325F632A9BA9984",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningSettings.cs",
+      "expected": "AB0FE5B85CCA385D8F02765D4930A62D2E5A39421EE385CE7D14B6B88749EC21",
+      "observed": "AB0FE5B85CCA385D8F02765D4930A62D2E5A39421EE385CE7D14B6B88749EC21",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningSettingsPage.cs",
+      "expected": "8189CA28532FD89FA58476C9FB38A4877CD546468E5D91CDB61622C94D8ABBE1",
+      "observed": "8189CA28532FD89FA58476C9FB38A4877CD546468E5D91CDB61622C94D8ABBE1",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningTaskDetails.cs",
+      "expected": "B5386696650142EBB9793A0E7753808F1A4C178AECC0C24F91F3BED2DA5EE0BD",
+      "observed": "B5386696650142EBB9793A0E7753808F1A4C178AECC0C24F91F3BED2DA5EE0BD",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+      "expected": "B5D960E845B3D7AD2F35315AEE9E61DF7601C7D56A05188E3E3E25E737EA5114",
+      "observed": "B5D960E845B3D7AD2F35315AEE9E61DF7601C7D56A05188E3E3E25E737EA5114",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyDialogs.cs",
+      "expected": "16AAB0D8A2056D1A9EB551364BFB673C3DEFC59EABA53614439BFF6E10988A46",
+      "observed": "16AAB0D8A2056D1A9EB551364BFB673C3DEFC59EABA53614439BFF6E10988A46",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyResults.cs",
+      "expected": "3F2B51DEB358378324B380457C52D95BDDBD905954D344D1D9F0B67FFCCC99D6",
+      "observed": "3F2B51DEB358378324B380457C52D95BDDBD905954D344D1D9F0B67FFCCC99D6",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationDiagnostics.cs",
+      "expected": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837",
+      "observed": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationPanel.xaml",
+      "expected": "66B1B2D46D74F7A7E409087B9ED7509DAD23B55495FD47C23C3D74C957937A1E",
+      "observed": "66B1B2D46D74F7A7E409087B9ED7509DAD23B55495FD47C23C3D74C957937A1E",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      "expected": "3843D7875475DDA7A06B95C74E225327FF08E7D1AA36D87ED6D09217AEB24521",
+      "observed": "3843D7875475DDA7A06B95C74E225327FF08E7D1AA36D87ED6D09217AEB24521",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RowViewSettings.cs",
+      "expected": "CE98BF4D80E3E42F137AC4E8B82B22BBB8E46CDBC41C61A7EE2DB7C3232011A4",
+      "observed": "CE98BF4D80E3E42F137AC4E8B82B22BBB8E46CDBC41C61A7EE2DB7C3232011A4",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SchedulingEditor.cs",
+      "expected": "8F570C8C62112BD4E0E24E767ADD3DF3FA67BB0CE503EE3F338114ED92EFDFA1",
+      "observed": "8F570C8C62112BD4E0E24E767ADD3DF3FA67BB0CE503EE3F338114ED92EFDFA1",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetDiagnostics.cs",
+      "expected": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638",
+      "observed": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetInteraction.cs",
+      "expected": "595CABF6CD72D761EFDA33EF7950DAE8C84AF4E933ACDA3028CC70AA225E653E",
+      "observed": "595CABF6CD72D761EFDA33EF7950DAE8C84AF4E933ACDA3028CC70AA225E653E",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetScrolling.cs",
+      "expected": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD",
+      "observed": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetViewCommands.cs",
+      "expected": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A",
+      "observed": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SummaryView.cs",
+      "expected": "6B581FD8764DDA9733558C6F33D964F8CC0033EE6F5C7FF695B0DE360C77BF28",
+      "observed": "6B581FD8764DDA9733558C6F33D964F8CC0033EE6F5C7FF695B0DE360C77BF28",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/ConnectionViewModel.cs",
+      "expected": "CC5AA6DECD095BC2D3C13FD6B770444B04CA1C3157DB2DF22986D62857470C21",
+      "observed": "CC5AA6DECD095BC2D3C13FD6B770444B04CA1C3157DB2DF22986D62857470C21",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GhProjectsBoards.Core.csproj",
+      "expected": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC",
+      "observed": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhApi.cs",
+      "expected": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78",
+      "observed": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhConnection.cs",
+      "expected": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366",
+      "observed": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhProcess.cs",
+      "expected": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418",
+      "observed": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GitHubAddress.cs",
+      "expected": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966",
+      "observed": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/TargetDiagnostics.cs",
+      "expected": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605",
+      "observed": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json",
+      "expected": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361",
+      "observed": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyCandidates.cs",
+      "expected": "6AB02BB9C217A04D89C94BB37365A445CE67F5A1A64AD5391460BF33AC321A92",
+      "observed": "6AB02BB9C217A04D89C94BB37365A445CE67F5A1A64AD5391460BF33AC321A92",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyConfirmationPresentation.cs",
+      "expected": "4109562C3B4B2B0DA59FBBF76D528D4E1B7110B0132EDCE9FA4C1303B0D4D36E",
+      "observed": "4109562C3B4B2B0DA59FBBF76D528D4E1B7110B0132EDCE9FA4C1303B0D4D36E",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyExecutor.cs",
+      "expected": "F41D3B85DA90A9B7532751DBC91A384C1B0852611D1E987557F08F1D81E04B28",
+      "observed": "F41D3B85DA90A9B7532751DBC91A384C1B0852611D1E987557F08F1D81E04B28",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyJournal.cs",
+      "expected": "E5FE64CB73CF355AAC2B1041A4F57DB802A27AEDF99873662E6F874D37F89CBC",
+      "observed": "E5FE64CB73CF355AAC2B1041A4F57DB802A27AEDF99873662E6F874D37F89CBC",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyRemote.cs",
+      "expected": "12BB528A0A3CD0A432D968D8FD0ADC5B34647D624A107144ECCBE4EBD9CFCCD2",
+      "observed": "12BB528A0A3CD0A432D968D8FD0ADC5B34647D624A107144ECCBE4EBD9CFCCD2",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyResultsPresentation.cs",
+      "expected": "002ADE7BA0DED85F621286F8F02267622BB019B1EAFE312331DC11452ADA9B14",
+      "observed": "002ADE7BA0DED85F621286F8F02267622BB019B1EAFE312331DC11452ADA9B14",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/BulkEditing.cs",
+      "expected": "DA9B7E008801E4D99DB4CF98C93D559C9AC678B45410E6D41310E07E7F72BB4A",
+      "observed": "DA9B7E008801E4D99DB4CF98C93D559C9AC678B45410E6D41310E07E7F72BB4A",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationExecutor.cs",
+      "expected": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357",
+      "observed": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationJournal.cs",
+      "expected": "E7E7C42255C5276AFE46BCE480876D2418A94F27832CEE11FADB86B405FDA38E",
+      "observed": "E7E7C42255C5276AFE46BCE480876D2418A94F27832CEE11FADB86B405FDA38E",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationPlanning.cs",
+      "expected": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B",
+      "observed": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationRemote.cs",
+      "expected": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4",
+      "observed": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/DraftSnapshot.cs",
+      "expected": "5441F9AC013F71CB359F8E132DDCE44DEF863D963401B480B7C4CC0FF87429EE",
+      "observed": "5441F9AC013F71CB359F8E132DDCE44DEF863D963401B480B7C4CC0FF87429EE",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/DraftStore.cs",
+      "expected": "4A1D362320D1E0A9879D9D235DDB24E4F59EB9AF6532159598D70267B6A87078",
+      "observed": "4A1D362320D1E0A9879D9D235DDB24E4F59EB9AF6532159598D70267B6A87078",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+      "expected": "09B63987E6388C9531A63015685100E7CBE39828960D49F32FE9D335EB99D10F",
+      "observed": "09B63987E6388C9531A63015685100E7CBE39828960D49F32FE9D335EB99D10F",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "expected": "C2D7668BB28C15E58E36CB3A6D979C76A56B075CEA611BD53D727CA0DAB34C4D",
+      "observed": "C2D7668BB28C15E58E36CB3A6D979C76A56B075CEA611BD53D727CA0DAB34C4D",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/LocalRows.cs",
+      "expected": "856A6C82ADBA72730F3F8EA07929A5EE8E5D9C9F3A73F60CE2381CD210947762",
+      "observed": "856A6C82ADBA72730F3F8EA07929A5EE8E5D9C9F3A73F60CE2381CD210947762",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PerformanceTrace.cs",
+      "expected": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14",
+      "observed": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningAssignment.cs",
+      "expected": "EC474D3C3ACED0ABFE89839DAAA48C06FA67D02499F8E95B24D2822988C5AF33",
+      "observed": "EC474D3C3ACED0ABFE89839DAAA48C06FA67D02499F8E95B24D2822988C5AF33",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningCellInput.cs",
+      "expected": "685C1FE43EA625BA7DCCB5F93C44743558171060ACB455028CF98A24526761CB",
+      "observed": "685C1FE43EA625BA7DCCB5F93C44743558171060ACB455028CF98A24526761CB",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningContract.cs",
+      "expected": "219DA6D79C6136EE75E811A5FCBA7BCE05EDF731F13FAE4788E9A7958B40F2B9",
+      "observed": "219DA6D79C6136EE75E811A5FCBA7BCE05EDF731F13FAE4788E9A7958B40F2B9",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningDependencies.cs",
+      "expected": "F26C61EEBA277E2E254BA58F976F0470FD5905895BED19CCFF5A26A785A9A86E",
+      "observed": "F26C61EEBA277E2E254BA58F976F0470FD5905895BED19CCFF5A26A785A9A86E",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningEngine.cs",
+      "expected": "ECFA28F74834F5FF6F2CE9F87711221B4853998830AADF59ABD564D472F6DCD1",
+      "observed": "ECFA28F74834F5FF6F2CE9F87711221B4853998830AADF59ABD564D472F6DCD1",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningReconciliation.cs",
+      "expected": "ACD959FA64E62E803A6707C810BD9B863035FE64D5A4D3BF35EA11364AD135FA",
+      "observed": "ACD959FA64E62E803A6707C810BD9B863035FE64D5A4D3BF35EA11364AD135FA",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningScalars.cs",
+      "expected": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611",
+      "observed": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningValidation.cs",
+      "expected": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED",
+      "observed": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+      "expected": "95D668A19955914D2B606BAE22F042B14AC812A7ADC2674B6933EA4DE0ADB7C9",
+      "observed": "95D668A19955914D2B606BAE22F042B14AC812A7ADC2674B6933EA4DE0ADB7C9",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectColumns.cs",
+      "expected": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228",
+      "observed": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectDiscovery.cs",
+      "expected": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557",
+      "observed": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectIssueIdentity.cs",
+      "expected": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2",
+      "observed": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectQueries.cs",
+      "expected": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21",
+      "observed": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectReader.cs",
+      "expected": "4D87A2D862CC9EF5B2B22F8FEDBDCBBE11D22903E848F5D120B79A6469424604",
+      "observed": "4D87A2D862CC9EF5B2B22F8FEDBDCBBE11D22903E848F5D120B79A6469424604",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectReadModel.cs",
+      "expected": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B",
+      "observed": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectRowViews.cs",
+      "expected": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04",
+      "observed": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/Reconciliation.cs",
+      "expected": "36FE121B354DB205C445972B12CD5D62A1607C9B2E38DF7158316EB1E743677D",
+      "observed": "36FE121B354DB205C445972B12CD5D62A1607C9B2E38DF7158316EB1E743677D",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationApply.cs",
+      "expected": "CA9653C901A937FD737EA614B3D9C5EE431262D32B96EAC57741AD1AD5F2B0CE",
+      "observed": "CA9653C901A937FD737EA614B3D9C5EE431262D32B96EAC57741AD1AD5F2B0CE",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationCreation.cs",
+      "expected": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F",
+      "observed": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationDiagnostics.cs",
+      "expected": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0",
+      "observed": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationStore.cs",
+      "expected": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42",
+      "observed": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationWorkspace.cs",
+      "expected": "12477F62DA8A100AAC018E0CF7E5C74B11F96DB6743C91A02258AD8905FF29EE",
+      "observed": "12477F62DA8A100AAC018E0CF7E5C74B11F96DB6743C91A02258AD8905FF29EE",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/SummaryContract.cs",
+      "expected": "63E57146A1D6B24BD5E3E4D24C69F766F8A505476C7152D5AA1355691483707C",
+      "observed": "63E57146A1D6B24BD5E3E4D24C69F766F8A505476C7152D5AA1355691483707C",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/SummaryProjection.cs",
+      "expected": "9D82122F8834436CA8B9BB9CD0A37614F2B536AF9567360E4B453D809A3C1EC3",
+      "observed": "9D82122F8834436CA8B9BB9CD0A37614F2B536AF9567360E4B453D809A3C1EC3",
+      "retained": true
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/UndoHistory.cs",
+      "expected": "0123DBF5759B0319F0418067DA0BEDA9D49D9ADE0B62FDB85266F4C0CF3825CC",
+      "observed": "0123DBF5759B0319F0418067DA0BEDA9D49D9ADE0B62FDB85266F4C0CF3825CC",
+      "retained": true
+    },
+    {
+      "path": "tests/Directory.Build.props",
+      "expected": "7105E5D4CF9C7E9853E04750CBF9E2248F0EC82E3135146C816953E7A2CF75B0",
+      "observed": "7105E5D4CF9C7E9853E04750CBF9E2248F0EC82E3135146C816953E7A2CF75B0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ApplyInformationTests.cs",
+      "expected": "70C7960394CEBF39F4832E14C359AD094E53436FC94CD18DDF617A5FB68FED6F",
+      "observed": "70C7960394CEBF39F4832E14C359AD094E53436FC94CD18DDF617A5FB68FED6F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ApplyTests.cs",
+      "expected": "1F621656F5E56CCF84FD2CE50956D1101F9C1A6ABD8D39AA82DA2EAE50D33F22",
+      "observed": "1F621656F5E56CCF84FD2CE50956D1101F9C1A6ABD8D39AA82DA2EAE50D33F22",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/BulkEditingJourney.cs",
+      "expected": "CFF9F3CE4D5E3723F1366E2526C1DA027B41A0E682782DAD4AEF16ED7CC6DBD0",
+      "observed": "CFF9F3CE4D5E3723F1366E2526C1DA027B41A0E682782DAD4AEF16ED7CC6DBD0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/BulkPerformanceTests.cs",
+      "expected": "4973EB3056617AC4E8858576EB7A3E2B1C0C9FA616246A8D8FA9C65E13F3BD4B",
+      "observed": "4973EB3056617AC4E8858576EB7A3E2B1C0C9FA616246A8D8FA9C65E13F3BD4B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ColumnTests.cs",
+      "expected": "A73A00F6BC32EB1BFB8DAFD0B6CBCE6343BFB044C81DF3A9B0C8EF35DFE72A00",
+      "observed": "A73A00F6BC32EB1BFB8DAFD0B6CBCE6343BFB044C81DF3A9B0C8EF35DFE72A00",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ConnectionTests.cs",
+      "expected": "CA0EA550A94F1EB15A7E9666854967464AFE8FB67AE6F7A5F2D29EE390F05C23",
+      "observed": "CA0EA550A94F1EB15A7E9666854967464AFE8FB67AE6F7A5F2D29EE390F05C23",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/CreationTests.cs",
+      "expected": "3A97A4769EA53FC60F349A5C6592334A2325F9EB06F7F8D4573CCF222439AE93",
+      "observed": "3A97A4769EA53FC60F349A5C6592334A2325F9EB06F7F8D4573CCF222439AE93",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/DesktopDpiScope.cs",
+      "expected": "73755D531F0F4B7005474EB99D4F1337878B39260CBAECC8BBD53EC2CFDF563E",
+      "observed": "73755D531F0F4B7005474EB99D4F1337878B39260CBAECC8BBD53EC2CFDF563E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/DesktopFrameObserver.cs",
+      "expected": "7CF4CEC3EBAE1B2B2A27BB886E8390F1893BE3C7CB01FC50304A250B6892D76D",
+      "observed": "7CF4CEC3EBAE1B2B2A27BB886E8390F1893BE3C7CB01FC50304A250B6892D76D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/EditingGridTests.cs",
+      "expected": "B0A8F6032F39813259CB1B95C66F2F9179E1CDDC7451767C71F02D30D6FBB854",
+      "observed": "B0A8F6032F39813259CB1B95C66F2F9179E1CDDC7451767C71F02D30D6FBB854",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "expected": "4167444CC9273CDC177B7719A4919B2901F34C59B86CE4D29EED837CEE4A2FFF",
+      "observed": "4167444CC9273CDC177B7719A4919B2901F34C59B86CE4D29EED837CEE4A2FFF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+      "expected": "0AA49191AD55188ABDE11AE92C0BE72321AC9F3EE58080E43D7CBFDAAC8C61D2",
+      "observed": "0AA49191AD55188ABDE11AE92C0BE72321AC9F3EE58080E43D7CBFDAAC8C61D2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveApplyTests.cs",
+      "expected": "A6E06204877086A67BD2327B029988A9AE99A5572753B34A461AFEC237D61182",
+      "observed": "A6E06204877086A67BD2327B029988A9AE99A5572753B34A461AFEC237D61182",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveConnectionTests.cs",
+      "expected": "68C66F8299E25BE3543B34F3C0EE836CCEE91B6FF374A7722A4D441EEEA4A422",
+      "observed": "68C66F8299E25BE3543B34F3C0EE836CCEE91B6FF374A7722A4D441EEEA4A422",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveCreationTests.cs",
+      "expected": "F0DF24AC9761306E2EC75E95CBF1725FFC4CE8F8B8D4D5CDAA53EA3E2F56FBF9",
+      "observed": "F0DF24AC9761306E2EC75E95CBF1725FFC4CE8F8B8D4D5CDAA53EA3E2F56FBF9",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LocalRowTests.cs",
+      "expected": "2A61616BCB897B23F30DEE19248CFD2CBC7BC25B3639BF87498E29859DC7F0C8",
+      "observed": "2A61616BCB897B23F30DEE19248CFD2CBC7BC25B3639BF87498E29859DC7F0C8",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs",
+      "expected": "5CA8F8E19D37EE1883900C7B233E586AB741F3693974917C0E1F3FA94C489E7A",
+      "observed": "5CA8F8E19D37EE1883900C7B233E586AB741F3693974917C0E1F3FA94C489E7A",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/NativeClipboardScope.cs",
+      "expected": "F7B9F09818B9016A6B3E94CED2B87DBA5693D3FA4637F74C4F693D2ED83BCA7C",
+      "observed": "F7B9F09818B9016A6B3E94CED2B87DBA5693D3FA4637F74C4F693D2ED83BCA7C",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/NativePointer.cs",
+      "expected": "3FD3905A7156F789493C7B14AF1C86ADB7878F7FA15E56344C7FAC6DDE39F3C6",
+      "observed": "3FD3905A7156F789493C7B14AF1C86ADB7878F7FA15E56344C7FAC6DDE39F3C6",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PerformanceTests.cs",
+      "expected": "21B3828233F607465B289549A6A1DD4F2DF1F2D996A9EE13524B1D48645705F4",
+      "observed": "21B3828233F607465B289549A6A1DD4F2DF1F2D996A9EE13524B1D48645705F4",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      "expected": "150BC5E111E63E391BE5B2C9D0119EA15CE2D12B4AA048EF42D6AE95264FDAAA",
+      "observed": "150BC5E111E63E391BE5B2C9D0119EA15CE2D12B4AA048EF42D6AE95264FDAAA",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PlanningPixelTests.cs",
+      "expected": "F688472E71F3C092275EC4519826AFFAF98469C5E145E891E088B933381FB1A6",
+      "observed": "F688472E71F3C092275EC4519826AFFAF98469C5E145E891E088B933381FB1A6",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ReadyInputTests.cs",
+      "expected": "6D85CACDF780A95D60822C1217EB881A69E1C32E13014EDD629FAADB1945D685",
+      "observed": "6D85CACDF780A95D60822C1217EB881A69E1C32E13014EDD629FAADB1945D685",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RecycledSheetGateTests.cs",
+      "expected": "6866A1BD7196BD457AD3B07C42CDA6D747309308B6505529E8E558939C0C21C7",
+      "observed": "6866A1BD7196BD457AD3B07C42CDA6D747309308B6505529E8E558939C0C21C7",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RefreshTests.cs",
+      "expected": "4344897F445E844C06B2756A058C31E994596B8FE01FBAEDF61CE6037F4BA274",
+      "observed": "4344897F445E844C06B2756A058C31E994596B8FE01FBAEDF61CE6037F4BA274",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RegistrationTests.cs",
+      "expected": "AB413E04A93A560D0A500805D97220E37F19AC7ACE014A92D1DA8C4FD2B57223",
+      "observed": "AB413E04A93A560D0A500805D97220E37F19AC7ACE014A92D1DA8C4FD2B57223",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RowViewTests.cs",
+      "expected": "86663659F1913938B9C8C8AA75E33ED0641DD1FB60549E7D6562C5197A61535F",
+      "observed": "86663659F1913938B9C8C8AA75E33ED0641DD1FB60549E7D6562C5197A61535F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SmokeTests.cs",
+      "expected": "A0B74905E71D4DB6745D0D4C0B76B5A3AE67E0E55CD6C2F85EE7919499DC88FB",
+      "observed": "A0B74905E71D4DB6745D0D4C0B76B5A3AE67E0E55CD6C2F85EE7919499DC88FB",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SummaryJourneyTests.cs",
+      "expected": "17BF1F355E100A870C30F7BFBE89E3D0DE12EA8A499B9F56CEB755DCA7FAC225",
+      "observed": "17BF1F355E100A870C30F7BFBE89E3D0DE12EA8A499B9F56CEB755DCA7FAC225",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SustainedInputDiagnosticTests.cs",
+      "expected": "CA6ED36056AFE18089F93CE94325F4CFBA0CC36257285E31E7DF028D724A5A10",
+      "observed": "CA6ED36056AFE18089F93CE94325F4CFBA0CC36257285E31E7DF028D724A5A10",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/TimestampedScreenCopy.cs",
+      "expected": "D5FABB734D01EE8B0B29428CBAD9698F9BD1E7145F7C02E2668F4C69B783C2D6",
+      "observed": "D5FABB734D01EE8B0B29428CBAD9698F9BD1E7145F7C02E2668F4C69B783C2D6",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/TitleIdentityTests.cs",
+      "expected": "21F5A00536B671F70AB2EE31C45DC69F9E1E7EB0C085B5B72621E20A0F1A7BC9",
+      "observed": "21F5A00536B671F70AB2EE31C45DC69F9E1E7EB0C085B5B72621E20A0F1A7BC9",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WinUiProcess.cs",
+      "expected": "210F07F7D2EAAD53BED96DD4A9D4786523DB44F232CC63902342DBF9699EF7D0",
+      "observed": "210F07F7D2EAAD53BED96DD4A9D4786523DB44F232CC63902342DBF9699EF7D0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WorkspaceSessionTests.cs",
+      "expected": "D060D7066927739E4E984643CE9789E79CCF864116B29F7430C559364FDB502C",
+      "observed": "D060D7066927739E4E984643CE9789E79CCF864116B29F7430C559364FDB502C",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WorkspaceUi.cs",
+      "expected": "AF458404682B25112C20845F499A0E2C4D898D3CD56C92C95619254E836F437E",
+      "observed": "AF458404682B25112C20845F499A0E2C4D898D3CD56C92C95619254E836F437E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyConfirmationTests.cs",
+      "expected": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E",
+      "observed": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyInformationTests.cs",
+      "expected": "08F2D201376D0E092DCCD89F8315FE2366975F136434277292147D8BC893E76F",
+      "observed": "08F2D201376D0E092DCCD89F8315FE2366975F136434277292147D8BC893E76F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyObservationTests.cs",
+      "expected": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11",
+      "observed": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyRecoveryTests.cs",
+      "expected": "CC9523AAAF2DB16E685B8D1B9B1A9F975E875AB3CC6E9519AAA50EB0DA93E1A8",
+      "observed": "CC9523AAAF2DB16E685B8D1B9B1A9F975E875AB3CC6E9519AAA50EB0DA93E1A8",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyResultsPresentationTests.cs",
+      "expected": "6F236407DBCBEB01471F372D707968E29B19F003F0A11146D5A788D1383A6437",
+      "observed": "6F236407DBCBEB01471F372D707968E29B19F003F0A11146D5A788D1383A6437",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyTests.cs",
+      "expected": "F6488D97BF44294F114125B72911F14108DC181DCB444823C22FBA0D684D02B3",
+      "observed": "F6488D97BF44294F114125B72911F14108DC181DCB444823C22FBA0D684D02B3",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/BulkEditingTests.cs",
+      "expected": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003",
+      "observed": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ColumnTests.cs",
+      "expected": "EF82ED97B877DC460EE15F19ACC64D1826F43E3E744ED30A546905BA4C468AD5",
+      "observed": "EF82ED97B877DC460EE15F19ACC64D1826F43E3E744ED30A546905BA4C468AD5",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ConfirmedUndoTests.cs",
+      "expected": "337B4E3E1B9948404F556F301FDEA60CEA9A7349DD4EA946A49F27EB05277864",
+      "observed": "337B4E3E1B9948404F556F301FDEA60CEA9A7349DD4EA946A49F27EB05277864",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ConnectionViewModelTests.cs",
+      "expected": "F9D4D3EA6462205D3090D60A191CCF33EDCB68D7A570FE2A07A291650F989EC7",
+      "observed": "F9D4D3EA6462205D3090D60A191CCF33EDCB68D7A570FE2A07A291650F989EC7",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/CreationHarness.cs",
+      "expected": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9",
+      "observed": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/CreationTests.cs",
+      "expected": "B17CDA2CC24B0AD4E109523114E303081CEA6F4C6AAB27BD2B73C06B4CF0F62D",
+      "observed": "B17CDA2CC24B0AD4E109523114E303081CEA6F4C6AAB27BD2B73C06B4CF0F62D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/DraftLifetimeTests.cs",
+      "expected": "3D86FDE0C8224E451919B09CB323361269D507AC23D6DAD9D0043AD0B235A98D",
+      "observed": "3D86FDE0C8224E451919B09CB323361269D507AC23D6DAD9D0043AD0B235A98D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/EditingTests.cs",
+      "expected": "05B952B4FF62A7D01944657918CC5B777A41434431AEFBADB1CF406FAC31F5A2",
+      "observed": "05B952B4FF62A7D01944657918CC5B777A41434431AEFBADB1CF406FAC31F5A2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/FakeCreation.cs",
+      "expected": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B",
+      "observed": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "expected": "167379AFBE873713F3EC5E9C21DBF7B3A500836C0F225752C9FB86D45388F5BB",
+      "observed": "167379AFBE873713F3EC5E9C21DBF7B3A500836C0F225752C9FB86D45388F5BB",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "expected": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28",
+      "observed": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "expected": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171",
+      "observed": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhApiTests.cs",
+      "expected": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F",
+      "observed": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhConnectionTests.cs",
+      "expected": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B",
+      "observed": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhProcessTests.cs",
+      "expected": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5",
+      "observed": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj",
+      "expected": "C648192D77FEDF25759A81639212E90A22DA7F98D51492DB4F65EBC045CE31D0",
+      "observed": "C648192D77FEDF25759A81639212E90A22DA7F98D51492DB4F65EBC045CE31D0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveCreationProxy.cs",
+      "expected": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA",
+      "observed": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveFixtureBoundary.cs",
+      "expected": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC",
+      "observed": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveGitHubTests.cs",
+      "expected": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0",
+      "observed": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceGuardTests.cs",
+      "expected": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534",
+      "observed": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceRun.cs",
+      "expected": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972",
+      "observed": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceRunner.cs",
+      "expected": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F",
+      "observed": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceStages.cs",
+      "expected": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411",
+      "observed": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceStageTests.cs",
+      "expected": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24",
+      "observed": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LocalRowTests.cs",
+      "expected": "2983EFC815EF0954C41383B31430C64EEC0CA721AF63CAC8F56713EDBCA595E2",
+      "observed": "2983EFC815EF0954C41383B31430C64EEC0CA721AF63CAC8F56713EDBCA595E2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ManualPlanningTests.cs",
+      "expected": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8",
+      "observed": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ObservationIdentityTests.cs",
+      "expected": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D",
+      "observed": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PerformanceRun.cs",
+      "expected": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F",
+      "observed": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningApplicationLiveTests.cs",
+      "expected": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29",
+      "observed": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningAssignmentTests.cs",
+      "expected": "C590CAF71772E82E00302800DD0303EC823CEFAFD593788910138C9BC3CE6EDC",
+      "observed": "C590CAF71772E82E00302800DD0303EC823CEFAFD593788910138C9BC3CE6EDC",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningCellInputTests.cs",
+      "expected": "E6F83A961D66B37A578B0E53C68972C5B4A95E9DCA82EE7A2B0AE2406DA2552A",
+      "observed": "E6F83A961D66B37A578B0E53C68972C5B4A95E9DCA82EE7A2B0AE2406DA2552A",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningContractTests.cs",
+      "expected": "64FD7AEDCF8FD90E6232B415326B69F379775C62C6D276F5392142E6E3DAF3F9",
+      "observed": "64FD7AEDCF8FD90E6232B415326B69F379775C62C6D276F5392142E6E3DAF3F9",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningCreationTests.cs",
+      "expected": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E",
+      "observed": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningDependencyTests.cs",
+      "expected": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42",
+      "observed": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+      "expected": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B",
+      "observed": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningFidelityLiveTests.cs",
+      "expected": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3",
+      "observed": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningLocalRowTests.cs",
+      "expected": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D",
+      "observed": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningPathTests.cs",
+      "expected": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478",
+      "observed": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningQueryTests.cs",
+      "expected": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4",
+      "observed": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningReaderTests.cs",
+      "expected": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF",
+      "observed": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningResponses.cs",
+      "expected": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF",
+      "observed": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningReviewRegressionTests.cs",
+      "expected": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF",
+      "observed": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningTransitionTests.cs",
+      "expected": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4",
+      "observed": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PostMergeStabilizationTests.cs",
+      "expected": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE",
+      "observed": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectIssueIdentityTests.cs",
+      "expected": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354",
+      "observed": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectReaderTests.cs",
+      "expected": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3",
+      "observed": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectReadLiveTests.cs",
+      "expected": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B",
+      "observed": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ReconciliationTests.cs",
+      "expected": "EFDC288206D1B98819AF4689706A43423AB06AD784E8A42B9FD30B95EDA0F123",
+      "observed": "EFDC288206D1B98819AF4689706A43423AB06AD784E8A42B9FD30B95EDA0F123",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RefreshLiveTests.cs",
+      "expected": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29",
+      "observed": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RefreshWorkflowTests.cs",
+      "expected": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875",
+      "observed": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationResponses.cs",
+      "expected": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E",
+      "observed": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationStoreTests.cs",
+      "expected": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2",
+      "observed": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationWorkflowTests.cs",
+      "expected": "3E09A23B86987F6C3042F7BA94D0C6C61E275417B1105BAC4A5CB4FB10593DF3",
+      "observed": "3E09A23B86987F6C3042F7BA94D0C6C61E275417B1105BAC4A5CB4FB10593DF3",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RowViewTests.cs",
+      "expected": "35322B8ED5922909C1B2129FF06662A38CC0CDD619236553B63B86074E4624B1",
+      "observed": "35322B8ED5922909C1B2129FF06662A38CC0CDD619236553B63B86074E4624B1",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SafeLiveDiagnostic.cs",
+      "expected": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D",
+      "observed": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SchedulingTests.cs",
+      "expected": "399F4C14FF6EF03E6A3F73300F6451645A507ABAC9785A507C0C26A8552F7980",
+      "observed": "399F4C14FF6EF03E6A3F73300F6451645A507ABAC9785A507C0C26A8552F7980",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ScopedObservationTests.cs",
+      "expected": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F",
+      "observed": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ScriptedRunner.cs",
+      "expected": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455",
+      "observed": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryPlanningIntegrationTests.cs",
+      "expected": "52FC2E0914741BD5EAEEF7F191C9E6CB1CFCD9434B9BD2250198D2857B83E8F5",
+      "observed": "52FC2E0914741BD5EAEEF7F191C9E6CB1CFCD9434B9BD2250198D2857B83E8F5",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryTests.cs",
+      "expected": "AAB0384ECE3EAFA4D5C421FB9D1BD7583519C128416AC404C91B91B6E3D962CF",
+      "observed": "AAB0384ECE3EAFA4D5C421FB9D1BD7583519C128416AC404C91B91B6E3D962CF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryWorkload.cs",
+      "expected": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4",
+      "observed": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/TargetDiagnosticTests.cs",
+      "expected": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720",
+      "observed": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyIaHostedTests.cs",
+      "expected": "2408037DCACC96B45263DCA6F8A9A573755504FEDC007CDBECF799B39E80CEE5",
+      "observed": "2408037DCACC96B45263DCA6F8A9A573755504FEDC007CDBECF799B39E80CEE5",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationEvidence.cs",
+      "expected": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197",
+      "observed": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationHostedTests.cs",
+      "expected": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E",
+      "observed": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationViewTests.cs",
+      "expected": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70",
+      "observed": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyRecoveryHostedTests.cs",
+      "expected": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5",
+      "observed": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyResultsHostedTests.cs",
+      "expected": "63FC291E94554B5301C504EB3413C3C801C6E0C82399ABAFF04946C6618EC415",
+      "observed": "63FC291E94554B5301C504EB3413C3C801C6E0C82399ABAFF04946C6618EC415",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/BulkEditingHostedTests.cs",
+      "expected": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2",
+      "observed": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ColumnHostedTests.cs",
+      "expected": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D",
+      "observed": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ConfirmedEditUndoHostedTests.cs",
+      "expected": "8B66DBF89154DFD29CD3530D8671E8BBB066B7360F6E79D7F17ACA254E0F008B",
+      "observed": "8B66DBF89154DFD29CD3530D8671E8BBB066B7360F6E79D7F17ACA254E0F008B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ConnectionEntryHostedTests.cs",
+      "expected": "E58FC5D1732E84FFED9925D6BB790745DE3347E0822623B15CC37F7FC0E773C0",
+      "observed": "E58FC5D1732E84FFED9925D6BB790745DE3347E0822623B15CC37F7FC0E773C0",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "expected": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D",
+      "observed": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj",
+      "expected": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2",
+      "observed": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs",
+      "expected": "BF1FDD00B8395207EE1F2BA6789F237EE8BBF5DFA65D6EEA60C89137689C299A",
+      "observed": "BF1FDD00B8395207EE1F2BA6789F237EE8BBF5DFA65D6EEA60C89137689C299A",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/InfrastructureTests.cs",
+      "expected": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF",
+      "observed": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+      "expected": "D482FEC5267362E262E987F4CB180780EE62066D1C67E3C878AF771F9C8D6592",
+      "observed": "D482FEC5267362E262E987F4CB180780EE62066D1C67E3C878AF771F9C8D6592",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningNavigationHostedTests.cs",
+      "expected": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8",
+      "observed": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningPerformanceHostedTests.cs",
+      "expected": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE",
+      "observed": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs",
+      "expected": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084",
+      "observed": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PostMergeHostedTests.cs",
+      "expected": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4",
+      "observed": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/Program.cs",
+      "expected": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2",
+      "observed": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+      "expected": "5A5C3A374C77C254539A0770D8444970EF8D6DBBA398444596EB9C6C3B68022F",
+      "observed": "5A5C3A374C77C254539A0770D8444970EF8D6DBBA398444596EB9C6C3B68022F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/RowApplyHostedTests.cs",
+      "expected": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B",
+      "observed": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/RowViewHostedTests.cs",
+      "expected": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E",
+      "observed": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SettingsFocusHostedTests.cs",
+      "expected": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F",
+      "observed": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetContextHostedTests.cs",
+      "expected": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B",
+      "observed": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetFocusedScrollHostedTests.cs",
+      "expected": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E",
+      "observed": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetHostedTests.cs",
+      "expected": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13",
+      "observed": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetNativeInput.cs",
+      "expected": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513",
+      "observed": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetRecyclingHostedTests.cs",
+      "expected": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9",
+      "observed": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetViewportHostedTests.cs",
+      "expected": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172",
+      "observed": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SummaryHostedTests.cs",
+      "expected": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7",
+      "observed": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SummaryPerformanceHostedTests.cs",
+      "expected": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B",
+      "observed": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ThemeHostedTests.cs",
+      "expected": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3",
+      "observed": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/TrackedContext.cs",
+      "expected": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014",
+      "observed": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/Ui.cs",
+      "expected": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656",
+      "observed": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/UndoRowVisibilityHostedTests.cs",
+      "expected": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974",
+      "observed": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WeeklyRecoveryHostedTests.cs",
+      "expected": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC",
+      "observed": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WindowLifetimeHostedTests.cs",
+      "expected": "5F112384DEF6BEA7BBB97B0BF5B7888FF3F027946C7098EF0E06EBB8380CCD4F",
+      "observed": "5F112384DEF6BEA7BBB97B0BF5B7888FF3F027946C7098EF0E06EBB8380CCD4F",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkflowPlanningHostedTests.cs",
+      "expected": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A",
+      "observed": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceApplyPresentationTests.cs",
+      "expected": "0FAFE2E6590E99F5080C5DC5550A8C5599B3A39F4C24AFD47DFDD2E110DEF958",
+      "observed": "0FAFE2E6590E99F5080C5DC5550A8C5599B3A39F4C24AFD47DFDD2E110DEF958",
+      "retained": true
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs",
+      "expected": "0CF75ED6534B43BC31C7C6AADCD276E7C2F79823AFC6C89CD4A3F37FD19F2954",
+      "observed": "0CF75ED6534B43BC31C7C6AADCD276E7C2F79823AFC6C89CD4A3F37FD19F2954",
+      "retained": true
+    }
+  ],
+  "complete": true
+}

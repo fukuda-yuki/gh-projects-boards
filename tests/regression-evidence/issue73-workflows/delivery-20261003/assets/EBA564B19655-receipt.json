@@ -1,0 +1,8 @@
+{
+  "source": "fd5732ad4f063665bbc23be96247dd8d620d80d2",
+  "unchangedSourceReceipt": "../first-run-source/receipt.json",
+  "changedTest": "tests/GhProjectsBoards.UiIntegration.Tests/PendingInputHostedTests.cs",
+  "sha256": "B5BE2D247EF07C5EF9F39E55F5D66B636A66380AEEDBE0E6B7BC49996D1BEBEA",
+  "priorRun": "run-20260927-204014-240-87fead2b",
+  "command": "./scripts/Test-UiIntegration.ps1 -Where 'name == UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation'"
+}

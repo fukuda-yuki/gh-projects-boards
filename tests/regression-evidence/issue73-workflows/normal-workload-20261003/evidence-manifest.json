@@ -1,0 +1,477 @@
+{
+  "atUtc": "2026-10-03T05:17:14.4538459+00:00",
+  "rawRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003",
+  "curatedRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\regression-evidence\\issue73-workflows\\normal-workload-20261003",
+  "files": [
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\packet.json",
+      "copy": "checks\\packet.json",
+      "originalSha256": "9E55FE2C46D0B1CEAFAB0A7056AA0F8A8199236BD845BBCC1129C4678F901733",
+      "copySha256": "9E55FE2C46D0B1CEAFAB0A7056AA0F8A8199236BD845BBCC1129C4678F901733",
+      "bytes": 4506
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\identity-before.json",
+      "copy": "checks\\identity-before.json",
+      "originalSha256": "463197B60A52110E1FEC83C4E44F63D63D86C9C2849B5DF198129F32A4F51D31",
+      "copySha256": "463197B60A52110E1FEC83C4E44F63D63D86C9C2849B5DF198129F32A4F51D31",
+      "bytes": 371
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\identity-after.json",
+      "copy": "checks\\identity-after.json",
+      "originalSha256": "508661A11FB68EE38A46C5D7875D8E52A32D456538D6B8C75960A1915AAD02CE",
+      "copySha256": "508661A11FB68EE38A46C5D7875D8E52A32D456538D6B8C75960A1915AAD02CE",
+      "bytes": 1729
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\running-1.json",
+      "copy": "checks\\running-1.json",
+      "originalSha256": "8AE5BFB184AF2213F4FC7AF9DF5ABE3163908479D9FDE62CAACD277EE19B157B",
+      "copySha256": "8AE5BFB184AF2213F4FC7AF9DF5ABE3163908479D9FDE62CAACD277EE19B157B",
+      "bytes": 581
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\running-2.json",
+      "copy": "checks\\running-2.json",
+      "originalSha256": "9BCF601D1CBCE6EB47DAEFD2E5FBF3DA35B200D3DC20D01CB1EC0938E8C6BAAB",
+      "copySha256": "9BCF601D1CBCE6EB47DAEFD2E5FBF3DA35B200D3DC20D01CB1EC0938E8C6BAAB",
+      "bytes": 586
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\process-exit-1.json",
+      "copy": "checks\\process-exit-1.json",
+      "originalSha256": "1ACA7D0A73DD6FE060BD386D5F690EA3CDD288A2C1668EE3FDFB3591F3CE5FB2",
+      "copySha256": "1ACA7D0A73DD6FE060BD386D5F690EA3CDD288A2C1668EE3FDFB3591F3CE5FB2",
+      "bytes": 138
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\ordinary-close-ui.json",
+      "copy": "checks\\ordinary-close-ui.json",
+      "originalSha256": "3C1F759756189C5B2C7FEF38257AA8BBC0D73D4455AFFCDB9B90E1B8293A16A2",
+      "copySha256": "3C1F759756189C5B2C7FEF38257AA8BBC0D73D4455AFFCDB9B90E1B8293A16A2",
+      "bytes": 570
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\independent-readback.json",
+      "copy": "checks\\independent-readback.json",
+      "originalSha256": "EE672E0FD803715E98190FAD4DFEC8319A7FCE81948674A7F384A8207A5B2223",
+      "copySha256": "EE672E0FD803715E98190FAD4DFEC8319A7FCE81948674A7F384A8207A5B2223",
+      "bytes": 16777
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\check-normal-workload.py",
+      "copy": "checks\\check-normal-workload.py",
+      "originalSha256": "5FB7C0E5AC828AB5FDA56C168D6B42F47369D142302E164E5E6B878D4E3DFF73",
+      "copySha256": "5FB7C0E5AC828AB5FDA56C168D6B42F47369D142302E164E5E6B878D4E3DFF73",
+      "bytes": 10653
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\launch-normal-1.log",
+      "copy": "checks\\launch-normal-1.log",
+      "originalSha256": "A4BB4ABBAB67827A410FEF9352AD895F5BEDB9EB490E4D082CEBBCE8B23319B2",
+      "copySha256": "A4BB4ABBAB67827A410FEF9352AD895F5BEDB9EB490E4D082CEBBCE8B23319B2",
+      "bytes": 645
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\launch-normal-2.log",
+      "copy": "checks\\launch-normal-2.log",
+      "originalSha256": "CEF37E935BE989B7DDC0E2A25A5F916DF559446D4D27CD6B806F4C647DBBF87C",
+      "copySha256": "CEF37E935BE989B7DDC0E2A25A5F916DF559446D4D27CD6B806F4C647DBBF87C",
+      "bytes": 645
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\failed-set-value-35.json",
+      "copy": "checks\\failed-set-value-35.json",
+      "originalSha256": "19CD20AC045CC63D21F0A3CA8B8A4A96BFC745A69FE37F6A649C2CC5D6CDA7C8",
+      "copySha256": "19CD20AC045CC63D21F0A3CA8B8A4A96BFC745A69FE37F6A649C2CC5D6CDA7C8",
+      "bytes": 247
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\14-weekly-report-ready-0.png",
+      "copy": "observations\\14-weekly-report-ready-0.png",
+      "originalSha256": "77B50746562D093E5DDB17E2234FF3394546705ED39C7B1C2AE8E10422CB1F6F",
+      "copySha256": "77B50746562D093E5DDB17E2234FF3394546705ED39C7B1C2AE8E10422CB1F6F",
+      "bytes": 97836
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\14-weekly-report-ready.json",
+      "copy": "observations\\14-weekly-report-ready.json",
+      "originalSha256": "3FF285AC4A74A0492AD84EF7BD80B428845524F0E64BFD0515DE7B4B56B13B86",
+      "copySha256": "3FF285AC4A74A0492AD84EF7BD80B428845524F0E64BFD0515DE7B4B56B13B86",
+      "bytes": 8825
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\16-report-saved-0.png",
+      "copy": "observations\\16-report-saved-0.png",
+      "originalSha256": "1618651C185604A1DF5C511D1BEC77321DC6EA4A5DE6163AC336C70B05ABA8A1",
+      "copySha256": "1618651C185604A1DF5C511D1BEC77321DC6EA4A5DE6163AC336C70B05ABA8A1",
+      "bytes": 76628
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\16-report-saved.json",
+      "copy": "observations\\16-report-saved.json",
+      "originalSha256": "1E35259DD97071D04DF0E8EEDB65E71745EF0844203F12EBCC492235CD095EF3",
+      "copySha256": "1E35259DD97071D04DF0E8EEDB65E71745EF0844203F12EBCC492235CD095EF3",
+      "bytes": 5784
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\20-cutoff-entered-0.png",
+      "copy": "observations\\20-cutoff-entered-0.png",
+      "originalSha256": "F967E41FE1F83F89CC60212C59C3C8E84D9716612163263E5F4F27A739F0B504",
+      "copySha256": "F967E41FE1F83F89CC60212C59C3C8E84D9716612163263E5F4F27A739F0B504",
+      "bytes": 84633
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\20-cutoff-entered.json",
+      "copy": "observations\\20-cutoff-entered.json",
+      "originalSha256": "2F1D1DE37A2F298512BEA589C58B262F65B2CD233E4EEAF5C495D308312C1CC0",
+      "copySha256": "2F1D1DE37A2F298512BEA589C58B262F65B2CD233E4EEAF5C495D308312C1CC0",
+      "bytes": 5169
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\24-calendar-interval-visible-0.png",
+      "copy": "observations\\24-calendar-interval-visible-0.png",
+      "originalSha256": "44C1F02386ADC5B1DFB58BCF9019354A9C05C0C9A24766CF8F6AE70B849FD797",
+      "copySha256": "44C1F02386ADC5B1DFB58BCF9019354A9C05C0C9A24766CF8F6AE70B849FD797",
+      "bytes": 75885
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\24-calendar-interval-visible.json",
+      "copy": "observations\\24-calendar-interval-visible.json",
+      "originalSha256": "693F3A483CBA574AC728B3D590F66D6741AD4E9F77D02728D60A7EAAF50EE845",
+      "copySha256": "693F3A483CBA574AC728B3D590F66D6741AD4E9F77D02728D60A7EAAF50EE845",
+      "bytes": 6477
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\25-calendar-entered-0.png",
+      "copy": "observations\\25-calendar-entered-0.png",
+      "originalSha256": "6F6AF6A11E4AAFF981716C60A48DE3588A2FCDD22A048908A36F6057EE2B5AF7",
+      "copySha256": "6F6AF6A11E4AAFF981716C60A48DE3588A2FCDD22A048908A36F6057EE2B5AF7",
+      "bytes": 78999
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\25-calendar-entered.json",
+      "copy": "observations\\25-calendar-entered.json",
+      "originalSha256": "ABC4D5BF9FDD154CA087064F583615D0D9ED004C8FD49E5B246F563B6CF728C4",
+      "copySha256": "ABC4D5BF9FDD154CA087064F583615D0D9ED004C8FD49E5B246F563B6CF728C4",
+      "bytes": 6468
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\26-settings-saved-0.png",
+      "copy": "observations\\26-settings-saved-0.png",
+      "originalSha256": "4012CFC4D1D9B73D1F4663C6C4A526B52A0EE74243C77449A1C02810256D5942",
+      "copySha256": "4012CFC4D1D9B73D1F4663C6C4A526B52A0EE74243C77449A1C02810256D5942",
+      "bytes": 72205
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\26-settings-saved.json",
+      "copy": "observations\\26-settings-saved.json",
+      "originalSha256": "FE4B843788457678C23D03B4598ABDCE1C9988D136B8AEB560EBF501985A6366",
+      "copySha256": "FE4B843788457678C23D03B4598ABDCE1C9988D136B8AEB560EBF501985A6366",
+      "bytes": 6466
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\27-replanned-301-0.png",
+      "copy": "observations\\27-replanned-301-0.png",
+      "originalSha256": "E2A3AC8D0205E3AE2962ED57A970FB18B7CDFC734BCABDD2A37797D0B33492BA",
+      "copySha256": "E2A3AC8D0205E3AE2962ED57A970FB18B7CDFC734BCABDD2A37797D0B33492BA",
+      "bytes": 77822
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\27-replanned-301.json",
+      "copy": "observations\\27-replanned-301.json",
+      "originalSha256": "91D48601FF20110B241AEEB941EAC49A4083E66E20DF6D01DECB7F6894DE1498",
+      "copySha256": "91D48601FF20110B241AEEB941EAC49A4083E66E20DF6D01DECB7F6894DE1498",
+      "bytes": 5860
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\28-replanned-301-revealed-0.png",
+      "copy": "observations\\28-replanned-301-revealed-0.png",
+      "originalSha256": "C282AA6010CFEE46C93C28C5009FA529B46C08BFC339AF368829F0147B4E8053",
+      "copySha256": "C282AA6010CFEE46C93C28C5009FA529B46C08BFC339AF368829F0147B4E8053",
+      "bytes": 76683
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\28-replanned-301-revealed.json",
+      "copy": "observations\\28-replanned-301-revealed.json",
+      "originalSha256": "890006435A71D48631B06379598BB43D8ECFD61C92501784BDD622429AA0BBD6",
+      "copySha256": "890006435A71D48631B06379598BB43D8ECFD61C92501784BDD622429AA0BBD6",
+      "bytes": 5773
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\29-replanned-302-0.png",
+      "copy": "observations\\29-replanned-302-0.png",
+      "originalSha256": "77EDEA25A07A3DD50A4B55C97BF76BD894FD24C74A7481CFD0C7E10F4D0FB586",
+      "copySha256": "77EDEA25A07A3DD50A4B55C97BF76BD894FD24C74A7481CFD0C7E10F4D0FB586",
+      "bytes": 73136
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\29-replanned-302.json",
+      "copy": "observations\\29-replanned-302.json",
+      "originalSha256": "A3FB625B3DA8534DF334C217D818DA2B223734377372FD37B5F1B977A800324A",
+      "copySha256": "A3FB625B3DA8534DF334C217D818DA2B223734377372FD37B5F1B977A800324A",
+      "bytes": 5780
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\31-edit-302-0.png",
+      "copy": "observations\\31-edit-302-0.png",
+      "originalSha256": "F64FBFB1F6A0B447DF143CDDB51C3C792EACB6869A69FCB5FCC6F712120AE23F",
+      "copySha256": "F64FBFB1F6A0B447DF143CDDB51C3C792EACB6869A69FCB5FCC6F712120AE23F",
+      "bytes": 96719
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\31-edit-302.json",
+      "copy": "observations\\31-edit-302.json",
+      "originalSha256": "EE0366AA570E367FF7F18EEDEEB35F820703FB8FD5F1BDC157CED66F6E9CE2F4",
+      "copySha256": "EE0366AA570E367FF7F18EEDEEB35F820703FB8FD5F1BDC157CED66F6E9CE2F4",
+      "bytes": 7767
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\32-close-date-editor-no-change.json",
+      "copy": "observations\\32-close-date-editor-no-change.json",
+      "originalSha256": "F09A093FDE24F8264E73552751C9EE22CDD9B46FA08C13ABC1249EEF64C976C4",
+      "copySha256": "F09A093FDE24F8264E73552751C9EE22CDD9B46FA08C13ABC1249EEF64C976C4",
+      "bytes": 5470
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\35a-after-inactive-cell-set-value-error-0.png",
+      "copy": "observations\\35a-after-inactive-cell-set-value-error-0.png",
+      "originalSha256": "B359205B580188FCDCC70B8DEAF053756ED87A9A19BFE8E63DD5810E6DCC716B",
+      "copySha256": "B359205B580188FCDCC70B8DEAF053756ED87A9A19BFE8E63DD5810E6DCC716B",
+      "bytes": 121130
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\35a-after-inactive-cell-set-value-error-1.png",
+      "copy": "observations\\35a-after-inactive-cell-set-value-error-1.png",
+      "originalSha256": "7BCD4DF7EEC88754A8F8991AF01980C954189E4E0C20811855848A02540A48AA",
+      "copySha256": "7BCD4DF7EEC88754A8F8991AF01980C954189E4E0C20811855848A02540A48AA",
+      "bytes": 1436
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\35a-after-inactive-cell-set-value-error.json",
+      "copy": "observations\\35a-after-inactive-cell-set-value-error.json",
+      "originalSha256": "E972DD8DA67F7D033ADD5341AB80DCE537937214301BF932E3AEC92275A03A5E",
+      "copySha256": "E972DD8DA67F7D033ADD5341AB80DCE537937214301BF932E3AEC92275A03A5E",
+      "bytes": 28115
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\36-mistake-active-entered-0.png",
+      "copy": "observations\\36-mistake-active-entered-0.png",
+      "originalSha256": "C655C730F9CD767D73FFC09922383B479FA572C8918369044D5AE27726EBDB9E",
+      "copySha256": "C655C730F9CD767D73FFC09922383B479FA572C8918369044D5AE27726EBDB9E",
+      "bytes": 121642
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\36-mistake-active-entered.json",
+      "copy": "observations\\36-mistake-active-entered.json",
+      "originalSha256": "97082630B46CBB5BE2222B59840F88E2FAC529D91F5F324CC96C5BA87FEE30DF",
+      "copySha256": "97082630B46CBB5BE2222B59840F88E2FAC529D91F5F324CC96C5BA87FEE30DF",
+      "bytes": 27545
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\38-mistake-settled.json",
+      "copy": "observations\\38-mistake-settled.json",
+      "originalSha256": "229D01DB7FB7EDBFC9E7ABD55077C4000CAF2F834C0D8FED0EC5BEACF7854C10",
+      "copySha256": "229D01DB7FB7EDBFC9E7ABD55077C4000CAF2F834C0D8FED0EC5BEACF7854C10",
+      "bytes": 27134
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\39-mistake-gantt-0.png",
+      "copy": "observations\\39-mistake-gantt-0.png",
+      "originalSha256": "F49CE672BD6BE2755F6D164A9C28822AB29068A441937E5B323BD3CB95C084B3",
+      "copySha256": "F49CE672BD6BE2755F6D164A9C28822AB29068A441937E5B323BD3CB95C084B3",
+      "bytes": 104145
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\39-mistake-gantt.json",
+      "copy": "observations\\39-mistake-gantt.json",
+      "originalSha256": "0255E03A02BD041E589CB8CDB6344131C65EA3548006431214A532D4745DF4C5",
+      "copySha256": "0255E03A02BD041E589CB8CDB6344131C65EA3548006431214A532D4745DF4C5",
+      "bytes": 27428
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\40-mistake-gantt-settled.json",
+      "copy": "observations\\40-mistake-gantt-settled.json",
+      "originalSha256": "62F3862B0CEBDE63286AA46FD66877385F9DF3BC3910EC3AC660E0B121783E88",
+      "copySha256": "62F3862B0CEBDE63286AA46FD66877385F9DF3BC3910EC3AC660E0B121783E88",
+      "bytes": 16013
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\42-undo-settled-0.png",
+      "copy": "observations\\42-undo-settled-0.png",
+      "originalSha256": "92A9501BCB75B418B1C5300296E9F53C1FEA268F2C3BD370AA8109E474A3ECD1",
+      "copySha256": "92A9501BCB75B418B1C5300296E9F53C1FEA268F2C3BD370AA8109E474A3ECD1",
+      "bytes": 104056
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\42-undo-settled.json",
+      "copy": "observations\\42-undo-settled.json",
+      "originalSha256": "EC9127823B7395CD223DC7069BCAEB7C4FD3FE16313558C7436049F842A9CA6D",
+      "copySha256": "EC9127823B7395CD223DC7069BCAEB7C4FD3FE16313558C7436049F842A9CA6D",
+      "bytes": 15468
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\43-completed-retained-0.png",
+      "copy": "observations\\43-completed-retained-0.png",
+      "originalSha256": "898F0FC4F0B30904BE9C01D5E3D728C88722C4748DB6B94340BE74D574E24DCF",
+      "copySha256": "898F0FC4F0B30904BE9C01D5E3D728C88722C4748DB6B94340BE74D574E24DCF",
+      "bytes": 71585
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\43-completed-retained.json",
+      "copy": "observations\\43-completed-retained.json",
+      "originalSha256": "500F660A2DBF146819E53C22061529AFD33AD82B384BAF95233DB20ED8C93B42",
+      "copySha256": "500F660A2DBF146819E53C22061529AFD33AD82B384BAF95233DB20ED8C93B42",
+      "bytes": 5830
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\44-manual-retained-0.png",
+      "copy": "observations\\44-manual-retained-0.png",
+      "originalSha256": "099A6204C27505689A8D1639C1CBBC4C6448BF871F88FC0EF7062D09193611CA",
+      "copySha256": "099A6204C27505689A8D1639C1CBBC4C6448BF871F88FC0EF7062D09193611CA",
+      "bytes": 71702
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\44-manual-retained.json",
+      "copy": "observations\\44-manual-retained.json",
+      "originalSha256": "0570A9221400F2F2D07128321DC90D61EEB1C617E01E705EEB1831A6F77C5FAA",
+      "copySha256": "0570A9221400F2F2D07128321DC90D61EEB1C617E01E705EEB1831A6F77C5FAA",
+      "bytes": 5835
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\45-far-manual-retained-0.png",
+      "copy": "observations\\45-far-manual-retained-0.png",
+      "originalSha256": "B6F246AF3E66B4B134852E41E51417D1AC21EBC86BB279F9278EF177D10661B6",
+      "copySha256": "B6F246AF3E66B4B134852E41E51417D1AC21EBC86BB279F9278EF177D10661B6",
+      "bytes": 71994
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\45-far-manual-retained.json",
+      "copy": "observations\\45-far-manual-retained.json",
+      "originalSha256": "BDED5090B5F0DA653C8AC16AEEF4C2E3307528C30FB407544234586C7C271620",
+      "copySha256": "BDED5090B5F0DA653C8AC16AEEF4C2E3307528C30FB407544234586C7C271620",
+      "bytes": 5847
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\47-pending-before-close-0.png",
+      "copy": "observations\\47-pending-before-close-0.png",
+      "originalSha256": "58BD568D52C1BF2C55C4A2C49843035BD1C9B44D0146D5829B372A8ADE07C017",
+      "copySha256": "58BD568D52C1BF2C55C4A2C49843035BD1C9B44D0146D5829B372A8ADE07C017",
+      "bytes": 121714
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\47-pending-before-close.json",
+      "copy": "observations\\47-pending-before-close.json",
+      "originalSha256": "1FA97E8F0B2CB6D6B6503D44C204C80350D5AF2D6759F5918990C6081AA85E15",
+      "copySha256": "1FA97E8F0B2CB6D6B6503D44C204C80350D5AF2D6759F5918990C6081AA85E15",
+      "bytes": 25176
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\48-restarted-0.png",
+      "copy": "observations\\48-restarted-0.png",
+      "originalSha256": "7DDBB8012CD59769A9094BC661A2DBF4DF063E54CFD04C8A87A75A995C19442D",
+      "copySha256": "7DDBB8012CD59769A9094BC661A2DBF4DF063E54CFD04C8A87A75A995C19442D",
+      "bytes": 59552
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\48-restarted.json",
+      "copy": "observations\\48-restarted.json",
+      "originalSha256": "80540748B8156AA9951B0BED95B402AA87E878CD17AB1C85402A8FB1B4D120AE",
+      "copySha256": "80540748B8156AA9951B0BED95B402AA87E878CD17AB1C85402A8FB1B4D120AE",
+      "bytes": 3001
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\51-restart-p1-0.png",
+      "copy": "observations\\51-restart-p1-0.png",
+      "originalSha256": "A9A208346AAA47C4BBFCBC1E191CDE448723EC4BD8863C46FC92C67DDE407318",
+      "copySha256": "A9A208346AAA47C4BBFCBC1E191CDE448723EC4BD8863C46FC92C67DDE407318",
+      "bytes": 105334
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\51-restart-p1.json",
+      "copy": "observations\\51-restart-p1.json",
+      "originalSha256": "A6B79059DFDF96187EE165E4B54D1CF819D95DCBE0AE72FCA589155D08E840B1",
+      "copySha256": "A6B79059DFDF96187EE165E4B54D1CF819D95DCBE0AE72FCA589155D08E840B1",
+      "bytes": 24580
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\52-restart-pending-revealed-0.png",
+      "copy": "observations\\52-restart-pending-revealed-0.png",
+      "originalSha256": "732EACC27FED50DCBF2606B4FC5298E96BF2B98A54B971844BCCF548BA2AB5EE",
+      "copySha256": "732EACC27FED50DCBF2606B4FC5298E96BF2B98A54B971844BCCF548BA2AB5EE",
+      "bytes": 122951
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\52-restart-pending-revealed.json",
+      "copy": "observations\\52-restart-pending-revealed.json",
+      "originalSha256": "CA9C2AB6CA079DA410608AC201D81CBAB5F9D60D6A221C8B08E623474EB51532",
+      "copySha256": "CA9C2AB6CA079DA410608AC201D81CBAB5F9D60D6A221C8B08E623474EB51532",
+      "bytes": 24594
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\53-restart-pending-settled.json",
+      "copy": "observations\\53-restart-pending-settled.json",
+      "originalSha256": "AE46AE46B6BAA987ECBD4F10DA4E163BC9CCCDDEECF4DCE978DD5E9C1FC2CF17",
+      "copySha256": "AE46AE46B6BAA987ECBD4F10DA4E163BC9CCCDDEECF4DCE978DD5E9C1FC2CF17",
+      "bytes": 25277
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\55-restart-301-0.png",
+      "copy": "observations\\55-restart-301-0.png",
+      "originalSha256": "CF4B4AFCFBB1427274C60B0B0DBFCFA7FC0B0EC6A1D880006740D92419D2C5A6",
+      "copySha256": "CF4B4AFCFBB1427274C60B0B0DBFCFA7FC0B0EC6A1D880006740D92419D2C5A6",
+      "bytes": 71436
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\55-restart-301.json",
+      "copy": "observations\\55-restart-301.json",
+      "originalSha256": "6E4E23A1CA0EA0A3CA1CC4291CFFEB3BD743ABF77B6A499F7F9DD4ECFE7F7332",
+      "copySha256": "6E4E23A1CA0EA0A3CA1CC4291CFFEB3BD743ABF77B6A499F7F9DD4ECFE7F7332",
+      "bytes": 5802
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\56-restart-302-0.png",
+      "copy": "observations\\56-restart-302-0.png",
+      "originalSha256": "F3DD64B387528A1D73784986AEEB47C52803235A7F95E4BB22A035C4ECE2F576",
+      "copySha256": "F3DD64B387528A1D73784986AEEB47C52803235A7F95E4BB22A035C4ECE2F576",
+      "bytes": 71528
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\56-restart-302.json",
+      "copy": "observations\\56-restart-302.json",
+      "originalSha256": "B44756AB24FB3340589B45F080F263271CB69AE768AB4FB1A5A6CC030F06C63D",
+      "copySha256": "B44756AB24FB3340589B45F080F263271CB69AE768AB4FB1A5A6CC030F06C63D",
+      "bytes": 5802
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\57-restart-303-0.png",
+      "copy": "observations\\57-restart-303-0.png",
+      "originalSha256": "8579B8D85EC7A31CE1A1B62C9EF9637FA44DCD091EA8C644BD6F56ECFFC058D0",
+      "copySha256": "8579B8D85EC7A31CE1A1B62C9EF9637FA44DCD091EA8C644BD6F56ECFFC058D0",
+      "bytes": 71548
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\57-restart-303.json",
+      "copy": "observations\\57-restart-303.json",
+      "originalSha256": "0070E5F5FCA3324A5DC139954F8052417CF10F125FE1E429DAD5D36777A8861B",
+      "copySha256": "0070E5F5FCA3324A5DC139954F8052417CF10F125FE1E429DAD5D36777A8861B",
+      "bytes": 5802
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\59-restart-selected-visible-0.png",
+      "copy": "observations\\59-restart-selected-visible-0.png",
+      "originalSha256": "337E16F19D165D09269F6BDACF8F8F54AC1E6A722D7A57C3C207E3BC39BAAFF1",
+      "copySha256": "337E16F19D165D09269F6BDACF8F8F54AC1E6A722D7A57C3C207E3BC39BAAFF1",
+      "bytes": 78975
+    },
+    {
+      "original": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\normal-workload-20261003\\observations\\59-restart-selected-visible.json",
+      "copy": "observations\\59-restart-selected-visible.json",
+      "originalSha256": "668263EA4F5EA153F73F244DF8CAE1578C860645584718AE63EB09CAE215F41C",
+      "copySha256": "668263EA4F5EA153F73F244DF8CAE1578C860645584718AE63EB09CAE215F41C",
+      "bytes": 5807
+    }
+  ],
+  "omittedCopies": "Large original checkpoints and complete transition observations remain in the raw root. No original was edited."
+}

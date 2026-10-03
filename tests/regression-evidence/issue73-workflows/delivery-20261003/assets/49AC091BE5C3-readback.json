@@ -1,0 +1,487 @@
+{
+  "kind": "Independent direct JSON readback of stopped H; no app/calculator/test execution",
+  "atUtc": "2026-09-27T10:15:02.427554+00:00",
+  "sourceCheckpointSha256": "4294CDAC1D686A1DCA7D254F94289D76F29978C1C1589600083C3E55A446D353",
+  "checkpointVersion": 13,
+  "checkpointRevision": 107,
+  "scope": {
+    "Host": "github.com",
+    "ViewerId": 42
+  },
+  "estimate": {
+    "Key": {
+      "Kind": "Number",
+      "NodeId": "P1T1",
+      "ProjectId": "P1",
+      "FieldId": "F-Estimate"
+    },
+    "Baseline": null,
+    "SourceProject": {
+      "Scope": {
+        "Host": "github.com",
+        "ViewerId": 42
+      },
+      "NodeId": "P1"
+    },
+    "RetrievedAt": "2026-09-27T09:49:55.9104578+00:00",
+    "Change": {
+      "Value": "8",
+      "Clear": false
+    },
+    "Buffer": "12",
+    "Stamp": 82,
+    "Observation": null,
+    "Conflict": false
+  },
+  "changedFields": 1,
+  "bufferedFields": 1,
+  "conflicts": 0,
+  "dispatchJournalEntries": 0,
+  "localRows": 0,
+  "structuralChanges": 0,
+  "registrations": [
+    {
+      "project": {
+        "Scope": {
+          "Host": "github.com",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "retrievedAt": "2026-09-27T09:49:55.9104578+00:00",
+      "issueCount": 20,
+      "itemCount": 20
+    },
+    {
+      "project": {
+        "Scope": {
+          "Host": "github.com",
+          "ViewerId": 42
+        },
+        "NodeId": "P2"
+      },
+      "retrievedAt": "2026-09-27T09:49:55.9971017+00:00",
+      "issueCount": 20,
+      "itemCount": 20
+    }
+  ],
+  "planning": {
+    "Version": 3,
+    "ProjectId": "P1",
+    "Stamp": 82,
+    "Start": "2026-10-05T09:00:00",
+    "Cutoff": null,
+    "Fields": [
+      {
+        "Role": "Estimate",
+        "FieldId": "F-Estimate",
+        "DataType": "NUMBER"
+      }
+    ],
+    "Calendar": {
+      "Revision": "6087acd7a9804578a5bb501e6312d825",
+      "Holidays": {
+        "Version": "cao-2025-2027-CEC37A743C96",
+        "Source": "https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv",
+        "SourceSha256": "CEC37A743C96995CDB9CB52B685C9003634682A9B0E1A640A6B9B96881FE964A",
+        "RetrievedAt": "2026-09-19T16:22:48+00:00",
+        "FirstYear": 2025,
+        "LastYear": 2027,
+        "Dates": [
+          {
+            "Date": "2025-01-01",
+            "Name": "元日"
+          },
+          {
+            "Date": "2025-01-13",
+            "Name": "成人の日"
+          },
+          {
+            "Date": "2025-02-11",
+            "Name": "建国記念の日"
+          },
+          {
+            "Date": "2025-02-23",
+            "Name": "天皇誕生日"
+          },
+          {
+            "Date": "2025-02-24",
+            "Name": "休日"
+          },
+          {
+            "Date": "2025-03-20",
+            "Name": "春分の日"
+          },
+          {
+            "Date": "2025-04-29",
+            "Name": "昭和の日"
+          },
+          {
+            "Date": "2025-05-03",
+            "Name": "憲法記念日"
+          },
+          {
+            "Date": "2025-05-04",
+            "Name": "みどりの日"
+          },
+          {
+            "Date": "2025-05-05",
+            "Name": "こどもの日"
+          },
+          {
+            "Date": "2025-05-06",
+            "Name": "休日"
+          },
+          {
+            "Date": "2025-07-21",
+            "Name": "海の日"
+          },
+          {
+            "Date": "2025-08-11",
+            "Name": "山の日"
+          },
+          {
+            "Date": "2025-09-15",
+            "Name": "敬老の日"
+          },
+          {
+            "Date": "2025-09-23",
+            "Name": "秋分の日"
+          },
+          {
+            "Date": "2025-10-13",
+            "Name": "スポーツの日"
+          },
+          {
+            "Date": "2025-11-03",
+            "Name": "文化の日"
+          },
+          {
+            "Date": "2025-11-23",
+            "Name": "勤労感謝の日"
+          },
+          {
+            "Date": "2025-11-24",
+            "Name": "休日"
+          },
+          {
+            "Date": "2026-01-01",
+            "Name": "元日"
+          },
+          {
+            "Date": "2026-01-12",
+            "Name": "成人の日"
+          },
+          {
+            "Date": "2026-02-11",
+            "Name": "建国記念の日"
+          },
+          {
+            "Date": "2026-02-23",
+            "Name": "天皇誕生日"
+          },
+          {
+            "Date": "2026-03-20",
+            "Name": "春分の日"
+          },
+          {
+            "Date": "2026-04-29",
+            "Name": "昭和の日"
+          },
+          {
+            "Date": "2026-05-03",
+            "Name": "憲法記念日"
+          },
+          {
+            "Date": "2026-05-04",
+            "Name": "みどりの日"
+          },
+          {
+            "Date": "2026-05-05",
+            "Name": "こどもの日"
+          },
+          {
+            "Date": "2026-05-06",
+            "Name": "休日"
+          },
+          {
+            "Date": "2026-07-20",
+            "Name": "海の日"
+          },
+          {
+            "Date": "2026-08-11",
+            "Name": "山の日"
+          },
+          {
+            "Date": "2026-09-21",
+            "Name": "敬老の日"
+          },
+          {
+            "Date": "2026-09-22",
+            "Name": "休日"
+          },
+          {
+            "Date": "2026-09-23",
+            "Name": "秋分の日"
+          },
+          {
+            "Date": "2026-10-12",
+            "Name": "スポーツの日"
+          },
+          {
+            "Date": "2026-11-03",
+            "Name": "文化の日"
+          },
+          {
+            "Date": "2026-11-23",
+            "Name": "勤労感謝の日"
+          },
+          {
+            "Date": "2027-01-01",
+            "Name": "元日"
+          },
+          {
+            "Date": "2027-01-11",
+            "Name": "成人の日"
+          },
+          {
+            "Date": "2027-02-11",
+            "Name": "建国記念の日"
+          },
+          {
+            "Date": "2027-02-23",
+            "Name": "天皇誕生日"
+          },
+          {
+            "Date": "2027-03-21",
+            "Name": "春分の日"
+          },
+          {
+            "Date": "2027-03-22",
+            "Name": "休日"
+          },
+          {
+            "Date": "2027-04-29",
+            "Name": "昭和の日"
+          },
+          {
+            "Date": "2027-05-03",
+            "Name": "憲法記念日"
+          },
+          {
+            "Date": "2027-05-04",
+            "Name": "みどりの日"
+          },
+          {
+            "Date": "2027-05-05",
+            "Name": "こどもの日"
+          },
+          {
+            "Date": "2027-07-19",
+            "Name": "海の日"
+          },
+          {
+            "Date": "2027-08-11",
+            "Name": "山の日"
+          },
+          {
+            "Date": "2027-09-20",
+            "Name": "敬老の日"
+          },
+          {
+            "Date": "2027-09-23",
+            "Name": "秋分の日"
+          },
+          {
+            "Date": "2027-10-11",
+            "Name": "スポーツの日"
+          },
+          {
+            "Date": "2027-11-03",
+            "Name": "文化の日"
+          },
+          {
+            "Date": "2027-11-23",
+            "Name": "勤労感謝の日"
+          }
+        ]
+      },
+      "HolidaysNotConsidered": false,
+      "Exceptions": []
+    },
+    "People": [
+      {
+        "Id": "U1",
+        "Name": "Owner",
+        "WeightPercent": 100
+      }
+    ],
+    "Tasks": [
+      {
+        "Id": "I1",
+        "Mode": 1,
+        "OwnerId": "U1",
+        "ManualStart": null,
+        "ManualFinish": null,
+        "Progress": 0,
+        "ActualStart": null,
+        "ActualFinish": null,
+        "EarliestStart": null,
+        "FixedStart": null,
+        "FixedFinish": null,
+        "Deadline": null,
+        "Actuals": null,
+        "Contributions": null,
+        "LocalLinks": null,
+        "LaborKind": 0,
+        "Assignment": {
+          "Assignees": [
+            "U1"
+          ],
+          "Complete": true,
+          "Legacy": false
+        }
+      }
+    ],
+    "Summary": null
+  },
+  "historySummary": [
+    {
+      "Id": "13c9dcdb97e746d9b45ef54f99b9ccd0",
+      "ProjectId": "P1",
+      "Changes": [],
+      "InvalidReason": null,
+      "Resolution": false,
+      "Rows": null,
+      "HasPlan": true,
+      "BufferWrites": []
+    },
+    {
+      "Id": "5154866f03b44bd2a0e1bf463d80062f",
+      "ProjectId": "P1",
+      "Changes": [
+        {
+          "Key": {
+            "Kind": "Number",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "Before": {
+            "Key": {
+              "Kind": "Number",
+              "NodeId": "P1T1",
+              "ProjectId": "P1",
+              "FieldId": "F-Estimate"
+            },
+            "Baseline": null,
+            "SourceProject": {
+              "Scope": {
+                "Host": "github.com",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "RetrievedAt": "2026-09-27T09:49:55.9104578+00:00",
+            "Change": null,
+            "Buffer": null,
+            "Stamp": 0,
+            "Observation": null,
+            "Conflict": false
+          },
+          "After": {
+            "Key": {
+              "Kind": "Number",
+              "NodeId": "P1T1",
+              "ProjectId": "P1",
+              "FieldId": "F-Estimate"
+            },
+            "Baseline": null,
+            "SourceProject": {
+              "Scope": {
+                "Host": "github.com",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "RetrievedAt": "2026-09-27T09:49:55.9104578+00:00",
+            "Change": {
+              "Value": "8",
+              "Clear": false
+            },
+            "Buffer": null,
+            "Stamp": 82,
+            "Observation": null,
+            "Conflict": false
+          }
+        }
+      ],
+      "InvalidReason": null,
+      "Resolution": false,
+      "Rows": [],
+      "HasPlan": true,
+      "BufferWrites": [
+        {
+          "Kind": "Number",
+          "NodeId": "P1T1",
+          "ProjectId": "P1",
+          "FieldId": "F-Estimate"
+        }
+      ]
+    }
+  ],
+  "launches": [
+    {
+      "file": "launch-3132c5d501c34342aefd20e2d3f41199.json",
+      "sha256": "80EBB59FAC00C877174622F41386845149BF32905FDC5059C6B82B5B90921B09",
+      "createdAt": "2026-09-27T09:49:56.1053364+00:00",
+      "preparedOnly": true,
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "launchSource": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "appSha256": "77EC6A38C4EA44783E675974F6D65DAA4C3E1D8BAC3F58B529014391A248F709",
+      "coreSha256": "5C1C4D603A291E202E2C68004F3FEEAA094C1C084098C2241E030A13D629B408",
+      "seedSha256": "351D2EEE934C03155139CF130DA09EE9E077107C3237D6AC699B6652FF31136D",
+      "frozenReceiptSha256": null
+    },
+    {
+      "file": "launch-9ae8b229cf274a0e8e88bbf70a4d333d.json",
+      "sha256": "8A53E8C79A85471304CB947CE661940B90FD01106ED097FECCB9418E5CD25E2C",
+      "createdAt": "2026-09-27T10:07:53.2238606+00:00",
+      "preparedOnly": false,
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "launchSource": "63fbf3c762432ea05da0bd5da4ec4356fd532b90",
+      "appSha256": "77EC6A38C4EA44783E675974F6D65DAA4C3E1D8BAC3F58B529014391A248F709",
+      "coreSha256": "5C1C4D603A291E202E2C68004F3FEEAA094C1C084098C2241E030A13D629B408",
+      "seedSha256": "351D2EEE934C03155139CF130DA09EE9E077107C3237D6AC699B6652FF31136D",
+      "frozenReceiptSha256": "80EBB59FAC00C877174622F41386845149BF32905FDC5059C6B82B5B90921B09"
+    },
+    {
+      "file": "launch-c10620a90974454c8cbd8cb72b634f97.json",
+      "sha256": "039C362B93952FAEF7D5E3FFDFC19053104D0C9BBF8D2ABF7F88704F6B54E0B0",
+      "createdAt": "2026-09-27T09:57:30.5488219+00:00",
+      "preparedOnly": false,
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "launchSource": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "appSha256": "77EC6A38C4EA44783E675974F6D65DAA4C3E1D8BAC3F58B529014391A248F709",
+      "coreSha256": "5C1C4D603A291E202E2C68004F3FEEAA094C1C084098C2241E030A13D629B408",
+      "seedSha256": "351D2EEE934C03155139CF130DA09EE9E077107C3237D6AC699B6652FF31136D",
+      "frozenReceiptSha256": "80EBB59FAC00C877174622F41386845149BF32905FDC5059C6B82B5B90921B09"
+    }
+  ],
+  "fixtureSource": {
+    "path": "tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+    "frozenSha256": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B",
+    "unchangedAcrossLaunchReceipts": true,
+    "normalizedMatchesCheckpointCommit": true
+  },
+  "visibleResultEvidence": {
+    "valueAndPending": "observations/21-restart-value-versus-pending.txt",
+    "scheduleReason": "observations/22-restart-eight-reason.txt",
+    "reportedSchedule": "2026-10-05 09:00 to 18:00 Japan time",
+    "calculationReexecuted": false,
+    "boundary": "The date result is evaluator UI evidence, not a serialized result or an independent model recomputation"
+  },
+  "mutationBoundary": "Saved Journal is empty and evaluator reports no connection/fetch/Apply. No new network trace or live remote readback was collected.",
+  "businessCorrection": "Weekdays corrected mid-story from 09:00-12:00/13:00-18:00 to 09:00-13:00/14:00-18:00; original calendar goal not passed",
+  "humanAcceptance": "not_run"
+}

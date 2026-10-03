@@ -1,0 +1,227 @@
+{
+  "schema": 14,
+  "revision": 199,
+  "processAbsent": true,
+  "journalCount": 0,
+  "pendingCount": 0,
+  "fields": [
+    {
+      "key": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "週次計画の確認"
+    },
+    {
+      "key": {
+        "Kind": "Select",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "todo"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "4"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "3",
+        "Clear": false
+      },
+      "baseline": "4"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Actual"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "7",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2026-10-13",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2026-10-13",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Title",
+        "NodeId": "I2",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "週次計画の確認"
+    },
+    {
+      "key": {
+        "Kind": "Select",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "todo"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "4"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2",
+        "Clear": false
+      },
+      "baseline": "4"
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Actual"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2026-10-14",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "buffer": null,
+      "change": {
+        "Value": "2026-10-14",
+        "Clear": false
+      },
+      "baseline": null
+    },
+    {
+      "key": {
+        "Kind": "Dependency",
+        "NodeId": "I2",
+        "ProjectId": "P1",
+        "FieldId": "I1"
+      },
+      "buffer": null,
+      "change": null,
+      "baseline": "present"
+    }
+  ],
+  "tasks": [
+    {
+      "Id": "I1",
+      "Progress": 1,
+      "ActualStart": "2026-10-05T09:00:00",
+      "ActualFinish": null,
+      "Actuals": [
+        {
+          "PersonId": "U1",
+          "Hours": 7,
+          "ReportedThrough": "2026-10-09"
+        }
+      ]
+    },
+    {
+      "Id": "I2",
+      "Progress": 1,
+      "ActualStart": "2026-10-06T09:00:00",
+      "ActualFinish": null,
+      "Actuals": [
+        {
+          "PersonId": "U2",
+          "Hours": 2,
+          "ReportedThrough": "2026-10-09"
+        }
+      ]
+    }
+  ],
+  "scope": "Independent final file readback; no restart and no measured remote-call claim"
+}

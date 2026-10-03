@@ -1,0 +1,245 @@
+{
+  "kind": "Independent final snapshot after E assisted third launch and evaluator-reported normal close; no new UI, app, CLI or service operation",
+  "readAtUtc": "2026-09-27T08:59:40.7887165+00:00",
+  "processCheck": {
+    "pid": 24556,
+    "absentBefore": true,
+    "checkedBeforeAtUtc": "2026-09-27T08:59:40.6577994+00:00",
+    "absentAfter": true,
+    "mechanism": "Targeted Get-Process by supplied ordinary-app PID only; no desktop inspection or other process mutation"
+  },
+  "files": [
+    {
+      "path": "data/.writer.lock",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/.writer.lock",
+      "length": 0,
+      "sourceSha256Before": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "sourceSha256After": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "copySha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 261698,
+      "sourceSha256Before": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7",
+      "sourceSha256After": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7",
+      "copySha256": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7"
+    },
+    {
+      "path": "data/Drafts/.writer.lock",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/Drafts/.writer.lock",
+      "length": 0,
+      "sourceSha256Before": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "sourceSha256After": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "copySha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 503965,
+      "sourceSha256Before": "A8C01067E6B4E04F10AEA721E92409EFA951C00F695446447FDDEC688C6DDBA1",
+      "sourceSha256After": "A8C01067E6B4E04F10AEA721E92409EFA951C00F695446447FDDEC688C6DDBA1",
+      "copySha256": "A8C01067E6B4E04F10AEA721E92409EFA951C00F695446447FDDEC688C6DDBA1"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 504023,
+      "sourceSha256Before": "F444A76E6B69A50164A3889C21FFDE3532ADC3BE4C09EB229D037C6875897AF6",
+      "sourceSha256After": "F444A76E6B69A50164A3889C21FFDE3532ADC3BE4C09EB229D037C6875897AF6",
+      "copySha256": "F444A76E6B69A50164A3889C21FFDE3532ADC3BE4C09EB229D037C6875897AF6"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "original": "TestResults/issue73/blind-review/round1-create-e/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sourceSha256Before": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "sourceSha256After": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "copySha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "gh-config/calls.jsonl",
+      "original": "TestResults/issue73/blind-review/round1-create-e/gh-config/calls.jsonl",
+      "length": 14348,
+      "sourceSha256Before": "277185812C85CF4306774B381FAC4B35714A47DAB484186E7F435AF45A823AE1",
+      "sourceSha256After": "277185812C85CF4306774B381FAC4B35714A47DAB484186E7F435AF45A823AE1",
+      "copySha256": "277185812C85CF4306774B381FAC4B35714A47DAB484186E7F435AF45A823AE1"
+    },
+    {
+      "path": "gh-config/creation-requests.jsonl",
+      "original": "TestResults/issue73/blind-review/round1-create-e/gh-config/creation-requests.jsonl",
+      "length": 444,
+      "sourceSha256Before": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2",
+      "sourceSha256After": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2",
+      "copySha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2"
+    },
+    {
+      "path": "gh-config/creation-state.json",
+      "original": "TestResults/issue73/blind-review/round1-create-e/gh-config/creation-state.json",
+      "length": 111,
+      "sourceSha256Before": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2",
+      "sourceSha256After": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2",
+      "copySha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2"
+    },
+    {
+      "path": "gh-config/scenario.json",
+      "original": "TestResults/issue73/blind-review/round1-create-e/gh-config/scenario.json",
+      "length": 126,
+      "sourceSha256Before": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57",
+      "sourceSha256After": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57",
+      "copySha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57"
+    }
+  ],
+  "session2Comparisons": [
+    {
+      "path": "gh-config/creation-requests.jsonl",
+      "session2Sha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2",
+      "finalSha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2",
+      "identical": true
+    },
+    {
+      "path": "gh-config/creation-state.json",
+      "session2Sha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2",
+      "finalSha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2",
+      "identical": true
+    },
+    {
+      "path": "gh-config/calls.jsonl",
+      "session2Sha256": "277185812C85CF4306774B381FAC4B35714A47DAB484186E7F435AF45A823AE1",
+      "finalSha256": "277185812C85CF4306774B381FAC4B35714A47DAB484186E7F435AF45A823AE1",
+      "identical": true
+    },
+    {
+      "path": "gh-config/scenario.json",
+      "session2Sha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57",
+      "finalSha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57",
+      "identical": true
+    }
+  ],
+  "checkpoint": {
+    "version": 12,
+    "scope": {
+      "Host": "example.test",
+      "ViewerId": 42
+    },
+    "revision": 226,
+    "registrationCount": 1,
+    "localRows": 0,
+    "changedFields": 0,
+    "pendingBuffers": 0,
+    "journalCount": 1,
+    "creations": [
+      {
+        "Id": "3b0563a022154955b79312d190351ca2",
+        "LocalId": "local-83588acd7c2d421cb7e2a225f26d7f6c",
+        "Stamp": 205,
+        "Repository": {
+          "Id": "R-first",
+          "Name": "sample-user/first",
+          "IssuesEnabled": true,
+          "Archived": false,
+          "CanCreate": true,
+          "At": "2026-09-27T17:40:08.8245452+09:00",
+          "Allowed": true
+        },
+        "Title": "Review follow-up",
+        "Selects": [
+          {
+            "FieldId": "P1-status",
+            "FieldName": "Status",
+            "OptionId": null,
+            "OptionName": null,
+            "ExplicitClear": false,
+            "Intent": "Unspecified"
+          }
+        ],
+        "Authorized": true,
+        "Dispatched": true,
+        "Received": null,
+        "Verified": {
+          "Id": "created1",
+          "RepositoryId": "R-first",
+          "Number": 1001,
+          "Url": "https://example.test/sample-user/first/issues/1001",
+          "Title": "Review follow-up",
+          "At": "2026-09-27T17:47:32.1596829+09:00"
+        },
+        "ItemId": "item-created1",
+        "MembershipDispatched": true,
+        "Fields": [],
+        "Completed": true,
+        "Reason": "今回の設定完了を検証済み。以前の作成試行は依然不確定です。",
+        "PreviousAttempt": null,
+        "EarlierUncertain": true,
+        "UserBound": true,
+        "ReceivedId": null,
+        "EarlierFields": [],
+        "SetupReviewedTitle": "Review follow-up",
+        "ReceivedItemId": "item-created1",
+        "SetupIntents": [
+          {
+            "FieldId": "P1-status",
+            "FieldName": "Status",
+            "OptionId": null,
+            "OptionName": null,
+            "ExplicitClear": false,
+            "Intent": "Unspecified"
+          }
+        ],
+        "EarlierSetupIntents": [
+          [
+            {
+              "FieldId": "P1-status",
+              "FieldName": "Status",
+              "OptionId": null,
+              "OptionName": null,
+              "ExplicitClear": false,
+              "Intent": "Unspecified"
+            }
+          ]
+        ],
+        "PlanningIntents": [],
+        "SetupPlanningIntents": [],
+        "EarlierPlanningIntents": [
+          []
+        ]
+      }
+    ]
+  },
+  "fakeService": {
+    "state": {
+      "id": "created1",
+      "number": 1001,
+      "title": "Review follow-up",
+      "repository": "first",
+      "member": true,
+      "option": "todo"
+    },
+    "requestCount": 2,
+    "createIssue": 1,
+    "addToProject": 1,
+    "requests": [
+      {
+        "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+        "input": {
+          "repositoryId": "R-first",
+          "title": "Review follow-up"
+        }
+      },
+      {
+        "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+        "input": {
+          "projectId": "P1",
+          "contentId": "created1"
+        }
+      }
+    ]
+  },
+  "interpretation": "Final retained setup is Completed with verified Issue and membership, while EarlierUncertain remains true and Received remains null. Session 3 observed cached retained completion/historical uncertainty and performed no fresh connection or fetch. Identical fake request/state/call files to the session-2 snapshot establish no additional local fake-service operations during that continuation. This is not a new remote verification or proof about the missing original response.",
+  "limits": [
+    "Session 2 Windows event 1000 establishes an app crash for PID42032; no managed stack/root cause is established.",
+    "Assisted third launch and later normal close do not retroactively establish successful session2 refresh or normal shutdown.",
+    "One synthetic Issue and one Project membership mutation do not prove live-GitHub behavior.",
+    "Normal-close UI evidence belongs to the evaluator original session3 report/observations; this reviewer did not operate the app."
+  ]
+}

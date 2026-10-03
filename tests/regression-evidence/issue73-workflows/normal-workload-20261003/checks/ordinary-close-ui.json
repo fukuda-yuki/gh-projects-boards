@@ -1,0 +1,15 @@
+{
+  "atUtc": "2026-10-03T05:03:30.770Z",
+  "closedWindow": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+    "id": 854896,
+    "title": "GitHub Projects Boards"
+  },
+  "windowsImmediatelyAfter": [
+    {
+      "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+      "id": 854896,
+      "title": "GitHub Projects Boards"
+    }
+  ]
+}

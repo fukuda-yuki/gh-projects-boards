@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="315" result="Failed" start-time="2026-10-03T03:48:43.7367237Z" end-time="2026-10-03T03:48:44.6866378Z" duration="0.949886" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0" random-seed="496785068">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "method == ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-124823-372-0ec319b2\results.xml]]></command-line>
+  <filter>
+    <method>ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod</method>
+  </filter>
+  <test-suite type="Assembly" id="1396" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="315" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7367237Z" end-time="2026-10-03T03:48:44.6866378Z" duration="0.949886" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="72220" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1397" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="315" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7391553Z" end-time="2026-10-03T03:48:44.6866338Z" duration="0.947478" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1398" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="315" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7393140Z" end-time="2026-10-03T03:48:44.6866319Z" duration="0.947318" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1399" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="315" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7393188Z" end-time="2026-10-03T03:48:44.6866299Z" duration="0.947311" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1127" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="75" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7393204Z" end-time="2026-10-03T03:48:44.6866227Z" duration="0.947302" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1156" name="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="3" result="Failed" site="Child" start-time="2026-10-03T03:48:43.7404967Z" end-time="2026-10-03T03:48:44.6864663Z" duration="0.945970" total="3" initiated="3" passed="0" failed="3" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1153" name="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;minute&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;minute&quot;)" methodname="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="562412711" result="Failed" start-time="2026-10-03T03:48:43.7405953Z" end-time="2026-10-03T03:48:44.2779375Z" duration="0.537382" asserts="0">
+                <failure>
+                  <message><![CDATA[  Completed or cleared input must not retain a stale warning.
+Assert.That(HasWarning(), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass34_0.<<ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod>b__4>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 151
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(String correction) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 134
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1154" name="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;clear&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;clear&quot;)" methodname="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="67719767" result="Failed" start-time="2026-10-03T03:48:44.2787641Z" end-time="2026-10-03T03:48:44.5054091Z" duration="0.226645" asserts="0">
+                <failure>
+                  <message><![CDATA[  Completed or cleared input must not retain a stale warning.
+Assert.That(HasWarning(), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass34_0.<<ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod>b__4>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 151
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(String correction) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 134
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1155" name="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;auto&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(&quot;auto&quot;)" methodname="ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="51261861" result="Failed" start-time="2026-10-03T03:48:44.5054467Z" end-time="2026-10-03T03:48:44.6857055Z" duration="0.180259" asserts="0">
+                <failure>
+                  <message><![CDATA[  Automatic scheduling does not require manually completing fetched dates.
+Assert.That(HasWarning(), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass34_0.<<ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod>b__4>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 142
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(String correction) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 134
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

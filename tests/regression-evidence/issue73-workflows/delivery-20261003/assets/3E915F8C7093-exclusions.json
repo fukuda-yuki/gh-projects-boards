@@ -1,0 +1,92 @@
+{
+  "files": [
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-2b1fba4588234b2bb8eed81ddf0b6eea/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-85e03a53374c4f82ad00f38701d343dd/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-85e03a53374c4f82ad00f38701d343dd/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-85e03a53374c4f82ad00f38701d343dd/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-2b1fba4588234b2bb8eed81ddf0b6eea/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/red-logic/data/apply-supersession-2b1fba4588234b2bb8eed81ddf0b6eea/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-146587e3f6f9440cafbab31f5e2b199e/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-c4c902911ca74000af5689ca38dbd682/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-c4c902911ca74000af5689ca38dbd682/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-c4c902911ca74000af5689ca38dbd682/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-146587e3f6f9440cafbab31f5e2b199e/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/apply-supersession-reason/green-logic/data/apply-supersession-146587e3f6f9440cafbab31f5e2b199e/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty captured lock; original evidence metadata preserved."
+    }
+  ],
+  "emptyLockFilesExcluded": 12,
+  "historicalSourceMarkdownExcludedFromNavigationAudit": [
+    "checks/apply-supersession-reason/build-only/source/tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+    "checks/apply-supersession-reason/build-v2/source/tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+    "checks/apply-supersession-reason/build-v3/source/tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+    "checks/apply-supersession-reason/build-v4/source/tests/GhProjectsBoards.UiIntegration.Tests/README.md",
+    "checks/candidate-recovery-range-r16/source/tests/GhProjectsBoards.UiIntegration.Tests/README.md"
+  ],
+  "stderrQualification": "Only seven exact closed UI integration stderr.log files, not private model output.",
+  "notSelected": [
+    "W/X closure or current data/service",
+    "X helper root correction",
+    "Private model events/stderr",
+    "Full ordinary App/seed runtime tree"
+  ],
+  "fifthFinalized": false
+}

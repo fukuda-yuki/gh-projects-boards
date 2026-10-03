@@ -1,0 +1,98 @@
+{
+  "validatedAtUtc": "2026-10-02T22:48:38.444592+00:00",
+  "previousLedgerSha256": "32DE148BA2A93B2CED916BDF5C27C3F353029BAF98CBA35358AA61562E534C95",
+  "approvedProposals": [
+    {
+      "path": "checks/v4-current-core-source-ready-20261003/source-ready-proposal.json",
+      "sha256": "A9A19292B13B66E856A910BF7E8B2744E93778BE7917487069C1BBCAC9394947",
+      "peerSha256": "6EADA912844FECFE892361B191494B56C19DB7DEB9937C5E1F70FCE7877A8A9E"
+    },
+    {
+      "path": "checks/x-publication-source-ready-20261003/source-ready-proposal.json",
+      "sha256": "0478A1C9ABF146681955F3668FBDA2B844F6B13DF513D7622EA9FACA403E1BA7",
+      "peerSha256": "39A18565FE56EE6CB0C5662663350CAB65CEC86C291EAB2BFAF9D1E51E033BDF"
+    }
+  ],
+  "priorManifests": [
+    {
+      "path": "manifest.json",
+      "sha256": "925D4CCE4C912E3205D4B92282012FBBCAD0695673B660D3EB020E3AFEE4E6A7",
+      "originalFilesVerified": 2188,
+      "bytes": 88267420
+    },
+    {
+      "path": "manifest-additions-20260927.json",
+      "sha256": "AD5E00B6EA3A8045D86B4773C4A59E3A5D05AC4E5D1A2CEBD898B2E832F7149F",
+      "originalFilesVerified": 1303,
+      "bytes": 70704702
+    },
+    {
+      "path": "manifest-additions-daily-final-20260927.json",
+      "sha256": "BD7E63C0B9788275DEC885F0F865D311EDC020222E4F3913543F659C43855583",
+      "originalFilesVerified": 254,
+      "bytes": 13463341
+    },
+    {
+      "path": "manifest-additions-round5-20260927.json",
+      "sha256": "9F0B15D469053A01ACA18B03DFC334361FADD670C550D41037DDD61F746767FF",
+      "originalFilesVerified": 763,
+      "bytes": 48644603
+    }
+  ],
+  "previousRetainedEntriesVerified": 18698,
+  "previousRetainedMismatches": 0,
+  "selectedSourceFilesVerified": 851,
+  "selectedSourceBytes": 46297380,
+  "currentCoreV4": {
+    "semanticPassed": 13,
+    "bytePreservationPassed": 1,
+    "earlierSemanticPrefixes": [
+      0,
+      3,
+      10
+    ],
+    "earlierIncompleteExitCodes": [
+      1,
+      1,
+      1
+    ],
+    "allFinalExternalInputsUnchanged": 49,
+    "selectedCoreCopies": 4
+  },
+  "X": {
+    "publicCalls": 132,
+    "completeObservations": 79,
+    "originalEvaluatorJpegs": 82,
+    "individualEvaluatorPrivacyReviews": 82,
+    "payloadMatches": 82,
+    "separateRootStartupImages": 2,
+    "readbacks": [
+      {
+        "stage": "KnownPartial",
+        "passed": 14
+      },
+      {
+        "stage": "TitleRecovered",
+        "passed": 17
+      }
+    ],
+    "countsOverlap": true,
+    "originalHelperFailureRetained": true,
+    "selectedHelperRuntimeFiles": 6
+  },
+  "qualifiedDerivatives": 7,
+  "privateModelFilesUnreadUnhashed": 8,
+  "rawInventoriesExcluded": 14,
+  "excludedEmptyLocks": 12,
+  "untraversedDirectories": 8,
+  "credentialPatternMatches": 0,
+  "newAppBuildTestModelCoreReaderNativeHelperOrEndpointExecution": false,
+  "relativeLinks": 114,
+  "resolvedLinks": 114,
+  "unexpectedBrokenLinks": 0,
+  "stageOrCommit": false,
+  "topReadmeUnchanged": true,
+  "fifthFinalized": false,
+  "humanAcceptance": "not_run",
+  "W1-H": "FAIL / NOT_ACCEPTED"
+}

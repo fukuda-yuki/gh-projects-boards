@@ -1,0 +1,15 @@
+{
+  "atUtc": "2026-10-03T04:05:06.779Z",
+  "action": "Read-only CLI identity recheck after restart; no login dialog or credential handling.",
+  "window": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+    "id": 7670198,
+    "title": "GitHub Projects Boards"
+  },
+  "accessibility": {
+    "document_text": "github.com",
+    "focused_element": "221 edit (settable, string) GitHub ホスト Value: github.com ID: HostInput",
+    "tree": "Window: \"GitHub Projects Boards\", App: GhProjectsBoards.App.exe.\n\t0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise\n\t\t1 ウィンドウ\n\t\t\t2 ウィンドウ\n\t\t\t\t217 button 元の作業へ戻る ID: ProjectsPageButton\n\t\t\t\t218 テキスト 接続設定\n\t\t\t\t219 pane ID: ConnectionScreen\n\t\t\t\t\t220 テキスト 接続先とアカウントを確認します。確認後は元の作業へ戻れます。Projectの取得や登録、GitHubへの反映はここでは行いません。\n\t\t\t\t\t221 edit (settable, string) GitHub ホスト Value: github.com ID: HostInput\n\t\t\t\t\t\t222 テキスト GitHub ホスト\n\t\t\t\t\t223 テキスト アカウント\n\t\t\t\t\t224 テキスト fukuda-yuki / ID 73648687 / github.com ID: AccountValue\n\t\t\t\t\t225 button 接続を確認 / 再確認 ID: CheckConnectionButton\n\t\t\t\t\t226 button 新しい接続として確認 ID: NewConnectionButton\n\t\t\t\t\t227 button (disabled) 接続確認を中止 ID: CancelConnectionButton\n\t\t\t\t\t228 テキスト 接続を確認しました。個別のProject・Issueのアクセス権限は、その作業で確認します。 ID: ConnectionStatus\n\t\t\t\t\t229 テキスト ID: UiMessage\n\t\t\t\t\t230 テキスト 接続の成功は、個別のProjectやIssueの更新権限を保証しません。対象の権限はProjectの追加・情報、反映内容の確認で確認します。\n\t\t\t\t\t231 button CLIと接続の詳細 ID: ConnectionDetails\n\t\t\t\t\t\t232 テキスト CLIと接続の詳細\n\t\t\t\t\t233 button ログイン・権限追加の手順 ID: LoginHelpExpander\n\t\t\t\t\t\t234 テキスト ログイン・権限追加の手順\n\t\t\t\t\t235 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar\n\t\t22 タイトル バー (settable, string) Value: GitHub Projects Boards\n\t\t\t23 メニュー バー システム ID: MenuBar\n\t\t\t\t24 メニュー項目 システム\n\t\t\t25 ボタン 最小化\n\t\t\t26 ボタン 最大化\n\t\t\t27 ボタン 閉じる\n\nDocument text: ```\ngithub.com\n```"
+  },
+  "screenshots": []
+}

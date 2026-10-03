@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "packetId": "holiday-weekly-20261003",
+  "name": "Holiday-week carryover and preserved review appointment",
+  "status": "prepared_only_not_executed",
+  "oracleMethod": "Independent decimal arithmetic and manual working-interval enumeration from docs/planning.md; no production engine or evaluator executed.",
+  "scope": {
+    "repository": "fukuda-yuki/codex-sandbox",
+    "projectOwner": "fukuda-yuki",
+    "projectNumber": 3,
+    "projectNodeId": "PVT_kwHOBGPKL84BjFYc",
+    "preserveExistingScopeIssue": 1,
+    "newIssuesRequired": 4,
+    "context": "Reduced four-task, one-worker derivative; not a 1000-item live comparator or equal-scale performance observation."
+  },
+  "worker": {
+    "sourceFixturePersonId": "U20",
+    "login": "fukuda-yuki",
+    "nodeId": "MDQ6VXNlcjczNjQ4Njg3",
+    "weightPercent": 80,
+    "assignment": "Exactly this one native assignee on each issue; adopt current native assignment in the app."
+  },
+  "fieldBindings": {
+    "Estimate": { "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8", "name": "Estimate", "dataType": "NUMBER", "create": false },
+    "Remaining": { "id": null, "name": "Remaining", "dataType": "NUMBER", "create": true },
+    "Actual": { "id": null, "name": "Actual", "dataType": "NUMBER", "create": true },
+    "Start": { "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA", "name": "Start date", "dataType": "DATE", "create": false },
+    "Finish": { "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE", "name": "Target date", "dataType": "DATE", "create": false }
+  },
+  "common": {
+    "timeZone": "Asia/Tokyo",
+    "projectStart": "2026-10-05T09:00:00",
+    "cutoff": "2026-10-09T18:00:00",
+    "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "regularWorkingIntervals": [["09:00", "13:00"], ["14:00", "18:00"]],
+    "holidayPolicy": "Use the retained bundled Japan 2025-2027 calendar; 2026-10-12 is a non-working holiday.",
+    "initialPersonExceptions": [],
+    "resourceLeveling": false,
+    "hoursAreRawPersonHours": true,
+    "remainingIsIndependentOfEstimateAndActual": true,
+    "dependencyKind": "FS, zero lag, successor consumes predecessor adopted finish"
+  },
+  "tasks": [
+    {
+      "key": "carryover", "sourceFixtureIssueNumber": 140,
+      "title": "週次比較: API実装の残作業",
+      "nativeState": "OPEN", "mode": "Auto", "progress": "InProgress",
+      "estimate": 16, "remaining": 4, "actual": 5,
+      "actualReports": [{ "worker": "fukuda-yuki", "hours": 5, "reportedThrough": "2026-10-06" }],
+      "actualStart": "2026-10-05T09:00:00", "actualFinish": null,
+      "manualStart": null, "manualFinish": null,
+      "predecessors": ["completed-prerequisite"],
+      "initialDateFields": { "Start": "2026-10-13", "Finish": "2026-10-13" }
+    },
+    {
+      "key": "successor", "sourceFixtureIssueNumber": 160,
+      "title": "週次比較: 後続の結合確認",
+      "nativeState": "OPEN", "mode": "Auto", "progress": "Unstarted",
+      "estimate": 16, "remaining": 4, "actual": null,
+      "actualReports": null, "actualStart": null, "actualFinish": null,
+      "manualStart": null, "manualFinish": null,
+      "predecessors": [],
+      "initialDateFields": { "Start": "2026-10-05", "Finish": "2026-10-07" }
+    },
+    {
+      "key": "completed-prerequisite", "sourceFixtureIssueNumber": 180,
+      "title": "週次比較: 完了済みの前提作業",
+      "nativeState": "CLOSED", "mode": "Auto", "progress": "Completed",
+      "estimate": 16, "remaining": 0, "actual": 5,
+      "actualReports": [{ "worker": "fukuda-yuki", "hours": 5, "reportedThrough": "2026-10-06" }],
+      "actualStart": "2026-10-05T09:00:00", "actualFinish": "2026-10-06T18:00:00",
+      "manualStart": null, "manualFinish": null,
+      "predecessors": [],
+      "initialDateFields": { "Start": "2026-10-05", "Finish": "2026-10-06" }
+    },
+    {
+      "key": "fixed-review", "sourceFixtureIssueNumber": 200,
+      "title": "週次比較: 合意済みレビュー枠",
+      "nativeState": "OPEN", "mode": "Manual", "progress": "Unstarted",
+      "estimate": 16, "remaining": 4, "actual": null,
+      "actualReports": null, "actualStart": null, "actualFinish": null,
+      "manualStart": "2026-10-10T12:07:00", "manualFinish": "2026-10-10T12:08:00",
+      "predecessors": [],
+      "initialDateFields": { "Start": "2026-10-10", "Finish": "2026-10-10" }
+    }
+  ],
+  "weeklyChanges": [
+    { "task": "carryover", "actual": 7, "reportedThrough": "2026-10-09", "remaining": 3, "progress": "InProgress", "actualStartUnchanged": "2026-10-05T09:00:00" },
+    { "personException": { "worker": "fukuda-yuki", "date": "2026-10-13", "intervals": [["10:00", "12:00"]] } },
+    { "task": "successor", "addNativePredecessor": "carryover", "preserveOtherRelationships": true },
+    { "task": "successor", "deliberateMistake": { "field": "Estimate", "value": 20 }, "correctBackTo": 16, "remainingMustStay": 4 }
+  ],
+  "baselineOracle": {
+    "carryover": { "operandHours": 4, "workingMinutes": 300, "adoptedStart": "2026-10-13T09:00:00", "adoptedFinish": "2026-10-13T15:00:00" },
+    "successor": { "operandHours": 16, "workingMinutes": 1200, "adoptedStart": "2026-10-05T09:00:00", "adoptedFinish": "2026-10-07T13:00:00" },
+    "completed-prerequisite": { "operandHours": 0, "workingMinutes": 0, "adoptedStart": "2026-10-05T09:00:00", "adoptedFinish": "2026-10-06T18:00:00" },
+    "fixed-review": { "operandHours": 16, "suggestedWorkingMinutes": 1200, "adoptedElapsedMinutes": 1, "adoptedStart": "2026-10-10T12:07:00", "adoptedFinish": "2026-10-10T12:08:00", "advisoriesExpected": ["Manual differs from automatic suggestion", "Weekend boundary outside working intervals"] }
+  },
+  "weeklyOracle": {
+    "carryover": { "estimate": 16, "remaining": 3, "actual": 7, "operandHours": 3, "workingMinutes": 225, "adoptedStart": "2026-10-13T10:00:00", "adoptedFinish": "2026-10-14T10:45:00", "dateStart": "2026-10-13", "dateFinish": "2026-10-14" },
+    "successor": { "estimate": 16, "remaining": 4, "actual": null, "operandHours": 16, "workingMinutes": 1200, "adoptedStart": "2026-10-14T10:45:00", "adoptedFinish": "2026-10-16T15:45:00", "dateStart": "2026-10-14", "dateFinish": "2026-10-16" },
+    "completed-prerequisite": { "estimate": 16, "remaining": 0, "actual": 5, "operandHours": 0, "workingMinutes": 0, "adoptedStart": "2026-10-05T09:00:00", "adoptedFinish": "2026-10-06T18:00:00", "dateStart": "2026-10-05", "dateFinish": "2026-10-06" },
+    "fixed-review": { "estimate": 16, "remaining": 4, "actual": null, "operandHours": 16, "suggestedWorkingMinutes": 1200, "adoptedElapsedMinutes": 1, "adoptedStart": "2026-10-10T12:07:00", "adoptedFinish": "2026-10-10T12:08:00", "dateStart": "2026-10-10", "dateFinish": "2026-10-10", "mode": "Manual" },
+    "effortTotals": { "estimateRawHours": 64, "remainingRawHours": 11, "reportedActualRawHours": 12, "tasksWithUnknownActual": ["successor", "fixed-review"] },
+    "mistakenSuccessorBeforeCorrection": { "estimate": 20, "remaining": 4, "workingMinutes": 1500, "adoptedStart": "2026-10-14T10:45:00", "adoptedFinish": "2026-10-19T11:45:00" }
+  },
+  "expectedFinalBusinessChanges": {
+    "numberChanges": [{ "task": "carryover", "field": "Actual", "before": 5, "after": 7 }, { "task": "carryover", "field": "Remaining", "before": 4, "after": 3 }],
+    "dateChanges": [{ "task": "carryover", "field": "Finish", "before": "2026-10-13", "after": "2026-10-14" }, { "task": "successor", "field": "Start", "before": "2026-10-05", "after": "2026-10-14" }, { "task": "successor", "field": "Finish", "before": "2026-10-07", "after": "2026-10-16" }],
+    "dependencyAdditions": [{ "blocked": "successor", "blocking": "carryover" }],
+    "dependencyDeletions": [],
+    "temporaryCorrectionWrites": "Estimate20 then16 on successor is an intentional bounded mistake/correction. Record if browser commits20 remotely; do not erase it from mutation evidence or force an unsupported Undo mechanism.",
+    "preserve": ["all four titles and native assignees", "all four final Estimates", "completed prerequisite and its original actual report", "Manual mode and exact one-minute endpoints", "unknown Actual values on successor and fixed-review", "existing scope Issue1 and its Project item", "unrelated fields/items/workflows/settings"]
+  },
+  "materialization": {
+    "newRemoteIds": "Leave unresolved until actual create/add responses and independent readback; never infer identity from title.",
+    "actualNullMeaning": "Leave remote Actual absent on successor/fixed-review; do not write zero.",
+    "appSetup": "Read real Project3 into a fresh isolated data root using the selected existing app candidate and real CLI. Map exact live field IDs, set common settings/80% worker, adopt current-native Auto on three tasks and Manual exact endpoints on fixed-review. Explicitly reconcile observed Actual5 into one cumulative worker report through2026-10-06 on carryover and completed-prerequisite, set declared progress/actual endpoints/remaining. Existing DATE values are projections, not imported exact times. Establish baseline with normal UI and preserve receipt/checkpoint; no synthetic viewer42, legacy-person substitution or hidden precomputed answer injection.",
+    "configuredProjectsSetup": "Use existing Estimate/Start date/Target date, add Remaining and Actual NUMBER fields, native dependencies and the same real assignee. Use a filtered table and roadmap. Put common rules and per-task exact adopted minute/method/actual-report records in the new test issues' normal editable Markdown bodies; this is a deliberately created comparison artifact, not an assumed existing planning aid. Manual arithmetic/calendar counting is allowed; no bespoke scheduling engine. Record setup, body/date handoffs and edits as work.",
+    "resumption": "After correcting the mistake and preserving local/app or remote/browser work, normally close and reopen each path. Verify exact minutes/method/reports and unrelated state; complete its normal publication path and independently read GitHub fields/dependencies. Distinguish browser autosave from app local checkpoint/publication.",
+    "timingBoundary": "Setup and learning separate; weekly active work, checking, correction, handoffs, waiting, publication and resumption all retained. CLI fixture construction is not measured UI completion.",
+    "oracleExposure": "Give the operator business inputs and rules; keep expected-output tables for independent checking after the operator records its result."
+  },
+  "sourceReferences": [
+    "docs/planning.md:28-55",
+    "tests/GhProjectsBoards.Tests/GanttWorkload.cs:9-41",
+    "tests/GhProjectsBoards.Tests/PlanningPathTests.cs:19-22",
+    "tests/GhProjectsBoards.Tests/PlanningEvaluation.cs:13-40",
+    "TestResults/issue73/blind-review/round7-dense-u/diagnostics/planning-evaluation.json",
+    "src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json",
+    "https://github.com/fukuda-yuki/codex-sandbox/issues/1"
+  ]
+}

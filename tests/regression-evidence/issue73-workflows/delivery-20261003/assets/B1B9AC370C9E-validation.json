@@ -1,0 +1,65 @@
+{
+  "validatedAtUtc": "2026-10-02T19:49:54.499740+00:00",
+  "previousLedgerSha256": "C1029CF7355DE8B6A60B37924BF825390E1998AE48CF1000ACD94E6B29BCF251",
+  "approvedProposalSha256": "77513E7A029B9A1DD799497685BEDACE2534F6B797ED7BAED96AF275FEE93BA4",
+  "priorManifests": [
+    {
+      "path": "manifest.json",
+      "sha256": "925D4CCE4C912E3205D4B92282012FBBCAD0695673B660D3EB020E3AFEE4E6A7",
+      "originals": 2188,
+      "derivatives": 0
+    },
+    {
+      "path": "manifest-additions-20260927.json",
+      "sha256": "AD5E00B6EA3A8045D86B4773C4A59E3A5D05AC4E5D1A2CEBD898B2E832F7149F",
+      "originals": 1303,
+      "derivatives": 0
+    },
+    {
+      "path": "manifest-additions-daily-final-20260927.json",
+      "sha256": "BD7E63C0B9788275DEC885F0F865D311EDC020222E4F3913543F659C43855583",
+      "originals": 254,
+      "derivatives": 0
+    },
+    {
+      "path": "manifest-additions-round5-20260927.json",
+      "sha256": "9F0B15D469053A01ACA18B03DFC334361FADD670C550D41037DDD61F746767FF",
+      "originals": 763,
+      "derivatives": 4
+    }
+  ],
+  "previousRetainedEntriesVerified": 14329,
+  "previousRetainedMismatches": 0,
+  "selectedSourceFilesVerified": 168,
+  "selectedSourceBytes": 67157206,
+  "sourceManifestEntriesVerified": 29,
+  "readbackInputBindingsVerified": 16,
+  "readbackDataCopiesVerified": 3,
+  "readbackExecutedResults": {
+    "pass": 51,
+    "fail": 0,
+    "missing": 0
+  },
+  "readerRerun": false,
+  "restartOriginalFileCount": 45,
+  "sameEvidenceLinkClosureCopies": 45,
+  "restartNativeCalls": 26,
+  "restartOriginalJpegs": 14,
+  "pmoOriginalTempPortableImageBindingsVerified": 7,
+  "newImageEdits": false,
+  "rawPrivateCliFilesCopied": 0,
+  "qualifiedDerivatives": 5,
+  "rootExitReceipt": "Retrospective root report; no saved contemporaneous result file available.",
+  "sourcePreparation": "Prepared-only history preserved without rewriting; completed actual-restart kept separately.",
+  "originalEvaluator": "Learned continuation on original C58/268A; not another unfamiliar sample.",
+  "pmoReview": "First direct bounded7-image review on repaired7D0/268A; findings retained, not corrected acceptance.",
+  "vFilesCopied": 0,
+  "desktopBuildReaderOrModelExecution": false,
+  "relativeLinks": 96,
+  "brokenLinks": 0,
+  "credentialPatternMatches": 0,
+  "stageOrCommit": false,
+  "fifthFinalized": false,
+  "humanAcceptance": "not_run",
+  "W1-H": "FAIL / NOT_ACCEPTED"
+}

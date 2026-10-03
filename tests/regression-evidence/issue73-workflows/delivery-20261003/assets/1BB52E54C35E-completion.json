@@ -1,0 +1,162 @@
+{
+  "schema": "V4-supplement-execution-closeout-v1",
+  "observedAtUtc": "2026-10-02T21:03:27.5890417+00:00",
+  "status": "Independent supplemental semantic interpretation passed",
+  "originalReadback": {
+    "unchanged": true,
+    "failed": 1,
+    "unobserved": 0,
+    "passed": 27
+  },
+  "originalFailureMeaning": "Exact approved member addition incorrectly rejected by the original blanket structural-equality expectation",
+  "failedAttemptRetained": "failed-attempt-1: Python ordinary long path IO error; 0 semantic / 0 negative probes",
+  "successfulAttempt": "runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3",
+  "semantic": {
+    "passed": 11,
+    "failed": 0,
+    "executed": 11
+  },
+  "negativeProbes": {
+    "correctlyRejected": 10,
+    "failed": 0,
+    "executed": 10
+  },
+  "independentPostVerification": {
+    "files": 19,
+    "unchanged": 19,
+    "changed": [],
+    "method": "PowerShell Get-FileHash after script exit"
+  },
+  "inputs": [
+    {
+      "key": "result",
+      "expected": "7223B5AD7D8C5EDC704B7CC450D3E8790537B23520CD60D756FA1D4BE13CF1DA",
+      "after": "7223B5AD7D8C5EDC704B7CC450D3E8790537B23520CD60D756FA1D4BE13CF1DA"
+    },
+    {
+      "key": "findings",
+      "expected": "886D47DB7A67817594881B4FC3D64A8DC602D358432F78C5FC81B807CE5FC1F8",
+      "after": "886D47DB7A67817594881B4FC3D64A8DC602D358432F78C5FC81B807CE5FC1F8"
+    },
+    {
+      "key": "preservation",
+      "expected": "6FFCF81D2EE9194EEEDE2A724BFA147521540BB77B475C43413C8F4C49E53F71",
+      "after": "6FFCF81D2EE9194EEEDE2A724BFA147521540BB77B475C43413C8F4C49E53F71"
+    },
+    {
+      "key": "current",
+      "expected": "E0ADCD68C6314103D497FD724BFC57DF9E809C5DEC8B88B5EC600C6E37CD99B6",
+      "after": "E0ADCD68C6314103D497FD724BFC57DF9E809C5DEC8B88B5EC600C6E37CD99B6"
+    },
+    {
+      "key": "baseline",
+      "expected": "463B2465AE56F6A92923C9DF18BA654465131F6564EF340AB9B5C372ED5D4EBD",
+      "after": "463B2465AE56F6A92923C9DF18BA654465131F6564EF340AB9B5C372ED5D4EBD"
+    },
+    {
+      "key": "loss",
+      "expected": "084CF2A1E16CC8F350DCDB0B795E52C89976B94285EF58D902459CB25229CB0C",
+      "after": "084CF2A1E16CC8F350DCDB0B795E52C89976B94285EF58D902459CB25229CB0C"
+    },
+    {
+      "key": "service",
+      "expected": "879736C9128142575309BD4D34BBA866398AFFF1EFD204457C0562DC4DD2DF60",
+      "after": "879736C9128142575309BD4D34BBA866398AFFF1EFD204457C0562DC4DD2DF60"
+    },
+    {
+      "key": "requests",
+      "expected": "2C83F2181A47F76078EE94D7F623454BD3EBEB8243528BF45B04C5F50761AC1B",
+      "after": "2C83F2181A47F76078EE94D7F623454BD3EBEB8243528BF45B04C5F50761AC1B"
+    },
+    {
+      "key": "existingRequests",
+      "expected": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "after": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "key": "existingState",
+      "expected": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+      "after": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "key": "baselineExistingRequests",
+      "expected": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "after": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "key": "baselineExistingState",
+      "expected": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+      "after": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "key": "originalEvaluator",
+      "expected": "4941FA3893DE3846FC816769943D7842E78FF9885AC5388A3918F268DC3EC226",
+      "after": "4941FA3893DE3846FC816769943D7842E78FF9885AC5388A3918F268DC3EC226"
+    },
+    {
+      "key": "originalReader",
+      "expected": "03CE4E1AA79258635B3AA0F1B4BE6CDDCAC54D10648F582087DE40640120AB05",
+      "after": "03CE4E1AA79258635B3AA0F1B4BE6CDDCAC54D10648F582087DE40640120AB05"
+    },
+    {
+      "key": "candidate",
+      "expected": "AEEEB08670924A41C8EFAEAB02E099894CA48A5FB04F7AD29B194E5A86B5AF02",
+      "after": "AEEEB08670924A41C8EFAEAB02E099894CA48A5FB04F7AD29B194E5A86B5AF02"
+    },
+    {
+      "key": "core",
+      "expected": "268A374EA7F813CE95D96FD31202A88404CBB883604DD823CB14D0FFC3B1B9E0",
+      "after": "268A374EA7F813CE95D96FD31202A88404CBB883604DD823CB14D0FFC3B1B9E0"
+    },
+    {
+      "key": "currentRaw",
+      "expected": "16260095E553396952238C58B90809086F36E6F66CD1F3A8BCDCA296468A978C",
+      "after": "16260095E553396952238C58B90809086F36E6F66CD1F3A8BCDCA296468A978C"
+    },
+    {
+      "key": "baselineRaw",
+      "expected": "3C8524228FD5DB44046503B70FBF5021B865C0EA029E9CBD80AFEA88C6C2792D",
+      "after": "3C8524228FD5DB44046503B70FBF5021B865C0EA029E9CBD80AFEA88C6C2792D"
+    },
+    {
+      "key": "lossRaw",
+      "expected": "64DF0029A59FA8E40DDAC40F4BD8F993198463A2053ABB16FCD25D61BA45FF16",
+      "after": "64DF0029A59FA8E40DDAC40F4BD8F993198463A2053ABB16FCD25D61BA45FF16"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "source-ready-v2.json",
+      "sha256": "70B0AB95B031C27E03DEB3B58513A63FEAC36B6CD2367447E74FBF8B297C43EC"
+    },
+    {
+      "path": "invocation-attempt-2/invocation.json",
+      "sha256": "384E42E80337FA314DFCF1CD4707957A80E21745406C1BE7FBBCFEAEA0FE714C"
+    },
+    {
+      "path": "invocation-attempt-2/stdout.txt",
+      "sha256": "B4ED9CE1E9D6B50A0263A04306AEC42B8D5990A24691DD2229605AE4A1139C83"
+    },
+    {
+      "path": "invocation-attempt-2/stderr.txt",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3/result.json",
+      "sha256": "50857FE414EDA7E08FC215D0DD95EC097A1258109A5552B72C1986E548B48CD4"
+    },
+    {
+      "path": "runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3/fixed-inputs.json",
+      "sha256": "E3FE3E1AEDB68806F5BF6091EA56D4A6EA1DE1568B34C19098042AC28BDF2DE3"
+    },
+    {
+      "path": "runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3/Evaluate-V4StructuralSupplement.py",
+      "sha256": "C2AED3AC8F81F90B05352257D41256A3521B1B1A1B128847A720103EB448B005"
+    }
+  ],
+  "appExecution": "not_run",
+  "coreLoad": "not_run",
+  "endpointExecution": "not_run",
+  "modelExecution": "not_run",
+  "humanAcceptance": "not_run"
+}

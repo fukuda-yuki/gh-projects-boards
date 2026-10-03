@@ -1,0 +1,88 @@
+--- failed-attempt-1/Evaluate-V4StructuralSupplement.py
++++ source/Evaluate-V4StructuralSupplement.py
+@@ -7,6 +7,7 @@
+ import copy
+ import hashlib
+ import json
++import os
+ import re
+ from datetime import datetime, timezone
+ from pathlib import Path
+@@ -22,8 +23,20 @@
+ ORIGINAL_FAILURE = "No unrelated planning, structural decision or historical disposition was introduced"
+ 
+ 
++def io_path(path):
++    """Keep ordinary absolute Paths for bounds; extend only Windows file IO."""
++    if not path.is_absolute():
++        raise ValueError("File IO requires an absolute path")
++    text = str(path)
++    if os.name != "nt" or text.startswith("\\\\?\\"):
++        return path
++    if text.startswith("\\\\"):
++        return Path("\\\\?\\UNC\\" + text[2:])
++    return Path("\\\\?\\" + text)
++
++
+ def digest(path):
+-    return hashlib.sha256(path.read_bytes()).hexdigest().upper()
++    return hashlib.sha256(io_path(path).read_bytes()).hexdigest().upper()
+ 
+ 
+ def unique_object(pairs):
+@@ -40,7 +53,7 @@
+ 
+ 
+ def load(path):
+-    return decode(path.read_text(encoding="utf-8-sig"))
++    return decode(io_path(path).read_text(encoding="utf-8-sig"))
+ 
+ 
+ def rows(value):
+@@ -276,7 +289,7 @@
+         path = (root / entry["relative"]).resolve()
+         if not path.is_relative_to(root) or digest(path) != entry["sha256"]:
+             raise ValueError("Input hash or boundary mismatch: " + entry["relative"])
+-        if path.stat().st_size != entry["length"] or entry["key"] in paths:
++        if io_path(path).stat().st_size != entry["length"] or entry["key"] in paths:
+             raise ValueError("Input inventory mismatch")
+         paths[entry["key"]] = path
+     original = load(paths["result"])
+@@ -287,8 +300,8 @@
+             or len(failures) != 1 or failures[0]["name"] != ORIGINAL_FAILURE or failures[0]["status"] != "failed":
+         raise ValueError("Original 27 passed / 1 failed evidence differs")
+     data = {key: load(paths[key]) for key in ("current", "baseline", "loss", "service")}
+-    data["requests"] = [decode(line) for line in paths["requests"].read_text(encoding="utf-8-sig").splitlines() if line]
+-    data["existingServiceIdentical"] = all(paths[current].read_bytes() == paths[baseline].read_bytes()
++    data["requests"] = [decode(line) for line in io_path(paths["requests"]).read_text(encoding="utf-8-sig").splitlines() if line]
++    data["existingServiceIdentical"] = all(io_path(paths[current]).read_bytes() == io_path(paths[baseline]).read_bytes()
+         for current, baseline in (("existingRequests", "baselineExistingRequests"), ("existingState", "baselineExistingState")))
+     positive = evaluate(data)
+     probes = []
+@@ -316,9 +329,9 @@
+         raise ValueError("Reviewed source or input manifest changed during interpretation")
+     output = args.output.resolve()
+     allowed_parent = source.parent.parent / "runs"
+-    if output.parent != allowed_parent or output.exists():
++    if output.parent != allowed_parent or io_path(output).exists():
+         raise ValueError("Require a new direct child of the supplement runs directory")
+-    output.mkdir(parents=True, exist_ok=False)
++    io_path(output).mkdir(parents=True, exist_ok=False)
+     result = {"schema": "V4-independent-structural-supplement-v1", "createdAtUtc": datetime.now(timezone.utc).isoformat(),
+               "originalRun": str(root), "originalReadback": {"passed": 27, "failed": 1, "unobserved": 0, "unchanged": True},
+               "sourceSha256": digest(source), "inputManifestSha256": digest(manifest_path),
+@@ -327,11 +340,11 @@
+               "originalInputsUnchanged": True, "scope": "Independent interpretation of the one structural failure; original result remains failed.",
+               "appExecution": "not_run", "coreLoad": "not_run", "endpointExecution": "not_run", "modelExecution": "not_run", "humanAcceptance": "not_run"}
+     for name, value in (("result.json", result), ("fixed-inputs.json", manifest)):
+-        with (output / name).open("x", encoding="utf-8") as stream:
++        with io_path(output / name).open("x", encoding="utf-8") as stream:
+             json.dump(value, stream, ensure_ascii=False, indent=2)
+             stream.write("\n")
+-    with (output / source.name).open("xb") as stream:
+-        stream.write(source.read_bytes())
++    with io_path(output / source.name).open("xb") as stream:
++        stream.write(io_path(source).read_bytes())
+     print(json.dumps({"output": str(output), "passed": result["passed"], "originalReadbackUnchanged": True}))
+     raise SystemExit(0 if result["passed"] else 2)
+ 

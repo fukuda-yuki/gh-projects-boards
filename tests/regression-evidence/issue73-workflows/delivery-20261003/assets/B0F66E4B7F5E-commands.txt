@@ -1,0 +1,14 @@
+Command provenance note
+
+These earlier runs were executed by the coordinator, not this worker.
+The worker's inherited messages confirm the filter below for both Red and Green:
+  FullyQualifiedName~BoundCreationUnregister
+
+The red.log and green.log files identify the Release GhProjectsBoards.Tests
+assembly and their TRX destinations, but do not retain the original shell command.
+The exact original command, logger flags and coverage flags could not be recovered
+from this worker's context or those logs. No reconstructed command is asserted here.
+
+Observed results reported by the coordinator and retained in TRX:
+  red.trx: 8 executed, 5 passed, 3 failed, 0 skipped
+  green.trx: 8 executed, 8 passed, 0 failed, 0 skipped

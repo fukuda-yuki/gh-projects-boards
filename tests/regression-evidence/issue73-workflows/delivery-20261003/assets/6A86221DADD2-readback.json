@@ -1,0 +1,784 @@
+{
+  "kind": "Independent stopped K JSON/service-file readback; no app, test or CLI service executed",
+  "atUtc": "2026-09-27T10:25:39.906591+00:00",
+  "checkpointSha256": "3289E9414AC2EC976369C72A4BEA5650D9BC1BC6E47E7FEBDFD7471C187F4A2E",
+  "beforeVersion": 12,
+  "beforeRevision": 214,
+  "version": 13,
+  "revision": 227,
+  "scope": {
+    "Host": "example.test",
+    "ViewerId": 42
+  },
+  "batchId": "5093c83178b04f8f8ba6df9adb99af21",
+  "creationBefore": {
+    "Id": "3b0563a022154955b79312d190351ca2",
+    "LocalId": "local-83588acd7c2d421cb7e2a225f26d7f6c",
+    "Stamp": 205,
+    "Repository": {
+      "Id": "R-first",
+      "Name": "sample-user/first",
+      "IssuesEnabled": true,
+      "Archived": false,
+      "CanCreate": true,
+      "At": "2026-09-27T08:40:08.8245452+00:00",
+      "Allowed": true
+    },
+    "Title": "Review follow-up",
+    "Selects": [
+      {
+        "FieldId": "P1-status",
+        "FieldName": "Status",
+        "OptionId": null,
+        "OptionName": null,
+        "ExplicitClear": false,
+        "Intent": "Unspecified"
+      }
+    ],
+    "Authorized": true,
+    "Dispatched": true,
+    "Received": null,
+    "Verified": null,
+    "ItemId": null,
+    "MembershipDispatched": false,
+    "Fields": null,
+    "Completed": false,
+    "Reason": "作成結果不確定：ID未確認。自動再作成しません。",
+    "PreviousAttempt": null,
+    "EarlierUncertain": false,
+    "UserBound": false,
+    "ReceivedId": null,
+    "EarlierFields": null,
+    "SetupReviewedTitle": null,
+    "ReceivedItemId": null,
+    "SetupIntents": null,
+    "EarlierSetupIntents": null,
+    "PlanningIntents": [],
+    "SetupPlanningIntents": null,
+    "EarlierPlanningIntents": null
+  },
+  "creationAfter": {
+    "Id": "3b0563a022154955b79312d190351ca2",
+    "LocalId": "local-83588acd7c2d421cb7e2a225f26d7f6c",
+    "Stamp": 205,
+    "Repository": {
+      "Id": "R-first",
+      "Name": "sample-user/first",
+      "IssuesEnabled": true,
+      "Archived": false,
+      "CanCreate": true,
+      "At": "2026-09-27T08:40:08.8245452+00:00",
+      "Allowed": true
+    },
+    "Title": "Review follow-up",
+    "Selects": [
+      {
+        "FieldId": "P1-status",
+        "FieldName": "Status",
+        "OptionId": null,
+        "OptionName": null,
+        "ExplicitClear": false,
+        "Intent": "Unspecified"
+      }
+    ],
+    "Authorized": true,
+    "Dispatched": true,
+    "Received": null,
+    "Verified": {
+      "Id": "created1",
+      "RepositoryId": "R-first",
+      "Number": 1001,
+      "Url": "https://example.test/sample-user/first/issues/1001",
+      "Title": "Review follow-up",
+      "At": "2026-09-27T10:16:18.6698899+00:00"
+    },
+    "ItemId": "item-created1",
+    "MembershipDispatched": true,
+    "Fields": [],
+    "Completed": true,
+    "Reason": "今回の設定完了を検証済み。以前の作成試行は依然不確定です。",
+    "PreviousAttempt": null,
+    "EarlierUncertain": true,
+    "UserBound": true,
+    "ReceivedId": null,
+    "EarlierFields": null,
+    "SetupReviewedTitle": null,
+    "ReceivedItemId": "item-created1",
+    "SetupIntents": null,
+    "EarlierSetupIntents": null,
+    "PlanningIntents": [],
+    "SetupPlanningIntents": null,
+    "EarlierPlanningIntents": null
+  },
+  "unchangedRequestPrefixes": [
+    {
+      "file": "calls.jsonl",
+      "originalBytes": 7223,
+      "finalBytes": 13087,
+      "unchangedPrefix": true,
+      "originalSha256": "8E2677CB9E19E7D42D43CD4314D5BCD5EA555A77117694143C4CF3734C13B80C",
+      "finalSha256": "1CA81FF38546012B0479126B2F70A1CA71353B03FA66469077A9FB6F6C9E8E40"
+    },
+    {
+      "file": "creation-requests.jsonl",
+      "originalBytes": 225,
+      "finalBytes": 444,
+      "unchangedPrefix": true,
+      "originalSha256": "A998E687B9713341D60DD3C4CB132635F5E3860ACB324600B76D39C28FB2AD26",
+      "finalSha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2"
+    }
+  ],
+  "mutationCounts": {
+    "existingCreateIssue": 1,
+    "newCreateIssue": 0,
+    "newAddToProject": 1,
+    "otherMutations": 0
+  },
+  "mutationPayloads": [
+    {
+      "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+      "input": {
+        "repositoryId": "R-first",
+        "title": "Review follow-up"
+      }
+    },
+    {
+      "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+      "input": {
+        "projectId": "P1",
+        "contentId": "created1"
+      }
+    }
+  ],
+  "serviceBefore": [
+    {
+      "id": "created1",
+      "number": 1001,
+      "title": "Review follow-up",
+      "repository": "first",
+      "member": false,
+      "option": "todo"
+    }
+  ],
+  "serviceAfter": [
+    {
+      "id": "created1",
+      "number": 1001,
+      "title": "Review follow-up",
+      "repository": "first",
+      "member": true,
+      "option": "todo"
+    }
+  ],
+  "calls": {
+    "original": 69,
+    "final": 125,
+    "appended": 56,
+    "appendedMutation": 1,
+    "appendedReadOnly": 55,
+    "finalMutationOneBasedIndex": 95,
+    "readOnlyCallsAfterFinalMutation": 30,
+    "appendedRecords": [
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 26468
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 39116
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 39056
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 11844
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 37192
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 20012
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 10004
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 32504
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 43688
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 32352
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 29524
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 24020
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 4440
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 1624
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 44756
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 31992
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 43624
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 1228
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 22068
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 29468
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 17796
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 32372
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 32108
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 8268
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 26208
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": true,
+        "pid": 23008
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 5852
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 30608
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 6364
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 460
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 14340
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 22376
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 8528
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 38920
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 16688
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 40876
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 29520
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 16628
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 13300
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 5356
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 16572
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 34088
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 29844
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 10904
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 18252
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 13320
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 16088
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 35452
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 6696
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 43640
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 14588
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 22328
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 40548
+      },
+      {
+        "operation": "auth",
+        "endpoint": null,
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 12876
+      },
+      {
+        "operation": "api",
+        "endpoint": "user",
+        "host": "example.test",
+        "method": "GET",
+        "mutation": false,
+        "pid": 15872
+      },
+      {
+        "operation": "api",
+        "endpoint": "graphql",
+        "host": "example.test",
+        "method": "POST",
+        "mutation": false,
+        "pid": 2004
+      }
+    ],
+    "timestampsAvailable": false
+  },
+  "finalState": {
+    "localRows": 0,
+    "changedFields": 0,
+    "buffers": 0,
+    "conflicts": 0,
+    "structuralChanges": 0,
+    "project": {
+      "Scope": {
+        "Host": "example.test",
+        "ViewerId": 42
+      },
+      "NodeId": "P1"
+    },
+    "retrievedAt": "2026-09-27T10:17:28.6451734+00:00",
+    "issues": 102,
+    "items": 102,
+    "createdIssue": {
+      "Id": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "created1"
+      },
+      "Repository": {
+        "Id": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "R-first"
+        },
+        "OwnerId": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "O1"
+        },
+        "NameWithOwner": "sample-user/first"
+      },
+      "Number": 1001,
+      "Url": "https://example.test/sample-user/first/issues/1001",
+      "Title": {
+        "Availability": 0,
+        "Value": "Review follow-up"
+      },
+      "State": {
+        "Availability": 0,
+        "Value": 0
+      },
+      "Capability": {
+        "CanUpdate": true,
+        "ObservedAt": "2026-09-27T10:17:28.6449303+00:00"
+      },
+      "Native": {
+        "Assignees": [],
+        "Predecessors": [],
+        "Parent": {
+          "Availability": 1,
+          "Value": null
+        },
+        "Complete": true
+      }
+    },
+    "membership": {
+      "Id": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "item-created1"
+      },
+      "Kind": 0,
+      "TypeName": "ISSUE",
+      "ContentId": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "created1"
+      },
+      "IsArchived": false,
+      "Values": [
+        {
+          "FieldId": {
+            "Scope": {
+              "Host": "example.test",
+              "ViewerId": 42
+            },
+            "NodeId": "P1-status"
+          },
+          "ValueId": "v-created1",
+          "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+          "Availability": 0,
+          "OptionId": "todo",
+          "Scalar": null
+        },
+        {
+          "FieldId": {
+            "Scope": {
+              "Host": "example.test",
+              "ViewerId": 42
+            },
+            "NodeId": "P1-text"
+          },
+          "ValueId": null,
+          "TypeName": "ProjectV2Field",
+          "Availability": 2,
+          "OptionId": null,
+          "Scalar": null
+        }
+      ],
+      "ValuesComplete": true
+    }
+  },
+  "freshFetchEvidence": {
+    "resumeInput": {
+      "timestamp": "2026-09-27T10:16:35.484Z",
+      "action": "Click 確認して再開 at window coordinate (454, 288) in visible bound-Issue history"
+    },
+    "fetchInput": {
+      "timestamp": "2026-09-27T10:17:27.319Z",
+      "action": "Click 最新を取得 (element 386) once after resume"
+    },
+    "fetchProgressCaptureUtc": "2026-09-27T10:17:27.614Z",
+    "persistedRetrievalAt": "2026-09-27T10:17:28.6451734+00:00",
+    "settledResultCaptureUtc": "2026-09-27T10:17:33.105Z",
+    "boundary": "Ordered fake service read records plus UI action/capture and saved retrieval timestamps corroborate fresh fetch. Individual fake call records have no timestamps; no per-call timing is invented."
+  },
+  "captureToolInterruption": {
+    "error": "no monitor found for window",
+    "atUtc": "2026-09-27T10:16:58.996Z",
+    "sameWindowId": 6097872,
+    "readOnlyRecoveryAtUtc": "2026-09-27T10:17:12.244Z",
+    "repeatedResumeInputs": 0,
+    "boundary": "Same window remained listed and read-only rebind/capture succeeded; transition coverage gap retained, not attributed as product crash"
+  },
+  "launchBinding": {
+    "pid": 12444,
+    "frozenSource": "498840b1eea42bfb344c53195f7e5473fe68e020",
+    "appSha256": "77EC6A38C4EA44783E675974F6D65DAA4C3E1D8BAC3F58B529014391A248F709",
+    "receiptSha256": "80EBB59FAC00C877174622F41386845149BF32905FDC5059C6B82B5B90921B09"
+  },
+  "processAndEvents": {
+    "snapshot": "snapshot-manifest.json",
+    "events": "../application-events-readback.json",
+    "boundary": "Ordinary close is evaluator UI evidence. PID absence and bounded Windows log query are separate; event absence is not universal no-crash proof."
+  },
+  "humanAcceptance": "not_run",
+  "sourceBoundary": "Frozen R3 only; no later navigation/popup source is validated by K"
+}

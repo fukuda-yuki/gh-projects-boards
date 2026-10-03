@@ -1,0 +1,138 @@
+{
+  "readUtc": "2026-09-27T09:36:12.4013802Z",
+  "pid": 24404,
+  "pidAbsentBefore": true,
+  "pidAbsentAfter": true,
+  "sourceRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-creation-g",
+  "destination": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-creation-g\\diagnostics\\disappearance-snapshot",
+  "stableBeforeAfter": true,
+  "copyMatches": true,
+  "excluded": "writer.lock only (.writer.lock and writer.lock); execution lock and backup retained",
+  "before": [
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 503469,
+      "sha256": "29BA4148DB50EE39076754C268FBA44D4A1EE2F3D8483E3D3DF506BB3351A5AD"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 498845,
+      "sha256": "943BC80BA70A21A822CD547BB495596E966CD7F73838D13DEB260F83BCD585C0"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 261698,
+      "sha256": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7"
+    },
+    {
+      "path": "gh-config/calls.jsonl",
+      "length": 11831,
+      "sha256": "B7C99E8A7C65CFF2FEF99D75F7DBFC9719CF503FDE4F15124DA45B8E02A14FD1"
+    },
+    {
+      "path": "gh-config/creation-requests.jsonl",
+      "length": 444,
+      "sha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2"
+    },
+    {
+      "path": "gh-config/creation-state.json",
+      "length": 111,
+      "sha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2"
+    },
+    {
+      "path": "gh-config/scenario.json",
+      "length": 126,
+      "sha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57"
+    }
+  ],
+  "after": [
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 503469,
+      "sha256": "29BA4148DB50EE39076754C268FBA44D4A1EE2F3D8483E3D3DF506BB3351A5AD"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 498845,
+      "sha256": "943BC80BA70A21A822CD547BB495596E966CD7F73838D13DEB260F83BCD585C0"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 261698,
+      "sha256": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7"
+    },
+    {
+      "path": "gh-config/calls.jsonl",
+      "length": 11831,
+      "sha256": "B7C99E8A7C65CFF2FEF99D75F7DBFC9719CF503FDE4F15124DA45B8E02A14FD1"
+    },
+    {
+      "path": "gh-config/creation-requests.jsonl",
+      "length": 444,
+      "sha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2"
+    },
+    {
+      "path": "gh-config/creation-state.json",
+      "length": 111,
+      "sha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2"
+    },
+    {
+      "path": "gh-config/scenario.json",
+      "length": 126,
+      "sha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57"
+    }
+  ],
+  "copy": [
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 503469,
+      "sha256": "29BA4148DB50EE39076754C268FBA44D4A1EE2F3D8483E3D3DF506BB3351A5AD"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 498845,
+      "sha256": "943BC80BA70A21A822CD547BB495596E966CD7F73838D13DEB260F83BCD585C0"
+    },
+    {
+      "path": "data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 261698,
+      "sha256": "70DF0058A1B7FBFCB7B5507299B144E3AA286FC26904120BAB4F52362144AAE7"
+    },
+    {
+      "path": "gh-config/calls.jsonl",
+      "length": 11831,
+      "sha256": "B7C99E8A7C65CFF2FEF99D75F7DBFC9719CF503FDE4F15124DA45B8E02A14FD1"
+    },
+    {
+      "path": "gh-config/creation-requests.jsonl",
+      "length": 444,
+      "sha256": "592A15DDA5F82235A489A739E35CAD59295686F3D5F901FC74FF2950004F33B2"
+    },
+    {
+      "path": "gh-config/creation-state.json",
+      "length": 111,
+      "sha256": "BC551A50B0EFF0F794DE977E256B6787BAFEDCC7112C7A858116AD16182920A2"
+    },
+    {
+      "path": "gh-config/scenario.json",
+      "length": 126,
+      "sha256": "57690B23C19533FCEA6CDA617C606A9EC6D252DEEC70AD6AD63B9E931A427E57"
+    }
+  ],
+  "close": "No normal close claimed. Evaluator reports unexpected window loss after Confirm and resume; Windows events separately retained."
+}

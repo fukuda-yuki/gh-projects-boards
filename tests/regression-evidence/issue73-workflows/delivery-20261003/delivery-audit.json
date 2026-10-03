@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "138142df44f9314700827b675185d3dfbf39ceda",
+  "sourceInputs": 272,
+  "sourceMismatches": 0,
+  "assetBindings": 331,
+  "distinctAssetFiles": 329,
+  "reportDerivatives": 30,
+  "copyMismatches": 0,
+  "selectionFilesBeforeAudit": 528,
+  "selectionBytesBeforeAudit": 28383477,
+  "relativeLinksChecked": 502,
+  "missingLinks": [],
+  "unselectedRepositoryTargets": [],
+  "explicitLocalRawReferences": [
+    {
+      "document": "tests/regression-evidence/issue73-workflows/normal-workload-20261003/README.md",
+      "target": "../../../../TestResults/issue73/normal-workload-20261003/before.json"
+    },
+    {
+      "document": "tests/regression-evidence/issue73-workflows/normal-workload-20261003/README.md",
+      "target": "../../../../TestResults/issue73/normal-workload-20261003/after-close.json"
+    },
+    {
+      "document": "tests/regression-evidence/issue73-workflows/normal-workload-20261003/README.md",
+      "target": "../../../../TestResults/issue73/normal-workload-20261003/after-restart.json"
+    }
+  ],
+  "credentialPatternMatches": 0,
+  "preservedWeeklyReportSha256": "7E41B0654099772235F9BCFFE5FD4579EDB0EB0C20A3DC735945B7C074A7176F",
+  "preservedNormalReportSha256": "E711B0DCD4246A202CB5EF433462D5B9018242A2B8AEBD3E4E8D712524732D41",
+  "runtimeVerification": "launcher-verification.json; no new process started",
+  "notClaims": [
+    "new behavioral test executions",
+    "all raw archive files committed",
+    "standalone runtime distribution",
+    "human acceptance",
+    "remote publication"
+  ]
+}

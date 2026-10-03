@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="13a5d24d-2867-46fb-8e18-ad6b34c5b973" name="mwam0@RTX5070 2026-09-27 18:18:08" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-27T18:18:08.7279890+09:00" queuing="2026-09-27T18:18:08.7279891+09:00" start="2026-09-27T18:18:03.7886585+09:00" finish="2026-09-27T18:18:33.2682498+09:00" />
+  <TestSettings name="default" id="0a4e2ffc-b3ae-4a34-979e-49991a41b7ea">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-09-27_18_18_08" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="7ae820f5-d4ce-48be-b882-9aa64e1c0aa4" testId="d3f55656-dbeb-7427-da64-5b490b3524ab" testName="BoundCreationUnregisterSaveFailureKeepsTheRegistrationAndJournalUntilRetry" computerName="RTX5070" duration="00:00:03.1817060" startTime="2026-09-27T18:18:29.9432960+09:00" endTime="2026-09-27T18:18:33.1250011+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7ae820f5-d4ce-48be-b882-9aa64e1c0aa4" />
+    <UnitTestResult executionId="eb387c16-a30d-428f-b1bb-3f52e1eeeba9" testId="1a97f157-674a-0e02-c537-60ede949f099" testName="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;other-project&quot;)" computerName="RTX5070" duration="00:00:03.2642360" startTime="2026-09-27T18:18:20.2834102+09:00" endTime="2026-09-27T18:18:23.5476453+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eb387c16-a30d-428f-b1bb-3f52e1eeeba9" />
+    <UnitTestResult executionId="4e9a7b2a-d852-4b6e-98b7-08c2369c5f09" testId="dc65ac8a-a674-4563-e884-ca4b1d253195" testName="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retry&quot;)" computerName="RTX5070" duration="00:00:03.5788650" startTime="2026-09-27T18:18:05.1233463+09:00" endTime="2026-09-27T18:18:08.7021720+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4e9a7b2a-d852-4b6e-98b7-08c2369c5f09" />
+    <UnitTestResult executionId="8523433d-58f2-4d16-ab6c-1e805238f54d" testId="4c19ce88-f1ff-3da9-dc36-90e06f9fc418" testName="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;membership&quot;)" computerName="RTX5070" duration="00:00:01.1119220" startTime="2026-09-27T18:18:15.0006642+09:00" endTime="2026-09-27T18:18:16.1125855+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8523433d-58f2-4d16-ab6c-1e805238f54d" />
+    <UnitTestResult executionId="783bb81e-04f2-4e1c-8398-2a441b65ee58" testId="babf1de3-3957-920d-2599-cbb9945dcd77" testName="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(True)" computerName="RTX5070" duration="00:00:03.1891890" startTime="2026-09-27T18:18:26.7539689+09:00" endTime="2026-09-27T18:18:29.9431567+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="783bb81e-04f2-4e1c-8398-2a441b65ee58" />
+    <UnitTestResult executionId="feaf3caa-3db6-4c07-8244-4aabbee352d0" testId="f9519361-0625-a3a5-a0f5-89c741157813" testName="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retired&quot;)" computerName="RTX5070" duration="00:00:06.2975100" startTime="2026-09-27T18:18:08.7031006+09:00" endTime="2026-09-27T18:18:15.0006103+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="feaf3caa-3db6-4c07-8244-4aabbee352d0" />
+    <UnitTestResult executionId="83c59fae-c847-4473-9c5d-bb24b2a0c809" testId="4d7eae2b-58d6-9164-8ec4-c87f923442e2" testName="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(False)" computerName="RTX5070" duration="00:00:03.2049930" startTime="2026-09-27T18:18:23.5489312+09:00" endTime="2026-09-27T18:18:26.7539232+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="83c59fae-c847-4473-9c5d-bb24b2a0c809" />
+    <UnitTestResult executionId="c2260b21-2fa4-4663-969a-2d6cc4ec49bc" testId="daefdf73-d27c-a02f-2625-598aeea23b46" testName="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;fields&quot;)" computerName="RTX5070" duration="00:00:04.1707070" startTime="2026-09-27T18:18:16.1126386+09:00" endTime="2026-09-27T18:18:20.2833447+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c2260b21-2fa4-4663-969a-2d6cc4ec49bc" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retry&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="dc65ac8a-a674-4563-e884-ca4b1d253195">
+      <Execution id="4e9a7b2a-d852-4b6e-98b7-08c2369c5f09" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retry&quot;)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(False)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="4d7eae2b-58d6-9164-8ec4-c87f923442e2">
+      <Execution id="83c59fae-c847-4473-9c5d-bb24b2a0c809" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(False)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retired&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="f9519361-0625-a3a5-a0f5-89c741157813">
+      <Execution id="feaf3caa-3db6-4c07-8244-4aabbee352d0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;retired&quot;)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;membership&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="4c19ce88-f1ff-3da9-dc36-90e06f9fc418">
+      <Execution id="8523433d-58f2-4d16-ab6c-1e805238f54d" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;membership&quot;)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;other-project&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="1a97f157-674a-0e02-c537-60ede949f099">
+      <Execution id="eb387c16-a30d-428f-b1bb-3f52e1eeeba9" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;other-project&quot;)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;fields&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="daefdf73-d27c-a02f-2625-598aeea23b46">
+      <Execution id="c2260b21-2fa4-4663-969a-2d6cc4ec49bc" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(&quot;fields&quot;)" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterSaveFailureKeepsTheRegistrationAndJournalUntilRetry" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="d3f55656-dbeb-7427-da64-5b490b3524ab">
+      <Execution id="7ae820f5-d4ce-48be-b882-9aa64e1c0aa4" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterSaveFailureKeepsTheRegistrationAndJournalUntilRetry" />
+    </UnitTest>
+    <UnitTest name="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(True)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="babf1de3-3957-920d-2599-cbb9945dcd77">
+      <Execution id="783bb81e-04f2-4e1c-8398-2a441b65ee58" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.CreationTests" name="BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(True)" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="d3f55656-dbeb-7427-da64-5b490b3524ab" executionId="7ae820f5-d4ce-48be-b882-9aa64e1c0aa4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1a97f157-674a-0e02-c537-60ede949f099" executionId="eb387c16-a30d-428f-b1bb-3f52e1eeeba9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc65ac8a-a674-4563-e884-ca4b1d253195" executionId="4e9a7b2a-d852-4b6e-98b7-08c2369c5f09" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4c19ce88-f1ff-3da9-dc36-90e06f9fc418" executionId="8523433d-58f2-4d16-ab6c-1e805238f54d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="babf1de3-3957-920d-2599-cbb9945dcd77" executionId="783bb81e-04f2-4e1c-8398-2a441b65ee58" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f9519361-0625-a3a5-a0f5-89c741157813" executionId="feaf3caa-3db6-4c07-8244-4aabbee352d0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4d7eae2b-58d6-9164-8ec4-c87f923442e2" executionId="83c59fae-c847-4473-9c5d-bb24b2a0c809" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="daefdf73-d27c-a02f-2625-598aeea23b46" executionId="c2260b21-2fa4-4663-969a-2d6cc4ec49bc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="8" executed="8" passed="8" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 8 of 8 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-09-27.18_18_33.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

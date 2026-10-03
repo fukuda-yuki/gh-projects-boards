@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="304" result="Failed" start-time="2026-10-02T18:20:02.0125148Z" end-time="2026-10-02T18:20:47.9993600Z" duration="45.986827" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60" random-seed="599760035">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == RangeInputRepair" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-031957-307-01d22121\results.xml]]></command-line>
+  <filter>
+    <cat>RangeInputRepair</cat>
+  </filter>
+  <test-suite type="Assembly" id="1380" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="304" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0125148Z" end-time="2026-10-02T18:20:47.9993600Z" duration="45.986827" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="104180" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1381" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="304" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0147603Z" end-time="2026-10-02T18:20:47.9993578Z" duration="45.984597" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1382" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="304" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0149017Z" end-time="2026-10-02T18:20:47.9993554Z" duration="45.984454" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1383" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="304" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0149515Z" end-time="2026-10-02T18:20:47.9993531Z" duration="45.984402" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1206" name="BulkEditingHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="26" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0149533Z" end-time="2026-10-02T18:20:47.9993464Z" duration="45.984393" total="4" initiated="4" passed="1" failed="3" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="60">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1209" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-02T18:20:02.0159698Z" end-time="2026-10-02T18:20:45.7171164Z" duration="43.701147" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="36">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1207" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1467385894" result="Failed" label="Error" start-time="2026-10-02T18:20:02.0160553Z" end-time="2026-10-02T18:20:24.0209477Z" duration="22.004945" asserts="17">
+                <failure>
+                  <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 73
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command)
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                    <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 73
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command)
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+              <test-case id="1208" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="363569058" result="Failed" label="Error" start-time="2026-10-02T18:20:24.0219320Z" end-time="2026-10-02T18:20:45.7163106Z" duration="21.694379" asserts="19">
+                <failure>
+                  <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 73
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command)
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.TimeoutException : Observable UI condition did not complete]]></message>
+                    <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 73
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(String command)
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+            </test-suite>
+            <test-case id="1211" name="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" methodname="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="768179874" result="Failed" start-time="2026-10-02T18:20:45.7172866Z" end-time="2026-10-02T18:20:47.4136471Z" duration="1.696361" asserts="7">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <failure>
+                <message><![CDATA[  The visible handle must receive the native press and acquire its pointer.
+Assert.That(directPress && capturedOnPress, Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.<>c__DisplayClass11_0.<NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease>b__10() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 131
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.<>c__DisplayClass11_0.<<NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease>b__5>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 129
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.SheetNativeInput.Drag(Point first, Point last, Func`1 beforeRelease) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SheetNativeInput.cs:line 96
+   at GhProjectsBoards.UiIntegration.Tests.SheetNativeInput.Drag(Point first, Point last, Func`1 beforeRelease) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SheetNativeInput.cs:line 97
+   at GhProjectsBoards.UiIntegration.Tests.SheetNativeInput.Drag(String from, String to, Func`1 beforeRelease) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SheetNativeInput.cs:line 91
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 128
+   at GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\BulkEditingHostedTests.cs:line 154
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+              <output><![CDATA[Handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Grid# > ListViewItemPresenter# > ListViewItem# > ItemsStackPanel# > ItemsPresenter# > ScrollContentPresenter# > Grid# > Border# > ScrollViewer# > Border# > ListView#ProjectItems > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Hit ancestry: Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Grid# > ListViewItemPresenter# > ListViewItem# > ItemsStackPanel# > ItemsPresenter# > ScrollContentPresenter# > Grid# > Border# > ScrollViewer# > Border# > ListView#ProjectItems > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | FillHandle#GridFillHandle0_1 > Grid# > Border# > Grid# > ListViewItemPresenter# > ListViewItem# > ItemsStackPanel# > ItemsPresenter# > ScrollContentPresenter# > Grid# > Border# > ScrollViewer# > Border# > ListView#ProjectItems > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Grid# > Border# > Grid# > ListViewItemPresenter# > ListViewItem# > ItemsStackPanel# > ItemsPresenter# > ScrollContentPresenter# > Grid# > Border# > ScrollViewer# > Border# > ListView#ProjectItems > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Root press source: Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Held: directPress=False; capturedOnPress=False; captureLost=False; captures=0; selection=Renamed workflow：1行・1セル
+Final handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Grid# > ListViewItemPresenter# > ListViewItem# > ItemsStackPanel# > ItemsPresenter# > ScrollContentPresenter# > Grid# > Border# > ScrollViewer# > Border# > ListView#ProjectItems > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-case id="1210" name="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" methodname="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1896841199" result="Passed" start-time="2026-10-02T18:20:47.4136731Z" end-time="2026-10-02T18:20:47.9992844Z" duration="0.585612" asserts="17">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: TextBox
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

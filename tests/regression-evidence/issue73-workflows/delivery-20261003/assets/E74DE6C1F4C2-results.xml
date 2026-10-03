@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="304" result="Passed" start-time="2026-10-02T18:22:53.8412523Z" end-time="2026-10-02T18:23:01.1403927Z" duration="7.299120" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72" random-seed="226166610">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == RangeInputRepair" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-032244-017-36c2f1bb\results.xml]]></command-line>
+  <filter>
+    <cat>RangeInputRepair</cat>
+  </filter>
+  <test-suite type="Assembly" id="1380" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="304" result="Passed" start-time="2026-10-02T18:22:53.8412523Z" end-time="2026-10-02T18:23:01.1403927Z" duration="7.299120" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="178836" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1381" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="304" result="Passed" start-time="2026-10-02T18:22:53.8435973Z" end-time="2026-10-02T18:23:01.1403900Z" duration="7.296793" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72">
+      <test-suite type="TestSuite" id="1382" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="304" result="Passed" start-time="2026-10-02T18:22:53.8437452Z" end-time="2026-10-02T18:23:01.1403871Z" duration="7.296642" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72">
+        <test-suite type="TestSuite" id="1383" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="304" result="Passed" start-time="2026-10-02T18:22:53.8438112Z" end-time="2026-10-02T18:23:01.1403847Z" duration="7.296573" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72">
+          <test-suite type="TestFixture" id="1206" name="BulkEditingHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="26" result="Passed" start-time="2026-10-02T18:22:53.8438126Z" end-time="2026-10-02T18:23:01.1403759Z" duration="7.296563" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="72">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1209" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T18:22:53.8448870Z" end-time="2026-10-02T18:22:57.5996575Z" duration="3.754771" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="48">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <test-case id="1207" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangePaste&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="879232286" result="Passed" start-time="2026-10-02T18:22:53.8449815Z" end-time="2026-10-02T18:22:55.8597279Z" duration="2.014822" asserts="25">
+                <output><![CDATA[Focus after native menu closure: Button#GridRangeCommands
+Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+              <test-case id="1208" name="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(&quot;GridRangeFillDown&quot;)" methodname="NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="594157738" result="Passed" start-time="2026-10-02T18:22:55.8607431Z" end-time="2026-10-02T18:22:57.5987477Z" duration="1.738005" asserts="23">
+                <output><![CDATA[Focus after native menu closure: Button#GridRangeCommands
+Final selection: Renamed workflow：3行・3セル; state: ; focus: Button
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1211" name="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" methodname="NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="1486161369" result="Passed" start-time="2026-10-02T18:22:57.5998336Z" end-time="2026-10-02T18:23:00.5428596Z" duration="2.943027" asserts="7">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <output><![CDATA[Handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Hit ancestry: ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer# | Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Handle press: captured=True; source=ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Root press source: ContentPresenter# > FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Held: directPress=True; capturedOnPress=True; captureLost=False; captures=1; selection=Renamed workflow：10行へコピー予定 · 離して確定 / Escで取消
+Handle pointer capture lost
+Final handle ancestry: FillHandle#GridFillHandle0_1 > Grid# > Border# > Canvas#SheetNativeEditors > Grid# > EditingGrid# > Grid# > ContentPresenter# > DependencyObject# > Border# > ScrollContentPresenter# > ScrollViewer#
+Final selection: Renamed workflow：1行・1セル; state: ; focus: ChoiceCell
+]]></output>
+            </test-case>
+            <test-case id="1210" name="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests.QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" methodname="QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText" classname="GhProjectsBoards.UiIntegration.Tests.BulkEditingHostedTests" runstate="Runnable" seed="549719663" result="Passed" start-time="2026-10-02T18:23:00.5429132Z" end-time="2026-10-02T18:23:01.1403035Z" duration="0.597391" asserts="17">
+              <properties>
+                <property name="Category" value="RangeInputRepair" />
+              </properties>
+              <output><![CDATA[Final selection: Renamed workflow：3行・3セル; state: ; focus: TextBox
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,0 +1,1355 @@
+{
+  "atUtc": "2026-09-27T15:44:06.480340+00:00",
+  "ledgerBeforeSha256": "3BA83DD02D483A725AE51913FCA39B9D033D0FBBA6C88D0E7A36B3683C9CA5B8",
+  "files": [
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\002-get_window.json",
+      "length": 353,
+      "sha256": "71D433F985EF13E8C914F2C7CA3FEA6DA4B3FD5A901B977B4D527343C567EA9B",
+      "retained": "round8-apply-t/observations/segment-1/002-get_window.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\004-activate_window.json",
+      "length": 107,
+      "sha256": "266E9C3A970533A1779DBADB73D514C3D2C6793C825C0956AAC697DBA4B15718",
+      "retained": "round8-apply-t/observations/segment-1/004-activate_window.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\005-get_window_state.json",
+      "length": 82422,
+      "sha256": "FCC855C5475456266FD056D69DE184EFAAD1627CB2C37D9B294ACAD93E0DF809",
+      "retained": "round8-apply-t/observations/segment-1/005-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\005-screenshot-0.jpg",
+      "length": 59574,
+      "sha256": "B8B3EA39714CEDFCA0264D8867B83EBA57ED6FF42FCA2BE8475453E804CD11F7",
+      "retained": "round8-apply-t/observations/segment-1/005-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\006-click.json",
+      "length": 107,
+      "sha256": "9B2BBE11129F1738B5A7A1FF39AF8751157B9BB8D15941AA04D4C4B8EC29AFE7",
+      "retained": "round8-apply-t/observations/segment-1/006-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\007-get_window_state.json",
+      "length": 82066,
+      "sha256": "096C093999D13F435687751A8780408056A0DC4EF2DAE01B1EE725C2E7058BB3",
+      "retained": "round8-apply-t/observations/segment-1/007-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\007-screenshot-0.jpg",
+      "length": 59306,
+      "sha256": "5CA230B6A26F219F19402C20EA20C3949F2C81FE26B87215D944FBAD77B3CEE4",
+      "retained": "round8-apply-t/observations/segment-1/007-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\008-get_window_state.json",
+      "length": 79797,
+      "sha256": "CB9B4B9F31C954323DB5848CE59871A754137C618A974108F7822B73CE507A7E",
+      "retained": "round8-apply-t/observations/segment-1/008-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\008-screenshot-0.jpg",
+      "length": 57744,
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D",
+      "retained": "round8-apply-t/observations/segment-1/008-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\009-press_key.json",
+      "length": 107,
+      "sha256": "84CCD43BCAB2C587E28ACC0B9B2B6700507F1596E71531F4EF35E679B1DD070A",
+      "retained": "round8-apply-t/observations/segment-1/009-press_key.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\010-get_window_state.json",
+      "length": 79798,
+      "sha256": "7FD6C285C7E217E4DE1973B489F25259627AB6EEB906410AAA4F4A8034A9446B",
+      "retained": "round8-apply-t/observations/segment-1/010-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\010-screenshot-0.jpg",
+      "length": 57744,
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D",
+      "retained": "round8-apply-t/observations/segment-1/010-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\011-click.json",
+      "length": 108,
+      "sha256": "BCEBD9BDD8F875C6B79F3DA644300530D3664C08BBC8F2D7512A79EEE3F67CE5",
+      "retained": "round8-apply-t/observations/segment-1/011-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\012-get_window_state.json",
+      "length": 80038,
+      "sha256": "29A11EED09C05CCCBD8FCE5E07AE28B49AC39B4FA049306946DB811E4F9D2785",
+      "retained": "round8-apply-t/observations/segment-1/012-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\012-screenshot-0.jpg",
+      "length": 57684,
+      "sha256": "A17C923385A20DE969704C062C54E0FF59BE6EDDF205FDFF7202E10269ABD45B",
+      "retained": "round8-apply-t/observations/segment-1/012-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\013-press_key.json",
+      "length": 108,
+      "sha256": "3725D86A02F487CEBD4B375313DB0F69DCF1450E100C177603319AC22D125830",
+      "retained": "round8-apply-t/observations/segment-1/013-press_key.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\014-get_window_state.json",
+      "length": 81544,
+      "sha256": "EC7ED071C51ABDE6FD5CF7259E5A3AAD1BEC2B1D6C7EBCDCC98874AC4324056A",
+      "retained": "round8-apply-t/observations/segment-1/014-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\014-screenshot-0.jpg",
+      "length": 58823,
+      "sha256": "A81C711CB9EF8DD19F9D1012D0E53EBDF06E7A271FAA728B26B1538F9977A27C",
+      "retained": "round8-apply-t/observations/segment-1/014-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\015-type_text.json",
+      "length": 108,
+      "sha256": "B6D81925D9246CEDA04E5A7A1842225856EA350333DE4E9F3239D02035E72FEC",
+      "retained": "round8-apply-t/observations/segment-1/015-type_text.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\016-get_window_state.json",
+      "length": 81059,
+      "sha256": "7ED4EBF0CBD6C762081BF6897D89781FCC9AD0882C4D07FAA32862D4AC50F53D",
+      "retained": "round8-apply-t/observations/segment-1/016-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\016-screenshot-0.jpg",
+      "length": 58686,
+      "sha256": "F34721BB268E8C5B5C81647CA09E526F435962E16EE3873F98D5C7E0ADCD62C8",
+      "retained": "round8-apply-t/observations/segment-1/016-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\017-click.json",
+      "length": 108,
+      "sha256": "6A1F70A454284C9DC404CB98A99D091211990310A9056913BCE192DCB87D7FF7",
+      "retained": "round8-apply-t/observations/segment-1/017-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\018-get_window_state.json",
+      "length": 81363,
+      "sha256": "E63ABA08A4BE49D2E05A85A8FA69455814BABFEB376C59E0E50CF84B6410CACF",
+      "retained": "round8-apply-t/observations/segment-1/018-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\018-screenshot-0.jpg",
+      "length": 58672,
+      "sha256": "C7AAFD4732377DC071EF783F21CDBE37C16C2F9B6B6A4081AFB501370C67958D",
+      "retained": "round8-apply-t/observations/segment-1/018-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\019-get_window_state.json",
+      "length": 96927,
+      "sha256": "A907BBB793D1DA5125FCB25E93BCCDA0450DB773D45B6019096A2432B1141028",
+      "retained": "round8-apply-t/observations/segment-1/019-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\019-screenshot-0.jpg",
+      "length": 69833,
+      "sha256": "6066003EA6A7E15A230FB42F1A2B7B7052CF0213FF44915CA61DED0BCEE7B627",
+      "retained": "round8-apply-t/observations/segment-1/019-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\020-click.json",
+      "length": 108,
+      "sha256": "A29D865C4D4378A8E67311C91D7275A4BD4F148C761CD0C2B6E911DDFA967E3A",
+      "retained": "round8-apply-t/observations/segment-1/020-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\021-get_window_state.json",
+      "length": 97659,
+      "sha256": "C80E6AC1145225875E29A5A225DAAEB9BA99982366B8C61870414F996F30D16D",
+      "retained": "round8-apply-t/observations/segment-1/021-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\021-screenshot-0.jpg",
+      "length": 70143,
+      "sha256": "B2092A8AE4C8CC82E6008BBEB17F99DCA3793E64C3365F45CBCD6DE7C4D03ACC",
+      "retained": "round8-apply-t/observations/segment-1/021-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\022-get_window_state.json",
+      "length": 106122,
+      "sha256": "CC949E27F43E2454A0794598CF2623551F58E028BDE9E8ECA6CDBC1A971EC9ED",
+      "retained": "round8-apply-t/observations/segment-1/022-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\022-screenshot-0.jpg",
+      "length": 76624,
+      "sha256": "49539CEC010CC144279E0270BDC98D32DD38119B347E88A62B63F38B9540AEEB",
+      "retained": "round8-apply-t/observations/segment-1/022-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\023-click.json",
+      "length": 108,
+      "sha256": "07ACC65F88E6EC14B9584F5F5F6BC33D5F95CBEFD66C9E05208833E3CB6FC490",
+      "retained": "round8-apply-t/observations/segment-1/023-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\024-get_window_state.json",
+      "length": 108274,
+      "sha256": "AAAB92077ADF10A157118988C42B5727E5CA20C71EF44B35A7F571E3871317AD",
+      "retained": "round8-apply-t/observations/segment-1/024-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\024-screenshot-0.jpg",
+      "length": 77999,
+      "sha256": "53BFE0A2572601FDD5ADBFDCADEBC6B0FBB1D4D554561752DE3A97F3924B4C72",
+      "retained": "round8-apply-t/observations/segment-1/024-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\025-get_window_state.json",
+      "length": 76043,
+      "sha256": "C34F9BAEEBBD9251FA8EC3377C659E99323AFCAFCDC7EAB256D1FBA117B8C6D3",
+      "retained": "round8-apply-t/observations/segment-1/025-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\025-screenshot-0.jpg",
+      "length": 54890,
+      "sha256": "007EE27B17B397CEF4DC2CEA7425EAD417C6903FFCB1170F4810376BA0B3197C",
+      "retained": "round8-apply-t/observations/segment-1/025-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\026-click.json",
+      "length": 108,
+      "sha256": "90977CF0E3D43CABF2E375228E53186E2C4364D0FDF5E5291ECD545666705523",
+      "retained": "round8-apply-t/observations/segment-1/026-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\027-get_window_state.json",
+      "length": 75547,
+      "sha256": "E9B0251C883A2E16439985144A9282511CB2EA2892ABDB6FC1008B0FA9561503",
+      "retained": "round8-apply-t/observations/segment-1/027-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\027-screenshot-0.jpg",
+      "length": 54518,
+      "sha256": "DF120E3161AE1D857F1FC85FF52BD7045FDA85FD0F4BEFC406413EC06A68CD6C",
+      "retained": "round8-apply-t/observations/segment-1/027-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\028-get_window_state.json",
+      "length": 101274,
+      "sha256": "A4B52562C4B1C3E1B730C0698870AE81FE405693FB6FF99945FB1B15B372B276",
+      "retained": "round8-apply-t/observations/segment-1/028-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\028-screenshot-0.jpg",
+      "length": 73100,
+      "sha256": "4A3E02A4383406FACA9AAA94B5EC33CBFAB8B47B1CDE8EF8C4A6F4CA1B06CE58",
+      "retained": "round8-apply-t/observations/segment-1/028-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\029-click.json",
+      "length": 108,
+      "sha256": "23A94132911C02983A672DFDC47218C00023D4895B46B69C2D134B12A8B52A81",
+      "retained": "round8-apply-t/observations/segment-1/029-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\030-get_window_state.json",
+      "length": 101370,
+      "sha256": "B14AFC946314F30B11AFFBC46B4A36B89391BE4DC75301146E178F7554599554",
+      "retained": "round8-apply-t/observations/segment-1/030-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\030-screenshot-0.jpg",
+      "length": 72929,
+      "sha256": "E6227E9399CCEE1244B88DC0429E3A354F5D248D7DD1ADC4CB95FA2148FAB999",
+      "retained": "round8-apply-t/observations/segment-1/030-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\031-type_text.json",
+      "length": 108,
+      "sha256": "16B33C4853256300FBB7494AA74D9C1F33C4AF1181A97E7E7CFB1E55DF931C34",
+      "retained": "round8-apply-t/observations/segment-1/031-type_text.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\032-get_window_state.json",
+      "length": 108264,
+      "sha256": "EAF902B84412068D7580D2C5EFF3C473C0755DFF6040A3A1C4CC9F8026E00B0D",
+      "retained": "round8-apply-t/observations/segment-1/032-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\032-screenshot-0.jpg",
+      "length": 78208,
+      "sha256": "1F564BA92493F3B34F0BF81D9FBEE92545AB76335742C1FA5E13ED7961EE9FD1",
+      "retained": "round8-apply-t/observations/segment-1/032-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\033-click.json",
+      "length": 108,
+      "sha256": "0F500F4955FF20ED1FDF8F1604101AF0D1CE72D86CD7D397F2BC412A7C36AD5C",
+      "retained": "round8-apply-t/observations/segment-1/033-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\034-get_window_state.json",
+      "length": 108268,
+      "sha256": "10EB681F0855E8F34E6435AE348B01F438462A779D6B6BFCC06B516B55606D80",
+      "retained": "round8-apply-t/observations/segment-1/034-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\034-screenshot-0.jpg",
+      "length": 77968,
+      "sha256": "F00F06920A2FC63CE5B2CB3491BF38CB6CDDEEF687A1C119DD04060BC7327C36",
+      "retained": "round8-apply-t/observations/segment-1/034-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\035-get_window_state.json",
+      "length": 119949,
+      "sha256": "C3917DD433E035E07B4736D8FEAAFB9C7E6E5D7BBB39D6EB870E2DB50B02510A",
+      "retained": "round8-apply-t/observations/segment-1/035-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\035-screenshot-0.jpg",
+      "length": 86796,
+      "sha256": "97CB8E353E4CDDB787E85A887E3A599056DB9B4AFD0A7570B552E049FFEE82EE",
+      "retained": "round8-apply-t/observations/segment-1/035-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\036-click.json",
+      "length": 108,
+      "sha256": "2B97775280313A61F5548247FE8A4F2F5019336BC64E076C1267F60826D5346F",
+      "retained": "round8-apply-t/observations/segment-1/036-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\037-get_window_state.json",
+      "length": 120185,
+      "sha256": "0546296ABBF7937820CF308BABE3A8906E9816374175EC69C4D8A989604867FF",
+      "retained": "round8-apply-t/observations/segment-1/037-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\037-screenshot-0.jpg",
+      "length": 86730,
+      "sha256": "848D5FDCB1B30C7AD4FEE77846919F088FF60212385F2E4419736D794E2AF803",
+      "retained": "round8-apply-t/observations/segment-1/037-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\038-get_window_state.json",
+      "length": 183125,
+      "sha256": "84DDE7DFA7CE4E455941426F57F4B1B9F4CCC053A205872359DA86EA92E57836",
+      "retained": "round8-apply-t/observations/segment-1/038-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\038-screenshot-0.jpg",
+      "length": 123711,
+      "sha256": "59598E4E67552737CFE1A557D5BE16D6D86BF0D8575ED7403E9D2AA616819B55",
+      "retained": "round8-apply-t/observations/segment-1/038-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\039-click.json",
+      "length": 108,
+      "sha256": "A2C9F0D7F9590FBE914D741156D394B5D9767E0213593994BCF9D564EB7F9F0A",
+      "retained": "round8-apply-t/observations/segment-1/039-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\040-get_window_state.json",
+      "length": 184225,
+      "sha256": "706BBED1D670D44116E1BBBE36D5A120E5CAA9FA107C70F6B83024BAF5D5A31D",
+      "retained": "round8-apply-t/observations/segment-1/040-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\040-screenshot-0.jpg",
+      "length": 124242,
+      "sha256": "0A4536BF40EA117C7EBC2260C02AC1AE7207DE96A1B977ED2D9F6834E1B4F396",
+      "retained": "round8-apply-t/observations/segment-1/040-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\041-type_text.json",
+      "length": 108,
+      "sha256": "7E52C2272B5ECE9155672ABC0D9A7DC338A710ABB1996B45643B6259233E5D5B",
+      "retained": "round8-apply-t/observations/segment-1/041-type_text.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\042-get_window_state.json",
+      "length": 184217,
+      "sha256": "5F1AA9694CA1F92CC47F8BDADA6B027E9850D732AF79ECC543A23F894AA3E444",
+      "retained": "round8-apply-t/observations/segment-1/042-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\042-screenshot-0.jpg",
+      "length": 124235,
+      "sha256": "CB0A0723596430F1E240177E66B2D1E66A26B393DDA887EB43F5E42184626616",
+      "retained": "round8-apply-t/observations/segment-1/042-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\043-get_window_state.json",
+      "length": 184317,
+      "sha256": "28C7E6D96C1FCA9F6B5684A9C3D0F7A2199B5E11D3804A9E7D45C0D575A0C097",
+      "retained": "round8-apply-t/observations/segment-1/043-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\043-screenshot-0.jpg",
+      "length": 124238,
+      "sha256": "233114030AC22C453CBBE12632EEB1B56B1D843B7A28BF1B4E2659836A040931",
+      "retained": "round8-apply-t/observations/segment-1/043-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\044-press_key.json",
+      "length": 108,
+      "sha256": "81185A604E5D439FA23061B36AA7536A51147675311633DC44E4165410DB27B6",
+      "retained": "round8-apply-t/observations/segment-1/044-press_key.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\045-get_window_state.json",
+      "length": 185495,
+      "sha256": "CC145417C0C26601BBD7E1DB950B3EC59F5BC6E8EA37E47A85091F1A9300221C",
+      "retained": "round8-apply-t/observations/segment-1/045-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\045-screenshot-0.jpg",
+      "length": 124921,
+      "sha256": "5DDFC799751513B1D1262B0F960E35C1C512B4B1883A6400BC6D6C2CAA657DF4",
+      "retained": "round8-apply-t/observations/segment-1/045-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\046-click.json",
+      "length": 108,
+      "sha256": "CA4F5473DDE374C88300ED30CB28404D27669B3891DC3483DCEA7B524A21A4C1",
+      "retained": "round8-apply-t/observations/segment-1/046-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\047-get_window_state.json",
+      "length": 183474,
+      "sha256": "7AB651B1A8DFC7F45C3C488D472EA27103D985B20D88635CCA4FB36C52C90B8C",
+      "retained": "round8-apply-t/observations/segment-1/047-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\047-screenshot-0.jpg",
+      "length": 123570,
+      "sha256": "49176298C5B7640E74B91F14C16F4B784CBDE9C80A425AC6B69961D8D0BF1A17",
+      "retained": "round8-apply-t/observations/segment-1/047-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\048-click.json",
+      "length": 108,
+      "sha256": "286E43B69F51A886D2F15D8052E96369CE8B7FC2F02CBA2B06B724093ED6CF09",
+      "retained": "round8-apply-t/observations/segment-1/048-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\049-get_window_state.json",
+      "length": 188740,
+      "sha256": "1FC2B7A5126135D56D753622B41AA3BF19722CAE321A0B16FF95473E1CD1A9B2",
+      "retained": "round8-apply-t/observations/segment-1/049-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\049-screenshot-0.jpg",
+      "length": 124301,
+      "sha256": "6A66BF13A9554AE76A074BA86927AB33855E4445A41A6FCA99A67E104D87CD81",
+      "retained": "round8-apply-t/observations/segment-1/049-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\049-screenshot-1.jpg",
+      "length": 2770,
+      "sha256": "872A2D83F8F6A2CB9B08EEB0B277CA57F6545BA382C492957B4AC8B0AECE3963",
+      "retained": "round8-apply-t/observations/segment-1/049-screenshot-1.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\050-click.json",
+      "length": 108,
+      "sha256": "E1FA662A8CBE166D1BED2C74DB0B4252D1A1FE6C8A69B91614C3D8DC6CC0F6F3",
+      "retained": "round8-apply-t/observations/segment-1/050-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\051-get_window_state.json",
+      "length": 183977,
+      "sha256": "6B4FC79E2D2228A456FD1FE342A9C9918D2FB8B79B7BB5BD4C8CA5BDD303FFD3",
+      "retained": "round8-apply-t/observations/segment-1/051-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\051-screenshot-0.jpg",
+      "length": 123883,
+      "sha256": "4A7920BB2462FC9E5F53F7F2C0EA538693BFD57117426B0F9AD7EA6F160796DC",
+      "retained": "round8-apply-t/observations/segment-1/051-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\052-click.json",
+      "length": 108,
+      "sha256": "5EB0F48F46895EF7E9E4085529914328CF1D60BC134E0822415C1077A1CEA76C",
+      "retained": "round8-apply-t/observations/segment-1/052-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\053-get_window_state.json",
+      "length": 185966,
+      "sha256": "963064B0E605E8E578B13AD8EF5945562689600F61E37B0E37C5F10AD0552620",
+      "retained": "round8-apply-t/observations/segment-1/053-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\053-screenshot-0.jpg",
+      "length": 125209,
+      "sha256": "F4DC9AF250574005A95402C0D62950CA28AD86D1809AD893D364A16B719ADA7E",
+      "retained": "round8-apply-t/observations/segment-1/053-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\054-type_text.json",
+      "length": 108,
+      "sha256": "E4F5D4A6C0CF479E5ACB4E199F22C435C115175304AB51C4847C479B640407CD",
+      "retained": "round8-apply-t/observations/segment-1/054-type_text.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\055-get_window_state.json",
+      "length": 186580,
+      "sha256": "3BCAE9BE663E3A3BD7EFB601CD66B4ED579A3268BCB0EC395C2D9166608EDB70",
+      "retained": "round8-apply-t/observations/segment-1/055-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\055-screenshot-0.jpg",
+      "length": 125785,
+      "sha256": "D7C5F98F6DE89D53EA8DBE8974AA0EAAE3131C2B39149FF83592E96C3957A8E3",
+      "retained": "round8-apply-t/observations/segment-1/055-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\056-press_key.json",
+      "length": 108,
+      "sha256": "8F2EE4F4DCFF0C6939052F57CB1EE10BEAFC16398572D1CF985BE347E71BED2D",
+      "retained": "round8-apply-t/observations/segment-1/056-press_key.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\057-get_window_state.json",
+      "length": 186458,
+      "sha256": "52788CF9D8BCF194F021D5364446CE676636DA403618ADAF21C6C5F54EBA1303",
+      "retained": "round8-apply-t/observations/segment-1/057-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\057-screenshot-0.jpg",
+      "length": 125493,
+      "sha256": "EAA8E9C3EC6F12A028B87D13B33617899428BD4825557C362F8BA38215D61318",
+      "retained": "round8-apply-t/observations/segment-1/057-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\058-click.json",
+      "length": 108,
+      "sha256": "3C248FACD690741A7F564977664808139746B1A77CABDEB528C3BC6A94CB3FF5",
+      "retained": "round8-apply-t/observations/segment-1/058-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\059-get_window_state.json",
+      "length": 187081,
+      "sha256": "926349288DBFF0A09FCA382E4F771D5B9DEC35AE489FB4C13822A3C1FAB81DF2",
+      "retained": "round8-apply-t/observations/segment-1/059-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\059-screenshot-0.jpg",
+      "length": 125927,
+      "sha256": "EE4ADB828F332BE40810952A25D33CA913ACF6B0FD809B39840275E782271BF4",
+      "retained": "round8-apply-t/observations/segment-1/059-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\060-press_key.json",
+      "length": 108,
+      "sha256": "47DCD6AA1B129DC34916458B01FF2158BA0AB109B05117536FDA86A9053F192E",
+      "retained": "round8-apply-t/observations/segment-1/060-press_key.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\061-get_window_state.json",
+      "length": 187820,
+      "sha256": "C5259E93CC2BE9D5E2AC2135C4DB74774B1AB7C6519CB6BE9F95AD08D13AD374",
+      "retained": "round8-apply-t/observations/segment-1/061-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\061-screenshot-0.jpg",
+      "length": 126542,
+      "sha256": "7CB179F54F07BFFC1857178E2D39ADBE3097EC97BD302FF99CEB6CA919EA2148",
+      "retained": "round8-apply-t/observations/segment-1/061-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\062-click.json",
+      "length": 108,
+      "sha256": "94B45F7F88D5EACEE2AD67D2CB98962D8AC3FB3C64ACAB0DB36080F70C9B2A51",
+      "retained": "round8-apply-t/observations/segment-1/062-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\063-get_window_state.json",
+      "length": 112520,
+      "sha256": "C5E318ED7A3F75CCD01943AA1001D16A45713946839E6589AB10DFCFC75BFA13",
+      "retained": "round8-apply-t/observations/segment-1/063-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\063-screenshot-0.jpg",
+      "length": 70068,
+      "sha256": "53B15AAC2864E6C7BB2A57F28C1C90118CAD50186B8D90CCD859A3846F1E67EE",
+      "retained": "round8-apply-t/observations/segment-1/063-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\064-get_window_state.json",
+      "length": 121935,
+      "sha256": "6E092BCBD9EC30EA6C0DD602E8320C83CD2EC58C1E5283B4AFFE1DD7D2612A0E",
+      "retained": "round8-apply-t/observations/segment-1/064-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\064-screenshot-0.jpg",
+      "length": 75210,
+      "sha256": "F57A2F53D88F23728F033DB817E91BBC70C30D1AE8D3B6363185D869495E3E3C",
+      "retained": "round8-apply-t/observations/segment-1/064-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\065-click.json",
+      "length": 108,
+      "sha256": "B77001DEB00E31BCDFEFE7E37CCDC43D4BC91787A0109696274ED9D361D164F4",
+      "retained": "round8-apply-t/observations/segment-1/065-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\066-get_window_state.json",
+      "length": 124257,
+      "sha256": "60BD7AB951A659DBECD5CCBCE1BDD8E6D8F814254A28B2550D2F2AAA5021A9FF",
+      "retained": "round8-apply-t/observations/segment-1/066-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\066-screenshot-0.jpg",
+      "length": 76713,
+      "sha256": "062D1C6DF3475FD6E0EECCBE22587B1DB3C6FB1847AD6D9A9F4C0138D0336133",
+      "retained": "round8-apply-t/observations/segment-1/066-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\067-get_window_state.json",
+      "length": 122435,
+      "sha256": "C2C3FE2D06B48C2D8ED0F3A77328B5F73CEBC857E21DC73078C182B354013E24",
+      "retained": "round8-apply-t/observations/segment-1/067-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\067-screenshot-0.jpg",
+      "length": 75603,
+      "sha256": "990B1F26B59092F8DE4863C899139FFE3046972FABCB8786BF4F2893A281C898",
+      "retained": "round8-apply-t/observations/segment-1/067-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\068-click.json",
+      "length": 108,
+      "sha256": "1B349B3B1CB90589293BE74C2ED31B4838D433644F797CA4A9D05A8EB3D055A6",
+      "retained": "round8-apply-t/observations/segment-1/068-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\069-get_window_state.json",
+      "length": 116771,
+      "sha256": "6CBC8D8D531E8C1CA5E7AB7DA724D447434D88BEAD52ECE1AE0E0E511340391C",
+      "retained": "round8-apply-t/observations/segment-1/069-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\069-screenshot-0.jpg",
+      "length": 71353,
+      "sha256": "64522DF1BFF59374BE25C26079631F350B0382558BA9AE3A3C13D82755316C7D",
+      "retained": "round8-apply-t/observations/segment-1/069-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\070-get_window_state.json",
+      "length": 151405,
+      "sha256": "9D28CD88D67DFCD05027888CBDA3B674BA2B80230AEF31289ED2B60ED9DA80AC",
+      "retained": "round8-apply-t/observations/segment-1/070-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\070-screenshot-0.jpg",
+      "length": 100309,
+      "sha256": "E9B4594C7856D5C8F87FD66394CE0465FD6375D163A334CD6A7E983A773CD777",
+      "retained": "round8-apply-t/observations/segment-1/070-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\071-click.json",
+      "length": 108,
+      "sha256": "A246270839DC18D02146F9CAF1299BC6BF758996E1F85AD81E555A2A5753AF52",
+      "retained": "round8-apply-t/observations/segment-1/071-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\072-get_window_state.json",
+      "length": 163406,
+      "sha256": "1C1ECF2D109351B05ADA1AF20F5F3C1E2BB0990DA606457684E173ACB018826D",
+      "retained": "round8-apply-t/observations/segment-1/072-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\072-screenshot-0.jpg",
+      "length": 109496,
+      "sha256": "23DEFE3DD2673B326BCB76CC35AB29D2FAE3755D8DB4C42AA28591DD29905649",
+      "retained": "round8-apply-t/observations/segment-1/072-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\073-get_window_state.json",
+      "length": 187026,
+      "sha256": "66C3B0CA8A617A00F3996ACF314D68AC92423FA108FA837C53967C422F6B17DD",
+      "retained": "round8-apply-t/observations/segment-1/073-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\073-screenshot-0.jpg",
+      "length": 126468,
+      "sha256": "A7BC013639DCF4553C232707921081D2508C4E7D3656AB0DB0C9D173EC13BDFD",
+      "retained": "round8-apply-t/observations/segment-1/073-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\074-click.json",
+      "length": 108,
+      "sha256": "BAEE899B9968F25438DF6C081AFA759EA5D1C3AF617BFE2BB5FFAC96121A5C5A",
+      "retained": "round8-apply-t/observations/segment-1/074-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\075-get_window_state.json",
+      "length": 160278,
+      "sha256": "F8C73FBB8EC8E06475700D3D756F956D4BD471CF1929A9CD0D59E605B9BC5A3C",
+      "retained": "round8-apply-t/observations/segment-1/075-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\075-screenshot-0.jpg",
+      "length": 106407,
+      "sha256": "64B5959F5C898B2BA3415D31019BCE3EBEF65C7B4D013411BA7B0596E802BC10",
+      "retained": "round8-apply-t/observations/segment-1/075-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\076-get_window_state.json",
+      "length": 161645,
+      "sha256": "800E94C3D82541CD43EA1B682BE582CD125DD16F1595408249D5B73F44FE7D7F",
+      "retained": "round8-apply-t/observations/segment-1/076-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\076-screenshot-0.jpg",
+      "length": 106441,
+      "sha256": "6597C1D5B4D40D62E59127B0C80CE4376FD57044862DEA41D5971390A8279B53",
+      "retained": "round8-apply-t/observations/segment-1/076-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\077-click.json",
+      "length": 108,
+      "sha256": "85F1EA3BB7986D9B62859FBE5BF40EE90A86706360C854269D2C61C7D7E30BB4",
+      "retained": "round8-apply-t/observations/segment-1/077-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\078-get_window_state.json",
+      "length": 141449,
+      "sha256": "D3518CA1BC59D51C7D95456F72A05F00821B026D061B428ED77FDC1ABB980746",
+      "retained": "round8-apply-t/observations/segment-1/078-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\078-screenshot-0.jpg",
+      "length": 91294,
+      "sha256": "19EBEF27D0D6F50B7FD194E0EF094CD2531F1B60342C955B56108BD9864FC1C1",
+      "retained": "round8-apply-t/observations/segment-1/078-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\079-get_window_state.json",
+      "length": 167365,
+      "sha256": "D4CB052538D28A5333D3A5B3FCEB6BB629FB749103B24BDB4362FDDE23840320",
+      "retained": "round8-apply-t/observations/segment-1/079-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\079-screenshot-0.jpg",
+      "length": 110412,
+      "sha256": "9EA864C9DFDBBD558BA6E48DD8E817030FCEEA280382FAB3436CBF196BD8D3E6",
+      "retained": "round8-apply-t/observations/segment-1/079-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\080-click.json",
+      "length": 108,
+      "sha256": "9E6730D42D92CB0B5B645B51093EE5CFDF10A6EF61CB23238CBA87A20583916F",
+      "retained": "round8-apply-t/observations/segment-1/080-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\081-get_window_state.json",
+      "length": 172034,
+      "sha256": "1A4BD4344B3B735E3A681184CCE5C55E7184B4EB839D01A1B1695025BDA56715",
+      "retained": "round8-apply-t/observations/segment-1/081-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\081-screenshot-0.jpg",
+      "length": 113759,
+      "sha256": "330234EB5E3B6D66E927098A6F0BE04192C70A2B0107BA4EF2825050448E4218",
+      "retained": "round8-apply-t/observations/segment-1/081-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\082-get_window_state.json",
+      "length": 171732,
+      "sha256": "67E04A1149B1F7727ABE45AD551B9B56903082FC4DD0DE92773A3796CD02F460",
+      "retained": "round8-apply-t/observations/segment-1/082-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\082-screenshot-0.jpg",
+      "length": 113694,
+      "sha256": "1C051D0B79929797F214DD7C84C928994CEAC51813EFA9955F029D97673E6548",
+      "retained": "round8-apply-t/observations/segment-1/082-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\083-click.json",
+      "length": 108,
+      "sha256": "DA23DDA90D506A07F548714630E152CBF280187C0AE77BF1B90E45738DABE66A",
+      "retained": "round8-apply-t/observations/segment-1/083-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\084-get_window_state.json",
+      "length": 167968,
+      "sha256": "73E3B8A20DE57AF4F9CAC9AF202E48B7FC2C28D491684CA51309880BB5EFA815",
+      "retained": "round8-apply-t/observations/segment-1/084-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\084-screenshot-0.jpg",
+      "length": 110747,
+      "sha256": "7DF7FA3F78FD51BFA34381829F1DD5E2E74011EF95676AD3D6C43BA89FDD0383",
+      "retained": "round8-apply-t/observations/segment-1/084-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\085-click.json",
+      "length": 108,
+      "sha256": "08FEEC0EF90E5898D628A16C717FB6C013464F4B52CEA3FE8EBE9567BC7F78B0",
+      "retained": "round8-apply-t/observations/segment-1/085-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\086-get_window_state.json",
+      "length": 181854,
+      "sha256": "AB9EFA368DB7E85BC9690DAABD72BBF7E08DF854544FEEE6FD1EBCA86BF5AB3E",
+      "retained": "round8-apply-t/observations/segment-1/086-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\086-screenshot-0.jpg",
+      "length": 121123,
+      "sha256": "F91BCDD088CCD5A4CA4D206E0E4A7D52A88BA83E0600D73316E8299696410D67",
+      "retained": "round8-apply-t/observations/segment-1/086-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\087-get_window_state.json",
+      "length": 181847,
+      "sha256": "B3F9E10AF70C6E05C1E5761ADE88948DE69AB802DC549D2A6C39C4FB32E7B2EA",
+      "retained": "round8-apply-t/observations/segment-1/087-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\087-screenshot-0.jpg",
+      "length": 121126,
+      "sha256": "076B7EFDA7256AA02597A78F544184FF06CE4F63F63C45DFECF8856AAF887109",
+      "retained": "round8-apply-t/observations/segment-1/087-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\088-click.json",
+      "length": 108,
+      "sha256": "078B0E3017E771B5BF6E49ABEA2A52C21335F532986453DBF894E84975F90B55",
+      "retained": "round8-apply-t/observations/segment-1/088-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\089-get_window_state.json",
+      "length": 182927,
+      "sha256": "1C35C73EF2FBCEC27DF02FB3E6BC9E0BCA376C090B82CC3DC0D5D50D75084A14",
+      "retained": "round8-apply-t/observations/segment-1/089-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\089-screenshot-0.jpg",
+      "length": 121936,
+      "sha256": "53F6B6878E0947F972DA11A8A116C5B636A85B9E941E0B62882341F0D221C163",
+      "retained": "round8-apply-t/observations/segment-1/089-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\090-get_window_state.json",
+      "length": 186630,
+      "sha256": "D02F3A5A1414477E4ADDC46C2AA66FA642287BBA73F53154469143BE584ACCAB",
+      "retained": "round8-apply-t/observations/segment-1/090-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\090-screenshot-0.jpg",
+      "length": 126169,
+      "sha256": "650FF4F79EB3D623FB823ECBA7F20EA853FBB902A29E86B127956005B0A79255",
+      "retained": "round8-apply-t/observations/segment-1/090-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\091-click.json",
+      "length": 108,
+      "sha256": "0DFD7070EFF4C16A4310D9B38D1DD32B6414C41BEE06990DE173CD927A38ECE3",
+      "retained": "round8-apply-t/observations/segment-1/091-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\092-get_window_state.json",
+      "length": 174102,
+      "sha256": "82C7901C7D55522C70DA5B5CFC1C0CC1CDE37FE19F0F16BE53A939692D96403E",
+      "retained": "round8-apply-t/observations/segment-1/092-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\092-screenshot-0.jpg",
+      "length": 116775,
+      "sha256": "9AFBCC48D6329E9E23A6364A71B20D2685B40DD48E0F6777E546EA3691FD860A",
+      "retained": "round8-apply-t/observations/segment-1/092-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\093-get_window_state.json",
+      "length": 173973,
+      "sha256": "4EAC675CFD247A8BFA0BB581E103C9163DEA4CC115E22DE2EB4D1424E61BF0E8",
+      "retained": "round8-apply-t/observations/segment-1/093-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\093-screenshot-0.jpg",
+      "length": 116327,
+      "sha256": "9B1792ABF0141A9DDFB0D0187DDEEE6FECA1532C551F3047C590714AD33FC031",
+      "retained": "round8-apply-t/observations/segment-1/093-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\094-click.json",
+      "length": 108,
+      "sha256": "928B4FE2F244DC6AA430FD47F410B89373AB1B82591B846EE09EB85A4AC8F890",
+      "retained": "round8-apply-t/observations/segment-1/094-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\095-get_window_state.json",
+      "length": 177857,
+      "sha256": "EB2C56E866F455AA0427E8D6AFACFA68737FE6C965A3BC6E062CE4D439D77D71",
+      "retained": "round8-apply-t/observations/segment-1/095-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\095-screenshot-0.jpg",
+      "length": 119240,
+      "sha256": "501645F6C5262F657531A3E17E10C0A821738F9C92137032EA3A5D114BB063FC",
+      "retained": "round8-apply-t/observations/segment-1/095-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\096-get_window_state.json",
+      "length": 177831,
+      "sha256": "28BDB5AD9391B4C0B22D8AE8113EE6F3325177C975AA06814A41611D73B53493",
+      "retained": "round8-apply-t/observations/segment-1/096-get_window_state.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\096-screenshot-0.jpg",
+      "length": 119211,
+      "sha256": "7E176DF178AB1FA770219FDB2AA7469B209915EB627691E915621A3320FD6AD0",
+      "retained": "round8-apply-t/observations/segment-1/096-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\097-click.json",
+      "length": 108,
+      "sha256": "F1C71325244D64120F30431DC78DC50771E250A2E1F5CC27B04DAFF90260F9E8",
+      "retained": "round8-apply-t/observations/segment-1/097-click.json"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\api-calls.jsonl",
+      "length": 41857,
+      "sha256": "B6F37A356D2301682381C3B43D886DA4FD33DC9EB1B7B544EDD4B528A4DE29C6",
+      "retained": "round8-apply-t/observations/segment-1/api-calls.jsonl"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\evaluation.md",
+      "length": 12499,
+      "sha256": "90372753EF2090E712C3BCB0D343824B6A56EC67D726B3197C734224F16A529C",
+      "retained": "round8-apply-t/observations/segment-1/evaluation.md"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\evidence-index.md",
+      "length": 7960,
+      "sha256": "6BB8D50131F7469B750D1C3158A575543F8AE5EB3BC13503AF27BC477656ABAF",
+      "retained": "round8-apply-t/observations/segment-1/evidence-index.md"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\notes.jsonl",
+      "length": 2611,
+      "sha256": "88CD73837355D865BDD04717DFFD9C3763CBCBA03B20031DBE9FAD4258E7916D",
+      "retained": "round8-apply-t/observations/segment-1/notes.jsonl"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\task-template.txt",
+      "length": 4764,
+      "sha256": "E32ACACB8D90BA3D27C168DF64436C345912C886DADC78514706F841F57A6848",
+      "retained": "round8-apply-t/observations/task-template.txt"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\task.txt",
+      "length": 5144,
+      "sha256": "0CA680DB225D8AF8867D79F22A515BF62566F955973F880CFE0F4B25872427D4",
+      "retained": "round8-apply-t/observations/task.txt"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\final.txt",
+      "length": 886,
+      "sha256": "7C78E678EABA7CB4A22BD3457978F625F56D243DF10ECB31C37FDD92D1E796EB",
+      "retained": "round8-apply-t/observations/final.txt"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\stderr.log",
+      "length": 1163,
+      "sha256": "B787FD6D812432A0206C59AFE16526A2B5A0A8071F610168498E721422F9A2A1",
+      "retained": "round8-apply-t/observations/stderr.log"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/current-vs-frozen-source.json",
+      "length": 87224,
+      "sha256": "3F7D21842CCF9209A0D7A025B6D1BAA5F20EF00F59ACCC0EFC3A0917DFC5C907",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/current-vs-frozen-source.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/decoded-checkpoint.json",
+      "length": 111399,
+      "sha256": "076D95303CD2F75230799686173492C57D252D8130AC1185B31631401EA985E6",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/decoded-checkpoint.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/findings.json",
+      "length": 9315,
+      "sha256": "0537478AF1B461669C24C534F269E5E158B46324DE37486B2359EE13EF43EB9A",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/findings.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/frozen-receipt.json",
+      "length": 233045,
+      "sha256": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/frozen-receipt.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/launch.json",
+      "length": 1768,
+      "sha256": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/launch.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/normal-close.json",
+      "length": 1096,
+      "sha256": "56E7605A79DEBD613A549D7BB3F120C54922D290718A34B10DDD1C03D150C855",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/normal-close.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/original-scenario.json",
+      "length": 130,
+      "sha256": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/original-scenario.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/preflight-result.json",
+      "length": 1918,
+      "sha256": "6EFD064E0EA282ED5A1A2BF834ADE16FD23956D157556C160EBCB11F19B9CB8F",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/preflight-result.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/preparation.json",
+      "length": 114998,
+      "sha256": "F2D6E31C8786171B029E423FFD0F2351C609BD8902FCEC5EE7317A70BAD5E80F",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/preparation.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 109913,
+      "sha256": "170CE18A889CD606BD03E019F83B7A7FC0C3F3A92763205430AD0FC30244B412",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54036,
+      "sha256": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/apply-requests.jsonl",
+      "length": 144,
+      "sha256": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/apply-requests.jsonl"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/apply-state.json",
+      "length": 17,
+      "sha256": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/apply-state.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/calls.jsonl",
+      "length": 4323,
+      "sha256": "77075A7318754FE934D001F63446CCB82CACA1C22EB46D7DB83949D69A367772",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/calls.jsonl"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/scenario.json",
+      "length": 130,
+      "sha256": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/gh-config/scenario.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/preservation.json",
+      "length": 8812,
+      "sha256": "1581F9113A8F8D39C5492C518C7269413763619A7DF8F193D9F21CAD16BC1CE9",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/preservation.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/result.json",
+      "length": 2025,
+      "sha256": "489703079536770B1ED251F80FBB893EDAFC15C108D28CA10D8D6F92DA03E3EC",
+      "retained": "checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/result.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/t-close1-observation.json",
+      "length": 1096,
+      "sha256": "56E7605A79DEBD613A549D7BB3F120C54922D290718A34B10DDD1C03D150C855",
+      "retained": "checks/fresh-apply-t-readback/t-close1-observation.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-fixture/evaluator-launch.json",
+      "length": 1152,
+      "sha256": "4AFF80EE73B3E06F189E3A4F4677C4AC2EA45018CB656A63D8088A18CA62A004",
+      "retained": "checks/fresh-apply-t-fixture/evaluator-launch.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/round8-apply-t/diagnostics/launch-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json",
+      "length": 1768,
+      "sha256": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+      "retained": "round8-apply-t/diagnostics/launch-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/round8-apply-t/diagnostics/candidate-binding-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json",
+      "length": 233045,
+      "sha256": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+      "retained": "round8-apply-t/diagnostics/candidate-binding-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/audit.json",
+      "length": 33030,
+      "sha256": "B2DE16BCDB419812EC85EB490B1C8E613761D9F651F41956C31F548D96CD0C42",
+      "retained": "checks/t-segment1-retention-audit/audit.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/derived-files.json",
+      "length": 9048,
+      "sha256": "CD5AF8C55A929C5701A07DEF63E3250A148B24E19622804F7BCFF52E1A20DF76",
+      "retained": "checks/t-segment1-retention-audit/derived-files.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/exclusions.json",
+      "length": 4053,
+      "sha256": "A5B63C7C7FDBEC33FAA31063DFEF72EEF20F4396510FC767594F1D0CC46A0D42",
+      "retained": "checks/t-segment1-retention-audit/exclusions.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/image-003-omission.md",
+      "length": 764,
+      "sha256": "EF3743DA3423F2246A9DE67756B4DBFDEE72E310EA42C63090E8DF0F3DA4D988",
+      "retained": "checks/t-segment1-retention-audit/image-003-omission.md"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/images.md",
+      "length": 9954,
+      "sha256": "3A90644B5E4DC7C6DF0068E48FF43571260709441CE56F255A2AEA50E73A5DF3",
+      "retained": "checks/t-segment1-retention-audit/images.md"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/originals.json",
+      "length": 67983,
+      "sha256": "8A7631F34D019FE0AF7CD08CDE316B7D4EA78A73DBC00354C9050F3813BA0622",
+      "retained": "checks/t-segment1-retention-audit/originals.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/stability.json",
+      "length": 786,
+      "sha256": "B61DD92FF547514F69CC7842930C301B71C2CDFD0B1D4FA41067CC2EF46BCCE7",
+      "retained": "checks/t-segment1-retention-audit/stability.json"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/append-t-segment1.py",
+      "length": 18613,
+      "sha256": "BE8951E96807F54824D10FD58B7F7BF192FF8B55A325C2D9CFC04130DA4AFBA4",
+      "retained": "checks/t-segment1-retention-audit/append-t-segment1.py"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/preparation-amendment.json",
+      "length": 3887,
+      "sha256": "AEC4671A9B01750DCCD2E015F6E2B2BCF0F9AD8C8AEE429F45B271EB6E4A0B95",
+      "retained": "checks/t-segment1-retention-audit/preparation-amendment.json"
+    }
+  ],
+  "derivedFiles": [
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\001-list_windows.json",
+      "originalSha256Before": "35307A19DF37BA9D3ABC7F189F868889CEF03CB8BC5CD0E34D45A0B1E4044B13",
+      "originalSha256After": "35307A19DF37BA9D3ABC7F189F868889CEF03CB8BC5CD0E34D45A0B1E4044B13",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/derived/001-list_windows.target-only.json",
+      "retained": "round8-apply-t/observations/segment-1/derived/001-list_windows.target-only.json",
+      "length": 372,
+      "retainedSha256": "E57C7FDCFA6DD16E3FBEA536596CD435404DCC48E3CCB051ED32F8B3F0BFBFB2",
+      "transformations": [
+        "Full inventory filtered to the exact target window id; non-target records removed. Original timestamps and retained target records are unchanged; JSON formatting differs."
+      ],
+      "details": {
+        "originalCount": 7,
+        "retainedTargetCount": 1,
+        "omittedUnrelatedCount": 6
+      }
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\098-list_windows.json",
+      "originalSha256Before": "D4510FF8BBC26023B89579659F11BFD0940ADE9382CA8B256D737C61348BFB22",
+      "originalSha256After": "D4510FF8BBC26023B89579659F11BFD0940ADE9382CA8B256D737C61348BFB22",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/derived/098-list_windows.target-only.json",
+      "retained": "round8-apply-t/observations/segment-1/derived/098-list_windows.target-only.json",
+      "length": 373,
+      "retainedSha256": "8500769DCBFF3E9E4110E01F173AA6E5093B6983D9CCB086FE1264722B6ED2F9",
+      "transformations": [
+        "Full inventory filtered to the exact target window id; non-target records removed. Original timestamps and retained target records are unchanged; JSON formatting differs."
+      ],
+      "details": {
+        "originalCount": 7,
+        "retainedTargetCount": 1,
+        "omittedUnrelatedCount": 6
+      }
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\099-list_windows.json",
+      "originalSha256Before": "06A94E833B2CEFD6686D2D5522C59C2553A2AF162F4625E23D1FC42D7F4662DE",
+      "originalSha256After": "06A94E833B2CEFD6686D2D5522C59C2553A2AF162F4625E23D1FC42D7F4662DE",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/derived/099-list_windows.target-only.json",
+      "retained": "round8-apply-t/observations/segment-1/derived/099-list_windows.target-only.json",
+      "length": 125,
+      "retainedSha256": "0BA295DA9F4E638218FD46FA55B5DA7103450EC0708343C767E9F470247E26AB",
+      "transformations": [
+        "Full inventory filtered to the exact target window id; non-target records removed. Original timestamps and retained target records are unchanged; JSON formatting differs."
+      ],
+      "details": {
+        "originalCount": 6,
+        "retainedTargetCount": 0,
+        "omittedUnrelatedCount": 6
+      }
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-get_window_state.json",
+      "originalSha256Before": "6D1EE5E0FFEECE95045362B6D3D03BEFED539EEA5BDE6B3CA5CC41D0BF98BD07",
+      "originalSha256After": "6D1EE5E0FFEECE95045362B6D3D03BEFED539EEA5BDE6B3CA5CC41D0BF98BD07",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/derived/003-get_window_state.image-omitted.json",
+      "retained": "round8-apply-t/observations/segment-1/derived/003-get_window_state.image-omitted.json",
+      "length": 3085,
+      "retainedSha256": "CFF9E82B40BEB0A39C7F3209170D04602B4490305CA66DF12E86C47722B4408A",
+      "transformations": [
+        "Only the exact unrelated screenshot data URL is replaced by a non-image omission marker. Other source text bytes, target accessibility and window geometry are unchanged. No pixel editing."
+      ]
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\events.jsonl",
+      "originalSha256Before": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+      "originalSha256After": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/derived/events.target-only.jsonl",
+      "retained": "round8-apply-t/observations/derived/events.target-only.jsonl",
+      "length": 8052416,
+      "retainedSha256": "8E216E87F3C5862B68474C4A02218E12C1507DCB1A5DD5656D13C032AE112839",
+      "transformations": [
+        "All 143 events retained in original order; only three full window-inventory text blocks are filtered to the exact target and the single exact unrelated image block is replaced by an omission text block. All other event content, tool arguments, messages and failures remain structurally unchanged; JSON formatting differs."
+      ],
+      "details": [
+        {
+          "line": 13,
+          "path": "$.item.result.content[0].text",
+          "kind": "target-only-inventory",
+          "originalCount": 7,
+          "retainedTargetCount": 1,
+          "originalTextSha256": "E7E1001514B7EAE7AD10B2A0970691DF202DEC620CB16E37AFC091C2C553EAE6"
+        },
+        {
+          "line": 15,
+          "path": "$.item.result.content[1]",
+          "kind": "image-content-omission",
+          "originalImageSha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0"
+        },
+        {
+          "line": 134,
+          "path": "$.item.result.content[0].text",
+          "kind": "target-only-inventory",
+          "originalCount": 7,
+          "retainedTargetCount": 1,
+          "originalTextSha256": "B07F04D996C72A8400C0C2B5B140AB8BAE294611546858A9CAC753877051FA76"
+        },
+        {
+          "line": 136,
+          "path": "$.item.result.content[0].text",
+          "kind": "target-only-inventory",
+          "originalCount": 6,
+          "retainedTargetCount": 0,
+          "originalTextSha256": "D53EFAC2D3BA016DAF651416967EE48B79C89857EA67EE883EE57FD0C2FB764E"
+        }
+      ]
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\evaluation.md",
+      "originalSha256Before": "90372753EF2090E712C3BCB0D343824B6A56EC67D726B3197C734224F16A529C",
+      "originalSha256After": "90372753EF2090E712C3BCB0D343824B6A56EC67D726B3197C734224F16A529C",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/portable/evaluation.md",
+      "retained": "round8-apply-t/observations/segment-1/portable/evaluation.md",
+      "length": 13050,
+      "retainedSha256": "5191B952883B4108B3FA1D1E0A1436F60E3960116E06942F661C8D9259ECED0E",
+      "transformations": [
+        "Only hyperlink destinations remapped and a privacy/provenance notice prepended. All evaluator findings, limitations, failed/lagging states and original prose remain."
+      ]
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\evidence-index.md",
+      "originalSha256Before": "6BB8D50131F7469B750D1C3158A575543F8AE5EB3BC13503AF27BC477656ABAF",
+      "originalSha256After": "6BB8D50131F7469B750D1C3158A575543F8AE5EB3BC13503AF27BC477656ABAF",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/segment-1/portable/evidence-index.md",
+      "retained": "round8-apply-t/observations/segment-1/portable/evidence-index.md",
+      "length": 8950,
+      "retainedSha256": "5B66A7D89D5260E9DA2F2B668B497DAC9CEBD8D1577FF0D1536D182F823DD9B6",
+      "transformations": [
+        "Only hyperlink destinations remapped and a privacy/provenance notice prepended. All evaluator findings, limitations, failed/lagging states and original prose remain."
+      ]
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\final.txt",
+      "originalSha256Before": "7C78E678EABA7CB4A22BD3457978F625F56D243DF10ECB31C37FDD92D1E796EB",
+      "originalSha256After": "7C78E678EABA7CB4A22BD3457978F625F56D243DF10ECB31C37FDD92D1E796EB",
+      "prepared": "TestResults/issue73/blind-review/checks/t-segment1-retention-audit/prepared/round8-apply-t/observations/portable/final.txt",
+      "retained": "round8-apply-t/observations/portable/final.txt",
+      "length": 967,
+      "retainedSha256": "1A06F736C9F5216DB79DA5D57314A8639AA44D552E646989682DDB96E7123343",
+      "transformations": [
+        "Absolute evaluator report link remapped to its portable counterpart; explicit derivative notice prepended."
+      ]
+    }
+  ],
+  "excludedFiles": [
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\001-list_windows.json",
+      "length": 1229,
+      "sha256": "35307A19DF37BA9D3ABC7F189F868889CEF03CB8BC5CD0E34D45A0B1E4044B13",
+      "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-get_window_state.json",
+      "length": 46806,
+      "sha256": "6D1EE5E0FFEECE95045362B6D3D03BEFED539EEA5BDE6B3CA5CC41D0BF98BD07",
+      "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-screenshot-0.jpg",
+      "length": 32861,
+      "sha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0",
+      "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\098-list_windows.json",
+      "length": 1230,
+      "sha256": "D4510FF8BBC26023B89579659F11BFD0940ADE9382CA8B256D737C61348BFB22",
+      "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\099-list_windows.json",
+      "length": 984,
+      "sha256": "06A94E833B2CEFD6686D2D5522C59C2553A2AF162F4625E23D1FC42D7F4662DE",
+      "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\events.jsonl",
+      "length": 8099036,
+      "sha256": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+      "reason": "Private original event stream includes three full window inventories and the known unrelated image; explicit target-only event derivative preserves the remaining event content/order."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/GhProjectsBoards.Core.dll",
+      "length": 935424,
+      "sha256": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+      "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+    }
+  ],
+  "credentialMatches": 0,
+  "unrelatedInventoryTitleMatchesInPortable": 0,
+  "explicitUninspected": [
+    "Segment2/current evaluator files",
+    "Mutable round8-apply-t/data and gh-config",
+    "All U runtime/evaluator data",
+    "Current product/build trees"
+  ]
+}

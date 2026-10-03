@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-27T15:20:56.390Z",
+  "observer": "root",
+  "method": "fresh sky.list_apps after agent recorded Alt_L+F4; no root input",
+  "targetWindows": [],
+  "inventoryEvidence": "private-root-post-close-inventory.json",
+  "priorClose": "ordinary-close.json"
+}

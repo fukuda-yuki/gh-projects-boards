@@ -1,0 +1,19 @@
+{
+  "mechanism": "Independent post-close readback of unchanged originals; synthetic gh boundary",
+  "version": 14,
+  "revision": 80,
+  "title": {
+    "pending": "Q",
+    "confirmedDraft": "Next iteration draft",
+    "baseline": "Weekly review completed"
+  },
+  "originalJournalUnchanged": true,
+  "dispositionCount": 1,
+  "acceptedCurrentSeparately": true,
+  "previousServiceCallsPreserved": true,
+  "addedCalls": 8,
+  "addedMutations": 0,
+  "applyRequestsUnchanged": true,
+  "remoteTitle": "Weekly review completed",
+  "remoteWorkflow": "done"
+}

@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="6de9e042-0a59-4626-8f0f-8c66eaed263b" name="mwam0@RTX5070 2026-10-03 05:05:08" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-03T05:05:08.2267455+09:00" queuing="2026-10-03T05:05:08.2267456+09:00" start="2026-10-03T05:05:06.8331174+09:00" finish="2026-10-03T05:05:08.2358246+09:00" />
+  <TestSettings name="default" id="de3925a4-c974-45a5-a3c2-506ce5573764">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-03_05_05_08" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="7a6d0d88-2928-4121-a1f0-f45f52f9c667" testId="69fc93c1-3cfb-aa93-9858-f6cc87f5d5f9" testName="PendingTextClearUnchangedAndZeroRemainDistinctFromUnavailableBaselines" computerName="RTX5070" duration="00:00:00.0995630" startTime="2026-10-03T05:05:07.9698708+09:00" endTime="2026-10-03T05:05:08.0693946+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7a6d0d88-2928-4121-a1f0-f45f52f9c667">
+      <Output>
+        <ErrorInfo>
+          <Message>  A preserved-input notice in review must not impose a global prerequisite on another selected row.&#xD;
+Assert.That(view.Rows[0].Cells[0].Problem, Does.Contain("保持").And.Contain("送信しません").And.Not.Contain("確定・取消"))&#xD;
+  Expected: String containing "保持" and String containing "送信しません" and not containing "確定・取消"&#xD;
+  But was:  "未確定文字を保持しています。文字を確定・取消してから再取得してください。"&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.Tests.ApplyInformationTests.PendingTextClearUnchangedAndZeroRemainDistinctFromUnavailableBaselines() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\ApplyInformationTests.cs:line 110&#xD;
+
+1)    at GhProjectsBoards.Tests.ApplyInformationTests.PendingTextClearUnchangedAndZeroRemainDistinctFromUnavailableBaselines() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\ApplyInformationTests.cs:line 110&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PendingTextClearUnchangedAndZeroRemainDistinctFromUnavailableBaselines" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="69fc93c1-3cfb-aa93-9858-f6cc87f5d5f9">
+      <Execution id="7a6d0d88-2928-4121-a1f0-f45f52f9c667" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.ApplyInformationTests" name="PendingTextClearUnchangedAndZeroRemainDistinctFromUnavailableBaselines" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="69fc93c1-3cfb-aa93-9858-f6cc87f5d5f9" executionId="7a6d0d88-2928-4121-a1f0-f45f52f9c667" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" passed="0" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-03.05_05_08.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

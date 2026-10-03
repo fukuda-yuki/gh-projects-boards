@@ -1,0 +1,430 @@
+{
+  "kind": "Coordinator file inspection of retained engineering originals; no test or app execution",
+  "createdAtUtc": "2026-09-27T09:21:31.9869412Z",
+  "issueComment": "https://github.com/fukuda-yuki/gh-projects-boards/issues/73#issuecomment-5854442934",
+  "frozenSource": {
+    "baseCommit": "498840b1eea42bfb344c53195f7e5473fe68e020",
+    "declaredInputs": 235,
+    "verifiedInputs": 235,
+    "bytes": 2582172,
+    "receiptSha256": "1E19ED15C2882DE3DA50FDFE8A3E129D77E93F745687D1FEAF63567A71DA5B08",
+    "sourceRetentionSha256": "22AC67CB489A415CF5CDCCF3187C210B521380F6DBFDE51AFCDDC8F01415D5B4",
+    "appSha256": "9248B158F96D0588AE75F7EDC3AA33F6C45C1E074C61BB6D7157C338A76CEEE1",
+    "coreSha256": "E0E449B2595C2C47BD00476D02BF28C37A472B2ABE02915DE00FEB85CB416D69",
+    "appMatchesRepairedUi": true,
+    "coreMatchesRepairedUi": true,
+    "laterUnregisterAmendmentIncluded": false
+  },
+  "noBuildBindings": [
+    {
+      "compiledRun": "run-20260927-175738-050-750adf3d",
+      "noBuildRun": "run-20260927-175849-470-97de708a",
+      "allRecordedBinariesMatch": true,
+      "binaryCount": 6,
+      "recordedUiSourceHashesMatch": true
+    },
+    {
+      "compiledRun": "run-20260927-180317-898-34fb9328",
+      "noBuildRun": "run-20260927-180913-671-50303ab8",
+      "allRecordedBinariesMatch": true,
+      "binaryCount": 6,
+      "recordedUiSourceHashesMatch": true
+    }
+  ],
+  "coreRuns": [
+    {
+      "retained": "checks/apply-explanation/green.trx",
+      "sha256": "98B5D2497034DB9309523375312B2FCF54D6C272AE1D4B810EE2EA2CFF768C4E",
+      "executed": 33,
+      "passed": 33,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/apply-explanation/red.trx",
+      "sha256": "D20E10A4E4F877BD5DCCD7E978D6C4885A2F519B13C176AC4EF839C1061A5472",
+      "executed": 4,
+      "passed": 3,
+      "failed": 1,
+      "notExecuted": 0,
+      "failedCases": [
+        "PartialFieldFailureDoesNotAcknowledgeTheUnverifiedField(\"permission\")"
+      ]
+    },
+    {
+      "retained": "checks/local-creation-target/green.trx",
+      "sha256": "1A4386F8D805D608CF910194EEC51847F72FDEA9B65AA0AFA3CCD6D07D29984B",
+      "executed": 16,
+      "passed": 16,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/local-creation-target/red.trx",
+      "sha256": "8BE31C4287AC94E8EE23A826B0D6186E4364A382591A7E293BE52BFBF3BBD517",
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "notExecuted": 0,
+      "failedCases": [
+        "UncertainCreationTargetsTheEditableLocalTitleInItsProject"
+      ]
+    },
+    {
+      "retained": "checks/retry-approval/green.trx",
+      "sha256": "8FA5EB43AC65DED19DA05A6C5DECBF6338B364C12523CF7215F7D62DE7F098AB",
+      "executed": 35,
+      "passed": 35,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/retry-approval/red.trx",
+      "sha256": "8D4D58C43C7BBD8B4A015B8B27C98025E1E7043280B23CB8049FF3488D7F5D6C",
+      "executed": 2,
+      "passed": 0,
+      "failed": 2,
+      "notExecuted": 0,
+      "failedCases": [
+        "FailedResumeObservationCannotMakeBlockedApprovalDispatchable(\"conflict\")",
+        "FailedResumeObservationCannotMakeBlockedApprovalDispatchable(\"failed\")"
+      ]
+    },
+    {
+      "retained": "checks/confirmed-scope/green.trx",
+      "sha256": "AD654A7C44370AE352C59BB079E6CAA45D81DB2F97496B4B80ABADC838545AA1",
+      "executed": 49,
+      "passed": 49,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/creation-completion/red.trx",
+      "sha256": "F18F60306BDE93682FE2C8AE4AB55EC13C0315D156B08CE064431518030D6F12",
+      "executed": 21,
+      "passed": 19,
+      "failed": 2,
+      "notExecuted": 0,
+      "failedCases": [
+        "ExplicitlyBoundCompletedCreationKeepsUncertainRetiredFieldActionable",
+        "ExplicitlyBoundCompletedCreationKeepsOriginalUnknownOnlyInDurableHistory"
+      ]
+    },
+    {
+      "retained": "checks/registration-stop/first-green.trx",
+      "sha256": "BD48C03F764459779B047AFF9D011DBA56FB113719F4C5B424C907FDEF83C3A2",
+      "executed": 2,
+      "passed": 2,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/registration-stop/red.trx",
+      "sha256": "66B990BCA9AFB2E174C7DD9CC408A86522219F3AABAF05D41D301EB596FDCFA8",
+      "executed": 2,
+      "passed": 1,
+      "failed": 1,
+      "notExecuted": 0,
+      "failedCases": [
+        "SettledObserverFailureIsReportedOnceByStopAndRetryKeepsDraftsAndAllowsNextWork"
+      ]
+    },
+    {
+      "retained": "checks/registration-stop/scoped-green.trx",
+      "sha256": "A6290E7F9D5ADC2065E7B9DC319A4FA5F97BB72B13057720A1EB5039550B45A0",
+      "executed": 43,
+      "passed": 43,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/confirmed-final.trx",
+      "sha256": "C68878A00001992686407CA3B7179D0363233D40A4C8CFED9E89A2092A4AC4FC",
+      "executed": 20,
+      "passed": 20,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/first-green.trx",
+      "sha256": "BED06BBF06B9FB37B5620542C32A319C1A509C8C5F3899DF273A069278D6965B",
+      "executed": 3,
+      "passed": 3,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/metadata-red.trx",
+      "sha256": "DF43568AD8093DE19F06F9E726EBC28F37F70531CCBB56A8CF8AA692513C6151",
+      "executed": 2,
+      "passed": 0,
+      "failed": 2,
+      "notExecuted": 0,
+      "failedCases": [
+        "ContextualMetadataOnlyCommitStillGuardsLaterInput(\"Actual\")",
+        "ContextualMetadataOnlyCommitStillGuardsLaterInput(\"Start\")"
+      ]
+    },
+    {
+      "retained": "checks/undo-core/planning-final.trx",
+      "sha256": "7598F48A088CA077DE25E485F9FD926B95FEC5347EF134B5E0C0E5D4791B5E89",
+      "executed": 107,
+      "passed": 107,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/red.trx",
+      "sha256": "88D1DA132B5C0C55E531806C564145765EE0667CC57C24B9C8D217CE524480C7",
+      "executed": 3,
+      "passed": 0,
+      "failed": 3,
+      "notExecuted": 0,
+      "failedCases": [
+        "ConfirmedEstimateCanBeUndoneTwiceWithoutReopeningEitherInput",
+        "CrossedLocalConfirmationsUndoInSequenceWithoutRecreatingConsumedBuffers",
+        "EstimateProjectionAndLaterDateConfirmationUndoInSequenceWithoutReopeningDateInput"
+      ]
+    },
+    {
+      "retained": "checks/undo-core/round2-first-green.trx",
+      "sha256": "7C754E3695BB058D2A81397CCFAC00B28C0130BB0426A184200BB142640D0D38",
+      "executed": 3,
+      "passed": 3,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/round2-planning-green.trx",
+      "sha256": "6A96244675085D983C1F6A561579ECC0D8A5C070B83383EC4B86C3FAA4F1C16A",
+      "executed": 117,
+      "passed": 117,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    },
+    {
+      "retained": "checks/undo-core/round2-red.trx",
+      "sha256": "F7A8B66842139D6B304F201BF97688DACE3538B6238A1333F8F2E612173F8748",
+      "executed": 3,
+      "passed": 0,
+      "failed": 3,
+      "notExecuted": 0,
+      "failedCases": [
+        "IdenticalContextualConfirmationSavesInputCompletionAndKeepsEarlierUndoAfterReload(\"Start\")",
+        "IdenticalContextualConfirmationSavesInputCompletionAndKeepsEarlierUndoAfterReload(\"Actual\")",
+        "IdenticalContextualConfirmationSavesInputCompletionAndKeepsEarlierUndoAfterReload(\"Finish\")"
+      ]
+    },
+    {
+      "retained": "checks/undo-core/scoped-1.trx",
+      "sha256": "946B0462498B15A557B31F8FD6EEEE5771786F34B1DC3D3F36E05C9C881D71FE",
+      "executed": 326,
+      "passed": 324,
+      "failed": 2,
+      "notExecuted": 0,
+      "failedCases": [
+        "EitherBranchCheckpointMigratesWithoutLosingPendingWorkHistoryOrMetadata(10)",
+        "EitherBranchCheckpointMigratesWithoutLosingPendingWorkHistoryOrMetadata(11)"
+      ]
+    },
+    {
+      "retained": "checks/undo-core/scoped-repair.trx",
+      "sha256": "B196A29853503F817BEB4E61822F52A5F261D7095C574A2B291015D9C99EFADE",
+      "executed": 43,
+      "passed": 43,
+      "failed": 0,
+      "notExecuted": 0,
+      "failedCases": []
+    }
+  ],
+  "uiRuns": [
+    {
+      "run": "run-20260927-175136-116-6244637b",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -Where 'cat == ConnectionEntry' -TimeoutSeconds 180",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 1,
+      "counts": {
+        "failed": "6",
+        "skipped": "0",
+        "total": "6",
+        "inconclusive": "0",
+        "passed": "0"
+      },
+      "metadataSha256": "9B8CEDACE0C8B730B865A32BF96ECC088DE41C303751C3E44D0CC8E2FDC0692C",
+      "resultsSha256": "DD185000972DA473695694241741AC6869E9143A360760D645362C4CE104CF25",
+      "failures": [
+        {
+          "name": "AnotherCachedAccountOnTheSameHostCannotInheritTheEarlierAuthenticationDisplay",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBlock>(\"AccountValue\", connection).Text, Is.EqualTo(\"不明\"))\n  Expected string length 2 but was 36. Strings differ at index 0.\n  Expected: \"不明\"\n  But was:  \"sample-user  /  ID 42  /  github.com\"\n  -----------^\n"
+        },
+        {
+          "name": "CheckingACachedDestinationKeepsItsWorkUntilAnotherAccountIsExplicitlyAccepted(42)",
+          "label": "Error",
+          "message": "System.InvalidOperationException : Sequence contains no matching element"
+        },
+        {
+          "name": "CheckingACachedDestinationKeepsItsWorkUntilAnotherAccountIsExplicitlyAccepted(99)",
+          "label": "Error",
+          "message": "System.InvalidOperationException : Sequence contains no matching element"
+        },
+        {
+          "name": "ConnectionEntryUsesTheCachedHostWithoutTreatingItAsAuthentication(null,\"github.com\")",
+          "label": "Error",
+          "message": "System.InvalidOperationException : Sequence contains no matching element"
+        },
+        {
+          "name": "ConnectionEntryUsesTheCachedHostWithoutTreatingItAsAuthentication(\"example.test\",\"example.test\")",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBox>(\"HostInput\", connection).Text, Is.EqualTo(expectedHost))\n  Expected string length 12 but was 10. Strings differ at index 0.\n  Expected: \"example.test\"\n  But was:  \"github.com\"\n  -----------^\n"
+        },
+        {
+          "name": "ReturningToTheSameProfilePreservesUnfinishedHostAndExecutableInput",
+          "label": "Error",
+          "message": "System.InvalidOperationException : Sequence contains no matching element"
+        }
+      ]
+    },
+    {
+      "run": "run-20260927-175316-158-34f5a1d3",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -Where 'cat == ConnectionEntry' -TimeoutSeconds 180",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 1,
+      "counts": {
+        "skipped": "0",
+        "total": "6",
+        "failed": "3",
+        "inconclusive": "0",
+        "passed": "3"
+      },
+      "metadataSha256": "46F4FD50FEDF3C9C92EF778A3549C1BF10D2C4AA18C918F6C8E4A701AFB8AE0F",
+      "resultsSha256": "6C6BC9F0A0F3F7D6991B2E02DE898D7DC77CE8EAF7C13A11D5905BAC910DAE30",
+      "failures": [
+        {
+          "name": "AnotherCachedAccountOnTheSameHostCannotInheritTheEarlierAuthenticationDisplay",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBlock>(\"AccountValue\", connection).Text, Is.EqualTo(\"不明\"))\n  Expected string length 2 but was 36. Strings differ at index 0.\n  Expected: \"不明\"\n  But was:  \"sample-user  /  ID 42  /  github.com\"\n  -----------^\n"
+        },
+        {
+          "name": "CheckingACachedDestinationKeepsItsWorkUntilAnotherAccountIsExplicitlyAccepted(99)",
+          "label": null,
+          "message": "  Assert.That(Workspace.Profile, Is.EqualTo(selected.Snapshot.Id.Scope))\n  Expected: <ConnectionScope { Host = github.com, ViewerId = 42 }>\n  But was:  <ConnectionScope { Host = github.com, ViewerId = 99 }>\n"
+        },
+        {
+          "name": "ConnectionEntryUsesTheCachedHostWithoutTreatingItAsAuthentication(\"example.test\",\"example.test\")",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBox>(\"HostInput\", connection).Text, Is.EqualTo(expectedHost))\n  Expected string length 12 but was 10. Strings differ at index 0.\n  Expected: \"example.test\"\n  But was:  \"github.com\"\n  -----------^\n"
+        }
+      ]
+    },
+    {
+      "run": "run-20260927-175738-050-750adf3d",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -Where 'cat == ScopedOperationProblem' -TimeoutSeconds 120",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 1,
+      "counts": {
+        "skipped": "0",
+        "total": "2",
+        "failed": "2",
+        "inconclusive": "0",
+        "passed": "0"
+      },
+      "metadataSha256": "AC2E2AEE49D2EA4F300924EF3FA68F1FE3767537344374C5A1760DABDBA61ACF",
+      "resultsSha256": "515397FFE04818AE18A8A738CF9082AC894D285366E88BA0C0EC93CE8AAD3278",
+      "failures": [
+        {
+          "name": "ConfirmingAnotherCellPreservesTheFirstCellsProblemUntilThatInputIsCorrected(False)",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBlock>(\"DraftStatus\").Text, Does.Contain(problem))\n  Expected: String containing \"工数\"\n  But was:  \"2/2行 · GitHub未反映 4セル · 未確定入力 1セル · ローカル保存中…\"\n"
+        },
+        {
+          "name": "ConfirmingAnotherCellPreservesTheFirstCellsProblemUntilThatInputIsCorrected(True)",
+          "label": null,
+          "message": "  Assert.That(Ui.Find<TextBlock>(\"DraftStatus\").Text, Does.Contain(problem))\n  Expected: String containing \"元に戻せません\"\n  But was:  \"2/2行 · GitHub未反映 4セル · 未確定入力 1セル · ローカル保存中…\"\n"
+        }
+      ]
+    },
+    {
+      "run": "run-20260927-175849-470-97de708a",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -NoBuild -Where \"cat == ApplyProblemRefresh or cat == ConnectionEntry or cat == CloseRecovery or cat == ConfirmedEditUndo or cat == ApplyCheckRecovery or test =~ 'WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover'\" -TimeoutSeconds 180",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 1,
+      "counts": {
+        "total": "15",
+        "skipped": "0",
+        "inconclusive": "0",
+        "passed": "12",
+        "failed": "3"
+      },
+      "metadataSha256": "D6F4696E4400FA8C86BC91048B1A7A8F38CA8BFEBA5769B9D0961A2FC7408D6F",
+      "resultsSha256": "5FC596841A87E21614B34D1BAED2AD4BC33916C5D026B455E4E016147DDA2E9D",
+      "failures": [
+        {
+          "name": "ReturningToTheSameProfilePreservesUnfinishedHostAndExecutableInput",
+          "label": null,
+          "message": "  Assert.That(model.Host, Is.EqualTo(\"enterprise-in-progress.\"))\n  Expected string length 23 but was 10. Strings differ at index 0.\n  Expected: \"enterprise-in-progress.\"\n  But was:  \"github.com\"\n  -----------^\n"
+        },
+        {
+          "name": "WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover",
+          "label": "Error",
+          "message": "System.TimeoutException : Observable UI condition did not complete"
+        },
+        {
+          "name": "FailedStopKeepsTheWindowUsableAndRetryClosesAfterSavingItsInput",
+          "label": "Error",
+          "message": "System.InvalidOperationException : Sequence contains no matching element"
+        }
+      ]
+    },
+    {
+      "run": "run-20260927-180317-898-34fb9328",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -Where \"cat == ApplyProblemRefresh or cat == ConnectionEntry or cat == CloseRecovery or cat == ConfirmedEditUndo or cat == ScopedOperationProblem or cat == ApplyCheckRecovery or test =~ 'WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover|BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory|ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo|MultipleWorkerActualRequiresItsBreakdownAndCancelPreservesTheTypedTotal'\" -TimeoutSeconds 180",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 0,
+      "counts": {
+        "total": "21",
+        "skipped": "0",
+        "passed": "21",
+        "inconclusive": "0",
+        "failed": "0"
+      },
+      "metadataSha256": "AAD8EB2C08E5862024F4196ADABD0AB0F6A3CC588E3EAE194B21946AA3607F11",
+      "resultsSha256": "01C4526069B312EFBEF308EBF71C876604A38D2BE8D98C3D70B4696FB5D576C8",
+      "failures": []
+    },
+    {
+      "run": "run-20260927-180913-671-50303ab8",
+      "commandAsRecorded": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -NoBuild -Where \"test =~ 'UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying'\" -TimeoutSeconds 120",
+      "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+      "exitCode": 0,
+      "counts": {
+        "skipped": "0",
+        "failed": "0",
+        "passed": "1",
+        "inconclusive": "0",
+        "total": "1"
+      },
+      "metadataSha256": "9DE7E6EF86C8A427196D7FC191461DDBBFD95D257B840B62095C9D76137FD77B",
+      "resultsSha256": "5693B64D5ABAEF92BE7923B6C1CB2ACADC056D3C6DAE603B2F73490BFB028565",
+      "failures": []
+    }
+  ],
+  "limits": [
+    "Selections overlap; not an additive unique-case total",
+    "Source capture at a NoBuild invocation may differ from executed compiled source",
+    "Five root Core command files are after-the-fact original-tool-call transcriptions with equivalent quoting",
+    "No ordinary app or active evaluator interaction during retention",
+    "No real GitHub, physical IME, human acceptance or readiness verdict"
+  ]
+}

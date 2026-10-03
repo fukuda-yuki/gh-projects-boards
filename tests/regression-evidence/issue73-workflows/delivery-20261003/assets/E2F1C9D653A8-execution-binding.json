@@ -1,0 +1,6 @@
+{
+  "execution": "TestResults/ui-integration/run-20260927-175849-470-97de708a",
+  "compiledSourceReceipt": "TestResults\\ui-integration\\run-20260927-175738-050-750adf3d\\metadata.json",
+  "matchingBinaries": true,
+  "note": "NoBuild run. Raw execution source.diff records invocation working tree, not already-compiled source. Use preceding build receipt and matching binary hashes. Later scoped-error changes were not executed in this run. Initial binding serialization comparison failed due JSON property order; file/hash comparison above resolves identity."
+}

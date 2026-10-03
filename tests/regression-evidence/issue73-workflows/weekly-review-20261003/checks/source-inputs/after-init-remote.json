@@ -1,0 +1,883 @@
+{
+  "capturedAtUtc": "2026-10-03T03:05:53.350302+00:00",
+  "scope": {
+    "viewer": {
+      "id": "MDQ6VXNlcjczNjQ4Njg3",
+      "login": "fukuda-yuki"
+    },
+    "repository": {
+      "id": "R_kgDOUVKgAw",
+      "nameWithOwner": "fukuda-yuki/codex-sandbox",
+      "issue": {
+        "id": "I_kwDOUVKgA88AAAABQq5_MQ",
+        "number": 1,
+        "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/1",
+        "title": "[Verified] Sandbox scope and GitHub CLI validation",
+        "body": "## Authorized sandbox scope\n\nThe user authorized all sandbox testing operations within these exact resources in the Codex conversation on 2026-09-10:\n\n- Repository: https://github.com/fukuda-yuki/codex-sandbox\n- Project: https://github.com/users/fukuda-yuki/projects/3\n\nThis authorization is limited to this repository and this Project. It does not extend to other repositories, other Projects, or account and organization settings. Repeated approval is not needed for operations within this scope, subject to actual execution controls.\n\n## Verified result\n\nReal GitHub CLI Issue and Projects operations completed from the user's Windows environment. Every passed check below includes a separate GitHub readback. This verifies the listed operations; it does not claim every possible gh command has been tested.\n\n- CLI: GitHub CLI 2.100.0, executed through PowerShell.\n- Authenticated account: fukuda-yuki; repository permission ADMIN; Project update permission true.\n- Started (UTC): 09/10/2026 14:49:26\n- Verified (UTC): 2026-09-10T14:56:32.1740497Z\n- Passed readback checks: 27\n\n## Checks\n\n- [x] Issue creation and exact submitted body readback\r\n- [x] Issue linked to Project 3 with In progress status\r\n- [x] Project scope README update and private visibility readback\r\n- [x] Temporary label creation and readback\r\n- [x] Issue title and body edits and applied label readback\r\n- [x] Issue close and completed reason readback\r\n- [x] Issue reopen readback\r\n- [x] Issue label removal readback\r\n- [x] Disposable Issue Project membership and Ready status readback\r\n- [x] Project number field readback\r\n- [x] Project date fields readback\r\n- [x] Temporary Project text field creation and value readback\r\n- [x] Project text field value clear readback\r\n- [x] Project draft item creation readback\r\n- [x] Project draft title and body edit readback\r\n- [x] Project item archive readback\r\n- [x] Project item unarchive readback\r\n- [x] Sandbox repository linked to Project 3 readback\r\n- [x] Draft Project item deletion readback\r\n- [x] Issue removed from Project while repository Issue remains readable\r\n- [x] Temporary Project field deletion and 18 baseline fields preserved\r\n- [x] Temporary repository label deletion readback\r\n- [x] Disposable Issue deletion confirmed by HTTP 404 or 410\r\n- [x] Retained validation Issue closed as completed\r\n- [x] Only the retained validation Issue remains in the repository\r\n- [x] Only the retained validation item remains in Project 3 with Done status\r\n- [x] Repository and Project remain private with all 18 baseline fields\n\n## Final state\n\n- This Issue is retained as the authorization-scope and validation record, closed as completed.\n- Project 3 is linked to the sandbox repository. Its README links to this Issue.\n- The only remaining Project item is this Issue, with Status = Done.\n- Disposable Issue #2, its Project item, the draft Project item, the temporary text field, and the temporary label were deleted.\n- Deleting the disposable Issue was verified by its HTTP 404/410 response.\n- All 18 pre-existing Project fields remain. The repository and Project remain private.\n- All GitHub mutations in this run targeted this repository or Project 3.\n\n## Validation-script correction\n\nThe first assertion incorrectly trimmed the expected Issue body's terminal newline. GitHub had preserved the submitted file exactly. The assertion was corrected to compare against the complete submitted file, and the exact comparison passed. This was a validation-script error, not a failed GitHub mutation.\n\n## Not exercised\n\nGit pushes, pull requests, Actions, repository deletion, Project deletion, visibility changes, and account or organization administration were not exercised by this Issue/Projects check.\r\n",
+        "state": "CLOSED",
+        "stateReason": "COMPLETED",
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        },
+        "assignees": {
+          "nodes": [],
+          "pageInfo": {
+            "hasNextPage": false
+          }
+        },
+        "blockedBy": {
+          "nodes": [],
+          "pageInfo": {
+            "hasNextPage": false
+          }
+        },
+        "blocking": {
+          "nodes": [],
+          "pageInfo": {
+            "hasNextPage": false
+          }
+        }
+      }
+    },
+    "user": {
+      "id": "MDQ6VXNlcjczNjQ4Njg3",
+      "login": "fukuda-yuki",
+      "projectV2": {
+        "id": "PVT_kwHOBGPKL84BjFYc",
+        "number": 3,
+        "url": "https://github.com/users/fukuda-yuki/projects/3",
+        "title": "codex-sandbox",
+        "closed": false,
+        "viewerCanUpdate": true
+      }
+    }
+  },
+  "fields": [
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C30",
+      "name": "Labels",
+      "dataType": "LABELS"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C38",
+      "name": "Linked pull requests",
+      "dataType": "LINKED_PULL_REQUESTS"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y",
+      "name": "Title",
+      "dataType": "TITLE"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g",
+      "name": "Assignees",
+      "dataType": "ASSIGNEES"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C40",
+      "name": "Updated",
+      "dataType": "UPDATED"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C48",
+      "name": "Closed",
+      "dataType": "CLOSED"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4I",
+      "name": "Milestone",
+      "dataType": "MILESTONE"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M",
+      "name": "Repository",
+      "dataType": "REPOSITORY"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4c",
+      "name": "Reviewers",
+      "dataType": "REVIEWERS"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4g",
+      "name": "Parent issue",
+      "dataType": "PARENT_ISSUE"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4o",
+      "name": "Sub-issues progress",
+      "dataType": "SUB_ISSUES_PROGRESS"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C4s",
+      "name": "Created",
+      "dataType": "CREATED"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8",
+      "name": "Estimate",
+      "dataType": "NUMBER"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA",
+      "name": "Start date",
+      "dataType": "DATE"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE",
+      "name": "Target date",
+      "dataType": "DATE"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhkOPVA",
+      "name": "Remaining",
+      "dataType": "NUMBER"
+    },
+    {
+      "__typename": "ProjectV2Field",
+      "id": "PVTF_lAHOBGPKL84BjFYczhkOPVE",
+      "name": "Actual",
+      "dataType": "NUMBER"
+    },
+    {
+      "__typename": "ProjectV2SingleSelectField",
+      "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s",
+      "name": "Status",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+        {
+          "id": "f75ad846",
+          "name": "Backlog",
+          "color": "GREEN",
+          "description": "This item hasn't been started"
+        },
+        {
+          "id": "61e4505c",
+          "name": "Ready",
+          "color": "BLUE",
+          "description": "This is ready to be picked up"
+        },
+        {
+          "id": "47fc9ee4",
+          "name": "In progress",
+          "color": "YELLOW",
+          "description": "This is actively being worked on"
+        },
+        {
+          "id": "df73e18b",
+          "name": "In review",
+          "color": "PURPLE",
+          "description": "This item is in review"
+        },
+        {
+          "id": "98236657",
+          "name": "Done",
+          "color": "ORANGE",
+          "description": "This has been completed"
+        }
+      ]
+    },
+    {
+      "__typename": "ProjectV2SingleSelectField",
+      "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_0",
+      "name": "Priority",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+        {
+          "id": "79628723",
+          "name": "P0",
+          "color": "RED",
+          "description": ""
+        },
+        {
+          "id": "0a877460",
+          "name": "P1",
+          "color": "ORANGE",
+          "description": ""
+        },
+        {
+          "id": "da944a9c",
+          "name": "P2",
+          "color": "YELLOW",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "__typename": "ProjectV2SingleSelectField",
+      "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_4",
+      "name": "Size",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+        {
+          "id": "6c6483d2",
+          "name": "XS",
+          "color": "GREEN",
+          "description": ""
+        },
+        {
+          "id": "f784b110",
+          "name": "S",
+          "color": "PURPLE",
+          "description": ""
+        },
+        {
+          "id": "7515a9f1",
+          "name": "M",
+          "color": "RED",
+          "description": ""
+        },
+        {
+          "id": "817d0097",
+          "name": "L",
+          "color": "YELLOW",
+          "description": ""
+        },
+        {
+          "id": "db339eb2",
+          "name": "XL",
+          "color": "PINK",
+          "description": ""
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "PVTI_lAHOBGPKL84BjFYczg-QYVM",
+      "type": "ISSUE",
+      "isArchived": false,
+      "content": {
+        "__typename": "Issue",
+        "id": "I_kwDOUVKgA88AAAABUuox3Q",
+        "number": 100,
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        }
+      },
+      "fieldValues": {
+        "nodes": [
+          {
+            "__typename": "ProjectV2ItemFieldTextValue",
+            "text": "週次比較: API実装の残作業",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldUserValue",
+            "users": {
+              "nodes": [
+                {
+                  "id": "MDQ6VXNlcjczNjQ4Njg3",
+                  "login": "fukuda-yuki"
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldRepositoryValue",
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 16.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-13",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-13",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 4.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 5.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+            "optionId": "f75ad846",
+            "name": "Backlog",
+            "field": {
+              "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "PVTI_lAHOBGPKL84BjFYczg-QYWo",
+      "type": "ISSUE",
+      "isArchived": false,
+      "content": {
+        "__typename": "Issue",
+        "id": "I_kwDOUVKgA88AAAABUuozZQ",
+        "number": 101,
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        }
+      },
+      "fieldValues": {
+        "nodes": [
+          {
+            "__typename": "ProjectV2ItemFieldTextValue",
+            "text": "週次比較: 後続の結合確認",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldUserValue",
+            "users": {
+              "nodes": [
+                {
+                  "id": "MDQ6VXNlcjczNjQ4Njg3",
+                  "login": "fukuda-yuki"
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldRepositoryValue",
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 16.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-05",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-07",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 4.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+            "optionId": "f75ad846",
+            "name": "Backlog",
+            "field": {
+              "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "PVTI_lAHOBGPKL84BjFYczg-QYXw",
+      "type": "ISSUE",
+      "isArchived": false,
+      "content": {
+        "__typename": "Issue",
+        "id": "I_kwDOUVKgA88AAAABUuo1CA",
+        "number": 102,
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        }
+      },
+      "fieldValues": {
+        "nodes": [
+          {
+            "__typename": "ProjectV2ItemFieldTextValue",
+            "text": "週次比較: 完了済みの前提作業",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldUserValue",
+            "users": {
+              "nodes": [
+                {
+                  "id": "MDQ6VXNlcjczNjQ4Njg3",
+                  "login": "fukuda-yuki"
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldRepositoryValue",
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 16.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-05",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-06",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 0.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 5.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+            "optionId": "98236657",
+            "name": "Done",
+            "field": {
+              "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "PVTI_lAHOBGPKL84BjFYczg-QYZQ",
+      "type": "ISSUE",
+      "isArchived": false,
+      "content": {
+        "__typename": "Issue",
+        "id": "I_kwDOUVKgA88AAAABUuo3Cg",
+        "number": 103,
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        }
+      },
+      "fieldValues": {
+        "nodes": [
+          {
+            "__typename": "ProjectV2ItemFieldTextValue",
+            "text": "週次比較: 合意済みレビュー枠",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldUserValue",
+            "users": {
+              "nodes": [
+                {
+                  "id": "MDQ6VXNlcjczNjQ4Njg3",
+                  "login": "fukuda-yuki"
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldRepositoryValue",
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 16.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C_8"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-10",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldDateValue",
+            "date": "2026-10-10",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7DAE"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldNumberValue",
+            "number": 4.0,
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhkOPVA"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+            "optionId": "f75ad846",
+            "name": "Backlog",
+            "field": {
+              "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "PVTI_lAHOBGPKL84BjFYczg6Wm7o",
+      "type": "ISSUE",
+      "isArchived": false,
+      "content": {
+        "__typename": "Issue",
+        "id": "I_kwDOUVKgA88AAAABQq5_MQ",
+        "number": 1,
+        "repository": {
+          "id": "R_kgDOUVKgAw",
+          "nameWithOwner": "fukuda-yuki/codex-sandbox"
+        }
+      },
+      "fieldValues": {
+        "nodes": [
+          {
+            "__typename": "ProjectV2ItemFieldTextValue",
+            "text": "[Verified] Sandbox scope and GitHub CLI validation",
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldRepositoryValue",
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            },
+            "field": {
+              "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M"
+            }
+          },
+          {
+            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+            "optionId": "98236657",
+            "name": "Done",
+            "field": {
+              "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C3s"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    }
+  ],
+  "issues": [
+    {
+      "id": "I_kwDOUVKgA88AAAABQq5_MQ",
+      "number": 1,
+      "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/1",
+      "title": "[Verified] Sandbox scope and GitHub CLI validation",
+      "body": "## Authorized sandbox scope\n\nThe user authorized all sandbox testing operations within these exact resources in the Codex conversation on 2026-09-10:\n\n- Repository: https://github.com/fukuda-yuki/codex-sandbox\n- Project: https://github.com/users/fukuda-yuki/projects/3\n\nThis authorization is limited to this repository and this Project. It does not extend to other repositories, other Projects, or account and organization settings. Repeated approval is not needed for operations within this scope, subject to actual execution controls.\n\n## Verified result\n\nReal GitHub CLI Issue and Projects operations completed from the user's Windows environment. Every passed check below includes a separate GitHub readback. This verifies the listed operations; it does not claim every possible gh command has been tested.\n\n- CLI: GitHub CLI 2.100.0, executed through PowerShell.\n- Authenticated account: fukuda-yuki; repository permission ADMIN; Project update permission true.\n- Started (UTC): 09/10/2026 14:49:26\n- Verified (UTC): 2026-09-10T14:56:32.1740497Z\n- Passed readback checks: 27\n\n## Checks\n\n- [x] Issue creation and exact submitted body readback\r\n- [x] Issue linked to Project 3 with In progress status\r\n- [x] Project scope README update and private visibility readback\r\n- [x] Temporary label creation and readback\r\n- [x] Issue title and body edits and applied label readback\r\n- [x] Issue close and completed reason readback\r\n- [x] Issue reopen readback\r\n- [x] Issue label removal readback\r\n- [x] Disposable Issue Project membership and Ready status readback\r\n- [x] Project number field readback\r\n- [x] Project date fields readback\r\n- [x] Temporary Project text field creation and value readback\r\n- [x] Project text field value clear readback\r\n- [x] Project draft item creation readback\r\n- [x] Project draft title and body edit readback\r\n- [x] Project item archive readback\r\n- [x] Project item unarchive readback\r\n- [x] Sandbox repository linked to Project 3 readback\r\n- [x] Draft Project item deletion readback\r\n- [x] Issue removed from Project while repository Issue remains readable\r\n- [x] Temporary Project field deletion and 18 baseline fields preserved\r\n- [x] Temporary repository label deletion readback\r\n- [x] Disposable Issue deletion confirmed by HTTP 404 or 410\r\n- [x] Retained validation Issue closed as completed\r\n- [x] Only the retained validation Issue remains in the repository\r\n- [x] Only the retained validation item remains in Project 3 with Done status\r\n- [x] Repository and Project remain private with all 18 baseline fields\n\n## Final state\n\n- This Issue is retained as the authorization-scope and validation record, closed as completed.\n- Project 3 is linked to the sandbox repository. Its README links to this Issue.\n- The only remaining Project item is this Issue, with Status = Done.\n- Disposable Issue #2, its Project item, the draft Project item, the temporary text field, and the temporary label were deleted.\n- Deleting the disposable Issue was verified by its HTTP 404/410 response.\n- All 18 pre-existing Project fields remain. The repository and Project remain private.\n- All GitHub mutations in this run targeted this repository or Project 3.\n\n## Validation-script correction\n\nThe first assertion incorrectly trimmed the expected Issue body's terminal newline. GitHub had preserved the submitted file exactly. The assertion was corrected to compare against the complete submitted file, and the exact comparison passed. This was a validation-script error, not a failed GitHub mutation.\n\n## Not exercised\n\nGit pushes, pull requests, Actions, repository deletion, Project deletion, visibility changes, and account or organization administration were not exercised by this Issue/Projects check.\r\n",
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "repository": {
+        "id": "R_kgDOUVKgAw",
+        "nameWithOwner": "fukuda-yuki/codex-sandbox"
+      },
+      "assignees": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blockedBy": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blocking": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "I_kwDOUVKgA88AAAABUuo1CA",
+      "number": 102,
+      "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/102",
+      "title": "週次比較: 完了済みの前提作業",
+      "body": "## Planning record\n\nComparison task: completed-prerequisite.\n\n### Agreed inputs\n\n- Worker: fukuda-yuki; allocation follows the shared carryover context.\n- Native Issue state: Closed. Planning method: Auto; progress: Completed.\n- Raw hours: Estimate 16; explicit Remaining 0; cumulative Actual 5.\n- Actual report: fukuda-yuki, cumulative 5 hours, reported through 2026-10-06.\n- Explicit actual start: 2026-10-05 09:00 JST; actual finish: 2026-10-06 18:00 JST.\n- Initial predecessors: none.\n- Published day observations: Start date 2026-10-05; Target date 2026-10-06.\n\n### Shared planning rules\n\nUse the shared planning context in the carryover comparison issue (API実装の残作業), section Shared planning rules. That one issue owns the worker allocation, cutoff, working calendar and person exceptions for all four tasks. Do not duplicate those mutable rules here.\n\n### Adopted precise result\n\nRetain the supplied actual start 2026-10-05 09:00 JST and finish 2026-10-06 18:00 JST. Preserve its dated cumulative report and completed state.\n\nShared planning rules: https://github.com/fukuda-yuki/codex-sandbox/issues/100\n\n<!-- Ownership marker: ghpb-weekly-value-f7b67f56d38f46f4a886061b347595a3; task: completed-prerequisite -->\n",
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "repository": {
+        "id": "R_kgDOUVKgAw",
+        "nameWithOwner": "fukuda-yuki/codex-sandbox"
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "id": "MDQ6VXNlcjczNjQ4Njg3",
+            "login": "fukuda-yuki"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blockedBy": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blocking": {
+        "nodes": [
+          {
+            "id": "I_kwDOUVKgA88AAAABUuox3Q",
+            "number": 100,
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "I_kwDOUVKgA88AAAABUuo3Cg",
+      "number": 103,
+      "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/103",
+      "title": "週次比較: 合意済みレビュー枠",
+      "body": "## Planning record\n\nComparison task: fixed-review.\n\n### Agreed inputs\n\n- Worker: fukuda-yuki; allocation follows the shared carryover context.\n- Planning method: Manual; progress: Unstarted.\n- Raw hours: Estimate 16; independent Remaining 4; Actual unknown (absent, not zero).\n- No actual reports or actual endpoints. Initial predecessors: none.\n- Explicit appointment: 2026-10-10 12:07-12:08 JST. Preserve these exact minute endpoints and Manual intent. This one-minute Saturday appointment is an intentional retained exception; do not replace it with the automatic duration or silently rewrite effort to match it.\n- Published day observations: Start date 2026-10-10; Target date 2026-10-10.\n\n### Shared planning rules\n\nUse the shared planning context in the carryover comparison issue (API実装の残作業), section Shared planning rules. That one issue owns the worker allocation, cutoff, working calendar and person exceptions for all four tasks. Do not duplicate those mutable rules here.\n\n### Adopted precise result\n\nManual start: 2026-10-10 12:07 JST.\nManual finish: 2026-10-10 12:08 JST.\nReason: explicitly preserved review appointment, including its weekend exception.\n\nShared planning rules: https://github.com/fukuda-yuki/codex-sandbox/issues/100\n\n<!-- Ownership marker: ghpb-weekly-value-f7b67f56d38f46f4a886061b347595a3; task: fixed-review -->\n",
+      "state": "OPEN",
+      "stateReason": null,
+      "repository": {
+        "id": "R_kgDOUVKgAw",
+        "nameWithOwner": "fukuda-yuki/codex-sandbox"
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "id": "MDQ6VXNlcjczNjQ4Njg3",
+            "login": "fukuda-yuki"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blockedBy": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blocking": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "I_kwDOUVKgA88AAAABUuox3Q",
+      "number": 100,
+      "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/100",
+      "title": "週次比較: API実装の残作業",
+      "body": "## Planning record\n\nComparison task: carryover.\n\n### Agreed inputs\n\n- Worker: fukuda-yuki; Project allocation: 80%.\n- Planning method: Auto; progress: InProgress.\n- Raw hours: Estimate 16; independent Remaining 4; cumulative Actual 5.\n- Actual report: fukuda-yuki, cumulative 5 hours, reported through 2026-10-06. Actual start: 2026-10-05 09:00 JST; actual finish: unknown.\n- Current planning predecessor: completed-prerequisite (the coordinator records the verified Issue relationship).\n- Published day observations: Start date 2026-10-13; Target date 2026-10-13. These dates do not establish an exact Auto time.\n\n### Shared planning rules\n\nJapan time. Project start 2026-10-05 09:00; remaining-work cutoff 2026-10-09 18:00. Monday-Friday 09:00-13:00 and 14:00-18:00; weekends and bundled Japanese 2025-2027 holidays are closed, including 2026-10-12. No initial person exception. Required minutes = selected raw hours / 0.8 * 60, ceil once to a whole minute. InProgress uses independent Remaining; Unstarted uses Estimate; Completed uses explicit actual endpoints and Remaining 0. FS waits for the predecessor's adopted finish. No resource leveling. Historical actuals are retained separately from remaining-work dates.\n\n### Adopted precise result\n\nExact Auto start: not yet recorded here.\nExact Auto finish: not yet recorded here.\nReason and revision: record during planning; keep input rules distinct from results.\n\n<!-- Ownership marker: ghpb-weekly-value-f7b67f56d38f46f4a886061b347595a3; task: carryover -->\n",
+      "state": "OPEN",
+      "stateReason": null,
+      "repository": {
+        "id": "R_kgDOUVKgAw",
+        "nameWithOwner": "fukuda-yuki/codex-sandbox"
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "id": "MDQ6VXNlcjczNjQ4Njg3",
+            "login": "fukuda-yuki"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blockedBy": {
+        "nodes": [
+          {
+            "id": "I_kwDOUVKgA88AAAABUuo1CA",
+            "number": 102,
+            "repository": {
+              "id": "R_kgDOUVKgAw",
+              "nameWithOwner": "fukuda-yuki/codex-sandbox"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blocking": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    },
+    {
+      "id": "I_kwDOUVKgA88AAAABUuozZQ",
+      "number": 101,
+      "url": "https://github.com/fukuda-yuki/codex-sandbox/issues/101",
+      "title": "週次比較: 後続の結合確認",
+      "body": "## Planning record\n\nComparison task: successor.\n\n### Agreed inputs\n\n- Worker: fukuda-yuki; allocation follows the shared carryover context.\n- Planning method: Auto; progress: Unstarted.\n- Raw hours: Estimate 16; independent Remaining 4; Actual unknown (absent, not zero).\n- No actual reports or actual endpoints.\n- Initial predecessors: none.\n- Published day observations: Start date 2026-10-05; Target date 2026-10-07. These dates do not establish an exact Auto time.\n\n### Shared planning rules\n\nUse the shared planning context in the carryover comparison issue (API実装の残作業), section Shared planning rules. That one issue owns the worker allocation, cutoff, working calendar and person exceptions for all four tasks. Do not duplicate those mutable rules here.\n\n### Adopted precise result\n\nExact Auto start: not yet recorded here.\nExact Auto finish: not yet recorded here.\nReason and revision: record during planning; keep input rules distinct from results.\n\nShared planning rules: https://github.com/fukuda-yuki/codex-sandbox/issues/100\n\n<!-- Ownership marker: ghpb-weekly-value-f7b67f56d38f46f4a886061b347595a3; task: successor -->\n",
+      "state": "OPEN",
+      "stateReason": null,
+      "repository": {
+        "id": "R_kgDOUVKgAw",
+        "nameWithOwner": "fukuda-yuki/codex-sandbox"
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "id": "MDQ6VXNlcjczNjQ4Njg3",
+            "login": "fukuda-yuki"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blockedBy": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "blocking": {
+        "nodes": [],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    }
+  ]
+}

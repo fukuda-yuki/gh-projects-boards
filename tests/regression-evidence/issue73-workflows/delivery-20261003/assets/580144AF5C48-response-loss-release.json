@@ -1,0 +1,165 @@
+{
+  "schema": "V-phase2-loss-release-v1",
+  "at": "2026-10-02T20:18:15.2139724+00:00",
+  "completed": true,
+  "failure": null,
+  "dataRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v\\data",
+  "endpointReceipt": {
+    "sha256": "E74C200B6FCAC1455163F40602EEF622CBD3C7F8A84F9440F9D1770CBDC55F25",
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v\\diagnostics\\phase2-install-5f3cacea47784383847fac19ebdff759\\endpoint-receipt.json"
+  },
+  "rootAuthorization": {
+    "sha256": "9A94A3E2A19751D88E5170443167981E39239134C3E391A6F0704296FEFDF5DA",
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\v-fresh-evaluator\\creation-authorization\\after-creation-loss.json"
+  },
+  "beforeScenarioSha256": "BABA185D4ACA0B68AE6010EEB66D94722BAA479004FC074CD8C82FFF978992EE",
+  "afterScenarioSha256": "D4DCC5B0A70BA8E90F2A6D37CD0B658650A3BBD56A6F2ACF7BDFCB5E067E7E6D",
+  "storedIssue": {
+    "id": "created1",
+    "number": 1001,
+    "title": "V follow-up review",
+    "repository": "first",
+    "member": false,
+    "option": "todo"
+  },
+  "administratorObservedIssue": {
+    "__typename": "Issue",
+    "id": "created1",
+    "assignees": {
+      "nodes": [],
+      "totalCount": 0,
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "blockedBy": {
+      "nodes": [],
+      "totalCount": 0,
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "parent": null,
+    "number": 1001,
+    "title": "V follow-up review",
+    "state": "OPEN",
+    "viewerCanUpdate": true,
+    "url": "https://example.test/sample-user/first/issues/1001",
+    "repository": {
+      "id": "R-first",
+      "nameWithOwner": "sample-user/first",
+      "owner": {
+        "id": "O1"
+      }
+    }
+  },
+  "appFilesBefore": [
+    {
+      "path": ".writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 121332,
+      "sha256": "64DF0029A59FA8E40DDAC40F4BD8F993198463A2053ABB16FCD25D61BA45FF16"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 121318,
+      "sha256": "8F9852B229EBFE9F2A76A015DC3DCDC9D76E857F2E3E7196B544D9874A1F4360"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54036,
+      "sha256": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679"
+    }
+  ],
+  "serviceFilesBefore": [
+    {
+      "path": "adapter-requests.jsonl",
+      "length": 18036,
+      "sha256": "4CE697AEEB2D9A644A6C412C92030A342DF7C7338EB2CFF2DECF5F9F368A668F"
+    },
+    {
+      "path": "apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "calls.jsonl",
+      "length": 8954,
+      "sha256": "560EB5A5D9449FB7F895303B211E16F83E3339DA2D1B5A43BFA073D6452D4B88"
+    },
+    {
+      "path": "creation-requests.jsonl",
+      "length": 227,
+      "sha256": "03614A43E92C49765E54D978A8092AF0E0E16A2D7F0A52FC9A112ED7EA12620D"
+    },
+    {
+      "path": "creation-state.json",
+      "length": 114,
+      "sha256": "6F3CB748AE2F69FFDD792AB8F590BF40954233F89135B3CD32E6F2926F4C1743"
+    },
+    {
+      "path": "scenario.json",
+      "length": 158,
+      "sha256": "BABA185D4ACA0B68AE6010EEB66D94722BAA479004FC074CD8C82FFF978992EE"
+    }
+  ],
+  "serviceFilesAfter": [
+    {
+      "path": "adapter-requests.jsonl",
+      "length": 18580,
+      "sha256": "24DB840B9D7F15DDB53D6AD3CB562515AC0C520AF82E2A90F0F5C41E7C5DB030"
+    },
+    {
+      "path": "apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "calls.jsonl",
+      "length": 9063,
+      "sha256": "4FDB4110B9C2B2B746BC699A00693B73F91CC96820FBD8862CD16CEB638C0E3D"
+    },
+    {
+      "path": "creation-requests.jsonl",
+      "length": 227,
+      "sha256": "03614A43E92C49765E54D978A8092AF0E0E16A2D7F0A52FC9A112ED7EA12620D"
+    },
+    {
+      "path": "creation-state.json",
+      "length": 114,
+      "sha256": "6F3CB748AE2F69FFDD792AB8F590BF40954233F89135B3CD32E6F2926F4C1743"
+    },
+    {
+      "path": "scenario.json",
+      "length": 125,
+      "sha256": "D4DCC5B0A70BA8E90F2A6D37CD0B658650A3BBD56A6F2ACF7BDFCB5E067E7E6D"
+    }
+  ],
+  "scope": "Only response-loss flag removed and one administrator identity query. No App state write, creation, association, approval, retry or live GitHub."
+}

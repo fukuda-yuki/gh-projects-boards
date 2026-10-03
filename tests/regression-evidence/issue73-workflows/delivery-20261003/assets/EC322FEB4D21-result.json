@@ -1,0 +1,39 @@
+{
+  "at": "2026-09-27T15:04:21.6398129+00:00",
+  "sourceCount": 154,
+  "changed": [],
+  "run": "TestResults/ui-integration/run-20260928-000333-118-4a3b736b",
+  "counts": {
+    "total": "3",
+    "passed": "3",
+    "skipped": "0",
+    "inconclusive": "0",
+    "failed": "0"
+  },
+  "binaries": [
+    {
+      "sha256": "F1AF966B9E8C072D0E88263F9467015910996AFEF01F77655B7F202DF8740674",
+      "name": "GhProjectsBoards.App.dll"
+    },
+    {
+      "sha256": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+      "name": "GhProjectsBoards.Core.dll"
+    },
+    {
+      "sha256": "E74F9B2FA9F87DA8A2F67CDBC95C58ABFC46A014A28AC5ABEC34534F9AA7196A",
+      "name": "GhProjectsBoards.UiIntegration.Tests.dll"
+    },
+    {
+      "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+      "name": "Microsoft.UI.Xaml.dll"
+    },
+    {
+      "sha256": "BB3C2C2C814A2E58D880033B5359163B6E66A1FD1AF0F95A4F70606FF1D5E757",
+      "name": "GhProjectsBoards.App.pri"
+    },
+    {
+      "sha256": "8ABCBC3F81AC862A50DE6239DCB5C3879B46F5B144CE17B6F76CC8ADE4846A42",
+      "name": "GhProjectsBoards.UiIntegration.Tests.pri"
+    }
+  ]
+}

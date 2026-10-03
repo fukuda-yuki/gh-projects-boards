@@ -1,0 +1,22 @@
+{
+  "oldCandidate": "R16",
+  "newCandidate": "weekly review warning correction",
+  "head": "fd5732ad4f063665bbc23be96247dd8d620d80d2",
+  "inputCount": 272,
+  "changes": [
+    {
+      "path": "src/GhProjectsBoards.App/SchedulingEditor.cs",
+      "previousSha256": "00396262597EC4F0E5649909F88751063BD35E0A84CDF5A1ADD57FE24AA13997",
+      "candidateSha256": "E3C4A60687A29C82FB7BCEC1D1D091065B9D97B855EEB25D102A4D7542318653"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+      "previousSha256": "24F7AB6091221DAC6AB36AF3BF989C4270E0FB36D26DDB2D6CA7999DFE5B6CA6",
+      "candidateSha256": "77728669F17A971433E93CFF77A659BAA3EDB50291C387DB8078366D23DC4D28"
+    }
+  ],
+  "currentSourceMismatchCount": 0,
+  "coreUnchanged": true,
+  "ordinaryAppMatchesGreenHost": true,
+  "testedScope": "Five rendered UI integration cases, no new logic changes"
+}

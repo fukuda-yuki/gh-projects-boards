@@ -1,0 +1,5 @@
+Provenance: coordinator transcription of the observed tool invocation, added after execution. This is not a recovered stdout command record. Working directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards.
+
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter 'FullyQualifiedName~GhProjectsBoards.Tests.CreationTests|FullyQualifiedName~ApplyResultsPresentationTests' --logger 'trx;LogFileName=green.trx' --results-directory TestResults/issue73/blind-review/checks/recovery-r2
+
+Observed result: 58 executed / 58 passed / 0 failed / 0 skipped. Original log/TRX retained separately. This command does not claim separate creation-unregister or legacy-failure commands whose exact invocation text is not contained in this record.

@@ -1,0 +1,4197 @@
+{
+  "schema": "V4-independent-structural-supplement-v1",
+  "createdAtUtc": "2026-10-02T21:02:48.366373+00:00",
+  "originalRun": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-v-creation\\readback\\runs\\20261002-203738-61d13832da544df9a17ed583c97116ba",
+  "originalReadback": {
+    "passed": 27,
+    "failed": 1,
+    "unobserved": 0,
+    "unchanged": true
+  },
+  "sourceSha256": "C2AED3AC8F81F90B05352257D41256A3521B1B1A1B128847A720103EB448B005",
+  "inputManifestSha256": "E3FE3E1AEDB68806F5BF6091EA56D4A6EA1DE1568B34C19098042AC28BDF2DE3",
+  "semanticObservation": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "exact-authorized-notification",
+        "passed": true,
+        "observed": {
+          "baseline": [],
+          "loss": [],
+          "current": [
+            "追加項目: item-created1"
+          ]
+        }
+      },
+      {
+        "name": "unrelated-domains-unchanged",
+        "passed": true,
+        "observed": {
+          "Planning": [],
+          "HistoricalDispositions": []
+        }
+      },
+      {
+        "name": "exact-profile-and-complete-project",
+        "passed": true,
+        "observed": {
+          "scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "registrationCount": 1
+        }
+      },
+      {
+        "name": "exact-twenty-to-twenty-one-members",
+        "passed": true,
+        "observed": {
+          "before": [
+            "P1-T1",
+            "P1-T2",
+            "P1-T3",
+            "P1-T4",
+            "P1-T5",
+            "P1-T6",
+            "P1-T7",
+            "P1-T8",
+            "P1-T9",
+            "P1-T10",
+            "P1-T11",
+            "P1-T12",
+            "P1-T13",
+            "P1-T14",
+            "P1-T15",
+            "P1-T16",
+            "P1-T17",
+            "P1-T18",
+            "P1-T19",
+            "P1-T20"
+          ],
+          "after": [
+            "P1-T1",
+            "P1-T2",
+            "P1-T3",
+            "P1-T4",
+            "P1-T5",
+            "P1-T6",
+            "P1-T7",
+            "P1-T8",
+            "P1-T9",
+            "P1-T10",
+            "P1-T11",
+            "P1-T12",
+            "P1-T13",
+            "P1-T14",
+            "P1-T15",
+            "P1-T16",
+            "P1-T17",
+            "P1-T18",
+            "P1-T19",
+            "P1-T20",
+            "item-created1"
+          ],
+          "addedMember": {
+            "Id": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "item-created1"
+            },
+            "Kind": "Issue",
+            "TypeName": "ISSUE",
+            "ContentId": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "created1"
+            },
+            "IsArchived": false,
+            "Values": [
+              {
+                "FieldId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "P1-status"
+                },
+                "ValueId": "v-created1",
+                "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                "Availability": "Present",
+                "OptionId": "done",
+                "Scalar": null
+              },
+              {
+                "FieldId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "P1-text"
+                },
+                "ValueId": null,
+                "TypeName": "ProjectV2Field",
+                "Availability": "Unsupported",
+                "OptionId": null,
+                "Scalar": null
+              }
+            ],
+            "ValuesComplete": true
+          }
+        }
+      },
+      {
+        "name": "exact-verified-issue-and-prior-tasks",
+        "passed": true,
+        "observed": {
+          "issue": {
+            "Id": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "created1"
+            },
+            "Repository": {
+              "Id": {
+                "Scope": {
+                  "Host": "example.test",
+                  "ViewerId": 42
+                },
+                "NodeId": "R-first"
+              },
+              "OwnerId": {
+                "Scope": {
+                  "Host": "example.test",
+                  "ViewerId": 42
+                },
+                "NodeId": "O1"
+              },
+              "NameWithOwner": "sample-user/first"
+            },
+            "Number": 1001,
+            "Url": "https://example.test/sample-user/first/issues/1001",
+            "Title": {
+              "Availability": "Present",
+              "Value": "V follow-up review"
+            },
+            "State": {
+              "Availability": "Present",
+              "Value": "Open"
+            },
+            "Capability": {
+              "CanUpdate": true,
+              "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+            },
+            "Native": {
+              "Assignees": [],
+              "Predecessors": [],
+              "Parent": {
+                "Availability": "Empty",
+                "Value": null
+              },
+              "Complete": true
+            }
+          },
+          "priorTaskFactsIntact": true
+        }
+      },
+      {
+        "name": "original-lineage-and-verified-membership",
+        "passed": true,
+        "observed": {
+          "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+          "creationId": "9806180e5ae448bfadf1e613a45be52c",
+          "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+          "verified": {
+            "Id": "created1",
+            "RepositoryId": "R-first",
+            "Number": 1001,
+            "Url": "https://example.test/sample-user/first/issues/1001",
+            "Title": "V follow-up review",
+            "At": "2026-10-02T20:29:54.3908011+00:00"
+          },
+          "itemId": "item-created1",
+          "completed": true
+        }
+      },
+      {
+        "name": "exact-status-intent-and-independent-verification",
+        "passed": true,
+        "observed": {
+          "status": {
+            "Id": "2bd22d9683c64585bbe78477996c0322",
+            "Key": {
+              "Kind": "Select",
+              "NodeId": "item-created1",
+              "ProjectId": "P1",
+              "FieldId": "P1-status"
+            },
+            "ItemId": "item-created1",
+            "IssueId": "created1",
+            "Identity": "https://example.test/sample-user/first/issues/1001",
+            "FieldName": "Status",
+            "Expected": "todo",
+            "Intended": {
+              "Value": "done",
+              "Clear": false
+            },
+            "Stamp": 66,
+            "State": "Succeeded",
+            "Attempts": [
+              {
+                "Number": 1,
+                "At": "2026-10-02T20:30:39.8696965+00:00",
+                "State": "Succeeded",
+                "Reason": "Read-back"
+              }
+            ],
+            "Reason": "独立読み戻し一致",
+            "Verification": {
+              "Id": "cb7007fc844442aca42e9debb9b9caf1",
+              "Project": {
+                "Scope": {
+                  "Host": "example.test",
+                  "ViewerId": 42
+                },
+                "NodeId": "P1"
+              },
+              "At": "2026-10-02T20:30:41.1612313+00:00",
+              "Value": "done",
+              "Availability": "Present",
+              "Reason": null,
+              "Options": [
+                {
+                  "Id": "todo",
+                  "Name": "Todo"
+                },
+                {
+                  "Id": "done",
+                  "Name": "Done"
+                }
+              ]
+            },
+            "NotBefore": null
+          },
+          "intents": [
+            {
+              "FieldId": "P1-status",
+              "FieldName": "Status",
+              "OptionId": "done",
+              "OptionName": "Done",
+              "ExplicitClear": false,
+              "Intent": "Set"
+            }
+          ]
+        }
+      },
+      {
+        "name": "exact-independent-service-creation-member-and-status",
+        "passed": true,
+        "observed": {
+          "service": [
+            {
+              "id": "created1",
+              "number": 1001,
+              "title": "V follow-up review",
+              "repository": "first",
+              "member": true,
+              "option": "done"
+            }
+          ],
+          "requests": [
+            {
+              "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+              "input": {
+                "repositoryId": "R-first",
+                "title": "V follow-up review"
+              }
+            },
+            {
+              "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+              "input": {
+                "projectId": "P1",
+                "contentId": "created1"
+              }
+            },
+            {
+              "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+              "input": {
+                "projectId": "P1",
+                "itemId": "item-created1",
+                "fieldId": "P1-status",
+                "value": {
+                  "singleSelectOptionId": "done"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "all-prior-work-and-exact-promoted-fields",
+        "passed": true,
+        "observed": {
+          "priorFieldCount": 40,
+          "currentFieldCount": 42,
+          "priorValuesChangesBuffersIntact": true
+        }
+      },
+      {
+        "name": "prior-apply-history-and-no-extra-authorization",
+        "passed": true,
+        "observed": {
+          "priorBatchIds": [
+            "75c998eee5cf443db6a3b86ccb484622",
+            "ae9b9f0b82b547af971c29fc78f12bf3"
+          ],
+          "currentBatchIds": [
+            "75c998eee5cf443db6a3b86ccb484622",
+            "ae9b9f0b82b547af971c29fc78f12bf3",
+            "15a7ca16012a40b08bf5c018ec60f1e8"
+          ],
+          "existingServiceIdentical": true
+        }
+      },
+      {
+        "name": "edit-history-only-disables-promoted-row-undo",
+        "passed": true,
+        "observed": {
+          "beforeIds": [
+            "2870aed169e6439c803715f3f20a23ba",
+            "438eafd362af496bafac726583d90d84",
+            "2e03229e2a38430f8a8de6ac103e6bdd",
+            "9f0b277228d54f8e9cbd36e6572da3b1",
+            "51d8c31dcf2d45569efb7d19be4b2fa7",
+            "47ef6560ad914e9da391e13401d5779f",
+            "efeff13083d249fc8ccf22cf9a8d018b"
+          ],
+          "afterIds": [
+            "2870aed169e6439c803715f3f20a23ba",
+            "438eafd362af496bafac726583d90d84",
+            "2e03229e2a38430f8a8de6ac103e6bdd",
+            "9f0b277228d54f8e9cbd36e6572da3b1",
+            "51d8c31dcf2d45569efb7d19be4b2fa7",
+            "47ef6560ad914e9da391e13401d5779f",
+            "efeff13083d249fc8ccf22cf9a8d018b"
+          ]
+        }
+      }
+    ]
+  },
+  "negativeProbes": [
+    {
+      "name": "wrong-notification-id",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "exact-authorized-notification",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": false,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-other"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-notification",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "exact-authorized-notification",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": false,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1",
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "extra-unrelated-notification",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "exact-authorized-notification",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": false,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1",
+                "アーカイブ: P1-T2"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-verified-issue",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "original-lineage-and-verified-membership",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": false,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {},
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong-member-content",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "exact-twenty-to-twenty-one-members",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": false,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "I2"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unrelated-planning",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "unrelated-domains-unchanged",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": false,
+            "observed": {
+              "Planning": [
+                {
+                  "ProjectId": "P1",
+                  "UnexpectedProbe": true
+                }
+              ],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unrelated-historical-disposition",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "unrelated-domains-unchanged",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": false,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": [
+                {
+                  "UnexpectedProbe": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-membership-dispatch",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "exact-independent-service-creation-member-and-status",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": false,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "altered-prior-apply-history",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "prior-apply-history-and-no-extra-authorization",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": true,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": true
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": false,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "altered-independent-pending-input",
+      "expected": "rejected",
+      "passed": true,
+      "requiredFailure": "all-prior-work-and-exact-promoted-fields",
+      "result": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "exact-authorized-notification",
+            "passed": true,
+            "observed": {
+              "baseline": [],
+              "loss": [],
+              "current": [
+                "追加項目: item-created1"
+              ]
+            }
+          },
+          {
+            "name": "unrelated-domains-unchanged",
+            "passed": true,
+            "observed": {
+              "Planning": [],
+              "HistoricalDispositions": []
+            }
+          },
+          {
+            "name": "exact-profile-and-complete-project",
+            "passed": true,
+            "observed": {
+              "scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "registrationCount": 1
+            }
+          },
+          {
+            "name": "exact-twenty-to-twenty-one-members",
+            "passed": true,
+            "observed": {
+              "before": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20"
+              ],
+              "after": [
+                "P1-T1",
+                "P1-T2",
+                "P1-T3",
+                "P1-T4",
+                "P1-T5",
+                "P1-T6",
+                "P1-T7",
+                "P1-T8",
+                "P1-T9",
+                "P1-T10",
+                "P1-T11",
+                "P1-T12",
+                "P1-T13",
+                "P1-T14",
+                "P1-T15",
+                "P1-T16",
+                "P1-T17",
+                "P1-T18",
+                "P1-T19",
+                "P1-T20",
+                "item-created1"
+              ],
+              "addedMember": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "item-created1"
+                },
+                "Kind": "Issue",
+                "TypeName": "ISSUE",
+                "ContentId": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "IsArchived": false,
+                "Values": [
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-status"
+                    },
+                    "ValueId": "v-created1",
+                    "TypeName": "ProjectV2ItemFieldSingleSelectValue",
+                    "Availability": "Present",
+                    "OptionId": "done",
+                    "Scalar": null
+                  },
+                  {
+                    "FieldId": {
+                      "Scope": {
+                        "Host": "example.test",
+                        "ViewerId": 42
+                      },
+                      "NodeId": "P1-text"
+                    },
+                    "ValueId": null,
+                    "TypeName": "ProjectV2Field",
+                    "Availability": "Unsupported",
+                    "OptionId": null,
+                    "Scalar": null
+                  }
+                ],
+                "ValuesComplete": true
+              }
+            }
+          },
+          {
+            "name": "exact-verified-issue-and-prior-tasks",
+            "passed": true,
+            "observed": {
+              "issue": {
+                "Id": {
+                  "Scope": {
+                    "Host": "example.test",
+                    "ViewerId": 42
+                  },
+                  "NodeId": "created1"
+                },
+                "Repository": {
+                  "Id": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "R-first"
+                  },
+                  "OwnerId": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "O1"
+                  },
+                  "NameWithOwner": "sample-user/first"
+                },
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": {
+                  "Availability": "Present",
+                  "Value": "V follow-up review"
+                },
+                "State": {
+                  "Availability": "Present",
+                  "Value": "Open"
+                },
+                "Capability": {
+                  "CanUpdate": true,
+                  "ObservedAt": "2026-10-02T20:30:42.2388515+00:00"
+                },
+                "Native": {
+                  "Assignees": [],
+                  "Predecessors": [],
+                  "Parent": {
+                    "Availability": "Empty",
+                    "Value": null
+                  },
+                  "Complete": true
+                }
+              },
+              "priorTaskFactsIntact": true
+            }
+          },
+          {
+            "name": "original-lineage-and-verified-membership",
+            "passed": true,
+            "observed": {
+              "batchId": "15a7ca16012a40b08bf5c018ec60f1e8",
+              "creationId": "9806180e5ae448bfadf1e613a45be52c",
+              "localId": "local-053bb67193f544048f8c5f7a3c0bd374",
+              "verified": {
+                "Id": "created1",
+                "RepositoryId": "R-first",
+                "Number": 1001,
+                "Url": "https://example.test/sample-user/first/issues/1001",
+                "Title": "V follow-up review",
+                "At": "2026-10-02T20:29:54.3908011+00:00"
+              },
+              "itemId": "item-created1",
+              "completed": true
+            }
+          },
+          {
+            "name": "exact-status-intent-and-independent-verification",
+            "passed": true,
+            "observed": {
+              "status": {
+                "Id": "2bd22d9683c64585bbe78477996c0322",
+                "Key": {
+                  "Kind": "Select",
+                  "NodeId": "item-created1",
+                  "ProjectId": "P1",
+                  "FieldId": "P1-status"
+                },
+                "ItemId": "item-created1",
+                "IssueId": "created1",
+                "Identity": "https://example.test/sample-user/first/issues/1001",
+                "FieldName": "Status",
+                "Expected": "todo",
+                "Intended": {
+                  "Value": "done",
+                  "Clear": false
+                },
+                "Stamp": 66,
+                "State": "Succeeded",
+                "Attempts": [
+                  {
+                    "Number": 1,
+                    "At": "2026-10-02T20:30:39.8696965+00:00",
+                    "State": "Succeeded",
+                    "Reason": "Read-back"
+                  }
+                ],
+                "Reason": "独立読み戻し一致",
+                "Verification": {
+                  "Id": "cb7007fc844442aca42e9debb9b9caf1",
+                  "Project": {
+                    "Scope": {
+                      "Host": "example.test",
+                      "ViewerId": 42
+                    },
+                    "NodeId": "P1"
+                  },
+                  "At": "2026-10-02T20:30:41.1612313+00:00",
+                  "Value": "done",
+                  "Availability": "Present",
+                  "Reason": null,
+                  "Options": [
+                    {
+                      "Id": "todo",
+                      "Name": "Todo"
+                    },
+                    {
+                      "Id": "done",
+                      "Name": "Done"
+                    }
+                  ]
+                },
+                "NotBefore": null
+              },
+              "intents": [
+                {
+                  "FieldId": "P1-status",
+                  "FieldName": "Status",
+                  "OptionId": "done",
+                  "OptionName": "Done",
+                  "ExplicitClear": false,
+                  "Intent": "Set"
+                }
+              ]
+            }
+          },
+          {
+            "name": "exact-independent-service-creation-member-and-status",
+            "passed": true,
+            "observed": {
+              "service": [
+                {
+                  "id": "created1",
+                  "number": 1001,
+                  "title": "V follow-up review",
+                  "repository": "first",
+                  "member": true,
+                  "option": "done"
+                }
+              ],
+              "requests": [
+                {
+                  "query": "mutation CreateWorkspaceIssue($input:CreateIssueInput!){createIssue(input:$input){issue{__typename id number url title repository{id nameWithOwner}}}}",
+                  "input": {
+                    "repositoryId": "R-first",
+                    "title": "V follow-up review"
+                  }
+                },
+                {
+                  "query": "mutation AddWorkspaceIssue($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id project{id} content{__typename ... on Issue{id}}}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "contentId": "created1"
+                  }
+                },
+                {
+                  "query": "mutation ApplySelect($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}",
+                  "input": {
+                    "projectId": "P1",
+                    "itemId": "item-created1",
+                    "fieldId": "P1-status",
+                    "value": {
+                      "singleSelectOptionId": "done"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "all-prior-work-and-exact-promoted-fields",
+            "passed": false,
+            "observed": {
+              "priorFieldCount": 40,
+              "currentFieldCount": 42,
+              "priorValuesChangesBuffersIntact": false
+            }
+          },
+          {
+            "name": "prior-apply-history-and-no-extra-authorization",
+            "passed": true,
+            "observed": {
+              "priorBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3"
+              ],
+              "currentBatchIds": [
+                "75c998eee5cf443db6a3b86ccb484622",
+                "ae9b9f0b82b547af971c29fc78f12bf3",
+                "15a7ca16012a40b08bf5c018ec60f1e8"
+              ],
+              "existingServiceIdentical": true
+            }
+          },
+          {
+            "name": "edit-history-only-disables-promoted-row-undo",
+            "passed": true,
+            "observed": {
+              "beforeIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ],
+              "afterIds": [
+                "2870aed169e6439c803715f3f20a23ba",
+                "438eafd362af496bafac726583d90d84",
+                "2e03229e2a38430f8a8de6ac103e6bdd",
+                "9f0b277228d54f8e9cbd36e6572da3b1",
+                "51d8c31dcf2d45569efb7d19be4b2fa7",
+                "47ef6560ad914e9da391e13401d5779f",
+                "efeff13083d249fc8ccf22cf9a8d018b"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "passed": true,
+  "originalInputsUnchanged": true,
+  "scope": "Independent interpretation of the one structural failure; original result remains failed.",
+  "appExecution": "not_run",
+  "coreLoad": "not_run",
+  "endpointExecution": "not_run",
+  "modelExecution": "not_run",
+  "humanAcceptance": "not_run"
+}

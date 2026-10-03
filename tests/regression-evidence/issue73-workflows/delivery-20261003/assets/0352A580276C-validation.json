@@ -1,0 +1,67 @@
+{
+  "validatedAtUtc": "2026-10-02T21:49:42.313051+00:00",
+  "previousLedgerSha256": "05DE6C04DCA1AEFA7420349FDCE14805A9CBA18461ABD9B44315781D0259A771",
+  "approvedProposalSha256": "DC431D4C46F27675982BA73DCC13E710DE8704F2DA2E2EA2E867E472F02CB013",
+  "priorManifests": [
+    {
+      "path": "manifest.json",
+      "sha256": "925D4CCE4C912E3205D4B92282012FBBCAD0695673B660D3EB020E3AFEE4E6A7",
+      "originalFilesVerified": 2188,
+      "bytes": 88267420
+    },
+    {
+      "path": "manifest-additions-20260927.json",
+      "sha256": "AD5E00B6EA3A8045D86B4773C4A59E3A5D05AC4E5D1A2CEBD898B2E832F7149F",
+      "originalFilesVerified": 1303,
+      "bytes": 70704702
+    },
+    {
+      "path": "manifest-additions-daily-final-20260927.json",
+      "sha256": "BD7E63C0B9788275DEC885F0F865D311EDC020222E4F3913543F659C43855583",
+      "originalFilesVerified": 254,
+      "bytes": 13463341
+    },
+    {
+      "path": "manifest-additions-round5-20260927.json",
+      "sha256": "9F0B15D469053A01ACA18B03DFC334361FADD670C550D41037DDD61F746767FF",
+      "originalFilesVerified": 763,
+      "bytes": 48644603
+    }
+  ],
+  "previousRetainedEntriesVerified": 16528,
+  "previousRetainedMismatches": 0,
+  "selectedSourceFilesVerified": 1596,
+  "selectedSourceBytes": 145502076,
+  "executionStagesPreserved": 10,
+  "originalPngs": 52,
+  "individualImagePrivacyReviews": 52,
+  "hostedBuilds": 4,
+  "hostedBuildSourceCounts": [
+    235,
+    236,
+    236,
+    236
+  ],
+  "hostedBuildBinariesVerified": 52,
+  "logicExecutedBinariesVerified": 12,
+  "availableLogicSourceEntriesMatched": 258,
+  "unresolvedAvailableLogicSourceEntries": 0,
+  "redPendingNoticeFullSourceManifestAvailable": false,
+  "R16SourceCopiesVerified": 272,
+  "hostedFinalSourceEntriesMatchedToR16": 236,
+  "R16SelectedBinaries": 6,
+  "R16BuildLogs": 2,
+  "sameAppBinary": false,
+  "sameCoreBinary": true,
+  "fullR16RuntimeCopied": false,
+  "qualifiedDerivatives": 0,
+  "excludedEmptyLocks": 12,
+  "credentialPatternMatches": 0,
+  "newAppBuildTestModelCoreReaderOrEndpointExecution": false,
+  "relativeLinks": 29,
+  "unexpectedBrokenLinks": 0,
+  "stageOrCommit": false,
+  "fifthFinalized": false,
+  "humanAcceptance": "not_run",
+  "W1-H": "FAIL / NOT_ACCEPTED"
+}

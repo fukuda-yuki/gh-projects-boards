@@ -1,0 +1,18 @@
+[
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\final.txt",
+    "sha256": "7C78E678EABA7CB4A22BD3457978F625F56D243DF10ECB31C37FDD92D1E796EB",
+    "length": 886,
+    "lastWriteUtcNanoseconds": 1790523184302045200,
+    "recheckedAtUtc": "2026-09-27T15:44:05.589585+00:00",
+    "sameAsFirstSample": true
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\events.jsonl",
+    "sha256": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+    "length": 8099036,
+    "lastWriteUtcNanoseconds": 1790523183158845900,
+    "recheckedAtUtc": "2026-09-27T15:44:05.594829+00:00",
+    "sameAsFirstSample": true
+  }
+]

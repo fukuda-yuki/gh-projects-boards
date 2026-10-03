@@ -1,0 +1,8 @@
+The supplied AGENTS block contains generic working preferences, with no target-product knowledge.
+
+- Repository path: no identified repository; a temporary workspace path was supplied.
+- Native desktop platform: yes, through environment metadata.
+- Target-product workflows: no.
+- Historical issue descriptions: no.
+
+I cannot verify or disable upstream memory injection. No tools, apps, or files were accessed.

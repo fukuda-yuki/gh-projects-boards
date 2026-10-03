@@ -1,0 +1,12 @@
+{
+  "sequence": 98,
+  "startedAt": "2026-09-27T15:29:35.515Z",
+  "completedAt": "2026-09-27T15:29:35.528Z",
+  "result": [
+    {
+      "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-96673ba0d89441e6a36677ee838a2d18\\app\\GhProjectsBoards.App.exe",
+      "id": 23596212,
+      "title": "GitHub Projects Boards"
+    }
+  ]
+}

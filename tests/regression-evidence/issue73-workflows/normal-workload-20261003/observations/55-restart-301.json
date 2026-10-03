@@ -1,0 +1,25 @@
+{
+  "atUtc": "2026-10-03T05:05:10.735Z",
+  "captureSettlingDelayMs": 250,
+  "window": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+    "id": 2163596,
+    "title": "GitHub Projects Boards"
+  },
+  "accessibility": {
+    "document_text": "#301",
+    "focused_element": "420 edit (settable, string) タスク検索 Value: #301 ID: GanttSearch",
+    "tree": "Window: \"GitHub Projects Boards\", App: GhProjectsBoards.App.exe.\n\t0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise\n\t\t1 ウィンドウ\n\t\t\t2 ウィンドウ\n\t\t\t\t3 button Project一覧を折りたたむ ID: ToggleProjectNavigation\n\t\t\t\t4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity\n\t\t\t\t5 button 接続設定 ID: ConnectionPageButton\n\t\t\t\t6 window Secondary Actions: Raise ID: PaneRoot\n\t\t\t\t\t7 combo box 保存済みアカウント ID: SavedProfiles\n\t\t\t\t\t8 テキスト 登録済みProject\n\t\t\t\t\t9 combo box 関連Repositoryで探す ID: NavigationRepositoryFilter\n\t\t\t\t\t11 tree ID: ListControl\n\t\t\t\t\t\t34 tree item (selectable) owner\n\t\t\t\t\t\t\t35 テキスト owner\n\t\t\t\t\t\t36 tree item (selectable) P1\n\t\t\t\t\t\t\t37 テキスト P1\n\t\t\t\t\t\t38 tree item (selectable) P2\n\t\t\t\t\t\t\t39 テキスト P2\n\t\t\t\t\t12 button Projectを追加… ID: AddProjectButton\n\t\t\t\t13 テキスト P1 ID: ProjectSummary\n\t\t\t\t40 button owner / Project #1 ID: ProjectIdentityButton\n\t\t\t\t41 テキスト キャッシュ 2026/10/03 13:44 ID: ProjectCacheDestination\n\t\t\t\t14 button (disabled) 最新を取得 ID: RefreshProjectButton\n\t\t\t\t15 button GitHubに反映… ID: ReviewApplyButton\n\t\t\t\t16 button 反映結果・履歴 ID: ApplyHistoryButton\n\t\t\t\t17 button Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton\n\t\t\t\t350 テキスト ローカル保存済み ID: WorkspaceSaveStatus\n\t\t\t\t351 button GitHub未反映 2167セル Description: このProjectの反映内容を確認します。ここではGitHubへ送信しません。 ID: WorkspaceUnpublished\n\t\t\t\t\t352 テキスト GitHub未反映 2167セル\n\t\t\t\t353 button 入力途中 1セル Description: 次の入力途中のセルへ移動します。非表示の対象は一時表示します。 ID: GridPendingInput\n\t\t\t\t363 リスト ID: PART_ItemsView\n\t\t\t\t\t364 pane ID: PART_ScrollPresenter\n\t\t\t\t\t\t365 SelectorBarItem (selectable) Boards ID: ProjectViewBoards\n\t\t\t\t\t\t\t366 テキスト Boards ID: PART_TextVisual\n\t\t\t\t\t\t367 SelectorBarItem (selectable) Gantt ID: ProjectViewGantt\n\t\t\t\t\t\t\t368 テキスト Gantt ID: PART_TextVisual\n\t\t\t\t\t\t369 SelectorBarItem (selectable, disabled) Summary（準備中） ID: ProjectViewSummary\n\t\t\t\t\t\t\t370 テキスト Summary（準備中） ID: PART_TextVisual\n\t\t\t\t411 アプリ バー ID: GanttCommands\n\t\t\t\t\t412 アプリバー ボタン (disabled) 日程を編集 ID: GanttEdit\n\t\t\t\t\t413 アプリバー ボタン (disabled) 実績・進捗 ID: GanttProgress\n\t\t\t\t\t414 アプリバー ボタン (disabled) 表で開く ID: GanttBoards\n\t\t\t\t\t415 アプリバー ボタン (disabled) 選択へ移動 ID: GanttReveal\n\t\t\t\t\t416 アプリバー ボタン (disabled) 日程の理由 ID: GanttDetails\n\t\t\t\t\t417 アプリバー ボタン 元に戻す ID: GanttUndo\n\t\t\t\t\t418 button その他のオプション ID: MoreButton\n\t\t\t\t419 combo box 時間軸の日・週 ID: GanttScale\n\t\t\t\t420 edit (settable, string) タスク検索 Value: #301 ID: GanttSearch\n\t\t\t\t421 テキスト 1/1000件 · 未計画1件 · 片側のみ1件 · 未解決1件 ID: GanttSummary\n\t\t\t\t422 テキスト タスク / 採用日程（日本時間）\n\t\t\t\t538 テキスト 10/5 月\n\t\t\t\t539 テキスト 10/6 火\n\t\t\t\t540 テキスト 10/7 水\n\t\t\t\t541 テキスト 10/8 木\n\t\t\t\t542 テキスト 10/9 金\n\t\t\t\t543 テキスト 10/10 土\n\t\t\t\t544 テキスト 休\n\t\t\t\t545 テキスト 10/11 日\n\t\t\t\t546 テキスト 休\n\t\t\t\t547 テキスト 10/12 月\n\t\t\t\t548 テキスト 休\n\t\t\t\t549 テキスト 10/13 火\n\t\t\t\t435 リスト 採用計画のタスク ID: GanttTasks\n\t\t\t\t\t550 list item (selectable) owner/repo #301 作業 301 自動計算 · 注意 2026-10-13 09:00 → 2026-10-13 12:00 ID: GanttRow-P1T301\n\t\t\t\t\t\t551 テキスト owner/repo #301 作業 301\n\t\t\t\t\t\t552 テキスト 自動計算 · 注意 10/13 09:00 → 10/13 12:00 ID: GanttState-P1T301\n\t\t\t\t462 pane 時間軸の横スクロール ID: GanttHorizontal\n\t\t\t\t\t463 scroll bar (settable, float) 水平 Value: 0 ID: HorizontalScrollBar\n\t\t\t\t464 テキスト タスクを選ぶと、正確な日時と変更理由を確認できます。 ID: GanttSelected\n\t\t\t\t465 combo box (disabled) 先行 → 選択 → 後続 Description: 関係を選択 ID: GanttRelated\n\t\t\t\t466 テキスト ID: GanttNotice\n\t\t22 タイトル バー (settable, string) Value: GitHub Projects Boards\n\t\t\t23 メニュー バー システム ID: MenuBar\n\t\t\t\t24 メニュー項目 システム\n\t\t\t25 ボタン 最小化\n\t\t\t26 ボタン 最大化\n\t\t\t27 ボタン 閉じる\n\nDocument text: ```\n#301\n```"
+  },
+  "screenshots": [
+    {
+      "height": 794,
+      "id": "screenshot-0",
+      "originX": 928,
+      "originY": 190,
+      "width": 1267,
+      "zIndex": 0,
+      "path": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/normal-workload-20261003/observations/55-restart-301-0.png"
+    }
+  ]
+}
