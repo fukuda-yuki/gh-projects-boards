@@ -1,0 +1,32 @@
+{
+  "source": {
+    "path": "001-result.json",
+    "length": 543,
+    "sha256": "3DB749FD1D6E43FD759E5021782934D9102611AA0BB83B6113093A969310FF5A"
+  },
+  "callSource": {
+    "path": "001-call.json",
+    "length": 117,
+    "sha256": "2B163ECE3B87B72AB5CDE9AC0AC4A2378CB0FE66F49055132908ED7845FD4AF2"
+  },
+  "call": {
+    "sequence": "001",
+    "method": "sky.list_windows",
+    "arguments": {},
+    "startedAt": "2026-10-02T20:21:48.757Z",
+    "completedAt": "2026-10-02T20:21:48.783Z",
+    "outcome": "returned"
+  },
+  "result": [
+    {
+      "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-2b3653a813d04cbcbf39a0a6592e8c30\\app\\GhProjectsBoards.App.exe",
+      "id": 14485394,
+      "title": "GitHub Projects Boards"
+    }
+  ],
+  "derivativeKind": "Target-only inventory projection",
+  "removedEntries": 2,
+  "removedContentClass": "Generic ChatGPT and ChatGPT Classic app identity/title only; no conversation content.",
+  "rawOriginalRetained": "../originals/001-result.json",
+  "targetPresent": true
+}

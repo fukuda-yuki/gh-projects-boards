@@ -2,6 +2,7 @@
     x:Class="GhProjectsBoards.App.RegistrationPanel"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GhProjectsBoards.App"
     SizeChanged="PanelSizeChanged">
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -22,12 +23,20 @@
             <SplitView.Pane>
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                     <Grid Padding="8,12,8,8" RowSpacing="12">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <ComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <local:FormComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
                                   SelectionChanged="ProfileChanged" AutomationProperties.AutomationId="SavedProfiles"/>
                         <TextBlock Grid.Row="1" Text="登録済みProject" FontWeight="SemiBold" Margin="8,0"/>
-                        <TreeView x:Name="Navigation" Grid.Row="2" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
-                        <Button x:Name="Add" Grid.Row="3" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
+                        <StackPanel Grid.Row="2" Spacing="4">
+                            <local:FormComboBox x:Name="NavigationRepository" Header="関連Repositoryで探す" HorizontalAlignment="Stretch"
+                                      SelectionChanged="NavigationRepositoryChanged" AutomationProperties.AutomationId="NavigationRepositoryFilter"/>
+                            <Button x:Name="ClearNavigationRepository" Content="絞り込みを解除" Click="ClearNavigationRepositoryFilter"
+                                    MinHeight="28" Padding="8,4" Visibility="Collapsed" AutomationProperties.AutomationId="ClearNavigationRepositoryFilter"/>
+                            <TextBlock x:Name="NavigationFilterNotice" TextWrapping="Wrap" Visibility="Collapsed"
+                                       AutomationProperties.AutomationId="NavigationFilterNotice" AutomationProperties.LiveSetting="Polite"/>
+                        </StackPanel>
+                        <TreeView x:Name="Navigation" Grid.Row="3" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
+                        <Button x:Name="Add" Grid.Row="4" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
                     </Grid>
                 </Border>
             </SplitView.Pane>
@@ -43,11 +52,11 @@
                         <Button Content="URLを確認" Click="ResolveUrl" AutomationProperties.AutomationId="ResolveProjectButton"/>
                         <Expander Header="所有者・Repositoryから探す" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectDiscoverySearchExpander">
                             <StackPanel Spacing="12">
-                                <ComboBox x:Name="Owners" Header="接続アカウントの所有者候補" HorizontalAlignment="Stretch" SelectionChanged="OwnerSelected" AutomationProperties.AutomationId="DiscoveryOwners"/>
+                                <local:FormComboBox x:Name="Owners" Header="接続アカウントの所有者候補" HorizontalAlignment="Stretch" SelectionChanged="OwnerSelected" AutomationProperties.AutomationId="DiscoveryOwners"/>
                                 <Button Content="所有者候補を取得" Click="LoadOwners" AutomationProperties.AutomationId="LoadOwnersButton"/>
                                 <TextBox x:Name="Owner" Header="所有者・Organization（直接入力も可）" AutomationProperties.AutomationId="DiscoveryOwner"/>
                                 <Button Content="所有者のRepositoryを取得" Click="LoadRepositories" AutomationProperties.AutomationId="LoadRepositoriesButton"/>
-                                <ComboBox x:Name="Repositories" Header="Repository（未選択なら所有者の全Project）" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="DiscoveryRepositories"/>
+                                <local:FormComboBox x:Name="Repositories" Header="Repository（未選択なら所有者の全Project）" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="DiscoveryRepositories"/>
                                 <TextBox x:Name="Search" Header="Project検索語（任意）" AutomationProperties.AutomationId="DiscoverySearch"/>
                                 <Button Content="Projectを検索" Click="SearchProjects" AutomationProperties.AutomationId="SearchProjectsButton"/>
                             </StackPanel>
@@ -69,20 +78,37 @@
                             <StackPanel x:Name="ProjectHeading" VerticalAlignment="Center">
                                 <TextBlock x:Name="Summary" Style="{StaticResource SubtitleTextBlockStyle}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectSummary"/>
                             </StackPanel>
-                            <TextBlock x:Name="ProjectContext" Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
+                            <Grid x:Name="ProjectIdentityContext" Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="8" Visibility="Collapsed" AutomationProperties.AutomationId="ProjectIdentityContext">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Button x:Name="ProjectIdentityButton" MinHeight="24" Padding="4,0" MaxWidth="420"
+                                        AutomationProperties.AutomationId="ProjectIdentityButton" ToolTipService.ToolTip="ProjectのURLを確認・コピー">
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedLeft">
+                                            <StackPanel MaxWidth="480" Spacing="8">
+                                                <TextBox x:Name="ProjectIdentityUrl" Header="Project URL" IsReadOnly="True" TextWrapping="Wrap"
+                                                         AutomationProperties.AutomationId="ProjectIdentityUrl"/>
+                                                <Button Content="URLをコピー" Click="CopyProjectUrl" AutomationProperties.AutomationId="CopyProjectUrlButton"/>
+                                                <TextBlock x:Name="ProjectIdentityCopyStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+                                            </StackPanel>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <TextBlock x:Name="ProjectContext" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
+                            </Grid>
                             <Grid x:Name="ProjectCommands" Grid.Column="1" ColumnSpacing="6" RowSpacing="4" HorizontalAlignment="Left" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                 <Button x:Name="Refresh" Content="最新を取得" MinHeight="28" Padding="10,4" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
                                 <Button x:Name="Apply" Grid.Column="1" Content="GitHubに反映…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
                                 <Button x:Name="ApplyHistory" Grid.Column="2" Content="反映結果・履歴" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
-                                <Button x:Name="ProjectSettings" Grid.Column="3" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Projectの情報と設定" AutomationProperties.AutomationId="ProjectSettingsButton">
-                                    <SymbolIcon Symbol="Setting"/>
+                                <Button x:Name="ProjectSettings" Grid.Column="3" Content="Project設定" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
                                     <Button.Flyout>
                                         <Flyout x:Name="ProjectSettingsFlyout" Placement="BottomEdgeAlignedRight">
                                             <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
                                                 <StackPanel Width="380" Spacing="12">
                                                     <TextBlock Text="Projectの情報と設定" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                                                    <Button Content="計画の前提" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
                                                     <TextBlock x:Name="ProjectInformation" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ProjectInformation"/>
                                                     <Button Content="対象のアクセス権限を確認…" Click="ShowTargetDiagnostics" AutomationProperties.AutomationId="ProjectTargetDiagnostics"/>
                                                     <Button Content="処理状況・診断…" Click="ShowStatusDetails" AutomationProperties.AutomationId="ProjectStatusDetailsButton"/>

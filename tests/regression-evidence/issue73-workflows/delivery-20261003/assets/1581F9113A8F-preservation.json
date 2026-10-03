@@ -1,0 +1,138 @@
+[
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round9-candidate-weekly\\diagnostics\\launch-ffde07379ffd4fd994cd2e04f9b1224f.json",
+    "path": "binding/frozen-receipt.json",
+    "length": 233045,
+    "sourceBefore": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+    "copy": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+    "sourceAfter": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\diagnostics\\launch-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json",
+    "path": "binding/launch.json",
+    "length": 1768,
+    "sourceBefore": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+    "copy": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+    "sourceAfter": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\fresh-apply-t-readback\\t-close1-observation.json",
+    "path": "binding/normal-close.json",
+    "length": 1096,
+    "sourceBefore": "56E7605A79DEBD613A549D7BB3F120C54922D290718A34B10DDD1C03D150C855",
+    "copy": "56E7605A79DEBD613A549D7BB3F120C54922D290718A34B10DDD1C03D150C855",
+    "sourceAfter": "56E7605A79DEBD613A549D7BB3F120C54922D290718A34B10DDD1C03D150C855"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\diagnostics\\preparation.json",
+    "path": "binding/preparation.json",
+    "length": 114998,
+    "sourceBefore": "F2D6E31C8786171B029E423FFD0F2351C609BD8902FCEC5EE7317A70BAD5E80F",
+    "copy": "F2D6E31C8786171B029E423FFD0F2351C609BD8902FCEC5EE7317A70BAD5E80F",
+    "sourceAfter": "F2D6E31C8786171B029E423FFD0F2351C609BD8902FCEC5EE7317A70BAD5E80F"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\diagnostics\\preflight-result.json",
+    "path": "binding/preflight-result.json",
+    "length": 1918,
+    "sourceBefore": "6EFD064E0EA282ED5A1A2BF834ADE16FD23956D157556C160EBCB11F19B9CB8F",
+    "copy": "6EFD064E0EA282ED5A1A2BF834ADE16FD23956D157556C160EBCB11F19B9CB8F",
+    "sourceAfter": "6EFD064E0EA282ED5A1A2BF834ADE16FD23956D157556C160EBCB11F19B9CB8F"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\input-snapshot\\gh-config\\scenario.json",
+    "path": "binding/original-scenario.json",
+    "length": 130,
+    "sourceBefore": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+    "copy": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+    "sourceAfter": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-96673ba0d89441e6a36677ee838a2d18\\app\\GhProjectsBoards.Core.dll",
+    "path": "binding/GhProjectsBoards.Core.dll",
+    "length": 935424,
+    "sourceBefore": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+    "copy": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+    "sourceAfter": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\.writer.lock",
+    "path": "data/.writer.lock",
+    "length": 0,
+    "sourceBefore": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "copy": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "sourceAfter": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\Drafts\\.writer.lock",
+    "path": "data/Drafts\\.writer.lock",
+    "length": 0,
+    "sourceBefore": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "copy": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "sourceAfter": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+    "path": "data/Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+    "length": 109913,
+    "sourceBefore": "170CE18A889CD606BD03E019F83B7A7FC0C3F3A92763205430AD0FC30244B412",
+    "copy": "170CE18A889CD606BD03E019F83B7A7FC0C3F3A92763205430AD0FC30244B412",
+    "sourceAfter": "170CE18A889CD606BD03E019F83B7A7FC0C3F3A92763205430AD0FC30244B412"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+    "path": "data/Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+    "length": 109237,
+    "sourceBefore": "85E3FCDDB5246A7568A7275402AF5A68A10F332DEF4285B2AFBF1F32C52254EB",
+    "copy": "85E3FCDDB5246A7568A7275402AF5A68A10F332DEF4285B2AFBF1F32C52254EB",
+    "sourceAfter": "85E3FCDDB5246A7568A7275402AF5A68A10F332DEF4285B2AFBF1F32C52254EB"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+    "path": "data/Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+    "length": 0,
+    "sourceBefore": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "copy": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "sourceAfter": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+    "path": "data/E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+    "length": 54036,
+    "sourceBefore": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679",
+    "copy": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679",
+    "sourceAfter": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\gh-config\\apply-requests.jsonl",
+    "path": "gh-config/apply-requests.jsonl",
+    "length": 144,
+    "sourceBefore": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+    "copy": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+    "sourceAfter": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\gh-config\\apply-state.json",
+    "path": "gh-config/apply-state.json",
+    "length": 17,
+    "sourceBefore": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+    "copy": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+    "sourceAfter": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\gh-config\\calls.jsonl",
+    "path": "gh-config/calls.jsonl",
+    "length": 4323,
+    "sourceBefore": "77075A7318754FE934D001F63446CCB82CACA1C22EB46D7DB83949D69A367772",
+    "copy": "77075A7318754FE934D001F63446CCB82CACA1C22EB46D7DB83949D69A367772",
+    "sourceAfter": "77075A7318754FE934D001F63446CCB82CACA1C22EB46D7DB83949D69A367772"
+  },
+  {
+    "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\gh-config\\scenario.json",
+    "path": "gh-config/scenario.json",
+    "length": 130,
+    "sourceBefore": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+    "copy": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396",
+    "sourceAfter": "8E45F0D74337E2003B31DEB4C7E7395F9FBB62DC7DAF89248717AB2964EAE396"
+  }
+]

@@ -1,0 +1,29 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 15:07:50Z
+    End time: 2026-09-24 15:07:50Z
+    Duration: 0.042 seconds
+
+Test Filters
+    Where: cat == WeeklyRecovery or test =~ WeeklyReportEditsIndependent or test =~ TaskDetailsClosure
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Passed
+  Test Count: 5, Passed: 5, Failed: 0, Warnings: 0, Inconclusive: 0, Skipped: 0
+  Start time: 2026-09-24 15:07:50Z
+    End time: 2026-09-24 15:07:53Z
+    Duration: 3.206 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260925-000740-978-6e74ccf1\results.xml
+

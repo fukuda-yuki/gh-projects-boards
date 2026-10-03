@@ -16,7 +16,7 @@ internal sealed partial class EditingGrid
     {
         if (!CanRefresh) { viewNotice.Text = deferredViewNotice = "IME変換中です。自然に確定・取消してから再適用してください。"; return; }
         deferredViewNotice = null;
-        temporaryApplyColumns.Clear();
+        temporaryContextColumns.Clear();
         quickTitleFilter.Text = session.Workspace.RowView(registration).Title;
         layout = session.Workspace.Columns(registration); projection.Reapply(session.Workspace, registration); RebuildRows(); Update();
         if (!active) FocusViewCommand();
@@ -40,7 +40,7 @@ internal sealed partial class EditingGrid
         var choices = new[] { (Kind: "Source", Id: (string?)null, Name: "取得順"), (Kind: "Title", Id: (string?)null, Name: "タイトル") }
             .Concat(fields.Select(f => (Kind: "Field", Id: (string?)f.Id.NodeId, Name: FieldName(f.Id.NodeId)))).ToList();
         if (definition.Sort == "Field" && !choices.Any(c => c.Id == definition.FieldId)) choices.Add(("Field", definition.FieldId, $"未確認 [{definition.FieldId}]"));
-        var sort = new ComboBox { Header = "並べ替え", HorizontalAlignment = HorizontalAlignment.Stretch,
+        var sort = new FormComboBox { Header = "並べ替え", HorizontalAlignment = HorizontalAlignment.Stretch,
             ItemsSource = choices.Select(c => c.Name).ToArray(), SelectedIndex = choices.FindIndex(c => c.Kind == definition.Sort && c.Id == definition.FieldId) };
         var descending = new CheckBox { Content = "降順", IsChecked = definition.Descending, VerticalAlignment = VerticalAlignment.Bottom };
         var title = new TextBox { Header = "タイトルに含む文字", PlaceholderText = "すべてのタイトル", Text = definition.Title };

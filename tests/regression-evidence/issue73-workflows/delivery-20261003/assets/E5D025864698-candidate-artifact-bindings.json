@@ -1,0 +1,93 @@
+{
+  "capturedAtUtc": "2026-10-02T21:27:03.419213+00:00",
+  "receipt": "checks/candidate-recovery-range-r16/frozen-receipt.json",
+  "receiptSha256": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+  "files": [
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\app\\GhProjectsBoards.App.exe",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/app/GhProjectsBoards.App.exe",
+      "length": 289792,
+      "sourceBefore": "5DF6C23FFC9C7F440D01E1FC006973AA1EAD98D6067AE81C0B9EDCEA782EE1E7",
+      "copySha256": "5DF6C23FFC9C7F440D01E1FC006973AA1EAD98D6067AE81C0B9EDCEA782EE1E7",
+      "sourceAfter": "5DF6C23FFC9C7F440D01E1FC006973AA1EAD98D6067AE81C0B9EDCEA782EE1E7",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\app\\GhProjectsBoards.App.dll",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/app/GhProjectsBoards.App.dll",
+      "length": 921600,
+      "sourceBefore": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+      "copySha256": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+      "sourceAfter": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\app\\GhProjectsBoards.Core.dll",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/app/GhProjectsBoards.Core.dll",
+      "length": 957440,
+      "sourceBefore": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "copySha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "sourceAfter": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\app\\GhProjectsBoards.App.pri",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/app/GhProjectsBoards.App.pri",
+      "length": 1374456,
+      "sourceBefore": "BB3C2C2C814A2E58D880033B5359163B6E66A1FD1AF0F95A4F70606FF1D5E757",
+      "copySha256": "BB3C2C2C814A2E58D880033B5359163B6E66A1FD1AF0F95A4F70606FF1D5E757",
+      "sourceAfter": "BB3C2C2C814A2E58D880033B5359163B6E66A1FD1AF0F95A4F70606FF1D5E757",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\seed\\GhProjectsBoards.Tests.exe",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/seed/GhProjectsBoards.Tests.exe",
+      "length": 162816,
+      "sourceBefore": "4EB70CD3734FB803CD64CC9254CE7EE4CC0FDE467240A3CC59793902552485DD",
+      "copySha256": "4EB70CD3734FB803CD64CC9254CE7EE4CC0FDE467240A3CC59793902552485DD",
+      "sourceAfter": "4EB70CD3734FB803CD64CC9254CE7EE4CC0FDE467240A3CC59793902552485DD",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\seed\\GhProjectsBoards.Tests.dll",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/seed/GhProjectsBoards.Tests.dll",
+      "length": 1586176,
+      "sourceBefore": "8420EA2DC84DA218BFFEA81E36AEB99B5B3A17CDB42BEE641D7186463930B95D",
+      "copySha256": "8420EA2DC84DA218BFFEA81E36AEB99B5B3A17CDB42BEE641D7186463930B95D",
+      "sourceAfter": "8420EA2DC84DA218BFFEA81E36AEB99B5B3A17CDB42BEE641D7186463930B95D",
+      "kind": "Exact frozen selected binary"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\GhProjectsBoards.App.log",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/build-logs/GhProjectsBoards.App.log",
+      "length": 556,
+      "sourceBefore": "0B5AA39719A141181DC56032FE94F413A41F3D72DA64994EB3A2F000EA5B2073",
+      "copySha256": "0B5AA39719A141181DC56032FE94F413A41F3D72DA64994EB3A2F000EA5B2073",
+      "sourceAfter": "0B5AA39719A141181DC56032FE94F413A41F3D72DA64994EB3A2F000EA5B2073",
+      "kind": "Original build log from frozen receipt"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-385e8be4f8c44483ae12f4cc008b8a11\\GhProjectsBoards.Tests.log",
+      "copy": "checks/publication-correction-r16-source-ready-20261003/candidate-artifacts/build-logs/GhProjectsBoards.Tests.log",
+      "length": 1150,
+      "sourceBefore": "3A330AE4151F1A9F644C7BA6C43512D0A9E7EBB497C922432A0F2BB150D81FA9",
+      "copySha256": "3A330AE4151F1A9F644C7BA6C43512D0A9E7EBB497C922432A0F2BB150D81FA9",
+      "sourceAfter": "3A330AE4151F1A9F644C7BA6C43512D0A9E7EBB497C922432A0F2BB150D81FA9",
+      "kind": "Original build log from frozen receipt"
+    }
+  ],
+  "selectedFiles": 8,
+  "selectedBinaries": 6,
+  "buildLogs": 2,
+  "appRuntimeManifestEntries": 516,
+  "seedRuntimeManifestEntries": 503,
+  "fullRuntimeRecursivelyCopied": false,
+  "appRun": false,
+  "readerRun": false,
+  "buildRun": false,
+  "WOrXDataRead": false,
+  "hostedAppIdentity": "5516E0C1D1C2AC1804550EBDFFDECE9A97E89D454E40459AE1F5EE8913FC212A",
+  "ordinaryAppIdentity": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+  "coreIdentity": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+  "scope": "Actual frozen file bytes only. Rebuild has different ordinary App DLL; source review separately maps identical source inputs. No ordinary visual acceptance."
+}

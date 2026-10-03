@@ -1,0 +1,261 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 15:03:14Z
+    End time: 2026-09-24 15:03:14Z
+    Duration: 0.034 seconds
+
+Test Filters
+    Where: cat == WeeklyRecovery
+
+Errors, Failures and Warnings
+
+1) Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching("PlanActualStart","�H���E�i���E����","���ъJ�n","2026-10-05 09:","2026-10-05 09:00")
+Multiple failures or warnings in test:
+  1)   Assert.That(status.Text, Does.Contain(label))
+  Expected: String containing "���ъJ�n"
+  But was:  "������ yyyy-MM-dd HH:mm�i���{���ԁj�œ��͂��Ă��������B"
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 36
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  2)   Assert.That(input.Description?.ToString() ?? "", Does.Contain(label))
+  Expected: String containing "���ъJ�n"
+  But was:  <string.Empty>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  3)   Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(input))
+  Expected: same as <Microsoft.UI.Xaml.Controls.TextBox>
+  But was:  <Microsoft.UI.Xaml.Controls.Primitives.ToggleButton>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 38
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  4)   The error must be visible without discovering it below the scroll viewport.
+Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(dialog.ActualHeight))
+  Expected: less than or equal to 762.4000244140625d
+  But was:  932.2210693359375d
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 41
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+2) Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching("PlanFixedStart","�����̐���","�Œ�J�n","2026-10-05 09:","2026-10-05 09:00")
+Multiple failures or warnings in test:
+  1)   Assert.That(status.Text, Does.Contain(label))
+  Expected: String containing "�Œ�J�n"
+  But was:  "������ yyyy-MM-dd HH:mm�i���{���ԁj�œ��͂��Ă��������B"
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 36
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  2)   Assert.That(input.Description?.ToString() ?? "", Does.Contain(label))
+  Expected: String containing "�Œ�J�n"
+  But was:  <string.Empty>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  3)   Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(input))
+  Expected: same as <Microsoft.UI.Xaml.Controls.TextBox>
+  But was:  <Microsoft.UI.Xaml.Controls.Primitives.ToggleButton>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 38
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+3) Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching("PlanWork-Remaining","�H���E�i���E����","�c����","3x","3")
+Multiple failures or warnings in test:
+  1)   Assert.That(status.Text, Does.Contain(label))
+  Expected: String containing "�c����"
+  But was:  "�H���͏���8���ȓ��̔񕉐��œ��͂��Ă��������B"
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 36
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  2)   Assert.That(input.Description?.ToString() ?? "", Does.Contain(label))
+  Expected: String containing "�c����"
+  But was:  <string.Empty>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 37
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  3)   Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(input))
+  Expected: same as <Microsoft.UI.Xaml.Controls.TextBox>
+  But was:  <Microsoft.UI.Xaml.Controls.Primitives.ToggleButton>
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 38
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+
+  4)   The error must be visible without discovering it below the scroll viewport.
+Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(dialog.ActualHeight))
+  Expected: less than or equal to 762.4000244140625d
+  But was:  932.2210693359375d
+
+     at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_1.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__14() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 41
+   at NUnit.Framework.Assert.Multiple(Action action)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<Run>b__0()
+   at ABI.Microsoft.UI.Dispatching.DispatcherQueueHandler.Do_Abi_Invoke(IntPtr thisPtr)
+   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.Start(IObjectReference _obj, ApplicationInitializationCallback callback)
+   at Microsoft.UI.Xaml.Application.Start(ApplicationInitializationCallback callback)
+   at GhProjectsBoards.UiIntegration.Tests.Program.Main(String[] args) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Program.cs:line 16
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(String id, String section, String label, String invalid, String corrected) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 30
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Failed
+  Test Count: 3, Passed: 0, Failed: 3, Warnings: 0, Inconclusive: 0, Skipped: 0
+    Failed Tests - Failures: 3, Errors: 0, Invalid: 0
+  Start time: 2026-09-24 15:03:14Z
+    End time: 2026-09-24 15:03:16Z
+    Duration: 1.925 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260925-000309-616-46f244b7\results.xml
+

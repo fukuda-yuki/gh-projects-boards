@@ -78,6 +78,74 @@ internal sealed class RegistrationWorkflowTests
         Assert.That(w.Selected, Is.Null); Assert.That(w.Registrations, Is.Empty); Assert.That((await store.LoadAsync()).Registrations, Is.Empty);
     }
 
+    [Test]
+    public async Task SettledObserverFailureIsReportedOnceByStopAndRetryKeepsDraftsAndAllowsNextWork()
+    {
+        var (boundary, service) = Boundary(); var context = (await service.ConnectAsync()).Context!;
+        var store = Store(); var workspace = new RegistrationWorkspace(store);
+        await workspace.BindAsync(context, service);
+        await workspace.RegisterAsync(await Choice(service, context), null);
+        var selected = workspace.Selected!; var drafts = workspace.Drafts!.Workspace;
+        var cell = drafts.Open(selected)[0].Cells[0]; drafts.SetBuffer(cell, "unfinished before observer failure");
+        var before = JsonSerializer.Serialize(drafts.Snapshot());
+        var failure = new InvalidOperationException("Controlled settled Changed observer failure");
+        void Observer() { if (!workspace.IsBusy) throw failure; }
+        workspace.Changed += Observer;
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var discovery = workspace.DiscoverAsync((_, _, _) => release.Task);
+        release.SetResult();
+        Assert.That(Assert.ThrowsAsync<InvalidOperationException>(() => discovery), Is.SameAs(failure));
+        workspace.Changed -= Observer;
+
+        Assert.That(workspace.IsBusy, Is.False);
+        Assert.That(JsonSerializer.Serialize(drafts.Snapshot()), Is.EqualTo(before));
+        Assert.That(Assert.ThrowsAsync<InvalidOperationException>(() => workspace.StopAsync()), Is.SameAs(failure));
+        Assert.DoesNotThrowAsync(() => workspace.StopAsync());
+
+        Assert.That(await workspace.FlushDraftsAsync(), Is.True);
+        var saved = await new DraftStore(store.Root).LoadAsync(selected.Snapshot.Id.Scope);
+        Assert.That(saved!.Fields.Single(f => f.Key == cell.Key).Buffer, Is.EqualTo("unfinished before observer failure"));
+        await workspace.SetDefaultAsync("sample-user/second");
+        await workspace.StopAsync();
+        var restored = new RegistrationWorkspace(new(store.Root)); await restored.RestoreAsync();
+        Assert.That(restored.Registrations.Single().DefaultRepository, Is.EqualTo("sample-user/second"));
+        await restored.SelectProfileAsync(selected.Snapshot.Id.Scope);
+        Assert.That(restored.Drafts!.Workspace.Buffer(cell), Is.EqualTo("unfinished before observer failure"));
+        boundary.AssertQueriesOnly();
+    }
+
+    [Test]
+    public async Task StoppingOneOperationKeepsNewWorkStartedByItsSettledObserverOwnedUntilItSettles()
+    {
+        var (_, service) = Boundary(); var context = (await service.ConnectAsync()).Context!;
+        var workspace = new RegistrationWorkspace(Store()); await workspace.BindAsync(context, service);
+        var firstStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var nextStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var nextRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? next = null;
+        void Observer()
+        {
+            if (workspace.IsBusy) return;
+            workspace.Changed -= Observer;
+            next = workspace.DiscoverAsync(async (_, _, _) => { nextStarted.SetResult(); await nextRelease.Task; });
+        }
+        workspace.Changed += Observer;
+        var first = workspace.DiscoverAsync(async (_, _, _) => { firstStarted.SetResult(); await firstRelease.Task; });
+        await firstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var firstStop = workspace.StopAsync();
+        Assert.That(firstStop.IsCompleted, Is.False);
+        firstRelease.SetResult(); await firstStop; await first;
+        await nextStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var nextStop = workspace.StopAsync();
+        Assert.That(nextStop.IsCompleted, Is.False, "The later operation still belongs to the workspace.");
+        Assert.That(workspace.IsBusy, Is.True);
+        nextRelease.SetResult(); await nextStop; await next!;
+        Assert.That(workspace.IsBusy, Is.False);
+        await workspace.StopAsync();
+    }
+
     private sealed class DelayedRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);

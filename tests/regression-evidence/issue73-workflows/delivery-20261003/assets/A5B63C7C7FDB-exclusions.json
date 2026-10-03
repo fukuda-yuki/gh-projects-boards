@@ -1,0 +1,56 @@
+[
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\001-list_windows.json",
+    "length": 1229,
+    "sha256": "35307A19DF37BA9D3ABC7F189F868889CEF03CB8BC5CD0E34D45A0B1E4044B13",
+    "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-get_window_state.json",
+    "length": 46806,
+    "sha256": "6D1EE5E0FFEECE95045362B6D3D03BEFED539EEA5BDE6B3CA5CC41D0BF98BD07",
+    "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-screenshot-0.jpg",
+    "length": 32861,
+    "sha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0",
+    "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\098-list_windows.json",
+    "length": 1230,
+    "sha256": "D4510FF8BBC26023B89579659F11BFD0940ADE9382CA8B256D737C61348BFB22",
+    "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\099-list_windows.json",
+    "length": 984,
+    "sha256": "06A94E833B2CEFD6686D2D5522C59C2553A2AF162F4625E23D1FC42D7F4662DE",
+    "reason": "Private original: unrelated window-inventory records or known unrelated occluding image. Exact scope-preserving derivative/omission metadata retained; original remains ignored and unchanged."
+  },
+  {
+    "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\events.jsonl",
+    "length": 8099036,
+    "sha256": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+    "reason": "Private original event stream includes three full window inventories and the known unrelated image; explicit target-only event derivative preserves the remaining event content/order."
+  },
+  {
+    "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/binding/GhProjectsBoards.Core.dll",
+    "length": 935424,
+    "sha256": "01A0E18B1B4CA4C9B7C51E82B870D1072591BFB8ACED6193B26F07D906D30755",
+    "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+  },
+  {
+    "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/.writer.lock",
+    "length": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+  },
+  {
+    "original": "TestResults/issue73/blind-review/checks/fresh-apply-t-readback/runs/20260927-153146-1d39e17d10774e7f8ab326f673a5cadc/originals/data/Drafts/.writer.lock",
+    "length": 0,
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "reason": "Runtime binary or lock excluded; original binary identity remains in the retained readback receipts."
+  }
+]

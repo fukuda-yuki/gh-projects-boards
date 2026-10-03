@@ -2,6 +2,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using System.Globalization;
 
 namespace GhProjectsBoards.App;
 
@@ -9,26 +10,59 @@ internal sealed partial class EditingGrid
 {
     private readonly StackPanel dateInputPane = new() { Orientation = Orientation.Horizontal, Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly TextBlock dateInputState = new() { VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock planningHint = new() { TextWrapping = TextWrapping.Wrap };
+    private Button dateCommit = null!, dateEdit = null!;
     private bool TypedDate(EditCell cell) => session.Workspace.PlanningInputRole(cell) is "Start" or "Finish";
     private bool TypedPlanning(EditCell cell) => TypedDate(cell) || TypedActual(cell);
+    private static string MissingManualDate(TaskPlan task) => task.Start is null
+        ? task.Finish is null ? "開始・終了日時が未設定です。" : "開始日時が未設定です。"
+        : "終了日時が未設定です。";
 
     private void InitializeDateInput(StackPanel footer)
     {
         AutomationProperties.SetAutomationId(dateInputState, "DateInputState");
+        AutomationProperties.SetAutomationId(planningHint, "FirstPlanningHint"); footer.Children.Add(planningHint);
+        dateInputState.TextWrapping = TextWrapping.Wrap;
         dateInputPane.Children.Add(dateInputState);
-        var edit = new Button { Content = "日時を編集" }; AutomationProperties.SetAutomationId(edit, "DateInputEditor");
+        var edit = dateEdit = new Button { Content = "日時を編集" }; AutomationProperties.SetAutomationId(edit, "DateInputEditor");
         edit.Click += async (_, _) => await ShowSchedulingEditorAsync(edit); dateInputPane.Children.Add(edit);
-        var commit = new Button { Content = "適用" }; AutomationProperties.SetAutomationId(commit, "DateInputCommit");
+        var commit = dateCommit = new Button { Content = "適用" }; AutomationProperties.SetAutomationId(commit, "DateInputCommit");
         commit.Click += (_, _) => CommitDateCell(); dateInputPane.Children.Add(commit);
         footer.Children.Add(dateInputPane);
     }
     private void UpdateDateInput()
     {
-        if (!active || ShowingGantt || !TypedDate(rows[currentRow].Cells[currentColumn])) { dateInputPane.Visibility = Visibility.Collapsed; return; }
+        var work = session.Workspace; var config = work.Planning(projectId);
+        var plan = config is null ? null : work.PlanFor(registration);
+        var estimate = config?.Fields.SingleOrDefault(f => f.Role == "Estimate");
+        planningHint.Text = estimate is null ? "" : $"タスクの「{registration.Snapshot.Fields.FirstOrDefault(f => f.Id.NodeId == estimate.FieldId)?.Name ?? "見積"}」に見積（人時）を入力。確定すると日程を自動計算します。";
+        var selectingRange = HasSelectedRange && !CurrentCellInputActive;
+        planningHint.Visibility = !ShowingGantt && !selectingRange && config is not null && estimate is not null && plan?.Tasks.Any(t => t.Resolved) != true ? Visibility.Visible : Visibility.Collapsed;
+        if (!active || currentRow >= rows.Length || ShowingGantt || plan is null || selectingRange || TypedActual(rows[currentRow].Cells[currentColumn])) { dateInputPane.Visibility = Visibility.Collapsed; return; }
+        var identity = (HasSelectedRange ? "現在のセル · " : "") + RowIdentity(rows[currentRow]);
+        dateInputState.MaxWidth = Math.Max(120, ActualWidth - 240);
+        var item = registration.Snapshot.Items.FirstOrDefault(i => i.Id.NodeId == rows[currentRow].ItemId);
+        dateEdit.IsEnabled = rows[currentRow].IsLocal || item is { Kind: ProjectItemKind.Issue, ContentId: not null };
+        if (!dateEdit.IsEnabled)
+        {
+            dateInputPane.Visibility = Visibility.Visible; dateCommit.Visibility = Visibility.Collapsed;
+            dateInputState.Text = identity + " · " + (item?.Kind is ProjectItemKind.Issue or ProjectItemKind.Unavailable
+                ? "Issue情報を確認できません。取得状態を確認してください。" : "この行は計画対象外です。Issueまたは新規行で計画できます。");
+            return;
+        }
+        var current = plan.Tasks.SingleOrDefault(t => t.Id == work.TaskId(registration, rows[currentRow].ItemId));
+        if (current is null) { dateInputPane.Visibility = Visibility.Collapsed; return; }
         dateInputPane.Visibility = Visibility.Visible;
         var cell = rows[currentRow].Cells[currentColumn]; var role = session.Workspace.PlanningInputRole(cell);
-        var current = session.Workspace.PlanFor(registration).Tasks.Single(t => t.Id == session.Workspace.TaskId(registration, rows[currentRow].ItemId));
-        dateInputState.Text = (session.Workspace.Buffer(cell) is not null ? "日時を指定（入力中）" : current.Mode switch
+        dateCommit.Visibility = TypedDate(cell) && work.Buffer(cell) is not null ? Visibility.Visible : Visibility.Collapsed;
+        if (!TypedDate(cell))
+        {
+            dateInputState.Text = identity + " · " + (current.Resolved ? (current.Mode == PlanningMode.Manual ? "日時を指定" : "自動計算")
+                + $"（採用済み） {DateText(current.Start)} → {DateText(current.Finish)}" : current.Mode == PlanningMode.Unplanned ? "未計画 · 見積を入力するか、日時を指定"
+                : current.Mode == PlanningMode.Manual ? MissingManualDate(current) : current.Problem ?? "日程を確認してください。");
+            return;
+        }
+        dateInputState.Text = (HasSelectedRange ? identity + " · " : "") + (session.Workspace.Buffer(cell) is not null ? "日時を指定（入力中）" : current.Mode switch
             { PlanningMode.Manual => "日時を指定", PlanningMode.Auto => "自動計算", _ => "日程未設定" })
             + " · " + (role == "Start" ? "開始日時" : "終了日時") + " · 日本時間・分単位";
     }
@@ -46,13 +80,16 @@ internal sealed partial class EditingGrid
             session.Workspace.PlanningInputRole(cell)!, text, session.Workspace.Revision));
         return session.Workspace.Buffer(cell) is null;
     }
-    private async Task ShowSchedulingEditorAsync(FrameworkElement anchor)
+    private sealed record SchedulingDraft(string RowId, string Start, string Finish, int Method, bool ExplicitAuto);
+    private async Task ShowSchedulingEditorAsync(FrameworkElement anchor, SchedulingDraft? retained = null)
     {
-        if (!CanRefresh || !active) { ShowOperationProblem("日程を変更するタスクを選択してください。"); return; }
+        if (!CanRefresh) { ShowOperationProblem("IME入力を確定・取消してから日程を編集してください。"); return; }
+        if (!active) { ShowOperationProblem(SelectSchedulingTask); return; }
         if (!rows[currentRow].IsLocal && !registration.Snapshot.Items.Any(i => i.Id.NodeId == rows[currentRow].ItemId
             && i.Kind == ProjectItemKind.Issue && i.ContentId is not null))
         { ShowOperationProblem("計画はIssueまたは新規行で設定してください。"); return; }
         var rowId = rows[currentRow].ItemId; var request = generation; var requestedView = ShowingGantt;
+        if (retained?.RowId != rowId) retained = null;
         if (!await prepareLocalRows() || request != generation || !IsLoaded || requestedView != ShowingGantt
             || anchor.Visibility != Visibility.Visible) return;
         if (session.Workspace.Planning(projectId) is null)
@@ -68,6 +105,7 @@ internal sealed partial class EditingGrid
         var dateCells = row.Cells.Where(c => work.PlanningInputRole(c) is "Start" or "Finish").ToArray();
         string Initial(string role)
         {
+            if (retained is not null) return role == "Start" ? retained.Start : retained.Finish;
             var value = work.SchedulingEndpoint(registration, rowId, role);
             var cell = dateCells.SingleOrDefault(c => work.PlanningInputRole(c) == role);
             return cell is null ? DateText(value) : work.Buffer(cell) ?? (value is null ? work.Value(cell) ?? "" : DateText(value));
@@ -77,7 +115,7 @@ internal sealed partial class EditingGrid
         panel.Children.Add(new TextBlock { Text = RowIdentity(row), TextWrapping = TextWrapping.Wrap, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         var method = new RadioButtons { Header = "日程の決め方", MaxColumns = 2 };
         method.Items.Add("自動計算"); method.Items.Add("日時を指定");
-        method.SelectedIndex = dateCells.Any(c => work.Buffer(c) is not null) || current.Mode == PlanningMode.Manual ? 1 : current.Mode == PlanningMode.Auto ? 0 : -1;
+        method.SelectedIndex = retained?.Method ?? (dateCells.Any(c => work.Buffer(c) is not null) || current.Mode == PlanningMode.Manual ? 1 : current.Mode == PlanningMode.Auto ? 0 : -1);
         AutomationProperties.SetAutomationId(method, "ScheduleMethod"); panel.Children.Add(method);
         if (current.Mode == PlanningMode.Unplanned) panel.Children.Add(new TextBlock { Text = "日程はまだ設定されていません。" });
         var start = new MinuteEditor("開始日時", "ScheduleStart", Initial("Start"));
@@ -91,12 +129,12 @@ internal sealed partial class EditingGrid
             : $"GitHub担当者: {person.Login} · Project配賦: {(weight is null ? "未設定" : weight.WeightPercent + "%")}", TextWrapping = TextWrapping.Wrap });
         if (oldTask is not null && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
         { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? oldTask.OwnerId ?? "未割当"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
-        if (dateCells.Any(c => work.Value(c) is not null && work.SchedulingEndpoint(registration, rowId, work.PlanningInputRole(c)!) is null))
-            panel.Children.Add(new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap });
+        var dateOnlyWarning = new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap };
+        panel.Children.Add(dateOnlyWarning);
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(preview, "SchedulePreview");
         panel.Children.Add(preview);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        var apply = new Button { Content = "適用" }; var close = new Button { Content = "閉じる" }; var settings = new Button { Content = "配賦・設定" };
+        var apply = new Button { Content = "適用" }; var close = new Button { Content = "閉じる" }; var settings = new Button { Content = "計画の前提" };
         AutomationProperties.SetAutomationId(apply, "ScheduleApply"); AutomationProperties.SetAutomationId(close, "ScheduleClose");
         AutomationProperties.SetAutomationId(settings, "ScheduleSettings");
         actions.Children.Add(apply); actions.Children.Add(close); actions.Children.Add(settings); panel.Children.Add(actions);
@@ -106,7 +144,7 @@ internal sealed partial class EditingGrid
         var flyout = new Flyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom,
             AreOpenCloseAnimationsEnabled = false,
             Content = new ScrollViewer { Content = panel, MaxHeight = Math.Max(180, XamlRoot.Size.Height - 240), VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
-        var expected = work.Revision; var editorGeneration = generation; var explicitAuto = false;
+        var expected = work.Revision; var editorGeneration = generation; var explicitAuto = retained?.ExplicitAuto ?? false;
         ProjectPlanning Candidate() => work.SchedulingCandidate(registration, rowId,
             method.SelectedIndex == 0 ? PlanningMode.Auto : method.SelectedIndex == 1 ? PlanningMode.Manual : PlanningMode.Unplanned,
             method.SelectedIndex == 1 ? PlanningDate(start.Text) : current.Start,
@@ -114,14 +152,29 @@ internal sealed partial class EditingGrid
             dateCells.Where(c => work.Buffer(c) == "").Select(c => work.PlanningInputRole(c)!).ToArray());
         void Preview()
         {
+            dateOnlyWarning.Visibility = method.SelectedIndex != 0 &&
+                (DateOnly.TryParseExact(start.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+                 DateOnly.TryParseExact(finish.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                ? Visibility.Visible : Visibility.Collapsed;
             try
             {
                 var staged = EditingWorkspace.Restore(work.Snapshot());
-                staged.CommitPlanning(registration, Candidate(), expected, consumeBuffers: dateCells.Select(c => c.Key!).ToArray());
+                var candidate = Candidate();
+                staged.CommitPlanning(registration, candidate, expected, consumeBuffers: dateCells.Select(c => c.Key!).ToArray());
                 var previous = work.PlanFor(registration).Tasks.ToDictionary(t => t.Id);
                 var next = staged.PlanFor(registration).Tasks;
-                preview.Text = string.Join("\n", next.Where(t => t.Id == id || !previous.TryGetValue(t.Id, out var old) || old.Start != t.Start || old.Finish != t.Finish)
-                    .Select(t => $"{(t.Id == id ? "このタスク" : registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, t.Id))?.Title.Value ?? t.Id)}: {DateText(previous.GetValueOrDefault(t.Id)?.Start)} → {DateText(t.Start)} / 終了 {DateText(previous.GetValueOrDefault(t.Id)?.Finish)} → {DateText(t.Finish)}\n{t.Problem ?? t.Controller}"));
+                var changed = next.Where(t => !previous.TryGetValue(t.Id, out var old) || old.Start != t.Start || old.Finish != t.Finish || old.Mode != t.Mode).ToArray();
+                if (changed.Length == 0)
+                {
+                    preview.Text = !current.Resolved ? current.Mode == PlanningMode.Manual ? MissingManualDate(current) : current.Problem ?? "日程はまだ確定していません。"
+                        : explicitAuto ? "現在のGitHub担当者で自動計算を採用します。日程の変更はありません。"
+                        : dateCells.Any(c => work.Buffer(c) is not null) || retained is not null ? "入力を適用しても採用日程は変わりません。"
+                        : "採用済みの日程です。確認だけなら適用は不要です。";
+                    return;
+                }
+                preview.Text = string.Join("\n", changed
+                    .Select(t => $"{(t.Id == id ? "このタスク" : registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, t.Id))?.Title.Value ?? t.Id)}: 開始 {Endpoint(previous.GetValueOrDefault(t.Id)?.Start)} → {Endpoint(t.Start)} / 終了 {Endpoint(previous.GetValueOrDefault(t.Id)?.Finish)} → {Endpoint(t.Finish)}\n{(t.Mode == PlanningMode.Manual ? t.Resolved ? "指定した日時を採用します。" : MissingManualDate(t) + "片側のみ保存できます。" : t.Problem ?? t.Controller)}"));
+                static string Endpoint(DateTime? value) => value is null ? "未設定" : DateText(value);
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { preview.Text = e.Message; }
         }
@@ -155,7 +208,11 @@ internal sealed partial class EditingGrid
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { preview.Text = e.Message; }
         };
         close.Click += (_, _) => flyout.Hide();
-        settings.Click += async (_, _) => { flyout.Hide(); await PlanningDialogAsync(true); if (IsLoaded) await ShowSchedulingEditorAsync(anchor); };
+        settings.Click += async (_, _) => {
+            var input = new SchedulingDraft(rowId, start.Text, finish.Text, method.SelectedIndex, explicitAuto);
+            flyout.Hide(); await ShowPlanningSettingsAsync();
+            if (IsLoaded && !leavingPlanningSettings && SelectGanttRow(rowId)) await ShowSchedulingEditorAsync(anchor, input);
+        };
         Preview(); flyout.ShowAt(anchor);
     }
 }

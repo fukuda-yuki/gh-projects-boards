@@ -1,0 +1,79 @@
+{
+  "status": "prepared-not-uploaded",
+  "destination": "Existing ChatGPT design conversation 6ab45fb6-9f50-83ee-9956-f93df2fc0e7f",
+  "draftDisposition": "Existing composer draft unchanged; upload pending authorization to temporarily preserve/restore draft or an actually draft-free supported route.",
+  "items": [
+    {
+      "file": "01-w-final-group.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-085-get_window_state-0.jpg",
+      "candidate": "R16",
+      "caption": "W final grouped Estimate 6 after its separate 8 and Undo sequence. This still image alone does not prove Undo."
+    },
+    {
+      "file": "02-w-before-details.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-105-get_window_state-0.jpg",
+      "candidate": "R16",
+      "caption": "W active pending row before details expansion; compare with next image."
+    },
+    {
+      "file": "03-w-expanded-details.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-107-get_window_state-0.jpg",
+      "candidate": "R16",
+      "caption": "W expanded details retain correct identity/confirmed/pending values; grid viewport shrinks and active bottom row disappears. Row1 remains at top."
+    },
+    {
+      "file": "04-x1-selected-work.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment1/030-ready-to-send-one-issue-0.jpg",
+      "candidate": "R16",
+      "caption": "X1 compact one-Issue authorization with separate I2 local and unconfirmed work."
+    },
+    {
+      "file": "05-x1-partial-result.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment1/032-publication-outcome-0.jpg",
+      "candidate": "R16",
+      "caption": "X1 Title failure with same-execution verified Status and current recovery guidance."
+    },
+    {
+      "file": "06-x2-title-only.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/016-one-title-ready-to-send-0.jpg",
+      "candidate": "R16",
+      "caption": "X2 learned continuation selects only remaining ready Title; successful Status is not a candidate and I2 is unchecked."
+    },
+    {
+      "file": "07-x2-new-success.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/020-successful-title-history-detail-0.jpg",
+      "candidate": "R16",
+      "caption": "X2 current Title readback and explicitly earlier Status success, not sent this time."
+    },
+    {
+      "file": "08-x2-earlier-failure.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/027-earlier-send-record-visible-0.jpg",
+      "candidate": "R16",
+      "caption": "X2 old authorization ended for a new review; original PermissionDenied attempt and later-completion link retained."
+    },
+    {
+      "file": "09-x2-unfinished-work.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/031-second-issue-preserved-before-close-0.jpg",
+      "candidate": "R16",
+      "caption": "X2 returns to I2 pending Z, distinct confirmed T next-week draft, one unpublished cell and local saved."
+    },
+    {
+      "file": "10-v4-setup-review.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/063-screenshot-0.jpg",
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 reviews Project membership and Done setup for externally verified existing Issue; this is not the R16 candidate."
+    },
+    {
+      "file": "11-v4-current-completion.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/070-screenshot-0.jpg",
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 current independently verified Issue/member/Status completion while original creation response remains unknown."
+    },
+    {
+      "file": "12-v4-original-unknown.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/073-screenshot-0.jpg",
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 detailed preserved Unknown and user-bound URL, explicitly not proof that the original create response succeeded."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 15:09:39Z
+    End time: 2026-09-24 15:09:39Z
+    Duration: 0.036 seconds
+
+Test Filters
+    Where: cat == WeeklyRecovery or test =~ WeeklyReportEditsIndependent or test =~ TaskDetailsClosure or test =~ GanttExplainsTheEffort
+
+Errors, Failures and Warnings
+
+1) Error : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText
+System.TimeoutException : Observable UI condition did not complete
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.OpenWeeklyProgressCorrection() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 79
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 85
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+2) Error : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReturningToThePendingCellRequiresExplicitDiscardAndPreservesTheSameTaskAndInput
+System.TimeoutException : Observable UI condition did not complete
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Until(Func`1 predicate) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 59
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.OpenWeeklyProgressCorrection() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 79
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReturningToThePendingCellRequiresExplicitDiscardAndPreservesTheSameTaskAndInput() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 121
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Failed
+  Test Count: 11, Passed: 9, Failed: 2, Warnings: 0, Inconclusive: 0, Skipped: 0
+    Failed Tests - Failures: 0, Errors: 2, Invalid: 0
+  Start time: 2026-09-24 15:09:39Z
+    End time: 2026-09-24 15:10:25Z
+    Duration: 45.751 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260925-000935-433-c62b9be4\results.xml
+

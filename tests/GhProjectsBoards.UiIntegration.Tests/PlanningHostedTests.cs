@@ -42,9 +42,9 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true), readClipboard: () => Task.FromResult(clipboard)));
         await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
         await Ui.Run(() => FocusCell("GridCell0_2"));
-        await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GridPlanningSettings"); await Ui.Ready<TextBox>("PlanProjectStart"); await Ui.Ready<Button>("PlanSettingsSave");
         await Ui.Run(() => {
-            var dialog = Ui.Dialog("PlanningDialog")!;
+            var dialog = Ui.Find<Grid>("PlanningSettingsPage");
             Ui.Find<TextBox>("PlanProjectStart", dialog).Text = "2026-10-05 09:00";
             Ui.Find<TextBox>("PlanCutoff", dialog).Text = "2026-10-09 18:00";
             foreach (var role in PlanningContract.Roles)
@@ -54,26 +54,33 @@ public sealed partial class PlanningHostedTests
             }
             Ui.Tree(dialog).OfType<Expander>().Single(e => (string)e.Header == "担当者・配賦").IsExpanded = true;
         });
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<CheckBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanPerson-U1" && c.IsLoaded && c.IsEnabled));
+        await Ui.Until(() => Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<CheckBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanPerson-U1" && c.IsLoaded && c.IsEnabled));
         await Ui.Run(() => {
-            var dialog = Ui.Dialog("PlanningDialog")!;
+            var dialog = Ui.Find<Grid>("PlanningSettingsPage");
             Ui.Toggle(Ui.Find<CheckBox>("PlanPerson-U1", dialog)); Ui.Find<TextBox>("PlanWeight-U1", dialog).Text = "50";
-            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+            Ui.Click("PlanSettingsSave");
         });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Ui.Until(() => !grid.PlanningSettingsOpen);
         await Ui.Ready<TextBlock>("GridHeader6");
         await Ui.Run(() => {
-            Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Project setup must not invent per-task owners or dates.");
+            Assert.That(session.Workspace.Planning("P1")!.Tasks, Is.Empty, "Project setup must not invent per-task owners or dates.");
+            Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Text, Does.Contain("見積（人時）"));
+            Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Visibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
             Assert.That(Ui.Tree(Ui.Find<Grid>("SheetHeader")).OfType<TextBlock>().Any(t => t.Text == "EndDate"), Is.True);
             FocusCell("GridCell0_2");
         });
         await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         clipboard = "8"; await Ui.ClickCommand("GridPaste");
+        await Ui.Until(() => Ui.Find<TextBlock>("DateInputState").Text.Contains("採用済み"));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("DateInputState").Text, Does.Contain("2026-10-06 18:00"));
+            Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Visibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+        });
         await ShowDateColumns();
         await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
         await Ui.Run(() => {
-            Assert.That(work.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
-            Assert.That(work.Planning("P1")!.Tasks.Single().OwnerId, Is.EqualTo("U1")); Assert.That(work.Journal, Is.Empty);
+            Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
+            Assert.That(session.Workspace.Planning("P1")!.Tasks.Single().OwnerId, Is.EqualTo("U1")); Assert.That(work.Journal, Is.Empty);
         });
     }
 
@@ -98,6 +105,7 @@ public sealed partial class PlanningHostedTests
             Ui.Find<TimePicker>("ScheduleFinish-Time", editor).SelectedTime = new TimeSpan(16, 19, 0);
         });
         await Ui.Until(() => Ui.Find<TextBox>("ScheduleFinish", Ui.Popup<StackPanel>("SchedulingEditor")).Text == "2026-10-06 16:19");
+        await Ui.Until(() => Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")).IsLoaded);
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is null);
         await Ui.Run(() => {
@@ -107,6 +115,50 @@ public sealed partial class PlanningHostedTests
             Assert.That(grid.SelectionIdentity?.Item, Is.EqualTo("P1T1"));
         });
     }
+    [TestCase("minute"), TestCase("clear"), TestCase("auto")]
+    public async Task ScheduleDateOnlyWarningFollowsCurrentInputAndPlanningMethod(string correction)
+    {
+        await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+        project = project with { Snapshot = project.Snapshot with {
+            Items = project.Snapshot.Items.Select(i => i with { Values = i.Values.Select(v =>
+                v.FieldId?.NodeId is "F-Start" or "F-Finish"
+                    ? v with { Scalar = "2026-10-05", Availability = ValueAvailability.Present } : v).ToArray() }).ToArray() } };
+        var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
+        work.CommitPlanning(project, PlanningPathTests.Plan(), work.Revision);
+        session = new(new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-schedule-warning-" + Guid.NewGuid().ToString("N"))), work, 0);
+        await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
+        await Ui.Run(() => FocusCell("GridCell0_2"));
+        await Ui.ClickCommand("GridPlanning");
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
+        await Ui.Run(async () => {
+            var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
+            bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
+                t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
+            Assert.That(HasWarning(), Is.True, "Fetched dates without a time need an actionable explanation.");
+            if (correction == "auto")
+            {
+                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0;
+                Assert.That(HasWarning(), Is.False, "Automatic scheduling does not require manually completing fetched dates.");
+                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 1;
+                Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates.");
+            }
+            else
+            {
+                Ui.Find<TextBox>("ScheduleStart", editor).Text = correction == "minute" ? "2026-10-05 12:07" : "";
+                Assert.That(HasWarning(), Is.True, "The other endpoint still has no time.");
+                Ui.Find<TextBox>("ScheduleFinish", editor).Text = correction == "minute" ? "2026-10-05 12:08" : "";
+                Assert.That(HasWarning(), Is.False, "Completed or cleared input must not retain a stale warning.");
+                await ApplyInformationEvidence.Capture(editor, "schedule-warning-" + correction);
+                Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-06";
+                Assert.That(HasWarning(), Is.True, "A newly incomplete date needs the warning again.");
+            }
+            Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Preview and input do not adopt a task schedule.");
+            Assert.That(work.Journal, Is.Empty, "Correction must not publish anything.");
+            Ui.Click(Ui.Find<Button>("ScheduleClose", editor));
+        });
+    }
+
     [Test]
     public async Task MappedActualAcceptsPendingTextWithoutChangingItsReportOrNumberProjection()
     {
@@ -162,7 +214,7 @@ public sealed partial class PlanningHostedTests
         });
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
-            Assert.That(w.Value(w.Open(project)[1].Cells[4]), Is.Null); Assert.That(w.Buffer(w.Open(project)[1].Cells[4]), Is.EqualTo("9"));
+            Assert.That(w.Value(w.Open(project)[1].Cells[4]), Is.Null); Assert.That(w.Buffer(w.Open(project)[1].Cells[4]), Is.Null);
             Assert.That(w.Planning("P1")!.Tasks.Single(t => t.Id == "I1").Actuals![0].Hours, Is.EqualTo(7));
             Assert.That(w.Journal, Is.Empty);
         });
@@ -220,7 +272,7 @@ public sealed partial class PlanningHostedTests
         await Ui.ClickCommand("GridUndo");
         await Ui.Run(() => {
             Assert.That(w.Planning("P1")!.Tasks[0].Actuals, Is.EqualTo(original));
-            Assert.That(w.Buffer(w.Open(project)[0].Cells[4]), Is.EqualTo("7"));
+            Assert.That(w.Buffer(w.Open(project)[0].Cells[4]), Is.Null);
         });
     }
 
@@ -280,7 +332,7 @@ public sealed partial class PlanningHostedTests
     [TearDown]
     public async Task Teardown()
     {
-        await Ui.Run(() => { Ui.Dialog("PlanningDialog")?.Hide(); Ui.Dialog("PlanningBatchDialog")?.Hide(); Ui.Dialog("ConflictDialog")?.Hide(); }); await Ui.Unmount(grid);
+        await Ui.Run(() => { Ui.Dialog("PlanningDialog")?.Hide(); Ui.Dialog("DailyProgressDialog")?.Hide(); Ui.Dialog("PlanningBatchDialog")?.Hide(); Ui.Dialog("ConflictDialog")?.Hide(); }); await Ui.Unmount(grid);
         await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True)); await Ui.Idle();
     }
     [Test]
@@ -298,19 +350,19 @@ public sealed partial class PlanningHostedTests
         var pending = w.Open(project)[0].Cells[2]; w.SetBuffer(pending, "24未確定");
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
         await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_2");
-        await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GridPlanningSettings"); await Ui.Ready<TextBox>("PlanProjectStart"); await Ui.Ready<Button>("PlanSettingsSave");
         await Ui.Run(() => {
             Assert.That(w.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-12 18:00")));
-            Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "カレンダー・祝日").IsExpanded = true;
+            Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<Expander>().Single(e => (string)e.Header == "カレンダー・祝日").IsExpanded = true;
         });
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<CheckBox>().Any(c =>
+        await Ui.Until(() => Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<CheckBox>().Any(c =>
             Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanAdoptHolidays" && c.IsLoaded));
         await Ui.Run(() => {
-            Assert.That(Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBlock>().Any(t => t.Text.Contains("変更日: 2026-10-12")), Is.True);
-            Ui.Find<CheckBox>("PlanAdoptHolidays", Ui.Dialog("PlanningDialog")).IsChecked = true;
-            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+            Assert.That(Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<TextBlock>().Any(t => t.Text.Contains("変更日: 2026-10-12")), Is.True);
+            Ui.Find<CheckBox>("PlanAdoptHolidays", Ui.Find<Grid>("PlanningSettingsPage")).IsChecked = true;
+            Ui.Click("PlanSettingsSave");
         });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Ui.Until(() => !grid.PlanningSettingsOpen);
         await Ui.Run(() => {
             w = session.Workspace;
             Assert.That(w.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-14 16:00")));
@@ -374,18 +426,18 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1" && grid.SelectionIdentity?.Field?.FieldId == "F-Estimate");
         await Ui.ClickCommand("GridPaste");
-        await Ui.ClickCommand("GridPlanningSettings"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("GridPlanningSettings"); await Ui.Ready<TextBox>("PlanProjectStart"); await Ui.Ready<Button>("PlanSettingsSave");
         await Ui.Run(() => {
-            foreach (var e in Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().ToArray()) e.IsExpanded = true;
+            foreach (var e in Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<Expander>().ToArray()) e.IsExpanded = true;
         });
-        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanWeight-U1" && c.IsLoaded));
+        await Ui.Until(() => Ui.Tree(Ui.Find<Grid>("PlanningSettingsPage")).OfType<TextBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanWeight-U1" && c.IsLoaded));
         await Ui.Run(() => {
-            var dialog = Ui.Dialog("PlanningDialog")!;
+            var dialog = Ui.Find<Grid>("PlanningSettingsPage");
             Ui.Find<TextBox>("PlanWeight-U1", dialog).Text = "80";
             Ui.Find<CheckBox>("PlanIgnoreHolidays", dialog).IsChecked = true;
-            Ui.DialogButton("PlanningDialog", "PrimaryButton");
+            Ui.Click("PlanSettingsSave");
         });
-        await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
+        await Ui.Until(() => !grid.PlanningSettingsOpen);
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-07 13:00"))));
         await Ui.Ready<FrameworkElement>("GridCell1_2");
         await Ui.Run(() => FocusCell("GridCell1_2"));
@@ -427,6 +479,12 @@ public sealed partial class PlanningHostedTests
             Ui.Find<TextBox>("PlanWork-Remaining", dialog).Text = "3";
             Ui.Find<TextBox>("PlanActualStart", dialog).Text = "2026-10-05 09:00";
             Ui.Tree(dialog).OfType<Expander>().Single(e => (string)e.Header == "累積実績・担当者別内訳").IsExpanded = true;
+        });
+        await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<ComboBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanActualAddWorker" && c.IsLoaded));
+        await Ui.Run(() => {
+            var dialog = Ui.Dialog("PlanningDialog")!;
+            Ui.Find<ComboBox>("PlanActualAddWorker", dialog).SelectedIndex = 0;
+            Ui.Click(Ui.Find<Button>("PlanActualAdd", dialog));
         });
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(c => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanActualHours-U1" && c.IsLoaded));
         await Ui.Run(() => {

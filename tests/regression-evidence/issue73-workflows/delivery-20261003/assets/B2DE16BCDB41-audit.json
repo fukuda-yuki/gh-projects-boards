@@ -1,0 +1,730 @@
+{
+  "atUtc": "2026-09-27T15:44:05.927111+00:00",
+  "originalSegmentFiles": 161,
+  "apiCalls": 99,
+  "apiReturned": 99,
+  "originalImages": 58,
+  "visuallyInspectedPublishableImages": 57,
+  "knownUnrelatedImageExcluded": 1,
+  "rawEmbeddedImages": [
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\003-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0",
+      "image": "003-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\005-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "B8B3EA39714CEDFCA0264D8867B83EBA57ED6FF42FCA2BE8475453E804CD11F7",
+      "image": "005-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\007-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "5CA230B6A26F219F19402C20EA20C3949F2C81FE26B87215D944FBAD77B3CEE4",
+      "image": "007-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\008-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D",
+      "image": "010-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\010-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D",
+      "image": "010-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\012-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "A17C923385A20DE969704C062C54E0FF59BE6EDDF205FDFF7202E10269ABD45B",
+      "image": "012-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\014-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "A81C711CB9EF8DD19F9D1012D0E53EBDF06E7A271FAA728B26B1538F9977A27C",
+      "image": "014-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\016-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "F34721BB268E8C5B5C81647CA09E526F435962E16EE3873F98D5C7E0ADCD62C8",
+      "image": "016-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\018-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "C7AAFD4732377DC071EF783F21CDBE37C16C2F9B6B6A4081AFB501370C67958D",
+      "image": "018-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\019-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "6066003EA6A7E15A230FB42F1A2B7B7052CF0213FF44915CA61DED0BCEE7B627",
+      "image": "019-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\021-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "B2092A8AE4C8CC82E6008BBEB17F99DCA3793E64C3365F45CBCD6DE7C4D03ACC",
+      "image": "021-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\022-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "49539CEC010CC144279E0270BDC98D32DD38119B347E88A62B63F38B9540AEEB",
+      "image": "022-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\024-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "53BFE0A2572601FDD5ADBFDCADEBC6B0FBB1D4D554561752DE3A97F3924B4C72",
+      "image": "024-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\025-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "007EE27B17B397CEF4DC2CEA7425EAD417C6903FFCB1170F4810376BA0B3197C",
+      "image": "025-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\027-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "DF120E3161AE1D857F1FC85FF52BD7045FDA85FD0F4BEFC406413EC06A68CD6C",
+      "image": "027-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\028-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "4A3E02A4383406FACA9AAA94B5EC33CBFAB8B47B1CDE8EF8C4A6F4CA1B06CE58",
+      "image": "028-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\030-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "E6227E9399CCEE1244B88DC0429E3A354F5D248D7DD1ADC4CB95FA2148FAB999",
+      "image": "030-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\032-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "1F564BA92493F3B34F0BF81D9FBEE92545AB76335742C1FA5E13ED7961EE9FD1",
+      "image": "032-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\034-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "F00F06920A2FC63CE5B2CB3491BF38CB6CDDEEF687A1C119DD04060BC7327C36",
+      "image": "034-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\035-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "97CB8E353E4CDDB787E85A887E3A599056DB9B4AFD0A7570B552E049FFEE82EE",
+      "image": "035-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\037-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "848D5FDCB1B30C7AD4FEE77846919F088FF60212385F2E4419736D794E2AF803",
+      "image": "037-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\038-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "59598E4E67552737CFE1A557D5BE16D6D86BF0D8575ED7403E9D2AA616819B55",
+      "image": "038-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\040-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "0A4536BF40EA117C7EBC2260C02AC1AE7207DE96A1B977ED2D9F6834E1B4F396",
+      "image": "040-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\042-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "CB0A0723596430F1E240177E66B2D1E66A26B393DDA887EB43F5E42184626616",
+      "image": "042-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\043-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "233114030AC22C453CBBE12632EEB1B56B1D843B7A28BF1B4E2659836A040931",
+      "image": "043-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\045-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "5DDFC799751513B1D1262B0F960E35C1C512B4B1883A6400BC6D6C2CAA657DF4",
+      "image": "045-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\047-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "49176298C5B7640E74B91F14C16F4B784CBDE9C80A425AC6B69961D8D0BF1A17",
+      "image": "047-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\049-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "6A66BF13A9554AE76A074BA86927AB33855E4445A41A6FCA99A67E104D87CD81",
+      "image": "049-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\049-get_window_state.json",
+      "jsonPath": "$.result.screenshots[1].url",
+      "sha256": "872A2D83F8F6A2CB9B08EEB0B277CA57F6545BA382C492957B4AC8B0AECE3963",
+      "image": "049-screenshot-1.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\051-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "4A7920BB2462FC9E5F53F7F2C0EA538693BFD57117426B0F9AD7EA6F160796DC",
+      "image": "051-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\053-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "F4DC9AF250574005A95402C0D62950CA28AD86D1809AD893D364A16B719ADA7E",
+      "image": "053-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\055-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "D7C5F98F6DE89D53EA8DBE8974AA0EAAE3131C2B39149FF83592E96C3957A8E3",
+      "image": "055-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\057-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "EAA8E9C3EC6F12A028B87D13B33617899428BD4825557C362F8BA38215D61318",
+      "image": "057-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\059-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "EE4ADB828F332BE40810952A25D33CA913ACF6B0FD809B39840275E782271BF4",
+      "image": "059-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\061-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "7CB179F54F07BFFC1857178E2D39ADBE3097EC97BD302FF99CEB6CA919EA2148",
+      "image": "061-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\063-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "53B15AAC2864E6C7BB2A57F28C1C90118CAD50186B8D90CCD859A3846F1E67EE",
+      "image": "063-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\064-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "F57A2F53D88F23728F033DB817E91BBC70C30D1AE8D3B6363185D869495E3E3C",
+      "image": "064-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\066-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "062D1C6DF3475FD6E0EECCBE22587B1DB3C6FB1847AD6D9A9F4C0138D0336133",
+      "image": "066-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\067-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "990B1F26B59092F8DE4863C899139FFE3046972FABCB8786BF4F2893A281C898",
+      "image": "067-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\069-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "64522DF1BFF59374BE25C26079631F350B0382558BA9AE3A3C13D82755316C7D",
+      "image": "069-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\070-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "E9B4594C7856D5C8F87FD66394CE0465FD6375D163A334CD6A7E983A773CD777",
+      "image": "070-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\072-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "23DEFE3DD2673B326BCB76CC35AB29D2FAE3755D8DB4C42AA28591DD29905649",
+      "image": "072-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\073-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "A7BC013639DCF4553C232707921081D2508C4E7D3656AB0DB0C9D173EC13BDFD",
+      "image": "073-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\075-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "64B5959F5C898B2BA3415D31019BCE3EBEF65C7B4D013411BA7B0596E802BC10",
+      "image": "075-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\076-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "6597C1D5B4D40D62E59127B0C80CE4376FD57044862DEA41D5971390A8279B53",
+      "image": "076-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\078-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "19EBEF27D0D6F50B7FD194E0EF094CD2531F1B60342C955B56108BD9864FC1C1",
+      "image": "078-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\079-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "9EA864C9DFDBBD558BA6E48DD8E817030FCEEA280382FAB3436CBF196BD8D3E6",
+      "image": "079-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\081-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "330234EB5E3B6D66E927098A6F0BE04192C70A2B0107BA4EF2825050448E4218",
+      "image": "081-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\082-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "1C051D0B79929797F214DD7C84C928994CEAC51813EFA9955F029D97673E6548",
+      "image": "082-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\084-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "7DF7FA3F78FD51BFA34381829F1DD5E2E74011EF95676AD3D6C43BA89FDD0383",
+      "image": "084-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\086-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "F91BCDD088CCD5A4CA4D206E0E4A7D52A88BA83E0600D73316E8299696410D67",
+      "image": "086-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\087-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "076B7EFDA7256AA02597A78F544184FF06CE4F63F63C45DFECF8856AAF887109",
+      "image": "087-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\089-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "53F6B6878E0947F972DA11A8A116C5B636A85B9E941E0B62882341F0D221C163",
+      "image": "089-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\090-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "650FF4F79EB3D623FB823ECBA7F20EA853FBB902A29E86B127956005B0A79255",
+      "image": "090-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\092-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "9AFBCC48D6329E9E23A6364A71B20D2685B40DD48E0F6777E546EA3691FD860A",
+      "image": "092-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\093-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "9B1792ABF0141A9DDFB0D0187DDEEE6FECA1532C551F3047C590714AD33FC031",
+      "image": "093-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\095-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "501645F6C5262F657531A3E17E10C0A821738F9C92137032EA3A5D114BB063FC",
+      "image": "095-screenshot-0.jpg"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\segment-1\\096-get_window_state.json",
+      "jsonPath": "$.result.screenshots[0].url",
+      "sha256": "7E176DF178AB1FA770219FDB2AA7469B209915EB627691E915621A3320FD6AD0",
+      "image": "096-screenshot-0.jpg"
+    }
+  ],
+  "eventImageBlocks": [
+    {
+      "line": 15,
+      "path": "$.item.result.content[1]",
+      "sha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0"
+    },
+    {
+      "line": 17,
+      "path": "$.item.result.content[1]",
+      "sha256": "B8B3EA39714CEDFCA0264D8867B83EBA57ED6FF42FCA2BE8475453E804CD11F7"
+    },
+    {
+      "line": 19,
+      "path": "$.item.result.content[1]",
+      "sha256": "5CA230B6A26F219F19402C20EA20C3949F2C81FE26B87215D944FBAD77B3CEE4"
+    },
+    {
+      "line": 21,
+      "path": "$.item.result.content[1]",
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D"
+    },
+    {
+      "line": 23,
+      "path": "$.item.result.content[1]",
+      "sha256": "E7BF88051E31667A849FB423989A88691DCDB062A1E46E60B6780024D1E30D7D"
+    },
+    {
+      "line": 25,
+      "path": "$.item.result.content[1]",
+      "sha256": "A17C923385A20DE969704C062C54E0FF59BE6EDDF205FDFF7202E10269ABD45B"
+    },
+    {
+      "line": 27,
+      "path": "$.item.result.content[1]",
+      "sha256": "A81C711CB9EF8DD19F9D1012D0E53EBDF06E7A271FAA728B26B1538F9977A27C"
+    },
+    {
+      "line": 29,
+      "path": "$.item.result.content[1]",
+      "sha256": "F34721BB268E8C5B5C81647CA09E526F435962E16EE3873F98D5C7E0ADCD62C8"
+    },
+    {
+      "line": 31,
+      "path": "$.item.result.content[1]",
+      "sha256": "C7AAFD4732377DC071EF783F21CDBE37C16C2F9B6B6A4081AFB501370C67958D"
+    },
+    {
+      "line": 34,
+      "path": "$.item.result.content[1]",
+      "sha256": "6066003EA6A7E15A230FB42F1A2B7B7052CF0213FF44915CA61DED0BCEE7B627"
+    },
+    {
+      "line": 36,
+      "path": "$.item.result.content[1]",
+      "sha256": "B2092A8AE4C8CC82E6008BBEB17F99DCA3793E64C3365F45CBCD6DE7C4D03ACC"
+    },
+    {
+      "line": 38,
+      "path": "$.item.result.content[1]",
+      "sha256": "49539CEC010CC144279E0270BDC98D32DD38119B347E88A62B63F38B9540AEEB"
+    },
+    {
+      "line": 40,
+      "path": "$.item.result.content[1]",
+      "sha256": "53BFE0A2572601FDD5ADBFDCADEBC6B0FBB1D4D554561752DE3A97F3924B4C72"
+    },
+    {
+      "line": 42,
+      "path": "$.item.result.content[1]",
+      "sha256": "007EE27B17B397CEF4DC2CEA7425EAD417C6903FFCB1170F4810376BA0B3197C"
+    },
+    {
+      "line": 44,
+      "path": "$.item.result.content[1]",
+      "sha256": "DF120E3161AE1D857F1FC85FF52BD7045FDA85FD0F4BEFC406413EC06A68CD6C"
+    },
+    {
+      "line": 46,
+      "path": "$.item.result.content[1]",
+      "sha256": "4A3E02A4383406FACA9AAA94B5EC33CBFAB8B47B1CDE8EF8C4A6F4CA1B06CE58"
+    },
+    {
+      "line": 48,
+      "path": "$.item.result.content[1]",
+      "sha256": "E6227E9399CCEE1244B88DC0429E3A354F5D248D7DD1ADC4CB95FA2148FAB999"
+    },
+    {
+      "line": 50,
+      "path": "$.item.result.content[1]",
+      "sha256": "1F564BA92493F3B34F0BF81D9FBEE92545AB76335742C1FA5E13ED7961EE9FD1"
+    },
+    {
+      "line": 52,
+      "path": "$.item.result.content[1]",
+      "sha256": "F00F06920A2FC63CE5B2CB3491BF38CB6CDDEEF687A1C119DD04060BC7327C36"
+    },
+    {
+      "line": 54,
+      "path": "$.item.result.content[1]",
+      "sha256": "97CB8E353E4CDDB787E85A887E3A599056DB9B4AFD0A7570B552E049FFEE82EE"
+    },
+    {
+      "line": 56,
+      "path": "$.item.result.content[1]",
+      "sha256": "848D5FDCB1B30C7AD4FEE77846919F088FF60212385F2E4419736D794E2AF803"
+    },
+    {
+      "line": 58,
+      "path": "$.item.result.content[1]",
+      "sha256": "59598E4E67552737CFE1A557D5BE16D6D86BF0D8575ED7403E9D2AA616819B55"
+    },
+    {
+      "line": 61,
+      "path": "$.item.result.content[1]",
+      "sha256": "0A4536BF40EA117C7EBC2260C02AC1AE7207DE96A1B977ED2D9F6834E1B4F396"
+    },
+    {
+      "line": 63,
+      "path": "$.item.result.content[1]",
+      "sha256": "CB0A0723596430F1E240177E66B2D1E66A26B393DDA887EB43F5E42184626616"
+    },
+    {
+      "line": 65,
+      "path": "$.item.result.content[1]",
+      "sha256": "233114030AC22C453CBBE12632EEB1B56B1D843B7A28BF1B4E2659836A040931"
+    },
+    {
+      "line": 67,
+      "path": "$.item.result.content[1]",
+      "sha256": "5DDFC799751513B1D1262B0F960E35C1C512B4B1883A6400BC6D6C2CAA657DF4"
+    },
+    {
+      "line": 69,
+      "path": "$.item.result.content[1]",
+      "sha256": "49176298C5B7640E74B91F14C16F4B784CBDE9C80A425AC6B69961D8D0BF1A17"
+    },
+    {
+      "line": 71,
+      "path": "$.item.result.content[1]",
+      "sha256": "6A66BF13A9554AE76A074BA86927AB33855E4445A41A6FCA99A67E104D87CD81"
+    },
+    {
+      "line": 71,
+      "path": "$.item.result.content[2]",
+      "sha256": "872A2D83F8F6A2CB9B08EEB0B277CA57F6545BA382C492957B4AC8B0AECE3963"
+    },
+    {
+      "line": 73,
+      "path": "$.item.result.content[1]",
+      "sha256": "4A7920BB2462FC9E5F53F7F2C0EA538693BFD57117426B0F9AD7EA6F160796DC"
+    },
+    {
+      "line": 75,
+      "path": "$.item.result.content[1]",
+      "sha256": "F4DC9AF250574005A95402C0D62950CA28AD86D1809AD893D364A16B719ADA7E"
+    },
+    {
+      "line": 77,
+      "path": "$.item.result.content[1]",
+      "sha256": "D7C5F98F6DE89D53EA8DBE8974AA0EAAE3131C2B39149FF83592E96C3957A8E3"
+    },
+    {
+      "line": 79,
+      "path": "$.item.result.content[1]",
+      "sha256": "EAA8E9C3EC6F12A028B87D13B33617899428BD4825557C362F8BA38215D61318"
+    },
+    {
+      "line": 81,
+      "path": "$.item.result.content[1]",
+      "sha256": "EE4ADB828F332BE40810952A25D33CA913ACF6B0FD809B39840275E782271BF4"
+    },
+    {
+      "line": 83,
+      "path": "$.item.result.content[1]",
+      "sha256": "7CB179F54F07BFFC1857178E2D39ADBE3097EC97BD302FF99CEB6CA919EA2148"
+    },
+    {
+      "line": 86,
+      "path": "$.item.result.content[1]",
+      "sha256": "53B15AAC2864E6C7BB2A57F28C1C90118CAD50186B8D90CCD859A3846F1E67EE"
+    },
+    {
+      "line": 88,
+      "path": "$.item.result.content[1]",
+      "sha256": "F57A2F53D88F23728F033DB817E91BBC70C30D1AE8D3B6363185D869495E3E3C"
+    },
+    {
+      "line": 90,
+      "path": "$.item.result.content[1]",
+      "sha256": "062D1C6DF3475FD6E0EECCBE22587B1DB3C6FB1847AD6D9A9F4C0138D0336133"
+    },
+    {
+      "line": 92,
+      "path": "$.item.result.content[1]",
+      "sha256": "990B1F26B59092F8DE4863C899139FFE3046972FABCB8786BF4F2893A281C898"
+    },
+    {
+      "line": 94,
+      "path": "$.item.result.content[1]",
+      "sha256": "64522DF1BFF59374BE25C26079631F350B0382558BA9AE3A3C13D82755316C7D"
+    },
+    {
+      "line": 96,
+      "path": "$.item.result.content[1]",
+      "sha256": "E9B4594C7856D5C8F87FD66394CE0465FD6375D163A334CD6A7E983A773CD777"
+    },
+    {
+      "line": 98,
+      "path": "$.item.result.content[1]",
+      "sha256": "23DEFE3DD2673B326BCB76CC35AB29D2FAE3755D8DB4C42AA28591DD29905649"
+    },
+    {
+      "line": 100,
+      "path": "$.item.result.content[1]",
+      "sha256": "A7BC013639DCF4553C232707921081D2508C4E7D3656AB0DB0C9D173EC13BDFD"
+    },
+    {
+      "line": 102,
+      "path": "$.item.result.content[1]",
+      "sha256": "64B5959F5C898B2BA3415D31019BCE3EBEF65C7B4D013411BA7B0596E802BC10"
+    },
+    {
+      "line": 104,
+      "path": "$.item.result.content[1]",
+      "sha256": "6597C1D5B4D40D62E59127B0C80CE4376FD57044862DEA41D5971390A8279B53"
+    },
+    {
+      "line": 107,
+      "path": "$.item.result.content[1]",
+      "sha256": "19EBEF27D0D6F50B7FD194E0EF094CD2531F1B60342C955B56108BD9864FC1C1"
+    },
+    {
+      "line": 109,
+      "path": "$.item.result.content[1]",
+      "sha256": "9EA864C9DFDBBD558BA6E48DD8E817030FCEEA280382FAB3436CBF196BD8D3E6"
+    },
+    {
+      "line": 111,
+      "path": "$.item.result.content[1]",
+      "sha256": "330234EB5E3B6D66E927098A6F0BE04192C70A2B0107BA4EF2825050448E4218"
+    },
+    {
+      "line": 113,
+      "path": "$.item.result.content[1]",
+      "sha256": "1C051D0B79929797F214DD7C84C928994CEAC51813EFA9955F029D97673E6548"
+    },
+    {
+      "line": 115,
+      "path": "$.item.result.content[1]",
+      "sha256": "7DF7FA3F78FD51BFA34381829F1DD5E2E74011EF95676AD3D6C43BA89FDD0383"
+    },
+    {
+      "line": 117,
+      "path": "$.item.result.content[1]",
+      "sha256": "F91BCDD088CCD5A4CA4D206E0E4A7D52A88BA83E0600D73316E8299696410D67"
+    },
+    {
+      "line": 119,
+      "path": "$.item.result.content[1]",
+      "sha256": "076B7EFDA7256AA02597A78F544184FF06CE4F63F63C45DFECF8856AAF887109"
+    },
+    {
+      "line": 121,
+      "path": "$.item.result.content[1]",
+      "sha256": "53F6B6878E0947F972DA11A8A116C5B636A85B9E941E0B62882341F0D221C163"
+    },
+    {
+      "line": 123,
+      "path": "$.item.result.content[1]",
+      "sha256": "650FF4F79EB3D623FB823ECBA7F20EA853FBB902A29E86B127956005B0A79255"
+    },
+    {
+      "line": 125,
+      "path": "$.item.result.content[1]",
+      "sha256": "9AFBCC48D6329E9E23A6364A71B20D2685B40DD48E0F6777E546EA3691FD860A"
+    },
+    {
+      "line": 127,
+      "path": "$.item.result.content[1]",
+      "sha256": "9B1792ABF0141A9DDFB0D0187DDEEE6FECA1532C551F3047C590714AD33FC031"
+    },
+    {
+      "line": 130,
+      "path": "$.item.result.content[1]",
+      "sha256": "501645F6C5262F657531A3E17E10C0A821738F9C92137032EA3A5D114BB063FC"
+    },
+    {
+      "line": 132,
+      "path": "$.item.result.content[1]",
+      "sha256": "7E176DF178AB1FA770219FDB2AA7469B209915EB627691E915621A3320FD6AD0"
+    }
+  ],
+  "eventChanges": [
+    {
+      "line": 13,
+      "path": "$.item.result.content[0].text",
+      "kind": "target-only-inventory",
+      "originalCount": 7,
+      "retainedTargetCount": 1,
+      "originalTextSha256": "E7E1001514B7EAE7AD10B2A0970691DF202DEC620CB16E37AFC091C2C553EAE6"
+    },
+    {
+      "line": 15,
+      "path": "$.item.result.content[1]",
+      "kind": "image-content-omission",
+      "originalImageSha256": "7EB2615D95507879B6E6CA404537EF26CB213966F7D78CB9C725E142087882B0"
+    },
+    {
+      "line": 134,
+      "path": "$.item.result.content[0].text",
+      "kind": "target-only-inventory",
+      "originalCount": 7,
+      "retainedTargetCount": 1,
+      "originalTextSha256": "B07F04D996C72A8400C0C2B5B140AB8BAE294611546858A9CAC753877051FA76"
+    },
+    {
+      "line": 136,
+      "path": "$.item.result.content[0].text",
+      "kind": "target-only-inventory",
+      "originalCount": 6,
+      "retainedTargetCount": 0,
+      "originalTextSha256": "D53EFAC2D3BA016DAF651416967EE48B79C89857EA67EE883EE57FD0C2FB764E"
+    }
+  ],
+  "events": 143,
+  "inventoryObservations": [
+    {
+      "sequence": 1,
+      "completedAt": "2026-09-27T15:22:21.143Z",
+      "originalCount": 7,
+      "retainedTargetCount": 1,
+      "omittedUnrelatedCount": 6
+    },
+    {
+      "sequence": 98,
+      "completedAt": "2026-09-27T15:29:35.528Z",
+      "originalCount": 7,
+      "retainedTargetCount": 1,
+      "omittedUnrelatedCount": 6
+    },
+    {
+      "sequence": 99,
+      "completedAt": "2026-09-27T15:29:46.640Z",
+      "originalCount": 6,
+      "retainedTargetCount": 0,
+      "omittedUnrelatedCount": 6
+    }
+  ],
+  "stableCompletedOutputs": [
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\final.txt",
+      "sha256": "7C78E678EABA7CB4A22BD3457978F625F56D243DF10ECB31C37FDD92D1E796EB",
+      "length": 886,
+      "lastWriteUtcNanoseconds": 1790523184302045200,
+      "recheckedAtUtc": "2026-09-27T15:44:05.589585+00:00",
+      "sameAsFirstSample": true
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7\\events.jsonl",
+      "sha256": "E8D645D6B61497980D91BC05C5BB63FE1A4B1A31B2E5C328A2D5CD1DDC266668",
+      "length": 8099036,
+      "lastWriteUtcNanoseconds": 1790523183158845900,
+      "recheckedAtUtc": "2026-09-27T15:44:05.594829+00:00",
+      "sameAsFirstSample": true
+    }
+  ],
+  "privateOriginalExclusions": 6,
+  "buildOrLockExclusions": 3,
+  "sourceScope": "Completed segment-1 and five explicitly named completed parent files; exact immutable readback run; close observation, evaluator launch, exact actual launch and candidate-binding only. No segment2/current streams, mutable T data/gh-config or U accessed.",
+  "scopeNote": "No product/UI/process/build execution. Persistence pass is not usability acceptance. No new latency measurement.",
+  "visualNote": "All 57 publishable originals visually inspected; each shows the target app or its native Status popup. The known unrelated initial screenshot is intentionally excluded, not edited."
+}

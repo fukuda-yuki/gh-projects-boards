@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-28T00:21:36.8698371+09:00",
+  "evaluatorDirectory": "C:/Users/mwam0/AppData/Local/Temp/ui-publication-evaluation-78c5f7538bd34afc88068267a096e4c7",
+  "launchReceipt": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round8-apply-t\\diagnostics\\launch-7cc4fc4dfd4348ec822a5c0e3cc41d3d.json",
+  "launchReceiptSha256": "7E1423D6A10751F0DF82187D7811785B302D7F89A8ED94719563297C6E6F71B9",
+  "promptSha256": "0CA680DB225D8AF8867D79F22A515BF62566F955973F880CFE0F4B25872427D4",
+  "pid": 66348,
+  "nativeHandle": {
+    "value": 23596212
+  },
+  "candidateSha256": "A9E28DC8D657FBB3A7D841124D5E3C4C3CAEEA009E751A6858566556575F7049",
+  "memoriesUse": false,
+  "memoriesGenerate": false,
+  "projectDocMaxBytes": 0,
+  "modelOverride": false,
+  "ephemeral": false,
+  "ordinaryApp": true,
+  "E2EDriver": false,
+  "threadId": "01a0e375-1b10-7723-b42b-b6d020537607",
+  "cliSessionId": 41783,
+  "preAccessContextDisclosure": "No target-product history, repository-specific instructions, or earlier evaluation findings beyond task; generic preferences and computer-use tools present."
+}

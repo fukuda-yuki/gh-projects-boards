@@ -42,12 +42,67 @@ public sealed class GanttHostedTests
         await Ui.Run(() => Ui.Dialog("PlanningDialog")?.Hide()); await Ui.Unmount(grid);
         Assert.That(await session.FlushAsync(), Is.True); await Ui.Idle();
     }
+    [TestCase("interval"), TestCase("start-only"), TestCase("finish-only"), TestCase("unplanned"), Category("GanttRevealContext")]
+    public async Task OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(string kind)
+    {
+        var work = session.Workspace;
+        var configuration = work.Planning("P1")!;
+        var target = new DateTime(2026, 12, 1, 9, 0, 0);
+        var rowIndex = kind == "unplanned" ? 3 : 0;
+        var rowId = "P1T" + (rowIndex + 1);
+        var cellId = $"GridCell{rowIndex}_0";
+        var title = work.Open(project)[rowIndex].Cells[0];
+        await Ui.Run(() => {
+            if (kind != "unplanned") work.CommitPlanning(project, configuration with { Tasks = configuration.Tasks.Select(task => task.Id != "I1" ? task :
+                task with { Mode = PlanningMode.Manual,
+                    ManualStart = kind is "interval" or "start-only" ? target : null,
+                    ManualFinish = kind == "interval" ? target.AddDays(30) : kind == "finish-only" ? target : null }).ToArray() }, work.Revision);
+            FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(cellId)).SetFocus();
+            Ui.Find<TextBox>(cellId).Text = "unfinished title";
+        });
+        await Ui.Until(() => grid.SelectionIdentity?.Item == rowId && work.Buffer(title) == "unfinished title");
+        var before = System.Text.Json.JsonSerializer.Serialize(work.Snapshot());
+        await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
+        await Ui.Ready<ListView>("GanttTasks"); await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<GanttView>("GanttView").SelectedRowId, Is.EqualTo(rowId));
+            Assert.That(Ui.Find<ScrollViewer>("GanttHorizontal").HorizontalOffset, Is.EqualTo(0));
+            Assert.That(Ui.Find<Button>("GanttChangedSchedule").Visibility,
+                Is.EqualTo(kind == "unplanned" ? Visibility.Collapsed : Visibility.Visible));
+        });
+        if (kind != "unplanned")
+        {
+            await Ui.Run(async () => {
+                var action = Ui.Find<Button>("GanttChangedSchedule");
+                Assert.That(action.Content, Is.EqualTo("選択したタスクの日程を見る"));
+                await ApplyInformationEvidence.Capture(grid, "gantt-selected-offscreen-" + kind);
+                Ui.Click(action);
+            });
+            await Ui.Until(() => {
+                var view = Ui.Find<GanttView>("GanttView"); var scroll = Ui.Find<ScrollViewer>("GanttHorizontal");
+                var position = view.Axis.Position(target) - scroll.HorizontalOffset;
+                return position >= 0 && position <= scroll.ViewportWidth
+                    && Ui.Find<Button>("GanttChangedSchedule").Visibility == Visibility.Collapsed;
+            });
+        }
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ComboBox>("GanttScale").SelectedIndex, Is.EqualTo(0));
+            Assert.That(Ui.Find<GanttView>("GanttView").SelectedRowId, Is.EqualTo(rowId));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(work.Snapshot()), Is.EqualTo(before));
+            Assert.That(work.Journal, Is.Empty);
+            Views().SelectedItem = Views().Items[0];
+        });
+        await Ui.Ready<TextBox>(cellId);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>(cellId).Text, Is.EqualTo("unfinished title")));
+    }
+
     [Test]
     public async Task BoardsPendingTextAndExactPlanRemainOneWorkspaceDuringViewAndEditRoundtrip()
     {
         var work = session.Workspace;
         await Ui.Run(() => {
-            var title = Ui.Find<TextBox>("GridCell0_0"); title.Focus(FocusState.Keyboard); title.Text = "未確定のタイトル";
+            FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus();
+            Ui.Find<TextBox>("GridCell0_0").Text = "未確定のタイトル";
         });
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T1");
         await Ui.Run(() => Views().SelectedItem = Views().Items[1]);
@@ -69,12 +124,12 @@ public sealed class GanttHostedTests
         await Ui.Until(() => Schedule() is null);
         await Ui.Until(() => Ui.Find<TextBlock>("GanttSelected").Text.Contains("2026-10-08 12:07"));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("2026-10-08 12:07"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("2026-10-08 12:07"));
             Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
         });
         await Ui.ClickCommand("GanttUndo");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Auto").And.Contain("2026-10-07 13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("自動計算").And.Contain("2026-10-07 13:00"));
             Views().SelectedItem = Views().Items[0];
         });
         await Ui.Ready<TextBox>("GridCell0_0");
@@ -200,20 +255,27 @@ public sealed class GanttHostedTests
     [Test]
     public async Task SaveFailureRemainsVisibleInGanttAndRetryPersistsTheRetainedEdit()
     {
+        await Ui.Ready<FrameworkElement>("GridCell0_0");
+        await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0")).SetFocus());
+        await Ui.Ready<TextBox>("GridCell0_0");
         await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
         using (var locked = new FileStream(Path.Combine(root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Ui.Run(() => { Ui.Find<TextBox>("GridCell0_0").Text = "保存を再試行する文字"; Views().SelectedItem = Views().Items[1]; });
             await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.False));
-            await Ui.Until(() => Ui.Find<InfoBar>("GanttOperationStatus").IsOpen);
-            await Ui.Ready<Button>("GanttRetrySave");
+            await Ui.Until(() => Ui.Find<TextBlock>("WorkspaceSaveStatus").Text.Contains("ローカル保存失敗", StringComparison.Ordinal));
+            await Ui.Ready<Button>("WorkspaceSaveRetry");
             await Ui.Run(() => {
-                Assert.That(Ui.Find<InfoBar>("GanttOperationStatus").Message, Does.Contain("ローカル保存失敗"));
-                Assert.That(Ui.Find<Button>("GanttRetrySave").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<Button>("WorkspaceSaveRetry").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<InfoBar>("GanttOperationStatus").IsOpen, Is.False,
+                    "The shared status owns saving; Gantt retains only operation-specific errors.");
             });
         }
-        await Ui.Run(() => Ui.Click("GanttRetrySave"));
-        await Ui.Until(() => !Ui.Find<InfoBar>("GanttOperationStatus").IsOpen && session.DurableRevision == session.Workspace.Revision);
+        await Ui.Run(() => Ui.Click("WorkspaceSaveRetry"));
+        await Ui.Until(() => Ui.Find<TextBlock>("WorkspaceSaveStatus").Text.Contains("ローカル保存済み", StringComparison.Ordinal)
+            && Ui.Find<Button>("WorkspaceSaveRetry").Visibility == Visibility.Collapsed
+            && session.DurableRevision == session.Workspace.Revision);
         var saved = (await new DraftStore(root).LoadAsync(session.Workspace.Scope))!;
         Assert.That(EditingWorkspace.Restore(saved).Buffer(session.Workspace.Open(project)[0].Cells[0]), Is.EqualTo("保存を再試行する文字"));
     }
@@ -328,18 +390,18 @@ public sealed class GanttHostedTests
         });
         await Ui.Until(() => Ui.Dialog("PlanningDialog") is null);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("12:07").And.Contain("13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("12:07").And.Contain("13:00"));
             Ui.Find<ListView>("GanttTasks").SelectedIndex = 2;
             Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-05 14:00").And.Contain("18:00"));
             Ui.Find<ListView>("GanttTasks").SelectedIndex = 0;
         });
         await Ui.ClickCommand("GanttEdit"); await ScheduleReady();
         await Ui.Run(() => { Ui.Find<RadioButtons>("ScheduleMethod", Schedule()).SelectedIndex = 0; Ui.Click(Ui.Find<Button>("ScheduleApply", Schedule())); });
-        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("Auto"));
+        await Ui.Until(() => Schedule() is null && Ui.Find<TextBlock>("GanttSelected").Text.Contains("自動計算"));
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("2026-10-09 13:00")));
         await Ui.ClickCommand("GanttUndo");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("Manual").And.Contain("12:07").And.Contain("13:00"));
+            Assert.That(Ui.Find<TextBlock>("GanttSelected").Text, Does.Contain("日時を指定").And.Contain("12:07").And.Contain("13:00"));
             Assert.That(session.Workspace.Planning("P1")!.People[0].WeightPercent, Is.EqualTo(50));
             Assert.That(session.Workspace.PlanFor(project).Tasks.Single(t => t.Id == "I3").Start, Is.EqualTo(At("2026-10-05 14:00")));
             Assert.That(session.Workspace.Journal, Is.Empty);

@@ -14,7 +14,9 @@ internal sealed partial class EditingGrid
     private sealed record SheetDrag(bool Fill, int SourceRow, int Column, int Generation, long Revision, uint PointerId)
     {
         public int EndRow { get; set; } = SourceRow;
+        public Point StartPosition { get; init; }
         public Point Position { get; set; }
+        public bool Moved { get; set; }
     }
     private SheetDrag? drag;
     private UIElement? dragCapture;
@@ -29,6 +31,7 @@ internal sealed partial class EditingGrid
         dragScroll.Tick += (_, _) =>
         {
             if (drag is not { } operation || !DragIsCurrent(operation) || listScroll is null) { CancelDrag(); return; }
+            if (!operation.Fill && !operation.Moved) return;
             var bounds = listScroll.TransformToVisual(this).TransformBounds(new(0, 0, listScroll.ViewportWidth, listScroll.ViewportHeight));
             var distance = operation.Position.Y < bounds.Top + 28 ? -30d : operation.Position.Y > bounds.Bottom - 28 ? 30d : 0;
             if (distance == 0) return;
@@ -41,7 +44,7 @@ internal sealed partial class EditingGrid
 
     private Button CreateFillHandle(int row, int column)
     {
-        var handle = new FillHandle(this) { Width = 10, Height = 10, MinHeight = 0, MinWidth = 0, Padding = new(0),
+        var handle = new FillHandle(this) { Width = 10, Height = 10, MinHeight = 0, MinWidth = 0, Padding = new(0), Margin = new(0, 0, 2, 2),
             HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
             IsTabStop = false, Visibility = Visibility.Collapsed, Style = (Style)Application.Current.Resources["SheetFillHandleStyle"] };
         AutomationProperties.SetAutomationId(handle, $"GridFillHandle{row}_{column}");
@@ -84,7 +87,8 @@ internal sealed partial class EditingGrid
         if (!target.CapturePointer(args.Pointer) && !target.PointerCaptures.Any(pointer => pointer.PointerId == args.Pointer.PointerId))
         { status.Text = "ドラッグを開始できません。もう一度操作してください。"; return; }
         dragCapture = target;
-        drag = new(fill, row, column, generation, session.Workspace.Revision, args.Pointer.PointerId) { Position = args.GetCurrentPoint(this).Position };
+        var position = args.GetCurrentPoint(this).Position;
+        drag = new(fill, row, column, generation, session.Workspace.Revision, args.Pointer.PointerId) { Position = position, StartPosition = position };
         dragScroll.Start(); PaintRealizedSelection();
     }
     private void DragMoved(object sender, PointerRoutedEventArgs args)
@@ -97,6 +101,13 @@ internal sealed partial class EditingGrid
     {
         if (drag is not { } operation || listScroll is null || rows.Length == 0) return;
         operation.Position = point;
+        // Selecting a cell can resize the contextual footer and move rows under
+        // a stationary pointer. A click must keep its pressed cell in that case.
+        if (!operation.Fill && !operation.Moved)
+        {
+            if (Math.Abs(point.X - operation.StartPosition.X) <= 4 && Math.Abs(point.Y - operation.StartPosition.Y) <= 4) return;
+            operation.Moved = true;
+        }
         var bounds = listScroll.TransformToVisual(this).TransformBounds(new(0, 0, listScroll.ViewportWidth, listScroll.ViewportHeight));
         // DPI rounding can turn a 30-DIP slot into e.g. 30.4 DIPs. Resolve to the captured logical projection,
         // never to recycled visuals or just the currently realized controls.

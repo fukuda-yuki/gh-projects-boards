@@ -1,0 +1,267 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				379 window ポップアップ Secondary Actions: Raise
+				49 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				50 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				51 button 接続設定 ID: ConnectionPageButton
+				52 window Secondary Actions: Raise ID: PaneRoot
+					53 combo box 保存済みアカウント ID: SavedProfiles
+					54 テキスト 登録済みProject
+					55 tree ID: ListControl
+						106 tree item (selectable) owner
+							107 テキスト owner
+						108 tree item (selectable) Repository関連付けなし
+							109 テキスト Repository関連付けなし
+						110 tree item (selectable) P1
+							111 テキスト P1
+						112 tree item (selectable) P2
+							113 テキスト P2
+					56 button Projectを追加… ID: AddProjectButton
+				93 テキスト P1 ID: ProjectSummary
+				114 テキスト キャッシュ 2026/09/24 21:18 ID: ProjectCacheDestination
+				94 button (disabled) 最新を取得 ID: RefreshProjectButton
+				95 button GitHubに反映… ID: ReviewApplyButton
+				96 button 反映結果・履歴 ID: ApplyHistoryButton
+				97 button Projectの情報と設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton
+				115 pane
+					410 テキスト 行
+					411 button タイトル の列操作 ID: GridHeaderMenu0
+						412 テキスト タイトル ID: GridHeader0
+					413 thumb タイトル の幅を変更 ID: GridColumnResize0
+					414 button Renamed workflow の列操作 ID: GridHeaderMenu1
+						415 テキスト Renamed workflow ID: GridHeader1
+					416 thumb Renamed workflow の幅を変更 ID: GridColumnResize1
+					417 button Repository の列操作 ID: GridHeaderMenu2
+						418 テキスト Repository ID: GridHeader2
+					419 thumb Repository の幅を変更 ID: GridColumnResize2
+				126 リスト ID: ProjectItems
+					420 list item 行 1 #1 owner/repo 週次計画の確認
+						421 テキスト 1 ID: GridRowNumber0
+						422 テキスト #1 ID: GridRowIdentity0
+						423 edit (settable, string) 行 1 列 2 Renamed workflow Todo Value: Todo ID: GridCell0_1
+							424 テキスト Todo
+						425 edit 行 1 列 3 Repository owner/repo #1 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #1 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell0_2
+							426 テキスト owner/repo #1 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						427 テキスト 参照専用 ID: GridMarker0_2
+					428 list item 行 2 #2 owner/repo 週次計画の確認
+						429 テキスト 2 ID: GridRowNumber1
+						430 edit (settable, string) 行 2 列 1 タイトル 週次計画の確認 Value: 週次計画の確認 ID: GridCell1_0
+							431 テキスト 週次計画の確認
+						432 テキスト #2 ID: GridRowIdentity1
+						433 edit (settable, string) 行 2 列 2 Renamed workflow Todo Value: Todo ID: GridCell1_1
+							434 テキスト Todo
+						435 edit 行 2 列 3 Repository owner/repo #2 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #2 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell1_2
+							436 テキスト owner/repo #2 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						437 テキスト 参照専用 ID: GridMarker1_2
+					438 list item 行 3 #3 owner/repo 作業 3
+						439 テキスト 3 ID: GridRowNumber2
+						440 edit (settable, string) 行 3 列 1 タイトル 作業 3 Value: 作業 3 ID: GridCell2_0
+							441 テキスト 作業 3
+						442 テキスト #3 ID: GridRowIdentity2
+						443 edit (settable, string) 行 3 列 2 Renamed workflow Todo Value: Todo ID: GridCell2_1
+							444 テキスト Todo
+						445 edit 行 3 列 3 Repository owner/repo #3 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #3 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell2_2
+							446 テキスト owner/repo #3 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						447 テキスト 参照専用 ID: GridMarker2_2
+					448 list item 行 4 #4 owner/repo 作業 4
+						449 テキスト 4 ID: GridRowNumber3
+						450 edit (settable, string) 行 4 列 1 タイトル 作業 4 Value: 作業 4 ID: GridCell3_0
+							451 テキスト 作業 4
+						452 テキスト #4 ID: GridRowIdentity3
+						453 edit (settable, string) 行 4 列 2 Renamed workflow Todo Value: Todo ID: GridCell3_1
+							454 テキスト Todo
+						455 edit 行 4 列 3 Repository owner/repo #4 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #4 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell3_2
+							456 テキスト owner/repo #4 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						457 テキスト 参照専用 ID: GridMarker3_2
+					458 list item 行 5 #5 owner/repo 作業 5
+						459 テキスト 5 ID: GridRowNumber4
+						460 edit (settable, string) 行 5 列 1 タイトル 作業 5 Value: 作業 5 ID: GridCell4_0
+							461 テキスト 作業 5
+						462 テキスト #5 ID: GridRowIdentity4
+						463 edit (settable, string) 行 5 列 2 Renamed workflow Todo Value: Todo ID: GridCell4_1
+							464 テキスト Todo
+						465 edit 行 5 列 3 Repository owner/repo #5 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #5 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell4_2
+							466 テキスト owner/repo #5 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						467 テキスト 参照専用 ID: GridMarker4_2
+					468 list item 行 6 #6 owner/repo 作業 6
+						469 テキスト 6 ID: GridRowNumber5
+						470 edit (settable, string) 行 6 列 1 タイトル 作業 6 Value: 作業 6 ID: GridCell5_0
+							471 テキスト 作業 6
+						472 テキスト #6 ID: GridRowIdentity5
+						473 edit (settable, string) 行 6 列 2 Renamed workflow Todo Value: Todo ID: GridCell5_1
+							474 テキスト Todo
+						475 edit 行 6 列 3 Repository owner/repo #6 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #6 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell5_2
+							476 テキスト owner/repo #6 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						477 テキスト 参照専用 ID: GridMarker5_2
+					478 list item 行 7 #7 owner/repo 作業 7
+						479 テキスト 7 ID: GridRowNumber6
+						480 edit (settable, string) 行 7 列 1 タイトル 作業 7 Value: 作業 7 ID: GridCell6_0
+							481 テキスト 作業 7
+						482 テキスト #7 ID: GridRowIdentity6
+						483 edit (settable, string) 行 7 列 2 Renamed workflow Todo Value: Todo ID: GridCell6_1
+							484 テキスト Todo
+						485 edit 行 7 列 3 Repository owner/repo #7 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #7 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell6_2
+							486 テキスト owner/repo #7 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						487 テキスト 参照専用 ID: GridMarker6_2
+					488 list item 行 8 #8 owner/repo 作業 8
+						489 テキスト 8 ID: GridRowNumber7
+						490 edit (settable, string) 行 8 列 1 タイトル 作業 8 Value: 作業 8 ID: GridCell7_0
+							491 テキスト 作業 8
+						492 テキスト #8 ID: GridRowIdentity7
+						493 edit (settable, string) 行 8 列 2 Renamed workflow Todo Value: Todo ID: GridCell7_1
+							494 テキスト Todo
+						495 edit 行 8 列 3 Repository owner/repo #8 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #8 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell7_2
+							496 テキスト owner/repo #8 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						497 テキスト 参照専用 ID: GridMarker7_2
+					498 list item 行 9 #9 owner/repo 作業 9
+						499 テキスト 9 ID: GridRowNumber8
+						500 edit (settable, string) 行 9 列 1 タイトル 作業 9 Value: 作業 9 ID: GridCell8_0
+							501 テキスト 作業 9
+						502 テキスト #9 ID: GridRowIdentity8
+						503 edit (settable, string) 行 9 列 2 Renamed workflow Todo Value: Todo ID: GridCell8_1
+							504 テキスト Todo
+						505 edit 行 9 列 3 Repository owner/repo #9 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #9 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell8_2
+							506 テキスト owner/repo #9 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						507 テキスト 参照専用 ID: GridMarker8_2
+					508 list item 行 10 #10 owner/repo 作業 10
+						509 テキスト 10 ID: GridRowNumber9
+						510 edit (settable, string) 行 10 列 1 タイトル 作業 10 Value: 作業 10 ID: GridCell9_0
+							511 テキスト 作業 10
+						512 テキスト #10 ID: GridRowIdentity9
+						513 edit (settable, string) 行 10 列 2 Renamed workflow Todo Value: Todo ID: GridCell9_1
+							514 テキスト Todo
+						515 edit 行 10 列 3 Repository owner/repo #10 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #10 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell9_2
+							516 テキスト owner/repo #10 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						517 テキスト 参照専用 ID: GridMarker9_2
+					518 list item 行 11 #11 owner/repo 作業 11
+						519 テキスト 11 ID: GridRowNumber10
+						520 edit (settable, string) 行 11 列 1 タイトル 作業 11 Value: 作業 11 ID: GridCell10_0
+							521 テキスト 作業 11
+						522 テキスト #11 ID: GridRowIdentity10
+						523 edit (settable, string) 行 11 列 2 Renamed workflow Todo Value: Todo ID: GridCell10_1
+							524 テキスト Todo
+						525 edit 行 11 列 3 Repository owner/repo #11 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #11 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell10_2
+							526 テキスト owner/repo #11 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						527 テキスト 参照専用 ID: GridMarker10_2
+					528 list item 行 12 #12 owner/repo 作業 12
+						529 テキスト 12 ID: GridRowNumber11
+						530 edit (settable, string) 行 12 列 1 タイトル 作業 12 Value: 作業 12 ID: GridCell11_0
+							531 テキスト 作業 12
+						532 テキスト #12 ID: GridRowIdentity11
+						533 edit (settable, string) 行 12 列 2 Renamed workflow Todo Value: Todo ID: GridCell11_1
+							534 テキスト Todo
+						535 edit 行 12 列 3 Repository owner/repo #12 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #12 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell11_2
+							536 テキスト owner/repo #12 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						537 テキスト 参照専用 ID: GridMarker11_2
+					538 list item 行 13 #13 owner/repo 作業 13
+						539 テキスト 13 ID: GridRowNumber12
+						540 edit (settable, string) 行 13 列 1 タイトル 作業 13 Value: 作業 13 ID: GridCell12_0
+							541 テキスト 作業 13
+						542 テキスト #13 ID: GridRowIdentity12
+						543 edit (settable, string) 行 13 列 2 Renamed workflow Todo Value: Todo ID: GridCell12_1
+							544 テキスト Todo
+						545 edit 行 13 列 3 Repository owner/repo #13 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #13 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell12_2
+							546 テキスト owner/repo #13 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						547 テキスト 参照専用 ID: GridMarker12_2
+					548 list item 行 14 #14 owner/repo 作業 14
+						549 テキスト 14 ID: GridRowNumber13
+						550 edit (settable, string) 行 14 列 1 タイトル 作業 14 Value: 作業 14 ID: GridCell13_0
+							551 テキスト 作業 14
+						552 テキスト #14 ID: GridRowIdentity13
+						553 edit (settable, string) 行 14 列 2 Renamed workflow Todo Value: Todo ID: GridCell13_1
+							554 テキスト Todo
+						555 edit 行 14 列 3 Repository owner/repo #14 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #14 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell13_2
+							556 テキスト owner/repo #14 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						557 テキスト 参照専用 ID: GridMarker13_2
+					558 list item 行 15 #15 owner/repo 作業 15
+						559 テキスト 15 ID: GridRowNumber14
+						560 edit (settable, string) 行 15 列 1 タイトル 作業 15 Value: 作業 15 ID: GridCell14_0
+							561 テキスト 作業 15
+						562 テキスト #15 ID: GridRowIdentity14
+						563 edit (settable, string) 行 15 列 2 Renamed workflow Todo Value: Todo ID: GridCell14_1
+							564 テキスト Todo
+						565 edit 行 15 列 3 Repository owner/repo #15 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #15 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell14_2
+							566 テキスト owner/repo #15 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						567 テキスト 参照専用 ID: GridMarker14_2
+					568 list item 行 16 #16 owner/repo 作業 16
+						569 テキスト 16 ID: GridRowNumber15
+						570 edit (settable, string) 行 16 列 1 タイトル 作業 16 Value: 作業 16 ID: GridCell15_0
+							571 テキスト 作業 16
+						572 テキスト #16 ID: GridRowIdentity15
+						573 edit (settable, string) 行 16 列 2 Renamed workflow Todo Value: Todo ID: GridCell15_1
+							574 テキスト Todo
+						575 edit 行 16 列 3 Repository owner/repo #16 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #16 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell15_2
+							576 テキスト owner/repo #16 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						577 テキスト 参照専用 ID: GridMarker15_2
+					578 list item 行 17 #17 owner/repo 作業 17
+						579 テキスト 17 ID: GridRowNumber16
+						580 edit (settable, string) 行 17 列 1 タイトル 作業 17 Value: 作業 17 ID: GridCell16_0
+							581 テキスト 作業 17
+						582 テキスト #17 ID: GridRowIdentity16
+						583 edit (settable, string) 行 17 列 2 Renamed workflow Todo Value: Todo ID: GridCell16_1
+							584 テキスト Todo
+						585 edit 行 17 列 3 Repository owner/repo #17 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #17 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell16_2
+							586 テキスト owner/repo #17 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						587 テキスト 参照専用 ID: GridMarker16_2
+					588 list item 行 18 #18 owner/repo 作業 18
+						589 テキスト 18 ID: GridRowNumber17
+						590 edit (settable, string) 行 18 列 1 タイトル 作業 18 Value: 作業 18 ID: GridCell17_0
+							591 テキスト 作業 18
+						592 テキスト #18 ID: GridRowIdentity17
+						593 edit (settable, string) 行 18 列 2 Renamed workflow Todo Value: Todo ID: GridCell17_1
+							594 テキスト Todo
+						595 edit 行 18 列 3 Repository owner/repo #18 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #18 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell17_2
+							596 テキスト owner/repo #18 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						597 テキスト 参照専用 ID: GridMarker17_2
+					598 list item 行 19 #19 owner/repo 作業 19
+						599 テキスト 19 ID: GridRowNumber18
+						600 edit (settable, string) 行 19 列 1 タイトル 作業 19 Value: 作業 19 ID: GridCell18_0
+							601 テキスト 作業 19
+						602 テキスト #19 ID: GridRowIdentity18
+						603 edit (settable, string) 行 19 列 2 Renamed workflow Todo Value: Todo ID: GridCell18_1
+							604 テキスト Todo
+						605 edit 行 19 列 3 Repository owner/repo #19 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み 参照専用 Description: 参照専用 Value: owner/repo #19 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み ID: GridCell18_2
+							606 テキスト owner/repo #19 | Open | Estimate: 取得済み / Remaining: 取得済み / Actual: 取得済み / Start: 取得済み / EndDate: 取得済み
+						607 テキスト 参照専用 ID: GridMarker18_2
+				359 edit (settable, string) 行 1 列 1 タイトル 週次計画の確認 Value: 週次計画の確認 ID: GridCell0_0
+				360 テキスト #1
+				608 button 上下にドラッグして同じ列へコピー ID: GridFillHandle0_0
+				317 scroll bar (settable, float) 表の縦スクロール Value: 0 ID: SheetVerticalScroll
+					318 button 垂直方向に小さく戻る ID: VerticalSmallDecrease
+					319 button 垂直方向に大きく戻る ID: VerticalLargeDecrease
+					320 button 垂直方向に大きく進む ID: VerticalLargeIncrease
+					321 button 垂直方向に小さく進む ID: VerticalSmallIncrease
+				322 テキスト タイトル：1行・1セル Description: 先頭 P1T1 / アクティブ P1T1 ID: GridSelection
+				323 テキスト 日程を変更するタスクを選択してください。 / ローカル保存済み ID: DraftStatus
+				324 button 選択内容の詳細 ID: GridDetails
+				325 アプリ バー ID: GridCommandBar
+					326 アプリバー ボタン 新規行を追加 ID: GridAddRow
+					327 アプリバー ボタン 貼り付け ID: GridPaste
+					328 アプリバー ボタン コピー ID: GridCopy
+					329 button その他のオプション ID: MoreButton
+				330 テキスト タイトル
+				331 edit (settable, string) タイトルに含む文字 ID: GridQuickTitleFilter
+				332 button 絞り込み ID: GridQuickFilterApply
+				333 button タイトルの絞り込みを解除 ID: GridQuickFilterClear
+				334 リスト ID: PART_ItemsView
+					335 pane ID: PART_ScrollPresenter
+						336 SelectorBarItem (selectable) Boards ID: ProjectViewBoards
+							337 テキスト Boards ID: PART_TextVisual
+						338 SelectorBarItem (selectable) Gantt ID: ProjectViewGantt
+							339 テキスト Gantt ID: PART_TextVisual
+						340 SelectorBarItem (selectable, disabled) Summary（準備中） ID: ProjectViewSummary
+							341 テキスト Summary（準備中） ID: PART_TextVisual
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+Selected text: ```
+週次計画の確認
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

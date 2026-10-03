@@ -6,7 +6,7 @@ internal sealed record ResolutionDecision(FieldKey Key, long Revision, string Ob
 
 internal sealed partial class EditingWorkspace
 {
-    private const string PendingObservationReason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。";
+    internal const string PendingObservationReason = "未確定文字を保持しています。文字を確定・取消してから再取得してください。";
     private RegistrationStore.RegistrationRecord[]? registrations;
     private string[] structuralChanges = [];
     public IReadOnlyList<string> StructuralChanges => structuralChanges;
@@ -118,7 +118,7 @@ internal sealed partial class EditingWorkspace
         var resolvedChanges = new Dictionary<FieldKey, FieldChange> { [old.Key] = new(old.Key, old, next) };
         // Resolution changes a baseline; derived projections are not themselves
         // baseline resolutions and remain guarded by their ordinary stamps.
-        history.Add(new(Guid.NewGuid().ToString("N"), projectId, [new(old.Key, old, next)], Resolution: true));
+        history.Add(new(Guid.NewGuid().ToString("N"), projectId, [new(old.Key, old, next)], Resolution: true, BufferWrites: [old.Key]));
         ProjectCommittedPlan(projectId, resolvedChanges);
         var derived = resolvedChanges.Values.Where(c => c.Key != old.Key).ToArray();
         if (derived.Length > 0) history[^1] = history[^1] with { InvalidReason = "競合解決で計画を再計算しました。以前の取得基準をUndoでは復元できません。" };

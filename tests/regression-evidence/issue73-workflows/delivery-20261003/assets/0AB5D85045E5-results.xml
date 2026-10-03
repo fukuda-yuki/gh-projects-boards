@@ -1,0 +1,361 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="274" result="Failed" start-time="2026-09-27T14:34:46.5868538Z" end-time="2026-09-27T14:35:51.7584584Z" duration="65.171586" total="28" initiated="28" passed="23" failed="5" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="96" random-seed="21503068">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == ComboBoxWheel or cat == GanttRevealContext or cat == HistoricalDisposition or cat == HistoryConnection or test =~ ScrollingKeepsColumnContextAndSelectedPendingDetailsWithoutChangingWork or test =~ RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible or test =~ UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation or test =~ InvalidDailyInputAndDirtyDetailsNavigationRetainCandidatesUntilExplicitCancel or test =~ GanttProgressConfirmsEachTaskAsOneUndoAndOffersOffscreenScheduleWithoutMovingViewport or test =~ LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic or test =~ BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory or test =~ UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying or test =~ WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover or test =~ PromotionNotificationKeepsDisplayedPositionAndActiveIdentity or test =~ CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260927-233421-122-77d08f8f\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>ComboBoxWheel</cat>
+      <cat>GanttRevealContext</cat>
+      <cat>HistoricalDisposition</cat>
+      <cat>HistoryConnection</cat>
+      <test re="1">ScrollingKeepsColumnContextAndSelectedPendingDetailsWithoutChangingWork</test>
+      <test re="1">RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible</test>
+      <test re="1">UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation</test>
+      <test re="1">InvalidDailyInputAndDirtyDetailsNavigationRetainCandidatesUntilExplicitCancel</test>
+      <test re="1">GanttProgressConfirmsEachTaskAsOneUndoAndOffersOffscreenScheduleWithoutMovingViewport</test>
+      <test re="1">LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic</test>
+      <test re="1">BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory</test>
+      <test re="1">UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying</test>
+      <test re="1">WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover</test>
+      <test re="1">PromotionNotificationKeepsDisplayedPositionAndActiveIdentity</test>
+      <test re="1">CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1341" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="274" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5868538Z" end-time="2026-09-27T14:35:51.7584584Z" duration="65.171586" total="28" initiated="28" passed="23" failed="5" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="96">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="81416" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1342" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="274" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5890933Z" end-time="2026-09-27T14:35:51.7584561Z" duration="65.169363" total="28" initiated="28" passed="23" failed="5" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="96">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1343" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="274" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5892446Z" end-time="2026-09-27T14:35:51.7584542Z" duration="65.169210" total="28" initiated="28" passed="23" failed="5" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="96">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1344" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="274" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5892494Z" end-time="2026-09-27T14:35:51.7584521Z" duration="65.169203" total="28" initiated="28" passed="23" failed="5" warnings="0" completed="28" skipped="0" inconclusive="0" asserts="96">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1226" name="GanttHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" testcasecount="19" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5892507Z" end-time="2026-09-27T14:34:51.6422125Z" duration="5.052962" total="4" initiated="4" passed="3" failed="1" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="4">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1231" name="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" testcasecount="4" result="Failed" site="Child" start-time="2026-09-27T14:34:46.5902751Z" end-time="2026-09-27T14:34:51.6419091Z" duration="5.051634" total="4" initiated="4" passed="3" failed="1" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="4">
+              <properties>
+                <property name="Category" value="GanttRevealContext" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1227" name="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;interval&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;interval&quot;)" methodname="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="874110981" result="Passed" start-time="2026-09-27T14:34:46.5903535Z" end-time="2026-09-27T14:34:48.4387421Z" duration="1.848462" asserts="1" />
+              <test-case id="1228" name="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;start-only&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;start-only&quot;)" methodname="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="1065266380" result="Passed" start-time="2026-09-27T14:34:48.4399506Z" end-time="2026-09-27T14:34:49.9294574Z" duration="1.489507" asserts="1" />
+              <test-case id="1229" name="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;finish-only&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;finish-only&quot;)" methodname="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="1970910341" result="Passed" start-time="2026-09-27T14:34:49.9295171Z" end-time="2026-09-27T14:34:51.4966326Z" duration="1.567116" asserts="1" />
+              <test-case id="1230" name="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;unplanned&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(&quot;unplanned&quot;)" methodname="OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork" classname="GhProjectsBoards.UiIntegration.Tests.GanttHostedTests" runstate="Runnable" seed="1242145931" result="Failed" label="Error" start-time="2026-09-27T14:34:51.4966901Z" end-time="2026-09-27T14:34:51.6406106Z" duration="0.143921" asserts="1">
+                <failure>
+                  <message><![CDATA[System.InvalidOperationException : 採用済みの計画は未設定に戻せません。Manualの解除はAutoを明示的に選んでください。]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitPlanning(ProjectRegistration registration, ProjectPlanning candidate, Int64 expectedRevision, PlanningValueEdit[] values, PlanningDependencyEdit[] dependencies, PlanningProjectionDecision[] decisions, FieldKey[] consumeBuffers, ProjectSelectEdit[] projectFields) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningWorkspace.cs:line 92
+   at GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.<>c__DisplayClass6_0.<OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\GanttHostedTests.cs:line 53
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(String kind) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\GanttHostedTests.cs:line 52
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </failure>
+                <assertions>
+                  <assertion result="Error">
+                    <message><![CDATA[System.InvalidOperationException : 採用済みの計画は未設定に戻せません。Manualの解除はAutoを明示的に選んでください。]]></message>
+                    <stack-trace><![CDATA[   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitPlanning(ProjectRegistration registration, ProjectPlanning candidate, Int64 expectedRevision, PlanningValueEdit[] values, PlanningDependencyEdit[] dependencies, PlanningProjectionDecision[] decisions, FieldKey[] consumeBuffers, ProjectSelectEdit[] projectFields) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningWorkspace.cs:line 92
+   at GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.<>c__DisplayClass6_0.<OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\GanttHostedTests.cs:line 53
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.GanttHostedTests.OffscreenSelectedDatesOfferExplicitRevealWithoutChangingScaleOrWork(String kind) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\GanttHostedTests.cs:line 52
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                  </assertion>
+                </assertions>
+              </test-case>
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1248" name="HistoricalDispositionHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-09-27T14:34:51.6422338Z" end-time="2026-09-27T14:35:19.4833348Z" duration="27.841101" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="48">
+            <properties>
+              <property name="ParallelScope" value="None" />
+              <property name="Category" value="HistoricalDisposition" />
+            </properties>
+            <test-case id="1255" name="ChangedObservationReturnsToTheVisibleChoiceAndFailedLocalSaveCanBeRetried" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.ChangedObservationReturnsToTheVisibleChoiceAndFailedLocalSaveCanBeRetried" methodname="ChangedObservationReturnsToTheVisibleChoiceAndFailedLocalSaveCanBeRetried" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="811905824" result="Passed" start-time="2026-09-27T14:34:51.6423577Z" end-time="2026-09-27T14:34:53.3568216Z" duration="1.714465" asserts="6" />
+            <test-case id="1256" name="ContinueOpensANewCurrentReviewAndCancellationKeepsItsHistoryEntryReachable" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.ContinueOpensANewCurrentReviewAndCancellationKeepsItsHistoryEntryReachable" methodname="ContinueOpensANewCurrentReviewAndCancellationKeepsItsHistoryEntryReachable" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="166865402" result="Passed" start-time="2026-09-27T14:34:53.3568575Z" end-time="2026-09-27T14:34:55.2005989Z" duration="1.843742" asserts="6" />
+            <test-suite type="ParameterizedMethod" id="1254" name="HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-27T14:34:55.2006380Z" end-time="2026-09-27T14:35:07.8953727Z" duration="12.694735" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="18">
+              <test-case id="1252" name="HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain(&quot;superseded-existing&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain(&quot;superseded-existing&quot;)" methodname="HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="974963634" result="Passed" start-time="2026-09-27T14:34:55.2007000Z" end-time="2026-09-27T14:34:59.0003534Z" duration="3.799654" asserts="8" />
+              <test-case id="1253" name="HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain(&quot;completed-retired&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain(&quot;completed-retired&quot;)" methodname="HistoryCanDeferThenFinishOnlyHistoricalHandlingWhileOriginalEvidenceAndInputRemain" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="906537591" result="Passed" start-time="2026-09-27T14:34:59.0003861Z" end-time="2026-09-27T14:35:07.8953363Z" duration="8.894951" asserts="10" />
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1251" name="ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-27T14:35:07.8953905Z" end-time="2026-09-27T14:35:19.4833186Z" duration="11.587928" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="18">
+              <properties>
+                <property name="Category" value="HistoryLayout" />
+              </properties>
+              <test-case id="1249" name="ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls(&quot;superseded-existing&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls(&quot;superseded-existing&quot;)" methodname="ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="355613031" result="Passed" start-time="2026-09-27T14:35:07.8954274Z" end-time="2026-09-27T14:35:11.1734063Z" duration="3.277979" asserts="8" />
+              <test-case id="1250" name="ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls(&quot;completed-retired&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests.ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls(&quot;completed-retired&quot;)" methodname="ReadingLongHistoryKeepsTheSelectedTargetAndActionWhileEvidenceScrolls" classname="GhProjectsBoards.UiIntegration.Tests.HistoricalDispositionHostedTests" runstate="Runnable" seed="470504887" result="Passed" start-time="2026-09-27T14:35:11.1734303Z" end-time="2026-09-27T14:35:19.4832793Z" duration="8.309850" asserts="10" />
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="91" result="Failed" site="Child" start-time="2026-09-27T14:35:19.4833539Z" end-time="2026-09-27T14:35:43.6568807Z" duration="24.173527" total="10" initiated="10" passed="7" failed="3" warnings="0" completed="10" skipped="0" inconclusive="0" asserts="14">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1096" name="BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" methodname="BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="766851512" result="Passed" start-time="2026-09-27T14:35:19.4834157Z" end-time="2026-09-27T14:35:26.6036681Z" duration="7.120254" asserts="3">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-6a011a84-72d6-4a6c-bfa0-d4d8ee65f148; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1056" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-09-27T14:35:26.6036990Z" end-time="2026-09-27T14:35:30.2038963Z" duration="3.600197" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="HistoryConnection" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1054" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(42)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(42)" methodname="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1164859046" result="Failed" start-time="2026-09-27T14:35:26.6037312Z" end-time="2026-09-27T14:35:28.3690855Z" duration="1.765355" asserts="0">
+                <failure>
+                  <message><![CDATA[  The bound button must be loaded and enabled
+Assert.That(button.IsLoaded && button.IsEnabled, Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Click(Button button) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 159
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass41_0.<CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HistoryConnectionHostedTests.cs:line 41
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(Int64 authenticatedViewer) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HistoryConnectionHostedTests.cs:line 41
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-9bc50e6d-85ce-4b70-a8bf-832fd414fde5; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+              </test-case>
+              <test-case id="1055" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(99)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(99)" methodname="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="14863527" result="Failed" start-time="2026-09-27T14:35:28.3691150Z" end-time="2026-09-27T14:35:30.2038632Z" duration="1.834748" asserts="0">
+                <failure>
+                  <message><![CDATA[  The bound button must be loaded and enabled
+Assert.That(button.IsLoaded && button.IsEnabled, Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.Ui.Click(Button button) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 159
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass41_0.<CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HistoryConnectionHostedTests.cs:line 41
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(Int64 authenticatedViewer) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HistoryConnectionHostedTests.cs:line 41
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-7d69293f-d2c7-464e-b651-9d6ea4d3ea55; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1057" name="CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" methodname="CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1670829703" result="Passed" start-time="2026-09-27T14:35:30.2039535Z" end-time="2026-09-27T14:35:31.7379464Z" duration="1.533993" asserts="0">
+              <properties>
+                <property name="Category" value="HistoryConnection" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-27696812-2284-4b68-b7a1-10aa8216f912; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1034" name="ClosedNavigationRepositoryWheelDoesNotSwitchFilterOrSelectedProject" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ClosedNavigationRepositoryWheelDoesNotSwitchFilterOrSelectedProject" methodname="ClosedNavigationRepositoryWheelDoesNotSwitchFilterOrSelectedProject" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="475372628" result="Passed" start-time="2026-09-27T14:35:31.7379719Z" end-time="2026-09-27T14:35:32.1050856Z" duration="0.367114" asserts="2">
+              <properties>
+                <property name="Category" value="ComboBoxWheel" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-69fa15c1-0e72-42a6-87c9-cd0a1f60294a; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1028" name="CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" methodname="CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1283164922" result="Passed" start-time="2026-09-27T14:35:32.1051198Z" end-time="2026-09-27T14:35:32.9700692Z" duration="0.864950" asserts="1">
+              <properties>
+                <property name="Category" value="ApplyProblemPresentation" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-efecf0c8-262b-4eb2-bd62-490b068bebc1; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1095" name="LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" methodname="LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1000927410" result="Passed" start-time="2026-09-27T14:35:32.9700993Z" end-time="2026-09-27T14:35:33.5406046Z" duration="0.570505" asserts="2">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-828a5da4-4b1c-4d5d-b593-7c27bd63b4d5; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1093" name="PromotionNotificationKeepsDisplayedPositionAndActiveIdentity" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.PromotionNotificationKeepsDisplayedPositionAndActiveIdentity" methodname="PromotionNotificationKeepsDisplayedPositionAndActiveIdentity" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="827118374" result="Failed" start-time="2026-09-27T14:35:33.5406332Z" end-time="2026-09-27T14:35:36.1709286Z" duration="2.630296" asserts="0">
+              <failure>
+                <message><![CDATA[  Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("GridCell0_0")).OfType<TextBlock>().Select(text => text.Text), Does.Contain("pending"))
+  Expected: some item equal to "pending"
+  But was:  < <string.Empty> >
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass81_0.<PromotionNotificationKeepsDisplayedPositionAndActiveIdentity>b__6() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\RowApplyHostedTests.cs:line 66
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.PromotionNotificationKeepsDisplayedPositionAndActiveIdentity() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\RowApplyHostedTests.cs:line 62
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a2d25c7f-e8d0-47bf-bf27-e7e3be615d13; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1097" name="UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" methodname="UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1508977370" result="Passed" start-time="2026-09-27T14:35:36.1709527Z" end-time="2026-09-27T14:35:38.0784180Z" duration="1.907465" asserts="3">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a9fcb0cb-99b1-4dd2-bd81-fd4e258701e8; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+            <test-case id="1025" name="WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" methodname="WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="911801082" result="Passed" start-time="2026-09-27T14:35:38.0784436Z" end-time="2026-09-27T14:35:43.6568066Z" duration="5.578363" asserts="3">
+              <properties>
+                <property name="Category" value="ApplyProblemPresentation" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-44bcbc70-704c-48d8-8e29-6199faa0cc41; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: c0da48fd-c314-4b1d-bbd6-47290720db05
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1113" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="72" result="Failed" site="Child" start-time="2026-09-27T14:35:43.6569032Z" end-time="2026-09-27T14:35:50.8512601Z" duration="7.194356" total="5" initiated="5" passed="4" failed="1" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="30">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1115" name="ClosedMappingWheelScrollsTheSettingsPageWithoutChangingMappingAndNativeKeysStillSelect" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ClosedMappingWheelScrollsTheSettingsPageWithoutChangingMappingAndNativeKeysStillSelect" methodname="ClosedMappingWheelScrollsTheSettingsPageWithoutChangingMappingAndNativeKeysStillSelect" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="611245371" result="Passed" start-time="2026-09-27T14:35:43.6569836Z" end-time="2026-09-27T14:35:44.5096213Z" duration="0.852638" asserts="22">
+              <properties>
+                <property name="Category" value="ComboBoxWheel" />
+              </properties>
+            </test-case>
+            <test-case id="1116" name="DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls" methodname="DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1686574272" result="Failed" label="Error" start-time="2026-09-27T14:35:44.5096518Z" end-time="2026-09-27T14:35:45.6127670Z" duration="1.103115" asserts="4">
+              <properties>
+                <property name="Category" value="ComboBoxWheel" />
+              </properties>
+              <failure>
+                <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.First[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass2_1.<DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls>b__4() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 69
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 65
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 99
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+              </failure>
+              <assertions>
+                <assertion result="Error">
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.First[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass2_1.<DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls>b__4() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 69
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 65
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.DailyClosedWheelPreservesCandidatesAtScrollBoundaryWhileOpenWorkerListStillScrolls() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\ComboBoxWheelHostedTests.cs:line 99
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+            <test-case id="1125" name="GanttProgressConfirmsEachTaskAsOneUndoAndOffersOffscreenScheduleWithoutMovingViewport" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttProgressConfirmsEachTaskAsOneUndoAndOffersOffscreenScheduleWithoutMovingViewport" methodname="GanttProgressConfirmsEachTaskAsOneUndoAndOffersOffscreenScheduleWithoutMovingViewport" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="569316749" result="Passed" start-time="2026-09-27T14:35:45.6127996Z" end-time="2026-09-27T14:35:48.1089942Z" duration="2.496195" asserts="0">
+              <properties>
+                <property name="Category" value="DailyProgress" />
+              </properties>
+            </test-case>
+            <test-case id="1126" name="InvalidDailyInputAndDirtyDetailsNavigationRetainCandidatesUntilExplicitCancel" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.InvalidDailyInputAndDirtyDetailsNavigationRetainCandidatesUntilExplicitCancel" methodname="InvalidDailyInputAndDirtyDetailsNavigationRetainCandidatesUntilExplicitCancel" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1044103286" result="Passed" start-time="2026-09-27T14:35:48.1090317Z" end-time="2026-09-27T14:35:49.1471263Z" duration="1.038095" asserts="0">
+              <properties>
+                <property name="Category" value="DailyProgress" />
+              </properties>
+            </test-case>
+            <test-case id="1134" name="UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" methodname="UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1691547872" result="Passed" start-time="2026-09-27T14:35:49.1471722Z" end-time="2026-09-27T14:35:50.8512182Z" duration="1.704047" asserts="4">
+              <properties>
+                <property name="Category" value="PendingInput" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1287" name="SheetContextHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-09-27T14:35:50.8512762Z" end-time="2026-09-27T14:35:51.0858142Z" duration="0.234538" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1290" name="RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible" fullname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests.RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible" classname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-09-27T14:35:50.8515517Z" end-time="2026-09-27T14:35:51.0858068Z" duration="0.234255" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <test-case id="1288" name="RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible(False)" fullname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests.RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible(False)" methodname="RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible" classname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests" runstate="Runnable" seed="1745280408" result="Passed" start-time="2026-09-27T14:35:50.8515664Z" end-time="2026-09-27T14:35:50.9773415Z" duration="0.125775" asserts="0" />
+              <test-case id="1289" name="RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible(True)" fullname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests.RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible(True)" methodname="RepositoryIdentityUsesAcceptedProjectAndDetailsRemainKeyboardAccessible" classname="GhProjectsBoards.UiIntegration.Tests.SheetContextHostedTests" runstate="Runnable" seed="1204104182" result="Passed" start-time="2026-09-27T14:35:50.9773665Z" end-time="2026-09-27T14:35:51.0857750Z" duration="0.108409" asserts="0" />
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1303" name="SheetHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.SheetHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.SheetHostedTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-09-27T14:35:51.0858299Z" end-time="2026-09-27T14:35:51.7584431Z" duration="0.672613" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1304" name="ScrollingKeepsColumnContextAndSelectedPendingDetailsWithoutChangingWork" fullname="GhProjectsBoards.UiIntegration.Tests.SheetHostedTests.ScrollingKeepsColumnContextAndSelectedPendingDetailsWithoutChangingWork" methodname="ScrollingKeepsColumnContextAndSelectedPendingDetailsWithoutChangingWork" classname="GhProjectsBoards.UiIntegration.Tests.SheetHostedTests" runstate="Runnable" seed="1819490706" result="Passed" start-time="2026-09-27T14:35:51.0860335Z" end-time="2026-09-27T14:35:51.7584055Z" duration="0.672372" asserts="0">
+              <output><![CDATA[Horizontal request: offset=0, max=124, viewport=624, extent=748, vertical=2682.39990234375/2682.39990234375, accepted=True
+Horizontal settled: offset=124, max=124, viewport=624, extent=748, vertical=2682.39990234375/2682.39990234375
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

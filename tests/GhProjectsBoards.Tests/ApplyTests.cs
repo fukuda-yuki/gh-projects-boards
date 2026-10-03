@@ -15,7 +15,7 @@ internal sealed class ApplyTests
     public void CheckpointExplicitlyVersionsExecutionHistory()
     {
         var workspace = new EditingWorkspace(new("github.com", 42));
-        Assert.That(workspace.Snapshot().Version, Is.EqualTo(12));
+        Assert.That(workspace.Snapshot().Version, Is.EqualTo(14));
     }
     [Test]
     public async Task TenOfOneHundredTitlesDispatchExactlyTenTitleOnlyPayloads()
@@ -145,10 +145,10 @@ internal sealed class ApplyTests
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-apply-migrate-" + Guid.NewGuid()); var store = new DraftStore(root);
         var w = new EditingWorkspace(new("github.com", 42)); var registration = EditingTests.Registration(); w.Open(registration);
-        await store.SaveAsync(w.Snapshot() with { Version = version, Journal = null }, 0);
+        await store.SaveAsync(EditingTests.LegacyHistory(w.Snapshot()) with { Version = version, Journal = null }, 0);
         var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!); restored.SetRegistrations([registration]);
         await store.SaveAsync(restored.Snapshot(), w.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(12)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(14)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
     public async Task CorruptJournalCannotRestoreOrOverwriteRecoveredData()
@@ -195,6 +195,50 @@ internal sealed class ApplyTests
         Assert.That(ops[0].State, Is.EqualTo(ApplyState.Succeeded));
         Assert.That(ops[1].State, Is.EqualTo(mode == "permission" ? ApplyState.Failed : ApplyState.Unknown));
         Assert.That(s.Workspace.Field(rows[0].Cells[1])!.Change, Is.Not.Null);
+
+        var dispatched = h.Writes.Select(w => w.GetRawText()).ToArray();
+        h.MutationResult = null; h.Unreadable = false;
+        await h.Workspace.ResumeApplyAsync(s.Workspace.Journal.Single().Id);
+        var resumed = s.Workspace.Journal.Single().Operations;
+        Assert.That(h.Writes.Select(w => w.GetRawText()), Is.EqualTo(dispatched), "Observation cannot repeat the successful or failed field's mutation.");
+        Assert.That(resumed[0].State, Is.EqualTo(ApplyState.Succeeded));
+        Assert.That(resumed[1].Attempts, Is.EqualTo(ops[1].Attempts), "The original dispatch evidence remains unchanged.");
+        Assert.That(resumed[1].State, Is.EqualTo(mode == "verification" ? ApplyState.Succeeded : ApplyState.Blocked));
+        if (mode == "permission")
+            Assert.That(ApplyResultsPresentation.Attention(s.Workspace).Single().Reason,
+                Does.Contain("失敗").And.Contain("再確認").And.Not.Contain("不確定"));
+        else if (mode != "verification")
+            Assert.That(ApplyResultsPresentation.Attention(s.Workspace).Single().Reason, Does.Contain("不確定"));
+    }
+    [TestCase("failed"), TestCase("conflict")]
+    public async Task FailedResumeObservationCannotMakeBlockedApprovalDispatchable(string origin)
+    {
+        var h = await Harness.Create(itemCount: 1); var session = h.Workspace.Drafts!;
+        var cell = session.Workspace.Open(h.Workspace.Selected!)[0].Cells[0];
+        session.Workspace.Commit("P1", cell, "B");
+        await h.Workspace.PrepareApplyAsync(new HashSet<string> { "P1-T1" });
+        if (origin == "failed") h.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+        else h.Titles["I1"] = "C";
+        await h.Workspace.ConfirmApplyAsync(h.Workspace.ApplyReview!);
+        var batch = session.Workspace.Journal.Single(); var original = batch.Operations.Single();
+        Assert.That(original.State, Is.EqualTo(origin == "failed" ? ApplyState.Failed : ApplyState.Blocked));
+        var dispatched = h.Writes.Select(w => w.GetRawText()).ToArray();
+
+        h.MutationResult = null; h.Unreadable = true;
+        await h.Workspace.ResumeApplyAsync(batch.Id);
+        Assert.That(h.Writes.Select(w => w.GetRawText()), Is.EqualTo(dispatched), "An unavailable observation cannot dispatch.");
+
+        h.Unreadable = false; h.Titles["I1"] = original.Expected!;
+        await h.Workspace.ResumeApplyAsync(batch.Id);
+        var resumed = session.Workspace.Journal.Single().Operations.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(h.Writes.Select(w => w.GetRawText()), Is.EqualTo(dispatched), "Restored readability is not fresh approval of a failed or blocked operation.");
+            Assert.That(h.Titles["I1"], Is.EqualTo(original.Expected), "The old intended value must not be sent without a new review.");
+            Assert.That(resumed.State, Is.EqualTo(ApplyState.Blocked));
+            Assert.That(resumed.Attempts, Is.EqualTo(original.Attempts));
+            Assert.That(session.Workspace.Field(cell)!.Change, Is.EqualTo(original.Intended), "Unsent local intent remains available for a new review.");
+        });
     }
     [Test]
     public async Task RateLimitWaitRechecksBeforeReschedulingKnownRejectedWrite()

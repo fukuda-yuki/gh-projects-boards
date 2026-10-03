@@ -214,6 +214,7 @@ internal sealed class ApplyConfirmationRowContent : Grid
         identity.Text = data.Number + "  " + data.Title;
         AutomationProperties.SetName(this, data.Identity);
         var notices = new List<string>();
+        if (data.CreationPlan is not null) notices.Add(data.CreationPlan);
         if (!data.IsCreation && data.Cells.Any(c => c.Column.Id == ColumnIdentity.Title && c.After.Kind != ConfirmationValueKind.Unchanged)) notices.Add("タイトル変更");
         if (data.Hidden) notices.Add("表では非表示");
         if (data.Cells.Any(c => c.Pending is not null) || data.RepositoryBuffer is not null) notices.Add("未確定入力は送信対象外");
@@ -282,6 +283,7 @@ internal sealed class ApplyConfirmationRowContent : Grid
         var scroll = (ScrollViewer)((Flyout)details.Flyout).Content;
         scroll.Width = Math.Max(240, Math.Min(600, XamlRoot.Size.Width - 120)); scroll.MaxHeight = Math.Max(160, XamlRoot.Size.Height - 180);
         var text = new List<string> { data.Identity, data.IdentityDetails };
+        if (data.CreationPlan is not null) text.Add(data.CreationPlan);
         foreach (var cell in data.Cells)
         {
             text.Add(cell.Column.Name + (cell.Column.Hidden ? "（表では非表示）" : ""));

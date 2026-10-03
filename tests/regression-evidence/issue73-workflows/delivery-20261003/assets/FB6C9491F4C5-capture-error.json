@@ -1,0 +1,6 @@
+{
+  "utc": "2026-09-27T09:33:15.154Z",
+  "action": "Observe settled inclusion result",
+  "error": "foreground window did not report a process id",
+  "response": "Stop using old coordinates and refresh returned-window selection"
+}

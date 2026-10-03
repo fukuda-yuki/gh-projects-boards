@@ -1,0 +1,95 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 13:56:00Z
+    End time: 2026-09-24 13:56:00Z
+    Duration: 0.034 seconds
+
+Test Filters
+    Where: test =~ InvalidProjectStart or test =~ SelectingAnUnavailableItem or test =~ FailedSettingsSaveKeeps
+
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess
+System.TimeoutException: Incomplete asynchronous event teardown (operations=1, posts=0)
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a5ff4287-3843-42a9-9e41-bd57d5d799f1; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 09ca92a1-290a-47cc-823f-318a5767e860
+
+Errors, Failures and Warnings
+
+1) Error : GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess
+System.TimeoutException : Incomplete asynchronous event teardown (operations=1, posts=0)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Idle() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 44
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningNavigationHostedTests.cs:line 99
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+2) TearDown Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling
+Unhandled asynchronous UI failure: System.TimeoutException: Incomplete asynchronous event teardown (operations=1, posts=0)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Idle() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 44
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningNavigationHostedTests.cs:line 99
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Check() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 35
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.Teardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 291
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+
+3) TearDown Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.SelectingAnUnavailableItemDoesNotExposeAnIssueScheduleOrChangeThePlan
+Unhandled asynchronous UI failure: System.TimeoutException: Incomplete asynchronous event teardown (operations=1, posts=0)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Idle() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 44
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningNavigationHostedTests.cs:line 99
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Check() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 35
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 33
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.Teardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningHostedTests.cs:line 291
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Failed
+  Test Count: 3, Passed: 0, Failed: 3, Warnings: 0, Inconclusive: 0, Skipped: 0
+    Failed Tests - Failures: 3, Errors: 0, Invalid: 0
+  Start time: 2026-09-24 13:56:00Z
+    End time: 2026-09-24 13:56:10Z
+    Duration: 10.844 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-225548-956-2628cb1e\results.xml
+

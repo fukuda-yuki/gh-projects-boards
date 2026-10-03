@@ -1,0 +1,23 @@
+Independent persisted-state readback
+
+Read at: 2026-09-27T03:03:30.4304690+00:00
+Source inspected: dd34eee4a48f6708710e0259866206168f1cd4a0
+Root: TestResults/issue73/weekly-v1 (Weekly synthetic marker and exact root verified)
+Checkpoint: schema 12, planning schema 3, revision 171
+Checkpoint SHA256: 485762E1283A8943217F1531F2499FFB23B7D83CF8EB13489B49B5DA03571390
+
+All 19 readback assertions passed. This is an independent JSON inspection, not an added product test-suite run.
+
+- I1 / P1T1: InProgress; ActualStart 2026-10-05 09:00; ActualFinish empty.
+- I2 / P1T2: Unstarted; both actual dates empty.
+- Confirmed Actual: 7 / 2 hours; Remaining: 3 / 1 hours; Estimate: 4 / 4 hours.
+- The only pending buffer is P1/P1T1/F-Remaining = 3x; it is distinct from confirmed Remaining 3.
+- Both Actual contributions retain ReportedThrough 2026-10-09. Project cutoff is separately 2026-10-09 18:00.
+- I1 date-only projected Start and Finish are 2026-10-13.
+- Apply journal is empty. No claim about network-call counts follows from this.
+
+The checkpoint hash is identical to the earlier independent read at 02:59:38 UTC and unchanged during this read. The final native journey's malformed/corrected candidate and explicit discard did not alter persisted bytes; ActualStart remains 09:00, not the discarded 09:01 candidate. Normal-close interaction and process exit were observed by the parent agent, not executed by this reader.
+
+Adopted 2026-10-13 09:00 to 12:00 is verified separately in the retained original 10-result-reason.txt AX observation. These minute endpoints are not persisted fields; no fresh core recomputation is claimed. The checkpoint's initial save came from source 140928b; later resumes do not relabel that save as a new dd34eee adoption.
+
+The companion JSON retains expected/actual values, exact identity checks, schema/source hashes, launch-receipt hashes, input file times and the evidence boundaries. The companion read-persisted-state.ps1 reproduces the read without mutation, UI, build or network calls.

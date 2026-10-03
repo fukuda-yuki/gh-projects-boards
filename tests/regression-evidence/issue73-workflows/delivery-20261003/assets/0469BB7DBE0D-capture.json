@@ -1,0 +1,26 @@
+{
+  "observer": "root",
+  "observedAtUtc": "2026-10-02T20:16:30.7361317+00:00",
+  "scope": "After V3 ordinary close and passing readback, before response-loss release. This is a later capture matching installation hashes, not a capture at installation time.",
+  "endpointReceipt": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v\\diagnostics\\phase2-install-5f3cacea47784383847fac19ebdff759\\endpoint-receipt.json",
+  "endpointReceiptSha256": "E74C200B6FCAC1455163F40602EEF622CBD3C7F8A84F9440F9D1770CBDC55F25",
+  "runtimeEntriesVerified": 509,
+  "copied": [
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v\\fake-gh\\adapter-config.json",
+      "copy": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\v-fresh-evaluator\\actual-segment3\\after-close-installed-inputs\\adapter-config.json",
+      "sourceBefore": "63476E2077BC93EE9B2D7AA1BECAEFC16652437CABF6EDBA87BE52736D55CB8E",
+      "copySha256": "63476E2077BC93EE9B2D7AA1BECAEFC16652437CABF6EDBA87BE52736D55CB8E",
+      "sourceAfter": "63476E2077BC93EE9B2D7AA1BECAEFC16652437CABF6EDBA87BE52736D55CB8E"
+    },
+    {
+      "source": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v\\gh-config\\scenario.json",
+      "copy": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\v-fresh-evaluator\\actual-segment3\\after-close-installed-inputs\\scenario.json",
+      "sourceBefore": "BABA185D4ACA0B68AE6010EEB66D94722BAA479004FC074CD8C82FFF978992EE",
+      "copySha256": "BABA185D4ACA0B68AE6010EEB66D94722BAA479004FC074CD8C82FFF978992EE",
+      "sourceAfter": "BABA185D4ACA0B68AE6010EEB66D94722BAA479004FC074CD8C82FFF978992EE"
+    }
+  ],
+  "normalCloseEvidenceSha256": "4E83E20A4F6F4CE40C57E4C77C13D60CC83F0E04D6FA98F1B10B5F54A22A9CC7",
+  "creationLossResultSha256": "49982ECF4695DFD71E90E12CA7D5181AD567D219E60B7E4A77C0E419F6CCC598"
+}

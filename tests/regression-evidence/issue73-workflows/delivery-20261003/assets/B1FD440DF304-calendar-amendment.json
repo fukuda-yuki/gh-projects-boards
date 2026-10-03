@@ -1,0 +1,49 @@
+{
+  "recordedUtc": "2026-09-27T13:41:26.6852207Z",
+  "reason": "Business outcome allows effective explicit October 12 nonworking exception; initial mechanism restriction was not authorized.",
+  "noLiveDataRead": true,
+  "postcloseNotRun": true,
+  "scriptParses": [
+    {
+      "file": "Capture-QSBeforeLaunch.ps1",
+      "sha256": "27514042A33048630A6A88A0151CD2AF7E217DCD8B5D3ADC9CB6A9CEB57A249C",
+      "errors": []
+    },
+    {
+      "file": "Check-ReadbackHelpers.ps1",
+      "sha256": "225B483965100ACC1DF8F9A26646A834FB80959E0B515D0F8E06F2830A22AF82",
+      "errors": []
+    },
+    {
+      "file": "Read-QSAfterClose.ps1",
+      "sha256": "F985B7187B2A25238C6953024A9A4BB024F31B6E184C54E2F19285F5984567C3",
+      "errors": []
+    }
+  ],
+  "preAmendmentCopies": [
+    {
+      "name": "Read-QSAfterClose.ps1",
+      "matched": true
+    },
+    {
+      "name": "readback-plan.md",
+      "matched": true
+    },
+    {
+      "name": "Check-ReadbackHelpers.ps1",
+      "matched": true
+    },
+    {
+      "name": "helper-checks.json",
+      "matched": true
+    },
+    {
+      "name": "syntax-final.json",
+      "matched": true
+    }
+  ],
+  "planLinks": 5,
+  "missingLinks": [],
+  "planSha256": "1C8F031AA7B026A5627CEF8CF425FED4D449FF814A7F61441D8049032CC0F701",
+  "helperSha256": "82C49600468060398B4118C6CA34CB85B6FFDFDC012FE3A74274C57DE8BD8BAA"
+}

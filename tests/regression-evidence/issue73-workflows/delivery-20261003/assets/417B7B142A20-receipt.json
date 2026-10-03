@@ -1,0 +1,6 @@
+{
+  "sha256": "082309150FD95860CE45F96043DDAB99562FD151187AC7A1DA5642920FDCC80B",
+  "at": "2026-09-27T14:35:23.5212836+00:00",
+  "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+  "amendment": "New GanttRevealContext fixture CommitPlanning moved inside existing Ui.Run; production unchanged; no prior run of this new case claimed"
+}

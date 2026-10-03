@@ -1,0 +1,110 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-09-24 13:08:39Z
+    End time: 2026-09-24 13:08:39Z
+    Duration: 0.082 seconds
+
+Test Filters
+    Where: cat == WorkflowPlanning
+
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-ca37213f-0640-4bc1-bc5a-1522f1c978a7; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 6087213a-d4e4-4bd2-a9e7-54bc917e2780
+=> GhProjectsBoards.UiIntegration.Tests.HostedTests.ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput
+Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-caeea4e8-153b-4108-9f1f-cb891163ced6; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 6087213a-d4e4-4bd2-a9e7-54bc917e2780
+
+Errors, Failures and Warnings
+
+1) Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange("Unstarted","������","���� 4�l��")
+  Assert.That(text, Does.Contain(label).And.Contain(effort).And.Contain("���т̓��͂����ł͐i����ύX���܂���"))
+  Expected: String containing "������" and containing "���� 4�l��" and containing "���т̓��͂����ł͐i����ύX���܂���"
+  But was:  "owner/repo #1
+Issue 1
+I1
+Auto: 2026-10-05 09:00 �� 2026-10-05 13:00
+�S��: Owner / �z��: 100%
+���� 4 / �c���� 3 / ���� �s�� �l��
+�i��: Unstarted
+�̗p���R: ���ύH���E�z���E�J�����_�[
+������: 2026-10-05 09:00 �� 2026-10-05 13:00
+
+�ȑO�̓Ɨ������v��S���҂�ێ��B�ύX���͓������r���Ă��������B
+���ς̖�����: 4�l��
+�c���Ԃ̖�����: 3�l��
+�J�����_�[: official-2025-2027
+�j��: cao-2025-2027-CEC37A743C96 / 2025?2027
+���̖Ԋ|����Project���ʁB�l��O�͉��L�̗̍p��Ԃɏ]���܂��B
+2026-10-05: 09:00?13:00 / 14:00?18:00"
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 30
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(String progressName, String label, String effort) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 28
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+2) Failed : GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange("InProgress","�i�s��","�c���� 3�l��")
+  Assert.That(text, Does.Contain(label).And.Contain(effort).And.Contain("���т̓��͂����ł͐i����ύX���܂���"))
+  Expected: String containing "�i�s��" and containing "�c���� 3�l��" and containing "���т̓��͂����ł͐i����ύX���܂���"
+  But was:  "owner/repo #1
+Issue 1
+I1
+Auto: 2026-10-05 09:00 �� 2026-10-05 12:00
+�S��: Owner / �z��: 100%
+���� 4 / �c���� 3 / ���� �s�� �l��
+�i��: InProgress
+�̗p���R: �c�H���E������E�z���E�J�����_�[
+������: 2026-10-05 09:00 �� 2026-10-05 12:00
+
+�ȑO�̓Ɨ������v��S���҂�ێ��B�ύX���͓������r���Ă��������B
+���ς̖�����: 4�l��
+�c���Ԃ̖�����: 3�l��
+���ъJ�n�������͂ł��B
+�J�����_�[: official-2025-2027
+�j��: cao-2025-2027-CEC37A743C96 / 2025?2027
+���̖Ԋ|����Project���ʁB�l��O�͉��L�̗̍p��Ԃɏ]���܂��B
+2026-10-05: 09:00?13:00 / 14:00?18:00"
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 30
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(String progressName, String label, String effort) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 28
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Failed
+  Test Count: 6, Passed: 4, Failed: 2, Warnings: 0, Inconclusive: 0, Skipped: 0
+    Failed Tests - Failures: 2, Errors: 0, Invalid: 0
+  Start time: 2026-09-24 13:08:39Z
+    End time: 2026-09-24 13:08:42Z
+    Duration: 3.077 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-220833-557-fa6b54de\results.xml
+

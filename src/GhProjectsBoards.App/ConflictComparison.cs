@@ -38,7 +38,7 @@ internal sealed partial class EditingGrid
             var name = field.Key.Kind == "Title" ? "タイトル" : project?.Fields.SingleOrDefault(f => f.Id.NodeId == field.Key.FieldId)?.Name ?? field.Key.Kind;
             return $"{identity} / {name} [{field.Key.FieldId ?? "Title"}] / {project?.Title ?? observedProject?.NodeId ?? "未確認のProject"} [{observedProject?.NodeId ?? "?"}]";
         }
-        var picker = new ComboBox { Header = "比較するフィールド", ItemsSource = fields.Select(Label).ToArray(), SelectedIndex = 0,
+        var picker = new FormComboBox { Header = "比較するフィールド", ItemsSource = fields.Select(Label).ToArray(), SelectedIndex = 0,
             HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetAutomationId(picker, "ConflictField");
         var context = ComparisonText("");
@@ -59,7 +59,7 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(comparison, "ConflictComparison");
         var pending = ComparisonText("");
         var text = new TextBox { Header = "別のタイトル" }; AutomationProperties.SetAutomationId(text, "ConflictAlternativeTitle");
-        var options = new ComboBox { Header = "別の選択肢", DisplayMemberPath = "Name", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var options = new FormComboBox { Header = "別の選択肢", DisplayMemberPath = "Name", HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetAutomationId(options, "ConflictAlternativeOption");
         var clear = new CheckBox { Content = "明示的にクリア" }; AutomationProperties.SetAutomationId(clear, "ConflictAlternativeClear");
         var other = new Button { Content = "別の値をローカル採用" }; AutomationProperties.SetAutomationId(other, "ConflictUseAlternative");

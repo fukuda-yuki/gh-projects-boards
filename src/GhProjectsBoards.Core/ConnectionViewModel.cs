@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using GhProjectsBoards.App.GitHub;
+using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.App;
 
@@ -12,6 +13,8 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
     private string issueUrl = "";
     private string projectUrl = "";
     private ConnectionContext? binding;
+    private ConnectionScope? destination;
+    private string? savedAccountText;
     private CancellationTokenSource? cancellation;
     public event PropertyChangedEventHandler? PropertyChanged;
     public string ExecutablePath { get => executablePath; set { if (executablePath == value) return; executablePath = value; InvalidateDisplay(); Changed(); } }
@@ -20,14 +23,15 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
     public string ProjectUrl { get => projectUrl; set { if (projectUrl == value) return; projectUrl = value; Project = new(); Changed(); Changed(nameof(ProjectText)); } }
     public bool IsBusy { get; private set; }
     public bool CanCheck => !IsBusy;
-    public bool CanSwitch => !IsBusy && binding is not null;
+    public bool CanSwitch => !IsBusy && (binding is not null || Connection?.Result.Failure == FailureKind.IdentityChanged);
     public ConnectionReport? Connection { get; private set; }
     internal GhConnectionService? Service { get; private set; }
     public TargetReport Issue { get; private set; } = new();
     public TargetReport Project { get; private set; } = new();
     public string StatusText { get; private set; } = "接続は未確認です。接続先とgh.exeを確認してください。";
     public string VersionText => Connection?.Version ?? "不明";
-    public string AccountText => Connection?.Context is { } context ? $"{context.Login}  /  ID {context.ViewerId}  /  {context.Host}" : "不明";
+    public string AccountText => Connection?.Context is { } context ? $"{context.Login}  /  ID {context.ViewerId}  /  {context.Host}"
+        : Connection is null ? savedAccountText ?? "未確認" : "不明";
     public string StorageText => Connection?.Authentication is { } auth ? auth.Store switch
     {
         CredentialStore.Keyring => "Windows の資格情報ストア（keyring）",
@@ -50,10 +54,24 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
     public string LoginCommand => Command("login --web --skip-ssh-key --scopes 'repo,read:org,project'");
     public string RefreshCommand => Command("refresh --scopes 'repo,read:org,project'");
 
+    internal void EnterWorkspace(ConnectionScope? scope, string? savedLogin = null)
+    {
+        destination = scope;
+        if (scope is not null) host = scope.Host;
+        // A cached destination supplies intent, never authentication. Keep the
+        // earlier binding so changing identity still needs explicit acceptance.
+        if (Connection is not { IsConnected: true } current || scope != ConnectionScope.From(current.Context!))
+            InvalidateDisplay(scope is null ? "接続は未確認です。接続先とgh.exeを確認してください。"
+                : "保存済みの接続先です。現在の接続状態を確認してください。",
+                scope is null || string.IsNullOrWhiteSpace(savedLogin) ? null
+                    : $"保存済み：{savedLogin}  /  ID {scope.ViewerId}  /  {scope.Host}\n現在の認証：未確認");
+        Changed(nameof(Host));
+    }
+
     public async Task CheckAsync(bool newConnection = false)
     {
         if (IsBusy) return;
-        if (newConnection) binding = null;
+        if (newConnection) { binding = null; destination = null; savedAccountText = null; }
         using var currentCancellation = new CancellationTokenSource();
         cancellation = currentCancellation;
         IsBusy = true;
@@ -80,6 +98,12 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
             if (!Connection.IsConnected)
             {
                 StatusText = FailureText(Connection.Result.Failure);
+                return;
+            }
+            if (destination is { } expected && ConnectionScope.From(Connection.Context!) != expected)
+            {
+                Connection = Connection with { Result = new ApiResult(ApiOutcome.Failed, FailureKind.IdentityChanged) };
+                StatusText = FailureText(FailureKind.IdentityChanged);
                 return;
             }
             binding = Connection.Context;
@@ -131,12 +155,13 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
     public void Cancel() => cancellation?.Cancel();
     public void ShowClipboardFailure() { StatusText = "クリップボードへコピーできませんでした。コマンド欄を選択してコピーしてください。"; Changed(nameof(StatusText)); }
 
-    private void InvalidateDisplay()
+    private void InvalidateDisplay(string statusText = "接続先の入力が変わりました。再確認してください。", string? savedAccount = null)
     {
+        savedAccountText = savedAccount;
         Connection = null;
         Issue = new();
         Project = new();
-        StatusText = "接続先の入力が変わりました。再確認してください。";
+        StatusText = statusText;
         Changed(null);
     }
 

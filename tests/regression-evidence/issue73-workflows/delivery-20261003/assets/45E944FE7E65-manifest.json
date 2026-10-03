@@ -1,0 +1,118 @@
+{
+  "createdAtUtc": "2026-10-02T22:31:04.6339776+00:00",
+  "status": "prepared-not-uploaded",
+  "imageCount": 12,
+  "images": [
+    {
+      "path": "images/01-w-final-group.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-085-get_window_state-0.jpg",
+      "sourceSha256": "52E8083B8A31A8CF2D82EB53FF9B64835822E0FB9D8CD84E8BCA752100F398B2",
+      "copySha256": "52E8083B8A31A8CF2D82EB53FF9B64835822E0FB9D8CD84E8BCA752100F398B2",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "W final grouped Estimate 6 after its separate 8 and Undo sequence. This still image alone does not prove Undo."
+    },
+    {
+      "path": "images/02-w-before-details.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-105-get_window_state-0.jpg",
+      "sourceSha256": "09EA4DD37C5FFD3129C697FAD254B9A974B083D02C93301D85B6B1792E731D2F",
+      "copySha256": "09EA4DD37C5FFD3129C697FAD254B9A974B083D02C93301D85B6B1792E731D2F",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "W active pending row before details expansion; compare with next image."
+    },
+    {
+      "path": "images/03-w-expanded-details.jpg",
+      "source": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/checks/w-dense-observation/originals/2026-10-02T21-09-20-327Z-107-get_window_state-0.jpg",
+      "sourceSha256": "BADE94BD6598DE599342D703E03E29E243689F4546D4004E4B6EED24EFA5465A",
+      "copySha256": "BADE94BD6598DE599342D703E03E29E243689F4546D4004E4B6EED24EFA5465A",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "W expanded details retain correct identity/confirmed/pending values; grid viewport shrinks and active bottom row disappears. Row1 remains at top."
+    },
+    {
+      "path": "images/04-x1-selected-work.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment1/030-ready-to-send-one-issue-0.jpg",
+      "sourceSha256": "459A8BE164584F75F1469421E10479216ABA329CCC25EE0009DF8D4E34775757",
+      "copySha256": "459A8BE164584F75F1469421E10479216ABA329CCC25EE0009DF8D4E34775757",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X1 compact one-Issue authorization with separate I2 local and unconfirmed work."
+    },
+    {
+      "path": "images/05-x1-partial-result.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment1/032-publication-outcome-0.jpg",
+      "sourceSha256": "506404828C79AD4C6D98D529FE78087BE22C677FFB8E96772CD623D3A835D9D4",
+      "copySha256": "506404828C79AD4C6D98D529FE78087BE22C677FFB8E96772CD623D3A835D9D4",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X1 Title failure with same-execution verified Status and current recovery guidance."
+    },
+    {
+      "path": "images/06-x2-title-only.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/016-one-title-ready-to-send-0.jpg",
+      "sourceSha256": "FACB9F2AEA49C21C8DD05328E3CF291C216CF77FB218625A799723BEFA273A64",
+      "copySha256": "FACB9F2AEA49C21C8DD05328E3CF291C216CF77FB218625A799723BEFA273A64",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X2 learned continuation selects only remaining ready Title; successful Status is not a candidate and I2 is unchecked."
+    },
+    {
+      "path": "images/07-x2-new-success.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/020-successful-title-history-detail-0.jpg",
+      "sourceSha256": "FD001B242B4B3244B080AA3F7AE1811BD506B81EDBCF6175C335D57F14A39F2C",
+      "copySha256": "FD001B242B4B3244B080AA3F7AE1811BD506B81EDBCF6175C335D57F14A39F2C",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X2 current Title readback and explicitly earlier Status success, not sent this time."
+    },
+    {
+      "path": "images/08-x2-earlier-failure.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/027-earlier-send-record-visible-0.jpg",
+      "sourceSha256": "46ECCA2B1AE0788070D5BA0FB4F97EE0CC0F27F3A53A2F185532E1974236A1F9",
+      "copySha256": "46ECCA2B1AE0788070D5BA0FB4F97EE0CC0F27F3A53A2F185532E1974236A1F9",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X2 old authorization ended for a new review; original PermissionDenied attempt and later-completion link retained."
+    },
+    {
+      "path": "images/09-x2-unfinished-work.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-x-publication-fresh-d7272657d47146e19f602b5c13a33d6b/observations-segment2/031-second-issue-preserved-before-close-0.jpg",
+      "sourceSha256": "4F894565CC71BA24F6C1D97B8C343B5A18B95462C5413C38C6AE0881465AF613",
+      "copySha256": "4F894565CC71BA24F6C1D97B8C343B5A18B95462C5413C38C6AE0881465AF613",
+      "sourceUnchanged": true,
+      "candidate": "R16",
+      "caption": "X2 returns to I2 pending Z, distinct confirmed T next-week draft, one unpublished cell and local saved."
+    },
+    {
+      "path": "images/10-v4-setup-review.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/063-screenshot-0.jpg",
+      "sourceSha256": "8D4E81510F3D84BB28B4335E0622A1FCC3E61649A1EBB14DA19044A932E1683A",
+      "copySha256": "8D4E81510F3D84BB28B4335E0622A1FCC3E61649A1EBB14DA19044A932E1683A",
+      "sourceUnchanged": true,
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 reviews Project membership and Done setup for externally verified existing Issue; this is not the R16 candidate."
+    },
+    {
+      "path": "images/11-v4-current-completion.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/070-screenshot-0.jpg",
+      "sourceSha256": "15B6C80A0283CE7FB5D0008B3C7D9C75295E0CCD6CCCE496ACB5FEE10D9D8D03",
+      "copySha256": "15B6C80A0283CE7FB5D0008B3C7D9C75295E0CCD6CCCE496ACB5FEE10D9D8D03",
+      "sourceUnchanged": true,
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 current independently verified Issue/member/Status completion while original creation response remains unknown."
+    },
+    {
+      "path": "images/12-v4-original-unknown.jpg",
+      "source": "C:/Users/mwam0/AppData/Local/Temp/ui-v-publication-fresh-2b3c22494fce4a829d84e94bdb91cc3a/observations-segment4/073-screenshot-0.jpg",
+      "sourceSha256": "D4BFB651BEA96B09BB59D2FF661F0808B484EB7A4346E72B912217A219E5C587",
+      "copySha256": "D4BFB651BEA96B09BB59D2FF661F0808B484EB7A4346E72B912217A219E5C587",
+      "sourceUnchanged": true,
+      "candidate": "V older App7D0/Core268",
+      "caption": "Older V4 detailed preserved Unknown and user-bound URL, explicitly not proof that the original create response succeeded."
+    }
+  ],
+  "imageTransformation": "None: copied original bytes, no crop or re-encoding",
+  "directPmoImageReview": "not_run",
+  "selectionSha256": "525A438DBC79102B5C9DDDB8FC573B3E838538BF064B4C7E75D6AE66DA15B7D3"
+}

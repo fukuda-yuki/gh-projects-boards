@@ -66,7 +66,7 @@ internal sealed class SummaryView : Grid
     internal event Action<bool>? BaselineRequested;
     internal event Action<string, ProjectView>? TaskRequested;
     internal event Action<string>? EditRequested;
-    internal event Action? UndoRequested, SaveRequested, SettingsRequested;
+    internal event Action? UndoRequested, SettingsRequested;
     internal string? SelectedPersonId => (people.SelectedItem as PersonSummary)?.Id;
     internal string? SelectedRowId => (tasks.SelectedItem as TaskLine)?.RowId;
     internal SummaryProjection? AdoptedSummary => projection;
@@ -121,7 +121,6 @@ internal sealed class SummaryView : Grid
         AutomationProperties.SetAutomationId(tasks, "SummaryTasks"); AutomationProperties.SetName(tasks, "選択した担当者の工数内訳");
         SetRow(tasks, 5); Children.Add(tasks);
         AutomationProperties.SetAutomationId(status, "SummaryOperationStatus");
-        var retry = new Button { Content = "保存を再試行" }; AutomationProperties.SetAutomationId(retry, "SummaryRetrySave"); retry.Click += (_, _) => SaveRequested?.Invoke(); status.ActionButton = retry;
         SetRow(status, 6); Children.Add(status);
         people.SelectionChanged += (_, _) => { if (!presenting) { tasks.SelectedItem = null; ShowPerson(); } }; filter.TextChanged += (_, _) => { if (!presenting) FilterTasks(); };
         tasks.SelectionChanged += (_, _) => { board.IsEnabled = gantt.IsEnabled = edit.IsEnabled = SelectedRowId is not null; };
@@ -163,11 +162,10 @@ internal sealed class SummaryView : Grid
             .Select(c => new TaskLine(c, taskId == c.TaskId ? id : c.RowId)).ToArray();
         tasks.ItemsSource = lines; tasks.SelectedItem = id is null ? lines.FirstOrDefault() : lines.FirstOrDefault(l => l.RowId == id);
     }
-    internal void ShowOperationStatus(string? problem, string saveStatus)
+    internal void ShowOperationStatus(string? problem)
     {
-        var failed = saveStatus.Contains("失敗", StringComparison.Ordinal);
-        status.Message = (failed ? saveStatus + " " : "") + problem; status.IsOpen = failed || problem is not null;
-        status.ActionButton.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
+        status.Message = problem;
+        status.IsOpen = problem is not null;
     }
     private void ShowTask()
     {

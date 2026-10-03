@@ -1,0 +1,331 @@
+{
+  "relativeLinks": 65,
+  "brokenLinks": 0,
+  "links": [
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-source-ready-20261003/source-ready-proposal.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-publication-segment3-observation/README.md",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/result.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-fresh-evaluator/actual-segment3/normal-close.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-fresh-evaluator/actual-segment3/after-close-installed-inputs/capture.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "round10-publication-v/diagnostics/phase2-install-5f3cacea47784383847fac19ebdff759/response-loss-release.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-fresh-evaluator/creation-authorization/after-creation-loss.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-retention-audit/selection.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-retention-audit/exclusions.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-retention-audit/validation.json",
+      "exists": true
+    },
+    {
+      "report": "added-v-creation-loss-20261003.md",
+      "target": "checks/v-creation-loss-retention-audit/link-audit.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "source-ready-proposal.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../v-publication-segment3-observation/README.md",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/readback/runs/20261002-201504-c772cfe00d7f449a87c8d105deebb5dd/findings.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../v-fresh-evaluator/actual-segment3/normal-close.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../v-fresh-evaluator/actual-segment3/after-close-installed-inputs/capture.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../../round10-publication-v/diagnostics/phase2-install-5f3cacea47784383847fac19ebdff759/response-loss-release.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-creation-loss-source-ready-20261003/README.md",
+      "target": "../v-fresh-evaluator/creation-authorization/after-creation-loss.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "020-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "020-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "036-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "036-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "042-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "042-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "043-call.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "047-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "048-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "048-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "056-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "056-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "059-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "062-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "065-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "065-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "close-verification.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "068-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "042-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "048-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "056-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "059-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "065-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "public-api-calls.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "screenshots.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/originals/evaluation.md",
+      "target": "notes.jsonl",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/evaluation.md",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/public-api-calls.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/notes.jsonl",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/042-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/043-call.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/048-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/056-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/059-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/062-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/065-screenshot-0.jpg",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/066-call.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/067-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "originals/068-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "call-audit.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "privacy-review.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "provenance/image-review.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "derived-target-inventories/001-result.json",
+      "exists": true
+    },
+    {
+      "report": "checks/v-publication-segment3-observation/README.md",
+      "target": "snapshot-manifest.json",
+      "exists": true
+    }
+  ]
+}

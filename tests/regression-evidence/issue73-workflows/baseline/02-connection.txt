@@ -1,0 +1,33 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				26 button 元の作業へ戻る ID: ProjectsPageButton
+				27 テキスト 接続設定
+				28 pane ID: ConnectionScreen
+					29 テキスト 接続先とアカウントを確認します。確認後は元の作業へ戻れます。Projectの取得や登録、GitHubへの反映はここでは行いません。
+					30 edit (settable, string) GitHub ホスト Value: github.com ID: HostInput
+						31 テキスト GitHub ホスト
+					32 テキスト アカウント
+					33 テキスト 不明 ID: AccountValue
+					34 button 接続を確認 / 再確認 ID: CheckConnectionButton
+					35 button (disabled) 新しい接続として確認 ID: NewConnectionButton
+					36 button (disabled) 接続確認を中止 ID: CancelConnectionButton
+					37 テキスト 接続は未確認です。接続先とgh.exeを確認してください。 ID: ConnectionStatus
+					38 テキスト ID: UiMessage
+					39 テキスト 接続の成功は、個別のProjectやIssueの更新権限を保証しません。対象の権限はProjectの追加・情報、反映内容の確認で確認します。
+					40 button CLIと接続の詳細 ID: ConnectionDetails
+						41 テキスト CLIと接続の詳細
+					42 button ログイン・権限追加の手順 ID: LoginHelpExpander
+						43 テキスト ログイン・権限追加の手順
+					44 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+Document text: ```
+github.com
+```

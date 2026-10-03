@@ -11,32 +11,55 @@ public sealed partial class ConnectionPanel : UserControl
 {
     private ConnectionViewModel model = new();
     private RegistrationWorkspace? workspace;
+    private ConnectionScope? enteredProfile;
+    private bool entered;
     private Task? operation;
     private bool rendering, pickerOpen, closingRequested, checking;
     internal IntPtr WindowHandle { get; set; }
+    internal Func<ConnectionScope, Task<bool>>? ConfirmWorkspaceChangeAsync { get; set; }
     public event EventHandler? ReturnRequested;
     public ConnectionPanel()
     {
         InitializeComponent();
-        Loaded += (_, _) => { model.PropertyChanged += ModelChanged; Render(); };
+        Loaded += (_, _) => { model.PropertyChanged += ModelChanged; EnterWorkspace(); Render(); };
         Unloaded += (_, _) => model.PropertyChanged -= ModelChanged;
-        ExecutableInput.TextChanged += (_, _) => { if (!rendering && model.ExecutablePath != ExecutableInput.Text) { workspace?.SuspendConnection(); model.ExecutablePath = ExecutableInput.Text; } };
-        HostInput.TextChanged += (_, _) => { if (!rendering && model.Host != HostInput.Text) { workspace?.SuspendConnection(); model.Host = HostInput.Text; } };
+        RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => EnterWorkspace());
+        // Capture input before a same-turn navigation can hide the controls and
+        // delay their post-render TextChanged notifications.
+        ExecutableInput.TextChanging += (_, _) => { if (!rendering && model.ExecutablePath != ExecutableInput.Text) { workspace?.SuspendConnection(); model.ExecutablePath = ExecutableInput.Text; } };
+        HostInput.TextChanging += (_, _) => { if (!rendering && model.Host != HostInput.Text) { workspace?.SuspendConnection(); model.Host = HostInput.Text; } };
     }
     internal void Initialize(RegistrationWorkspace? owner, ConnectionViewModel? value = null)
     {
         workspace = owner;
+        entered = false; enteredProfile = null;
         if (value is not null) { model.PropertyChanged -= ModelChanged; model = value; if (IsLoaded) model.PropertyChanged += ModelChanged; }
         rendering = true;
         ExecutableInput.Text = model.ExecutablePath; HostInput.Text = model.Host;
         rendering = false;
+        if (IsLoaded) EnterWorkspace();
+        Render();
+    }
+    private void EnterWorkspace()
+    {
+        if (Visibility != Visibility.Visible || workspace is null || entered && enteredProfile == workspace.Profile) return;
+        entered = true; enteredProfile = workspace.Profile;
+        var savedLogin = workspace.Registrations.FirstOrDefault(registration => registration.Snapshot.Id.Scope == enteredProfile)?.ViewerLogin;
+        model.EnterWorkspace(enteredProfile, savedLogin);
+        // Prefill only when entering another workspace. Status renders and a
+        // round trip to the same profile must retain unfinished user input.
+        rendering = true;
+        try { HostInput.Text = model.Host; }
+        finally { rendering = false; }
         Render();
     }
     internal void ShowProblem(string text) => UiMessage.Text = text;
     internal async Task StopAsync()
     {
         closingRequested = true; model.Cancel();
-        if (operation is not null) await operation;
+        if (operation is not { } pending) return;
+        try { await pending; }
+        finally { if (ReferenceEquals(operation, pending) && pending.IsCompleted) operation = null; }
     }
     internal void ResumeAfterFailedClose() { closingRequested = false; Render(); }
     private async void GoBack(object sender, RoutedEventArgs e)
@@ -100,7 +123,11 @@ public sealed partial class ConnectionPanel : UserControl
         model.ProjectUrl = "";
         await model.CheckAsync(newConnection);
         if (workspace is not null && !closingRequested && model.Connection is { IsConnected: true })
-            await workspace.BindAsync(model.Connection.Context, model.Service);
+        {
+            if (ConfirmWorkspaceChangeAsync is { } confirm && !await confirm(ConnectionScope.From(model.Connection.Context!)))
+            { UiMessage.Text = "作業中のProjectと設定候補を保持しています。ワークスペースへ戻って編集を続けられます。"; return; }
+            if (!closingRequested) await workspace.BindAsync(model.Connection.Context, model.Service);
+        }
     }
     private void Cancel_Click(object sender, RoutedEventArgs args) => model.Cancel();
     private void Detect_Click(object sender, RoutedEventArgs args) => ExecutableInput.Text = ConnectionViewModel.FindGh();

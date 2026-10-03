@@ -1,0 +1,173 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				556 window ポップアップ Secondary Actions: Raise
+				557 window タスクの詳細 Secondary Actions: Raise ID: PlanningDialog
+					558 pane ID: ContentScrollViewer
+						559 テキスト タスクの詳細
+						560 テキスト #1 owner/repo
+						561 pane
+							562 テキスト GitHub: Open / 担当: Owner
+							563 button 工数・進捗・実績 ID: PlanSection-工数・進捗・実績
+								564 テキスト 工数・進捗・実績
+								565 combo box 採用する進捗 ID: PlanProgress
+								566 テキスト 保存後の計算：見積 4人時 ID: PlanProgressEffect
+								567 テキスト 実績開始（日本時間）
+								568 カレンダー日付の選択 実績開始（日本時間）の日付 Value: 日付 ID: PlanActualStart-Date
+									569 テキスト 日付 ID: DateText
+								570 グループ 実績開始（日本時間）の時刻 ID: PlanActualStart-Time
+									571 button 実績開始（日本時間）の時刻 時刻の選択 ID: FlyoutButton
+								572 リンク 文字で入力 ID: PlanActualStart-Direct
+								573 テキスト 実績終了（日本時間）
+								574 カレンダー日付の選択 実績終了（日本時間）の日付 Value: 日付 ID: PlanActualFinish-Date
+									575 テキスト 日付 ID: DateText
+								576 グループ 実績終了（日本時間）の時刻 ID: PlanActualFinish-Time
+									577 button 実績終了（日本時間）の時刻 時刻の選択 ID: FlyoutButton
+								578 リンク 文字で入力 ID: PlanActualFinish-Direct
+								579 combo box 親タスクの工数区分 ID: PlanLaborKind
+								580 edit (settable, string) 総見積（人時） Value: 4 ID: PlanWork-Estimate
+									581 テキスト 総見積（人時）
+								582 edit 残時間（人時） Value: 3 ID: PlanWork-Remaining
+									583 テキスト 残時間（人時）
+								584 テキスト 残時間の確定値：3人時 表の入力「3x」は未確定・計算対象外です。 ID: PlanPending-Remaining
+								585 button 残時間の入力へ ID: PlanPendingEdit-Remaining
+								586 button 見積を残時間へコピー ID: PlanSeedRemaining
+								587 button 累積実績・担当者別内訳 ID: PlanSection-累積実績・担当者別内訳
+									588 テキスト 累積実績・担当者別内訳
+							589 button 日程の制約 ID: PlanSection-日程の制約
+								590 テキスト 日程の制約
+							591 button 先行Issue（終了→開始） ID: PlanSection-先行Issue（終了→開始）
+								592 テキスト 先行Issue（終了→開始）
+							593 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar
+					598 button 保存 ID: PrimaryButton
+					599 button キャンセル ID: CloseButton
+				3 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				5 button 接続設定 ID: ConnectionPageButton
+				6 window Secondary Actions: Raise ID: PaneRoot
+					7 combo box 保存済みアカウント ID: SavedProfiles
+					8 テキスト 登録済みProject
+					9 tree ID: ListControl
+						33 tree item (selectable) owner
+							34 テキスト owner
+						35 tree item (selectable) Repository関連付けなし
+							36 テキスト Repository関連付けなし
+						37 tree item (selectable) P1
+							38 テキスト P1
+						39 tree item (selectable) P2
+							40 テキスト P2
+					10 button Projectを追加… ID: AddProjectButton
+				11 テキスト P1 ID: ProjectSummary
+				41 テキスト キャッシュ 2026/09/27 11:36 ID: ProjectCacheDestination
+				12 button (disabled) 最新を取得 ID: RefreshProjectButton
+				13 button GitHubに反映… ID: ReviewApplyButton
+				14 button 反映結果・履歴 ID: ApplyHistoryButton
+				15 button Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton
+				393 リスト ID: PART_ItemsView
+					394 pane ID: PART_ScrollPresenter
+						395 SelectorBarItem (selectable) Boards ID: ProjectViewBoards
+							396 テキスト Boards ID: PART_TextVisual
+						397 SelectorBarItem (selectable) Gantt ID: ProjectViewGantt
+							398 テキスト Gantt ID: PART_TextVisual
+						399 SelectorBarItem (selectable, disabled) Summary（準備中） ID: ProjectViewSummary
+							400 テキスト Summary（準備中） ID: PART_TextVisual
+				442 アプリ バー ID: GanttCommands
+					443 アプリバー ボタン 日程を編集 ID: GanttEdit
+					444 アプリバー ボタン 表で開く ID: GanttBoards
+					445 アプリバー ボタン 選択へ移動 ID: GanttReveal
+					446 アプリバー ボタン 日程の理由 ID: GanttDetails
+					447 アプリバー ボタン 元に戻す ID: GanttUndo
+					448 button その他のオプション ID: MoreButton
+				449 combo box 時間軸の日・週 ID: GanttScale
+				450 edit (settable, string) タスク検索 ID: GanttSearch
+				451 テキスト 20/20件 ID: GanttSummary
+				452 テキスト タスク / 採用日程（日本時間）
+				453 テキスト 10/5 月
+				454 テキスト 10/6 火
+				455 テキスト 10/7 水
+				456 テキスト 10/8 木
+				457 テキスト 10/9 金
+				458 テキスト 10/10 土
+				459 テキスト 休
+				460 テキスト 10/11 日
+				461 テキスト 休
+				462 テキスト 10/12 月
+				463 テキスト 休
+				464 テキスト 10/13 火
+				465 リスト 採用計画のタスク ID: GanttTasks
+					466 list item (selectable) owner/repo #1 週次計画の確認 自動計算 2026-10-05 09:00 → 2026-10-05 13:00 ID: GanttRow-P1T1
+						467 テキスト owner/repo #1 週次計画の確認
+						468 テキスト 自動計算 10/5 09:00 → 10/5 13:00
+					469 list item (selectable) owner/repo #2 週次計画の確認 自動計算 2026-10-05 14:00 → 2026-10-06 10:00 ID: GanttRow-P1T2
+						470 テキスト owner/repo #2 週次計画の確認
+						471 テキスト 自動計算 · 注意 10/5 14:00 → 10/6 10:00
+					472 list item (selectable) owner/repo #3 作業 3 自動計算 2026-10-06 10:00 → 2026-10-07 10:00 ID: GanttRow-P1T3
+						473 テキスト owner/repo #3 作業 3
+						474 テキスト 自動計算 · 注意 10/6 10:00 → 10/7 10:00
+					475 list item (selectable) owner/repo #4 作業 4 自動計算 2026-10-07 10:00 → 2026-10-07 15:00 ID: GanttRow-P1T4
+						476 テキスト owner/repo #4 作業 4
+						477 テキスト 自動計算 · 注意 10/7 10:00 → 10/7 15:00
+					478 list item (selectable) owner/repo #5 作業 5 自動計算 2026-10-07 15:00 → 2026-10-08 11:00 ID: GanttRow-P1T5
+						479 テキスト owner/repo #5 作業 5
+						480 テキスト 自動計算 · 注意 10/7 15:00 → 10/8 11:00
+					481 list item (selectable) owner/repo #6 作業 6 自動計算 2026-10-08 11:00 → 2026-10-09 11:00 ID: GanttRow-P1T6
+						482 テキスト owner/repo #6 作業 6
+						483 テキスト 自動計算 · 注意 10/8 11:00 → 10/9 11:00
+					484 list item (selectable) owner/repo #7 作業 7 自動計算 2026-10-13 09:00 → 2026-10-13 13:00 ID: GanttRow-P1T7
+						485 テキスト owner/repo #7 作業 7
+						486 テキスト 自動計算 · 注意 10/13 09:00 → 10/13 13:00
+					487 list item (selectable) owner/repo #8 作業 8 自動計算 2026-10-13 14:00 → 2026-10-14 10:00 ID: GanttRow-P1T8
+						488 テキスト owner/repo #8 作業 8
+						489 テキスト 自動計算 · 注意 10/13 14:00 → 10/14 10:00
+					499 list item (selectable) owner/repo #9 作業 9 自動計算 2026-10-14 10:00 → 2026-10-15 10:00 ID: GanttRow-P1T9
+						500 テキスト owner/repo #9 作業 9
+						501 テキスト 自動計算 · 注意 10/14 10:00 → 10/15 10:00
+					502 list item (selectable) owner/repo #10 作業 10 自動計算 2026-10-15 10:00 → 2026-10-15 15:00 ID: GanttRow-P1T10
+						503 テキスト owner/repo #10 作業 10
+						504 テキスト 自動計算 · 注意 10/15 10:00 → 10/15 15:00
+					505 list item (selectable) owner/repo #11 作業 11 自動計算 2026-10-15 15:00 → 2026-10-16 11:00 ID: GanttRow-P1T11
+						506 テキスト owner/repo #11 作業 11
+						507 テキスト 自動計算 · 注意 10/15 15:00 → 10/16 11:00
+					508 list item (selectable) owner/repo #12 作業 12 自動計算 2026-10-16 11:00 → 2026-10-19 11:00 ID: GanttRow-P1T12
+						509 テキスト owner/repo #12 作業 12
+						510 テキスト 自動計算 · 注意 10/16 11:00 → 10/19 11:00
+					511 list item (selectable) owner/repo #13 作業 13 自動計算 2026-10-19 11:00 → 2026-10-19 16:00 ID: GanttRow-P1T13
+						512 テキスト owner/repo #13 作業 13
+						513 テキスト 自動計算 · 注意 10/19 11:00 → 10/19 16:00
+					514 list item (selectable) owner/repo #14 作業 14 自動計算 2026-10-19 16:00 → 2026-10-20 12:00 ID: GanttRow-P1T14
+						515 テキスト owner/repo #14 作業 14
+						516 テキスト 自動計算 · 注意 10/19 16:00 → 10/20 12:00
+					517 list item (selectable) owner/repo #15 作業 15 自動計算 2026-10-20 12:00 → 2026-10-21 12:00 ID: GanttRow-P1T15
+						518 テキスト owner/repo #15 作業 15
+						519 テキスト 自動計算 · 注意 10/20 12:00 → 10/21 12:00
+					520 list item (selectable) owner/repo #16 作業 16 自動計算 2026-10-21 12:00 → 2026-10-21 17:00 ID: GanttRow-P1T16
+						521 テキスト owner/repo #16 作業 16
+						522 テキスト 自動計算 · 注意 10/21 12:00 → 10/21 17:00
+					523 list item (selectable) owner/repo #17 作業 17 自動計算 2026-10-21 17:00 → 2026-10-22 13:00 ID: GanttRow-P1T17
+						524 テキスト owner/repo #17 作業 17
+						525 テキスト 自動計算 · 注意 10/21 17:00 → 10/22 13:00
+					526 list item (selectable) owner/repo #18 作業 18 自動計算 2026-10-22 14:00 → 2026-10-23 13:00 ID: GanttRow-P1T18
+						527 テキスト owner/repo #18 作業 18
+						528 テキスト 自動計算 · 注意 10/22 14:00 → 10/23 13:00
+					529 list item (selectable) owner/repo #19 作業 19 自動計算 2026-10-23 14:00 → 2026-10-23 18:00 ID: GanttRow-P1T19
+						530 テキスト owner/repo #19 作業 19
+						531 テキスト 自動計算 · 注意 10/23 14:00 → 10/23 18:00
+					532 list item (selectable) owner/repo #20 作業 20 自動計算 2026-10-26 09:00 → 2026-10-26 15:00 ID: GanttRow-P1T20
+						533 テキスト owner/repo #20 作業 20
+						534 テキスト 自動計算 · 注意 10/26 09:00 → 10/26 15:00
+				490 pane 時間軸の横スクロール ID: GanttHorizontal
+					491 scroll bar (settable, float) 水平 Value: 0 ID: HorizontalScrollBar
+				496 テキスト owner/repo #1 週次計画の確認 自動計算 2026-10-05 09:00 → 2026-10-05 13:00 ID: GanttSelected
+				497 combo box 先行 → 選択 → 後続 Description: 関係を選択 ID: GanttRelated
+				498 テキスト 担当者別集計の内訳に不足（日程の理由で確認） ID: GanttNotice
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				26 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+Document text: ```
+3
+```

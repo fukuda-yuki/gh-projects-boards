@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="205" result="Failed" start-time="2026-09-27T02:26:23.8673425Z" end-time="2026-09-27T02:26:30.2284569Z" duration="6.361086" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0" random-seed="1812983519">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == WeeklyRecovery or test =~ WeeklyReportEditsIndependent or test =~ TaskDetailsClosure or test =~ GanttExplainsTheEffort" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260927-112613-073-00319e96\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>WeeklyRecovery</cat>
+      <test re="1">WeeklyReportEditsIndependent</test>
+      <test re="1">TaskDetailsClosure</test>
+      <test re="1">GanttExplainsTheEffort</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1257" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="205" result="Failed" site="Child" start-time="2026-09-27T02:26:23.8673425Z" end-time="2026-09-27T02:26:30.2284569Z" duration="6.361086" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="15056" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1258" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="205" result="Failed" site="Child" start-time="2026-09-27T02:26:23.8697820Z" end-time="2026-09-27T02:26:30.2284543Z" duration="6.358672" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1259" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="205" result="Failed" site="Child" start-time="2026-09-27T02:26:23.8699699Z" end-time="2026-09-27T02:26:30.2284490Z" duration="6.358480" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1260" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="205" result="Failed" site="Child" start-time="2026-09-27T02:26:23.8699756Z" end-time="2026-09-27T02:26:30.2284435Z" duration="6.358468" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1132" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-09-27T02:26:23.8699770Z" end-time="2026-09-27T02:26:30.2284328Z" duration="6.358456" total="13" initiated="13" passed="12" failed="1" warnings="0" completed="13" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1174" name="CompletingAManualTaskExplainsAndRetainsItsSpecifiedDates" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.CompletingAManualTaskExplainsAndRetainsItsSpecifiedDates" methodname="CompletingAManualTaskExplainsAndRetainsItsSpecifiedDates" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="616324696" result="Passed" start-time="2026-09-27T02:26:23.8710827Z" end-time="2026-09-27T02:26:24.7255247Z" duration="0.854490" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+            </test-case>
+            <test-case id="1173" name="CorrectingOneErrorRetainsTheOtherAndDateOrderAcceptsACorrectionToEitherEndpoint" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.CorrectingOneErrorRetainsTheOtherAndDateOrderAcceptsACorrectionToEitherEndpoint" methodname="CorrectingOneErrorRetainsTheOtherAndDateOrderAcceptsACorrectionToEitherEndpoint" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1872063405" result="Passed" start-time="2026-09-27T02:26:24.7264103Z" end-time="2026-09-27T02:26:25.1905539Z" duration="0.464144" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1180" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-27T02:26:25.1905990Z" end-time="2026-09-27T02:26:25.8180553Z" duration="0.627456" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <test-case id="1177" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;,False)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;,False)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1721434578" result="Passed" start-time="2026-09-27T02:26:25.1908478Z" end-time="2026-09-27T02:26:25.3781538Z" duration="0.187307" asserts="0" />
+              <test-case id="1178" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;,True)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;,True)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1651939709" result="Passed" start-time="2026-09-27T02:26:25.3781810Z" end-time="2026-09-27T02:26:25.5892830Z" duration="0.211103" asserts="0" />
+              <test-case id="1179" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;,True)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;,True)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1476327007" result="Passed" start-time="2026-09-27T02:26:25.5893119Z" end-time="2026-09-27T02:26:25.8171288Z" duration="0.227818" asserts="0" />
+            </test-suite>
+            <test-case id="1170" name="ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" methodname="ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="958692433" result="Failed" start-time="2026-09-27T02:26:25.8182173Z" end-time="2026-09-27T02:26:26.4244058Z" duration="0.606189" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+              <failure>
+                <message><![CDATA[  Focus must be on the progress control or its native input template.
+Assert.That(Ui.Tree(progress).Contains(FocusManager.GetFocusedElement(grid.XamlRoot) as DependencyObject), Is.True)
+  Expected: True
+  But was:  False
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText>b__42_0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 91
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReasonLeadsToProgressAndSavingUsesConfirmedRemainingWithoutConsumingPendingText() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyRecoveryHostedTests.cs:line 89
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+            </test-case>
+            <test-case id="1172" name="RemovingARetainedActualTotalIsACandidateEvenWhenItsBreakdownWasNotEntered" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.RemovingARetainedActualTotalIsACandidateEvenWhenItsBreakdownWasNotEntered" methodname="RemovingARetainedActualTotalIsACandidateEvenWhenItsBreakdownWasNotEntered" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1204400677" result="Passed" start-time="2026-09-27T02:26:26.4245444Z" end-time="2026-09-27T02:26:27.1150538Z" duration="0.690510" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+            </test-case>
+            <test-case id="1171" name="ReturningToThePendingCellRequiresExplicitDiscardAndPreservesTheSameTaskAndInput" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.ReturningToThePendingCellRequiresExplicitDiscardAndPreservesTheSameTaskAndInput" methodname="ReturningToThePendingCellRequiresExplicitDiscardAndPreservesTheSameTaskAndInput" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1234437963" result="Passed" start-time="2026-09-27T02:26:27.1150784Z" end-time="2026-09-27T02:26:27.7127119Z" duration="0.597634" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1169" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-09-27T02:26:27.7127407Z" end-time="2026-09-27T02:26:29.1590115Z" duration="1.446271" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WeeklyRecovery" />
+              </properties>
+              <test-case id="1166" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanActualStart&quot;,&quot;工数・進捗・実績&quot;,&quot;実績開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanActualStart&quot;,&quot;工数・進捗・実績&quot;,&quot;実績開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="508092875" result="Passed" start-time="2026-09-27T02:26:27.7127754Z" end-time="2026-09-27T02:26:28.2266268Z" duration="0.513852" asserts="0" />
+              <test-case id="1167" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanFixedStart&quot;,&quot;日程の制約&quot;,&quot;固定開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanFixedStart&quot;,&quot;日程の制約&quot;,&quot;固定開始&quot;,&quot;2026-10-05 09:&quot;,&quot;2026-10-05 09:00&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1268486873" result="Passed" start-time="2026-09-27T02:26:28.2266780Z" end-time="2026-09-27T02:26:28.6915604Z" duration="0.464883" asserts="0" />
+              <test-case id="1168" name="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanWork-Remaining&quot;,&quot;工数・進捗・実績&quot;,&quot;残時間&quot;,&quot;3x&quot;,&quot;3&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching(&quot;PlanWork-Remaining&quot;,&quot;工数・進捗・実績&quot;,&quot;残時間&quot;,&quot;3x&quot;,&quot;3&quot;)" methodname="TaskCorrectionKeepsCandidatesAndShowsTheInvalidFieldWithoutSearching" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1537196406" result="Passed" start-time="2026-09-27T02:26:28.6915982Z" end-time="2026-09-27T02:26:29.1589139Z" duration="0.467316" asserts="0" />
+            </test-suite>
+            <test-case id="1140" name="TaskDetailsClosureRetainsTheNextActualInputAndItsFocus" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.TaskDetailsClosureRetainsTheNextActualInputAndItsFocus" methodname="TaskDetailsClosureRetainsTheNextActualInputAndItsFocus" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="223551276" result="Passed" start-time="2026-09-27T02:26:29.1590277Z" end-time="2026-09-27T02:26:29.7500595Z" duration="0.591033" asserts="0" />
+            <test-case id="1146" name="WeeklyReportEditsIndependentRemainingAndActualAttributionThroughNativeControls" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.WeeklyReportEditsIndependentRemainingAndActualAttributionThroughNativeControls" methodname="WeeklyReportEditsIndependentRemainingAndActualAttributionThroughNativeControls" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1360539955" result="Passed" start-time="2026-09-27T02:26:29.7500872Z" end-time="2026-09-27T02:26:30.2283927Z" duration="0.478306" asserts="0" />
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

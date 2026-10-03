@@ -64,7 +64,7 @@ internal sealed partial class EditingWorkspace
     private void CommitSummary(ProjectPlanning before, SummarySettings summary)
     {
         SetPlanning(before with { Version = before.Version >= 3 ? 4 : 2, Summary = summary }, before.Stamp);
-        history.Add(new(Guid.NewGuid().ToString("N"), before.ProjectId, [], Plan: new(before, Planning(before.ProjectId)!)));
+        history.Add(new(Guid.NewGuid().ToString("N"), before.ProjectId, [], Plan: new(before, Planning(before.ProjectId)!), BufferWrites: []));
     }
     public void SetAllowance(ProjectRegistration project, string personId, decimal? hours, long expectedRevision)
     {

@@ -1,0 +1,1521 @@
+{
+  "checks": [
+    {
+      "name": "baseline exact bytes",
+      "observed": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539",
+      "expected": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539",
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline scope",
+      "observed": {
+        "Host": "github.com",
+        "ViewerId": 42
+      },
+      "expected": {
+        "Host": "github.com",
+        "ViewerId": 42
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "schema version",
+      "observed": 14,
+      "expected": 14,
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline fields unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "closed fields unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "Scope preserved",
+      "observed": {
+        "Host": "github.com",
+        "ViewerId": 42
+      },
+      "expected": {
+        "Host": "github.com",
+        "ViewerId": 42
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "Registrations preserved",
+      "observed": {
+        "semanticSha256": "DE02773AA6B231DE46B093CEF23869D0CFA1F118CA2F9E10222F8648E454D676",
+        "jsonCharacters": 2192050
+      },
+      "expected": {
+        "semanticSha256": "DE02773AA6B231DE46B093CEF23869D0CFA1F118CA2F9E10222F8648E454D676",
+        "jsonCharacters": 2192050
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "Journal preserved",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "LocalRows preserved",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "StructuralChanges preserved",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "HistoricalDispositions preserved",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "unrecognized record domains unchanged",
+      "observed": {},
+      "expected": {},
+      "outcome": "pass"
+    },
+    {
+      "name": "top-level domain inventory preserved",
+      "observed": [
+        "ColumnPreferences",
+        "Fields",
+        "HistoricalDispositions",
+        "History",
+        "Journal",
+        "LocalRows",
+        "Planning",
+        "Registrations",
+        "Revision",
+        "RowPreferences",
+        "Scope",
+        "StructuralChanges",
+        "Version"
+      ],
+      "expected": [
+        "ColumnPreferences",
+        "Fields",
+        "HistoricalDispositions",
+        "History",
+        "Journal",
+        "LocalRows",
+        "Planning",
+        "Registrations",
+        "Revision",
+        "RowPreferences",
+        "Scope",
+        "StructuralChanges",
+        "Version"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "planning business inputs preserved",
+      "observed": {
+        "semanticSha256": "E75674EE6F394A7AD9CD2AD5E58CF83AE829DC3CB66B782A785135A633727D7F",
+        "jsonCharacters": 342470
+      },
+      "expected": {
+        "semanticSha256": "E75674EE6F394A7AD9CD2AD5E58CF83AE829DC3CB66B782A785135A633727D7F",
+        "jsonCharacters": 342470
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "original Undo sequence preserved",
+      "observed": {
+        "semanticSha256": "9E963C0C3F5280C599E89A58768F85B8308A7CD6A4D34926F910DD49B2CF3161",
+        "jsonCharacters": 2096223
+      },
+      "expected": {
+        "semanticSha256": "9E963C0C3F5280C599E89A58768F85B8308A7CD6A4D34926F910DD49B2CF3161",
+        "jsonCharacters": 2096223
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production Core identity",
+      "observed": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "expected": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production receipt identity",
+      "observed": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+      "expected": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production checkpoint identity",
+      "observed": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539",
+      "expected": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539",
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production read is unchanged",
+      "observed": true,
+      "expected": true,
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production projected dates unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "baseline production plans unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production Core identity",
+      "observed": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "expected": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production receipt identity",
+      "observed": "C1ECCAFDE5089E347C2FC5346B4BF9822B8A53B5ABD5FACD2D19FD7705EE5EA4",
+      "expected": "C1ECCAFDE5089E347C2FC5346B4BF9822B8A53B5ABD5FACD2D19FD7705EE5EA4",
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production checkpoint identity",
+      "observed": "1AF0D93ADC0A4B7300E25E495E266EB1391E5ABE60272EBA73F3C7A2076A1760",
+      "expected": "1AF0D93ADC0A4B7300E25E495E266EB1391E5ABE60272EBA73F3C7A2076A1760",
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production read is unchanged",
+      "observed": true,
+      "expected": true,
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production projected dates unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "closed production plans unique identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "project row counts preserved",
+      "observed": {
+        "P1": 1000,
+        "P2": 20
+      },
+      "expected": {
+        "P1": 1000,
+        "P2": 20
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 known initial Estimate",
+      "observed": "4",
+      "expected": "4",
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 initial input is confirmed",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 final Estimate",
+      "observed": "6",
+      "expected": "6",
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 final unfinished input",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 production final Estimate",
+      "observed": [
+        "6"
+      ],
+      "expected": [
+        "6"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I120 production initial Estimate",
+      "observed": [
+        "4"
+      ],
+      "expected": [
+        "4"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 known initial Estimate",
+      "observed": "16",
+      "expected": "16",
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 initial input is confirmed",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 final Estimate",
+      "observed": "6",
+      "expected": "6",
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 final unfinished input",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 production final Estimate",
+      "observed": [
+        "6"
+      ],
+      "expected": [
+        "6"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I121 production initial Estimate",
+      "observed": [
+        "16"
+      ],
+      "expected": [
+        "16"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 known initial Estimate",
+      "observed": "16",
+      "expected": "16",
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 initial input is confirmed",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 final Estimate",
+      "observed": "6",
+      "expected": "6",
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 final unfinished input",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 production final Estimate",
+      "observed": [
+        "6"
+      ],
+      "expected": [
+        "6"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I122 production initial Estimate",
+      "observed": [
+        "16"
+      ],
+      "expected": [
+        "16"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 known initial Estimate",
+      "observed": "16",
+      "expected": "16",
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 initial input is confirmed",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 final Estimate",
+      "observed": "6",
+      "expected": "6",
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 final unfinished input",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 production final Estimate",
+      "observed": [
+        "6"
+      ],
+      "expected": [
+        "6"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I123 production initial Estimate",
+      "observed": [
+        "16"
+      ],
+      "expected": [
+        "16"
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I245 whole independent field preserved",
+      "observed": {
+        "Key": {
+          "Kind": "Title",
+          "NodeId": "I245",
+          "ProjectId": null,
+          "FieldId": null
+        },
+        "Baseline": "作業 245 — 検索結果の並び順と絞り込み条件を確認する（運用担当者との確認を含む）",
+        "SourceProject": {
+          "Scope": {
+            "Host": "github.com",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "RetrievedAt": "2026-09-27T13:44:10.4315461+00:00",
+        "Change": null,
+        "Buffer": "U follow-up",
+        "Stamp": 0,
+        "Observation": null,
+        "Conflict": false
+      },
+      "expected": {
+        "Key": {
+          "Kind": "Title",
+          "NodeId": "I245",
+          "ProjectId": null,
+          "FieldId": null
+        },
+        "Baseline": "作業 245 — 検索結果の並び順と絞り込み条件を確認する（運用担当者との確認を含む）",
+        "SourceProject": {
+          "Scope": {
+            "Host": "github.com",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "RetrievedAt": "2026-09-27T13:44:10.4315461+00:00",
+        "Change": null,
+        "Buffer": "U follow-up",
+        "Stamp": 0,
+        "Observation": null,
+        "Conflict": false
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "I245 initial pending text",
+      "observed": "U follow-up",
+      "expected": "U follow-up",
+      "outcome": "pass"
+    },
+    {
+      "name": "I245 production confirmed and pending values",
+      "observed": [
+        [
+          "作業 245 — 検索結果の並び順と絞り込み条件を確認する（運用担当者との確認を含む）",
+          "U follow-up"
+        ]
+      ],
+      "expected": [
+        [
+          "作業 245 — 検索結果の並び順と絞り込み条件を確認する（運用担当者との確認を含む）",
+          "U follow-up"
+        ]
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "I1000 whole independent field preserved",
+      "observed": {
+        "Key": {
+          "Kind": "Number",
+          "NodeId": "P1T1000",
+          "ProjectId": "P1",
+          "FieldId": "F-Estimate"
+        },
+        "Baseline": "16",
+        "SourceProject": {
+          "Scope": {
+            "Host": "github.com",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "RetrievedAt": "2026-09-27T13:44:10.4315461+00:00",
+        "Change": null,
+        "Buffer": "24未確定",
+        "Stamp": 0,
+        "Observation": null,
+        "Conflict": false
+      },
+      "expected": {
+        "Key": {
+          "Kind": "Number",
+          "NodeId": "P1T1000",
+          "ProjectId": "P1",
+          "FieldId": "F-Estimate"
+        },
+        "Baseline": "16",
+        "SourceProject": {
+          "Scope": {
+            "Host": "github.com",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "RetrievedAt": "2026-09-27T13:44:10.4315461+00:00",
+        "Change": null,
+        "Buffer": "24未確定",
+        "Stamp": 0,
+        "Observation": null,
+        "Conflict": false
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "I1000 initial pending text",
+      "observed": "24未確定",
+      "expected": "24未確定",
+      "outcome": "pass"
+    },
+    {
+      "name": "I1000 production confirmed and pending values",
+      "observed": [
+        [
+          "16",
+          "24未確定"
+        ]
+      ],
+      "expected": [
+        [
+          "16",
+          "24未確定"
+        ]
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "no original field removed",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "unexpected changed fields",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "new fields are pristine observed initialization",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    },
+    {
+      "name": "added Undo records stay within requested identities",
+      "observed": [],
+      "expected": [],
+      "outcome": "pass"
+    }
+  ],
+  "counts": {
+    "pass": 62,
+    "fail": 0,
+    "missing": 0
+  },
+  "allowedFieldChanges": [
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T120",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "requested-estimate",
+      "beforeValue": "4",
+      "afterValue": "6",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": null
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T121",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "requested-estimate",
+      "beforeValue": "16",
+      "afterValue": "6",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T121",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-06",
+      "afterValue": "2026-10-05",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I121",
+        "role": "Finish",
+        "baselineExpected": "2026-10-06",
+        "candidateExpected": "2026-10-05",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T122",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "requested-estimate",
+      "beforeValue": "16",
+      "afterValue": "6",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T122",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-07",
+      "afterValue": "2026-10-05",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I122",
+        "role": "Start",
+        "baselineExpected": "2026-10-07",
+        "candidateExpected": "2026-10-05",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T122",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-09",
+      "afterValue": "2026-10-06",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I122",
+        "role": "Finish",
+        "baselineExpected": "2026-10-09",
+        "candidateExpected": "2026-10-06",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T123",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "requested-estimate",
+      "beforeValue": "16",
+      "afterValue": "6",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": null
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T123",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-09",
+      "afterValue": "2026-10-06",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I123",
+        "role": "Start",
+        "baselineExpected": "2026-10-09",
+        "candidateExpected": "2026-10-06",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T123",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-16",
+      "afterValue": "2026-10-08",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I123",
+        "role": "Finish",
+        "baselineExpected": "2026-10-16",
+        "candidateExpected": "2026-10-08",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T124",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-16",
+      "afterValue": "2026-10-08",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I124",
+        "role": "Start",
+        "baselineExpected": "2026-10-16",
+        "candidateExpected": "2026-10-08",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T124",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-20",
+      "afterValue": "2026-10-13",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I124",
+        "role": "Finish",
+        "baselineExpected": "2026-10-20",
+        "candidateExpected": "2026-10-13",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T125",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-20",
+      "afterValue": "2026-10-13",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I125",
+        "role": "Start",
+        "baselineExpected": "2026-10-20",
+        "candidateExpected": "2026-10-13",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T125",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-22",
+      "afterValue": "2026-10-15",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I125",
+        "role": "Finish",
+        "baselineExpected": "2026-10-22",
+        "candidateExpected": "2026-10-15",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T126",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-23",
+      "afterValue": "2026-10-15",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I126",
+        "role": "Start",
+        "baselineExpected": "2026-10-23",
+        "candidateExpected": "2026-10-15",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T126",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-23",
+      "afterValue": "2026-10-16",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I126",
+        "role": "Finish",
+        "baselineExpected": "2026-10-23",
+        "candidateExpected": "2026-10-16",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T127",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-26",
+      "afterValue": "2026-10-16",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I127",
+        "role": "Start",
+        "baselineExpected": "2026-10-26",
+        "candidateExpected": "2026-10-16",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T127",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-27",
+      "afterValue": "2026-10-20",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I127",
+        "role": "Finish",
+        "baselineExpected": "2026-10-27",
+        "candidateExpected": "2026-10-20",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T128",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-28",
+      "afterValue": "2026-10-20",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I128",
+        "role": "Start",
+        "baselineExpected": "2026-10-28",
+        "candidateExpected": "2026-10-20",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T128",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-30",
+      "afterValue": "2026-10-23",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I128",
+        "role": "Finish",
+        "baselineExpected": "2026-10-30",
+        "candidateExpected": "2026-10-23",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T129",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-10-30",
+      "afterValue": "2026-10-23",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I129",
+        "role": "Start",
+        "baselineExpected": "2026-10-30",
+        "candidateExpected": "2026-10-23",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T129",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-11-06",
+      "afterValue": "2026-10-29",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I129",
+        "role": "Finish",
+        "baselineExpected": "2026-11-06",
+        "candidateExpected": "2026-10-29",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T130",
+        "ProjectId": "P1",
+        "FieldId": "F-Start"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-11-06",
+      "afterValue": "2026-10-29",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I130",
+        "role": "Start",
+        "baselineExpected": "2026-11-06",
+        "candidateExpected": "2026-10-29",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    },
+    {
+      "key": {
+        "Kind": "Date",
+        "NodeId": "P1T130",
+        "ProjectId": "P1",
+        "FieldId": "F-Finish"
+      },
+      "properties": [
+        "Change",
+        "Stamp"
+      ],
+      "category": "candidate-validated-derived-date",
+      "beforeValue": "2026-11-10",
+      "afterValue": "2026-11-02",
+      "beforeBuffer": null,
+      "afterBuffer": null,
+      "attribution": {
+        "project": "P1",
+        "task": "I130",
+        "role": "Finish",
+        "baselineExpected": "2026-11-10",
+        "candidateExpected": "2026-11-02",
+        "sourceRevision": 7977,
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+        "attribution": "Unchanged planning inputs; four requested Estimate inputs; actual selected-Core resolved Auto projection"
+      }
+    }
+  ],
+  "unexpectedFieldChanges": [],
+  "initializedFields": [],
+  "metadata": {
+    "beforeRevision": 7971,
+    "afterRevision": 7977,
+    "planning": [
+      {
+        "project": "P1",
+        "version": 1,
+        "stamp": 2
+      }
+    ]
+  },
+  "preferences": {
+    "ColumnPreferences": {
+      "changed": false,
+      "before": [],
+      "after": []
+    },
+    "RowPreferences": {
+      "changed": true,
+      "before": [
+        {
+          "ProjectId": "P1",
+          "Definition": {
+            "Sort": "Source",
+            "Descending": false,
+            "FieldId": null,
+            "Title": "",
+            "Filters": null
+          }
+        }
+      ],
+      "after": [
+        {
+          "ProjectId": "P1",
+          "Definition": {
+            "Sort": "Source",
+            "Descending": false,
+            "FieldId": null,
+            "Title": "作業 12",
+            "Filters": null
+          }
+        }
+      ]
+    }
+  },
+  "historyBefore": 3,
+  "historyAfter": 4,
+  "addedUndoOperations": [
+    {
+      "id": "5fbdde878b9a44e8b6e12f0c3b44c0e6",
+      "project": "P1",
+      "changes": [
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T120",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "category": "requested-estimate",
+          "beforeValue": "4",
+          "afterValue": "6"
+        },
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T121",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "category": "requested-estimate",
+          "beforeValue": "16",
+          "afterValue": "6"
+        },
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T122",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "category": "requested-estimate",
+          "beforeValue": "16",
+          "afterValue": "6"
+        },
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T123",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "category": "requested-estimate",
+          "beforeValue": "16",
+          "afterValue": "6"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T121",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-06",
+          "afterValue": "2026-10-05"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T122",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-07",
+          "afterValue": "2026-10-05"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T122",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-09",
+          "afterValue": "2026-10-06"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T123",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-09",
+          "afterValue": "2026-10-06"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T123",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-16",
+          "afterValue": "2026-10-08"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T124",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-16",
+          "afterValue": "2026-10-08"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T124",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-20",
+          "afterValue": "2026-10-13"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T125",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-20",
+          "afterValue": "2026-10-13"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T125",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-22",
+          "afterValue": "2026-10-15"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T126",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-23",
+          "afterValue": "2026-10-15"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T126",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-23",
+          "afterValue": "2026-10-16"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T127",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-26",
+          "afterValue": "2026-10-16"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T127",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-27",
+          "afterValue": "2026-10-20"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T128",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-28",
+          "afterValue": "2026-10-20"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T128",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-30",
+          "afterValue": "2026-10-23"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T129",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-10-30",
+          "afterValue": "2026-10-23"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T129",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-11-06",
+          "afterValue": "2026-10-29"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T130",
+            "ProjectId": "P1",
+            "FieldId": "F-Start"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-11-06",
+          "afterValue": "2026-10-29"
+        },
+        {
+          "key": {
+            "Kind": "Date",
+            "NodeId": "P1T130",
+            "ProjectId": "P1",
+            "FieldId": "F-Finish"
+          },
+          "category": "candidate-validated-date-identity",
+          "beforeValue": "2026-11-10",
+          "afterValue": "2026-11-02"
+        }
+      ],
+      "limits": "Recorded historical values do not prove an intermediate native action, timing or one-Undo restoration"
+    }
+  ],
+  "plans": [
+    {
+      "project": "P1",
+      "rowCount": 1000,
+      "inputCount": 1000,
+      "taskCount": 1000,
+      "sourceRevision": 7977,
+      "sourceProblems": [],
+      "taskProblems": [
+        {
+          "task": "I997",
+          "problem": "Auto または Manual を選んでください。"
+        },
+        {
+          "task": "I998",
+          "problem": "計画担当者を明示的に選んでください。"
+        },
+        {
+          "task": "I999",
+          "problem": "先行 I998 の採用終了を確認できません。"
+        },
+        {
+          "task": "I1000",
+          "problem": "計画担当者を明示的に選んでください。"
+        }
+      ]
+    },
+    {
+      "project": "P2",
+      "rowCount": 20,
+      "inputCount": 0,
+      "taskCount": 0,
+      "sourceRevision": 7977,
+      "sourceProblems": [],
+      "taskProblems": []
+    }
+  ],
+  "limitations": [
+    "Final checkpoint cannot prove 8 together, one Undo to 4/16/16/16, discoverability or operation routes.",
+    "Date allowances require exact selected-Core baseline/current resolved Auto projection and unchanged field metadata; no general Date-field exclusion.",
+    "App readability, narrow-window behavior, distant navigation and P2 return require evaluator evidence; human acceptance is not run."
+  ]
+}

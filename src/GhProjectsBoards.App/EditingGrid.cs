@@ -17,7 +17,11 @@ internal sealed partial class EditingGrid : Grid
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.None, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new(0) };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private string? operationProblem;
+    private HashSet<FieldKey>? operationProblemFields;
+    private const string SelectSchedulingTask = "日程を変更するタスクを選択してください。";
+    private Button? firstPlanning;
     private readonly TextBlock selection = new();
+    private readonly Grid selectionBar = new() { ColumnSpacing = 12 };
     private readonly TextBlock columnNotice = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly List<FrameworkElement[]> controls = [];
     private readonly List<Grid> rowLines = [];
@@ -34,6 +38,8 @@ internal sealed partial class EditingGrid : Grid
     private readonly Grid headerGrid = new() { HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ScrollViewer headerScroll = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled, IsTabStop = false, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left };
     private readonly TextBlock selectedDetails = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
+    private readonly TextBlock selectedDiagnostics = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
+    private readonly Expander selectedDetailsDisclosure = new() { Header = "取得値・識別情報", HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly TextBlock selectionMode = new();
     private readonly Border detailsPane = new() { Visibility = Visibility.Collapsed, Padding = new(12, 8, 12, 8), BorderThickness = new(0, 1, 0, 0) };
     private readonly TextBlock emptyView = new() { Text = "表示する行はありません。行の表示設定で条件を変更・リセットできます。", TextWrapping = TextWrapping.Wrap, Margin = new(20), Visibility = Visibility.Collapsed };
@@ -56,16 +62,17 @@ internal sealed partial class EditingGrid : Grid
     private bool active;
     private bool selecting;
     private int generation;
-    internal void CancelPending() { generation++; CancelDrag(); }
+    internal void CancelPending() { generation++; CancelDrag(); dailyProgressDialog?.Hide(); }
     private readonly HashSet<TextBox> contextualComposition = [];
     internal bool CanRefresh => contextualComposition.Count == 0 && !controls.SelectMany(r => r).OfType<TitleCell>().Any(t => t.Composing);
     private void TrackContextInput(TextBox input)
     {
-        input.TextCompositionStarted += (_, _) => contextualComposition.Add(input);
+        input.TextCompositionStarted += (_, _) => { contextualComposition.Add(input); UpdateRangeCommands(); };
         void End()
         {
             contextualComposition.Remove(input);
             if (deferredRefresh && CanRefresh && IsLoaded) Update("context-composition-ended");
+            else UpdateRangeCommands();
         }
         input.TextCompositionEnded += (_, _) => End(); input.Unloaded += (_, _) => End();
     }
@@ -101,9 +108,9 @@ internal sealed partial class EditingGrid : Grid
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Enabled);
         ScrollViewer.SetVerticalScrollBarVisibility(list, ScrollBarVisibility.Hidden);
         layout = session.Workspace.Columns(registration);
-        temporaryApplyColumns.UnionWith(temporaryColumns ?? []);
-        if (temporaryApplyColumns.Count > 0)
-            layout = new(layout.Columns.Select(c => temporaryApplyColumns.Contains(c.Id.FieldId ?? "")
+        temporaryContextColumns.UnionWith(temporaryColumns ?? []);
+        if (temporaryContextColumns.Count > 0)
+            layout = new(layout.Columns.Select(c => temporaryContextColumns.Contains(c.Id.FieldId ?? "")
                 ? c with { Preference = c.Preference with { Visible = true } } : c).ToArray());
         projection = previousProjection ?? new(registration.Snapshot.Id);
         if (previousProjection is null) projection.Reapply(session.Workspace, registration);
@@ -113,6 +120,7 @@ internal sealed partial class EditingGrid : Grid
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new());
+        RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var toolbar = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true, HorizontalAlignment = HorizontalAlignment.Left };
@@ -133,9 +141,26 @@ internal sealed partial class EditingGrid : Grid
                 var request = generation;
                 var targets = active ? SelectedRows() : [];
                 if (!CanRefresh || !await prepareLocalRows() || request != generation || !IsLoaded) return;
-                Run(() => { var added = action(targets); projection.IncludeNew(session.Workspace.Open(registration), added ?? []); RebuildRows(); if (added is { Length: > 0 }) Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
+                Run(() => {
+                    var added = action(targets);
+                    projection.IncludeNew(session.Workspace.Open(registration), added ?? []);
+                    RebuildRows();
+                    if (added is not { Length: > 0 }) return;
+                    if (id == "GridAddRow") RevealAddedRow(added[0]);
+                    else Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false);
+                });
             };
         }
+        var startPlanning = new Button { Content = "計画を始める", Margin = new(8, 4, 8, 4),
+            HorizontalAlignment = HorizontalAlignment.Left, Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        AutomationProperties.SetAutomationId(startPlanning, "GridStartPlanning");
+        firstPlanning = startPlanning;
+        startPlanning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowPlanningSettingsAsync(); };
+        var planning = Tool("日程を編集", "GridPlanning", Symbol.Calendar);
+        planning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowSchedulingEditorAsync(toolbar); };
+        boardsDailyProgress = Tool("実績・進捗", "GridDailyProgress", Symbol.Edit);
+        boardsDailyProgress.IsEnabled = false;
+        boardsDailyProgress.Click += async (_, _) => { toolbar.IsOpen = false; await OpenBoardsDailyProgressAsync(); };
         RowCommand("新規行を追加", "GridAddRow", _ => [session.Workspace.AddRow(registration)]);
         RowCommand("選択行を複製", "GridDuplicateRows", targets => session.Workspace.DuplicateRows(registration, targets));
         RowCommand("新規行を削除", "GridRemoveRows", targets => { session.Workspace.RemoveRows(projectId, targets); return null; });
@@ -152,11 +177,9 @@ internal sealed partial class EditingGrid : Grid
         Command("下へコピー (Ctrl+D)", "GridFillDown", Symbol.Download, FillDown);
         Command("元に戻す", "GridUndo", Symbol.Undo, Undo);
         Command("値をクリア", "GridClear", Symbol.Clear, ClearSelected, true);
-        var planning = Tool("計画", "GridPlanning", Symbol.Calendar);
-        planning.Click += async (_, _) => { toolbar.IsOpen = false; await ShowSchedulingEditorAsync(toolbar); };
         var taskDetails = Tool("タスクの詳細", "GridTaskDetails", Symbol.Edit, true);
         taskDetails.Click += async (_, _) => await PlanningDialogAsync(false);
-        var planningSettings = Tool("計画設定", "GridPlanningSettings", Symbol.Setting, true);
+        var planningSettings = Tool("計画の前提", "GridPlanningSettings", Symbol.Setting, true);
         planningSettings.Click += async (_, _) => await PlanningDialogAsync(true);
         var initializePlans = Tool("自動計算を設定", "GridInitializePlans", Symbol.Calendar, true);
         initializePlans.Click += async (_, _) => await InitializeSelectedPlansAsync();
@@ -169,9 +192,11 @@ internal sealed partial class EditingGrid : Grid
         var save = Tool("ローカル保存を再試行", "GridSave", Symbol.Save, true);
         save.Click += async (_, _) => { var request = generation; await FlushDraftsAsync("save-command"); if (IsLoaded && request == generation) Update("save-command"); };
         var commandRow = new Grid { ColumnSpacing = 8, Padding = new(0, 0, 8, 0) };
+        commandRow.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         commandRow.ColumnDefinitions.Add(new()); commandRow.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        commandRow.Children.Add(toolbar);
-        var quickFilter = CreateQuickFilter(); SetColumn(quickFilter, 1); commandRow.Children.Add(quickFilter);
+        commandRow.Children.Add(CreateRangeCommands());
+        SetColumn(toolbar, 1); commandRow.Children.Add(toolbar);
+        var quickFilter = CreateQuickFilter(); SetColumn(quickFilter, 2); commandRow.Children.Add(quickFilter);
         Children.Add(commandRow);
         viewStrip = new Grid { Padding = new(8, 2, 8, 2), ColumnSpacing = 8, Visibility = Visibility.Collapsed };
         viewStrip.ColumnDefinitions.Add(new()); viewStrip.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
@@ -188,22 +213,32 @@ internal sealed partial class EditingGrid : Grid
         var sheetViewport = CreateSheetViewport(); SetRow(sheetViewport, 3); Children.Add(sheetViewport);
         SetRow(emptyView, 3); Children.Add(emptyView);
         AutomationProperties.SetAutomationId(selectedDetails, "SelectedCellDetails");
-        detailsPane.Child = new ScrollViewer { Content = selectedDetails, MaxHeight = 156, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        AutomationProperties.SetAutomationId(selectedDiagnostics, "SelectedCellDiagnostics");
+        AutomationProperties.SetAutomationId(selectedDetailsDisclosure, "SelectedCellDisclosure");
+        selectedDetailsDisclosure.Content = selectedDiagnostics;
+        var detailContent = new StackPanel { Spacing = 4 };
+        detailContent.Children.Add(selectedDetails); detailContent.Children.Add(selectedDetailsDisclosure);
+        detailsPane.Child = new ScrollViewer { Content = detailContent, MaxHeight = 156, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         SetRow(detailsPane, 4); Children.Add(detailsPane);
         var footer = new StackPanel { Spacing = 0, Padding = new(8, 2, 8, 2) };
         InitializeActualInput(footer);
         InitializeDateInput(footer);
         InitializeApplyProblems(footer);
-        var selectionBar = new Grid { ColumnSpacing = 12 };
         selectionBar.ColumnDefinitions.Add(new()); selectionBar.ColumnDefinitions.Add(new() { Width = new GridLength(1.7, GridUnitType.Star) }); selectionBar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        InitializePendingInput(footer);
         selection.TextTrimming = TextTrimming.CharacterEllipsis; selection.VerticalAlignment = VerticalAlignment.Center; selectionBar.Children.Add(selection);
-        status.TextWrapping = TextWrapping.NoWrap; status.TextTrimming = TextTrimming.CharacterEllipsis; status.VerticalAlignment = VerticalAlignment.Center;
+        status.TextWrapping = TextWrapping.Wrap; status.VerticalAlignment = VerticalAlignment.Center;
         SetColumn(status, 1); selectionBar.Children.Add(status);
         var detailButton = detailsButton = new Button { Content = "選択内容の詳細", Padding = new(8, 2, 8, 2), MinHeight = 26 };
-        AutomationProperties.SetAutomationId(detailButton, "GridDetails"); detailButton.Click += (_, _) => { detailsPane.Visibility = detailsPane.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; UpdateSelectedDetails(); };
+        AutomationProperties.SetAutomationId(detailButton, "GridDetails"); detailButton.Click += (_, _) => {
+            detailsPane.Visibility = detailsPane.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            UpdateSelectedDetails();
+            if (detailsPane.Visibility == Visibility.Visible) ((ScrollViewer)detailsPane.Child).ChangeView(null, 0, null, true);
+        };
         SetColumn(detailButton, 2); selectionBar.Children.Add(detailButton);
         footer.Children.Add(selectionBar); footer.Children.Add(columnNotice);
         SetRow(footer, 5); Children.Add(footer);
+        InitializeWorkspaceStatus();
         ToolTipService.SetToolTip(detailButton, "F6で表・コマンド・詳細に移動。Shift+F6で逆順。");
         PreviewKeyDown += (_, e) =>
         {
@@ -230,7 +265,16 @@ internal sealed partial class EditingGrid : Grid
         ActualThemeChanged += (_, _) => Update("theme");
         InitializeDrag();
         Unloaded += (_, _) => { generation++; CancelDrag(); session.Changed -= SessionChanged; DetachWheel(); if (listScroll is not null) { listScroll.ViewChanged -= ScrollChanged; listScroll.SizeChanged -= ScrollSizeChanged; } listScroll = null; diagnostics?.Detach(); };
-        Loaded += (_, _) => { session.Changed -= SessionChanged; session.Changed += SessionChanged; AttachSheetScroll(); diagnostics?.Attach(CaptureDiagnosticState); Update("loaded"); };
+        Loaded += (_, _) => {
+            session.Changed -= SessionChanged; session.Changed += SessionChanged; AttachSheetScroll();
+            diagnostics?.Attach(CaptureDiagnosticState); Update("loaded");
+            // A replacement restores identity before mounting; its scroll request
+            // can only reach an offscreen row once the native viewport exists.
+            if (active && RowStillPresent(currentRow) && CurrentProjectView == ProjectView.Boards) {
+                EnsureRow(currentRow); RevealColumn(currentRow, currentColumn);
+                list.ScrollIntoView(list.Items[currentRow]);
+            }
+        };
         if (diagnostics is not null)
         {
             GettingFocus += (_, args) => diagnostics.Record("getting-focus", new { oldTarget = DiagnosticId(args.OldFocusedElement), newTarget = DiagnosticId(args.NewFocusedElement) });
@@ -489,7 +533,14 @@ internal sealed partial class EditingGrid : Grid
     }
     private string RowIdentity(EditRow row, bool compact = false)
     {
-        if (row.IsLocal) return "新規（ローカル）";
+        if (row.IsLocal)
+        {
+            var creation = session.Workspace.Creations.LastOrDefault(c => c.LocalId == row.ItemId);
+            var knowledge = CreationKnowledgePresentation.Describe(creation);
+            if (knowledge.Knowledge == CreationKnowledge.Complete && creation?.Verified is { } verified)
+                return compact && !showRepositoryIdentity ? $"#{verified.Number}" : $"#{verified.Number}  {creation.Repository.Name}";
+            return knowledge.RowLabel;
+        }
         var item = registration.Snapshot.Items.SingleOrDefault(item => item.Id.NodeId == row.ItemId);
         var issue = item?.ContentId is { } id ? registration.Snapshot.Issues.GetValueOrDefault(id) : null;
         return issue is null ? row.ItemId : compact && !showRepositoryIdentity ? $"#{issue.Number}" : $"#{issue.Number}  {issue.Repository.NameWithOwner}";
@@ -548,7 +599,7 @@ internal sealed partial class EditingGrid : Grid
     private string statusBeforeSave = "", statusAfterSave = "";
     private readonly HashSet<(int Row, int Column)> paintedSelection = [];
     private (int Row, int Column)? paintedCurrent;
-    private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count
+    private bool CurrentEditor(int r, int c, FrameworkElement editor) => IsLoaded && r >= 0 && r < controls.Count && RowStillPresent(r)
         && c >= 0 && c < controls[r].Length && ReferenceEquals(controls[r][c], editor);
     private static string? DiagnosticId(DependencyObject? element) => element is null ? null : AutomationProperties.GetAutomationId(element);
     private object CaptureDiagnosticState(bool includeVisuals)
@@ -663,6 +714,8 @@ internal sealed partial class EditingGrid : Grid
     }
     private void Update(string updateReason = "caller")
     {
+        if (PlanningSettingsOpen) return;
+        if (firstPlanning is not null) firstPlanning.Visibility = session.Workspace.Planning(projectId) is not { Start: not null, Fields.Length: > 0 } ? Visibility.Visible : Visibility.Collapsed;
         using var measured = diagnostics?.Span("update", updateReason);
         diagnostics?.Record("update-request", new { reason = updateReason, generation, rows = rows.Length, cells = controls.Sum(row => row.Length) });
         if (!CanRefresh) { deferredRefresh = true; return; }
@@ -722,15 +775,20 @@ internal sealed partial class EditingGrid : Grid
             ToolTipService.SetToolTip(viewNotice, viewNotice.Text);
             emptyView.Visibility = rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             var hidden = canonical.SelectMany(r => r.Cells).Where(c => layout.Hidden(c.Key?.FieldId)).ToArray();
-            statusBeforeSave = $"{rows.Length}/{canonical.Length}行 · GitHub未反映 {canonical.SelectMany(r => r.Cells).Where(session.Workspace.Changed).Select(c => c.Key).Distinct().Count()}セル · ";
-            var pending = canonical.SelectMany(r => r.Cells).Count(c => session.Workspace.Buffer(c) is not null);
-            if (pending > 0) statusBeforeSave += $"未確定入力 {pending}セル · ";
+            statusBeforeSave = $"{rows.Length}/{canonical.Length}行";
+            UpdatePendingCount(canonical);
             status.Text = "";
             var hiddenWork = hidden.Count(cell => session.Workspace.Changed(cell) || session.Workspace.Buffer(cell) is not null
                 || session.Workspace.Field(cell)?.Conflict == true || cell.Key is { Kind: "LocalSelect" } local
                 && session.Workspace.LocalRows.Single(row => row.Id == local.NodeId).Selects.Any(s => s.FieldId == local.FieldId && s.Intent != "Unspecified"));
             if (hiddenWork > 0) status.Text += $" / 非表示列の作業 {hiddenWork}セル";
             if (hiddenRows > 0) status.Text += $" / 非表示行の作業 {hiddenRows}行";
+            if (hiddenWork > 0 || hiddenRows > 0)
+            {
+                viewNotice.Text = statusBeforeSave + " · " + viewNotice.Text + status.Text;
+                viewStrip.Visibility = Visibility.Visible;
+                ToolTipService.SetToolTip(viewNotice, viewNotice.Text);
+            }
             var conflicts = canonical.SelectMany(r => r.Cells).Count(c => session.Workspace.Field(c)?.Conflict == true);
             var unknown = canonical.SelectMany(r => r.Cells).Count(c => session.Workspace.Field(c)?.Observation?.Reason is not null);
             if (conflicts > 0) status.Text += $" / 競合 {conflicts}セル（詳細）";
@@ -749,16 +807,25 @@ internal sealed partial class EditingGrid : Grid
         }
         finally { updating = false; }
     }
+    // A durable creation promotion removes the local row before the panel mounts
+    // its fetched replacement. Layout/focus callbacks can still reach the old
+    // grid in that interval; it must not query or edit the retired local identity.
+    private bool RowStillPresent(int row) => !rows[row].IsLocal
+        || session.Workspace.LocalRows.Any(local => local.Id == rows[row].ItemId && local.ProjectId == projectId);
+
     private void UpdateCell(int r, int c)
     {
+        if (!RowStillPresent(r)) return;
         if (controls[r][c] is not (TitleCell or ChoiceCell or RecycledCell)) return;
         if (controls[r][c] is RecycledCell presentation) presentation.Refresh();
         var cell = rows[r].Cells[c];
-        markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? "新規・GitHub未作成 " : "変更あり " : "")
+        if (c == 0 && rows[r].IsLocal) RefreshCreationRowIdentity(r);
+        markers[r][c].Text = (HasDraftMarker(cell) ? rows[r].IsLocal ? RowIdentity(rows[r]) + " " : "変更あり " : "")
             + (session.Workspace.Buffer(cell) is not null ? "編集中（未確定）" : cell.Reason ?? "");
         if (cell.Key?.Kind is "Select" or "LocalSelect" && session.Workspace.Buffer(cell) is { } pending)
             markers[r][c].Text += " / 未確定文字: " + pending;
-        if (rows[r].IsLocal && c == 0) markers[r][c].Text += " 新規 / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
+        if (rows[r].IsLocal && c == 0) markers[r][c].Text += " / " + CreationKnowledgePresentation.Describe(session.Workspace.Creations.LastOrDefault(x => x.LocalId == rows[r].ItemId)).Description
+            + " / " + string.Join(" / ", session.Workspace.LocalProblems(registration, rows[r].ItemId));
         if (rows[r].IsLocal && c == 0 && session.Workspace.Creations.LastOrDefault(x => x.LocalId == rows[r].ItemId) is { } creation)
             markers[r][c].Text += " / " + creation.Reason + " " + creation.Verified?.Url;
         if (cell.Key?.Kind == "LocalSelect") markers[r][c].Text += " / " + session.Workspace.LocalRows.Single(x => x.Id == rows[r].ItemId).Selects.SingleOrDefault(s => s.FieldId == cell.Key.FieldId)?.Intent;
@@ -771,7 +838,7 @@ internal sealed partial class EditingGrid : Grid
         var explanation = markers[r][c].Text;
         markers[r][c].Tag = explanation;
         markers[r][c].Text = ApplyProblem(cell)?.Kind == ApplyAttentionKind.Uncertain ? "?" : CellHasProblem(cell) ? "!"
-            : HasDraftMarker(cell) ? "◆" : !cell.Editable && !TypedPlanning(cell) ? "▧" : "";
+            : session.Workspace.Buffer(cell) is not null ? "…" : HasDraftMarker(cell) ? "◆" : !cell.Editable && !TypedPlanning(cell) ? "▧" : "";
         markers[r][c].Visibility = markers[r][c].Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         AutomationProperties.SetName(markers[r][c], explanation);
         AutomationProperties.SetHelpText(controls[r][c], explanation);
@@ -782,6 +849,8 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateSelection()
     {
+        UpdateBoardsDailyProgress();
+        UpdateRangeCommands();
         var next = new HashSet<(int Row, int Column)>();
         if (active)
             for (var r = Math.Min(anchorRow, currentRow); r <= Math.Max(anchorRow, currentRow); r++)
@@ -798,12 +867,16 @@ internal sealed partial class EditingGrid : Grid
         }
         paintedSelection.Clear(); paintedSelection.UnionWith(next);
         paintedCurrent = active ? (currentRow, currentColumn) : null;
-        var count = Math.Abs(anchorRow - currentRow) + 1; var columns = Math.Abs(anchorColumn - currentColumn) + 1;
         selection.Text = drag is { Fill: true } operation
             ? $"{layout.Visible[operation.Column].Name}：{Math.Abs(operation.EndRow - operation.SourceRow) + 1}行へコピー予定 · 離して確定 / Escで取消"
-            : active ? $"{layout.Visible[Math.Min(anchorColumn, currentColumn)].Name}{(columns == 1 ? "" : " ～ " + layout.Visible[Math.Max(anchorColumn, currentColumn)].Name)}：{count}行・{count * columns}セル"
+            : active ? SelectionRangeText()
             : "セルを選択 · Shiftで範囲選択 · F2で編集";
         AutomationProperties.SetHelpText(selection, active ? $"先頭 {rows[anchorRow].ItemId} / アクティブ {rows[currentRow].ItemId}" : "");
+        selectionBar.ColumnDefinitions[0].Width = new(HasSelectedRange ? 1.7 : 1, GridUnitType.Star);
+        selectionBar.ColumnDefinitions[1].Width = new(HasSelectedRange ? 1 : 1.7, GridUnitType.Star);
+        selection.TextWrapping = HasSelectedRange ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        selection.TextTrimming = HasSelectedRange ? TextTrimming.None : TextTrimming.CharacterEllipsis;
+        selection.FontWeight = HasSelectedRange ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
     }
     private string SelectDisplay(EditCell cell, string? value)
     {
@@ -822,29 +895,51 @@ internal sealed partial class EditingGrid : Grid
     }
     private void UpdateSelectedDetails()
     {
+        if (active && currentRow < rows.Length && !RowStillPresent(currentRow)) return;
+        UpdateRangeCommands();
         UpdateActualInput();
         UpdateDateInput();
         UpdateApplyProblemText();
-        if (!active || currentRow >= rows.Length) { selectedDetails.Text = "セルを選択すると、値・入力状態・Issueの識別情報を表示します。"; selectionMode.Text = "選択モード"; return; }
+        UpdatePendingInput();
+        selectedDetailsDisclosure.Visibility = active && currentRow < rows.Length ? Visibility.Visible : Visibility.Collapsed;
+        if (!active || currentRow >= rows.Length) { selectedDetails.Text = "セルを選択すると、値・入力状態・Issueの識別情報を表示します。"; selectedDiagnostics.Text = ""; selectionMode.Text = "選択モード"; return; }
         var row = rows[currentRow]; var cell = row.Cells[currentColumn]; var field = session.Workspace.Field(cell);
         var pending = session.Workspace.Buffer(cell);
         selectionMode.Text = controls[currentRow][currentColumn] is TitleCell { Composing: true } ? "IME変換中" : pending is not null ? "編集中・未確定" : cell.Editable || TypedPlanning(cell) ? "選択モード" : "参照専用";
         string Display(string? value) => cell.Key?.Kind is "Select" or "LocalSelect" ? SelectDisplay(cell, value) : value ?? "（空値）";
         string ObservedDisplay(string? value) => value is null ? "（空値）" : cell.Key?.Kind is "Select" or "LocalSelect"
             ? cell.Options.SingleOrDefault(o => o.Id == value)?.Name ?? $"未確認 [{value}]" : value;
-        var lines = new List<string> { $"行 {currentRow + 1} / {layout.Visible[currentColumn].Name}  —  {selectionMode.Text}",
-            $"値: {(cell.Key is null ? cell.Display : Display(session.Workspace.Value(cell)))}" };
-        if (pending is not null) lines.Add($"未確定文字: {pending}\nEnter / Tabでセル確定、Escで未確定文字を取り消します。IMEの確定とセル確定は別です。");
-        if (markers[currentRow][currentColumn]?.Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
+        var titleCell = canonicalRows.Single(r => r.ItemId == row.ItemId).Cells[0];
+        var title = session.Workspace.Value(titleCell) ?? titleCell.Display;
+        var fieldName = layout.Visible[currentColumn].Name + (cell.Key?.Kind == "Title" ? "（Issue共通）" : "");
+        var needsComparison = field?.Conflict == true || field?.Observation is not null;
+        var lines = new List<string>();
+        if (HasSelectedRange) lines.Add(SelectionRangeText());
+        lines.AddRange([$"{(HasSelectedRange ? "現在のセル · " : "")}{RowIdentity(row)} · {title}",
+            $"{fieldName} — {selectionMode.Text} / {(needsComparison ? "ローカル確定値" : "確定値")}: {(cell.Key is null ? cell.Display : Display(session.Workspace.Value(cell)))}"]);
+        if (pending is not null)
+        {
+            lines.Add($"入力途中: {pending}\nEnter / Tabでセル確定 · Escで取消（IMEの確定とセル確定は別）");
+            if (IsPlanningField(cell)) lines.Add("日程計算は確定値を使用します。入力途中の文字は計算に使いません。");
+        }
+        if ((CellHasProblem(cell) || row.IsLocal) && markers[currentRow][currentColumn]?.Tag is string explanation && explanation.Length > 0) lines.Add(explanation);
+        if (operationProblem is not null && cell.Key is { } key && operationProblemFields?.Contains(key) == true) lines.Add(operationProblem);
+        var diagnostics = new List<string>();
         if (field is not null)
         {
             var observed = field.Observation;
-            lines.Add($"B 基準: {ObservedDisplay(field.Baseline)}\nL ローカル: {Display(field.Change is { } local ? local.Value : field.Baseline)}\nR GitHub（取得済み）: {(observed is null ? ObservedDisplay(field.Baseline) : observed.Availability is ValueAvailability.Present or ValueAvailability.Empty ? ObservedDisplay(observed.Value) : EditingWorkspace.AvailabilityText(observed.Availability))}\n観測: {(observed?.At ?? field.RetrievedAt).LocalDateTime:g}");
+            var comparison = $"変更前: {ObservedDisplay(field.Baseline)}\nGitHub取得値: {(observed is null ? ObservedDisplay(field.Baseline) : observed.Availability is ValueAvailability.Present or ValueAvailability.Empty ? ObservedDisplay(observed.Value) : EditingWorkspace.AvailabilityText(observed.Availability))}";
+            // Comparisons needed for a current decision stay beside the cell;
+            // routine source inspection is available on explicit disclosure.
+            if (needsComparison) lines.Add(comparison);
+            else diagnostics.Add(comparison + $"\nローカル確定値: {Display(field.Change is { } local ? local.Value : field.Baseline)}");
+            diagnostics.Add($"観測: {(observed?.At ?? field.RetrievedAt).LocalDateTime:g}");
         }
-        else if (row.IsLocal) lines.Add($"B 基準: 未作成\nL ローカル: {Display(session.Workspace.Value(cell))}\nR GitHub: 未作成・未取得");
-        lines.Add($"{RowIdentity(row)}\nProject: {projectId} / 項目: {row.ItemId} / 所有: {cell.Key?.Kind ?? "参照"} / ID: {cell.Key?.NodeId} / フィールド: {cell.Key?.FieldId}");
-        selectedDetails.Text = string.Join("\n", lines) + PlanningSummary(row);
-        selectedDetails.Text += "\n" + status.Text + $"\nプロフィール全体: GitHub未反映 {session.Workspace.DifferenceCount}セル\n" + viewNotice.Text;
+        else if (row.IsLocal) diagnostics.Add($"ローカル確定値: {Display(session.Workspace.Value(cell))}\n作成状況: {CreationKnowledgePresentation.Describe(session.Workspace.Creations.LastOrDefault(c => c.LocalId == row.ItemId)).Description}");
+        var planning = PlanningSummary(row);
+        selectedDetails.Text = string.Join("\n", lines) + (HasSelectedRange ? "" : planning.Routine) + planning.Required;
+        diagnostics.Add($"Project: {projectId} / 項目: {row.ItemId} / 所有: {cell.Key?.Kind ?? "参照"} / ID: {cell.Key?.NodeId} / フィールド: {cell.Key?.FieldId}");
+        selectedDiagnostics.Text = string.Join("\n", diagnostics) + (HasSelectedRange ? planning.Routine : "") + planning.Diagnostics;
     }
     private IEnumerable<EditCell> Range()
     {
@@ -854,14 +949,20 @@ internal sealed partial class EditingGrid : Grid
     }
     private void Select(int r, int c, bool extend, bool focus = true)
     {
+        if (!RowStillPresent(r)) return;
         using var measured = diagnostics?.Span("select");
         diagnostics?.Record("select-request", new { row = r, column = c, extend, focus, item = rows[r].ItemId, key = rows[r].Cells[c].Key });
         EnsureRow(r);
         currentRow = r; currentColumn = c; active = true;
+        if (operationProblem == SelectSchedulingTask) operationProblem = null;
         if (!extend) { anchorRow = r; anchorColumn = c; }
+        Update("select");
         if (focus)
         {
             selecting = true;
+            // The destination's pending/context rows can shrink the sheet.
+            // Resolve that viewport before revealing and focusing the cell.
+            UpdateLayout(); AttachSheetScroll();
             RevealColumn(r, c);
             list.ScrollIntoView(list.Items[r]);
             if (recycledPresentation) { list.UpdateLayout(); PositionOwnedEditors(); }
@@ -869,7 +970,6 @@ internal sealed partial class EditingGrid : Grid
             if (controls[r][c] is TitleCell text && !text.Editing) text.SelectAll();
             selecting = false;
         }
-        Update("select");
         diagnostics?.Record("select-result", CaptureDiagnosticState(false));
     }
     private void ClearSelected()
@@ -913,20 +1013,28 @@ internal sealed partial class EditingGrid : Grid
         using var measured = diagnostics?.Span("run");
         try { action(); operationProblem = null; Update("run"); _ = FlushDraftsAsync("run"); }
         catch (Exception ex) when (ex is InvalidOperationException or System.Runtime.InteropServices.COMException)
-        { diagnostics?.Record("command-failure", new { type = ex.GetType().Name, ex.HResult }); ShowOperationProblem(ex is InvalidOperationException ? ex.Message : "クリップボードを利用できません。"); }
+        { diagnostics?.Record("command-failure", new { type = ex.GetType().Name, ex.HResult }); ShowOperationProblem(ex is InvalidOperationException ? ex.Message : "クリップボードを利用できません。", (ex as UndoRejectedException)?.Fields); }
     }
-    private void ShowOperationProblem(string message)
+    private void ShowOperationProblem(string message, IEnumerable<FieldKey>? fields = null)
     {
-        operationProblem = message; RefreshStatus(); UpdateSelectedDetails();
+        operationProblem = message; operationProblemFields = fields?.ToHashSet(); RefreshStatus(); UpdateSelectedDetails();
+    }
+    private void ClearCellOperationProblem(FieldKey? key)
+    {
+        // A successful cell correction resolves only that cell's failure. An
+        // unrelated clipboard/command problem and session save failure remain.
+        if (operationProblem is null || key is null || operationProblemFields?.Remove(key) != true) return;
+        if (operationProblemFields.Count == 0) { operationProblem = null; operationProblemFields = null; }
     }
     private void RefreshStatus()
     {
-        if (ShowingGantt) gantt!.ShowOperationStatus(operationProblem, session.Status);
-        if (ShowingSummary) summaryView!.ShowOperationStatus(operationProblem, session.Status);
-        var saved = session.Status.Replace("（GitHub未反映）", "");
-        // Keep a save failure visible even when a bulk command also has a rejection.
-        status.Text = saved.Contains("失敗") ? saved + " / " + operationProblem
-            : operationProblem is not null ? operationProblem + " / " + saved : statusBeforeSave + saved + statusAfterSave;
+        UpdateWorkspaceStatus();
+        if (ShowingGantt) gantt!.ShowOperationStatus(operationProblem);
+        if (ShowingSummary) summaryView!.ShowOperationStatus(operationProblem);
+        // The shared strip owns current save state; selected-cell errors retain
+        // their own recovery context without appending historical diagnostics.
+        status.Text = operationProblem ?? "";
+        status.Visibility = operationProblem is null ? Visibility.Collapsed : Visibility.Visible;
         ToolTipService.SetToolTip(status, status.Text);
     }
     private bool CellHasProblem(EditCell cell) => ApplyProblem(cell) is not null || (session.Workspace.Field(cell) is { } field
@@ -1056,7 +1164,7 @@ internal sealed partial class EditingGrid : Grid
             if (await dialog.ShowAsync() != ContentDialogResult.Primary || request != generation || !IsLoaded || !CanRefresh) return;
             Run(() => { var added = session.Workspace.AppendRows(destination, text, inputMapping.Select(c => c.Id).ToArray()); projection.IncludeNew(session.Workspace.Open(registration), added); RebuildRows(); Select(Array.FindIndex(rows, r => r.ItemId == added[0]), 0, false); });
         }
-        catch (Exception) { status.Text = "クリップボードを読み取れません。追加していません。"; }
+        catch (Exception) { ShowOperationProblem("クリップボードを読み取れません。追加していません。"); }
     }
     private sealed class ChoiceCell : Button
     {
@@ -1128,7 +1236,7 @@ internal sealed partial class EditingGrid : Grid
         private void OpenChoices()
         {
             if (!arrow.IsEnabled || !owner.CurrentEditor(row, column, this)) return;
-            if (owner.session.Workspace.Buffer(cell) is not null) { owner.status.Text = "未確定入力を確定または取消してから選択肢を開いてください。"; return; }
+            if (owner.session.Workspace.Buffer(cell) is not null) { owner.ShowOperationProblem("未確定入力を確定または取消してから選択肢を開いてください。", cell.Key is null ? null : [cell.Key]); return; }
             owner.Select(row, column, Down(VirtualKey.Shift), false);
             if (Down(VirtualKey.Shift)) return;
             // Definitions are fixed for this retained editor's generation. Reuse the
@@ -1179,7 +1287,7 @@ internal sealed partial class EditingGrid : Grid
             if (owner.diagnostics is not null)
                 TextChanged += (_, _) => owner.diagnostics.Record("text-changed", new { row, column, length = Text.Length, restoring });
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
-            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.applyProblemTip.IsOpen = false; owner.selectionMode.Text = "IME変換中"; };
+            TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.UpdateSelectedDetails(); };
             TextCompositionEnded += (_, _) =>
             {
                 composing = false;
@@ -1242,8 +1350,8 @@ internal sealed partial class EditingGrid : Grid
             {
                 if (owner.TypedActual(cell)) { owner.CommitActualCell(confirmContext: false); e.Handled = true; return; }
                 if (owner.TypedDate(cell)) { if (owner.CommitDateCell()) owner.NavigateKey(row, column, e); e.Handled = true; return; }
-                try { owner.session.Workspace.Commit(owner.projectId, cell, Text); Editing = false; owner.NavigateKey(row, column, e); _ = owner.FlushDraftsAsync("cell-commit"); }
-                catch (InvalidOperationException ex) { owner.status.Text = ex.Message; e.Handled = true; }
+                try { owner.session.Workspace.Commit(owner.projectId, cell, Text); owner.ClearCellOperationProblem(cell.Key); Editing = false; owner.NavigateKey(row, column, e); _ = owner.FlushDraftsAsync("cell-commit"); }
+                catch (InvalidOperationException ex) { owner.ShowOperationProblem(ex.Message, cell.Key is { } key ? [key] : null); e.Handled = true; }
             }
             else if (!Editing) owner.NavigateKey(row, column, e);
             // Native text Undo stays inside the editing/composition path.

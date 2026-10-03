@@ -1,0 +1,13 @@
+{
+  "observer": "root",
+  "normalCloseObserved": true,
+  "forcedTermination": false,
+  "pid": 132524,
+  "dataRoot": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/round10-publication-v/data",
+  "launchReceiptSha256": "79BA5A8D1C2D846D60554D5E9FC5A93568CC4399DB35E9DB441EA66589657441",
+  "observedAt": "2026-10-02T20:14:31.8591451+00:00",
+  "observationArtifact": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\v-fresh-evaluator\\actual-segment3\\close-observation.json",
+  "observationArtifactSha256": "2FDDCC044626AD1AD5E9C4C86D590C4A217DB417835D71E19DA09F132817254B",
+  "actor": "isolated V evaluator",
+  "rootPerformedClose": false
+}

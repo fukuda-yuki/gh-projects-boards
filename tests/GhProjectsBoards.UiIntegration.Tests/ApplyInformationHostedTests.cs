@@ -3,13 +3,76 @@ using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using NUnit.Framework;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
+    [TestCase(960, 600), TestCase(1267, 794), Category("ApplyPublicationPresentation")]
+    public async Task ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(int width, int height)
+    {
+        Windows.Graphics.SizeInt32? previous = null;
+        Flyout information = null!;
+        TextBlock text = null!;
+        try
+        {
+            await Ui.Run(() => {
+                previous = Ui.Window.AppWindow.Size;
+                Ui.Window.AppWindow.Resize(new(width, height));
+                Work.Commit("P1", Work.Open(Workspace.Selected!)[0].Cells[0], "Reviewed title");
+                Ui.Click("ReviewApplyButton");
+            });
+            await Ui.DialogReady("ApplyReviewDialog"); await Ui.Until(() => !Workspace.IsBusy);
+            string before = "";
+            await Ui.Run(() => {
+                before = System.Text.Json.JsonSerializer.Serialize(Work.Snapshot());
+                var button = Ui.Find<Button>("ApplyReviewIdentity", Ui.Dialog("ApplyReviewDialog"));
+                information = (Flyout)button.Flyout; text = (TextBlock)information.Content;
+                Ui.Click(button);
+            });
+            await Ui.Until(() => information.IsOpen && text.IsLoaded && text.ActualWidth > 0 && text.ActualHeight > 0);
+            await SheetNativeInput.Rendered();
+            await Ui.Run(async () => {
+                Assert.That(text.Text, Does.Contain("最終反映ボタンを押すまで送信しません").And.Contain("送信直前にも対象・値・権限を再確認します。"));
+                var bounds = text.TransformToVisual(null).TransformBounds(new(0, 0, text.ActualWidth, text.ActualHeight));
+                double left = 0, right = text.XamlRoot.Size.Width, top = 0, bottom = text.XamlRoot.Size.Height;
+                for (var parent = VisualTreeHelper.GetParent(text); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+                {
+                    if (parent is not FrameworkElement { ActualWidth: > 0 } ancestor) continue;
+                    var visible = ancestor.TransformToVisual(null).TransformBounds(new(0, 0, ancestor.ActualWidth, ancestor.ActualHeight));
+                    left = Math.Max(left, visible.Left); right = Math.Min(right, visible.Right);
+                    top = Math.Max(top, visible.Top); bottom = Math.Min(bottom, visible.Bottom);
+                }
+                Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(left - 1));
+                Assert.That(bounds.Right, Is.LessThanOrEqualTo(right + 1), "The information text must fit every containing visible surface, not merely the dialog width.");
+                Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(top - 1));
+                Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(bottom + 1));
+                var last = text.ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+                Assert.That(last.Height, Is.GreaterThan(0));
+                Assert.That(last.Right, Is.LessThanOrEqualTo(text.ActualWidth + 1));
+                Assert.That(last.Bottom, Is.LessThanOrEqualTo(text.ActualHeight + 1));
+                Assert.That(text.IsTextTrimmed, Is.False);
+                // Render the opened flyout's content; native popup roots can return an empty bitmap.
+                await ApplyInformationEvidence.Capture(text, $"review-information-popup-content-{width}x{height}");
+                Assert.That(System.Text.Json.JsonSerializer.Serialize(Work.Snapshot()), Is.EqualTo(before));
+                Assert.That(h.Writes, Is.Empty);
+                information.Hide(); Ui.DialogButton("ApplyReviewDialog", "CloseButton");
+            });
+        }
+        finally
+        {
+            await Ui.Run(() => {
+                information?.Hide(); Ui.Dialog("ApplyReviewDialog")?.Hide();
+                if (previous is { } size) Ui.Window.AppWindow.Resize(size);
+                return Task.CompletedTask;
+            }, check: false);
+        }
+    }
+
     [TestCase(401, true), TestCase(503, false)]
     public async Task FailedLatestCheckShowsRecoveryForAuthenticationOnly(int httpStatus, bool needsConnection)
     {

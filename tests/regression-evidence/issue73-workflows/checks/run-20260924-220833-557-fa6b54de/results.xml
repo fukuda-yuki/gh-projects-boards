@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="188" result="Failed" start-time="2026-09-24T13:08:39.7939505Z" end-time="2026-09-24T13:08:42.8712892Z" duration="3.077319" total="6" initiated="6" passed="4" failed="2" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="2" random-seed="1093826190">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == WorkflowPlanning" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-220833-557-fa6b54de\results.xml]]></command-line>
+  <filter>
+    <cat>WorkflowPlanning</cat>
+  </filter>
+  <test-suite type="Assembly" id="1237" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="188" result="Failed" site="Child" start-time="2026-09-24T13:08:39.7939505Z" end-time="2026-09-24T13:08:42.8712892Z" duration="3.077319" total="6" initiated="6" passed="4" failed="2" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="2">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="22192" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1238" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="188" result="Failed" site="Child" start-time="2026-09-24T13:08:39.7964252Z" end-time="2026-09-24T13:08:42.8712860Z" duration="3.074861" total="6" initiated="6" passed="4" failed="2" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="2">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1239" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="188" result="Failed" site="Child" start-time="2026-09-24T13:08:39.7965780Z" end-time="2026-09-24T13:08:42.8712833Z" duration="3.074705" total="6" initiated="6" passed="4" failed="2" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="2">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1240" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="188" result="Failed" site="Child" start-time="2026-09-24T13:08:39.7966336Z" end-time="2026-09-24T13:08:42.8712807Z" duration="3.074647" total="6" initiated="6" passed="4" failed="2" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="2">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="59" result="Passed" start-time="2026-09-24T13:08:39.7966353Z" end-time="2026-09-24T13:08:41.5798691Z" duration="1.783234" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1056" name="FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" methodname="FailedSettingsSaveKeepsTheCandidateAndRetryReturnsOnlyAfterDurableSuccess" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1172382088" result="Passed" start-time="2026-09-24T13:08:39.7977145Z" end-time="2026-09-24T13:08:40.6522961Z" duration="0.854621" asserts="2">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-ca37213f-0640-4bc1-bc5a-1522f1c978a7; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 6087213a-d4e4-4bd2-a9e7-54bc917e2780
+]]></output>
+            </test-case>
+            <test-case id="1055" name="ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" methodname="ProjectSwitchRequiresDiscardAndCancelRetainsTheSameSettingsAndTaskInput" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1942033764" result="Passed" start-time="2026-09-24T13:08:40.6530357Z" end-time="2026-09-24T13:08:41.5790143Z" duration="0.925979" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-caeea4e8-153b-4108-9f1f-cb891163ced6; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 6087213a-d4e4-4bd2-a9e7-54bc917e2780
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1128" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="34" result="Failed" site="Child" start-time="2026-09-24T13:08:41.5800189Z" end-time="2026-09-24T13:08:42.8712703Z" duration="1.291251" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1166" name="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" methodname="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="366898792" result="Passed" start-time="2026-09-24T13:08:41.5801017Z" end-time="2026-09-24T13:08:42.0279435Z" duration="0.447842" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1164" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-09-24T13:08:42.0279899Z" end-time="2026-09-24T13:08:42.5349380Z" duration="0.506948" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1162" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;Unstarted&quot;,&quot;未着手&quot;,&quot;見積 4人時&quot;)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1093020887" result="Failed" start-time="2026-09-24T13:08:42.0282243Z" end-time="2026-09-24T13:08:42.3052223Z" duration="0.276999" asserts="0">
+                <failure>
+                  <message><![CDATA[  Assert.That(text, Does.Contain(label).And.Contain(effort).And.Contain("実績の入力だけでは進捗を変更しません"))
+  Expected: String containing "未着手" and containing "見積 4人時" and containing "実績の入力だけでは進捗を変更しません"
+  But was:  "owner/repo #1
+Issue 1
+I1
+Auto: 2026-10-05 09:00 → 2026-10-05 13:00
+担当: Owner / 配賦: 100%
+見積 4 / 残時間 3 / 実績 不明 人時
+進捗: Unstarted
+採用理由: 見積工数・配賦・カレンダー
+自動案: 2026-10-05 09:00 → 2026-10-05 13:00
+
+以前の独立した計画担当者を保持。変更時は日程を比較してください。
+見積の未割当: 4人時
+残時間の未割当: 3人時
+カレンダー: official-2025-2027
+祝日: cao-2025-2027-CEC37A743C96 / 2025–2027
+軸の網掛けはProject共通。個人例外は下記の採用区間に従います。
+2026-10-05: 09:00–13:00 / 14:00–18:00"
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 30
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(String progressName, String label, String effort) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 28
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1163" name="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(&quot;InProgress&quot;,&quot;進行中&quot;,&quot;残時間 3人時&quot;)" methodname="GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1442728183" result="Failed" start-time="2026-09-24T13:08:42.3053497Z" end-time="2026-09-24T13:08:42.5348737Z" duration="0.229525" asserts="0">
+                <failure>
+                  <message><![CDATA[  Assert.That(text, Does.Contain(label).And.Contain(effort).And.Contain("実績の入力だけでは進捗を変更しません"))
+  Expected: String containing "進行中" and containing "残時間 3人時" and containing "実績の入力だけでは進捗を変更しません"
+  But was:  "owner/repo #1
+Issue 1
+I1
+Auto: 2026-10-05 09:00 → 2026-10-05 12:00
+担当: Owner / 配賦: 100%
+見積 4 / 残時間 3 / 実績 不明 人時
+進捗: InProgress
+採用理由: 残工数・基準日時・配賦・カレンダー
+自動案: 2026-10-05 09:00 → 2026-10-05 12:00
+
+以前の独立した計画担当者を保持。変更時は日程を比較してください。
+見積の未割当: 4人時
+残時間の未割当: 3人時
+実績開始が未入力です。
+カレンダー: official-2025-2027
+祝日: cao-2025-2027-CEC37A743C96 / 2025–2027
+軸の網掛けはProject共通。個人例外は下記の採用区間に従います。
+2026-10-05: 09:00–13:00 / 14:00–18:00"
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.<>c__DisplayClass40_0.<GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 30
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.GanttExplainsTheEffortUsedWithoutTreatingActualAsAProgressChange(String progressName, String label, String effort) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkflowPlanningHostedTests.cs:line 28
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+            </test-suite>
+            <test-case id="1165" name="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" methodname="InvalidProjectStartKeepsTheInputAndShowsTheCorrectionWithoutScrolling" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1624369439" result="Passed" start-time="2026-09-24T13:08:42.5349559Z" end-time="2026-09-24T13:08:42.8712242Z" duration="0.336269" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

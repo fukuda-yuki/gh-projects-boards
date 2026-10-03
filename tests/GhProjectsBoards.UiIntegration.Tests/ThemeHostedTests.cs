@@ -37,7 +37,7 @@ public sealed class ThemeHostedTests
         var folder = Path.Combine(Path.GetTempPath(), "ghpb-states-" + Guid.NewGuid().ToString("N"));
         var session = new DraftSession(new DraftStore(folder), w, 0);
         ElementTheme old = default; Grid surface = null!; EditingGrid grid = null!;
-        string selectedCapture = "", pendingCapture = "", conditions = "";
+        string handleCapture = "", selectedCapture = "", pendingCapture = "", conditions = "";
         await Ui.Run(() => {
             old = Ui.Root.RequestedTheme; Ui.Root.RequestedTheme = theme;
             surface = (Grid)XamlReader.Load("<Grid xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" Background=\"{ThemeResource ApplicationPageBackgroundThemeBrush}\"/>");
@@ -46,7 +46,13 @@ public sealed class ThemeHostedTests
         try
         {
             await Ui.Mount(surface); await Ui.Ready<Button>("GridCell0_1");
-            await SheetNativeInput.Click("GridCell0_1"); await SheetNativeInput.Click("GridCell1_1", Windows.System.VirtualKey.Shift);
+            await SheetNativeInput.Click("GridCell0_1");
+            await SheetNativeInput.Rendered();
+            await Ui.Run(async () => {
+                Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<Button>("GridFillHandle0_1")).IsOffscreen(), Is.False);
+                handleCapture = await CaptureThemeAsync(Path.Combine(folder, "handle"), theme, surface);
+            });
+            await SheetNativeInput.Click("GridCell1_1", Windows.System.VirtualKey.Shift);
             await Ui.Run(async () => {
                 Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("2行・2セル"));
                 Assert.That(Ui.Find<TextBlock>("GridMarker1_1").Text, Is.EqualTo("◆"));
@@ -84,11 +90,12 @@ public sealed class ThemeHostedTests
             await Ui.Until(() => w.Buffer(rows[3].Cells[0]) is not null);
             await Ui.Run(async () => {
                 Assert.That(w.Field(rows[3].Cells[0])!.Change, Is.Null);
-                Assert.That(Ui.Find<TextBlock>("GridMarker3_0").Visibility, Is.EqualTo(Visibility.Collapsed));
+                Assert.That(Ui.Find<TextBlock>("GridMarker3_0").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<TextBlock>("GridMarker3_0").Text, Is.EqualTo("…"));
                 pendingCapture = await CaptureThemeAsync(Path.Combine(folder, "pending"), theme, surface);
                 conditions = $"State matrix: requested={theme}; actual={grid.ActualTheme}; highContrast={new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast}; scale={Ui.Root.XamlRoot.RasterizationScale}; source={typeof(EditingGrid).Module.ModuleVersionId}";
             });
-            TestContext.AddTestAttachment(selectedCapture); TestContext.AddTestAttachment(pendingCapture); TestContext.Out.WriteLine(conditions);
+            TestContext.AddTestAttachment(handleCapture); TestContext.AddTestAttachment(selectedCapture); TestContext.AddTestAttachment(pendingCapture); TestContext.Out.WriteLine(conditions);
         }
         finally { await Ui.Unmount(surface); await Ui.Run(async () => { Ui.Root.RequestedTheme = old; Assert.That(await session.FlushAsync(), Is.True); }); await Ui.Idle(); }
     }

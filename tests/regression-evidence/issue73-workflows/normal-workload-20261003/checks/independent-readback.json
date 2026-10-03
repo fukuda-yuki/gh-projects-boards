@@ -1,0 +1,488 @@
+{
+  "atUtc": "2026-10-03T05:11:20.024539+00:00",
+  "method": "Independent standard-library JSON audit of retained checkpoints and UI observations; no production calculator",
+  "inputs": {
+    "packet.json": "9E55FE2C46D0B1CEAFAB0A7056AA0F8A8199236BD845BBCC1129C4678F901733",
+    "before.json": "08CE8A85BEABBDAFAA29457223D63E2E6A6CEB11558C2B6D0B4333D8AA719BA7",
+    "after-close.json": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B",
+    "after-restart.json": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B"
+  },
+  "executed": 27,
+  "passed": 27,
+  "failed": 0,
+  "skipped": 0,
+  "checks": [
+    {
+      "name": "frozen source and original inputs",
+      "passed": true,
+      "detail": {
+        "atUtc": "2026-10-03T05:08:46.2501890+00:00",
+        "buildInputs": 272,
+        "sourceMismatches": [],
+        "liveFiles": [
+          {
+            "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\7DAFBA7BCCA169DE4D2B6304CB6DD2A29AB3D25C436FB095B1935C818E8A753C.json",
+            "before": "BAF12C3FE7052CF75BFCC71E02018D3185C77103DD721E84EA0B1056D7ECFE09",
+            "after": "BAF12C3FE7052CF75BFCC71E02018D3185C77103DD721E84EA0B1056D7ECFE09",
+            "equal": true
+          },
+          {
+            "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\Drafts\\E192BF56CA77E46DC06147205E2B163526A65C7B67E946D9513123207E7EDBF7.json",
+            "before": "2CD82B135BAC6EB3BCBA1D546143247FD2CD3BD787F68E9F0D9534558F68E143",
+            "after": "2CD82B135BAC6EB3BCBA1D546143247FD2CD3BD787F68E9F0D9534558F68E143",
+            "equal": true
+          },
+          {
+            "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\Drafts\\E192BF56CA77E46DC06147205E2B163526A65C7B67E946D9513123207E7EDBF7.json.bak",
+            "before": "985BA7B98F5B0F65291A1402C15EEF8AA7C96668978928CCA5B063F0716AC57A",
+            "after": "985BA7B98F5B0F65291A1402C15EEF8AA7C96668978928CCA5B063F0716AC57A",
+            "equal": true
+          }
+        ],
+        "packetSha256": "9E55FE2C46D0B1CEAFAB0A7056AA0F8A8199236BD845BBCC1129C4678F901733",
+        "beforeSha256": "08CE8A85BEABBDAFAA29457223D63E2E6A6CEB11558C2B6D0B4333D8AA719BA7",
+        "afterCloseSha256": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B",
+        "afterRestartSha256": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B"
+      }
+    },
+    {
+      "name": "ordinary WinUI process 1 exact candidate",
+      "passed": true,
+      "detail": {
+        "atUtc": "2026-10-03T04:51:40.0822594Z",
+        "pid": 143748,
+        "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+        "winuiModules": [
+          "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\Microsoft.UI.Xaml.dll"
+        ],
+        "appSha256": "AF78DF1AAC8821C5B47BB7E957980C8DEAEE6020DD17C767336C188E8F98D4A5",
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A"
+      }
+    },
+    {
+      "name": "ordinary WinUI process 2 exact candidate",
+      "passed": true,
+      "detail": {
+        "atUtc": "2026-10-03T05:06:03.1935005+00:00",
+        "pid": 215132,
+        "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+        "winuiModules": [
+          "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\Microsoft.UI.Xaml.dll"
+        ],
+        "appSha256": "AF78DF1AAC8821C5B47BB7E957980C8DEAEE6020DD17C767336C188E8F98D4A5",
+        "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A"
+      }
+    },
+    {
+      "name": "normal exit and byte-identical restart checkpoint",
+      "passed": true,
+      "detail": {
+        "afterClose": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B",
+        "afterRestart": "A682204AEEE2D0F89D62137279AAC87460B660CE9D30C285D833B313F0FBA40B"
+      }
+    },
+    {
+      "name": "separate live root unchanged",
+      "passed": true,
+      "detail": [
+        {
+          "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\7DAFBA7BCCA169DE4D2B6304CB6DD2A29AB3D25C436FB095B1935C818E8A753C.json",
+          "before": "BAF12C3FE7052CF75BFCC71E02018D3185C77103DD721E84EA0B1056D7ECFE09",
+          "after": "BAF12C3FE7052CF75BFCC71E02018D3185C77103DD721E84EA0B1056D7ECFE09",
+          "equal": true
+        },
+        {
+          "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\Drafts\\E192BF56CA77E46DC06147205E2B163526A65C7B67E946D9513123207E7EDBF7.json",
+          "before": "2CD82B135BAC6EB3BCBA1D546143247FD2CD3BD787F68E9F0D9534558F68E143",
+          "after": "2CD82B135BAC6EB3BCBA1D546143247FD2CD3BD787F68E9F0D9534558F68E143",
+          "equal": true
+        },
+        {
+          "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\weekly-value-20261003\\live-app-data\\Drafts\\E192BF56CA77E46DC06147205E2B163526A65C7B67E946D9513123207E7EDBF7.json.bak",
+          "before": "985BA7B98F5B0F65291A1402C15EEF8AA7C96668978928CCA5B063F0716AC57A",
+          "after": "985BA7B98F5B0F65291A1402C15EEF8AA7C96668978928CCA5B063F0716AC57A",
+          "equal": true
+        }
+      ]
+    },
+    {
+      "name": "all task and field identities retained",
+      "passed": true,
+      "detail": {
+        "tasks": 1000,
+        "fields": 7922
+      }
+    },
+    {
+      "name": "full registrations, snapshots and second Project retained",
+      "passed": true,
+      "detail": {
+        "projects": 2,
+        "itemCounts": [
+          1000,
+          20
+        ]
+      }
+    },
+    {
+      "name": "all 1000 task contracts preserved with only specified report change",
+      "passed": true,
+      "detail": {
+        "unexpectedDifferences": [],
+        "explicitMigration": "v1 to v3; null assignment becomes empty/incomplete/Legacy=true. Owner and semantics stay unchanged.",
+        "manualTasks": 21,
+        "completedTasks": 33,
+        "report": [
+          {
+            "PersonId": "U1",
+            "Hours": 7,
+            "ReportedThrough": "2026-10-09"
+          }
+        ]
+      }
+    },
+    {
+      "name": "20 people, weights, start and mappings retained",
+      "passed": true,
+      "detail": {
+        "people": [
+          {
+            "Id": "U1",
+            "Name": "Person 1",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U2",
+            "Name": "Person 2",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U3",
+            "Name": "Person 3",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U4",
+            "Name": "Person 4",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U5",
+            "Name": "Person 5",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U6",
+            "Name": "Person 6",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U7",
+            "Name": "Person 7",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U8",
+            "Name": "Person 8",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U9",
+            "Name": "Person 9",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U10",
+            "Name": "Person 10",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U11",
+            "Name": "Person 11",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U12",
+            "Name": "Person 12",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U13",
+            "Name": "Person 13",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U14",
+            "Name": "Person 14",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U15",
+            "Name": "Person 15",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U16",
+            "Name": "Person 16",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U17",
+            "Name": "Person 17",
+            "WeightPercent": 80
+          },
+          {
+            "Id": "U18",
+            "Name": "Person 18",
+            "WeightPercent": 50
+          },
+          {
+            "Id": "U19",
+            "Name": "Person 19",
+            "WeightPercent": 100
+          },
+          {
+            "Id": "U20",
+            "Name": "Person 20",
+            "WeightPercent": 80
+          }
+        ],
+        "beforeVersion": 1,
+        "afterVersion": 3
+      }
+    },
+    {
+      "name": "only chosen cutoff and U2 calendar exception changed",
+      "passed": true,
+      "detail": {
+        "cutoff": "2026-10-09T18:00:00",
+        "exceptions": [
+          {
+            "Date": "2026-10-13",
+            "PersonId": "U2",
+            "Intervals": [
+              {
+                "StartMinute": 840,
+                "EndMinute": 1080
+              }
+            ]
+          }
+        ],
+        "holidaysPreserved": true
+      }
+    },
+    {
+      "name": "raw values and original field provenance preserved",
+      "passed": true,
+      "detail": {
+        "unexpectedRawDifferences": [],
+        "unexpectedProvenanceDifferences": [],
+        "numericChanges": [
+          {
+            "key": [
+              "Number",
+              "P1T301",
+              "P1",
+              "F-Remaining"
+            ],
+            "before": "4",
+            "after": "3"
+          },
+          {
+            "key": [
+              "Number",
+              "P1T301",
+              "P1",
+              "F-Actual"
+            ],
+            "before": "5",
+            "after": "7"
+          }
+        ],
+        "derivedDateChanges": 616
+      }
+    },
+    {
+      "name": "exact independent pending value and undone estimate retained",
+      "passed": true,
+      "detail": {
+        "buffers": [
+          {
+            "key": [
+              "Number",
+              "P1T1000",
+              "P1",
+              "F-Estimate"
+            ],
+            "value": "24未確定"
+          }
+        ],
+        "I302Estimate": "16"
+      }
+    },
+    {
+      "name": "original history retained and two committed operations remain",
+      "passed": true,
+      "detail": {
+        "beforeHistory": 1,
+        "afterHistory": 3,
+        "meaning": "Daily report and planning settings remain; the mistaken estimate was undone once in observations 40-42."
+      }
+    },
+    {
+      "name": "remaining checkpoint content, journal and creation state unchanged",
+      "passed": true,
+      "detail": {
+        "properties": [
+          "Version",
+          "Scope",
+          "Registrations",
+          "StructuralChanges",
+          "Journal",
+          "LocalRows",
+          "ColumnPreferences",
+          "RowPreferences",
+          "HistoricalDispositions"
+        ],
+        "journalEntries": 0,
+        "localRows": 0,
+        "networkBoundary": "No network instrumentation claimed. Ordinary observations show cached unverified identity; no connection, Apply or creation operation was requested."
+      }
+    },
+    {
+      "name": "ordinary adopted interval I301 observation 27",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-13 09:00 → 2026-10-13 12:00",
+        "observed": [
+          "827 list item (selectable) owner/repo #301 作業 301 自動計算 · 注意 2026-10-13 09:00 → 2026-10-13 12:00 ID: GanttRow-P1T301"
+        ],
+        "evidence": "27"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I301 observation 55",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-13 09:00 → 2026-10-13 12:00",
+        "observed": [
+          "550 list item (selectable) owner/repo #301 作業 301 自動計算 · 注意 2026-10-13 09:00 → 2026-10-13 12:00 ID: GanttRow-P1T301"
+        ],
+        "evidence": "55"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I302 observation 29",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-13 14:00 → 2026-10-15 18:00",
+        "observed": [
+          "858 list item (selectable) owner/repo #302 作業 302 自動計算 · 注意 2026-10-13 14:00 → 2026-10-15 18:00 ID: GanttRow-P1T302"
+        ],
+        "evidence": "29"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I302 observation 42",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-13 14:00 → 2026-10-15 18:00",
+        "observed": [
+          "1426 list item (selectable) owner/repo #302 作業 302 自動計算 · 注意 2026-10-13 14:00 → 2026-10-15 18:00 ID: GanttRow-P1T302"
+        ],
+        "evidence": "42"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I302 observation 56",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-13 14:00 → 2026-10-15 18:00",
+        "observed": [
+          "565 list item (selectable) owner/repo #302 作業 302 自動計算 · 注意 2026-10-13 14:00 → 2026-10-15 18:00 ID: GanttRow-P1T302"
+        ],
+        "evidence": "56"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I303 observation 42",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-16 09:00 → 2026-10-21 18:00",
+        "observed": [
+          "1429 list item (selectable) owner/repo #303 作業 303 自動計算 · 注意 2026-10-16 09:00 → 2026-10-21 18:00 ID: GanttRow-P1T303"
+        ],
+        "evidence": "42"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I303 observation 57",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-16 09:00 → 2026-10-21 18:00",
+        "observed": [
+          "580 list item (selectable) owner/repo #303 作業 303 自動計算 · 注意 2026-10-16 09:00 → 2026-10-21 18:00 ID: GanttRow-P1T303"
+        ],
+        "evidence": "57"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I330 observation 43",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-05 09:00 → 2026-10-06 18:00",
+        "observed": [
+          "1510 list item (selectable) owner/repo #330 作業 330 自動計算 · 注意 2026-10-05 09:00 → 2026-10-06 18:00 ID: GanttRow-P1T330"
+        ],
+        "evidence": "43"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I350 observation 44",
+      "passed": true,
+      "detail": {
+        "expected": "2026-10-10 12:07 → 2026-10-10 12:08",
+        "observed": [
+          "1524 list item (selectable) owner/repo #350 作業 350 日時を指定 · 注意 2026-10-10 12:07 → 2026-10-10 12:08 ID: GanttRow-P1T350"
+        ],
+        "evidence": "44"
+      }
+    },
+    {
+      "name": "ordinary adopted interval I1000 observation 45",
+      "passed": true,
+      "detail": {
+        "expected": "2027-03-15 12:07 → 2027-03-15 13:00",
+        "observed": [
+          "1538 list item (selectable) owner/repo #1000 作業 1000 日時を指定 · 注意 2027-03-15 12:07 → 2027-03-15 13:00 ID: GanttRow-P1T1000"
+        ],
+        "evidence": "45"
+      }
+    },
+    {
+      "name": "mistake visibly changed I302 to the independent expected finish",
+      "passed": true,
+      "detail": {
+        "evidence": "40-mistake-gantt-settled"
+      }
+    },
+    {
+      "name": "pending input remains separate from calculation observation 47",
+      "passed": true,
+      "detail": {
+        "evidence": "47",
+        "pending": "24未確定",
+        "confirmed": "16"
+      }
+    },
+    {
+      "name": "pending input remains separate from calculation observation 53",
+      "passed": true,
+      "detail": {
+        "evidence": "53",
+        "pending": "24未確定",
+        "confirmed": "16"
+      }
+    }
+  ]
+}

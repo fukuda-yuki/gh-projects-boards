@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 
@@ -123,13 +124,13 @@ internal sealed class CreationTests
         var h = await CreationHarness.Create(); var id = h.Add(); var w = h.Session.Workspace;
         var cells = w.Open(h.Workspace.Selected!).Single(r => r.ItemId == id).Cells;
         w.Commit("P1", cells[1], "done", true); w.SetBuffer(cells[0], "pending日本語");
-        var v4 = w.Snapshot() with { Version = 4 };
+        var v4 = EditingTests.LegacyHistory(w.Snapshot()) with { Version = 4 };
         var root = Path.Combine(Path.GetTempPath(), "ghpb-v4-" + Guid.NewGuid()); var store = new DraftStore(root);
         await store.SaveAsync(v4, 0); var restored = EditingWorkspace.Restore((await store.LoadAsync(w.Scope))!);
         Assert.That(restored.LocalRows.Single().TitleBuffer, Is.EqualTo("pending日本語"));
         Assert.That(restored.LocalRows.Single().Selects.Single().Intent, Is.EqualTo("Set"));
         await store.SaveAsync(restored.Snapshot(), v4.Revision);
-        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(12)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
+        Assert.That((await store.LoadAsync(w.Scope))!.Version, Is.EqualTo(14)); Assert.That(File.Exists(store.FileFor(w.Scope) + ".bak"), Is.True);
     }
     [Test]
     public async Task IdOnlyResponseIsDurableAndVerifiedWithoutRecreation()
@@ -211,7 +212,10 @@ internal sealed class CreationTests
     public async Task ResponseBeforePersistenceKeepsDispatchVetoAndUnrelatedMixedUndo()
     {
         var h = await CreationHarness.Create(); var a = h.Add("A"); var b = h.Add("B");
+        var repository = h.Session.Workspace.Open(h.Workspace.Selected!).Single(r => r.ItemId == b).Cells[^1];
+        h.Session.Workspace.SetBuffer(repository, "before paste");
         h.Session.Workspace.Paste("P1", h.Session.Workspace.Open(h.Workspace.Selected!), 100, 0, "A2\nB2");
+        h.Session.Workspace.SetBuffer(repository, "later independent input");
         FileStream? gate = null;
         h.AfterCreate = () => gate = new FileStream(Path.Combine(h.Existing.Root, "Drafts", ".writer.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         try { await h.Apply(a); } finally { gate?.Dispose(); }
@@ -220,11 +224,30 @@ internal sealed class CreationTests
         h.Session.Workspace.Undo("P1");
         Assert.That(h.Session.Workspace.LocalRows.Single(r => r.Id == a).Title, Is.EqualTo("A2"));
         Assert.That(h.Session.Workspace.LocalRows.Single(r => r.Id == b).Title, Is.EqualTo("B"));
+        Assert.That(h.Session.Workspace.Buffer(repository), Is.EqualTo("later independent input"));
         await h.Workspace.ResumeApplyAsync(h.Session.Workspace.Journal.Single().Id); Assert.That(h.Issues, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task SuccessfulPromotionRetainsUnrelatedMixedUndoAndLaterInputAfterReload()
+    {
+        var h = await CreationHarness.Create(); var a = h.Add("A"); var b = h.Add("B");
+        var rows = h.Session.Workspace.Open(h.Workspace.Selected!);
+        var repository = rows.Single(r => r.ItemId == b).Cells[^1];
+        h.Session.Workspace.SetBuffer(repository, "before paste");
+        h.Session.Workspace.Paste("P1", rows, 100, 0, "A2\nB2");
+        h.Session.Workspace.SetBuffer(repository, "later independent input");
+        await h.Apply(a); await h.Restart();
+        Assert.That(h.Session.Workspace.Creations.Single().Completed, Is.True);
+        Assert.That(h.Session.Workspace.LocalRows.Any(r => r.Id == a), Is.False);
+        h.Session.Workspace.Undo("P1");
+        Assert.That(h.Session.Workspace.LocalRows.Single(r => r.Id == b).Title, Is.EqualTo("B"));
+        Assert.That(h.Session.Workspace.Buffer(repository), Is.EqualTo("later independent input"));
+        Assert.That(h.Issues, Has.Count.EqualTo(1));
     }
     [Test]
     public void CheckpointUsesNextExplicitVersion()
-        => Assert.That(new EditingWorkspace(new("github.com", 42)).Snapshot().Version, Is.EqualTo(12));
+        => Assert.That(new EditingWorkspace(new("github.com", 42)).Snapshot().Version, Is.EqualTo(14));
 
     [TestCase(false), TestCase(true)]
     public async Task RemoteMembershipOrFieldBeforePersistenceReconcilesAfterReloadWithoutReplay(bool fieldStage)
@@ -258,5 +281,198 @@ internal sealed class CreationTests
         Assert.That(review.SelectedRows, Is.EqualTo(1));
         Assert.That(review.Blocked, Has.Some.Contains("タイトル"));
         Assert.That(w.ReviewApply(p, new HashSet<string>()).Blocked, Is.Empty);
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task BoundCreationUnregisterRetainsJournalThroughLastProjectRestartAndReregistration(bool discardLocalWork)
+    {
+        var h = await BoundCreationForUnregister();
+        var project = h.Workspace.Selected!;
+        var local = h.Add("Unsent local work");
+        var cell = h.Session.Workspace.Open(project).Single(row => row.ItemId == "P1-T1").Cells[0];
+        h.Session.Workspace.Commit("P1", cell, "Unsent title edit");
+        Assert.That(await h.Workspace.FlushDraftsAsync(), Is.True);
+        var journal = JsonSerializer.Serialize(h.Session.Workspace.Journal);
+        var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+
+        await h.Workspace.UnregisterAsync(retainDrafts: !discardLocalWork, discardDrafts: discardLocalWork);
+
+        Assert.That(h.Workspace.Selected, Is.Null, h.Workspace.Status);
+        Assert.That(h.Workspace.Registrations, Is.Empty);
+        var saved = (await new DraftStore(h.Existing.Root).LoadAsync(project.Snapshot.Id.Scope))!;
+        Assert.That(saved.Registrations, Is.Empty);
+        Assert.That(JsonSerializer.Serialize(saved.Journal), Is.EqualTo(journal));
+        Assert.That(saved.LocalRows!.Any(row => row.Id == local), Is.EqualTo(!discardLocalWork));
+        Assert.That(saved.Fields.Any(field => field.Key == cell.Key && field.Change?.Value == "Unsent title edit"), Is.EqualTo(!discardLocalWork));
+
+        var reopened = new RegistrationWorkspace(new(h.Existing.Root));
+        await reopened.RestoreAsync(); await reopened.BindAsync(h.Existing.Context, h.Existing.Service);
+        Assert.That(reopened.Registrations, Is.Empty);
+        var choice = await new ProjectDiscovery(h.Existing.Service).ResolveAsync(h.Existing.Context, project.Snapshot.Url, default);
+        await reopened.RegisterAsync(choice, project.DefaultRepository);
+        Assert.That(reopened.Selected?.Snapshot.Id, Is.EqualTo(project.Snapshot.Id), reopened.Status);
+        Assert.That(JsonSerializer.Serialize(reopened.Drafts!.Workspace.Journal), Is.EqualTo(journal));
+        Assert.That(reopened.Drafts.Workspace.LocalRows.Any(row => row.Id == local), Is.EqualTo(!discardLocalWork));
+        Assert.That(reopened.Drafts.Workspace.Open(reopened.Selected!).Count(row => row.ItemId == "item-created1"), Is.EqualTo(1));
+        Assert.That(reopened.Drafts.Workspace.Creations.Single().EarlierUncertain, Is.True);
+        Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes),
+            "Unregister, restart and registration must preserve the original request and never recreate or resend it.");
+    }
+
+    [TestCase("retry"), TestCase("retired"), TestCase("membership"), TestCase("fields"), TestCase("other-project")]
+    public async Task BoundCreationUnregisterKeepsOtherUnresolvedWorkBlocked(string unresolved)
+    {
+        CreationHarness h;
+        if (unresolved == "retry")
+        {
+            h = await CreationHarness.Create(2); var local = h.Add(); h.LoseCreate = true; await h.Apply(local);
+            var original = h.Session.Workspace.Creations.Single(); var batch = h.Session.Workspace.Journal.Single();
+            h.LoseCreate = false; await h.Workspace.PrepareCreationRetryAsync(batch.Id, original.Id);
+            await h.Workspace.ConfirmCreationRetryAsync(h.Workspace.ApplyReview!);
+            Assert.That(h.Session.Workspace.Creations.Last().Completed, Is.True);
+            Assert.That(h.Session.Workspace.Creations.Last().PreviousAttempt, Is.EqualTo(original.Id));
+        }
+        else
+        {
+            h = await BoundCreationForUnregister(complete: false, field: unresolved is "fields" or "retired");
+            var creation = h.Session.Workspace.Creations.Single(); var batch = h.Session.Workspace.Journal.Single();
+            if (unresolved is "fields" or "retired")
+            {
+                h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+                await h.Workspace.ResumeApplyAsync(batch.Id);
+                Assert.That(h.Session.Workspace.Creations.Single().Fields!.Single().State, Is.EqualTo(ApplyState.Unknown));
+                if (unresolved == "retired")
+                {
+                    h.Existing.MutationResult = null;
+                    var cell = h.Session.Workspace.Open(h.Workspace.Selected!).Single(row => row.ItemId == creation.LocalId).Cells[1];
+                    h.Session.Workspace.Commit("P1", cell, "todo", true);
+                    await h.Workspace.PrepareCreationSetupAsync(batch.Id, creation.Id);
+                    await h.Workspace.ConfirmCreationSetupAsync(h.Workspace.CreationSetupReview!);
+                    var completed = h.Session.Workspace.Creations.Single();
+                    Assert.That(completed.Completed, Is.True, h.Workspace.Status);
+                    Assert.That(completed.EarlierFields!.Single().State, Is.EqualTo(ApplyState.Unknown));
+                }
+            }
+            else if (unresolved == "other-project")
+            {
+                var first = h.Workspace.Selected!;
+                var choice = await new ProjectDiscovery(h.Existing.Service).ResolveAsync(h.Existing.Context,
+                    "https://github.com/users/sample-user/projects/2", default);
+                await h.Workspace.RegisterAsync(choice, null); await h.Workspace.SelectAsync(first.Snapshot.Id);
+                await h.Workspace.ResumeApplyAsync(batch.Id);
+                var cell = h.Session.Workspace.Open(h.Workspace.Selected!).Single(row => row.ItemId == "P1-T1").Cells[0];
+                h.Session.Workspace.Commit("P1", cell, "Unresolved existing Issue");
+                h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+                await h.Apply("P1-T1"); await h.Workspace.SelectAsync(choice.Id);
+                Assert.That(h.Session.Workspace.Journal.Last().Operations.Single().State, Is.EqualTo(ApplyState.Failed));
+                Assert.That(h.Workspace.Selected!.Snapshot.Id.NodeId, Is.EqualTo("P2"));
+            }
+            else Assert.That(h.Session.Workspace.Creations.Single().ItemId, Is.Null);
+        }
+        var selected = h.Workspace.Selected!;
+        var store = new DraftStore(h.Existing.Root);
+        var before = await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope));
+        var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+
+        await h.Workspace.UnregisterAsync(retainDrafts: true);
+
+        Assert.That(h.Workspace.Selected, Is.SameAs(selected));
+        Assert.That(h.Workspace.Status, Does.Contain("未解決のApply履歴"));
+        Assert.That(await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope)), Is.EqualTo(before));
+        Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
+    }
+
+    [Test]
+    public async Task BoundCreationUnregisterSaveFailureKeepsTheRegistrationAndJournalUntilRetry()
+    {
+        var h = await BoundCreationForUnregister(); var selected = h.Workspace.Selected!;
+        var store = new DraftStore(h.Existing.Root);
+        var before = await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope));
+        var journal = JsonSerializer.Serialize(h.Session.Workspace.Journal);
+        using (var competingWriter = new FileStream(Path.Combine(h.Existing.Root, ".writer.lock"),
+            FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            await h.Workspace.UnregisterAsync(retainDrafts: true);
+            Assert.That(h.Workspace.Selected, Is.SameAs(selected));
+            Assert.That(h.Workspace.Status, Does.StartWith("ローカル保存失敗"));
+            Assert.That(await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope)), Is.EqualTo(before));
+        }
+
+        await h.Workspace.UnregisterAsync(retainDrafts: true);
+
+        Assert.That(h.Workspace.Selected, Is.Null, h.Workspace.Status);
+        Assert.That(JsonSerializer.Serialize((await store.LoadAsync(selected.Snapshot.Id.Scope))!.Journal), Is.EqualTo(journal));
+    }
+
+    [TestCase("superseded-existing"), TestCase("normally-created-retired")]
+    public async Task UnregisterKeepsUncertainDispatchBlockedRegardlessOfApprovalOrCreationOriginAfterRestart(string origin)
+    {
+        CreationHarness h;
+        if (origin == "superseded-existing")
+        {
+            h = await BoundCreationForUnregister();
+            var row = h.Session.Workspace.Open(h.Workspace.Selected!).Single(r => r.ItemId == "P1-T1");
+            h.Session.Workspace.Commit("P1", row.Cells[0], "Uncertain existing title");
+            h.Existing.LoseResponse = true; await h.Apply(row.ItemId);
+            var batch = h.Session.Workspace.Journal.Last();
+            Assert.That(batch.Operations.Single().State, Is.EqualTo(ApplyState.Unknown));
+            await h.Workspace.SupersedeApplyAsync(batch.Id);
+            var operation = h.Session.Workspace.Journal.Last().Operations.Single();
+            Assert.That(operation.State, Is.EqualTo(ApplyState.Superseded));
+            Assert.That(operation.Attempts.Single().State, Is.EqualTo(ApplyState.Unknown));
+            Assert.That(CreationJournal.IsCompletedOriginalBinding(h.Session.Workspace.Creations.Single()), Is.True);
+        }
+        else
+        {
+            h = await CreationHarness.Create(2); var local = h.Add("Normally acknowledged creation");
+            var status = h.Session.Workspace.Open(h.Workspace.Selected!).Single(r => r.ItemId == local).Cells[1];
+            h.Session.Workspace.Commit("P1", status, "done", true);
+            h.Existing.MutationResult = (_, _) => ScriptedRunner.Http("{}", 403);
+            await h.Apply(local);
+            var creation = h.Session.Workspace.Creations.Single();
+            Assert.That(creation.Received, Is.Not.Null);
+            Assert.That(creation.Fields!.Single().State, Is.EqualTo(ApplyState.Unknown));
+            h.Existing.MutationResult = null;
+            h.Session.Workspace.Commit("P1", status, "todo", true);
+            await h.Workspace.PrepareCreationSetupAsync(h.Session.Workspace.Journal.Single().Id, creation.Id);
+            await h.Workspace.ConfirmCreationSetupAsync(h.Workspace.CreationSetupReview!);
+            creation = h.Session.Workspace.Creations.Single();
+            Assert.That(creation.Completed, Is.True, h.Workspace.Status);
+            Assert.That(creation.UserBound, Is.False);
+            Assert.That(creation.EarlierUncertain, Is.False);
+            Assert.That(creation.EarlierFields!.Single().State, Is.EqualTo(ApplyState.Unknown));
+        }
+        await h.Restart();
+        var selected = h.Workspace.Selected!;
+        var store = new DraftStore(h.Existing.Root);
+        var checkpoint = await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope));
+        var journal = JsonSerializer.Serialize(h.Session.Workspace.Journal);
+        var writes = h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())).ToArray();
+
+        await h.Workspace.UnregisterAsync(retainDrafts: true);
+
+        Assert.Multiple(() => {
+            Assert.That(h.Workspace.Selected, Is.SameAs(selected));
+            Assert.That(h.Workspace.Status, Does.Contain("未解決のApply履歴"));
+            Assert.That(JsonSerializer.Serialize(h.Session.Workspace.Journal), Is.EqualTo(journal));
+            Assert.That(h.Writes.Select(w => (w.Query, Input: w.Input.GetRawText())), Is.EqualTo(writes));
+        });
+        Assert.That(await File.ReadAllBytesAsync(store.FileFor(selected.Snapshot.Id.Scope)), Is.EqualTo(checkpoint));
+    }
+
+    private static async Task<CreationHarness> BoundCreationForUnregister(bool complete = true, bool field = false)
+    {
+        var h = await CreationHarness.Create(2); var local = h.Add("Recovered creation");
+        if (field) h.Session.Workspace.Commit("P1", h.Session.Workspace.Open(h.Workspace.Selected!).Single(row => row.ItemId == local).Cells[1], "done", true);
+        h.LoseCreate = true; await h.Apply(local);
+        var creation = h.Session.Workspace.Creations.Single(); var batch = h.Session.Workspace.Journal.Single();
+        await h.Workspace.InspectCreationBindingAsync(batch.Id, creation.Id, "https://github.com/sample-user/first/issues/1001");
+        await h.Workspace.ConfirmCreationBindingAsync(batch.Id, creation.Id, h.Workspace.CreationBindingPreview!, h.Workspace.CreationBindingRevision);
+        if (complete)
+        {
+            await h.Workspace.ResumeApplyAsync(batch.Id);
+            Assert.That(h.Session.Workspace.Creations.Single().Completed, Is.True, h.Workspace.Status);
+        }
+        return h;
     }
 }

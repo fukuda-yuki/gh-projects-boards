@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="312" result="Passed" start-time="2026-10-02T21:00:18.7310381Z" end-time="2026-10-02T21:01:27.1052260Z" duration="68.374110" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30" random-seed="169861121">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == ApplyOutcomeRecovery or cat == ApplyPublicationPresentation or cat == HistoryConnection or test =~ '(LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic|UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying|BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory|CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord|WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover|SuccessfulConfirmationReturnsToTableWithoutOpeningResults|MixedResultsReturnToExactProblemAndPreservePendingInputAndView)'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-060018-144-01e781e2\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>ApplyOutcomeRecovery</cat>
+      <cat>ApplyPublicationPresentation</cat>
+      <cat>HistoryConnection</cat>
+      <test re="1">(LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic|UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying|BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory|CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord|WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover|SuccessfulConfirmationReturnsToTableWithoutOpeningResults|MixedResultsReturnToExactProblemAndPreservePendingInputAndView)</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1392" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T21:00:18.7310381Z" end-time="2026-10-02T21:01:27.1052260Z" duration="68.374110" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="106168" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1393" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T21:00:18.7332246Z" end-time="2026-10-02T21:01:27.1051457Z" duration="68.371921" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30">
+      <test-suite type="TestSuite" id="1394" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T21:00:18.7333644Z" end-time="2026-10-02T21:01:27.1051438Z" duration="68.371779" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30">
+        <test-suite type="TestSuite" id="1395" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T21:00:18.7333720Z" end-time="2026-10-02T21:01:27.1051346Z" duration="68.371763" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30">
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="102" result="Passed" start-time="2026-10-02T21:00:18.7333732Z" end-time="2026-10-02T21:01:27.1051291Z" duration="68.371756" total="20" initiated="20" passed="20" failed="0" warnings="0" completed="20" skipped="0" inconclusive="0" asserts="30">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1110" name="BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" methodname="BoundCreationCompletionReturnsToEditingAndKeepsOriginalUnknownInFullHistory" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1463201201" result="Passed" start-time="2026-10-02T21:00:18.7343177Z" end-time="2026-10-02T21:00:26.2828106Z" duration="7.548535" asserts="3">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-3242d01c-9361-416b-b56e-cae057ed6c53; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1070" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T21:00:26.2836965Z" end-time="2026-10-02T21:00:33.1835972Z" duration="6.899901" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="HistoryConnection" />
+              </properties>
+              <test-case id="1068" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(42)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(42)" methodname="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="75063810" result="Passed" start-time="2026-10-02T21:00:26.2838722Z" end-time="2026-10-02T21:00:29.7484214Z" duration="3.464550" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-9148c9c9-aa60-40f3-8b48-d984692105f1; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1069" name="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(99)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending(99)" methodname="CachedHistoryExplainsConnectionAndReturnsToTheSameHistoryWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1694667616" result="Passed" start-time="2026-10-02T21:00:29.7485036Z" end-time="2026-10-02T21:00:33.1828245Z" duration="3.434321" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-e9a5fcf7-d23d-49a6-a531-2e4256015802; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1071" name="CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" methodname="CachedUncertainCreationExplainsTheConnectionNeededForResolutionAfterWithdrawal" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1250326885" result="Passed" start-time="2026-10-02T21:00:33.1837528Z" end-time="2026-10-02T21:00:34.7487765Z" duration="1.565024" asserts="0">
+              <properties>
+                <property name="Category" value="HistoryConnection" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-7638ad97-d645-43e9-80e7-56f955a21122; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1025" name="CancelledApprovedExecutionRetainsUnsentWorkAndOffersTheExistingHistoryRoute" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CancelledApprovedExecutionRetainsUnsentWorkAndOffersTheExistingHistoryRoute" methodname="CancelledApprovedExecutionRetainsUnsentWorkAndOffersTheExistingHistoryRoute" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1934730884" result="Passed" start-time="2026-10-02T21:00:34.7488054Z" end-time="2026-10-02T21:00:36.3848976Z" duration="1.636093" asserts="1">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-e4680675-b7fc-43f6-b606-e10d704c2d41; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1031" name="CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T21:00:36.3849286Z" end-time="2026-10-02T21:00:41.3524119Z" duration="4.967483" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="6">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <test-case id="1029" name="CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory(False)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory(False)" methodname="CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="716434084" result="Passed" start-time="2026-10-02T21:00:36.3849680Z" end-time="2026-10-02T21:00:38.9843444Z" duration="2.599377" asserts="3">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-8eabc4bc-63a3-45dd-a2be-518f6b814fa2; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1030" name="CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory(True)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory(True)" methodname="CancelledOrFailedRemainingReviewDoesNotInventAnExecutionOrReplaceHistory" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="532690225" result="Passed" start-time="2026-10-02T21:00:38.9843795Z" end-time="2026-10-02T21:00:41.3523000Z" duration="2.367921" asserts="3">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a1cce483-e579-4c31-a90f-45b9bf1d14d5; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1038" name="CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" methodname="CompletedApplyHistoryDefaultsToAttentionWithoutDeletingVerifiedRecord" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1537351969" result="Passed" start-time="2026-10-02T21:00:41.3524257Z" end-time="2026-10-02T21:00:41.8834285Z" duration="0.531004" asserts="1">
+              <properties>
+                <property name="Category" value="ApplyProblemPresentation" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-01292b6c-bd7d-4b01-981d-3bb0acfb38cf; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1028" name="KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" methodname="KnownFailureReviewsRemainingWorkAndNewExecutionReplacesOnlyThePreviousHistoryDestination" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1861275962" result="Passed" start-time="2026-10-02T21:00:41.8834674Z" end-time="2026-10-02T21:00:46.6857339Z" duration="4.802267" asserts="4">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-9b4d42f3-fd6e-418c-af44-f59d0597ea59; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1109" name="LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" methodname="LegacyFailedHistoryExplainsFailureAndRetainsItsOriginalDiagnostic" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1135639171" result="Passed" start-time="2026-10-02T21:00:46.6857629Z" end-time="2026-10-02T21:00:47.2874500Z" duration="0.601688" asserts="2">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a48b188b-761d-4266-9517-2fc41ad886e6; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1043" name="MixedResultsReturnToExactProblemAndPreservePendingInputAndView" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.MixedResultsReturnToExactProblemAndPreservePendingInputAndView" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-10-02T21:00:47.2874783Z" end-time="2026-10-02T21:01:03.8697616Z" duration="16.582283" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="3">
+              <properties>
+                <property name="Category" value="ApplyProblemPresentation" />
+              </properties>
+              <test-case id="1040" name="MixedResultsReturnToExactProblemAndPreservePendingInputAndView(False,False)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.MixedResultsReturnToExactProblemAndPreservePendingInputAndView(False,False)" methodname="MixedResultsReturnToExactProblemAndPreservePendingInputAndView" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="557723872" result="Passed" start-time="2026-10-02T21:00:47.2875259Z" end-time="2026-10-02T21:00:52.9259594Z" duration="5.638434" asserts="1">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-bfaab121-61f7-48e4-a2b6-688786f81bb6; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1041" name="MixedResultsReturnToExactProblemAndPreservePendingInputAndView(True,False)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.MixedResultsReturnToExactProblemAndPreservePendingInputAndView(True,False)" methodname="MixedResultsReturnToExactProblemAndPreservePendingInputAndView" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1424965036" result="Passed" start-time="2026-10-02T21:00:52.9259881Z" end-time="2026-10-02T21:00:58.4026483Z" duration="5.476661" asserts="1">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-0e73d3ac-ad7d-4439-b804-6d7750920a8c; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1042" name="MixedResultsReturnToExactProblemAndPreservePendingInputAndView(True,True)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.MixedResultsReturnToExactProblemAndPreservePendingInputAndView(True,True)" methodname="MixedResultsReturnToExactProblemAndPreservePendingInputAndView" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="788092452" result="Passed" start-time="2026-10-02T21:00:58.4026840Z" end-time="2026-10-02T21:01:03.8697293Z" duration="5.467046" asserts="1">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-a905afce-9541-4706-8275-f433321656b3; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1026" name="MixedSuccessfulUpdateAndUnknownCreationOpenTheCreationStagesAndKeepTheApprovedIntent" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.MixedSuccessfulUpdateAndUnknownCreationOpenTheCreationStagesAndKeepTheApprovedIntent" methodname="MixedSuccessfulUpdateAndUnknownCreationOpenTheCreationStagesAndKeepTheApprovedIntent" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="2087916947" result="Passed" start-time="2026-10-02T21:01:03.8697742Z" end-time="2026-10-02T21:01:07.8065997Z" duration="3.936826" asserts="3">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-7ead7c8e-9a4c-42a7-96eb-be207711b202; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1027" name="PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" methodname="PartialOutcomeAndFailedDetailExposeVerifiedStatusAndExactPermissionTarget" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1132353579" result="Passed" start-time="2026-10-02T21:01:07.8066274Z" end-time="2026-10-02T21:01:14.0103324Z" duration="6.203705" asserts="1">
+              <properties>
+                <property name="Category" value="ApplyOutcomeRecovery" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-50958d91-b3dc-4e10-a0c2-d837270d67e9; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1014" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T21:01:14.0103621Z" end-time="2026-10-02T21:01:17.4954113Z" duration="3.485049" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="ApplyPublicationPresentation" />
+              </properties>
+              <test-case id="1012" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="228322148" result="Passed" start-time="2026-10-02T21:01:14.0103930Z" end-time="2026-10-02T21:01:15.7967501Z" duration="1.786358" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-b1d87dae-ffbf-4fd7-8ae7-39a4f8fa2a97; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1013" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1269553270" result="Passed" start-time="2026-10-02T21:01:15.7967945Z" end-time="2026-10-02T21:01:17.4953779Z" duration="1.698584" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-0fc3a523-22fc-4bc2-88ce-68cd2478e8ed; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1039" name="SuccessfulConfirmationReturnsToTableWithoutOpeningResults" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.SuccessfulConfirmationReturnsToTableWithoutOpeningResults" methodname="SuccessfulConfirmationReturnsToTableWithoutOpeningResults" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="477731460" result="Passed" start-time="2026-10-02T21:01:17.4954253Z" end-time="2026-10-02T21:01:18.9509397Z" duration="1.455515" asserts="0">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-40025842-6890-4567-b9f3-12a6889c6e70; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1111" name="UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" methodname="UncertainCreationHistoryShowsDestinationStageAndContextualResolutionWithoutRetrying" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1401916523" result="Passed" start-time="2026-10-02T21:01:18.9509795Z" end-time="2026-10-02T21:01:21.1339646Z" duration="2.182985" asserts="3">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-465e9123-2164-4ae5-ae6c-8e468b9452a0; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+            <test-case id="1035" name="WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" methodname="WithdrawingFailedApplyDoesNotReopenAnObsoleteProblemOnHover" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="572269326" result="Passed" start-time="2026-10-02T21:01:21.1340020Z" end-time="2026-10-02T21:01:27.1050953Z" duration="5.971093" asserts="3">
+              <properties>
+                <property name="Category" value="ApplyProblemPresentation" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-86390bb4-6d20-487e-8390-c789df6924b9; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

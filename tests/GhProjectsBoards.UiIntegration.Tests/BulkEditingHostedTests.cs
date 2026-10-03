@@ -3,6 +3,8 @@ using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -41,6 +43,268 @@ public sealed class BulkEditingHostedTests
         .Any(i => i.IsLoaded && AutomationProperties.GetAutomationId(i) == "ChoiceOption-done");
     private async Task ChangeSource() => await Ui.ChooseCell("GridCell0_1", "done");
     private Task AssertDifferences(int count) => Ui.Run(() => Assert.That(session.Workspace.DifferenceCount, Is.EqualTo(count)));
+
+    [TestCase("GridRangePaste"), TestCase("GridRangeFillDown"), Category("RangeInputRepair")]
+    public async Task NativeRangeMenuThenKeyboardUndoKeepsTheRangeAndUnrelatedPendingText(string command)
+    {
+        await ChangeSource();
+        await AddUnrelatedPendingText();
+        await SheetNativeInput.Click("GridCell0_1");
+        await SheetNativeInput.Click("GridCell2_1", VirtualKey.Shift);
+        await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("3行・3セル"));
+        string before = "";
+        await Ui.Run(() => before = WorkWithoutRevision());
+        if (command == "GridRangePaste") clipboard.SetResult("Done");
+        await SheetNativeInput.Click("GridRangeCommands");
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>(command) is { IsLoaded: true, IsEnabled: true });
+        await FocusRangeCommandWithNativeKey(command);
+        await SheetNativeInput.Press(VirtualKey.Enter);
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>(command) is null && session.Workspace.DifferenceCount == 3);
+        string focusAfterMenu = "";
+        await Ui.Run(() => focusAfterMenu = ElementName(FocusManager.GetFocusedElement(grid.XamlRoot) as DependencyObject));
+        TestContext.Out.WriteLine("Focus after native menu closure: " + focusAfterMenu);
+        // The menu must close naturally. No test refocus is allowed before Undo.
+        await SheetNativeInput.Press(VirtualKey.Z, VirtualKey.Control);
+        try { await Ui.Until(() => session.Workspace.DifferenceCount == 1); }
+        finally { await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "range-native-undo-" + command)); }
+        await Ui.Run(() => {
+            Assert.That(WorkWithoutRevision(), Is.EqualTo(before));
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・3セル"));
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("GridSelection")), Does.Contain("先頭 P1T1 / アクティブ P1T3"));
+            AssertUnrelatedPendingText();
+        });
+        await SheetNativeInput.Press(VirtualKey.Z, VirtualKey.Control);
+        await Ui.Until(() => session.Workspace.DifferenceCount == 0);
+        await Ui.Run(() => { Assert.That(session.Workspace.Snapshot().History, Is.Empty); AssertUnrelatedPendingText(); });
+    }
+
+    [Test, Category("RangeInputRepair")]
+    public async Task QuickFilterNativeUndoDoesNotUndoSheetWorkOrPendingText()
+    {
+        await ChangeSource(); await AddUnrelatedPendingText();
+        await SheetNativeInput.Click("GridCell0_1"); await SheetNativeInput.Click("GridCell2_1", VirtualKey.Shift);
+        string before = "";
+        await Ui.Run(() => before = WorkWithoutRevision());
+        await SheetNativeInput.Click("GridQuickTitleFilter");
+        await SheetNativeInput.Press(VirtualKey.Number1);
+        await Ui.Until(() => Ui.Find<TextBox>("GridQuickTitleFilter").Text == "1");
+        await SheetNativeInput.Press(VirtualKey.Z, VirtualKey.Control);
+        await Ui.Until(() => Ui.Find<TextBox>("GridQuickTitleFilter").Text == "");
+        await Ui.Run(() => { Assert.That(WorkWithoutRevision(), Is.EqualTo(before)); AssertUnrelatedPendingText(); });
+    }
+
+    [TestCase(false), TestCase(true), Category("RangeInputRepair")]
+    public async Task CancelledOrRejectedRangeMenuDoesNotInsertAnUndoOperation(bool reject)
+    {
+        await ChangeSource();
+        if (reject) await Ui.Run(() => session.Workspace.SetBuffer(session.Workspace.Open(project)[1].Cells[1], "unfinished target"));
+        await SheetNativeInput.Click("GridCell0_1"); await SheetNativeInput.Click("GridCell2_1", VirtualKey.Shift);
+        string before = "";
+        await Ui.Run(() => before = WorkWithoutRevision());
+        await SheetNativeInput.Click("GridRangeCommands");
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("GridRangeFillDown") is { IsLoaded: true });
+        if (reject)
+        {
+            await FocusRangeCommandWithNativeKey("GridRangeFillDown");
+            await SheetNativeInput.Press(VirtualKey.Enter);
+            await Ui.Until(() => Ui.Find<TextBlock>("DraftStatus").Text.Contains("未確定入力"));
+        }
+        else await SheetNativeInput.Press(VirtualKey.Escape);
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("GridRangeFillDown") is null);
+        await Ui.Run(() => Assert.That(WorkWithoutRevision(), Is.EqualTo(before)));
+        await SheetNativeInput.Press(VirtualKey.Z, VirtualKey.Control);
+        await Ui.Until(() => session.Workspace.DifferenceCount == 0);
+        await Ui.Run(() => {
+            Assert.That(session.Workspace.Snapshot().History, Is.Empty);
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[1].Cells[1]), Is.EqualTo(reject ? "unfinished target" : null));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・3セル"));
+        });
+    }
+
+    [Test, Category("RangeInputRepair")]
+    public async Task NewlySelectedFillHandleAcquiresNativeDragAndCopiesOnlyOnRelease()
+    {
+        await ChangeSource(); await AddUnrelatedPendingText();
+        await SheetNativeInput.Click("GridCell0_1");
+        Button handle = null!;
+        var directPress = false; var capturedOnPress = false; var captureLost = false;
+        var observations = new List<string>();
+        PointerEventHandler pressed = (_, args) => {
+            directPress = true;
+            capturedOnPress = handle.PointerCaptures?.Any(pointer => pointer.PointerId == args.Pointer.PointerId) == true;
+            observations.Add($"Handle press: captured={capturedOnPress}; source={ElementPath(args.OriginalSource as DependencyObject)}");
+        };
+        PointerEventHandler lost = (_, _) => { captureLost = true; observations.Add("Handle pointer capture lost"); };
+        PointerEventHandler rootPressed = (_, args) => observations.Add("Root press source: " + ElementPath(args.OriginalSource as DependencyObject));
+        string before = "";
+        await Ui.Run(() => {
+            handle = Ui.Find<Button>("GridFillHandle0_1");
+            observations.Add("Handle ancestry: " + ElementPath(handle));
+            var center = handle.TransformToVisual(Ui.Root).TransformPoint(new(handle.ActualWidth / 2, handle.ActualHeight / 2));
+            observations.Add("Hit ancestry: " + string.Join(" | ", VisualTreeHelper.FindElementsInHostCoordinates(center, Ui.Root).Take(5).Select(ElementPath)));
+            handle.AddHandler(UIElement.PointerPressedEvent, pressed, true);
+            handle.PointerCaptureLost += lost; Ui.Root.AddHandler(UIElement.PointerPressedEvent, rootPressed, true);
+            before = WorkWithoutRevision();
+        });
+        try
+        {
+            await SheetNativeInput.Drag("GridFillHandle0_1", "GridCell9_1", async () => {
+                await Ui.Run(() => {
+                    observations.Add($"Held: directPress={directPress}; capturedOnPress={capturedOnPress}; captureLost={captureLost}; captures={handle.PointerCaptures?.Count ?? 0}; selection={Ui.Find<TextBlock>("GridSelection").Text}");
+                    Assert.That(directPress && capturedOnPress, Is.True, "The visible handle must receive the native press and acquire its pointer.");
+                    Assert.That(WorkWithoutRevision(), Is.EqualTo(before));
+                });
+                await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("10行へコピー予定"));
+                await Ui.Run(async () => await ApplyInformationEvidence.Capture(grid, "fill-held-preview"));
+            });
+            await Ui.Until(() => session.Workspace.DifferenceCount == 10);
+            await Ui.Run(() => {
+                Assert.That(session.Workspace.Fields.Where(f => f.Change is not null).Select(f => f.Key.NodeId), Is.EquivalentTo(Enumerable.Range(1, 10).Select(i => "P1T" + i)));
+                Assert.That(session.Workspace.Fields.Where(f => f.Change is not null).Select(f => f.Change!.Value), Is.All.EqualTo("done"));
+                AssertUnrelatedPendingText();
+            });
+            await Ui.ClickCommand("GridUndo");
+            await Ui.Run(() => Assert.That(WorkWithoutRevision(), Is.EqualTo(before)));
+        }
+        finally
+        {
+            await Ui.Run(async () => {
+                handle.RemoveHandler(UIElement.PointerPressedEvent, pressed); handle.PointerCaptureLost -= lost;
+                Ui.Root.RemoveHandler(UIElement.PointerPressedEvent, rootPressed);
+                observations.Add("Final handle ancestry: " + ElementPath(handle));
+                await ApplyInformationEvidence.Capture(grid, "fill-native-final");
+            });
+            foreach (var observation in observations) TestContext.Out.WriteLine(observation);
+        }
+    }
+
+    private Task AddUnrelatedPendingText() => Ui.Run(() => {
+        var rows = session.Workspace.Open(project);
+        session.Workspace.SetBuffer(rows[90].Cells[0], "unrelated pending title");
+        session.Workspace.SetBuffer(rows[91].Cells[0], "second unrelated pending title");
+    });
+    private async Task FocusRangeCommandWithNativeKey(string command)
+    {
+        await Ui.Until(() => FocusManager.GetFocusedElement(grid.XamlRoot) is MenuFlyoutItem);
+        var atCommand = false;
+        await Ui.Run(() => atCommand = ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Popup<MenuFlyoutItem>(command)));
+        if (!atCommand) await SheetNativeInput.Press(VirtualKey.Down);
+        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(grid.XamlRoot), Ui.Popup<MenuFlyoutItem>(command)));
+    }
+    private void AssertUnrelatedPendingText()
+    {
+        var rows = session.Workspace.Open(project);
+        Assert.That(session.Workspace.Buffer(rows[90].Cells[0]), Is.EqualTo("unrelated pending title"));
+        Assert.That(session.Workspace.Buffer(rows[91].Cells[0]), Is.EqualTo("second unrelated pending title"));
+        Assert.That(session.Workspace.Fields.Count(field => field.Buffer is not null), Is.EqualTo(2));
+        Assert.That(session.Workspace.Journal, Is.Empty);
+    }
+    private string WorkWithoutRevision() => System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot() with { Revision = 0 });
+    private static string ElementName(DependencyObject? element) => element is null ? "null" : element.GetType().Name + "#" + AutomationProperties.GetAutomationId(element);
+    private static string ElementPath(DependencyObject? element)
+    {
+        var names = new List<string>();
+        for (; element is not null; element = VisualTreeHelper.GetParent(element)) names.Add(ElementName(element));
+        return string.Join(" > ", names);
+    }
+
+    [TestCase("GridRangePaste"), TestCase("GridRangeFillDown"), Category("RangeCommands")]
+    public async Task NamedRangeMenuAtNarrowWidthKeepsTheRangeAndOneBulkUndo(string command)
+    {
+        await Ui.Run(() => grid.Width = 640);
+        await ChangeSource();
+        await SheetNativeInput.Click("GridCell0_1");
+        await SheetNativeInput.Click("GridCell2_1", VirtualKey.Shift);
+        await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("3行・3セル"));
+        await Ui.Run(() => {
+            var entry = Ui.Find<Button>("GridRangeCommands");
+            var bounds = entry.TransformToVisual(grid).TransformBounds(new(0, 0, entry.ActualWidth, entry.ActualHeight));
+            Assert.That(entry.Content, Is.EqualTo("範囲操作"));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(entry).GetName(), Is.EqualTo("範囲操作"));
+            Assert.That(entry.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(entry.ActualWidth, Is.GreaterThan(0));
+            Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Right, Is.LessThanOrEqualTo(grid.ActualWidth));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(entry).IsOffscreen(), Is.False);
+        });
+        if (command == "GridRangePaste") clipboard.SetResult("Done");
+        await SheetNativeInput.Click("GridRangeCommands");
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>(command) is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(async () => {
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・3セル"));
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("GridSelection")), Does.Contain("先頭 P1T1 / アクティブ P1T3"));
+            var expectedAction = command == "GridRangePaste" ? "選択範囲に貼り付け" : "先頭セルの値を下へコピー";
+            Assert.That(Ui.Popup<MenuFlyoutItem>(command)!.Text, Is.EqualTo(expectedAction));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Popup<MenuFlyoutItem>(command)!).GetName(), Is.EqualTo(expectedAction));
+            await CaptureRangeMenu("range-menu-640-" + command);
+            ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Popup<MenuFlyoutItem>(command)!).GetPattern(PatternInterface.Invoke)).Invoke();
+        });
+        await Ui.Until(() => session.Workspace.DifferenceCount == 3);
+        await Ui.Run(() => {
+            Assert.That(session.Workspace.Fields.Where(f => f.Change is not null).Select(f => f.Key.NodeId), Is.EquivalentTo(new[] { "P1T1", "P1T2", "P1T3" }));
+            Assert.That(session.Workspace.Fields.Where(f => f.Change is not null).Select(f => f.Change!.Value), Is.All.EqualTo("done"));
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・3セル"));
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("GridSelection")), Does.Contain("先頭 P1T1 / アクティブ P1T3"));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+        });
+        await Ui.ClickCommand("GridUndo"); await AssertDifferences(1);
+        await Ui.Run(() => {
+            Assert.That(session.Workspace.Fields.Single(f => f.Change is not null).Key.NodeId, Is.EqualTo("P1T1"));
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・3セル"));
+        });
+        await Ui.ClickCommand("GridUndo"); await AssertDifferences(0);
+    }
+
+    [Test, Category("RangeCommands")]
+    public async Task MultiColumnRangeExplainsFillDownWithoutChangingTheSelection()
+    {
+        await SheetNativeInput.Click("GridCell0_0"); await SheetNativeInput.Click("GridCell2_1", VirtualKey.Shift);
+        await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("3行・6セル"));
+        await SheetNativeInput.Click("GridRangeCommands");
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("GridRangeFillDown") is { IsLoaded: true });
+        await Ui.Run(async () => {
+            var fill = Ui.Popup<MenuFlyoutItem>("GridRangeFillDown")!;
+            Assert.That(fill.IsEnabled, Is.False); Assert.That(fill.Text, Does.Contain("1列を選択"));
+            Assert.That(Ui.Popup<MenuFlyoutItem>("GridRangePaste")!.IsEnabled, Is.True);
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("3行・6セル"));
+            Assert.That(session.Workspace.DifferenceCount, Is.Zero);
+            await CaptureRangeMenu("range-menu-multiple-columns");
+        });
+        await SheetNativeInput.Press(VirtualKey.Escape);
+    }
+
+    [Test, Category("RangeCommands")]
+    public async Task SingleCellAndUnconfirmedNativeEditHideRangeCommandsEvenAfterToolbarFocus()
+    {
+        await SheetNativeInput.Click("GridCell0_0");
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("GridRangeCommands").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        await SheetNativeInput.Press(VirtualKey.Down, VirtualKey.Shift);
+        await Ui.Until(() => Ui.Find<Button>("GridRangeCommands").Visibility == Visibility.Visible);
+        await SheetNativeInput.Press(VirtualKey.F2);
+        await Ui.Until(() => Ui.Find<Button>("GridRangeCommands").Visibility == Visibility.Collapsed);
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("GridCell1_0"); input.Text = "unfinished range input";
+            Assert.That(Ui.Find<TextBox>("GridQuickTitleFilter").Focus(FocusState.Keyboard), Is.True);
+        });
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("GridRangeCommands").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("2行・2セル"));
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[1].Cells[0]), Is.EqualTo("unfinished range input"));
+            Assert.That(session.Workspace.DifferenceCount, Is.Zero); Assert.That(session.Workspace.Journal, Is.Empty);
+            FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>("GridCell1_0")).SetFocus();
+        });
+        await SheetNativeInput.Press(VirtualKey.Escape);
+        await Ui.Until(() => Ui.Find<Button>("GridRangeCommands").Visibility == Visibility.Visible);
+        await Ui.Run(() => Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[1].Cells[0]), Is.Null));
+    }
+
+    private async Task CaptureRangeMenu(string name)
+    {
+        await ApplyInformationEvidence.Capture(grid, name + "-sheet");
+        var menu = VisualTreeHelper.GetOpenPopupsForXamlRoot(grid.XamlRoot)
+            .Single(p => Ui.Tree(p.Child).OfType<MenuFlyoutItem>().Any(i => AutomationProperties.GetAutomationId(i) == "GridRangePaste"));
+        await ApplyInformationEvidence.Capture((FrameworkElement)menu.Child, name + "-menu");
+    }
 
     [Test]
     public async Task BodySelectsMenuKeysOpenAndFixedMarkerNeverMovesValueOrArrow()
@@ -97,6 +361,25 @@ public sealed class BulkEditingHostedTests
             Is.EquivalentTo(new[] { "P1T1", "P1T2", "P1T3", "P1T4", "P1T5", "P1T6", "P1T7", "P1T8", "P1T9", "P1T10" })));
         await Ui.ClickCommand("GridUndo"); await AssertDifferences(1);
         await Ui.ClickCommand("GridUndo"); await AssertDifferences(0);
+    }
+
+    [Test, Category("SelectionGesture")]
+    public async Task BodyRangeDragCanReturnToItsPressedCellWithoutChangingWork()
+    {
+        var before = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot());
+        var first = await SheetNativeInput.PointFor("GridCell0_1");
+        var last = await SheetNativeInput.PointFor("GridCell9_1");
+        await SheetNativeInput.Drag(first, last, async () => {
+            await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("10行・10セル"));
+            SheetNativeInput.Move(first);
+            await Ui.Until(() => Ui.Find<TextBlock>("GridSelection").Text.Contains("1行・1セル"));
+        });
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("GridSelection").Text, Does.Contain("1行・1セル"));
+            Assert.That(grid.SelectionIdentity, Is.EqualTo(("P1T1", session.Workspace.Open(project)[0].Cells[1].Key)));
+            Assert.That(FocusManager.GetFocusedElement(grid.XamlRoot), Is.SameAs(Ui.Find<Button>("GridCell0_1")));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot()), Is.EqualTo(before));
+        });
     }
 
     [Test]
@@ -232,7 +515,7 @@ public sealed class BulkEditingHostedTests
         });
         await Ui.Until(() => session.Workspace.DifferenceCount == 100);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("GridCell99_1Value").Text, Is.EqualTo("Done"));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("GridCell99_1")).OfType<TextBlock>().Any(text => text.Text == "Done"), Is.True);
             Assert.That(session.Workspace.Fields.Where(f => f.Key.Kind == "Select" && f.Change is not null).Select(f => f.Key.NodeId),
                 Is.EquivalentTo(Enumerable.Range(1, 100).Select(i => "P1T" + i)));
         });

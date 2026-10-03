@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ProjectsPage.ConnectionRequested += (_, _) => ShowConnection();
         ConnectionPage.ReturnRequested += (_, _) => ShowProjects();
+        ConnectionPage.ConfirmWorkspaceChangeAsync = scope => ProjectsPage.ConfirmPlanningNavigationAsync(scope);
         ConnectionPage.WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         try
         {
@@ -90,22 +91,36 @@ public sealed partial class MainWindow : Window
         args.Cancel = true;
         if (closingRequested) return;
         closingRequested = true;
-        workspace?.CancelPendingEdits();
-        if (ProjectsPage.Visibility == Visibility.Visible) ProjectsPage.FocusHeader();
-
-        ProjectsPage.IsEnabled = false;
-
-        await ConnectionPage.StopAsync();
-        if (workspace is not null) await workspace.StopAsync();
-        // Keep the UI dispatcher alive until the owned gh operation has stopped.
-        if (operation is not null) await operation;
-        if (workspace is not null && !await workspace.FlushDraftsAsync())
+        try
         {
-            closingRequested = false; ProjectsPage.IsEnabled = true; ConnectionPage.ResumeAfterFailedClose();
+            if (!await ProjectsPage.ConfirmPlanningNavigationAsync()) { closingRequested = false; return; }
+            workspace?.CancelPendingEdits();
+            if (ProjectsPage.Visibility == Visibility.Visible) ProjectsPage.FocusHeader();
+            ProjectsPage.IsEnabled = false;
+
+            await ConnectionPage.StopAsync();
+            if (workspace is not null) await workspace.StopAsync();
+            // Keep the UI dispatcher alive until the owned gh operation has stopped.
+            if (operation is not null) await operation;
+            if (workspace is not null && !await workspace.FlushDraftsAsync())
+            {
+                ResumeAfterFailedClose();
+                return;
+            }
+            await SheetDiagnostics.CompleteAsync();
+        }
+        catch (Exception)
+        {
+            ResumeAfterFailedClose();
+            const string problem = "終了できませんでした。入力は保持しています。もう一度閉じてください。";
+            ProjectsPage.ShowCloseProblem(problem); ConnectionPage.ShowProblem(problem);
             return;
         }
-        await SheetDiagnostics.CompleteAsync();
         closeReady = true;
         DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
+    }
+    private void ResumeAfterFailedClose()
+    {
+        closingRequested = false; ProjectsPage.IsEnabled = true; ConnectionPage.ResumeAfterFailedClose();
     }
 }

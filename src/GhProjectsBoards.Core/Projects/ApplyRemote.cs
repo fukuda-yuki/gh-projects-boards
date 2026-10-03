@@ -5,6 +5,9 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal sealed partial class ApplyRemote(GhConnectionService service, ConnectionContext context)
 {
+    public Task<(HistoricalFieldObservation? Observation, ApiResult Result)> ObserveHistoricalFieldAsync(
+        ApplyBatch batch, ApplyOperation operation, CancellationToken token) =>
+        new ProjectReader(service).ObserveHistoricalFieldAsync(context, batch, operation, token);
     public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveAsync(ApplyBatch batch, ApplyOperation operation, CancellationToken token)
     {
         using var measured = PerformanceTrace.Span("operation-observation");

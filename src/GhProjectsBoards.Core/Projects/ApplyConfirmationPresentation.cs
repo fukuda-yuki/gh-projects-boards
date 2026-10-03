@@ -1,6 +1,6 @@
 namespace GhProjectsBoards.Core.Projects;
 
-internal enum ConfirmationValueKind { Value, Unset, NotLoaded, Unavailable, Unsupported, Unchanged, Clear, NotCreated, Unspecified }
+internal enum ConfirmationValueKind { Value, Unset, NotLoaded, Unavailable, Unsupported, Unchanged, Clear, CreationStatus, Unspecified }
 internal sealed record ConfirmationValue(ConfirmationValueKind Kind, string Text, string? Id = null);
 internal sealed record ConfirmationColumn(ColumnIdentity Id, string Name, bool Hidden);
 internal sealed record ConfirmationCell(ConfirmationColumn Column, ConfirmationValue Before, ConfirmationValue After,
@@ -16,6 +16,7 @@ internal sealed record ConfirmationIssue(ApplyCandidate Candidate, string Reposi
     public string Id => Candidate.Id;
     public bool IsCreation => Candidate.IsCreation;
     public string Identity => Repository + " " + Number + " / " + Title;
+    public string? CreationPlan { get; init; }
     public string[] Problems => RowProblems.Concat(Cells.Where(c => c.Problem is not null).Select(c => c.Column.Name + ": " + c.Problem)).ToArray();
 }
 internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Columns, ConfirmationIssue[] Rows,
@@ -36,6 +37,9 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
                 .Concat(c.Fields.Where(f => f.Buffer is not null).Select(f => new ColumnIdentity("Field", f.Key.FieldId)))
             : c.Fields.Where(f => f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == EditingWorkspace.ProjectionDecisionReason)
                 .Select(f => f.Key.Kind == "Title" ? ColumnIdentity.Title : new ColumnIdentity(f.Key.Kind == "Dependency" ? "Dependency" : "Field", f.Key.FieldId)))
+            .Concat((review?.Batch.Creations ?? []).SelectMany(creation => creation.Selects.Where(select => select.Intent != "Unspecified")
+                .Select(select => new ColumnIdentity("Field", select.FieldId))
+                .Concat((creation.PlanningIntents ?? []).Select(intent => new ColumnIdentity(intent.Kind == "Dependency" ? "Dependency" : "Field", intent.FieldId)))))
             .Concat((retainedColumns ?? []).Select(c => c.Id)).Distinct().ToArray();
         string Name(ColumnIdentity id)
         {
@@ -59,12 +63,15 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
         ConfirmationIssue Row(ApplyCandidate candidate)
         {
             var local = workspace.LocalRows.SingleOrDefault(r => r.Id == candidate.Id);
+            var approved = review?.Batch.Creations?.SingleOrDefault(creation => creation.LocalId == candidate.Id);
+            var existingCreation = local is null ? null : workspace.Creations.LastOrDefault(creation => creation.LocalId == local.Id);
+            var knowledge = local is null ? null : CreationKnowledgePresentation.Describe(existingCreation);
             var item = p.Items.SingleOrDefault(i => i.Id.NodeId == candidate.Id);
             var issue = item?.ContentId is { } issueId ? p.Issues.GetValueOrDefault(issueId) : null;
-            var repository = local?.Repository ?? issue?.Repository.NameWithOwner ?? "Repository未確認";
+            var repository = approved?.Repository.Name ?? local?.Repository ?? issue?.Repository.NameWithOwner ?? "Repository未確認";
             if (string.IsNullOrWhiteSpace(repository)) repository = "宛先未指定";
-            var number = local is not null ? "新規作成" : issue is not null ? "#" + issue.Number : "取得結果で確認できない変更";
-            var title = local?.Title ?? issue?.Title.Value ?? "タイトル未取得";
+            var number = local is not null ? knowledge!.RowLabel : issue is not null ? "#" + issue.Number : "取得結果で確認できない変更";
+            var title = approved?.Title ?? local?.Title ?? issue?.Title.Value ?? "タイトル未取得";
             var rowProblems = review?.Problems.Where(b => b.RowId == candidate.Id).ToArray() ?? [];
             var problems = rowProblems.Where(b => b.Field is null).Select(b => b.Message)
                 .Concat(local is null ? [] : workspace.LocalProblems(project, local.Id))
@@ -82,10 +89,10 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
                 string? pending = field?.Buffer, problem = null;
                 if (local is not null)
                 {
-                    before = new(ConfirmationValueKind.NotCreated, "未作成");
-                    var select = local.Selects.SingleOrDefault(s => s.FieldId == id.FieldId);
-                    var intent = workspace.CreationPlanningFor(project, local.Id).SingleOrDefault(s => s.FieldId == id.FieldId && (s.Kind == "Dependency") == (id.Role == "Dependency"));
-                    after = id == ColumnIdentity.Title ? new(ConfirmationValueKind.Value, local.Title)
+                    before = new(ConfirmationValueKind.CreationStatus, knowledge!.RowLabel);
+                    var select = (approved?.Selects ?? local.Selects).SingleOrDefault(s => s.FieldId == id.FieldId);
+                    var intent = (approved?.PlanningIntents ?? workspace.CreationPlanningFor(project, local.Id)).SingleOrDefault(s => s.FieldId == id.FieldId && (s.Kind == "Dependency") == (id.Role == "Dependency"));
+                    after = id == ColumnIdentity.Title ? new(ConfirmationValueKind.Value, title)
                         : intent is not null ? intent.Value.Clear ? new(ConfirmationValueKind.Clear, "クリア") : Value(intent.Value.Value, ValueAvailability.Present)
                         : select?.ExplicitClear == true ? new(ConfirmationValueKind.Clear, "クリア")
                         : select?.OptionId is { } option ? Value(option, ValueAvailability.Present)
@@ -103,12 +110,20 @@ internal sealed record ApplyConfirmationPresentation(ConfirmationColumn[] Column
                     problem = field?.Conflict == true ? "競合: GitHubと端末内の両方で変更されています。"
                         : rowProblems.FirstOrDefault(b => b.Field == field?.Key && b.Field is not null)?.Message
                             ?? observation?.Reason;
+                    if (pending is not null && problem == EditingWorkspace.PendingObservationReason)
+                        problem = "入力途中の文字は保持し、送信しません。";
                 }
                 return new ConfirmationCell(column, before, after, field, pending, problem, latest,
                     field?.Observation?.At ?? field?.RetrievedAt ?? project.RetrievedAt);
             }).ToArray();
             var details = local is not null ? "ローカル行 " + local.Id : $"{issue?.Url}\nIssue ID {issue?.Id.NodeId ?? "未確認"}\n項目 ID {candidate.Id}";
-            return new(candidate, repository, number, title, details, cells, problems.Distinct().ToArray(), !visible.Contains(candidate.Id), local?.RepositoryBuffer);
+            return new(candidate, repository, number, title, details, cells, problems.Distinct().ToArray(), !visible.Contains(candidate.Id), local?.RepositoryBuffer) {
+                CreationPlan = local is null ? null : existingCreation?.ItemId is not null
+                    ? $"{p.Title}への所属を確認済み" + (existingCreation.Completed ? "" : "・設定が未完了")
+                    : existingCreation is { Dispatched: true } && approved is null
+                        ? $"{p.Title}への追加・設定状況は履歴で確認"
+                        : $"{review?.Batch.ProjectName ?? p.Title}へ追加予定"
+            };
         }
         var order = visible.Select((id, index) => (id, index)).ToDictionary(v => v.id, v => v.index);
         var rows = displayed.OrderBy(c => order.GetValueOrDefault(c.Id, int.MaxValue)).Select(Row).ToArray();

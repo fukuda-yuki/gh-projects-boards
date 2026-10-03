@@ -1,0 +1,19 @@
+{
+  "schema": "V4-current-Core-history-readback-v1",
+  "finishedAtUtc": "2026-10-02T22:24:41.5393718+00:00",
+  "sourceReadySha256": "88072E6709A6FFC022026C3706D5E9F5125D35AFE9D165622C560FB035E5E06C",
+  "candidateReceiptSha256": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+  "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+  "originalCheckpointSha256": "16260095E553396952238C58B90809086F36E6F66CD1F3A8BCDCA296468A978C",
+  "executed": 14,
+  "passed": 14,
+  "failed": 0,
+  "exception": null,
+  "scope": "Offline current-Core restore and history presentation on byte copies of the exact preserved V4 completed state",
+  "appExecution": "not_run",
+  "uiExecution": "not_run",
+  "endpointExecution": "not_run",
+  "humanAcceptance": "not_run",
+  "originalV4Result": "Unchanged 27 passed / 1 failed; prior supplement remains separate",
+  "originalInputsUnchanged": true
+}

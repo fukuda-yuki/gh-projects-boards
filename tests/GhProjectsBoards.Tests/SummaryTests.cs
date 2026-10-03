@@ -121,7 +121,7 @@ internal sealed class SummaryTests
         var restoredStore = new DraftStore(root + "-restored"); await restoredStore.RestoreBackupAsync(backup, w.Scope);
         var restored = (await restoredStore.LoadAsync(w.Scope))!;
         Assert.That(Json(restored), Is.EqualTo(Json(session.Workspace.Snapshot())));
-        var legacy = JsonNode.Parse(Json(Example().Work.Snapshot()))!; legacy["Version"] = 9;
+        var legacy = JsonNode.Parse(Json(EditingTests.LegacyHistory(Example().Work.Snapshot())))!; legacy["Version"] = 9;
         foreach (var plan in legacy["Planning"]!.AsArray()) { plan!.AsObject().Remove("Summary"); foreach (var task in plan["Tasks"]!.AsArray()) task!.AsObject().Remove("LaborKind"); }
         foreach (var tx in legacy["History"]!.AsArray()) if (tx?["Plan"] is { } change)
             foreach (var side in new[] { "Before", "After" }) if (change[side] is { } plan) { plan.AsObject().Remove("Summary"); foreach (var task in plan["Tasks"]!.AsArray()) task!.AsObject().Remove("LaborKind"); }

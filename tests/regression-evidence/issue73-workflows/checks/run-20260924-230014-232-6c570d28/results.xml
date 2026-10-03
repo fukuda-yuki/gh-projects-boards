@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="194" result="Passed" start-time="2026-09-24T14:00:24.4107679Z" end-time="2026-09-24T14:00:25.5927837Z" duration="1.181997" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0" random-seed="1892908240">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ PartialManualDatesAsk or test =~ FirstTaskPlanningReturns" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260924-230014-232-6c570d28\results.xml]]></command-line>
+  <filter>
+    <or>
+      <test re="1">PartialManualDatesAsk</test>
+      <test re="1">FirstTaskPlanningReturns</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1244" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="194" result="Passed" start-time="2026-09-24T14:00:24.4107679Z" end-time="2026-09-24T14:00:25.5927837Z" duration="1.181997" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="28728" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1245" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="194" result="Passed" start-time="2026-09-24T14:00:24.4134472Z" end-time="2026-09-24T14:00:25.5927807Z" duration="1.179333" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+      <test-suite type="TestSuite" id="1246" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="194" result="Passed" start-time="2026-09-24T14:00:24.4136388Z" end-time="2026-09-24T14:00:25.5927791Z" duration="1.179140" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+        <test-suite type="TestSuite" id="1247" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="194" result="Passed" start-time="2026-09-24T14:00:24.4136509Z" end-time="2026-09-24T14:00:25.5927738Z" duration="1.179123" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+          <test-suite type="TestFixture" id="1131" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="38" result="Passed" start-time="2026-09-24T14:00:24.4136524Z" end-time="2026-09-24T14:00:25.5926099Z" duration="1.178958" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1173" name="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" methodname="FirstTaskPlanningReturnsFromProjectSetupToTheSameTaskAndClearsTheOldSelectionError" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="697192666" result="Passed" start-time="2026-09-24T14:00:24.4148490Z" end-time="2026-09-24T14:00:25.3215433Z" duration="0.906742" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+            <test-case id="1165" name="PartialManualDatesAskForTheMissingEndpointWithoutRequiringAutomaticEffort" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.PartialManualDatesAskForTheMissingEndpointWithoutRequiringAutomaticEffort" methodname="PartialManualDatesAskForTheMissingEndpointWithoutRequiringAutomaticEffort" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1190354757" result="Passed" start-time="2026-09-24T14:00:25.3226864Z" end-time="2026-09-24T14:00:25.5918171Z" duration="0.269131" asserts="0">
+              <properties>
+                <property name="Category" value="WorkflowPlanning" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

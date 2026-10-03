@@ -1,0 +1,16 @@
+{
+  "counts": {
+    "pass": 51,
+    "fail": 0,
+    "missing": 0
+  },
+  "failed": [],
+  "originalUUnchanged": true,
+  "closedCopyUnchangedByReader": true,
+  "preservedReadbackCopyUnchanged": true,
+  "closeActor": "original-U-evaluator",
+  "rootPerformedClose": false,
+  "scope": "Stored values, buffers, Undo and unrelated state only; resumed evaluator visible observations are separate evidence.",
+  "unfamiliarEvaluation": "original evaluator continuation; assess from evaluator report, not these data checks",
+  "humanAcceptance": "not_run"
+}

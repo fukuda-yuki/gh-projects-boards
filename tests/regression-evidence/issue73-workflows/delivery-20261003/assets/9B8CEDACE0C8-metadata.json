@@ -1,0 +1,261 @@
+{
+  "source": "498840b1eea42bfb344c53195f7e5473fe68e020",
+  "changes": [
+    " M docs/planning.md",
+    " M docs/spec.md",
+    " M src/GhProjectsBoards.App/ConnectionPanel.xaml.cs",
+    " M src/GhProjectsBoards.App/EditingGrid.ApplyResults.cs",
+    " M src/GhProjectsBoards.App/EditingGrid.cs",
+    " M src/GhProjectsBoards.App/MainWindow.xaml.cs",
+    " M src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+    " M src/GhProjectsBoards.App/RegistrationApplyDialogs.cs",
+    " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+    " M src/GhProjectsBoards.Core/Projects/ApplyExecutor.cs",
+    " M src/GhProjectsBoards.Core/Projects/CreationJournal.cs",
+    " M src/GhProjectsBoards.Core/Projects/DraftSnapshot.cs",
+    " M src/GhProjectsBoards.Core/Projects/DraftStore.cs",
+    " M src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+    " M src/GhProjectsBoards.Core/Projects/LocalRows.cs",
+    " M src/GhProjectsBoards.Core/Projects/PlanningContract.cs",
+    " M src/GhProjectsBoards.Core/Projects/PlanningReconciliation.cs",
+    " M src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+    " M src/GhProjectsBoards.Core/Projects/Reconciliation.cs",
+    " M src/GhProjectsBoards.Core/Projects/RegistrationWorkspace.cs",
+    " M src/GhProjectsBoards.Core/Projects/SummaryContract.cs",
+    " M tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs",
+    " M tests/GhProjectsBoards.Tests/ApplyTests.cs",
+    " M tests/GhProjectsBoards.Tests/ColumnTests.cs",
+    " M tests/GhProjectsBoards.Tests/CreationTests.cs",
+    " M tests/GhProjectsBoards.Tests/EditingTests.cs",
+    " M tests/GhProjectsBoards.Tests/LocalRowTests.cs",
+    " M tests/GhProjectsBoards.Tests/PlanningAssignmentTests.cs",
+    " M tests/GhProjectsBoards.Tests/PlanningCellInputTests.cs",
+    " M tests/GhProjectsBoards.Tests/PlanningContractTests.cs",
+    " M tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+    " M tests/GhProjectsBoards.Tests/ReconciliationTests.cs",
+    " M tests/GhProjectsBoards.Tests/RegistrationWorkflowTests.cs",
+    " M tests/GhProjectsBoards.Tests/RowViewTests.cs",
+    " M tests/GhProjectsBoards.Tests/SummaryPlanningIntegrationTests.cs",
+    " M tests/GhProjectsBoards.Tests/SummaryTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/ApplyResultsHostedTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+    " M tests/regression-evidence/issue73-workflows/README.md",
+    "?? src/GhProjectsBoards.Core/Projects/UndoHistory.cs",
+    "?? tests/GhProjectsBoards.Tests/ConfirmedUndoTests.cs",
+    "?? tests/GhProjectsBoards.UiIntegration.Tests/ConfirmedEditUndoHostedTests.cs",
+    "?? tests/GhProjectsBoards.UiIntegration.Tests/ConnectionEntryHostedTests.cs",
+    "?? tests/GhProjectsBoards.UiIntegration.Tests/WindowLifetimeHostedTests.cs",
+    "?? tests/regression-evidence/issue73-workflows/blind-review/"
+  ],
+  "command": "$env:GHPB_RECYCLED_PRESENTATION='1'; ./scripts/Test-UiIntegration.ps1 -Where 'cat == ConnectionEntry' -TimeoutSeconds 180",
+  "where": "cat == ConnectionEntry",
+  "discoveryOnly": false,
+  "sdk": "10.0.401",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "started": "2026-09-27T08:51:36.2856769Z",
+  "results": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20260927-175136-116-6244637b",
+  "sources": [
+    {
+      "name": "ApplyIaHostedTests.cs",
+      "sha256": "470BA79715D53ACC7D692F9F0CFA07C7A13F093EAFF168C1E88677B50FA9EB75"
+    },
+    {
+      "name": "ApplyInformationEvidence.cs",
+      "sha256": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197"
+    },
+    {
+      "name": "ApplyInformationHostedTests.cs",
+      "sha256": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E"
+    },
+    {
+      "name": "ApplyInformationViewTests.cs",
+      "sha256": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70"
+    },
+    {
+      "name": "ApplyRecoveryHostedTests.cs",
+      "sha256": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5"
+    },
+    {
+      "name": "ApplyResultsHostedTests.cs",
+      "sha256": "63FC291E94554B5301C504EB3413C3C801C6E0C82399ABAFF04946C6618EC415"
+    },
+    {
+      "name": "BulkEditingHostedTests.cs",
+      "sha256": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2"
+    },
+    {
+      "name": "ColumnHostedTests.cs",
+      "sha256": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D"
+    },
+    {
+      "name": "ConfirmedEditUndoHostedTests.cs",
+      "sha256": "957A0AF390AF0817CA4867CD54CDFB61E63228D2F5FBB90932D59356A0044932"
+    },
+    {
+      "name": "ConnectionEntryHostedTests.cs",
+      "sha256": "168CF9C5131EBB1CA27D3093DABE7732E9B1F126A75DF31DCADD60438E0F1C7E"
+    },
+    {
+      "name": "GanttHostedTests.cs",
+      "sha256": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.csproj",
+      "sha256": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2"
+    },
+    {
+      "name": "HostedTests.cs",
+      "sha256": "BF1FDD00B8395207EE1F2BA6789F237EE8BBF5DFA65D6EEA60C89137689C299A"
+    },
+    {
+      "name": "InfrastructureTests.cs",
+      "sha256": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF"
+    },
+    {
+      "name": "PlanningHostedTests.cs",
+      "sha256": "D482FEC5267362E262E987F4CB180780EE62066D1C67E3C878AF771F9C8D6592"
+    },
+    {
+      "name": "PlanningNavigationHostedTests.cs",
+      "sha256": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8"
+    },
+    {
+      "name": "PlanningPerformanceHostedTests.cs",
+      "sha256": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE"
+    },
+    {
+      "name": "PlanningReviewHostedTests.cs",
+      "sha256": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084"
+    },
+    {
+      "name": "PostMergeHostedTests.cs",
+      "sha256": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4"
+    },
+    {
+      "name": "Program.cs",
+      "sha256": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2"
+    },
+    {
+      "name": "README.md",
+      "sha256": "5A5C3A374C77C254539A0770D8444970EF8D6DBBA398444596EB9C6C3B68022F"
+    },
+    {
+      "name": "RowApplyHostedTests.cs",
+      "sha256": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B"
+    },
+    {
+      "name": "RowViewHostedTests.cs",
+      "sha256": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E"
+    },
+    {
+      "name": "SettingsFocusHostedTests.cs",
+      "sha256": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F"
+    },
+    {
+      "name": "SheetContextHostedTests.cs",
+      "sha256": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B"
+    },
+    {
+      "name": "SheetFocusedScrollHostedTests.cs",
+      "sha256": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E"
+    },
+    {
+      "name": "SheetHostedTests.cs",
+      "sha256": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13"
+    },
+    {
+      "name": "SheetNativeInput.cs",
+      "sha256": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513"
+    },
+    {
+      "name": "SheetRecyclingHostedTests.cs",
+      "sha256": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9"
+    },
+    {
+      "name": "SheetViewportHostedTests.cs",
+      "sha256": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172"
+    },
+    {
+      "name": "SummaryHostedTests.cs",
+      "sha256": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7"
+    },
+    {
+      "name": "SummaryPerformanceHostedTests.cs",
+      "sha256": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B"
+    },
+    {
+      "name": "ThemeHostedTests.cs",
+      "sha256": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3"
+    },
+    {
+      "name": "TrackedContext.cs",
+      "sha256": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014"
+    },
+    {
+      "name": "Ui.cs",
+      "sha256": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656"
+    },
+    {
+      "name": "UndoRowVisibilityHostedTests.cs",
+      "sha256": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974"
+    },
+    {
+      "name": "WeeklyRecoveryHostedTests.cs",
+      "sha256": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC"
+    },
+    {
+      "name": "WindowLifetimeHostedTests.cs",
+      "sha256": "C6EAB898F99EC5A341EA8E2A184DD4AFC15EBE8898BD2DD12FAE48F394F2D207"
+    },
+    {
+      "name": "WorkflowPlanningHostedTests.cs",
+      "sha256": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A"
+    },
+    {
+      "name": "WorkspaceApplyPresentationTests.cs",
+      "sha256": "EBAE91D80AE22B6FFE3113D63DEDDBD1762266559D9A3A598A6DA401971B6275"
+    },
+    {
+      "name": "WorkspaceShellHostedTests.cs",
+      "sha256": "0CF75ED6534B43BC31C7C6AADCD276E7C2F79823AFC6C89CD4A3F37FD19F2954"
+    }
+  ],
+  "buildSeconds": 12.7499007,
+  "binaries": [
+    {
+      "name": "GhProjectsBoards.App.dll",
+      "sha256": "00ABE4650D4B698AC1ED91C9729C2A7302BFC0F121D100018092AD4CC69FEA11"
+    },
+    {
+      "name": "GhProjectsBoards.Core.dll",
+      "sha256": "F5BEB07C1218F2CB3291CA8D833228FD95AD46E2995BA985E51586B698C1152F"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.dll",
+      "sha256": "CC58D82246C87048491C3B7B92AC78F6F78CF131F502D321D36A4FD170AEA4C2"
+    },
+    {
+      "name": "Microsoft.UI.Xaml.dll",
+      "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C"
+    },
+    {
+      "name": "GhProjectsBoards.App.pri",
+      "sha256": "534D3760E54C46F9BD8DA726EAE4ACC6CC96F49C4EE9CEFF5D198AF0C5CC273F"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.pri",
+      "sha256": "727FF8A50EEC74582F9FC8650B3489455843CE45737E4109E0094D88D874CD3C"
+    }
+  ],
+  "packageAssets": "C9CD0CD5CC204E13C764C5944D3AC42E6A2F8542D2ED42A7DD561420BB2B47B4",
+  "processId": 20164,
+  "exitCode": 1,
+  "counts": {
+    "failed": "6",
+    "skipped": "0",
+    "total": "6",
+    "inconclusive": "0",
+    "passed": "0"
+  },
+  "elapsedSeconds": 14.9874204
+}

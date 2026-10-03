@@ -1,0 +1,886 @@
+{
+  "createdAtUtc": "2026-09-27T14:47:39.587102+00:00",
+  "portableDocuments": 9,
+  "portableLinks": 94,
+  "portableFailures": [],
+  "portable": [
+    {
+      "path": "round7-first-q/observations/portable/continuation-evaluation.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../continuation-state-025-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-025-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-029-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-029-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-040-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-040-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-053-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-053-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-054-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-054-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-056-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-056-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-043-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-043-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-044-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-044-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-060-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-060-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-061-1.jpg",
+          "resolved": "round7-first-q/observations/continuation-state-061-1.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-close-verification.json",
+          "resolved": "round7-first-q/observations/continuation-close-verification.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/continuation-public-api-calls.json",
+          "resolved": "round7-first-q/observations/derived/continuation-public-api-calls.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-state-index.json",
+          "resolved": "round7-first-q/observations/continuation-state-index.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-events.json",
+          "resolved": "round7-first-q/observations/continuation-events.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-close-verification.json",
+          "resolved": "round7-first-q/observations/continuation-close-verification.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../continuation-evidence-verification.json",
+          "resolved": "round7-first-q/observations/continuation-evidence-verification.json",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/portable/continuation-final.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../continuation-evaluation.md",
+          "resolved": "round7-first-q/observations/continuation-evaluation.md",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/portable/evaluation.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../derived/public-api-calls.json",
+          "resolved": "round7-first-q/observations/derived/public-api-calls.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/raw-native-observations.json",
+          "resolved": "round7-first-q/observations/derived/raw-native-observations.json",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/portable/final.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../evaluation.md",
+          "resolved": "round7-first-q/observations/evaluation.md",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round6-historical-r/observations/portable/evaluation.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../figure-account.jpg",
+          "resolved": "round6-historical-r/observations/figure-account.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-project.jpg",
+          "resolved": "round6-historical-r/observations/figure-project.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-confirmed.jpg",
+          "resolved": "round6-historical-r/observations/figure-confirmed.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-tentative.jpg",
+          "resolved": "round6-historical-r/observations/figure-tentative.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-history_initial.jpg",
+          "resolved": "round6-historical-r/observations/figure-history_initial.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-history_values.jpg",
+          "resolved": "round6-historical-r/observations/figure-history_values.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-attempt_detail.jpg",
+          "resolved": "round6-historical-r/observations/figure-attempt_detail.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-execution_identity.jpg",
+          "resolved": "round6-historical-r/observations/figure-execution_identity.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-connection_verified.jpg",
+          "resolved": "round6-historical-r/observations/figure-connection_verified.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-decision.jpg",
+          "resolved": "round6-historical-r/observations/figure-decision.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-completed.jpg",
+          "resolved": "round6-historical-r/observations/figure-completed.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-retained_history.jpg",
+          "resolved": "round6-historical-r/observations/figure-retained_history.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-decision_record.jpg",
+          "resolved": "round6-historical-r/observations/figure-decision_record.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-resumed_work.jpg",
+          "resolved": "round6-historical-r/observations/figure-resumed_work.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/observation-083.json",
+          "resolved": "round6-historical-r/observations/derived/observation-083.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/observation-084.json",
+          "resolved": "round6-historical-r/observations/derived/observation-084.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-later_success.jpg",
+          "resolved": "round6-historical-r/observations/figure-later_success.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-decision.jpg",
+          "resolved": "round6-historical-r/observations/figure-decision.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-scroll_clipping.jpg",
+          "resolved": "round6-historical-r/observations/figure-scroll_clipping.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-attempt_detail.jpg",
+          "resolved": "round6-historical-r/observations/figure-attempt_detail.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-connection_warning.jpg",
+          "resolved": "round6-historical-r/observations/figure-connection_warning.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-connection_verified.jpg",
+          "resolved": "round6-historical-r/observations/figure-connection_verified.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-resumed_work.jpg",
+          "resolved": "round6-historical-r/observations/figure-resumed_work.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../api-calls.jsonl",
+          "resolved": "round6-historical-r/observations/api-calls.jsonl",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screenshots.jsonl",
+          "resolved": "round6-historical-r/observations/screenshots.jsonl",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../notes.jsonl",
+          "resolved": "round6-historical-r/observations/notes.jsonl",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-tentative.jpg",
+          "resolved": "round6-historical-r/observations/figure-tentative.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-decision.jpg",
+          "resolved": "round6-historical-r/observations/figure-decision.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-decision_record.jpg",
+          "resolved": "round6-historical-r/observations/figure-decision_record.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../figure-resumed_work.jpg",
+          "resolved": "round6-historical-r/observations/figure-resumed_work.jpg",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round6-historical-r/observations/portable/final.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../evaluation.md",
+          "resolved": "round6-historical-r/observations/evaluation.md",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "checks/round7-readback/s-close1-handoff/evaluator-original/portable/evaluation.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../screen-010-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-010-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-047-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-047-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-073-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-073-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-091-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-091-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-084-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-084-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-078-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-078-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-100-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-100-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-103-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-103-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-113-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-113-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../screen-117-0.jpg",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/screen-117-0.jpg",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/close-inventory.json",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/derived/close-inventory.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../observations.jsonl",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/observations.jsonl",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../derived/api-calls.jsonl",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/derived/api-calls.jsonl",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../evidence-index.json",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/evidence-index.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "../artifact-verification.json",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/artifact-verification.json",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "checks/round7-readback/s-close1-handoff/evaluator-original/portable/final.md",
+      "kind": "portable derivative",
+      "links": [
+        {
+          "target": "../evaluation.md",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/evaluation.md",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "added-qrs-progress-20260927.md",
+      "kind": "portable index",
+      "links": [
+        {
+          "target": "round7-first-q/observations/portable/evaluation.md",
+          "resolved": "round7-first-q/observations/portable/evaluation.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "round7-first-q/observations/portable/continuation-evaluation.md",
+          "resolved": "round7-first-q/observations/portable/continuation-evaluation.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "round7-first-q/diagnostics/after-q-close1/review.md",
+          "resolved": "round7-first-q/diagnostics/after-q-close1/review.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/round7-readback/calendar-amendment.json",
+          "resolved": "checks/round7-readback/calendar-amendment.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "round6-historical-r/observations/portable/evaluation.md",
+          "resolved": "round6-historical-r/observations/portable/evaluation.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/r-history-layout-review.md",
+          "resolved": "checks/r-history-layout-review.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "round6-historical-r/diagnostics/after-r-close1/readback.json",
+          "resolved": "round6-historical-r/diagnostics/after-r-close1/readback.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/round7-readback/s-close1-handoff/evaluator-original/portable/evaluation.md",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/portable/evaluation.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/round7-readback/s-close1-handoff/summary.md",
+          "resolved": "checks/round7-readback/s-close1-handoff/summary.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/round7-readback/s-close1-handoff/usability-assessment.md",
+          "resolved": "checks/round7-readback/s-close1-handoff/usability-assessment.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-selected-details/review-and-results.md",
+          "resolved": "checks/q-selected-details/review-and-results.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-repair-ui/ui/run-20260927-231538-815-5b8419e7/results.xml",
+          "resolved": "checks/q-repair-ui/ui/run-20260927-231538-815-5b8419e7/results.xml",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-selected-details/ui-regression-fix/review.md",
+          "resolved": "checks/q-selected-details/ui-regression-fix/review.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-repair-ui/wheel-test-amendment/reason.md",
+          "resolved": "checks/q-repair-ui/wheel-test-amendment/reason.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/connection-entry/README.md",
+          "resolved": "checks/connection-entry/README.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/connection-entry-v2/README.md",
+          "resolved": "checks/connection-entry-v2/README.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/r-history-layout-review/implementation-handoff.md",
+          "resolved": "checks/r-history-layout-review/implementation-handoff.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-gantt-presentation/independent-review.md",
+          "resolved": "checks/q-gantt-presentation/independent-review.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/combo-wheel/review-and-scope.md",
+          "resolved": "checks/combo-wheel/review-and-scope.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention/observed-executions.json",
+          "resolved": "checks/qrs-retention/observed-executions.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/q-complete-whole-job-checkpoint.md",
+          "resolved": "checks/q-complete-whole-job-checkpoint.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/rs-complete-repair-checkpoint.md",
+          "resolved": "checks/rs-complete-repair-checkpoint.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention/append-result.json",
+          "resolved": "checks/qrs-retention/append-result.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention/originals-inventory.json",
+          "resolved": "checks/qrs-retention/originals-inventory.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention-scope-audit/report.md",
+          "resolved": "checks/qrs-retention-scope-audit/report.md",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention/duplicate-content.json",
+          "resolved": "checks/qrs-retention/duplicate-content.json",
+          "exists": true,
+          "absolute": false
+        },
+        {
+          "target": "checks/qrs-retention/relative-link-audit.json",
+          "resolved": "checks/qrs-retention/relative-link-audit.json",
+          "exists": true,
+          "absolute": false
+        }
+      ]
+    }
+  ],
+  "originalHistoricalLinkLimitations": [
+    {
+      "path": "checks/round7-readback/calendar-expectation-before-amendment/readback-plan.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "../../round7-first-q/diagnostics/before-q/manifest.json",
+          "resolved": "checks/round7-first-q/diagnostics/before-q/manifest.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "../../round7-weekly-s/diagnostics/before-s/manifest.json",
+          "resolved": "checks/round7-weekly-s/diagnostics/before-s/manifest.json",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "checks/r-history-layout-review/originals/evaluation.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "figure-account.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-account.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-project.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-project.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-confirmed.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-confirmed.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-tentative.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-tentative.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-connection_verified.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-connection_verified.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-completed.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-completed.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-retained_history.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-retained_history.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-decision_record.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-decision_record.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-resumed_work.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-resumed_work.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "observation-083.json",
+          "resolved": "checks/r-history-layout-review/originals/observation-083.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "observation-084.json",
+          "resolved": "checks/r-history-layout-review/originals/observation-084.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-later_success.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-later_success.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-connection_verified.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-connection_verified.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-resumed_work.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-resumed_work.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "api-calls.jsonl",
+          "resolved": "checks/r-history-layout-review/originals/api-calls.jsonl",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "screenshots.jsonl",
+          "resolved": "checks/r-history-layout-review/originals/screenshots.jsonl",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "notes.jsonl",
+          "resolved": "checks/r-history-layout-review/originals/notes.jsonl",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-tentative.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-tentative.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-decision_record.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-decision_record.jpg",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "figure-resumed_work.jpg",
+          "resolved": "checks/r-history-layout-review/originals/figure-resumed_work.jpg",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/continuation-evaluation.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "continuation-public-api-calls.json",
+          "resolved": "round7-first-q/observations/continuation-public-api-calls.json",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/continuation-final.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "C:/Users/mwam0/AppData/Local/Temp/ui-first-use-evaluation-4e115623c96548119a4296d44252b9b2/continuation-evaluation.md",
+          "resolved": "../../../../../../../AppData/Local/Temp/ui-first-use-evaluation-4e115623c96548119a4296d44252b9b2/continuation-evaluation.md",
+          "exists": true,
+          "absolute": true
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/evaluation.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "public-api-calls.json",
+          "resolved": "round7-first-q/observations/public-api-calls.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "raw-native-observations.json",
+          "resolved": "round7-first-q/observations/raw-native-observations.json",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round7-first-q/observations/final.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "C:/Users/mwam0/AppData/Local/Temp/ui-first-use-evaluation-4e115623c96548119a4296d44252b9b2/evaluation.md",
+          "resolved": "../../../../../../../AppData/Local/Temp/ui-first-use-evaluation-4e115623c96548119a4296d44252b9b2/evaluation.md",
+          "exists": true,
+          "absolute": true
+        }
+      ]
+    },
+    {
+      "path": "round6-historical-r/observations/evaluation.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "observation-083.json",
+          "resolved": "round6-historical-r/observations/observation-083.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "observation-084.json",
+          "resolved": "round6-historical-r/observations/observation-084.json",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "round6-historical-r/observations/final.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "C:/Users/mwam0/AppData/Local/Temp/ui-history-evaluation-d6e9332c22a740dd93ac6c4ec6eab9d7/evaluation.md",
+          "resolved": "../../../../../../../AppData/Local/Temp/ui-history-evaluation-d6e9332c22a740dd93ac6c4ec6eab9d7/evaluation.md",
+          "exists": true,
+          "absolute": true
+        }
+      ]
+    },
+    {
+      "path": "checks/round7-readback/s-close1-handoff/evaluator-original/evaluation.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "close-inventory.json",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/close-inventory.json",
+          "exists": false,
+          "absolute": false
+        },
+        {
+          "target": "api-calls.jsonl",
+          "resolved": "checks/round7-readback/s-close1-handoff/evaluator-original/api-calls.jsonl",
+          "exists": false,
+          "absolute": false
+        }
+      ]
+    },
+    {
+      "path": "checks/round7-readback/s-close1-handoff/evaluator-original/final.md",
+      "kind": "Immutable original; links unchanged",
+      "issues": [
+        {
+          "target": "C:/Users/mwam0/AppData/Local/Temp/ui-weekly-entry-evaluation-0a60d0dfc12a47b0822f387489540962/evaluation.md",
+          "resolved": "../../../../../../../AppData/Local/Temp/ui-weekly-entry-evaluation-0a60d0dfc12a47b0822f387489540962/evaluation.md",
+          "exists": true,
+          "absolute": true
+        }
+      ]
+    }
+  ]
+}

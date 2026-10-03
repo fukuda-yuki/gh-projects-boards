@@ -2,3 +2,7 @@
 # Preserve the upstream terms exactly, including their original line endings.
 docs/notices/* -text -diff
 docs/notices/*.json text diff
+# Keep selected execution evidence byte-identical across Windows checkouts.
+tests/regression-evidence/issue73-workflows/delivery-20261003/** -text
+tests/regression-evidence/issue73-workflows/weekly-review-20261003/** -text
+tests/regression-evidence/issue73-workflows/normal-workload-20261003/** -text

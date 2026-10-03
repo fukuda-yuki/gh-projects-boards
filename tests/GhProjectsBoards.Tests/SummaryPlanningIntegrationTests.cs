@@ -19,7 +19,8 @@ internal sealed class SummaryPlanningIntegrationTests
         }
         else work.CommitPlanning(project, EditingWorkspace.UpgradeAssignmentContract(work.Planning("P1")!), work.Revision);
         work.SetBuffer(work.Open(project)[0].Cells[0], "pending日本語");
-        var expected = work.Snapshot();
+        var expected = EditingTests.LegacyHistory(work.Snapshot());
+        work = EditingWorkspace.Restore(expected);
         var source = JsonNode.Parse(Json(expected))!; source["Version"] = version;
         void OriginalPlan(JsonNode? plan)
         {
@@ -29,7 +30,10 @@ internal sealed class SummaryPlanningIntegrationTests
         }
         foreach (var plan in source["Planning"]!.AsArray()) OriginalPlan(plan);
         foreach (var transaction in source["History"]!.AsArray())
+        {
+            transaction!.AsObject().Remove("BufferWrites");
             if (transaction?["Plan"] is { } change) { OriginalPlan(change["Before"]); OriginalPlan(change["After"]); }
+        }
         var store = new DraftStore(Path.Combine(Path.GetTempPath(), "ghpb-summary-integration-" + Guid.NewGuid().ToString("N")));
         var file = store.FileFor(work.Scope); Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         var original = source.ToJsonString(); await File.WriteAllTextAsync(file, original);

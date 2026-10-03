@@ -1,0 +1,263 @@
+{
+  "mechanism": "Independent post-close JSON and append-only service-log comparison; no product commands invoked",
+  "interpretation": "Expected end-state is evaluator-created local Next weekly plan plus unconfirmed Z, with separate AcceptCurrent for the original uncertain attempt.",
+  "liveGitHub": "not used; synthetic isolated CLI",
+  "version": 14,
+  "revision": 79,
+  "title": {
+    "baseline": "Weekly review completed",
+    "confirmedDraft": "Next weekly plan",
+    "pending": "Z"
+  },
+  "addedServiceCalls": 8,
+  "checks": [
+    {
+      "name": "schema supports separate historical decisions",
+      "observed": 14,
+      "expected": 14,
+      "outcome": "pass"
+    },
+    {
+      "name": "exact profile scope",
+      "observed": {
+        "Host": "example.test",
+        "ViewerId": 42
+      },
+      "expected": {
+        "Host": "example.test",
+        "ViewerId": 42
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "one exact I1 title",
+      "observed": 1,
+      "expected": 1,
+      "outcome": "pass"
+    },
+    {
+      "name": "current title baseline",
+      "observed": "Weekly review completed",
+      "expected": "Weekly review completed",
+      "outcome": "pass"
+    },
+    {
+      "name": "confirmed local title",
+      "observed": "Next weekly plan",
+      "expected": "Next weekly plan",
+      "outcome": "pass"
+    },
+    {
+      "name": "confirmed title is not a clear",
+      "observed": false,
+      "expected": false,
+      "outcome": "pass"
+    },
+    {
+      "name": "ordinary tentative title input",
+      "observed": "Z",
+      "expected": "Z",
+      "outcome": "pass"
+    },
+    {
+      "name": "original complete execution journal unchanged",
+      "observed": "[{\"Id\":\"1be0ec054e814c4ba7afa22b5095046f\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"ProjectName\":\"Project 1\",\"ReviewedRevision\":46,\"ReviewedAt\":\"2026-09-27T17:09:59.6886149+09:00\",\"Operations\":[{\"Id\":\"0e8048c4c82f447992e0b04b031c3713\",\"Key\":{\"Kind\":\"Title\",\"NodeId\":\"I1\",\"ProjectId\":null,\"FieldId\":null},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Issue title（全Projectで共有）\",\"Expected\":\"Issue 1\",\"Intended\":{\"Value\":\"Weekly review completed\",\"Clear\":false},\"Stamp\":41,\"State\":8,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T17:10:11.0368371+09:00\",\"State\":4,\"Reason\":\"Synthetic uncertain transport outcome for historical-handling evaluation\"}],\"Reason\":\"ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。\",\"Verification\":null,\"NotBefore\":null},{\"Id\":\"d1950a115a404382af485f0efe8d1aaa\",\"Key\":{\"Kind\":\"Select\",\"NodeId\":\"P1-T1\",\"ProjectId\":\"P1\",\"FieldId\":\"P1-status\"},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Status\",\"Expected\":\"todo\",\"Intended\":{\"Value\":\"done\",\"Clear\":false},\"Stamp\":42,\"State\":2,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T17:10:12.4078079+09:00\",\"State\":2,\"Reason\":\"Read-back\"}],\"Reason\":\"更新結果と独立読み戻しを確認\",\"Verification\":{\"Id\":\"ff18fd58d7eb4194bdbef667f1c66b01\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"At\":\"2026-09-27T17:10:13.0441985+09:00\",\"Value\":\"done\",\"Availability\":0,\"Reason\":null,\"Options\":[{\"Id\":\"todo\",\"Name\":\"Todo\"},{\"Id\":\"done\",\"Name\":\"Done\"}]},\"NotBefore\":null}],\"Creations\":[]},{\"Id\":\"ac010cba526f449581fd7cf7e685e7af\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"ProjectName\":\"Project 1\",\"ReviewedRevision\":71,\"ReviewedAt\":\"2026-09-27T18:15:38.4846064+09:00\",\"Operations\":[{\"Id\":\"ad244f7242724461bf339a674c72c1b7\",\"Key\":{\"Kind\":\"Title\",\"NodeId\":\"I1\",\"ProjectId\":null,\"FieldId\":null},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Issue title（全Projectで共有）\",\"Expected\":\"Issue 1\",\"Intended\":{\"Value\":\"Weekly review completed\",\"Clear\":false},\"Stamp\":41,\"State\":2,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T18:15:57.1893375+09:00\",\"State\":2,\"Reason\":\"Read-back\"}],\"Reason\":\"更新結果と独立読み戻しを確認\",\"Verification\":{\"Id\":\"45ad1de1638b427aada0633cc6a5ede0\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"At\":\"2026-09-27T18:15:57.7974642+09:00\",\"Value\":\"Weekly review completed\",\"Availability\":0,\"Reason\":null,\"Options\":[]},\"NotBefore\":null}],\"Creations\":[]}]",
+      "expected": "[{\"Id\":\"1be0ec054e814c4ba7afa22b5095046f\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"ProjectName\":\"Project 1\",\"ReviewedRevision\":46,\"ReviewedAt\":\"2026-09-27T17:09:59.6886149+09:00\",\"Operations\":[{\"Id\":\"0e8048c4c82f447992e0b04b031c3713\",\"Key\":{\"Kind\":\"Title\",\"NodeId\":\"I1\",\"ProjectId\":null,\"FieldId\":null},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Issue title（全Projectで共有）\",\"Expected\":\"Issue 1\",\"Intended\":{\"Value\":\"Weekly review completed\",\"Clear\":false},\"Stamp\":41,\"State\":8,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T17:10:11.0368371+09:00\",\"State\":4,\"Reason\":\"Synthetic uncertain transport outcome for historical-handling evaluation\"}],\"Reason\":\"ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。\",\"Verification\":null,\"NotBefore\":null},{\"Id\":\"d1950a115a404382af485f0efe8d1aaa\",\"Key\":{\"Kind\":\"Select\",\"NodeId\":\"P1-T1\",\"ProjectId\":\"P1\",\"FieldId\":\"P1-status\"},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Status\",\"Expected\":\"todo\",\"Intended\":{\"Value\":\"done\",\"Clear\":false},\"Stamp\":42,\"State\":2,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T17:10:12.4078079+09:00\",\"State\":2,\"Reason\":\"Read-back\"}],\"Reason\":\"更新結果と独立読み戻しを確認\",\"Verification\":{\"Id\":\"ff18fd58d7eb4194bdbef667f1c66b01\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"At\":\"2026-09-27T17:10:13.0441985+09:00\",\"Value\":\"done\",\"Availability\":0,\"Reason\":null,\"Options\":[{\"Id\":\"todo\",\"Name\":\"Todo\"},{\"Id\":\"done\",\"Name\":\"Done\"}]},\"NotBefore\":null}],\"Creations\":[]},{\"Id\":\"ac010cba526f449581fd7cf7e685e7af\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"ProjectName\":\"Project 1\",\"ReviewedRevision\":71,\"ReviewedAt\":\"2026-09-27T18:15:38.4846064+09:00\",\"Operations\":[{\"Id\":\"ad244f7242724461bf339a674c72c1b7\",\"Key\":{\"Kind\":\"Title\",\"NodeId\":\"I1\",\"ProjectId\":null,\"FieldId\":null},\"ItemId\":\"P1-T1\",\"IssueId\":\"I1\",\"Identity\":\"sample-user/first #1 / I1\",\"FieldName\":\"Issue title（全Projectで共有）\",\"Expected\":\"Issue 1\",\"Intended\":{\"Value\":\"Weekly review completed\",\"Clear\":false},\"Stamp\":41,\"State\":2,\"Attempts\":[{\"Number\":1,\"At\":\"2026-09-27T18:15:57.1893375+09:00\",\"State\":2,\"Reason\":\"Read-back\"}],\"Reason\":\"更新結果と独立読み戻しを確認\",\"Verification\":{\"Id\":\"45ad1de1638b427aada0633cc6a5ede0\",\"Project\":{\"Scope\":{\"Host\":\"example.test\",\"ViewerId\":42},\"NodeId\":\"P1\"},\"At\":\"2026-09-27T18:15:57.7974642+09:00\",\"Value\":\"Weekly review completed\",\"Availability\":0,\"Reason\":null,\"Options\":[]},\"NotBefore\":null}],\"Creations\":[]}]",
+      "outcome": "pass"
+    },
+    {
+      "name": "original operation remains superseded",
+      "observed": 8,
+      "expected": 8,
+      "outcome": "pass"
+    },
+    {
+      "name": "original attempt remains Unknown",
+      "observed": [
+        4
+      ],
+      "expected": [
+        4
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "original uncertain request gains no fabricated verification",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "separate later successful title operation retained",
+      "observed": [
+        2
+      ],
+      "expected": [
+        2
+      ],
+      "outcome": "pass"
+    },
+    {
+      "name": "one separately recorded historical decision",
+      "observed": 1,
+      "expected": 1,
+      "outcome": "pass"
+    },
+    {
+      "name": "decision is AcceptCurrent",
+      "observed": 0,
+      "expected": 0,
+      "outcome": "pass"
+    },
+    {
+      "name": "exact historical batch",
+      "observed": "1be0ec054e814c4ba7afa22b5095046f",
+      "expected": "1be0ec054e814c4ba7afa22b5095046f",
+      "outcome": "pass"
+    },
+    {
+      "name": "exact historical operation",
+      "observed": "0e8048c4c82f447992e0b04b031c3713",
+      "expected": "0e8048c4c82f447992e0b04b031c3713",
+      "outcome": "pass"
+    },
+    {
+      "name": "no creation retarget",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "no follow-up publication authorized",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "current-value evidence",
+      "observed": 0,
+      "expected": 0,
+      "outcome": "pass"
+    },
+    {
+      "name": "evidence belongs to I1",
+      "observed": "I1",
+      "expected": "I1",
+      "outcome": "pass"
+    },
+    {
+      "name": "evidence belongs to P1-T1",
+      "observed": "P1-T1",
+      "expected": "P1-T1",
+      "outcome": "pass"
+    },
+    {
+      "name": "evidence belongs to P1",
+      "observed": "P1",
+      "expected": "P1",
+      "outcome": "pass"
+    },
+    {
+      "name": "evidence exact profile",
+      "observed": {
+        "Host": "example.test",
+        "ViewerId": 42
+      },
+      "expected": {
+        "Host": "example.test",
+        "ViewerId": 42
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "evidence exact title key",
+      "observed": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "expected": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "outcome": "pass"
+    },
+    {
+      "name": "accepted current value",
+      "observed": "Weekly review completed",
+      "expected": "Weekly review completed",
+      "outcome": "pass"
+    },
+    {
+      "name": "accepted value available",
+      "observed": 0,
+      "expected": 0,
+      "outcome": "pass"
+    },
+    {
+      "name": "accepted value has no unresolved read reason",
+      "observed": null,
+      "expected": null,
+      "outcome": "pass"
+    },
+    {
+      "name": "remote title unchanged",
+      "observed": "Weekly review completed",
+      "expected": "Weekly review completed",
+      "outcome": "pass"
+    },
+    {
+      "name": "remote workflow unchanged",
+      "observed": "done",
+      "expected": "done",
+      "outcome": "pass"
+    },
+    {
+      "name": "original service-call prefix preserved",
+      "observed": true,
+      "expected": true,
+      "outcome": "pass"
+    },
+    {
+      "name": "no new remote mutations",
+      "observed": 0,
+      "expected": 0,
+      "outcome": "pass"
+    },
+    {
+      "name": "no unexpected service host",
+      "observed": 0,
+      "expected": 0,
+      "outcome": "pass"
+    },
+    {
+      "name": "apply request log unchanged",
+      "observed": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "expected": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "outcome": "pass"
+    },
+    {
+      "name": "remote state file unchanged",
+      "observed": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+      "expected": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+      "outcome": "pass"
+    },
+    {
+      "name": "frozen App still matches",
+      "observed": "02A2222618D8754F91F76E4972AF8C75EE0472B15D0F254E65FAF7F083E34EA0",
+      "expected": "02A2222618D8754F91F76E4972AF8C75EE0472B15D0F254E65FAF7F083E34EA0",
+      "outcome": "pass"
+    },
+    {
+      "name": "frozen Core still matches",
+      "observed": "AA719F772D4BE2885664318D9A48CC12D64CCC8E42144F2B2BA82FFA4882D901",
+      "expected": "AA719F772D4BE2885664318D9A48CC12D64CCC8E42144F2B2BA82FFA4882D901",
+      "outcome": "pass"
+    }
+  ],
+  "failed": 0,
+  "result": "pass"
+}

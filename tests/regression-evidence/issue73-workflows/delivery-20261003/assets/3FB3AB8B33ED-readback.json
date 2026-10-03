@@ -1,0 +1,139 @@
+{
+  "kind": "Independent read-only inspection after evaluator B normal close; no new product execution",
+  "readAtUtc": "2026-09-27T07:56:41.0137506+00:00",
+  "sourceAtRead": "498840b1eea42bfb344c53195f7e5473fe68e020",
+  "originalPath": "TestResults/issue73/blind-review/round1-fresh-b/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json",
+  "copyPath": "TestResults/issue73/blind-review/coordinator-readback/fresh-b/source-checkpoint.json",
+  "originalSha256Before": "43A159FA548A0CED97A826FBDAF10599DDBD8BEE9E36A233D7E95D26BE57CBEA",
+  "originalSha256After": "43A159FA548A0CED97A826FBDAF10599DDBD8BEE9E36A233D7E95D26BE57CBEA",
+  "copySha256": "43A159FA548A0CED97A826FBDAF10599DDBD8BEE9E36A233D7E95D26BE57CBEA",
+  "checkpointSchema": 12,
+  "scope": {
+    "Host": "github.com",
+    "ViewerId": 42
+  },
+  "revision": 109,
+  "historyCount": 2,
+  "applyJournalCount": 0,
+  "pendingFieldCount": 0,
+  "currentEstimateFields": [
+    {
+      "key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Estimate"
+      },
+      "baseline": null,
+      "change": {
+        "Value": "8",
+        "Clear": false
+      },
+      "buffer": null,
+      "stamp": 84,
+      "conflict": false,
+      "observation": null
+    }
+  ],
+  "planning": [
+    {
+      "Version": 3,
+      "ProjectId": "P1",
+      "Stamp": 84,
+      "Start": "2026-10-05T09:00:00",
+      "Cutoff": null,
+      "Fields": [
+        {
+          "Role": "Estimate",
+          "FieldId": "F-Estimate",
+          "DataType": "NUMBER"
+        }
+      ],
+      "People": [
+        {
+          "Id": "U1",
+          "Name": "Owner",
+          "WeightPercent": 100
+        }
+      ],
+      "Tasks": [
+        {
+          "Id": "I1",
+          "Mode": 1,
+          "OwnerId": "U1",
+          "ManualStart": null,
+          "ManualFinish": null,
+          "Progress": 0,
+          "ActualStart": null,
+          "ActualFinish": null,
+          "EarliestStart": null,
+          "FixedStart": null,
+          "FixedFinish": null,
+          "Deadline": null,
+          "Actuals": null,
+          "Contributions": null,
+          "LocalLinks": null,
+          "LaborKind": 0,
+          "Assignment": {
+            "Assignees": [
+              "U1"
+            ],
+            "Complete": true,
+            "Legacy": false
+          }
+        }
+      ]
+    }
+  ],
+  "history": [
+    {
+      "id": "971f1f5cb8a24450b6bbc74b80e840eb",
+      "projectId": "P1",
+      "invalidReason": null,
+      "hasPlan": true,
+      "changes": []
+    },
+    {
+      "id": "6755202e922b4f9897c58f6ab023e402",
+      "projectId": "P1",
+      "invalidReason": null,
+      "hasPlan": true,
+      "changes": [
+        {
+          "key": {
+            "Kind": "Number",
+            "NodeId": "P1T1",
+            "ProjectId": "P1",
+            "FieldId": "F-Estimate"
+          },
+          "before": {
+            "baseline": null,
+            "change": null,
+            "buffer": "8",
+            "stamp": 0
+          },
+          "after": {
+            "baseline": null,
+            "change": {
+              "Value": "8",
+              "Clear": false
+            },
+            "buffer": null,
+            "stamp": 84
+          }
+        }
+      ]
+    }
+  ],
+  "interpretation": "Final durable P1 Estimate is 8 with no buffer; P1 maps Estimate, starts 2026-10-05 09:00 and retains U1/Owner at 100 percent. The final planning record contains I1 assigned to U1. The two retained history entries are premises and initial Estimate adoption; there is no surviving After value of 10. This supports the visible end state after Escape and restart, not the instantaneous Undo state.",
+  "limitations": [
+    "No checkpoint was sampled immediately after Ctrl+Z.",
+    "This readback does not repeat the evaluator journey, establish learnability or constitute human acceptance.",
+    "An empty Apply journal does not establish a network-call count or independently verify the remote service.",
+    "Computed dates in screenshots were not recalculated by this file inspection."
+  ],
+  "normalCloseEvidence": {
+    "path": "TestResults/issue73/blind-review/round1-fresh-b/observations/close-confirmation.json",
+    "sha256": "9422E217C583D2C898EC2C947BB06640BCBD43C384E7C5F3C341755CF7312E18"
+  }
+}

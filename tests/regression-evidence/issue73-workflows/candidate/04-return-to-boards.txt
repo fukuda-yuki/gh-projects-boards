@@ -1,0 +1,138 @@
+Window: "GitHub Projects Boards", App: GhProjectsBoards.App.exe.
+	0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise
+		1 ウィンドウ
+			2 ウィンドウ
+				3 button Project一覧を折りたたむ ID: ToggleProjectNavigation
+				4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity
+				5 button 接続設定 ID: ConnectionPageButton
+				6 window Secondary Actions: Raise ID: PaneRoot
+					7 combo box 保存済みアカウント ID: SavedProfiles
+					8 テキスト 登録済みProject
+					9 tree ID: ListControl
+						32 tree item (selectable) owner
+							33 テキスト owner
+						34 tree item (selectable) Repository関連付けなし
+							35 テキスト Repository関連付けなし
+						36 tree item (selectable) P1
+							37 テキスト P1
+						38 tree item (selectable) P2
+							39 テキスト P2
+					10 button Projectを追加… ID: AddProjectButton
+				11 テキスト P1 ID: ProjectSummary
+				40 テキスト キャッシュ 2026/09/24 22:14 ID: ProjectCacheDestination
+				12 button (disabled) 最新を取得 ID: RefreshProjectButton
+				13 button (disabled) GitHubに反映… ID: ReviewApplyButton
+				14 button 反映結果・履歴 ID: ApplyHistoryButton
+				15 button (disabled) Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton
+				268 テキスト 計画の前提
+				269 テキスト Project「P1」全体に適用します。保存すると自動計算の日程を見直します。
+				304 テキスト Project開始：日付と時刻を選択するか、yyyy-MM-dd HH:mmで入力してください。 ID: PlanningStatus
+				270 pane
+					271 edit (settable, string) Project開始（日本時間） Value: 2026-10-01 09:00 ID: PlanProjectStart
+						272 テキスト Project開始（日本時間）
+					273 カレンダー日付の選択 Project開始（日本時間）の日付 Value: ‎2026‎/‎10‎/‎01 ID: PlanProjectStart-Date
+						274 テキスト ‎2026‎/‎10‎/‎01 ID: DateText
+					275 グループ Project開始（日本時間）の時刻 ID: PlanProjectStart-Time
+						276 button Project開始（日本時間）の時刻 ‎9‎:‎00 時刻の選択 ID: FlyoutButton
+					277 テキスト 自動計算の開始点です。日時を指定するタスクは、タスクの日程から編集できます。
+					278 edit (settable, string) 再計画の基準日時（日本時間） ID: PlanCutoff
+						279 テキスト 再計画の基準日時（日本時間）
+					280 カレンダー日付の選択 再計画の基準日時（日本時間）の日付 Value: 日付 ID: PlanCutoff-Date
+						281 テキスト 日付 ID: DateText
+					282 グループ 再計画の基準日時（日本時間）の時刻 ID: PlanCutoff-Time
+						283 button 再計画の基準日時（日本時間）の時刻 時刻の選択 ID: FlyoutButton
+					284 テキスト 進行中・再開したタスクの残作業を、いつ以降に計画するか。実績の報告日とは別です。
+					285 テキスト GitHubの列との対応
+					286 テキスト 見積時間を対応づけると表で入力できます。既存の列を確認して選んでください。その他の列は必要になった時に設定できます。
+					287 combo box 見積時間 ID: PlanField-Estimate
+					288 combo box 残時間 ID: PlanField-Remaining
+					289 combo box 実績合計 ID: PlanField-Actual
+					290 combo box 開始日 ID: PlanField-Start
+					291 combo box 終了日 ID: PlanField-Finish
+					292 テキスト 通常は平日9–13時・14–18時。採用祝日 2025–2027。
+					293 button 担当者・配賦 ID: PlanSection-担当者・配賦
+						294 テキスト 担当者・配賦
+						305 チェック ボックス Owner ID: PlanPerson-U1
+						306 edit (settable, string) このProjectの配賦（0–100%） Value: 50 ID: PlanWeight-U1
+							307 テキスト このProjectの配賦（0–100%）
+						308 チェック ボックス Owner ID: PlanPerson-U2
+						309 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U2
+							310 テキスト このProjectの配賦（0–100%）
+						311 チェック ボックス Owner ID: PlanPerson-U3
+						312 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U3
+							313 テキスト このProjectの配賦（0–100%）
+						314 チェック ボックス Owner ID: PlanPerson-U4
+						315 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U4
+							316 テキスト このProjectの配賦（0–100%）
+						317 チェック ボックス Owner ID: PlanPerson-U5
+						318 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U5
+							319 テキスト このProjectの配賦（0–100%）
+						320 チェック ボックス Owner ID: PlanPerson-U6
+						321 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U6
+							322 テキスト このProjectの配賦（0–100%）
+						323 チェック ボックス Owner ID: PlanPerson-U7
+						324 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U7
+							325 テキスト このProjectの配賦（0–100%）
+						326 チェック ボックス Owner ID: PlanPerson-U8
+						327 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U8
+							328 テキスト このProjectの配賦（0–100%）
+						329 チェック ボックス Owner ID: PlanPerson-U9
+						330 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U9
+							331 テキスト このProjectの配賦（0–100%）
+						332 チェック ボックス Owner ID: PlanPerson-U10
+						333 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U10
+							334 テキスト このProjectの配賦（0–100%）
+						335 チェック ボックス Owner ID: PlanPerson-U11
+						336 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U11
+							337 テキスト このProjectの配賦（0–100%）
+						338 チェック ボックス Owner ID: PlanPerson-U12
+						339 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U12
+							340 テキスト このProjectの配賦（0–100%）
+						341 チェック ボックス Owner ID: PlanPerson-U13
+						342 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U13
+							343 テキスト このProjectの配賦（0–100%）
+						344 チェック ボックス Owner ID: PlanPerson-U14
+						345 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U14
+							346 テキスト このProjectの配賦（0–100%）
+						347 チェック ボックス Owner ID: PlanPerson-U15
+						348 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U15
+							349 テキスト このProjectの配賦（0–100%）
+						350 チェック ボックス Owner ID: PlanPerson-U16
+						351 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U16
+							352 テキスト このProjectの配賦（0–100%）
+						353 チェック ボックス Owner ID: PlanPerson-U17
+						354 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U17
+							355 テキスト このProjectの配賦（0–100%）
+						356 チェック ボックス Owner ID: PlanPerson-U18
+						357 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U18
+							358 テキスト このProjectの配賦（0–100%）
+						359 チェック ボックス Owner ID: PlanPerson-U19
+						360 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U19
+							361 テキスト このProjectの配賦（0–100%）
+						362 チェック ボックス Owner ID: PlanPerson-U20
+						363 edit (settable, string) このProjectの配賦（0–100%） Value: 100 ID: PlanWeight-U20
+							364 テキスト このProjectの配賦（0–100%）
+					295 button カレンダー・祝日 ID: PlanSection-カレンダー・祝日
+						296 テキスト カレンダー・祝日
+						365 チェック ボックス 祝日を考慮しない ID: PlanIgnoreHolidays
+						366 チェック ボックス 同梱祝日を採用（2025–2027） ID: PlanAdoptHolidays
+						367 テキスト 採用済み祝日との差分なし。個別例外・Manual・実績は保持します。
+						368 テキスト 日付例外：空の時間帯は休日。担当者別 → Project共通 → 通常週・祝日の順で採用します。
+						369 button 日付例外を追加 ID: PlanAddException
+					297 scroll bar (settable, float) 垂直 Value: 828 ID: VerticalScrollBar
+						700 button 垂直方向に小さく戻る ID: VerticalSmallDecrease
+						701 button 垂直方向に大きく戻る ID: VerticalLargeDecrease
+						702 button 垂直方向に大きく進む ID: VerticalLargeIncrease
+						703 button 垂直方向に小さく進む ID: VerticalSmallIncrease
+				302 button 保存して戻る ID: PlanSettingsSave
+				303 button 取消して戻る ID: PlanSettingsCancel
+		20 タイトル バー (settable, string) Value: GitHub Projects Boards
+			21 メニュー バー システム ID: MenuBar
+				22 メニュー項目 システム
+			23 ボタン 最小化
+			24 ボタン 最大化
+			25 ボタン 閉じる
+
+Document text: ```
+100
+```

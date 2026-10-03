@@ -7,6 +7,24 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanningAssignmentTests
 {
+    [Test]
+    public void ExactManualDatesCanBePlannedBeforeGitHubDateColumnsAreMapped()
+    {
+        var project = Assigned("U1"); var work = new EditingWorkspace(project.Snapshot.Id.Scope);
+        work.SetRegistrations([project]);
+        work.SetPlanning(PlanningPathTests.Plan() with { Version = 3, Fields = [] }, 0);
+        var start = PlanningContractTests.At("2026-10-05 09:00");
+        var finish = PlanningContractTests.At("2026-10-05 13:00");
+
+        var candidate = work.SchedulingCandidate(project, "P1T1", PlanningMode.Manual, start, finish, false);
+        work.CommitPlanning(project, candidate, work.Revision);
+
+        Assert.That(work.PlanFor(project).Tasks.Single(t => t.Id == "I1"),
+            Has.Property("Start").EqualTo(start).And.Property("Finish").EqualTo(finish));
+        Assert.That(work.Planning("P1")!.Fields, Is.Empty);
+        Assert.That(work.Journal, Is.Empty);
+    }
+
     internal static ProjectRegistration Assigned(params string[] people)
     {
         var p = PlanningPathTests.Registration();
@@ -72,7 +90,7 @@ internal sealed class PlanningAssignmentTests
     }
 
     [TestCase("Start"), TestCase("Finish")]
-    public void DirectDateInputRetainsTheOtherExactEndpointAndUndoRestoresPendingText(string role)
+    public void DirectDateInputRetainsTheOtherExactEndpointAndUndoRestoresConfirmedDates(string role)
     {
         var p = Assigned("U1"); var w = new EditingWorkspace(p.Snapshot.Id.Scope); w.SetRegistrations([p]);
         w.SetPlanning(PlanningPathTests.Plan() with { Tasks = [new("I1", PlanningMode.Manual, "U1",
@@ -84,7 +102,7 @@ internal sealed class PlanningAssignmentTests
         Assert.That(role == "Start" ? result.Finish : result.Start, Is.EqualTo(PlanningContractTests.At(role == "Start" ? "2026-10-06 16:43" : "2026-10-05 10:17")));
         Assert.That(w.Value(cell), Is.EqualTo("2026-10-06")); Assert.That(w.Buffer(cell), Is.Null);
         var restored = EditingWorkspace.Restore(w.Snapshot()); restored.Undo("P1");
-        Assert.That(restored.Buffer(cell), Is.EqualTo(text));
+        Assert.That(restored.Buffer(cell), Is.Null);
         Assert.That(restored.PlanFor(p).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 16:43")));
     }
 

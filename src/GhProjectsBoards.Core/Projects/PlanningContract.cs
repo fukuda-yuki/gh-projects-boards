@@ -33,6 +33,25 @@ internal sealed record ProjectPlanning(int Version, string ProjectId, long Stamp
 // assumed time reconstructed from a GitHub DATE projection.
 internal static class PlanningContract
 {
+    internal static bool SameAdoptedPlan(ProjectPlanning left, ProjectPlanning right)
+    {
+        var a = left.Calendar; var b = right.Calendar;
+        return left with { Stamp = right.Stamp, Fields = right.Fields, Calendar = b,
+            People = right.People, Tasks = right.Tasks, Summary = right.Summary } == right
+            && left.Fields.SequenceEqual(right.Fields) && left.People.SequenceEqual(right.People)
+            && SummaryContract.SameSettings(left.Summary, right.Summary)
+            && a with { Holidays = b.Holidays, Exceptions = b.Exceptions } == b
+            && a.Holidays with { Dates = b.Holidays.Dates } == b.Holidays
+            && a.Holidays.Dates.SequenceEqual(b.Holidays.Dates)
+            && a.Exceptions.Length == b.Exceptions.Length && a.Exceptions.Zip(b.Exceptions).All(e =>
+                e.First with { Intervals = e.Second.Intervals } == e.Second
+                && e.First.Intervals.SequenceEqual(e.Second.Intervals))
+            // Contextual edits replace their task at the end of the array;
+            // that storage order is not a change to the adopted plan.
+            && left.Tasks.Length == right.Tasks.Length
+            && left.Tasks.OrderBy(t => t.Id, StringComparer.Ordinal).Zip(right.Tasks.OrderBy(t => t.Id, StringComparer.Ordinal))
+                .All(t => SameRetainedTask(t.First, t.Second));
+    }
     internal static bool SameRetainedTask(PlanningTask left, PlanningTask right)
     {
         static bool Same<T>(T[]? a, T[]? b) => a is null ? b is null : b is not null && a.SequenceEqual(b);

@@ -1,0 +1,29 @@
+{
+  "exactRawExclusions": [
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\history-width-repair\\native-cu\\private-initial-inventory.json",
+      "relativePath": "private-initial-inventory.json",
+      "sha256": "39149DA0DE2CA070A9399E60F94256E3AC12F3646661E6C7C6ADCC70C3AF6D17",
+      "bytes": 7624,
+      "reason": "Private full native application/window inventory; exclude wholesale without derivative.",
+      "originalPreserved": true
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\history-width-repair\\native-cu\\private-post-close-inventory.json",
+      "relativePath": "private-post-close-inventory.json",
+      "sha256": "C4446962F638ACC97E86DB8BBBC30F0FFD2A094B85C4D651F22C0944C4D3B280",
+      "bytes": 1035,
+      "reason": "Private full native application/window inventory; exclude wholesale without derivative.",
+      "originalPreserved": true
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\history-width-repair\\native-cu\\private-root-post-close-inventory.json",
+      "relativePath": "private-root-post-close-inventory.json",
+      "sha256": "7A8BC4DB044B13EC953913EEF6B47CD6BC18DF9C581BA7F0C83366108AA2BB1A",
+      "bytes": 7901,
+      "reason": "Private full native application/window inventory; exclude wholesale without derivative.",
+      "originalPreserved": true
+    }
+  ],
+  "imageExclusions": []
+}

@@ -1,0 +1,116 @@
+{
+  "kind": "Coordinator retention verification; file inspection only",
+  "atUtc": "2026-09-27T09:28:49.7460289Z",
+  "source": "round2-recovery-f",
+  "originalImageCount": 44,
+  "candidateReceiptSha256": "1E19ED15C2882DE3DA50FDFE8A3E129D77E93F745687D1FEAF63567A71DA5B08",
+  "launchReceiptMatchesR1": true,
+  "inputAndFinalChecks": [
+    {
+      "boundary": "input",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "sha256": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "sha256": "F6EAEF02EF66C24A01FF80ED7AD0DED3152CE1C3EE9159D919FBB39D189A8B9D",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "sha256": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "gh-config\\apply-requests.jsonl",
+      "sha256": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "gh-config\\apply-state.json",
+      "sha256": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "gh-config\\calls.jsonl",
+      "sha256": "7C598AFB4335284AB5C6A8FA30637FE4D13C1D404CF52DF776CC418D69048FEF",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "input",
+      "path": "gh-config\\scenario.json",
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+      "matchesPriorCAndAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "sha256": "3520EA8FB8D6EDD80C1C5C4E578804CC67580D9DB838072A361204197DBD175C",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "sha256": "CF5671565A0AF5CD1D60F107DC9F86A6215A4BE32672066F8332E91DA514BEAD",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "sha256": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "gh-config\\apply-requests.jsonl",
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "gh-config\\apply-state.json",
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "gh-config\\calls.jsonl",
+      "sha256": "68FAADA47C96A6DFCE0DA95140FBA11F08DDED9AA3611D3FD8AACDA3539AC6BF",
+      "matchesAllRecordedCopies": true
+    },
+    {
+      "boundary": "final",
+      "path": "gh-config\\scenario.json",
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+      "matchesAllRecordedCopies": true
+    }
+  ],
+  "originalRequestPrefixLength": 144,
+  "originalRequestPrefixMatches": true,
+  "soleAppendedRequestIsTitle": true,
+  "normalCloseEvidence": "Evaluator Computer Use action log; PID absence is separately recorded by snapshot capturer",
+  "limits": [
+    "No UI or process inspection by retention agent",
+    "No build/test or real GitHub",
+    "No R2 retention",
+    "No human acceptance or global readiness verdict"
+  ]
+}

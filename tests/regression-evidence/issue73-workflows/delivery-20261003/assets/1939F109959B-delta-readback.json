@@ -1,0 +1,69 @@
+{
+  "mechanism": "Compare final saved fields with the retained first seed transaction, not a regenerated initial fixture",
+  "retainedSeedTransactionId": "bf1fceac6a3c4918a5be910c43ad7295",
+  "initialChangedKeys": 43,
+  "finalChangedKeys": 46,
+  "additionalChangedKeys": [
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "Change": {
+        "Value": "3",
+        "Clear": false
+      }
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Remaining"
+      },
+      "Change": {
+        "Value": "2",
+        "Clear": false
+      }
+    },
+    {
+      "Key": {
+        "Kind": "Number",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "F-Actual"
+      },
+      "Change": {
+        "Value": "2",
+        "Clear": false
+      }
+    }
+  ],
+  "remainingHistoryEntries": 3,
+  "workflowUnchanged": [
+    {
+      "Key": {
+        "Kind": "Select",
+        "NodeId": "P1T1",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "Baseline": "todo",
+      "Change": null,
+      "Buffer": null
+    },
+    {
+      "Key": {
+        "Kind": "Select",
+        "NodeId": "P1T2",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "Baseline": "todo",
+      "Change": null,
+      "Buffer": null
+    }
+  ]
+}

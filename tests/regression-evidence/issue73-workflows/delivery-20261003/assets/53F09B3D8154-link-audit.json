@@ -1,0 +1,1982 @@
+{
+  "relativeLinks": 329,
+  "resolvedLinks": 322,
+  "intentionalExcludedRawInventoryLinks": 7,
+  "unexpectedBrokenLinks": 0,
+  "links": [
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-source-ready-20261003/source-ready-proposal.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-fresh-evaluator/actual-segment4/root-observation.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-fresh-evaluator/actual-segment4/normal-close.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-publication-segment4-observation/derived-target-inventories/001-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-publication-segment4-observation/derived-target-inventories/092-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-publication-segment4-observation/derived-target-inventories/093-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/readback/runs/20261002-203738-61d13832da544df9a17ed583c97116ba/result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/structural-diagnosis/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/structural-supplement/failed-attempt-1/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/structural-supplement/extended-path-source.diff",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/structural-supplement/runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3/result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/publication-v-creation/structural-supplement/completion.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-retention-audit/selection.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-retention-audit/exclusions.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-retention-audit/validation.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "added-v-bound-recovery-20261003.md",
+      "target": "checks/v-bound-recovery-retention-audit/link-audit.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "source-ready-proposal.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-publication-segment4-observation/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-fresh-evaluator/actual-segment4/root-observation.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-fresh-evaluator/actual-segment4/normal-close.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../../round10-publication-v/diagnostics/phase2-install-5f3cacea47784383847fac19ebdff759/launch-recovery.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-publication-segment4-observation/derived-target-inventories/001-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-publication-segment4-observation/derived-target-inventories/092-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../v-publication-segment4-observation/derived-target-inventories/093-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/readback/runs/20261002-203738-61d13832da544df9a17ed583c97116ba/result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/readback/runs/20261002-203738-61d13832da544df9a17ed583c97116ba/findings.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-diagnosis/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-supplement/failed-attempt-1/README.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-supplement/source-ready-v2.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-supplement/extended-path-source.diff",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-supplement/runs/20261003-060248-f24bb9a5259c4f978234afea1e2353c3/result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/structural-supplement/completion.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-bound-recovery-source-ready-20261003/README.md",
+      "target": "../publication-v-creation/v4-diagnosis-supplement-allowlist.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "001-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "001-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "002-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "002-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "003-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "003-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "004-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "004-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "005-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "005-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "006-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "006-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "007-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "007-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "008-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "008-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "009-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "009-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "010-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "010-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "011-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "011-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "012-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "012-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "013-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "013-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "014-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "014-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "015-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "015-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "016-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "016-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "017-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "017-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "018-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "018-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "019-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "019-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "020-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "020-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "021-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "021-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "022-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "022-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "023-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "023-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "024-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "024-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "025-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "025-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "026-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "026-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "027-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "027-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "028-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "028-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "029-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "029-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "030-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "030-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "031-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "031-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "032-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "032-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "033-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "033-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "034-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "034-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "035-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "035-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "036-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "036-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "037-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "037-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "038-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "038-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "039-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "039-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "040-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "040-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "041-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "041-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "042-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "042-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "043-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "043-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "044-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "044-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "045-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "045-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "046-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "046-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "047-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "047-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "048-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "048-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "049-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "049-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "050-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "050-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "051-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "051-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "052-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "052-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "053-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "053-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "054-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "054-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "055-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "055-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "056-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "056-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "057-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "057-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "058-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "058-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "059-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "059-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "060-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "060-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "061-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "061-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "062-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "062-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "063-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "063-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "064-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "064-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "065-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "065-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "066-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "066-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "067-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "067-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "068-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "068-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "069-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "069-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "070-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "070-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "071-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "071-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "072-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "072-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "073-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "073-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "074-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "074-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "075-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "075-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "076-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "076-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "077-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "077-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "078-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "078-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "079-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "079-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "080-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "080-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "081-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "081-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "082-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "082-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "083-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "083-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "084-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "084-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "085-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "085-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "086-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "086-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "087-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "087-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "088-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "088-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "089-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "089-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "090-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "090-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "091-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "091-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "092-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "092-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "093-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/call-index.md",
+      "target": "093-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "027-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "052-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "055-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "060-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "063-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "070-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "073-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "077-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "080-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "002-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "043-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "040-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "083-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "085-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "090-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "091-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "092-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "093-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "015-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "029-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "036-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "public-api-calls.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "call-index.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "screenshots.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "screenshot-index.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/evaluation.md",
+      "target": "notes.jsonl",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "002-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "004-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "005-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "007-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "008-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "010-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "012-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "014-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "015-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "017-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "017-screenshot-1.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "019-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "020-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "022-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "024-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "026-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "027-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "029-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "029-screenshot-1.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "031-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "033-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "034-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "036-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "038-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "039-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "040-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "042-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "043-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "045-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "047-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "048-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "050-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "052-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "054-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "055-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "057-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "058-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "060-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "062-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "063-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "063-screenshot-1.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "065-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "065-screenshot-1.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "066-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "067-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "069-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "070-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "072-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "073-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "075-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "077-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "079-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "080-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "082-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "083-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "085-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "087-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "088-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/originals/screenshot-index.md",
+      "target": "090-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/evaluation.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/public-api-calls.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/call-index.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/screenshot-index.md",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/notes.jsonl",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/051-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/055-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/063-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/064-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/070-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/073-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/077-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/085-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/090-screenshot-0.jpg",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/091-call.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/092-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/093-result.json",
+      "exists": false,
+      "intentionallyExcludedRawInventory": true
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "call-audit.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "privacy-review.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "provenance/image-review.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "derived-target-inventories/001-result.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "snapshot-manifest.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    },
+    {
+      "report": "checks/v-publication-segment4-observation/README.md",
+      "target": "originals/evidence-validation.json",
+      "exists": true,
+      "intentionallyExcludedRawInventory": false
+    }
+  ]
+}

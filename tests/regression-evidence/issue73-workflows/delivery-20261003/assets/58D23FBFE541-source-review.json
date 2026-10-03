@@ -1,0 +1,21 @@
+{
+  "observedAtUtc": "2026-10-02T21:04:50.8240875+00:00",
+  "receipt": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round16-candidate-recovery-range\\diagnostics\\launch-65a3c5e70fad4336ac88149dbf46a44e.json",
+  "receiptSha256": "B291204B6F3381E380B5764C271D081A9BC37050C772287068F8163B078E03B2",
+  "sourceCount": 272,
+  "sourceCopiesSha256": "EEE76D0A5277257FDDFE44B46FA1850244479CF5A12EF32A8CA3640F0B81D873",
+  "hostedSourceCount": 236,
+  "hostedSourceDifferences": [],
+  "appSha256": "874C50EE900BC2F448E16393E1DFD1212442D5072E95FDAEF117C156B3B0A07B",
+  "coreSha256": "E7EF7179BED66C4794D46EA7038D2443E2CE9DF6F22D481B0811A956BD30540A",
+  "hostedAppSha256": "5516E0C1D1C2AC1804550EBDFFDECE9A97E89D454E40459AE1F5EE8913FC212A",
+  "binaryIdentityClaim": "Ordinary and hosted App hashes differ after rebuild; exact source inputs match. Core hashes match.",
+  "buildExitCodes": [
+    0,
+    0
+  ],
+  "preparedOnly": true,
+  "gitWarning": "Launcher Git enumeration reported long paths inside excluded regression-evidence. All 272 included build inputs and all 236 hosted input entries were independently checked.",
+  "appRun": "not_run",
+  "humanAcceptance": "not_run"
+}

@@ -1,0 +1,88 @@
+{
+  "createdAtUtc": "2026-10-02T19:29:49.029677+00:00",
+  "source": {
+    "path": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-dense-u-resume-26211aac469a4b64afba435a0718c080\\closing-assessment\\events.private.jsonl",
+    "length": 1909,
+    "sha256": "C29A893154C5A2B53674E7814D3FC0B94E52D1252BB58C03AAB5E07E9941766E"
+  },
+  "whitelistFields": [
+    "type",
+    "thread_id",
+    "item.id",
+    "item.type",
+    "item.status",
+    "item.changes.path",
+    "item.changes.kind"
+  ],
+  "events": [
+    {
+      "sourceLine": 1,
+      "type": "thread.started",
+      "thread_id": "01a0e3cc-8dcc-7d51-a65f-31ece366acbc"
+    },
+    {
+      "sourceLine": 2,
+      "type": "turn.started"
+    },
+    {
+      "sourceLine": 3,
+      "type": "item.completed",
+      "item": {
+        "id": "item_0",
+        "type": "agent_message",
+        "textOmitted": true
+      }
+    },
+    {
+      "sourceLine": 4,
+      "type": "item.started",
+      "item": {
+        "id": "item_1",
+        "type": "file_change",
+        "status": "in_progress",
+        "changes": [
+          {
+            "path": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-dense-u-resume-26211aac469a4b64afba435a0718c080\\closing-assessment\\closing-assessment.md",
+            "kind": "add"
+          }
+        ]
+      }
+    },
+    {
+      "sourceLine": 5,
+      "type": "item.completed",
+      "item": {
+        "id": "item_1",
+        "type": "file_change",
+        "status": "completed",
+        "changes": [
+          {
+            "path": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ui-dense-u-resume-26211aac469a4b64afba435a0718c080\\closing-assessment\\closing-assessment.md",
+            "kind": "add"
+          }
+        ]
+      }
+    },
+    {
+      "sourceLine": 6,
+      "type": "item.completed",
+      "item": {
+        "id": "item_2",
+        "type": "agent_message",
+        "textOmitted": true
+      }
+    },
+    {
+      "sourceLine": 7,
+      "type": "turn.completed",
+      "usageOmitted": true
+    }
+  ],
+  "omitted": [
+    "all agent message text",
+    "internal reasoning if any",
+    "file diff content",
+    "usage payload"
+  ],
+  "claimLimit": "Shows the recorded thread/turn and a file-change item only. Turn completion is not an independently captured OS process exit or application action."
+}

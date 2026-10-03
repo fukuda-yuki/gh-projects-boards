@@ -18,13 +18,15 @@ internal static class SheetNativeInput
         if (GetForegroundWindow() != hwnd) { Key(VirtualKey.Menu, true); Key(VirtualKey.Menu, false); SetForegroundWindow(hwnd); }
         Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
     });
-    internal static async Task<Point> PointFor(string id, double x = .5, double y = .5)
+    internal static Task<Point> PointFor(string id, double x = .5, double y = .5) => PointFor(() => Ui.Find<FrameworkElement>(id), x, y);
+    internal static Task<Point> PointFor(FrameworkElement control, double x = .5, double y = .5) => PointFor(() => control, x, y);
+    private static async Task<Point> PointFor(Func<FrameworkElement> find, double x, double y)
     {
         await Rendered();
         await ActivateWindow();
         Point result = default;
         await Ui.Run(() => {
-            var control = Ui.Find<FrameworkElement>(id);
+            var control = find();
             Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
             var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
             var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);

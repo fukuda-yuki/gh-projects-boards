@@ -1,0 +1,1064 @@
+{
+  "at": "2026-09-27T13:44:44.576Z",
+  "report": "continuation-evaluation.md",
+  "originalEvidenceUntouched": true,
+  "states": 61,
+  "images": 68,
+  "reportLinks": [
+    {
+      "file": "continuation-state-025-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-029-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-040-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-053-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-054-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-056-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-043-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-044-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-060-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-061-1.jpg",
+      "exists": true
+    },
+    {
+      "file": "continuation-close-verification.json",
+      "exists": true
+    },
+    {
+      "file": "continuation-public-api-calls.json",
+      "exists": true
+    },
+    {
+      "file": "continuation-state-index.json",
+      "exists": true
+    },
+    {
+      "file": "continuation-events.json",
+      "exists": true
+    },
+    {
+      "file": "continuation-close-verification.json",
+      "exists": true
+    },
+    {
+      "file": "continuation-evidence-verification.json",
+      "exists": true
+    }
+  ],
+  "rawStates": [
+    {
+      "file": "continuation-state-001.json",
+      "exists": true,
+      "bytes": 81171
+    },
+    {
+      "file": "continuation-state-002.json",
+      "exists": true,
+      "bytes": 87408
+    },
+    {
+      "file": "continuation-state-003.json",
+      "exists": true,
+      "bytes": 76027
+    },
+    {
+      "file": "continuation-state-004.json",
+      "exists": true,
+      "bytes": 77383
+    },
+    {
+      "file": "continuation-state-005.json",
+      "exists": true,
+      "bytes": 159871
+    },
+    {
+      "file": "continuation-state-006.json",
+      "exists": true,
+      "bytes": 134663
+    },
+    {
+      "file": "continuation-state-007.json",
+      "exists": true,
+      "bytes": 115578
+    },
+    {
+      "file": "continuation-state-008.json",
+      "exists": true,
+      "bytes": 117822
+    },
+    {
+      "file": "continuation-state-009.json",
+      "exists": true,
+      "bytes": 116219
+    },
+    {
+      "file": "continuation-state-010.json",
+      "exists": true,
+      "bytes": 116454
+    },
+    {
+      "file": "continuation-state-011.json",
+      "exists": true,
+      "bytes": 129706
+    },
+    {
+      "file": "continuation-state-012.json",
+      "exists": true,
+      "bytes": 115958
+    },
+    {
+      "file": "continuation-state-013.json",
+      "exists": true,
+      "bytes": 126800
+    },
+    {
+      "file": "continuation-state-014.json",
+      "exists": true,
+      "bytes": 116302
+    },
+    {
+      "file": "continuation-state-015.json",
+      "exists": true,
+      "bytes": 116050
+    },
+    {
+      "file": "continuation-state-016.json",
+      "exists": true,
+      "bytes": 133076
+    },
+    {
+      "file": "continuation-state-017.json",
+      "exists": true,
+      "bytes": 116334
+    },
+    {
+      "file": "continuation-state-018.json",
+      "exists": true,
+      "bytes": 114778
+    },
+    {
+      "file": "continuation-state-019.json",
+      "exists": true,
+      "bytes": 100794
+    },
+    {
+      "file": "continuation-state-020.json",
+      "exists": true,
+      "bytes": 116748
+    },
+    {
+      "file": "continuation-state-021.json",
+      "exists": true,
+      "bytes": 104008
+    },
+    {
+      "file": "continuation-state-022.json",
+      "exists": true,
+      "bytes": 117854
+    },
+    {
+      "file": "continuation-state-023.json",
+      "exists": true,
+      "bytes": 103908
+    },
+    {
+      "file": "continuation-state-024.json",
+      "exists": true,
+      "bytes": 113084
+    },
+    {
+      "file": "continuation-state-025.json",
+      "exists": true,
+      "bytes": 103932
+    },
+    {
+      "file": "continuation-state-026.json",
+      "exists": true,
+      "bytes": 108310
+    },
+    {
+      "file": "continuation-state-027.json",
+      "exists": true,
+      "bytes": 101968
+    },
+    {
+      "file": "continuation-state-028.json",
+      "exists": true,
+      "bytes": 102834
+    },
+    {
+      "file": "continuation-state-029.json",
+      "exists": true,
+      "bytes": 102934
+    },
+    {
+      "file": "continuation-state-030.json",
+      "exists": true,
+      "bytes": 103158
+    },
+    {
+      "file": "continuation-state-031.json",
+      "exists": true,
+      "bytes": 102626
+    },
+    {
+      "file": "continuation-state-032.json",
+      "exists": true,
+      "bytes": 88750
+    },
+    {
+      "file": "continuation-state-033.json",
+      "exists": true,
+      "bytes": 93395
+    },
+    {
+      "file": "continuation-state-034.json",
+      "exists": true,
+      "bytes": 94975
+    },
+    {
+      "file": "continuation-state-035.json",
+      "exists": true,
+      "bytes": 106643
+    },
+    {
+      "file": "continuation-state-036.json",
+      "exists": true,
+      "bytes": 107966
+    },
+    {
+      "file": "continuation-state-037.json",
+      "exists": true,
+      "bytes": 110838
+    },
+    {
+      "file": "continuation-state-038.json",
+      "exists": true,
+      "bytes": 109810
+    },
+    {
+      "file": "continuation-state-039.json",
+      "exists": true,
+      "bytes": 110860
+    },
+    {
+      "file": "continuation-state-040.json",
+      "exists": true,
+      "bytes": 112958
+    },
+    {
+      "file": "continuation-state-041.json",
+      "exists": true,
+      "bytes": 156329
+    },
+    {
+      "file": "continuation-state-042.json",
+      "exists": true,
+      "bytes": 162562
+    },
+    {
+      "file": "continuation-state-043.json",
+      "exists": true,
+      "bytes": 163546
+    },
+    {
+      "file": "continuation-state-044.json",
+      "exists": true,
+      "bytes": 160310
+    },
+    {
+      "file": "continuation-state-045.json",
+      "exists": true,
+      "bytes": 163430
+    },
+    {
+      "file": "continuation-state-046.json",
+      "exists": true,
+      "bytes": 159163
+    },
+    {
+      "file": "continuation-state-047.json",
+      "exists": true,
+      "bytes": 163227
+    },
+    {
+      "file": "continuation-state-048.json",
+      "exists": true,
+      "bytes": 157990
+    },
+    {
+      "file": "continuation-state-049.json",
+      "exists": true,
+      "bytes": 163017
+    },
+    {
+      "file": "continuation-state-050.json",
+      "exists": true,
+      "bytes": 169166
+    },
+    {
+      "file": "continuation-state-051.json",
+      "exists": true,
+      "bytes": 163121
+    },
+    {
+      "file": "continuation-state-052.json",
+      "exists": true,
+      "bytes": 164257
+    },
+    {
+      "file": "continuation-state-053.json",
+      "exists": true,
+      "bytes": 135060
+    },
+    {
+      "file": "continuation-state-054.json",
+      "exists": true,
+      "bytes": 174480
+    },
+    {
+      "file": "continuation-state-055.json",
+      "exists": true,
+      "bytes": 139982
+    },
+    {
+      "file": "continuation-state-056.json",
+      "exists": true,
+      "bytes": 156928
+    },
+    {
+      "file": "continuation-state-057.json",
+      "exists": true,
+      "bytes": 132182
+    },
+    {
+      "file": "continuation-state-058.json",
+      "exists": true,
+      "bytes": 148210
+    },
+    {
+      "file": "continuation-state-059.json",
+      "exists": true,
+      "bytes": 138330
+    },
+    {
+      "file": "continuation-state-060.json",
+      "exists": true,
+      "bytes": 115234
+    },
+    {
+      "file": "continuation-state-061.json",
+      "exists": true,
+      "bytes": 143731
+    }
+  ],
+  "screenshotFiles": [
+    {
+      "file": "continuation-state-001-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 58686,
+      "savedFileByteLength": 58686,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "12f5af71f2fa8f1415175a82e6c07723a7ce70f69338b9da494f7c672be53eab"
+    },
+    {
+      "file": "continuation-state-002-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 58715,
+      "savedFileByteLength": 58715,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "abe88753434d1d05b8a70df7f84cb630cd54646491996e447dc2c1d0778c990f"
+    },
+    {
+      "file": "continuation-state-002-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 3129,
+      "savedFileByteLength": 3129,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "4370f78191c01882754e440ec34facee5acb45bc728b64db36205736fbb26f52"
+    },
+    {
+      "file": "continuation-state-003-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 54893,
+      "savedFileByteLength": 54893,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "574160ce407247657e9316916011a64b01d3c7c84fb3fc347633832e1c995b04"
+    },
+    {
+      "file": "continuation-state-004-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 55911,
+      "savedFileByteLength": 55911,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "03bac5a94e874ef265662b25de1494c9a26a9e4523713fe5974e8434c7111bc7"
+    },
+    {
+      "file": "continuation-state-005-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 103095,
+      "savedFileByteLength": 103095,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "09707eaa1610853e8fbab51a1a3ed5963f37c5f4f7a2ce6dc27b2d0d07afea6e"
+    },
+    {
+      "file": "continuation-state-006-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 84187,
+      "savedFileByteLength": 84187,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "291fd50d2a718e1dbe4909630f224685c202eaf6ca7fa4f25b9003e2aa3949a3"
+    },
+    {
+      "file": "continuation-state-007-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 82881,
+      "savedFileByteLength": 82881,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "2fbba72ea5b70fee092c5914258b77e9a2316e08e19697f1cf5e8448fd6db63a"
+    },
+    {
+      "file": "continuation-state-008-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 84320,
+      "savedFileByteLength": 84320,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "0d215d9904bce38f1f95f42dead0a3bf0c3ca50cd16eee886dc03339bd3a73b8"
+    },
+    {
+      "file": "continuation-state-009-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83468,
+      "savedFileByteLength": 83468,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "1035f7d80b7870e9832da5146bcd3a68d22da42f6e4d0f06e2fb1bf8dcb81418"
+    },
+    {
+      "file": "continuation-state-010-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83627,
+      "savedFileByteLength": 83627,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "b82701214b168057f260438fb4ea7c79a27e38ffbd76bdc7993c77187b3cf003"
+    },
+    {
+      "file": "continuation-state-011-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 81869,
+      "savedFileByteLength": 81869,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ef870497d100dd2995b244afd46fc4d3f736711a8ea0c92fc7952208ff7d1eb7"
+    },
+    {
+      "file": "continuation-state-011-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 8462,
+      "savedFileByteLength": 8462,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "1494d4f9bf10d961b6aa6e1e3d33d1ee5504adf95cc42c58fdf16de4430ddbcd"
+    },
+    {
+      "file": "continuation-state-012-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83013,
+      "savedFileByteLength": 83013,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "2a76c20154c9b6de3805c765f8eb130adca78951d7a024c7586fa5113a02ca6a"
+    },
+    {
+      "file": "continuation-state-013-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 79849,
+      "savedFileByteLength": 79849,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "4c6e715e7c5901eea4170c8a8a3289ba80b0560633b1c1800edb7fafc4e49a43"
+    },
+    {
+      "file": "continuation-state-013-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 8392,
+      "savedFileByteLength": 8392,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "22dc20ea7a1c182eb9c05bcd2e76199e16d9bb1767585d01a2bd3579a2ae689f"
+    },
+    {
+      "file": "continuation-state-014-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83270,
+      "savedFileByteLength": 83270,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "bf4b51b1ef75b09e72e7ccd526a2cdddee524c898a6c41c9b0254ccbc7f7dd4e"
+    },
+    {
+      "file": "continuation-state-015-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83082,
+      "savedFileByteLength": 83082,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "d66459f1449020a38011ab9d39a12bb7fb8584d8b85bbbdcec6729d43b33edec"
+    },
+    {
+      "file": "continuation-state-016-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 82327,
+      "savedFileByteLength": 82327,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "dc5b9c9861351d00457815e6a94c67f49585a0f8348e0014f54c5bd388a30abc"
+    },
+    {
+      "file": "continuation-state-016-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 10622,
+      "savedFileByteLength": 10622,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "564bd5e94d17b2c20ce0d34394fdb478d53ebc9de66915cf86edd49d2a987920"
+    },
+    {
+      "file": "continuation-state-017-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 83295,
+      "savedFileByteLength": 83295,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "82181f1e154a64137f38be47b114a7c9cd518e2b0c4910e577bc928e2a12c7cf"
+    },
+    {
+      "file": "continuation-state-018-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 82370,
+      "savedFileByteLength": 82370,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "56827f5310492affa406ba7d09a291d58dd3b1dc46d6fae62efc14eb07f16314"
+    },
+    {
+      "file": "continuation-state-019-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 71638,
+      "savedFileByteLength": 71638,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ca29fdd11dc6fe36d8137b55b65f7334941dfc498949105990389b66017bf7df"
+    },
+    {
+      "file": "continuation-state-020-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 72979,
+      "savedFileByteLength": 72979,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "b873c89f18d11947f75037d0baf8d2485faecce162c1b6b38a707a87355b2dca"
+    },
+    {
+      "file": "continuation-state-020-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 7809,
+      "savedFileByteLength": 7809,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "6278334daa62bba6bacae64112b6bee45206538f54a938bafd2be09b06b61063"
+    },
+    {
+      "file": "continuation-state-021-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 74048,
+      "savedFileByteLength": 74048,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "c7def7a547a0e3575063bb89675b4f85e299059da01e45163e92ddf9dfa2ac86"
+    },
+    {
+      "file": "continuation-state-022-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 73005,
+      "savedFileByteLength": 73005,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "091ff5c75f5dd5c9473b3953f7a3a6d3b245b12071c08cfa8f3e603fe2272b54"
+    },
+    {
+      "file": "continuation-state-022-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 8917,
+      "savedFileByteLength": 8917,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "1db3b03ef5eb0de4a54f41413df96e794adff19dc7d79dd4050ba75540529d3d"
+    },
+    {
+      "file": "continuation-state-023-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 73972,
+      "savedFileByteLength": 73972,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "85bd72e68fe175a90d76cabe67100af2a19242216faaf974d829a2a038e78afd"
+    },
+    {
+      "file": "continuation-state-024-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 71582,
+      "savedFileByteLength": 71582,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "6019c641a8b6f6a4449c619faf513802c8e338e359fd47f39a297fcb57884ead"
+    },
+    {
+      "file": "continuation-state-024-2.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 6846,
+      "savedFileByteLength": 6846,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "3c125e3c92a3f980b5fb465aa05502933652acbd668778a2d0829cc4f7dd3816"
+    },
+    {
+      "file": "continuation-state-025-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 73991,
+      "savedFileByteLength": 73991,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "f823ccd66f8bada140dcf23e93d6f6db95358f232bfcceb3dfda9acefd88d2d0"
+    },
+    {
+      "file": "continuation-state-026-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 73610,
+      "savedFileByteLength": 73610,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "f737cbfac86e511ff426d5dbd2eec91259907d05725d3e4270861825ce70708b"
+    },
+    {
+      "file": "continuation-state-027-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 68844,
+      "savedFileByteLength": 68844,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "cf3d3d21ec852b2fabcef6f5ef0ebda12487e0352e50615863142a7a3172d33b"
+    },
+    {
+      "file": "continuation-state-028-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 69502,
+      "savedFileByteLength": 69502,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "831e26843e582ddfa44de79bbda071063d3a5e7a3e6c3e9bfc6ffc7f655fcc58"
+    },
+    {
+      "file": "continuation-state-029-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 69577,
+      "savedFileByteLength": 69577,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "96bc5d73fcb3d56cb831f430aaacde886f7ca35f4fade41856ca6d43d0633080"
+    },
+    {
+      "file": "continuation-state-030-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 69745,
+      "savedFileByteLength": 69745,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "82b430cc28ffad1247df9536e09fbdf0af2af068d0296853955ae39714348631"
+    },
+    {
+      "file": "continuation-state-031-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 69591,
+      "savedFileByteLength": 69591,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "c3b3e3644d4f566b85aa8baf66f7be658cfc742bfe86cb3f8417c24a232422e6"
+    },
+    {
+      "file": "continuation-state-032-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 58941,
+      "savedFileByteLength": 58941,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "f2fdb2a575a6bd280d3fba68e8e3932877425db2eb8c60ebb28485a4e3f9f0aa"
+    },
+    {
+      "file": "continuation-state-033-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 66320,
+      "savedFileByteLength": 66320,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "866029f813bbc4defc51e84d603dab7cafd78082f1c279e0f1992af67a155285"
+    },
+    {
+      "file": "continuation-state-034-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 66860,
+      "savedFileByteLength": 66860,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ac2c9abf3c31912ca99f8741c57f04f3de83157f37c721ac00176cbcac61e18a"
+    },
+    {
+      "file": "continuation-state-035-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 75612,
+      "savedFileByteLength": 75612,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "f92efad7383ad5532223c9423a955b6353e9743350b48f95d4327feeda739dcf"
+    },
+    {
+      "file": "continuation-state-036-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 76318,
+      "savedFileByteLength": 76318,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "fc0000e1f595f4f60ced5b97ca90a5c6544765d3598a15455ba70a2764a2c01e"
+    },
+    {
+      "file": "continuation-state-037-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 78463,
+      "savedFileByteLength": 78463,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "5ba442e3dc0002751386bfd666b4ca0508a408c9469f33e66b5609a498ea5499"
+    },
+    {
+      "file": "continuation-state-038-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 77937,
+      "savedFileByteLength": 77937,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "b0290f1e470a6774bd2e01259594326903442ac040822f73a25170f3f74ba0d4"
+    },
+    {
+      "file": "continuation-state-039-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 78719,
+      "savedFileByteLength": 78719,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "6bd7429be371c3cb53ce08711cc925a6b6a02103ad86eb02e7edf1a4eae567ff"
+    },
+    {
+      "file": "continuation-state-040-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 80047,
+      "savedFileByteLength": 80047,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ee2867ec5bddf5331d9913072a92dd5bad43a9a9bc27fea9f6a519e71ba9c3df"
+    },
+    {
+      "file": "continuation-state-041-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 101188,
+      "savedFileByteLength": 101188,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ccf928296f03f4b247227bb7c9c2f37d348883889b9653b598834355bd906537"
+    },
+    {
+      "file": "continuation-state-042-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 105759,
+      "savedFileByteLength": 105759,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "7e22a84f6efba0fd978e629921b17455940985266833175c7735f2e96481b3f1"
+    },
+    {
+      "file": "continuation-state-043-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 106113,
+      "savedFileByteLength": 106113,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "2e47f8b155009fb228161b4010cc0c00d778352a13c32751f8d50e23c83ce737"
+    },
+    {
+      "file": "continuation-state-044-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 104070,
+      "savedFileByteLength": 104070,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "7633b204a8c8d401835689e6a5e409fee4586808eebfb7ccfb5fee5bcd22c7fb"
+    },
+    {
+      "file": "continuation-state-045-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 106026,
+      "savedFileByteLength": 106026,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "84299dd0db41d23e77f7cf3b3c23fa28faa1656be64b437e4842df1090a4a59c"
+    },
+    {
+      "file": "continuation-state-046-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 102987,
+      "savedFileByteLength": 102987,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "02ec55fe5008e31aeda6dbacc920c39e90c62325fbb58920c91683c7b5c50100"
+    },
+    {
+      "file": "continuation-state-047-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 105651,
+      "savedFileByteLength": 105651,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "1075e9c6f2e85a6f360c4fba0413d5d8da2bd628337b84b95749c622269d0308"
+    },
+    {
+      "file": "continuation-state-048-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 101936,
+      "savedFileByteLength": 101936,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "ddbcd26a410a74525762e2be57f7407a79ae6b7ad700cb7fdd6ced5c524b0908"
+    },
+    {
+      "file": "continuation-state-049-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 105361,
+      "savedFileByteLength": 105361,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "d05549263b9492605cc6cc0d3a2f4efab784c599cbc843134cdd5f76297ef2e0"
+    },
+    {
+      "file": "continuation-state-050-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 108604,
+      "savedFileByteLength": 108604,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "a128bb852b199ce15630b40c78afaa51763ec617379bf0c8132b1d275c9e237b"
+    },
+    {
+      "file": "continuation-state-051-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 105440,
+      "savedFileByteLength": 105440,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "39bef04a6ec1841e163547d0f5ce12ba7b1dda72f04bed0d4c18b4d85ac8d4c4"
+    },
+    {
+      "file": "continuation-state-052-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 105402,
+      "savedFileByteLength": 105402,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "e29fc35d98a33ad582045673f79a91109da45b9a86b5a1126f3bc6ee1e78c07b"
+    },
+    {
+      "file": "continuation-state-053-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 93144,
+      "savedFileByteLength": 93144,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "0f5cd2a9614df8c5b42ecf0eeb0e831d7a7fabc5663a91cd05a9ff95828dcecf"
+    },
+    {
+      "file": "continuation-state-054-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 121510,
+      "savedFileByteLength": 121510,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "637873dd778b179a8749890c352b06ecc39ae4ef1926bb35ad7539c5256121ed"
+    },
+    {
+      "file": "continuation-state-055-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 96813,
+      "savedFileByteLength": 96813,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "bd95f49e391a26d21ac3aa1b6d495572a7ff4e39ee5504e5f485b86fbc601f24"
+    },
+    {
+      "file": "continuation-state-056-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 107913,
+      "savedFileByteLength": 107913,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "f1726493cb29c4a491e2dfff84dcd4a34101693aaa980acdab3bf847d5cc1cf0"
+    },
+    {
+      "file": "continuation-state-057-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 89906,
+      "savedFileByteLength": 89906,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "c693116a5216e3d986ddedc5607ac756064f81c4cc49058296f5e32584f6cfe9"
+    },
+    {
+      "file": "continuation-state-058-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 100267,
+      "savedFileByteLength": 100267,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "c71570ba2d8fbc6cff12b6ae97909ed4ca08278caceddd0a24333afc72635d9b"
+    },
+    {
+      "file": "continuation-state-059-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 95574,
+      "savedFileByteLength": 95574,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "187c71ba4ade6b5fad3ca98a0c26f0831622b712a4ce5e32e53c16e981653369"
+    },
+    {
+      "file": "continuation-state-060-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 75558,
+      "savedFileByteLength": 75558,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "bcf53df10dab325fe5f367fe85982d5658b13a9f4eb1532518a3545109073b6a"
+    },
+    {
+      "file": "continuation-state-061-1.jpg",
+      "mime": "image/jpeg",
+      "exists": true,
+      "extensionMatchesMime": true,
+      "originalByteLength": 99379,
+      "savedFileByteLength": 99379,
+      "sizeMatchesOriginal": true,
+      "originalBytesSha256": "d29b569cc4238835dd4d197dd6555b997773d64c4d6aaee15ec9638e9d75ee7e"
+    }
+  ],
+  "method": "Existence, MIME/extension, and byte-length checks on output artifacts only. SHA-256 records original screenshot bytes held in returned API results. Saved files were not read back; no re-encoding was used.",
+  "initialReportLinkFailure": "Report assumed .png; corrected to MIME-derived .jpg filenames before final verification."
+}

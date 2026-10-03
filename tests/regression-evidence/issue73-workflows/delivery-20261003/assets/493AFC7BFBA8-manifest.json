@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-27T11:40:02.3058935+00:00",
+  "processAbsent": true,
+  "files": [
+    {
+      "bytes": 573284,
+      "copied": "D1BA9DF818A5C8E1C50DBA0AC78356FEDD7E82CD726434781836C5BEAC1228CB",
+      "after": "D1BA9DF818A5C8E1C50DBA0AC78356FEDD7E82CD726434781836C5BEAC1228CB",
+      "before": "D1BA9DF818A5C8E1C50DBA0AC78356FEDD7E82CD726434781836C5BEAC1228CB",
+      "path": "data\\Drafts\\31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json"
+    }
+  ],
+  "mechanism": "Independent file snapshot after ordinary close; not an app restart observation",
+  "ownedProcessId": 10160
+}

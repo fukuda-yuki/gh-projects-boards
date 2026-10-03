@@ -1,0 +1,25 @@
+{
+  "atUtc": "2026-10-03T04:59:06.784Z",
+  "captureSettlingDelayMs": 250,
+  "window": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-7b81326e93064588bd530f1e040d5be5\\app\\GhProjectsBoards.App.exe",
+    "id": 854896,
+    "title": "GitHub Projects Boards"
+  },
+  "accessibility": {
+    "document_text": "10:00-12:00",
+    "focused_element": "753 edit (settable, string) 再計画の基準日時（日本時間） Value: 2026-10-09 18:00 ID: PlanCutoff",
+    "tree": "Window: \"GitHub Projects Boards\", App: GhProjectsBoards.App.exe.\n\t0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise\n\t\t1 ウィンドウ\n\t\t\t2 ウィンドウ\n\t\t\t\t3 button Project一覧を折りたたむ ID: ToggleProjectNavigation\n\t\t\t\t4 テキスト github.com / viewer / 未認証・キャッシュのみ ID: WorkspaceIdentity\n\t\t\t\t5 button 接続設定 ID: ConnectionPageButton\n\t\t\t\t6 window Secondary Actions: Raise ID: PaneRoot\n\t\t\t\t\t7 combo box 保存済みアカウント ID: SavedProfiles\n\t\t\t\t\t8 テキスト 登録済みProject\n\t\t\t\t\t9 combo box 関連Repositoryで探す ID: NavigationRepositoryFilter\n\t\t\t\t\t11 tree ID: ListControl\n\t\t\t\t\t\t34 tree item (selectable) owner\n\t\t\t\t\t\t\t35 テキスト owner\n\t\t\t\t\t\t36 tree item (selectable) P1\n\t\t\t\t\t\t\t37 テキスト P1\n\t\t\t\t\t\t38 tree item (selectable) P2\n\t\t\t\t\t\t\t39 テキスト P2\n\t\t\t\t\t12 button Projectを追加… ID: AddProjectButton\n\t\t\t\t13 テキスト P1 ID: ProjectSummary\n\t\t\t\t40 button owner / Project #1 ID: ProjectIdentityButton\n\t\t\t\t41 テキスト キャッシュ 2026/10/03 13:44 ID: ProjectCacheDestination\n\t\t\t\t14 button (disabled) 最新を取得 ID: RefreshProjectButton\n\t\t\t\t15 button (disabled) GitHubに反映… ID: ReviewApplyButton\n\t\t\t\t16 button 反映結果・履歴 ID: ApplyHistoryButton\n\t\t\t\t17 button (disabled) Project設定 Description: ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。 ID: ProjectSettingsButton\n\t\t\t\t713 テキスト 計画の前提\n\t\t\t\t714 テキスト Project「P1」全体に適用します。保存すると自動計算の日程を見直します。\n\t\t\t\t715 pane\n\t\t\t\t\t716 テキスト Project開始（日本時間）\n\t\t\t\t\t717 カレンダー日付の選択 Project開始（日本時間）の日付 Value: ‎2026‎/‎10‎/‎05 ID: PlanProjectStart-Date\n\t\t\t\t\t\t718 テキスト ‎2026‎/‎10‎/‎05 ID: DateText\n\t\t\t\t\t719 グループ Project開始（日本時間）の時刻 ID: PlanProjectStart-Time\n\t\t\t\t\t\t720 button Project開始（日本時間）の時刻 ‎9‎:‎00 時刻の選択 ID: FlyoutButton\n\t\t\t\t\t721 リンク 文字で入力 ID: PlanProjectStart-Direct\n\t\t\t\t\t722 テキスト 自動計算の開始点です。日時を指定するタスクは、タスクの日程から編集できます。\n\t\t\t\t\t723 テキスト 再計画の基準日時（日本時間）\n\t\t\t\t\t753 edit (settable, string) 再計画の基準日時（日本時間） Value: 2026-10-09 18:00 ID: PlanCutoff\n\t\t\t\t\t728 リンク 日付と時刻を選ぶ ID: PlanCutoff-Direct\n\t\t\t\t\t729 テキスト 進行中・再開したタスクの残作業を、いつ以降に計画するか。実績の報告日とは別です。\n\t\t\t\t\t730 テキスト GitHubの列との対応\n\t\t\t\t\t731 テキスト 見積時間を対応づけると表で入力できます。既存の列を確認して選んでください。その他の列は必要になった時に設定できます。\n\t\t\t\t\t732 combo box 見積時間 ID: PlanField-Estimate\n\t\t\t\t\t733 combo box 残時間 ID: PlanField-Remaining\n\t\t\t\t\t734 combo box 実績合計 ID: PlanField-Actual\n\t\t\t\t\t735 combo box 開始日 ID: PlanField-Start\n\t\t\t\t\t736 combo box 終了日 ID: PlanField-Finish\n\t\t\t\t\t737 テキスト 通常は平日9–13時・14–18時。採用祝日 2025–2027。\n\t\t\t\t\t738 button 担当者・配賦 ID: PlanSection-担当者・配賦\n\t\t\t\t\t\t739 テキスト 担当者・配賦\n\t\t\t\t\t740 button カレンダー・祝日 ID: PlanSection-カレンダー・祝日\n\t\t\t\t\t\t741 テキスト カレンダー・祝日\n\t\t\t\t\t\t762 チェック ボックス 祝日を考慮しない ID: PlanIgnoreHolidays\n\t\t\t\t\t\t763 チェック ボックス 同梱祝日を採用（2025–2027） ID: PlanAdoptHolidays\n\t\t\t\t\t\t764 テキスト 採用済み祝日との差分なし。個別例外・Manual・実績は保持します。\n\t\t\t\t\t\t765 テキスト 日付例外：空の時間帯は休日。担当者別 → Project共通 → 通常週・祝日の順で採用します。\n\t\t\t\t\t\t766 edit (settable, string) 日付 yyyy-MM-dd Value: 2026-10-13 ID: PlanExceptionDay-0\n\t\t\t\t\t\t\t767 テキスト 日付 yyyy-MM-dd\n\t\t\t\t\t\t768 combo box 対象\n\t\t\t\t\t\t769 edit (settable, string) 時間帯（例 09:00-13:00,14:00-18:00） Value: 10:00-12:00 ID: PlanExceptionIntervals-0\n\t\t\t\t\t\t\t770 テキスト 時間帯（例 09:00-13:00,14:00-18:00）\n\t\t\t\t\t\t771 button 例外を削除\n\t\t\t\t\t\t772 button 日付例外を追加 ID: PlanAddException\n\t\t\t\t\t742 scroll bar (settable, float) 垂直 Value: 712.1759643554688 ID: VerticalScrollBar\n\t\t\t\t\t\t777 button 垂直方向に小さく戻る ID: VerticalSmallDecrease\n\t\t\t\t\t\t778 button 垂直方向に大きく戻る ID: VerticalLargeDecrease\n\t\t\t\t\t\t779 button 垂直方向に大きく進む ID: VerticalLargeIncrease\n\t\t\t\t\t\t780 button 垂直方向に小さく進む ID: VerticalSmallIncrease\n\t\t\t\t747 button 保存して戻る ID: PlanSettingsSave\n\t\t\t\t748 button 取消して戻る ID: PlanSettingsCancel\n\t\t22 タイトル バー (settable, string) Value: GitHub Projects Boards\n\t\t\t23 メニュー バー システム ID: MenuBar\n\t\t\t\t24 メニュー項目 システム\n\t\t\t25 ボタン 最小化\n\t\t\t26 ボタン 最大化\n\t\t\t27 ボタン 閉じる\n\nDocument text: ```\n10:00-12:00\n```"
+  },
+  "screenshots": [
+    {
+      "height": 794,
+      "id": "screenshot-0",
+      "originX": 928,
+      "originY": 190,
+      "width": 1267,
+      "zIndex": 0,
+      "path": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/normal-workload-20261003/observations/24-calendar-interval-visible-0.png"
+    }
+  ]
+}

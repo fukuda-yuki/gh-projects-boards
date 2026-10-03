@@ -39,7 +39,8 @@ if ($Resume) {
 # use its immutable receipt without silently rebuilding a different executable.
 function BuildInputs {
     @(git -C $repo ls-files --cached --others --exclude-standard | Where-Object {
-        $_ -match '^(src/|tests/GhProjectsBoards\.)' -or $_ -match '\.(props|targets|sln|slnx)$' -or $_ -eq 'global.json'
+        $_ -notmatch '^tests/regression-evidence/' -and
+        ($_ -match '^(src/|tests/GhProjectsBoards\.)' -or $_ -match '\.(props|targets|sln|slnx)$' -or $_ -eq 'global.json')
     } | Sort-Object -Unique | ForEach-Object { [ordered]@{ path = $_; sha256 = (Get-FileHash -LiteralPath (Join-Path $repo $_)).Hash } })
 }
 function BinaryFiles([string]$executable) {

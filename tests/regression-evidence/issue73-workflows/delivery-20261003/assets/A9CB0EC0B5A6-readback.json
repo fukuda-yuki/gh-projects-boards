@@ -1,0 +1,382 @@
+{
+  "kind": "Independent final file inspection after evaluator C session 3 normal close; no new app, CLI, UI, test or network execution",
+  "readAtUtc": "2026-09-27T08:35:43.1662515+00:00",
+  "frozenProductionSource": "dd34eee4a48f6708710e0259866206168f1cd4a0",
+  "originalPath": "TestResults/issue73/blind-review/round1-apply-c/data/Drafts/DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+  "copyPath": "TestResults/issue73/blind-review/coordinator-readback/apply-c/source-checkpoint.json",
+  "originalSha256Before": "736BE6BCA4762642492CC0967C8E2B89592024AC707036B96F138EAD46A0E744",
+  "originalSha256After": "736BE6BCA4762642492CC0967C8E2B89592024AC707036B96F138EAD46A0E744",
+  "copySha256": "736BE6BCA4762642492CC0967C8E2B89592024AC707036B96F138EAD46A0E744",
+  "checkpointSchema": 12,
+  "scope": {
+    "Host": "example.test",
+    "ViewerId": 42
+  },
+  "revision": 72,
+  "registrationCount": 1,
+  "confirmedLocalDifferenceCount": 0,
+  "pendingFieldCount": 0,
+  "historyCount": 2,
+  "journalCount": 2,
+  "selectedFields": [
+    {
+      "Key": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "Baseline": "Weekly review completed",
+      "Change": null,
+      "Buffer": null,
+      "Stamp": 41,
+      "Observation": {
+        "Id": "baf3d8280dff410295c7b5fb196dca57",
+        "Project": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "At": "2026-09-27T17:29:12.2403616+09:00",
+        "Value": "Weekly review completed",
+        "Availability": 0,
+        "Reason": null,
+        "Options": []
+      },
+      "Conflict": false
+    },
+    {
+      "Key": {
+        "Kind": "Select",
+        "NodeId": "P1-T1",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "Baseline": "done",
+      "Change": null,
+      "Buffer": null,
+      "Stamp": 42,
+      "Observation": {
+        "Id": "0b9e2edd712646c2b9fe7ed6cb9e7cad",
+        "Project": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "At": "2026-09-27T17:28:58.2971356+09:00",
+        "Value": "done",
+        "Availability": 0,
+        "Reason": null,
+        "Options": [
+          {
+            "Id": "todo",
+            "Name": "Todo"
+          },
+          {
+            "Id": "done",
+            "Name": "Done"
+          }
+        ]
+      },
+      "Conflict": false
+    }
+  ],
+  "journal": [
+    {
+      "id": "1be0ec054e814c4ba7afa22b5095046f",
+      "project": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "projectName": "Project 1",
+      "reviewedAt": "2026-09-27T17:09:59.6886149+09:00",
+      "reviewedRevision": 46,
+      "operations": [
+        {
+          "id": "0e8048c4c82f447992e0b04b031c3713",
+          "key": {
+            "Kind": "Title",
+            "NodeId": "I1",
+            "ProjectId": null,
+            "FieldId": null
+          },
+          "itemId": "P1-T1",
+          "issueId": "I1",
+          "identity": "sample-user/first #1 / I1",
+          "expected": "Issue 1",
+          "intended": {
+            "Value": "Weekly review completed",
+            "Clear": false
+          },
+          "stateCode": 8,
+          "state": "Superseded",
+          "reason": "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。",
+          "attempts": [
+            {
+              "number": 1,
+              "at": "2026-09-27T17:10:11.0368371+09:00",
+              "stateCode": 3,
+              "state": "Failed",
+              "reason": "PermissionDenied"
+            }
+          ],
+          "verification": {
+            "Id": "2242da0fa20c4705a90e0509e1814989",
+            "Project": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "At": "2026-09-27T17:16:26.3652607+09:00",
+            "Value": "Issue 1",
+            "Availability": 0,
+            "Reason": null,
+            "Options": []
+          }
+        },
+        {
+          "id": "d1950a115a404382af485f0efe8d1aaa",
+          "key": {
+            "Kind": "Select",
+            "NodeId": "P1-T1",
+            "ProjectId": "P1",
+            "FieldId": "P1-status"
+          },
+          "itemId": "P1-T1",
+          "issueId": "I1",
+          "identity": "sample-user/first #1 / I1",
+          "expected": "todo",
+          "intended": {
+            "Value": "done",
+            "Clear": false
+          },
+          "stateCode": 2,
+          "state": "Succeeded",
+          "reason": "更新結果と独立読み戻しを確認",
+          "attempts": [
+            {
+              "number": 1,
+              "at": "2026-09-27T17:10:12.4078079+09:00",
+              "stateCode": 2,
+              "state": "Succeeded",
+              "reason": "Read-back"
+            }
+          ],
+          "verification": {
+            "Id": "ff18fd58d7eb4194bdbef667f1c66b01",
+            "Project": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "At": "2026-09-27T17:10:13.0441985+09:00",
+            "Value": "done",
+            "Availability": 0,
+            "Reason": null,
+            "Options": [
+              {
+                "Id": "todo",
+                "Name": "Todo"
+              },
+              {
+                "Id": "done",
+                "Name": "Done"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ce1292abf8694bc6a2283f46f3a69e30",
+      "project": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "projectName": "Project 1",
+      "reviewedAt": "2026-09-27T17:28:58.3134348+09:00",
+      "reviewedRevision": 69,
+      "operations": [
+        {
+          "id": "18777168dd1c4b178cd4616a4313f928",
+          "key": {
+            "Kind": "Title",
+            "NodeId": "I1",
+            "ProjectId": null,
+            "FieldId": null
+          },
+          "itemId": "P1-T1",
+          "issueId": "I1",
+          "identity": "sample-user/first #1 / I1",
+          "expected": "Issue 1",
+          "intended": {
+            "Value": "Weekly review completed",
+            "Clear": false
+          },
+          "stateCode": 2,
+          "state": "Succeeded",
+          "reason": "更新結果と独立読み戻しを確認",
+          "attempts": [
+            {
+              "number": 1,
+              "at": "2026-09-27T17:29:11.6120519+09:00",
+              "stateCode": 2,
+              "state": "Succeeded",
+              "reason": "Read-back"
+            }
+          ],
+          "verification": {
+            "Id": "baf3d8280dff410295c7b5fb196dca57",
+            "Project": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "At": "2026-09-27T17:29:12.2403616+09:00",
+            "Value": "Weekly review completed",
+            "Availability": 0,
+            "Reason": null,
+            "Options": []
+          }
+        }
+      ]
+    }
+  ],
+  "enumSource": "git show dd34eee4a48f6708710e0259866206168f1cd4a0:src/GhProjectsBoards.Core/Projects/ApplyJournal.cs, ApplyState declaration",
+  "fakeService": {
+    "statePath": "round1-apply-c/gh-config/apply-state.json",
+    "stateSha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2",
+    "state": {
+      "option": "done",
+      "title": "Weekly review completed"
+    },
+    "mutationLogPath": "round1-apply-c/gh-config/apply-requests.jsonl",
+    "mutationLogSha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D",
+    "mutationCount": 3,
+    "titleRequestCount": 2,
+    "statusRequestCount": 1,
+    "mutations": [
+      {
+        "id": "I1",
+        "title": "Weekly review completed"
+      },
+      {
+        "projectId": "P1",
+        "itemId": "P1-T1",
+        "fieldId": "P1-status",
+        "value": {
+          "singleSelectOptionId": "done"
+        }
+      },
+      {
+        "id": "I1",
+        "title": "Weekly review completed"
+      }
+    ],
+    "session2SnapshotRequestCount": 2,
+    "snapshotRequestsRemainExactPrefix": true
+  },
+  "session2Snapshot": {
+    "capturedAt": "2026-09-27T17:23:18.6348331+09:00",
+    "recordedReason": "Blind session 2 normal close did not complete; checkpoint copied while app remained alive. No process termination yet.",
+    "files": [
+      {
+        "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+        "recordedSourceBefore": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+        "recordedSourceAfter": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+        "recordedCopy": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+        "observedSnapshotCopy": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4",
+        "match": true
+      },
+      {
+        "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+        "recordedSourceBefore": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C",
+        "recordedSourceAfter": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C",
+        "recordedCopy": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C",
+        "observedSnapshotCopy": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C",
+        "match": true
+      },
+      {
+        "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+        "recordedSourceBefore": "F6EAEF02EF66C24A01FF80ED7AD0DED3152CE1C3EE9159D919FBB39D189A8B9D",
+        "recordedSourceAfter": "F6EAEF02EF66C24A01FF80ED7AD0DED3152CE1C3EE9159D919FBB39D189A8B9D",
+        "recordedCopy": "F6EAEF02EF66C24A01FF80ED7AD0DED3152CE1C3EE9159D919FBB39D189A8B9D",
+        "observedSnapshotCopy": "F6EAEF02EF66C24A01FF80ED7AD0DED3152CE1C3EE9159D919FBB39D189A8B9D",
+        "match": true
+      },
+      {
+        "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+        "recordedSourceBefore": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "recordedSourceAfter": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "recordedCopy": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "observedSnapshotCopy": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "match": true
+      },
+      {
+        "path": "gh-config\\apply-requests.jsonl",
+        "recordedSourceBefore": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+        "recordedSourceAfter": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+        "recordedCopy": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+        "observedSnapshotCopy": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D",
+        "match": true
+      },
+      {
+        "path": "gh-config\\apply-state.json",
+        "recordedSourceBefore": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+        "recordedSourceAfter": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+        "recordedCopy": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+        "observedSnapshotCopy": "B4BB2FC29E5D6E2094AC9892963CE3C03A85308A541AE09DFB576370D7A360BD",
+        "match": true
+      },
+      {
+        "path": "gh-config\\calls.jsonl",
+        "recordedSourceBefore": "7C598AFB4335284AB5C6A8FA30637FE4D13C1D404CF52DF776CC418D69048FEF",
+        "recordedSourceAfter": "7C598AFB4335284AB5C6A8FA30637FE4D13C1D404CF52DF776CC418D69048FEF",
+        "recordedCopy": "7C598AFB4335284AB5C6A8FA30637FE4D13C1D404CF52DF776CC418D69048FEF",
+        "observedSnapshotCopy": "7C598AFB4335284AB5C6A8FA30637FE4D13C1D404CF52DF776CC418D69048FEF",
+        "match": true
+      },
+      {
+        "path": "gh-config\\scenario.json",
+        "recordedSourceBefore": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+        "recordedSourceAfter": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+        "recordedCopy": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+        "observedSnapshotCopy": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8",
+        "match": true
+      }
+    ],
+    "limitation": "These hashes verify the preserved snapshot and its recorded before/after copy boundary. Current service/product files changed legitimately during session 3 and are not expected to equal session 2."
+  },
+  "assistance": {
+    "receipt": "round1-apply-c/diagnostics/session2-assisted-stop.json",
+    "normalClose": false,
+    "recordingCorrection": "The original receipt records a failed first write due to a PowerShell boolean typo; the corrected receipt timestamp is recording time, not the stop time. Original correction retained unchanged.",
+    "finalCloseEvidence": "round1-apply-c/observations/session3-normal-close-confirmed.json",
+    "finalCloseEvidenceSha256": "93B68A2DD9DCADDBF1EAFD9C0E873AF43A5F801A1986406D103B31C622347574"
+  },
+  "interpretation": "Final Title I1 baseline is Weekly review completed and Status P1-T1/P1-status baseline is done, with no local difference or pending text. The original title PermissionDenied attempt is retained in the superseded old operation; the successful Status remains in that batch with one successful attempt and readback done. The new batch contains only one successful title operation with readback Weekly review completed. The fake mutation log contains first Title, then Status, then Title; Status was dispatched once. This is local fake-service evidence, not a live GitHub audit.",
+  "limitations": [
+    "Business completion required an operator force stop and same-data relaunch after the second session failed to close; the third normal close does not erase that failure.",
+    "The retained lifecycle diagnosis is a source hypothesis, not a reproduced exception or confirmed causal fix at this evidence boundary.",
+    "Mutation JSONL payloads do not themselves encode HTTP outcomes; the original PermissionDenied attempt and successful readback evidence are retained in the real product journal and fixture receipts.",
+    "This readback is independent of the blind evaluator, who did not inspect storage or logs.",
+    "No final fourth app reopening was performed; final persistence is verified by file inspection after the recorded normal close.",
+    "Fake logs are not network capture or proof of live service behavior."
+  ]
+}

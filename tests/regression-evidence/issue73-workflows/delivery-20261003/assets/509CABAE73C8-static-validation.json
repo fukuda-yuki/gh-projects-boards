@@ -1,0 +1,30 @@
+{
+  "readUtc": "2026-09-27T09:11:31.3133256+00:00",
+  "status": "Prepared; operator launch not executed by preparer",
+  "schema": 12,
+  "revision": 62,
+  "originalStable": true,
+  "immutableMatches": true,
+  "immutableReadOnly": true,
+  "fakeFiles": 504,
+  "changedPaths": [],
+  "operatorScriptsParsed": true,
+  "scriptExecution": "not_run",
+  "appExecution": "not_run",
+  "sourceOrTestEdits": "none",
+  "build": "not_run",
+  "scripts": [
+    {
+      "path": "Environment.ps1",
+      "sha256": "378B252DBC30704851B5626AED1E2CB53C1426313600D8E494364DCCCE19C22A"
+    },
+    {
+      "path": "Launch.ps1",
+      "sha256": "A839412081890C7CC0FF486B80DC958AA8A8E4A5D2B9A22E622AA2EF4E369C9B"
+    },
+    {
+      "path": "story-card.md",
+      "sha256": "2CE1EF3940FB7B9722EFBCF69B71F0EE14E9C128E4CEF40410F1A818B16B0CED"
+    }
+  ]
+}

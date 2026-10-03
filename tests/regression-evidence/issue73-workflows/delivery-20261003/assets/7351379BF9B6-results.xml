@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="312" result="Passed" start-time="2026-10-02T20:45:52.4500996Z" end-time="2026-10-02T20:45:56.7552126Z" duration="4.305094" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0" random-seed="1621665970">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == ApplyPublicationPresentation" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261003-054551-839-6ee1812e\results.xml]]></command-line>
+  <filter>
+    <cat>ApplyPublicationPresentation</cat>
+  </filter>
+  <test-suite type="Assembly" id="1392" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T20:45:52.4500996Z" end-time="2026-10-02T20:45:56.7552126Z" duration="4.305094" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="193672" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1393" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T20:45:52.4527049Z" end-time="2026-10-02T20:45:56.7552104Z" duration="4.302505" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+      <test-suite type="TestSuite" id="1394" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T20:45:52.4528664Z" end-time="2026-10-02T20:45:56.7552087Z" duration="4.302342" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+        <test-suite type="TestSuite" id="1395" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="312" result="Passed" start-time="2026-10-02T20:45:52.4529334Z" end-time="2026-10-02T20:45:56.7552067Z" duration="4.302273" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+          <test-suite type="TestFixture" id="1000" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="102" result="Passed" start-time="2026-10-02T20:45:52.4529353Z" end-time="2026-10-02T20:45:56.7552001Z" duration="4.302265" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1014" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-02T20:45:52.4540894Z" end-time="2026-10-02T20:45:56.7550584Z" duration="4.300969" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <properties>
+                <property name="Category" value="ApplyPublicationPresentation" />
+              </properties>
+              <test-case id="1012" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(960,600)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="991304387" result="Passed" start-time="2026-10-02T20:45:52.4541894Z" end-time="2026-10-02T20:45:54.9897654Z" duration="2.535631" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-b1f334a8-9ca8-4ac9-8083-9802a37894cf; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+              <test-case id="1013" name="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds(1267,794)" methodname="ReviewInformationPopupKeepsItsCompleteExplanationWithinVisibleBounds" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="49794797" result="Passed" start-time="2026-10-02T20:45:54.9905985Z" end-time="2026-10-02T20:45:56.7544258Z" duration="1.763828" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-8114ffc3-ea15-4275-80f4-999c3a9ba4a3; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: da50a9d4-b5bb-48b3-b5c9-814117f7bac1
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

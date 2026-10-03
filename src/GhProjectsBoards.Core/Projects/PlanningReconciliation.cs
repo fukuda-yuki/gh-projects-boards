@@ -14,7 +14,7 @@ internal sealed partial class EditingWorkspace
         fields[key] = next; Revision++;
         var changes = new Dictionary<FieldKey, FieldChange> { [key] = new(key, old, next) };
         ProjectCommittedPlan(key.ProjectId!, changes);
-        history.Add(new(Guid.NewGuid().ToString("N"), key.ProjectId!, changes.Values.ToArray()));
+        history.Add(new(Guid.NewGuid().ToString("N"), key.ProjectId!, changes.Values.ToArray(), BufferWrites: [key]));
     }
     internal const string ProjectionDecisionReason = "計画の照合が必要です。日時・実績を確認してください。";
     private string? ProjectionRole(FieldKey key) => key.Kind is "Date" or "Number"

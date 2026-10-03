@@ -9,7 +9,7 @@ A native C#/.NET 10/WinUI 3 Windows workspace for PMO to plan and replan GitHub 
 ## Agreed boundaries
 
 - Launch from a Windows executable; no browser extension or Excel dependency.
-- Explicitly register Projects and switch between them through Repository-oriented navigation. The navigation hierarchy does not redefine Project ownership or filter out Issues from other repositories.
+- Explicitly register Projects and switch between them through owner/Project navigation. Each scoped Project is one workspace. Repository associations help find registered or unregistered Projects and do not redefine Project ownership or filter its contents.
 - GitHub-native data uses scoped observations and local drafts; exact intraday planning metadata has explicit checkpoint authority. Publish only through reviewed Apply. See the [planning contract](planning.md).
 - Delegate authentication and initial API access to GitHub CLI (`gh api`); do not require manually issued PATs or a custom GitHub App.
 - Measure the selected feature at 1,000 tasks/20 fixture people; this is not a retrieval cap. Keep inherited latency failures under #65 separate.

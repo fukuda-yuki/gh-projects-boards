@@ -1,0 +1,258 @@
+{
+  "readUtc": "2026-09-27T18:21:22.7079563+09:00",
+  "scope": "Independent closed-state readback of synthetic practice service and durable checkpoint; no UI actions",
+  "inputs": [
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot\\data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "sha256": "3520EA8FB8D6EDD80C1C5C4E578804CC67580D9DB838072A361204197DBD175C"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\input-snapshot\\data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "sha256": "D4442EA8A685348ECE51FF2E63AA1F89B7302589E058C5A052DF8A20E262512C"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot/gh-config/apply-requests.jsonl",
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f/input-snapshot/gh-config/apply-requests.jsonl",
+      "sha256": "A1F2E21A349A30D2DB7AE03835D9E7AFA62D955CF1E4731F9303F2C83BEB4B4D"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot/gh-config/apply-state.json",
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot/launch-receipt.json",
+      "sha256": "A90AD5C0BC97932005862B6D65178F015B47A89386100784CDA1E93483C38AB3"
+    },
+    {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot/candidate-frozen-receipt.json",
+      "sha256": "1E19ED15C2882DE3DA50FDFE8A3E129D77E93F745687D1FEAF63567A71DA5B08"
+    }
+  ],
+  "checks": {
+    "Version13": true,
+    "Revision76": true,
+    "RemoteTitle": true,
+    "RemoteStatus": true,
+    "CachedTitle": true,
+    "CachedStatus": true,
+    "NoChanges": true,
+    "NoBuffers": true,
+    "NoConflicts": true,
+    "RequestPrefixBytesUnchanged": true,
+    "TotalRequests3": true,
+    "OriginalRequests2": true,
+    "OnlyNewTitleRequest": true,
+    "OldTitleSuperseded": true,
+    "OldTitleFailureRetained": true,
+    "StatusSucceededOnce": true,
+    "NewTitleSucceededOnce": true,
+    "ImmutableBaselineUnchanged": true
+  },
+  "version": 13,
+  "revision": 76,
+  "scopeIdentity": {
+    "Host": "example.test",
+    "ViewerId": 42
+  },
+  "prefixByteLength": 144,
+  "requests": [
+    {
+      "id": "I1",
+      "title": "Weekly review completed"
+    },
+    {
+      "projectId": "P1",
+      "itemId": "P1-T1",
+      "fieldId": "P1-status",
+      "value": {
+        "singleSelectOptionId": "done"
+      }
+    },
+    {
+      "id": "I1",
+      "title": "Weekly review completed"
+    }
+  ],
+  "oldTitle": {
+    "Id": "0e8048c4c82f447992e0b04b031c3713",
+    "Key": {
+      "Kind": "Title",
+      "NodeId": "I1",
+      "ProjectId": null,
+      "FieldId": null
+    },
+    "ItemId": "P1-T1",
+    "IssueId": "I1",
+    "Identity": "sample-user/first #1 / I1",
+    "FieldName": "Issue title（全Projectで共有）",
+    "Expected": "Issue 1",
+    "Intended": {
+      "Value": "Weekly review completed",
+      "Clear": false
+    },
+    "Stamp": 41,
+    "State": 8,
+    "Attempts": [
+      {
+        "Number": 1,
+        "At": "2026-09-27T17:10:11.0368371+09:00",
+        "State": 3,
+        "Reason": "PermissionDenied"
+      }
+    ],
+    "Reason": "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。",
+    "Verification": {
+      "Id": "2242da0fa20c4705a90e0509e1814989",
+      "Project": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "At": "2026-09-27T17:16:26.3652607+09:00",
+      "Value": "Issue 1",
+      "Availability": 0,
+      "Reason": null,
+      "Options": []
+    },
+    "NotBefore": null
+  },
+  "status": {
+    "Id": "d1950a115a404382af485f0efe8d1aaa",
+    "Key": {
+      "Kind": "Select",
+      "NodeId": "P1-T1",
+      "ProjectId": "P1",
+      "FieldId": "P1-status"
+    },
+    "ItemId": "P1-T1",
+    "IssueId": "I1",
+    "Identity": "sample-user/first #1 / I1",
+    "FieldName": "Status",
+    "Expected": "todo",
+    "Intended": {
+      "Value": "done",
+      "Clear": false
+    },
+    "Stamp": 42,
+    "State": 2,
+    "Attempts": [
+      {
+        "Number": 1,
+        "At": "2026-09-27T17:10:12.4078079+09:00",
+        "State": 2,
+        "Reason": "Read-back"
+      }
+    ],
+    "Reason": "更新結果と独立読み戻しを確認",
+    "Verification": {
+      "Id": "ff18fd58d7eb4194bdbef667f1c66b01",
+      "Project": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "At": "2026-09-27T17:10:13.0441985+09:00",
+      "Value": "done",
+      "Availability": 0,
+      "Reason": null,
+      "Options": [
+        {
+          "Id": "todo",
+          "Name": "Todo"
+        },
+        {
+          "Id": "done",
+          "Name": "Done"
+        }
+      ]
+    },
+    "NotBefore": null
+  },
+  "newTitle": [
+    {
+      "Id": "ad244f7242724461bf339a674c72c1b7",
+      "Key": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "ItemId": "P1-T1",
+      "IssueId": "I1",
+      "Identity": "sample-user/first #1 / I1",
+      "FieldName": "Issue title（全Projectで共有）",
+      "Expected": "Issue 1",
+      "Intended": {
+        "Value": "Weekly review completed",
+        "Clear": false
+      },
+      "Stamp": 41,
+      "State": 2,
+      "Attempts": [
+        {
+          "Number": 1,
+          "At": "2026-09-27T18:15:57.1893375+09:00",
+          "State": 2,
+          "Reason": "Read-back"
+        }
+      ],
+      "Reason": "更新結果と独立読み戻しを確認",
+      "Verification": {
+        "Id": "45ad1de1638b427aada0633cc6a5ede0",
+        "Project": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "At": "2026-09-27T18:15:57.7974642+09:00",
+        "Value": "Weekly review completed",
+        "Availability": 0,
+        "Reason": null,
+        "Options": []
+      },
+      "NotBefore": null
+    }
+  ],
+  "remote": {
+    "option": "done",
+    "title": "Weekly review completed"
+  },
+  "cached": {
+    "issue": "I1",
+    "repository": "sample-user/first",
+    "number": 1,
+    "title": "Weekly review completed",
+    "item": "P1-T1",
+    "status": "done"
+  },
+  "normalClose": "Evaluator observation only; PID absence independently verified by snapshot capture",
+  "limits": [
+    "Not live GitHub",
+    "No new UI, build, launch, test or product edit",
+    "Original screenshots and evaluator report remain in observations; no human acceptance claimed"
+  ],
+  "probeCorrection": "First readback used PSObject.Properties.Count directly, which enumerates member values in PowerShell; corrected to an explicit array of property names. Original false probe retained in readback-first-probe.json. Raw requests unchanged.",
+  "observations": [
+    {
+      "path": "observations/report.md",
+      "sha256": "2ECC8393483AC6E7AF2C675C3B0E5E2972C8B7B854F44F85808800095A56C81F"
+    },
+    {
+      "path": "observations/action-log.md",
+      "sha256": "A543643C57AD2ED80182F3611C070C62277DD77118B888CC2C0AD247226D7507"
+    },
+    {
+      "path": "observations/action-log.json",
+      "sha256": "787AE9CF6C9155EF8158EA14ADDB62818F54785FAD6D4E9FC375CB794E90F8A9"
+    }
+  ]
+}

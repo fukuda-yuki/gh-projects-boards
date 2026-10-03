@@ -236,7 +236,8 @@ public sealed class SheetFocusedScrollHostedTests
                 Assert.That(scroll.HorizontalOffset, Is.EqualTo(right ? scroll.ScrollableWidth : 0).Within(1));
                 AssertFirstEditor();
                 var rowIndex = bottom ? 100 : 0;
-                var row = (Grid)((ListViewItem)list.Items[rowIndex]).Content;
+                var container = (ListViewItem)list.ContainerFromIndex(rowIndex);
+                var row = container.ContentTemplateRoot as Grid ?? (Grid)container.Content;
                 Assert.That(row.IsLoaded, Is.True);
                 Assert.That(Ui.Find<Grid>("SheetHeader").TransformToVisual(grid).TransformPoint(new(0, 0)).X,
                     Is.EqualTo(row.TransformToVisual(grid).TransformPoint(new(0, 0)).X).Within(1),
@@ -253,6 +254,8 @@ public sealed class SheetFocusedScrollHostedTests
                 surface.Width = 640; surface.Height = 440; surface.Children.Add(grid);
             });
             await Ui.Mount(surface); mounted = true;
+            await Ui.Ready<FrameworkElement>("GridCell0_0");
+            await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell0_0", grid)).SetFocus());
             await Ui.Ready<TextBox>("GridCell0_0");
             await Ui.Run(() =>
             {
@@ -279,7 +282,9 @@ public sealed class SheetFocusedScrollHostedTests
             await MoveAndObserve("05-repeat-bottom-right", bottom: true, right: true);
             await MoveAndObserve("06-repeat-return", bottom: false, right: false);
 
-            await Ui.Run(() => Assert.That(Ui.Find<TextBox>("GridCell1_0").Focus(FocusState.Keyboard), Is.True));
+            await Ui.Ready<FrameworkElement>("GridCell1_0");
+            await Ui.Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("GridCell1_0", grid)).SetFocus());
+            await Ui.Ready<TextBox>("GridCell1_0");
             await Ui.Until(() => (FocusManager.GetFocusedElement(grid.XamlRoot) as DependencyObject) is { } focus
                 && AutomationProperties.GetAutomationId(focus) == "GridCell1_0");
             await Ui.Until(() =>

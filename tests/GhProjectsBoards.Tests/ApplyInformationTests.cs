@@ -100,10 +100,16 @@ internal sealed class ApplyInformationTests
         var p = ThreeFields(2); var w = new EditingWorkspace(p.Snapshot.Id.Scope); w.SetRegistrations([p]); var rows = w.Open(p);
         w.Clear("P1", [rows[0].Cells[1]]); w.Commit("P1", rows[0].Cells[2], "zero", true);
         w.SetBuffer(rows[0].Cells[0], "pending only"); w.Commit("P1", rows[1].Cells[3], "done", true);
-        var view = ApplyConfirmationPresentation.Create(w, p, w.ApplyCandidates(p), rows.Select(r => r.ItemId).ToArray(), false, new HashSet<string>(), null, false);
+        var refreshed = p with { RetrievedAt = p.RetrievedAt.AddMinutes(1) };
+        w.Reconcile(p, refreshed); w.SetRegistrations([refreshed]);
+        var savedNotice = w.Field(rows[0].Cells[0])!.Observation!.Reason;
+        var view = ApplyConfirmationPresentation.Create(w, refreshed, w.ApplyCandidates(refreshed), rows.Select(r => r.ItemId).ToArray(), false, new HashSet<string>(), null, false);
 
         Assert.That(view.Rows[0].Cells.Select(c => c.After.Kind), Is.EqualTo(new[] { ConfirmationValueKind.Unchanged, ConfirmationValueKind.Clear, ConfirmationValueKind.Value, ConfirmationValueKind.Unchanged }));
         Assert.That(view.Rows[0].Cells[0].Pending, Is.EqualTo("pending only"));
+        Assert.That(view.Rows[0].Cells[0].Problem, Does.Contain("保持").And.Contain("送信しません").And.Not.Contain("確定・取消"),
+            "A preserved-input notice in review must not impose a global prerequisite on another selected row.");
+        Assert.That(w.Field(rows[0].Cells[0])!.Observation!.Reason, Is.EqualTo(savedNotice), "Presentation must not rewrite the saved observation diagnostic.");
         Assert.That(view.Rows[0].Cells[2].After.Text, Is.EqualTo("0"));
         var states = new[] { ValueAvailability.Empty, ValueAvailability.NotLoaded, ValueAvailability.Unavailable, ValueAvailability.Unsupported };
         Assert.That(states.Select(s => ApplyConfirmationPresentation.Format(null, s, null).Text), Is.EqualTo(new[] { "未設定", "未取得", "取得不可", "非対応" }));
@@ -125,7 +131,52 @@ internal sealed class ApplyInformationTests
 
         Assert.That(view.SelectedCount, Is.EqualTo(3)); Assert.That(view.EffectiveCount, Is.EqualTo(2));
         Assert.That(view.Summary, Does.Contain("3件中3件").And.Contain("反映対象2件（変更なし1件）").And.Contain("更新1件・新規作成1件"));
-        Assert.That(view.Rows.Single(r => r.Id == local).Cells[0].Before.Kind, Is.EqualTo(ConfirmationValueKind.NotCreated));
+        Assert.That(view.Rows.Single(r => r.Id == local).Cells[0].Before.Kind, Is.EqualTo(ConfirmationValueKind.CreationStatus));
         Assert.That(h.Writes, Is.Empty);
+    }
+
+    [Test]
+    public async Task CreationReviewUsesFrozenDestinationTitleAndSettingIntentWithProjectAddition()
+    {
+        var h = await CreationHarness.Create(2); var w = h.Session.Workspace;
+        var local = h.Add("Approved title");
+        w.Commit("P1", w.Open(h.Workspace.Selected!).Single(row => row.ItemId == local).Cells[1], "done", true);
+        var selected = new HashSet<string> { local };
+        await h.Workspace.PrepareApplyAsync(selected);
+        var review = h.Workspace.ApplyReview!; var p = h.Workspace.Selected!;
+        var frozen = review.Batch.Creations!.Single();
+        w.Commit("P1", w.Open(p).Single(row => row.ItemId == local).Cells[0], "Later local title");
+        w.Commit("P1", w.Open(p).Single(row => row.ItemId == local).Cells[1], "todo", true);
+
+        var view = ApplyConfirmationPresentation.Create(w, p, w.ApplyCandidates(p), [local], false, selected, review, true);
+
+        var row = view.Rows.Single();
+        Assert.That(row.Title, Is.EqualTo(frozen.Title));
+        Assert.That(row.Repository, Is.EqualTo(frozen.Repository.Name));
+        Assert.That(row.CreationPlan, Is.EqualTo(review.Batch.ProjectName + "へ追加予定"));
+        Assert.That(row.Cells.Single(cell => cell.Column.Id.FieldId == "P1-status").Difference, Is.EqualTo("新規・未送信 → Done"));
+        Assert.That(row.Number, Is.EqualTo("新規・未送信"));
+        Assert.That(h.Writes, Is.Empty);
+    }
+
+    [Test]
+    public async Task KnownProjectMemberWithUnsentSettingsDoesNotPromiseAnotherProjectAddition()
+    {
+        var h = await CreationHarness.Create(2); var w = h.Session.Workspace;
+        var local = h.Add("Known Issue awaiting Status"); var p = h.Workspace.Selected!;
+        w.Commit("P1", w.Open(p).Single(row => row.ItemId == local).Cells[1], "done", true);
+        h.Existing.Boundary.ChangeCombinedResponse = data => data["data"]!["viewer"] = null;
+        await h.Apply(local);
+        w = h.Session.Workspace; p = h.Workspace.Selected!;
+        var creation = w.Creations.Single();
+        Assert.That(creation.Verified, Is.Not.Null);
+        Assert.That(creation.ItemId, Is.Not.Null);
+        Assert.That(creation.Completed, Is.False);
+        var before = System.Text.Json.JsonSerializer.Serialize(w.Snapshot());
+
+        var view = ApplyConfirmationPresentation.Create(w, p, w.ApplyCandidates(p), [local], false, new HashSet<string>(), null, false);
+
+        Assert.That(view.Rows.Single().CreationPlan, Is.EqualTo(p.Snapshot.Title + "への所属を確認済み・設定が未完了"));
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(w.Snapshot()), Is.EqualTo(before));
     }
 }

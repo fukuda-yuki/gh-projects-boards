@@ -1,0 +1,137 @@
+{
+  "readUtc": "2026-09-27T09:20:27.1862429+00:00",
+  "pid": 33952,
+  "pidAbsent": true,
+  "sourceRoot": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f",
+  "destination": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round2-recovery-f\\diagnostics\\final-snapshot",
+  "stableBeforeAfter": true,
+  "copyMatches": true,
+  "excluded": "writer.lock only (.writer.lock and writer.lock); .execution.lock and backups retained",
+  "before": [
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 109800,
+      "sha256": "3520EA8FB8D6EDD80C1C5C4E578804CC67580D9DB838072A361204197DBD175C"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 109798,
+      "sha256": "CF5671565A0AF5CD1D60F107DC9F86A6215A4BE32672066F8332E91DA514BEAD"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54037,
+      "sha256": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4"
+    },
+    {
+      "path": "gh-config\\apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "gh-config\\apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "gh-config\\calls.jsonl",
+      "length": 13193,
+      "sha256": "68FAADA47C96A6DFCE0DA95140FBA11F08DDED9AA3611D3FD8AACDA3539AC6BF"
+    },
+    {
+      "path": "gh-config\\scenario.json",
+      "length": 104,
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8"
+    }
+  ],
+  "after": [
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 109800,
+      "sha256": "3520EA8FB8D6EDD80C1C5C4E578804CC67580D9DB838072A361204197DBD175C"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 109798,
+      "sha256": "CF5671565A0AF5CD1D60F107DC9F86A6215A4BE32672066F8332E91DA514BEAD"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54037,
+      "sha256": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4"
+    },
+    {
+      "path": "gh-config\\apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "gh-config\\apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "gh-config\\calls.jsonl",
+      "length": 13193,
+      "sha256": "68FAADA47C96A6DFCE0DA95140FBA11F08DDED9AA3611D3FD8AACDA3539AC6BF"
+    },
+    {
+      "path": "gh-config\\scenario.json",
+      "length": 104,
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8"
+    }
+  ],
+  "copy": [
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "length": 109800,
+      "sha256": "3520EA8FB8D6EDD80C1C5C4E578804CC67580D9DB838072A361204197DBD175C"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "length": 109798,
+      "sha256": "CF5671565A0AF5CD1D60F107DC9F86A6215A4BE32672066F8332E91DA514BEAD"
+    },
+    {
+      "path": "data\\Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "data\\E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "length": 54037,
+      "sha256": "C479CAB782CB2ABE4308C69D4BCB9F5BB6178B07805F43DEA14A89F63B2A2EF4"
+    },
+    {
+      "path": "gh-config\\apply-requests.jsonl",
+      "length": 190,
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "gh-config\\apply-state.json",
+      "length": 51,
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "gh-config\\calls.jsonl",
+      "length": 13193,
+      "sha256": "68FAADA47C96A6DFCE0DA95140FBA11F08DDED9AA3611D3FD8AACDA3539AC6BF"
+    },
+    {
+      "path": "gh-config\\scenario.json",
+      "length": 104,
+      "sha256": "AC835D8598B724B8A4BF67F96DDC22860A0AB1A932C83ECE68749D2B9124A2E8"
+    }
+  ],
+  "normalCloseEvidence": "Evaluator Computer Use observations; process absence here is independent readback, not independent normal-close evidence"
+}

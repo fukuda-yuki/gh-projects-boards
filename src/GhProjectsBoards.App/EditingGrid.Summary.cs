@@ -33,19 +33,18 @@ internal sealed partial class EditingGrid
     {
         if (summaryView is not null) return;
         summaryView = new SummaryView { Visibility = Visibility.Collapsed };
-        SetRow(summaryView, 1); SetRowSpan(summaryView, RowDefinitions.Count - 1); Children.Add(summaryView);
+        SetRow(summaryView, 1); SetRowSpan(summaryView, RowDefinitions.Count - 2); Children.Add(summaryView);
         summaryView.AllowanceRequested += async id => await AllowanceDialogAsync(id);
         summaryView.BaselineRequested += async replace => await BaselineDialogAsync(replace);
         summaryView.TaskRequested += (id, view) => { if (SelectGanttRow(id)) ShowProjectView(view, id); };
         summaryView.EditRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateSummary(true); } };
         summaryView.UndoRequested += () => { Run(Undo); UpdateSummary(true); };
-        summaryView.SaveRequested += async () => { await FlushDraftsAsync("summary-retry"); Update(); };
         summaryView.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateSummary(true); };
     }
     private void UpdateSummary(bool force = false, string? person = null, string? row = null)
     {
         if (!ShowingSummary) return;
-        summaryView!.ShowOperationStatus(operationProblem, session.Status);
+        summaryView!.ShowOperationStatus(operationProblem);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9));
         if (!force && summaryWorkspace == session.Workspace && summaryRevision == session.Workspace.Revision && summaryDay == today) return;
         summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today), person, row);

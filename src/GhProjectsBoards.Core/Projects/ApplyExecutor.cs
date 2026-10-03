@@ -46,7 +46,13 @@ internal sealed partial class ApplyExecutor(DraftStore store, DraftSession sessi
                     o = o with { NotBefore = DateTimeOffset.UtcNow + (result.RetryAfter ?? TimeSpan.FromMinutes(Math.Pow(2, waits - 1))), Reason = "RateLimited: 読み取り待機" };
                     await Save(o); goto Revalidate;
                 }
-                await Save(o with { State = o.State is ApplyState.Running or ApplyState.Unknown ? ApplyState.Unknown : ApplyState.Waiting, Reason = result.Failure.ToString() });
+                // A failed read does not renew a spent or blocked approval.
+                var state = o.State switch {
+                    ApplyState.Running or ApplyState.Unknown => ApplyState.Unknown,
+                    ApplyState.Failed or ApplyState.Blocked => o.State,
+                    _ => ApplyState.Waiting
+                };
+                await Save(o with { State = state, Reason = result.Failure.ToString() });
                 if (Global(result.Failure)) break;
                 continue;
             }
@@ -57,7 +63,14 @@ internal sealed partial class ApplyExecutor(DraftStore store, DraftSession sessi
             }
             if (o.State is not (ApplyState.Pending or ApplyState.Cancelled or ApplyState.Waiting) || o.Attempts.Any(a => a.State is ApplyState.Running or ApplyState.Unknown))
             {
-                await Save(o with { State = ApplyState.Blocked, Verification = observation, Reason = "以前の送信結果が不確定です。明示的な再照合・新規レビューが必要です。" });
+                var uncertain = o.State is ApplyState.Running or ApplyState.Unknown
+                    || o.Attempts.Any(a => a.State is ApplyState.Running or ApplyState.Unknown);
+                var reason = uncertain
+                    ? "以前の送信結果が不確定です。明示的な再照合・新規レビューが必要です。"
+                    : o.Attempts.Any(a => a.State == ApplyState.Failed)
+                        ? "前回の送信は失敗しました。残った変更を再確認し、新しいレビューで承認してください。"
+                        : "現在の承認では続行できません。残った変更を再確認し、新しいレビューで承認してください。";
+                await Save(o with { State = ApplyState.Blocked, Verification = observation, Reason = reason });
                 continue;
             }
             if (observation.Value != o.Expected)

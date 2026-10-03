@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="241" result="Passed" start-time="2026-09-27T11:42:04.9877331Z" end-time="2026-09-27T11:42:06.9664569Z" duration="1.978701" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4" random-seed="1512097142">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "name == UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20260927-204159-981-9fb6bf13\results.xml]]></command-line>
+  <filter>
+    <name>UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation</name>
+  </filter>
+  <test-suite type="Assembly" id="1302" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="241" result="Passed" start-time="2026-09-27T11:42:04.9877331Z" end-time="2026-09-27T11:42:06.9664569Z" duration="1.978701" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="15892" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1303" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="241" result="Passed" start-time="2026-09-27T11:42:04.9908767Z" end-time="2026-09-27T11:42:06.9664540Z" duration="1.975577" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+      <test-suite type="TestSuite" id="1304" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="241" result="Passed" start-time="2026-09-27T11:42:04.9910499Z" end-time="2026-09-27T11:42:06.9664497Z" duration="1.975400" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+        <test-suite type="TestSuite" id="1305" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="241" result="Passed" start-time="2026-09-27T11:42:04.9910557Z" end-time="2026-09-27T11:42:06.9664401Z" duration="1.975385" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+          <test-suite type="TestFixture" id="1133" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="60" result="Passed" start-time="2026-09-27T11:42:04.9910573Z" end-time="2026-09-27T11:42:06.9662620Z" duration="1.975205" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1145" name="UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" methodname="UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1399106769" result="Passed" start-time="2026-09-27T11:42:04.9923841Z" end-time="2026-09-27T11:42:06.9648397Z" duration="1.972503" asserts="4">
+              <properties>
+                <property name="Category" value="PendingInput" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

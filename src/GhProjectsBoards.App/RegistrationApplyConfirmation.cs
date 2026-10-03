@@ -18,7 +18,9 @@ public sealed partial class RegistrationPanel
         return false;
     }
 
-    private async void ReviewApply(object sender, RoutedEventArgs e)
+    private async void ReviewApply(object sender, RoutedEventArgs e) => await ReviewApplyAsync();
+
+    private async Task ReviewApplyAsync(string? historicalDecisionId = null, bool restartRemaining = false)
     {
         if (applyDialog || Workspace.Selected is not { } initial || Workspace.Drafts is not { } session) return;
         if (!CanRefreshEditors())
@@ -30,22 +32,26 @@ public sealed partial class RegistrationPanel
         var owner = Workspace; var expected = lifetime; var projectId = initial.Snapshot.Id; var login = owner.ProfileLogin;
         var visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
         var selectedIds = new HashSet<string>();
+        var continuation = historicalDecisionId is null ? null : session.Workspace.HistoricalDispositions.SingleOrDefault(d => d.Id == historicalDecisionId);
+        if (historicalDecisionId is not null && continuation is null) return;
+        if (continuation is not null) selectedIds.Add(continuation.Observation.ItemId);
         var table = new ApplyConfirmationTable();
         var status = ApplyText(""); AutomationProperties.SetAutomationId(status, "ApplyCheckStatus");
         var counts = ApplyText(""); AutomationProperties.SetAutomationId(counts, "ApplyTargetCounts");
         var reasons = ApplyText(""); AutomationProperties.SetAutomationId(reasons, "ApplyBlockReason");
         AutomationProperties.SetLiveSetting(reasons, AutomationLiveSetting.Polite);
         var includeHidden = new CheckBox { Content = "非表示行も候補に追加する" };
+        if (continuation is not null && !visible.Contains(continuation.Observation.ItemId)) includeHidden.IsChecked = true;
         AutomationProperties.SetAutomationId(includeHidden, "ApplyIncludeHidden");
         var hiddenText = ApplyText(""); AutomationProperties.SetAutomationId(hiddenText, "ApplyHiddenSummary");
         var retry = new Button { Content = "最新状態を再確認" }; AutomationProperties.SetAutomationId(retry, "ApplyCheckAgain");
         var connection = new Button { Content = "接続設定" }; AutomationProperties.SetAutomationId(connection, "ApplyConnectionSettings");
         var history = new Button { Content = "反映結果・履歴" }; AutomationProperties.SetAutomationId(history, "ApplyReviewHistory");
         var jump = new Button { Content = "問題の行へ" }; AutomationProperties.SetAutomationId(jump, "ApplyGoToProblem");
-        var restart = new Button { Content = "再確認してやり直す" }; AutomationProperties.SetAutomationId(restart, "ApplyRestartReview");
+        var restart = new Button { Content = "未反映の変更を確認…" }; AutomationProperties.SetAutomationId(restart, "ApplyRestartReview");
         var recovery = new Grid { ColumnSpacing = 8 };
         recovery.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); recovery.ColumnDefinitions.Add(new());
-        var recoveryHint = ApplyText("前回の承認を取り消して再確認します。反映済みの変更は保持し、ここでは送信しません。");
+        var recoveryHint = ApplyText("以前の結果とローカルの変更を保持して、残る変更を確認します。この操作では送信しません。");
         recoveryHint.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(recoveryHint, 1);
         recovery.Children.Add(restart); recovery.Children.Add(recoveryHint);
         var informationText = ApplyText("");
@@ -54,6 +60,7 @@ public sealed partial class RegistrationPanel
         var legend = ApplyText("GitHubの値 → 反映する値（Projectフィールド）");
         var header = ApplyPanel(4);
         header.Children.Add(ApplyText($"{initial.Snapshot.Title} / {projectId.Scope.Host} / {login}", true));
+        if (continuation is not null) header.Children.Add(ApplyText("以前の処理から続ける、新しい変更の確認です。現在の確定済み入力を使い、未確定入力は送りません。"));
         header.Children.Add(counts); header.Children.Add(status); header.Children.Add(legend);
         var hidden = ApplyPanel(4); hidden.Children.Add(hiddenText); hidden.Children.Add(includeHidden);
         var problem = ApplyPanel(4); problem.Children.Add(reasons);
@@ -80,14 +87,16 @@ public sealed partial class RegistrationPanel
             content.Width = Math.Min(1100, Math.Max(280, XamlRoot.Size.Width - 112));
             content.Height = Math.Max(180, Math.Min(600, XamlRoot.Size.Height - 200));
             dialog.Resources["ContentDialogMaxWidth"] = content.Width + 64;
-            informationText.MaxWidth = Math.Max(240, Math.Min(560, content.Width - 64));
+            // The native flyout offers less content width than the review dialog.
+            informationText.MaxWidth = Math.Max(160, Math.Min(400, XamlRoot.Size.Width - 112));
         }
         SizeReview();
         var reviewRoot = XamlRoot;
         void RootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => SizeReview();
         reviewRoot.Changed += RootChanged;
         AutomationProperties.SetAutomationId(dialog, "ApplyReviewDialog");
-        bool open = true, suspended = false, checking = false, goConnection = false, goHistory = false, restartRequested = false;
+        bool open = true, suspended = false, checking = false, goConnection = false, goHistory = false, restartRequested = restartRemaining;
+        string? checkProblem = null;
         int request = 0, nextProblem = 0;
         ApplyReview? review = null;
         ApplyConfirmationPresentation? presentation = null;
@@ -101,12 +110,15 @@ public sealed partial class RegistrationPanel
         {
             if (!open) return;
             var reason = checking ? null : !Current() ? "接続先またはProjectが変わりました。元の作業を保持しました。対象を確認し直してください。"
-                : owner.ApplyBlockReason(review);
+                : checkProblem ?? owner.ApplyBlockReason(review);
             dialog.IsPrimaryButtonEnabled = !checking && Current() && reason is null;
             var problemIds = ProblemIds();
             reasons.Text = reason ?? "";
-            recovery.Visibility = !checking && Current() && owner.CanRestartApplyReview ? Visibility.Visible : Visibility.Collapsed;
-            restart.IsEnabled = !checking && Current() && owner.CanRestartApplyReview;
+            recovery.Visibility = historicalDecisionId is null && !checking && Current() && owner.CanRestartApplyReview ? Visibility.Visible : Visibility.Collapsed;
+            restart.IsEnabled = historicalDecisionId is null && !checking && Current() && owner.CanRestartApplyReview;
+            var knownFailure = session.Workspace.Journal.Where(batch => batch.Operations.Any(operation => operation.State is not (ApplyState.Succeeded or ApplyState.Superseded)))
+                .All(ApplyResultsPresentation.RequiresFreshReview);
+            restart.Content = knownFailure ? "未反映の変更を確認…" : "再確認してやり直す";
             jump.Visibility = problemIds.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
             connection.Visibility = owner.ApplyNeedsConnectionRecovery ? Visibility.Visible : Visibility.Collapsed;
             problem.Visibility = reasons.Text.Length > 0 || connection.Visibility == Visibility.Visible || recovery.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
@@ -138,29 +150,41 @@ public sealed partial class RegistrationPanel
         }
         async Task CheckLoop()
         {
-            while (Current())
+            try
             {
-                var thisRequest = request;
-                var restartThisCheck = restartRequested; restartRequested = false;
-                checking = true; review = null;
-                status.Text = "GitHubの最新状態を確認中…"; Populate();
-                var ids = selectedIds.ToHashSet();
-                var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
-                if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
-                else await owner.PrepareApplyAsync(ids, targets);
-                if (!Current()) break;
-                if (thisRequest != request) continue;
-                checking = false; review = owner.ApplyReview;
-                status.Text = review is null ? owner.Status + "（表示は保存済み・最新未確認）" : "最新確認済み";
-                if (review is null && owner.ApplySelectionInvalidated)
+                while (Current())
                 {
-                    selectedIds.Clear();
-                    visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
-                    status.Text += " 対象を広げず、選択を解除しました。行を選び直してください。";
+                    var thisRequest = request;
+                    var restartThisCheck = restartRequested; restartRequested = false;
+                    checking = true; review = null; checkProblem = null;
+                    status.Text = "GitHubの最新状態を確認中…"; Populate();
+                    var ids = selectedIds.ToHashSet();
+                    var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
+                    if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
+                    else if (historicalDecisionId is not null) await owner.PrepareHistoricalFollowUpAsync(historicalDecisionId, ids, targets);
+                    else await owner.PrepareApplyAsync(ids, targets);
+                    if (!Current()) break;
+                    if (thisRequest != request) continue;
+                    checking = false; review = owner.ApplyReview;
+                    status.Text = review is null ? owner.Status + "（表示は保存済み・最新未確認）" : "最新確認済み";
+                    if (review is null && owner.ApplySelectionInvalidated)
+                    {
+                        selectedIds.Clear();
+                        visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
+                        status.Text += " 対象を広げず、選択を解除しました。行を選び直してください。";
+                    }
+                    Populate(); break;
                 }
-                Populate(); break;
             }
-            checking = false; UpdateApproval();
+            catch (Exception)
+            {
+                // A failed presentation notification can fault a completed read.
+                // It must not leave an enabled approval or an endless busy view.
+                review = null;
+                checkProblem = "確認を完了できませんでした。再確認するか、編集へ戻ってください。";
+                if (Current()) status.Text = "最新状態は未確認です。変更は送信していません。";
+            }
+            finally { checking = false; UpdateApproval(); }
         }
         void QueueCheck(bool restartApproval = false)
         {
@@ -228,6 +252,6 @@ public sealed partial class RegistrationPanel
             if (IsLoaded) Update();
         }
         if (goHistory && IsCurrent(owner, expected) && CanRefreshEditors()) ShowApplyHistory(this, new RoutedEventArgs());
-        else if (applied && IsCurrent(owner, expected) && outcomeGeneration == applyViewGeneration) QueueApplyOutcome(review!.Batch.Id);
+        else if (applied && IsCurrent(owner, expected) && outcomeGeneration == applyViewGeneration) QueueApplyOutcome(review!.Batch.Id, newlyApproved: true);
     }
 }

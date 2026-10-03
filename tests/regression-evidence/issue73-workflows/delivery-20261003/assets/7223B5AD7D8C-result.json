@@ -1,0 +1,101 @@
+{
+  "schema": "V-creation-readback-v1",
+  "stage": "BoundRecovery",
+  "startedAt": "2026-10-02T20:37:38.0276833+00:00",
+  "input": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\round10-publication-v",
+  "run": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\publication-v-creation\\readback\\runs\\20261002-203738-61d13832da544df9a17ed583c97116ba",
+  "status": "completed",
+  "passed": false,
+  "appExecution": "not_run",
+  "uiExecution": "not_run",
+  "endpointExecution": "not_run",
+  "actualVRead": true,
+  "frozenReceiptSha256": "AEEEB08670924A41C8EFAEAB02E099894CA48A5FB04F7AD29B194E5A86B5AF02",
+  "endpointReceiptSha256": "E74C200B6FCAC1455163F40602EEF622CBD3C7F8A84F9440F9D1770CBDC55F25",
+  "expectedTitle": "V follow-up review",
+  "expectedStatus": "done",
+  "candidateReceiptSha256": "AEEEB08670924A41C8EFAEAB02E099894CA48A5FB04F7AD29B194E5A86B5AF02",
+  "preparationSha256": "44FD90D5AA4239F9BD31CAF5CF31095FE760788F08A8539FF9EBAB3427333AF1",
+  "launchReceiptSha256": "3B6E0470C0E28B80EAA9A312ADB47490899E1A9E4F5403159FE3009169EC4B5D",
+  "dataFiles": [
+    {
+      "path": ".writer.lock",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\.writer.lock",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json",
+      "sha256": "16260095E553396952238C58B90809086F36E6F66CD1F3A8BCDCA296468A978C"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.bak",
+      "sha256": "693D4F94433CF9A20A15DC2437920D35AB552360F9CCABB0DBFE5A4734504C15"
+    },
+    {
+      "path": "Drafts\\DFD7C2B99CBFEAB95681370F7D874BBA83E79D70B0C23C86B1746B4CDD458CFD.json.execution.lock",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "E07CDF19F72038F28DA81804E599C93D3A1FE141CFD1D7535AD43E8B010C5A0A.json",
+      "sha256": "B374A715CECEE1F17A97348E8876E26D5854E0C62452835F6638ECC7A8D43679"
+    }
+  ],
+  "serviceFiles": [
+    {
+      "path": "adapter-requests.jsonl",
+      "sha256": "8C3039E4736F2117B7E0910A2426EA0DB2CA608A8A73E0D8621D276F8A7C139E"
+    },
+    {
+      "path": "apply-requests.jsonl",
+      "sha256": "5093672FD845899480AC26CB866106F9D5FC440AD87B4FDF058C195CDC87270D"
+    },
+    {
+      "path": "apply-state.json",
+      "sha256": "E006EC2B88F6427D06F40DAFDB69F98D8C42C7798906FA9B7DAF82DAE39FB6A2"
+    },
+    {
+      "path": "calls.jsonl",
+      "sha256": "B7C6921EAD1C7252305DC1DD7E956A52625F402FFD68644B41DDD908D31783A3"
+    },
+    {
+      "path": "creation-requests.jsonl",
+      "sha256": "2C83F2181A47F76078EE94D7F623454BD3EBEB8243528BF45B04C5F50761AC1B"
+    },
+    {
+      "path": "creation-state.json",
+      "sha256": "879736C9128142575309BD4D34BBA866398AFFF1EFD204457C0562DC4DD2DF60"
+    },
+    {
+      "path": "scenario.json",
+      "sha256": "D4DCC5B0A70BA8E90F2A6D37CD0B658650A3BBD56A6F2ACF7BDFCB5E067E7E6D"
+    }
+  ],
+  "baselineResultSha256": "AF8A271436423A893956900053022760DCA3CB639CEE8C524030D237CFF02098",
+  "baselineManifestSha256": "3663EB72C2074B285C37CD426023E3D8F43C58BC4330F9B69845716387EA305B",
+  "lossResultSha256": "49982ECF4695DFD71E90E12CA7D5181AD567D219E60B7E4A77C0E419F6CCC598",
+  "lossManifestSha256": "8026E572C044D8E5A70CF986A74155A3BD86CAC74272DC637C65FE76D87B0E67",
+  "ordinaryClose": {
+    "observer": "root",
+    "normalCloseObserved": true,
+    "forcedTermination": false,
+    "pid": 85924,
+    "dataRoot": "C:/Users/mwam0/.copilot/repos/gh-projects-boards/TestResults/issue73/blind-review/round10-publication-v/data",
+    "launchReceiptSha256": "3B6E0470C0E28B80EAA9A312ADB47490899E1A9E4F5403159FE3009169EC4B5D",
+    "observedAt": "2026-10-03T05:37:07.7043017+09:00",
+    "observationArtifact": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\issue73\\blind-review\\checks\\v-fresh-evaluator\\actual-segment4\\close-observation.json",
+    "observationArtifactSha256": "CE7C16EAE13794B8F4722B0B312087191AD505CD8F070A4BEB688DE8C54A170A",
+    "actor": "isolated V evaluator",
+    "rootPerformedClose": false
+  },
+  "checkCount": 28,
+  "coreSha256": "268A374EA7F813CE95D96FD31202A88404CBB883604DD823CB14D0FFC3B1B9E0",
+  "originalBytesUnchanged": true,
+  "checkpointRevision": 85,
+  "checkpointVersion": 14,
+  "productionDraftStore": "LoadAsync on disposable copies of current, successful V TitleRecovered and (for recovery) CreationLoss preserved evidence; same selected Core.",
+  "interruptedCandidates": [],
+  "finishedAt": "2026-10-02T20:37:40.3021045+00:00"
+}

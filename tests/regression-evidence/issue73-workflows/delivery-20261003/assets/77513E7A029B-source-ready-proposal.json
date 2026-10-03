@@ -1,0 +1,1494 @@
+{
+  "createdAtUtc": "2026-10-02T19:40:37.235362+00:00",
+  "status": "LOCAL_SOURCE_READY_NOT_APPENDED",
+  "files": [
+    {
+      "path": "checks/u-original-restart-observation/derived-target-inventories/001-list_windows.json",
+      "length": 245,
+      "sha256": "0FB47A085E5DCC7F91DDDC6EF1F7F0004F2A9B23E4441FDFDE584760E613F119"
+    },
+    {
+      "path": "checks/u-original-restart-observation/derived-target-inventories/025-list_windows.json",
+      "length": 245,
+      "sha256": "0FB47A085E5DCC7F91DDDC6EF1F7F0004F2A9B23E4441FDFDE584760E613F119"
+    },
+    {
+      "path": "checks/u-original-restart-observation/derived-target-inventories/026-list_windows.json",
+      "length": 4,
+      "sha256": "A5338D955B09046EC0B16F3A9625B7955C763AAE07DC722E474E6078745F932F"
+    },
+    {
+      "path": "checks/u-original-restart-observation/freeze-observation.py",
+      "length": 7467,
+      "sha256": "997D842FBCC92C47C37D91346EA49C7413E3B01A1571CD25A7972C9A876EAD98"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/final.md",
+      "length": 951,
+      "sha256": "1F2ED66DD63ABAABDF67D9536924D623C97C07CD0DBAD9CD762809E01E769C34"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/invocation.json",
+      "length": 3216,
+      "sha256": "542F197424A346E448A5ACDC8CC86778DC6327F55FBF1732FBBD01C9FCE69136"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/001-list_windows.json",
+      "length": 332,
+      "sha256": "A005D9A811971307EF0140E9FBB3EB9702D621521A1EE1EFDDCFC64469526504"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/002-get_window.json",
+      "length": 223,
+      "sha256": "CF12BBD374751E63CD585BDF8922DDC02924B44CA463B14BA389B820F33DCEAF"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/003-activate_window.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/004-get_window_state.json",
+      "length": 81066,
+      "sha256": "E200F9DD68C822D2CFC07C7F965566E658D80B2AEF6798D7D71BB742CEFE8A48"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/004-screenshot-0.jpg",
+      "length": 58678,
+      "sha256": "A35B28721D134DC18233A3EF0474047C655D20E963E61BE4078A4DA6B4213BDC"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/005-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/006-get_window_state.json",
+      "length": 88239,
+      "sha256": "EABF992250B9B9ED246F8D0D608E61FA563F07B0584653F82D8D80D35C8D4762"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/006-screenshot-0.jpg",
+      "length": 58863,
+      "sha256": "8B84F7AA06ED0457D4D2F2453C847F4825BC69C54AE00589AB9E8DE1171AD465"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/006-screenshot-1.jpg",
+      "length": 3606,
+      "sha256": "2231F33002971914673251FD4031640D8D5272CAD8C8E0B044DCAF594E78EAAB"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/007-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/008-get_window_state.json",
+      "length": 75670,
+      "sha256": "910C92CB590FF87ADCEF228F33433CA4413C6C637DEBF87766EC6A4FAD423391"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/008-screenshot-0.jpg",
+      "length": 54627,
+      "sha256": "80DCF556E53757FB66564C4104922BBB05B219FD40A4DFD1243D898B1F0E68C7"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/009-get_window_state.json",
+      "length": 76594,
+      "sha256": "B8EFEB3FEF5E36235E497B2AF565522B0ABBA9E3894C5F272761FA2A3F40EB2C"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/009-screenshot-0.jpg",
+      "length": 55320,
+      "sha256": "3A76E1E23E33B2F8B298C7F9992D1CF8F644F0779D251DB6E7317817467C9FC6"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/010-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/011-get_window_state.json",
+      "length": 180181,
+      "sha256": "58DF37954A4C0B50C49FB7484CDA430D97736E82668197596C90E11DC4AA7DA8"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/011-screenshot-0.jpg",
+      "length": 116090,
+      "sha256": "07E64DDD4355EDCF4713BC1ECD01BBF3121480F3C2CE836967E80BB11A0A5479"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/012-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/013-get_window_state.json",
+      "length": 211897,
+      "sha256": "C70885DDA64C686ADDA8F7F2C52D118CED7858DDCAC3E49D3B7789C4BDB4A31E"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/013-screenshot-0.jpg",
+      "length": 139876,
+      "sha256": "AF664C5F194C983DAE55E2DB93407486EF3E77A168B8DC053B6182508EFC7311"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/014-get_window_state.json",
+      "length": 214976,
+      "sha256": "8162F6B50AAD5D8E62B9D1F05F45C035F1482D16E9CB3E4F20C73EB7DA2143E1"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/014-screenshot-0.jpg",
+      "length": 138382,
+      "sha256": "DEDA22208D9B31B460F1B4384C198B1D72706EAA90C4085DE4AC6C5DBD019F35"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/015-scroll.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/016-get_window_state.json",
+      "length": 226396,
+      "sha256": "6AD179D6722995029979CADC5AE4AEAD9484521847068D1DAA6BD807141F10FA"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/016-screenshot-0.jpg",
+      "length": 145844,
+      "sha256": "760E7C5407318B128EEFC0AC25DDD345373AB3005614089B0A5B78450D6E3E63"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/017-get_window_state.json",
+      "length": 225268,
+      "sha256": "8D261E944DED5557E8F6F9125C0596E28CB54FA13AE6BE557C0C86E5A1406084"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/017-screenshot-0.jpg",
+      "length": 144998,
+      "sha256": "61F8743FC7636F0F6A7CD1A0261AAFE6EE2EA40CA81CA7CD9E34928298B2AF55"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/018-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/019-get_window_state.json",
+      "length": 245416,
+      "sha256": "273E787E353A12EB94E16A732633A0B1FEAD1BC2E94A3216C7147524E694B108"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/019-screenshot-0.jpg",
+      "length": 160108,
+      "sha256": "3183473BEAA8C63C6485627EE49101E21D7572FEB56EBDC3CA6D89EA5113C155"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/020-get_window_state.json",
+      "length": 246314,
+      "sha256": "A1805201AE68DEC4BF9E37D9873A8B867DF5E7B7E665BC6AE416098EEF9987FC"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/020-screenshot-0.jpg",
+      "length": 159608,
+      "sha256": "EC04BB1D6A54B28B0974B17343FEA7DCC0DD7722AEC2320021C9885A9A6A4321"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/021-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/022-get_window_state.json",
+      "length": 220014,
+      "sha256": "A2E2AA5BD4DBD6B490B81FAE8F8E5F1EACEA8AFF9103D5E4089590E47F24B776"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/022-screenshot-0.jpg",
+      "length": 139883,
+      "sha256": "39050399440FB20926F7E8792E14A9C5447E23BFF9FA76469A8B8254C2EB3E0A"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/023-get_window_state.json",
+      "length": 205997,
+      "sha256": "E1FAB2B1DAEBCD3790ECD9731FD03F79B4ED1E3B6D1383BAF57828D53CEE8AA6"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/023-screenshot-0.jpg",
+      "length": 139518,
+      "sha256": "8CF339E772D3CDDBC7CB2E710AC21571482CEE6FD4A89524AAD8C9DF6224C2D0"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/024-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/025-list_windows.json",
+      "length": 332,
+      "sha256": "A005D9A811971307EF0140E9FBB3EB9702D621521A1EE1EFDDCFC64469526504"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/026-list_windows.json",
+      "length": 97,
+      "sha256": "634292AC43FF2E4BFBAC2C76D46772FAD2875211F51C9D59A7CC2BE6BE5791B5"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/calls.jsonl",
+      "length": 11433,
+      "sha256": "1D006E284F52E66B287B1A1D06229A4645A6D86BECAF15DCC008DD2AC6AC90C4"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+      "length": 7691,
+      "sha256": "4FC60CEB3354410384993FACAE132FA16CB935D16DE1324AD18B088C59668D8E"
+    },
+    {
+      "path": "checks/u-original-restart-observation/originals/observations/evidence-index.json",
+      "length": 14258,
+      "sha256": "AA4D3413D087189FF897FFBDE4B646262B2CF78DCCC3935BAEFC60B8791F1A83"
+    },
+    {
+      "path": "checks/u-original-restart-observation/privacy-review.json",
+      "length": 6507,
+      "sha256": "2FD02E1B33BB1147357E67A0D17DC78FAAD3BCEB9ABF517F17B2DCC23D5695E1"
+    },
+    {
+      "path": "checks/u-original-restart-observation/README.md",
+      "length": 2927,
+      "sha256": "E5272295BCB36A1916FFCBAF13FD99786853D624A7F914863947C79779379966"
+    },
+    {
+      "path": "checks/u-original-restart-observation/snapshot-manifest.json",
+      "length": 10843,
+      "sha256": "41C96FA34F69EF4E9B78F371FEAA25DD3ED2954DB6DE4B3091C61C2E6AE1E05C"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/events-whitelist.json",
+      "length": 2355,
+      "sha256": "30F64EDC38B44009CE0AED5ABB11D99B72F62593BDE4CFB86F49F7D996DD1D8F"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/freeze-assessment.py",
+      "length": 11497,
+      "sha256": "1F792353354CEE1AB16B172527D48E5B281FF05BC405CDF043DBD63BC5EDE03A"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/closing-assessment/closing-assessment.md",
+      "length": 5765,
+      "sha256": "C03BCC5B1968D1EFF15F976AA286792DD085EEB9E0EDD0A2CCF8D8819146F404"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/closing-assessment/final.md",
+      "length": 679,
+      "sha256": "FD7C5B8FD721091C219F7DCCB9996A71B18EFDB91729A97F1949F572FD4FBDA9"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/closing-assessment/prompt.txt",
+      "length": 1633,
+      "sha256": "438DC084E7D45A6E63DDF148C91B7356AE5E76E7C08378BE5CD7E48B1A6FD545"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/final.md",
+      "length": 951,
+      "sha256": "1F2ED66DD63ABAABDF67D9536924D623C97C07CD0DBAD9CD762809E01E769C34"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/invocation.json",
+      "length": 3216,
+      "sha256": "542F197424A346E448A5ACDC8CC86778DC6327F55FBF1732FBBD01C9FCE69136"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/001-list_windows.json",
+      "length": 332,
+      "sha256": "A005D9A811971307EF0140E9FBB3EB9702D621521A1EE1EFDDCFC64469526504"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/002-get_window.json",
+      "length": 223,
+      "sha256": "CF12BBD374751E63CD585BDF8922DDC02924B44CA463B14BA389B820F33DCEAF"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/003-activate_window.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/004-get_window_state.json",
+      "length": 81066,
+      "sha256": "E200F9DD68C822D2CFC07C7F965566E658D80B2AEF6798D7D71BB742CEFE8A48"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/004-screenshot-0.jpg",
+      "length": 58678,
+      "sha256": "A35B28721D134DC18233A3EF0474047C655D20E963E61BE4078A4DA6B4213BDC"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/005-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/006-get_window_state.json",
+      "length": 88239,
+      "sha256": "EABF992250B9B9ED246F8D0D608E61FA563F07B0584653F82D8D80D35C8D4762"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/006-screenshot-0.jpg",
+      "length": 58863,
+      "sha256": "8B84F7AA06ED0457D4D2F2453C847F4825BC69C54AE00589AB9E8DE1171AD465"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/006-screenshot-1.jpg",
+      "length": 3606,
+      "sha256": "2231F33002971914673251FD4031640D8D5272CAD8C8E0B044DCAF594E78EAAB"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/007-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/008-get_window_state.json",
+      "length": 75670,
+      "sha256": "910C92CB590FF87ADCEF228F33433CA4413C6C637DEBF87766EC6A4FAD423391"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/008-screenshot-0.jpg",
+      "length": 54627,
+      "sha256": "80DCF556E53757FB66564C4104922BBB05B219FD40A4DFD1243D898B1F0E68C7"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/009-get_window_state.json",
+      "length": 76594,
+      "sha256": "B8EFEB3FEF5E36235E497B2AF565522B0ABBA9E3894C5F272761FA2A3F40EB2C"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/009-screenshot-0.jpg",
+      "length": 55320,
+      "sha256": "3A76E1E23E33B2F8B298C7F9992D1CF8F644F0779D251DB6E7317817467C9FC6"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/010-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/011-get_window_state.json",
+      "length": 180181,
+      "sha256": "58DF37954A4C0B50C49FB7484CDA430D97736E82668197596C90E11DC4AA7DA8"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/011-screenshot-0.jpg",
+      "length": 116090,
+      "sha256": "07E64DDD4355EDCF4713BC1ECD01BBF3121480F3C2CE836967E80BB11A0A5479"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/012-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/013-get_window_state.json",
+      "length": 211897,
+      "sha256": "C70885DDA64C686ADDA8F7F2C52D118CED7858DDCAC3E49D3B7789C4BDB4A31E"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/013-screenshot-0.jpg",
+      "length": 139876,
+      "sha256": "AF664C5F194C983DAE55E2DB93407486EF3E77A168B8DC053B6182508EFC7311"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/014-get_window_state.json",
+      "length": 214976,
+      "sha256": "8162F6B50AAD5D8E62B9D1F05F45C035F1482D16E9CB3E4F20C73EB7DA2143E1"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/014-screenshot-0.jpg",
+      "length": 138382,
+      "sha256": "DEDA22208D9B31B460F1B4384C198B1D72706EAA90C4085DE4AC6C5DBD019F35"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/015-scroll.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/016-get_window_state.json",
+      "length": 226396,
+      "sha256": "6AD179D6722995029979CADC5AE4AEAD9484521847068D1DAA6BD807141F10FA"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/016-screenshot-0.jpg",
+      "length": 145844,
+      "sha256": "760E7C5407318B128EEFC0AC25DDD345373AB3005614089B0A5B78450D6E3E63"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/017-get_window_state.json",
+      "length": 225268,
+      "sha256": "8D261E944DED5557E8F6F9125C0596E28CB54FA13AE6BE557C0C86E5A1406084"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/017-screenshot-0.jpg",
+      "length": 144998,
+      "sha256": "61F8743FC7636F0F6A7CD1A0261AAFE6EE2EA40CA81CA7CD9E34928298B2AF55"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/018-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/019-get_window_state.json",
+      "length": 245416,
+      "sha256": "273E787E353A12EB94E16A732633A0B1FEAD1BC2E94A3216C7147524E694B108"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/019-screenshot-0.jpg",
+      "length": 160108,
+      "sha256": "3183473BEAA8C63C6485627EE49101E21D7572FEB56EBDC3CA6D89EA5113C155"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/020-get_window_state.json",
+      "length": 246314,
+      "sha256": "A1805201AE68DEC4BF9E37D9873A8B867DF5E7B7E665BC6AE416098EEF9987FC"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/020-screenshot-0.jpg",
+      "length": 159608,
+      "sha256": "EC04BB1D6A54B28B0974B17343FEA7DCC0DD7722AEC2320021C9885A9A6A4321"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/021-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/022-get_window_state.json",
+      "length": 220014,
+      "sha256": "A2E2AA5BD4DBD6B490B81FAE8F8E5F1EACEA8AFF9103D5E4089590E47F24B776"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/022-screenshot-0.jpg",
+      "length": 139883,
+      "sha256": "39050399440FB20926F7E8792E14A9C5447E23BFF9FA76469A8B8254C2EB3E0A"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/023-get_window_state.json",
+      "length": 205997,
+      "sha256": "E1FAB2B1DAEBCD3790ECD9731FD03F79B4ED1E3B6D1383BAF57828D53CEE8AA6"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/023-screenshot-0.jpg",
+      "length": 139518,
+      "sha256": "8CF339E772D3CDDBC7CB2E710AC21571482CEE6FD4A89524AAD8C9DF6224C2D0"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/024-click.json",
+      "length": 4,
+      "sha256": "74234E98AFE7498FB5DAF1F36AC2D78ACC339464F950703B8C019892F982B90B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/025-list_windows.json",
+      "length": 332,
+      "sha256": "A005D9A811971307EF0140E9FBB3EB9702D621521A1EE1EFDDCFC64469526504"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/026-list_windows.json",
+      "length": 97,
+      "sha256": "634292AC43FF2E4BFBAC2C76D46772FAD2875211F51C9D59A7CC2BE6BE5791B5"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/calls.jsonl",
+      "length": 11433,
+      "sha256": "1D006E284F52E66B287B1A1D06229A4645A6D86BECAF15DCC008DD2AC6AC90C4"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+      "length": 7691,
+      "sha256": "4FC60CEB3354410384993FACAE132FA16CB935D16DE1324AD18B088C59668D8E"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evidence-index.json",
+      "length": 14258,
+      "sha256": "AA4D3413D087189FF897FFBDE4B646262B2CF78DCCC3935BAEFC60B8791F1A83"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/README.md",
+      "length": 2916,
+      "sha256": "12CE11BE8F117DA7467C145ECA54CA05142B541204BD933B4CA1A3270099FE1B"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/root-exit-observation.json",
+      "length": 1025,
+      "sha256": "F9EF872A6365286950640103E7A072B497D36A06E02454F3783634C313679B3F"
+    },
+    {
+      "path": "checks/u-original-closing-assessment/source-ready-proposal.json",
+      "length": 50950,
+      "sha256": "321CACEBDFC06142B5403C4A0D98654623135C4C1D7632418D1145E21E731BFE"
+    },
+    {
+      "path": "checks/pmo-range-direct-review-20261003/browser-review.jpg",
+      "length": 86494,
+      "sha256": "D980ACBEB9154883D262F655C43CCF9745736A7042DD6376E6B7B7A335DD6584"
+    },
+    {
+      "path": "checks/pmo-range-direct-review-20261003/image-bindings.json",
+      "length": 8693,
+      "sha256": "A38EFE03134A1013111C6D0D378D2C8F9021BA744EE5BF2E388C0C322F59044F"
+    },
+    {
+      "path": "checks/pmo-range-direct-review-20261003/README.md",
+      "length": 3542,
+      "sha256": "33D69A5C37D9CD1224241F5F35AEF2EA694AEE04F5F6AA98642D24FE0F3038DA"
+    },
+    {
+      "path": "checks/pmo-range-direct-review-20261003/review-original.json",
+      "length": 11751,
+      "sha256": "7971FEAA3CBAA4C2FBBC442FEBD75ED8DB2ED654F8E333E8813FD78A9565668A"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/checks.json",
+      "length": 25772,
+      "sha256": "F61101137F62AC36901CBE141B787399A5815C1EE4A2025A82CBB4079E947597"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/data/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json",
+      "length": 14075738,
+      "sha256": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/data/Drafts/31E1AE58D13395DE138AD21F335E381D56A242DFEAE6AEAB6BAD290DD66ABE0A.json.bak",
+      "length": 14065527,
+      "sha256": "503C841D1F77A7C7DC778E2EF1EFC4246CFB720ED25135B5BA5BA23F71882163"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/baseline-checkpoint.json",
+      "length": 13473071,
+      "sha256": "D70BF73BA507FF5E6CED1C620DA51E543A1A2E17C9FCB37612A58FB9A3A5C532"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/baseline-manifest.json",
+      "length": 1445,
+      "sha256": "FA2753D01CABD32D571E038F4FD09CA3FCF41012AD08E58F568A8B6EC39B7C4E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/close-fresh-inventory.json",
+      "length": 457,
+      "sha256": "58CDF7597122C939FBE275B708D889795945CB3D00038CE754ADF4AC7631AE4E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/Compare-U.py",
+      "length": 6932,
+      "sha256": "6D530B7B8534E365D5A32A98FC6207AB67DC1277D987A69BD3B11AF6AAF124AE"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/evaluator-close-action.jsonl",
+      "length": 11433,
+      "sha256": "1D006E284F52E66B287B1A1D06229A4645A6D86BECAF15DCC008DD2AC6AC90C4"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/evaluator-close-evidence.json",
+      "length": 2287,
+      "sha256": "3E995FD3174D9009F8223698FB8145D4D2B53CA9AC2CBC28EB142ECFEA9D153D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/evaluator-post-close-inventory.json",
+      "length": 97,
+      "sha256": "634292AC43FF2E4BFBAC2C76D46772FAD2875211F51C9D59A7CC2BE6BE5791B5"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/evaluator-pre-close.jpg",
+      "length": 139518,
+      "sha256": "8CF339E772D3CDDBC7CB2E710AC21571482CEE6FD4A89524AAD8C9DF6224C2D0"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/launch-receipt.json",
+      "length": 235268,
+      "sha256": "20466F53CC82D4E488DCEDD6C5B1E69018BDE2D140CF8282659FE1033AD9FB6E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/native-binding.json",
+      "length": 339,
+      "sha256": "7046BC9DA33E2F19ACCD022847D1EB8760F925BA7D8BA68D1AB364CECACE65A7"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/preparation.json",
+      "length": 2377,
+      "sha256": "8F620A41B1D887A27528948F994269D0C442F1FEF285C2B7082F630A54ACA6DC"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/previous-checkpoint.json",
+      "length": 14075738,
+      "sha256": "835B39AE04A359719277057F6981B0FE9ED2BB293542DD0870B726D51497B539"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/previous-manifest.json",
+      "length": 1913,
+      "sha256": "52F6BB5CF22208535A4F66FC0CD4B36838CA4597EBA784A6E9D67588395D4727"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/process-binding.json",
+      "length": 557,
+      "sha256": "47E211C4EC1A660C5B88CFA0F5FA30C2333B98873708BE7F204EDC7C6B463436"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/Read-ClosedRestartCopy.ps1",
+      "length": 12176,
+      "sha256": "9E5355D1324996A570E7D98037EF313BE7A58F71AA6169CA67B472F352CFA9C4"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/inputs/Read-UProduction.ps1",
+      "length": 4967,
+      "sha256": "3E95F04777D5775F9B40DD989880DC3F7BC4537FAC91DC59006D57C37EFAC119"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/preservation.json",
+      "length": 7248,
+      "sha256": "E379637B322714C0F831F91FE95191806F92CBF799848BC6FF362257904B6B89"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/production.json",
+      "length": 2986833,
+      "sha256": "880D9230322601B69BF628DD03643622C753F726CE2E07EF302285B89197FAA5"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/summary.json",
+      "length": 561,
+      "sha256": "577C6B1B80D4456C0A4384C14F9E03312DE0235DC90E0B9CA5BADD2AB17CA58E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/close-fresh-inventory.json",
+      "length": 457,
+      "sha256": "58CDF7597122C939FBE275B708D889795945CB3D00038CE754ADF4AC7631AE4E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/evaluator-close-evidence.json",
+      "length": 2287,
+      "sha256": "3E995FD3174D9009F8223698FB8145D4D2B53CA9AC2CBC28EB142ECFEA9D153D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/native-binding.json",
+      "length": 339,
+      "sha256": "7046BC9DA33E2F19ACCD022847D1EB8760F925BA7D8BA68D1AB364CECACE65A7"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/process-after-close.json",
+      "length": 124,
+      "sha256": "979B2C19EE76090302E6B9887E27BA50D4CC54A952312E8C9191EBA47BCAFA55"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/process-binding.json",
+      "length": 557,
+      "sha256": "47E211C4EC1A660C5B88CFA0F5FA30C2333B98873708BE7F204EDC7C6B463436"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/cli-exec-help.txt",
+      "length": 4066,
+      "sha256": "94753A6510FAE65C1FBB3919C4220B56D5848B8095BACB336EBA08ED0A3C36E8"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/cli-exec-resume-help.txt",
+      "length": 2886,
+      "sha256": "2EA8ED87C40471F4C959C9909622FCB3E992A6422B9438CCCE1A32AF1E30C84D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/cli-invocation-help.txt",
+      "length": 2886,
+      "sha256": "2EA8ED87C40471F4C959C9909622FCB3E992A6422B9438CCCE1A32AF1E30C84D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/cli-invocation-v2-help.txt",
+      "length": 2886,
+      "sha256": "2EA8ED87C40471F4C959C9909622FCB3E992A6422B9438CCCE1A32AF1E30C84D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/context-disclosure.txt",
+      "length": 1647,
+      "sha256": "4A16ACD0646E950EA916E5107B67D7D62C60B58E63AE403E2E1768D79881121B"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/independent-source-review.md",
+      "length": 3088,
+      "sha256": "C78C742EB1D90C0C7D2015B974A13B0D946E5922E383DA5B03BE8FEEDC207D24"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/original-candidate-check.json",
+      "length": 1029,
+      "sha256": "9CE3D97B85B20BD3FBC1374AF7CAFE6251B7ADE46C7CBAE52E43CF45D0139501"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/preflight-v2.json",
+      "length": 261,
+      "sha256": "88FDB975E0C8F4137778CEDF350EB2C7BA0448C6D58BBFCFF41803CB30CD5DAF"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/preflight.json",
+      "length": 203,
+      "sha256": "25DBFA7924C56D5C625E3CC6BA2CE976D245345E43228249A61E89178D3BE0E3"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/preparation-v2.json",
+      "length": 4000,
+      "sha256": "12C6B1986FD20E80C8BCE5075485D972AB12CCBC3505D2E208256BDEF7C0EE1E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/preparation.json",
+      "length": 3187,
+      "sha256": "433465BA582B5F2DB276CFC35FF1D1EA6915190E9767F1552FC37AA677A30A0C"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/README.md",
+      "length": 3695,
+      "sha256": "6C753FB1DD90BCA6116A49099445DDFB8840B334DE1030DA9D907432C7240D1E"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/restart-business-template.txt",
+      "length": 4479,
+      "sha256": "5C5D0482E7EC3B87B9FA81960A7EDC8B0D8E48E08AA17288C897CF841AF8D971"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/Resume-U-v2.ps1",
+      "length": 5927,
+      "sha256": "569F1E42E6792E1A1F262CA4832D7BE05D46D36BAF7985B9EE45B788A0BC52E2"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/Resume-U.ps1",
+      "length": 5676,
+      "sha256": "704CD250B1D3B63D809C9E8EA60D9EEBD23F403247EC674F6F523FCF858B055A"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/source-manifest.json",
+      "length": 4233,
+      "sha256": "08121D95273B19E51F28D16576A4BA061791CE6772C5405B80304D2B8F7BD497"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/cli-exec-help.txt",
+      "length": 4066,
+      "sha256": "94753A6510FAE65C1FBB3919C4220B56D5848B8095BACB336EBA08ED0A3C36E8"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/cli-exec-resume-help.txt",
+      "length": 2886,
+      "sha256": "2EA8ED87C40471F4C959C9909622FCB3E992A6422B9438CCCE1A32AF1E30C84D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/cli-invocation-help.txt",
+      "length": 2886,
+      "sha256": "2EA8ED87C40471F4C959C9909622FCB3E992A6422B9438CCCE1A32AF1E30C84D"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/context-disclosure.txt",
+      "length": 1647,
+      "sha256": "4A16ACD0646E950EA916E5107B67D7D62C60B58E63AE403E2E1768D79881121B"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/manifest.json",
+      "length": 1425,
+      "sha256": "7D7E95D43818E64C0D9D3FAAA9137D8CD701BC7CCF31BC12B7F8B3AA156CBF62"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/original-candidate-check.json",
+      "length": 1029,
+      "sha256": "9CE3D97B85B20BD3FBC1374AF7CAFE6251B7ADE46C7CBAE52E43CF45D0139501"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/preflight.json",
+      "length": 203,
+      "sha256": "25DBFA7924C56D5C625E3CC6BA2CE976D245345E43228249A61E89178D3BE0E3"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/preparation.json",
+      "length": 3187,
+      "sha256": "433465BA582B5F2DB276CFC35FF1D1EA6915190E9767F1552FC37AA677A30A0C"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/restart-business-template.txt",
+      "length": 4479,
+      "sha256": "5C5D0482E7EC3B87B9FA81960A7EDC8B0D8E48E08AA17288C897CF841AF8D971"
+    },
+    {
+      "path": "checks/u-cli-resume-preparation/v1/Resume-U.ps1",
+      "length": 5676,
+      "sha256": "704CD250B1D3B63D809C9E8EA60D9EEBD23F403247EC674F6F523FCF858B055A"
+    },
+    {
+      "path": "checks/u-restart-ordinary-readback/independent-source-review.md",
+      "length": 2259,
+      "sha256": "8D0D0C78E4987C912BA10A35AE8EF0267A5300FD72465BC9B52CE008E1736EE8"
+    },
+    {
+      "path": "checks/u-restart-ordinary-readback/preflight.json",
+      "length": 329,
+      "sha256": "AE39D7AE7B81CA274F547C3BBED59382FE0B26A051F72F0531AC107E1CBBABFA"
+    },
+    {
+      "path": "checks/u-restart-ordinary-readback/Read-ClosedRestartCopy.ps1",
+      "length": 12176,
+      "sha256": "9E5355D1324996A570E7D98037EF313BE7A58F71AA6169CA67B472F352CFA9C4"
+    },
+    {
+      "path": "checks/u-restart-ordinary-readback/README.md",
+      "length": 5257,
+      "sha256": "1754E199613D2E9BB2BC2DE212505566499DDE00E468BD46EF6BEFCCFCA6E81D"
+    },
+    {
+      "path": "checks/u-restart-ordinary-readback/source-manifest.json",
+      "length": 928,
+      "sha256": "CAB6C813B6844657421909785B7018D91CFAA1949E050F5C8C8A522702CFD051"
+    },
+    {
+      "path": "checks/u-restart-v-partial-checkpoint-20261003.md",
+      "length": 5072,
+      "sha256": "C2BA315D40A8AFF75156C41B8985D4CD455E0C78BAE12B8A4427227C9B60A515"
+    }
+  ],
+  "fileCount": 168,
+  "bytes": 67157206,
+  "excluded": [
+    {
+      "path": "checks/u-cli-resume-preparation/actual-restart/after-close/data/Drafts/.writer.lock",
+      "length": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "reason": "Empty historical writer lock; no business data."
+    }
+  ],
+  "verifiedSourceManifests": [
+    {
+      "manifest": {
+        "path": "checks/u-cli-resume-preparation/source-manifest.json",
+        "length": 4233,
+        "sha256": "08121D95273B19E51F28D16576A4BA061791CE6772C5405B80304D2B8F7BD497"
+      },
+      "verifiedEntries": 25
+    },
+    {
+      "manifest": {
+        "path": "checks/u-restart-ordinary-readback/source-manifest.json",
+        "length": 928,
+        "sha256": "CAB6C813B6844657421909785B7018D91CFAA1949E050F5C8C8A522702CFD051"
+      },
+      "verifiedEntries": 4
+    }
+  ],
+  "readbackBindingsVerified": 16,
+  "readbackDataCopiesVerified": 3,
+  "readbackResult": {
+    "counts": {
+      "pass": 51,
+      "fail": 0,
+      "missing": 0
+    },
+    "failed": [],
+    "originalUUnchanged": true,
+    "closedCopyUnchangedByReader": true,
+    "preservedReadbackCopyUnchanged": true,
+    "closeActor": "original-U-evaluator",
+    "rootPerformedClose": false,
+    "scope": "Stored values, buffers, Undo and unrelated state only; resumed evaluator visible observations are separate evidence.",
+    "unfamiliarEvaluation": "original evaluator continuation; assess from evaluator report, not these data checks",
+    "humanAcceptance": "not_run"
+  },
+  "readbackRerun": false,
+  "preCloseImagePreviouslyReviewedAndHashMatched": true,
+  "restartOriginalsVerified": 45,
+  "sameRestartLinkClosureCopiesVerified": 45,
+  "pmoOriginalAttachmentPortableImageBindingsVerified": 7,
+  "links": {
+    "checked": 82,
+    "broken": 0,
+    "records": [
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "017-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "020-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "020-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "023-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "023-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "020-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "023-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "004-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "006-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "011-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "014-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "024-click.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "025-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "026-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "calls.jsonl",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/originals/observations/evaluation.md",
+        "target": "evidence-index.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "originals/observations/evaluation.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "originals/final.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "snapshot-manifest.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "privacy-review.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "originals/observations/calls.jsonl",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "originals/observations/evidence-index.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "derived-target-inventories/001-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "derived-target-inventories/025-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-restart-observation/README.md",
+        "target": "derived-target-inventories/026-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/closing-assessment/closing-assessment.md",
+        "target": "../run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/closing-assessment/closing-assessment.md",
+        "target": "../run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/closing-assessment/closing-assessment.md",
+        "target": "../run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/020-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/closing-assessment/closing-assessment.md",
+        "target": "../run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/023-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "017-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "020-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "020-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "023-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "023-get_window_state.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "020-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "023-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "004-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "006-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "011-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "014-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "017-screenshot-0.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "024-click.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "025-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "026-list_windows.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "calls.jsonl",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "target": "evidence-index.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "originals/closing-assessment/closing-assessment.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "originals/closing-assessment/prompt.txt",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "originals/closing-assessment/final.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "originals/run-restartobservation-a6a0aa08ac7f4606ae2d5a86db17f3ed/observations/evaluation.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "../u-original-restart-observation/privacy-review.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "../u-original-restart-observation/snapshot-manifest.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "events-whitelist.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "root-exit-observation.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "source-ready-proposal.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-original-closing-assessment/README.md",
+        "target": "../pmo-range-direct-review-20261003/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "review-original.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "browser-review.jpg",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/017-range-four-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/019-paste-menu-settled-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/019-paste-menu-settled-1.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/021-paste-keyboard-undo-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/033-visible-fill-source-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/034-visible-fill-released-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "../u-range-input-ordinary/ordinary/035-visible-fill-keyboard-undo-0.jpg",
+        "exists": true,
+        "selectionOrProposal": false,
+        "alreadyPortable": true
+      },
+      {
+        "report": "checks/pmo-range-direct-review-20261003/README.md",
+        "target": "image-bindings.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-cli-resume-preparation/README.md",
+        "target": "../u-restart-ordinary-readback/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "source-ready-proposal.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-original-restart-observation/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-original-closing-assessment/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-cli-resume-preparation/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-cli-resume-preparation/actual-restart/after-close/summary.json",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-restart-ordinary-readback/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../pmo-range-direct-review-20261003/README.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      },
+      {
+        "report": "checks/u-pmo-source-ready-20261003/README.md",
+        "target": "../u-restart-v-partial-checkpoint-20261003.md",
+        "exists": true,
+        "selectionOrProposal": true,
+        "alreadyPortable": false
+      }
+    ]
+  },
+  "credentialPatternFilesScanned": 138,
+  "credentialPatternMatches": 0,
+  "limits": [
+    "Original U is learned continuation on old candidate, not a new unfamiliar evaluator.",
+    "Closed-copy checks concern stored state; visible observations are separate.",
+    "Closing assessment first-phase statements are retrospective, not fresh execution.",
+    "PMO direct pixel review is bounded to seven images from the repaired candidate.",
+    "External skill documentation paths and hashes are metadata only; those files are not selected.",
+    "Generic ChatGPT native inventory metadata is preserved as original and qualified separately.",
+    "V checkpoint text is retained without verifying V outputs in this proposal.",
+    "No UI, model, build, reader, stage, commit, portable copy or ledger append was performed."
+  ],
+  "sourceBytesUnchanged": true,
+  "ledgerSha256Before": "C1029CF7355DE8B6A60B37924BF825390E1998AE48CF1000ACD94E6B29BCF251",
+  "ledgerSha256After": "C1029CF7355DE8B6A60B37924BF825390E1998AE48CF1000ACD94E6B29BCF251",
+  "ledgerModified": false,
+  "portableCopied": false
+}

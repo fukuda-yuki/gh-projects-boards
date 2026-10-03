@@ -1,0 +1,342 @@
+[
+  {
+    "name": "ExactScopeVersionRevisionAndSingleCreation",
+    "outcome": "pass",
+    "actual": {
+      "Host": "example.test",
+      "ViewerId": 42
+    }
+  },
+  {
+    "name": "CompletedOriginalBindingRetainsUnknownRequestAndNoManufacturedResponse",
+    "outcome": "pass",
+    "actual": {
+      "Id": "9806180e5ae448bfadf1e613a45be52c",
+      "LocalId": "local-053bb67193f544048f8c5f7a3c0bd374",
+      "Stamp": 66,
+      "Repository": {
+        "Id": "R-first",
+        "Name": "sample-user/first",
+        "IssuesEnabled": true,
+        "Archived": false,
+        "CanCreate": true,
+        "At": "2026-10-03T05:06:05.7416464+09:00",
+        "Allowed": true
+      },
+      "Title": "V follow-up review",
+      "Selects": [
+        {
+          "FieldId": "P1-status",
+          "FieldName": "Status",
+          "OptionId": "done",
+          "OptionName": "Done",
+          "ExplicitClear": false,
+          "Intent": "Set"
+        }
+      ],
+      "Authorized": true,
+      "Dispatched": true,
+      "Received": null,
+      "Verified": {
+        "Id": "created1",
+        "RepositoryId": "R-first",
+        "Number": 1001,
+        "Url": "https://example.test/sample-user/first/issues/1001",
+        "Title": "V follow-up review",
+        "At": "2026-10-03T05:29:54.3908011+09:00"
+      },
+      "ItemId": "item-created1",
+      "MembershipDispatched": true,
+      "Fields": [
+        {
+          "Id": "2bd22d9683c64585bbe78477996c0322",
+          "Key": {
+            "Kind": "Select",
+            "NodeId": "item-created1",
+            "ProjectId": "P1",
+            "FieldId": "P1-status"
+          },
+          "ItemId": "item-created1",
+          "IssueId": "created1",
+          "Identity": "https://example.test/sample-user/first/issues/1001",
+          "FieldName": "Status",
+          "Expected": "todo",
+          "Intended": {
+            "Value": "done",
+            "Clear": false
+          },
+          "Stamp": 66,
+          "State": 2,
+          "Attempts": [
+            {
+              "Number": 1,
+              "At": "2026-10-03T05:30:39.8696965+09:00",
+              "State": 2,
+              "Reason": "Read-back"
+            }
+          ],
+          "Reason": "独立読み戻し一致",
+          "Verification": {
+            "Id": "cb7007fc844442aca42e9debb9b9caf1",
+            "Project": {
+              "Scope": {
+                "Host": "example.test",
+                "ViewerId": 42
+              },
+              "NodeId": "P1"
+            },
+            "At": "2026-10-03T05:30:41.1612313+09:00",
+            "Value": "done",
+            "Availability": 0,
+            "Reason": null,
+            "Options": [
+              {
+                "Id": "todo",
+                "Name": "Todo"
+              },
+              {
+                "Id": "done",
+                "Name": "Done"
+              }
+            ]
+          },
+          "NotBefore": null
+        }
+      ],
+      "Completed": true,
+      "Reason": "今回の設定完了を検証済み。以前の作成試行は依然不確定です。",
+      "PreviousAttempt": null,
+      "EarlierUncertain": true,
+      "UserBound": true,
+      "ReceivedId": null,
+      "EarlierFields": [],
+      "SetupReviewedTitle": "V follow-up review",
+      "ReceivedItemId": "item-created1",
+      "SetupIntents": [
+        {
+          "FieldId": "P1-status",
+          "FieldName": "Status",
+          "OptionId": "done",
+          "OptionName": "Done",
+          "ExplicitClear": false,
+          "Intent": "Set"
+        }
+      ],
+      "EarlierSetupIntents": [
+        [
+          {
+            "FieldId": "P1-status",
+            "FieldName": "Status",
+            "OptionId": "done",
+            "OptionName": "Done",
+            "ExplicitClear": false,
+            "Intent": "Set"
+          }
+        ]
+      ],
+      "PlanningIntents": [],
+      "SetupPlanningIntents": [],
+      "EarlierPlanningIntents": [
+        []
+      ]
+    }
+  },
+  {
+    "name": "VerifiedIssueAndMembershipRetainExactBoundIdentity",
+    "outcome": "pass",
+    "actual": {
+      "Id": "created1",
+      "RepositoryId": "R-first",
+      "Number": 1001,
+      "Url": "https://example.test/sample-user/first/issues/1001",
+      "Title": "V follow-up review",
+      "At": "2026-10-03T05:29:54.3908011+09:00"
+    }
+  },
+  {
+    "name": "CompletedStatusRetainsIndependentlyVerifiedDone",
+    "outcome": "pass",
+    "actual": {
+      "Id": "2bd22d9683c64585bbe78477996c0322",
+      "Key": {
+        "Kind": "Select",
+        "NodeId": "item-created1",
+        "ProjectId": "P1",
+        "FieldId": "P1-status"
+      },
+      "ItemId": "item-created1",
+      "IssueId": "created1",
+      "Identity": "https://example.test/sample-user/first/issues/1001",
+      "FieldName": "Status",
+      "Expected": "todo",
+      "Intended": {
+        "Value": "done",
+        "Clear": false
+      },
+      "Stamp": 66,
+      "State": 2,
+      "Attempts": [
+        {
+          "Number": 1,
+          "At": "2026-10-03T05:30:39.8696965+09:00",
+          "State": 2,
+          "Reason": "Read-back"
+        }
+      ],
+      "Reason": "独立読み戻し一致",
+      "Verification": {
+        "Id": "cb7007fc844442aca42e9debb9b9caf1",
+        "Project": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "At": "2026-10-03T05:30:41.1612313+09:00",
+        "Value": "done",
+        "Availability": 0,
+        "Reason": null,
+        "Options": [
+          {
+            "Id": "todo",
+            "Name": "Todo"
+          },
+          {
+            "Id": "done",
+            "Name": "Done"
+          }
+        ]
+      },
+      "NotBefore": null
+    }
+  },
+  {
+    "name": "CurrentCoreDescribesCompletedBoundCreationWithApprovedFields",
+    "outcome": "pass",
+    "actual": {
+      "Knowledge": 4,
+      "RowLabel": "設定確認済み",
+      "Description": "Issue・Project所属・承認した設定を確認済みです。"
+    }
+  },
+  {
+    "name": "CurrentCoreSeparatesIssueMembershipAndVerifiedStatusStages",
+    "outcome": "pass",
+    "actual": {
+      "Issue": "Issue：独立確認済み",
+      "Membership": "Project 1への所属：確認済み",
+      "Fields": [
+        "Status → Done：設定値を確認済み"
+      ]
+    }
+  },
+  {
+    "name": "CurrentCompletionWordingDescribesSetupWithoutClaimingOriginalCreateSuccess",
+    "outcome": "pass",
+    "actual": "Issueの確認とProject設定が完了しました。"
+  },
+  {
+    "name": "CompletedOriginalCreationDoesNotReappearAsUnresolvedWork",
+    "outcome": "pass",
+    "actual": null
+  },
+  {
+    "name": "OriginalFailedUpdateAndLegacyApprovalReasonRemainExact",
+    "outcome": "pass",
+    "actual": {
+      "Id": "b3212614674544b8948b980b08b9d682",
+      "Key": {
+        "Kind": "Title",
+        "NodeId": "I1",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "ItemId": "P1-T1",
+      "IssueId": "I1",
+      "Identity": "sample-user/first #1 / I1",
+      "FieldName": "Issue title（全Projectで共有）",
+      "Expected": "Issue 1",
+      "Intended": {
+        "Value": "Weekly review completed",
+        "Clear": false
+      },
+      "Stamp": 42,
+      "State": 8,
+      "Attempts": [
+        {
+          "Number": 1,
+          "At": "2026-10-03T04:21:42.5897506+09:00",
+          "State": 3,
+          "Reason": "PermissionDenied"
+        }
+      ],
+      "Reason": "ユーザーが以前の承認を撤回。試行履歴を保持し、新たな取得・レビューが必要。",
+      "Verification": null,
+      "NotBefore": null
+    }
+  },
+  {
+    "name": "LegacyApprovalPresentationDoesNotInventWithdrawalOrRequireCurrentRepair",
+    "outcome": "pass",
+    "actual": "以前の承認は終了しています。"
+  },
+  {
+    "name": "IndependentI2ConfirmedDraftAndUnconfirmedTextRemain",
+    "outcome": "pass",
+    "actual": {
+      "Key": {
+        "Kind": "Title",
+        "NodeId": "I2",
+        "ProjectId": null,
+        "FieldId": null
+      },
+      "Baseline": "Issue 2",
+      "SourceProject": {
+        "Scope": {
+          "Host": "example.test",
+          "ViewerId": 42
+        },
+        "NodeId": "P1"
+      },
+      "RetrievedAt": "2026-09-28T00:24:19.6030377+09:00",
+      "Change": {
+        "Value": "T next-week draft",
+        "Clear": false
+      },
+      "Buffer": "Z",
+      "Stamp": 44,
+      "Observation": {
+        "Id": "3238e16344594bf5a1d5e87de5f7356d",
+        "Project": {
+          "Scope": {
+            "Host": "example.test",
+            "ViewerId": 42
+          },
+          "NodeId": "P1"
+        },
+        "At": "2026-10-03T05:30:42.2395831+09:00",
+        "Value": "Issue 2",
+        "Availability": 0,
+        "Reason": "未確定文字を保持しています。文字を確定・取消してから再取得してください。",
+        "Options": []
+      },
+      "Conflict": false
+    }
+  },
+  {
+    "name": "RestorePreservesFullJournalAndAllUnrelatedBusinessRecords",
+    "outcome": "pass",
+    "actual": "Exact typed serialization equality across journal, fields, Undo history, registrations, planning, structural notifications, local rows, view preferences and historical decisions."
+  },
+  {
+    "name": "PresentationDoesNotMutateRestoredWorkspace",
+    "outcome": "pass",
+    "actual": "Snapshot serialization unchanged before/after presentation calls."
+  },
+  {
+    "name": "AllPreservedInputsRuntimeAndCopiedDataRemainByteIdentical",
+    "outcome": "pass",
+    "actual": []
+  }
+]

@@ -1,0 +1,2064 @@
+{
+  "kind": "Second append-only addition: completed daily-progress compound input and final focused validation",
+  "createdAtUtc": "2026-09-27T11:29:02.596012+00:00",
+  "hashAlgorithm": "SHA256",
+  "priorManifests": [
+    {
+      "path": "manifest.json",
+      "sha256": "925D4CCE4C912E3205D4B92282012FBBCAD0695673B660D3EB020E3AFEE4E6A7",
+      "originalFilesVerified": 2188,
+      "bytes": 88267420
+    },
+    {
+      "path": "manifest-additions-20260927.json",
+      "sha256": "AD5E00B6EA3A8045D86B4773C4A59E3A5D05AC4E5D1A2CEBD898B2E832F7149F",
+      "originalFilesVerified": 1303,
+      "bytes": 70704702
+    }
+  ],
+  "fileCount": 254,
+  "totalBytes": 13463341,
+  "sourceRecheckedAtUtc": "2026-09-27T11:29:02.596012+00:00",
+  "files": [
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/commands.txt",
+      "retained": "checks/daily-progress/commands.txt",
+      "length": 1272,
+      "originalSha256Before": "0AC4200FD492B0E4ECE2693D6F15505A2739638D1ECF851EE1B31DD36B98D3D9",
+      "originalSha256After": "0AC4200FD492B0E4ECE2693D6F15505A2739638D1ECF851EE1B31DD36B98D3D9",
+      "retainedSha256": "0AC4200FD492B0E4ECE2693D6F15505A2739638D1ECF851EE1B31DD36B98D3D9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/47f74a44-1a82-4ac3-9cd9-e34740e41e24/mwam0_RTX5070_2026-09-27.20_17_51.cobertura.xml",
+      "retained": "checks/daily-progress/compound-consumption/47f74a44-1a82-4ac3-9cd9-e34740e41e24/mwam0_RTX5070_2026-09-27.20_17_51.cobertura.xml",
+      "length": 2420700,
+      "originalSha256Before": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D",
+      "originalSha256After": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D",
+      "retainedSha256": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/PlanningCellInputTests-red.cs",
+      "retained": "checks/daily-progress/compound-consumption/PlanningCellInputTests-red.cs",
+      "length": 8167,
+      "originalSha256Before": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012",
+      "originalSha256After": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012",
+      "retainedSha256": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/PlanningWorkspace-after.cs",
+      "retained": "checks/daily-progress/compound-consumption/PlanningWorkspace-after.cs",
+      "length": 20480,
+      "originalSha256Before": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305",
+      "originalSha256After": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305",
+      "retainedSha256": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/PlanningWorkspace-before.cs",
+      "retained": "checks/daily-progress/compound-consumption/PlanningWorkspace-before.cs",
+      "length": 20069,
+      "originalSha256Before": "95D668A19955914D2B606BAE22F042B14AC812A7ADC2674B6933EA4DE0ADB7C9",
+      "originalSha256After": "95D668A19955914D2B606BAE22F042B14AC812A7ADC2674B6933EA4DE0ADB7C9",
+      "retainedSha256": "95D668A19955914D2B606BAE22F042B14AC812A7ADC2674B6933EA4DE0ADB7C9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/da005a5c-c38c-4b79-a4d3-402839bd8bec/mwam0_RTX5070_2026-09-27.20_17_06.cobertura.xml",
+      "retained": "checks/daily-progress/compound-consumption/da005a5c-c38c-4b79-a4d3-402839bd8bec/mwam0_RTX5070_2026-09-27.20_17_06.cobertura.xml",
+      "length": 2408680,
+      "originalSha256Before": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103",
+      "originalSha256After": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103",
+      "retainedSha256": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/green-receipt.json",
+      "retained": "checks/daily-progress/compound-consumption/green-receipt.json",
+      "length": 641,
+      "originalSha256Before": "33FADBA4FCCA15F0A05CF6510D8BD4FB5F15D1F44ED86645228CA171FEAEB4E0",
+      "originalSha256After": "33FADBA4FCCA15F0A05CF6510D8BD4FB5F15D1F44ED86645228CA171FEAEB4E0",
+      "retainedSha256": "33FADBA4FCCA15F0A05CF6510D8BD4FB5F15D1F44ED86645228CA171FEAEB4E0"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/green.log",
+      "retained": "checks/daily-progress/compound-consumption/green.log",
+      "length": 1243,
+      "originalSha256Before": "E5599B0B0E9C63EE741F719B66BD82C1ED4A1F56C80378AF165F17C3DE351CBF",
+      "originalSha256After": "E5599B0B0E9C63EE741F719B66BD82C1ED4A1F56C80378AF165F17C3DE351CBF",
+      "retainedSha256": "E5599B0B0E9C63EE741F719B66BD82C1ED4A1F56C80378AF165F17C3DE351CBF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/green.trx",
+      "retained": "checks/daily-progress/compound-consumption/green.trx",
+      "length": 83283,
+      "originalSha256Before": "5D323044043DC61991017E740CD6267C7A728BAD111677B45A7F658DBF9184D2",
+      "originalSha256After": "5D323044043DC61991017E740CD6267C7A728BAD111677B45A7F658DBF9184D2",
+      "retainedSha256": "5D323044043DC61991017E740CD6267C7A728BAD111677B45A7F658DBF9184D2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/mwam0_RTX5070_2026-09-27_20_17_06/In/RTX5070/mwam0_RTX5070_2026-09-27.20_17_06.cobertura.xml",
+      "retained": "checks/daily-progress/compound-consumption/mwam0_RTX5070_2026-09-27_20_17_06/In/RTX5070/mwam0_RTX5070_2026-09-27.20_17_06.cobertura.xml",
+      "length": 2408680,
+      "originalSha256Before": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103",
+      "originalSha256After": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103",
+      "retainedSha256": "20C6FFE73D4DDDAB423D100B85FA8A2241524A4AA2CC86CAAEF59EADC66F4103"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/mwam0_RTX5070_2026-09-27_20_17_43/In/RTX5070/mwam0_RTX5070_2026-09-27.20_17_51.cobertura.xml",
+      "retained": "checks/daily-progress/compound-consumption/mwam0_RTX5070_2026-09-27_20_17_43/In/RTX5070/mwam0_RTX5070_2026-09-27.20_17_51.cobertura.xml",
+      "length": 2420700,
+      "originalSha256Before": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D",
+      "originalSha256After": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D",
+      "retainedSha256": "CAB27CB9AF7F47E797BF77BE21E2FE1179D514F41B0AC682E6472638066D763D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/red-receipt.json",
+      "retained": "checks/daily-progress/compound-consumption/red-receipt.json",
+      "length": 519,
+      "originalSha256Before": "28437DE74DD2ECBC4E951A9BF1FC1B1BF562B528BCED121DAAF2E48E73FEFCEF",
+      "originalSha256After": "28437DE74DD2ECBC4E951A9BF1FC1B1BF562B528BCED121DAAF2E48E73FEFCEF",
+      "retainedSha256": "28437DE74DD2ECBC4E951A9BF1FC1B1BF562B528BCED121DAAF2E48E73FEFCEF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/red.log",
+      "retained": "checks/daily-progress/compound-consumption/red.log",
+      "length": 7071,
+      "originalSha256Before": "ECEA141584C407D6D56DA8E7AB9F281D388F4FC74C02994770FEC5AEA8238B95",
+      "originalSha256After": "ECEA141584C407D6D56DA8E7AB9F281D388F4FC74C02994770FEC5AEA8238B95",
+      "retainedSha256": "ECEA141584C407D6D56DA8E7AB9F281D388F4FC74C02994770FEC5AEA8238B95"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/compound-consumption/red.trx",
+      "retained": "checks/daily-progress/compound-consumption/red.trx",
+      "length": 15257,
+      "originalSha256Before": "A17A721A16CD1C5E4195763EA39918FC4C5E2BB4F7A725092E6B7DB5CF9D83AD",
+      "originalSha256After": "A17A721A16CD1C5E4195763EA39918FC4C5E2BB4F7A725092E6B7DB5CF9D83AD",
+      "retainedSha256": "A17A721A16CD1C5E4195763EA39918FC4C5E2BB4F7A725092E6B7DB5CF9D83AD"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/receipt.json",
+      "retained": "checks/daily-progress/final-focused-source/receipt.json",
+      "length": 35970,
+      "originalSha256Before": "887A1A46D2A6FD8D4BF21499562DEA8998FAEB0740A14273D35AC75519EFBB7F",
+      "originalSha256After": "887A1A46D2A6FD8D4BF21499562DEA8998FAEB0740A14273D35AC75519EFBB7F",
+      "retainedSha256": "887A1A46D2A6FD8D4BF21499562DEA8998FAEB0740A14273D35AC75519EFBB7F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ActualCellEditor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ActualCellEditor.cs",
+      "length": 14456,
+      "originalSha256Before": "4433C757D3E00E1F635FA0D9DB2124CA2288235960FE191818D585D710E0CED2",
+      "originalSha256After": "4433C757D3E00E1F635FA0D9DB2124CA2288235960FE191818D585D710E0CED2",
+      "retainedSha256": "4433C757D3E00E1F635FA0D9DB2124CA2288235960FE191818D585D710E0CED2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/App.xaml",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/App.xaml",
+      "length": 9055,
+      "originalSha256Before": "FBECF6C41E4B78FA46DD9A69AC04CBFC015B52ACE3B3331F4E0EDEE244828EC2",
+      "originalSha256After": "FBECF6C41E4B78FA46DD9A69AC04CBFC015B52ACE3B3331F4E0EDEE244828EC2",
+      "retainedSha256": "FBECF6C41E4B78FA46DD9A69AC04CBFC015B52ACE3B3331F4E0EDEE244828EC2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/App.xaml.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/App.xaml.cs",
+      "length": 462,
+      "originalSha256Before": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721",
+      "originalSha256After": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721",
+      "retainedSha256": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ApplyConfirmationTable.xaml",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ApplyConfirmationTable.xaml",
+      "length": 2692,
+      "originalSha256Before": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8",
+      "originalSha256After": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8",
+      "retainedSha256": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ApplyConfirmationTable.xaml.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ApplyConfirmationTable.xaml.cs",
+      "length": 18059,
+      "originalSha256Before": "E7E51EA14CD878E65F2DDA565C719DF55590C88D43028A0EA3E1371A0B2555F6",
+      "originalSha256After": "E7E51EA14CD878E65F2DDA565C719DF55590C88D43028A0EA3E1371A0B2555F6",
+      "retainedSha256": "E7E51EA14CD878E65F2DDA565C719DF55590C88D43028A0EA3E1371A0B2555F6"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ColumnSettings.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ColumnSettings.cs",
+      "length": 9484,
+      "originalSha256Before": "8AF3DFE3F25A8C5B0AA8BF67E89A4FA12445FF3247ABB2411D7B71E6A6A3C784",
+      "originalSha256After": "8AF3DFE3F25A8C5B0AA8BF67E89A4FA12445FF3247ABB2411D7B71E6A6A3C784",
+      "retainedSha256": "8AF3DFE3F25A8C5B0AA8BF67E89A4FA12445FF3247ABB2411D7B71E6A6A3C784"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConflictComparison.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConflictComparison.cs",
+      "length": 11492,
+      "originalSha256Before": "61F35E652127797CE76676707D429BD32AAD346695D96E17EFCCB29AB9667044",
+      "originalSha256After": "61F35E652127797CE76676707D429BD32AAD346695D96E17EFCCB29AB9667044",
+      "retainedSha256": "61F35E652127797CE76676707D429BD32AAD346695D96E17EFCCB29AB9667044"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConnectionPanel.xaml",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConnectionPanel.xaml",
+      "length": 5508,
+      "originalSha256Before": "48527B3FFFFA5C9A88749C81983A22809510C96CDF66E81B434346079A559C27",
+      "originalSha256After": "48527B3FFFFA5C9A88749C81983A22809510C96CDF66E81B434346079A559C27",
+      "retainedSha256": "48527B3FFFFA5C9A88749C81983A22809510C96CDF66E81B434346079A559C27"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConnectionPanel.xaml.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/ConnectionPanel.xaml.cs",
+      "length": 7743,
+      "originalSha256Before": "79B05CEF02C5FBC7709FFD7EA415E49CAB8AD2AE28819E1D82A7CD5D27AF13A5",
+      "originalSha256After": "79B05CEF02C5FBC7709FFD7EA415E49CAB8AD2AE28819E1D82A7CD5D27AF13A5",
+      "retainedSha256": "79B05CEF02C5FBC7709FFD7EA415E49CAB8AD2AE28819E1D82A7CD5D27AF13A5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/DailyProgressEditor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/DailyProgressEditor.cs",
+      "length": 19261,
+      "originalSha256Before": "53E312082B785261594874440BE090B200F30A7FB5E3ACFD6C45F8E2B785DA31",
+      "originalSha256After": "53E312082B785261594874440BE090B200F30A7FB5E3ACFD6C45F8E2B785DA31",
+      "retainedSha256": "53E312082B785261594874440BE090B200F30A7FB5E3ACFD6C45F8E2B785DA31"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.ApplyResults.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.ApplyResults.cs",
+      "length": 5519,
+      "originalSha256Before": "BDC8E53CDDF5E93107F158BE8F0E833EB6CF9EF9E964B080AFD11930C7FAF073",
+      "originalSha256After": "BDC8E53CDDF5E93107F158BE8F0E833EB6CF9EF9E964B080AFD11930C7FAF073",
+      "retainedSha256": "BDC8E53CDDF5E93107F158BE8F0E833EB6CF9EF9E964B080AFD11930C7FAF073"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "length": 9619,
+      "originalSha256Before": "3D4464D3568C756ECC3BE2910AE04AB4438B130503E376E236EDCB28BE352258",
+      "originalSha256After": "3D4464D3568C756ECC3BE2910AE04AB4438B130503E376E236EDCB28BE352258",
+      "retainedSha256": "3D4464D3568C756ECC3BE2910AE04AB4438B130503E376E236EDCB28BE352258"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Recycling.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Recycling.cs",
+      "length": 26666,
+      "originalSha256Before": "A01C7A7A5964CE7B312FCAC23E6F09E983E633C8754E5F680209ECE7DADD7046",
+      "originalSha256After": "A01C7A7A5964CE7B312FCAC23E6F09E983E633C8754E5F680209ECE7DADD7046",
+      "retainedSha256": "A01C7A7A5964CE7B312FCAC23E6F09E983E633C8754E5F680209ECE7DADD7046"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Summary.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.Summary.cs",
+      "length": 8082,
+      "originalSha256Before": "3DC64776A028C9518114E7953B5121D17E0E8F455C9BF790E0CF0302792B4A35",
+      "originalSha256After": "3DC64776A028C9518114E7953B5121D17E0E8F455C9BF790E0CF0302792B4A35",
+      "retainedSha256": "3DC64776A028C9518114E7953B5121D17E0E8F455C9BF790E0CF0302792B4A35"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/EditingGrid.cs",
+      "length": 93425,
+      "originalSha256Before": "BFBECCE7E4D80E73B291C7DB797D4D53EC3332380A5F07185A83EE500B1365E2",
+      "originalSha256After": "BFBECCE7E4D80E73B291C7DB797D4D53EC3332380A5F07185A83EE500B1365E2",
+      "retainedSha256": "BFBECCE7E4D80E73B291C7DB797D4D53EC3332380A5F07185A83EE500B1365E2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/GanttView.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/GanttView.cs",
+      "length": 39437,
+      "originalSha256Before": "645F73CAB5DF236B58F7188E3E106872C9961ECC5993BA50F73F5A63181229F4",
+      "originalSha256After": "645F73CAB5DF236B58F7188E3E106872C9961ECC5993BA50F73F5A63181229F4",
+      "retainedSha256": "645F73CAB5DF236B58F7188E3E106872C9961ECC5993BA50F73F5A63181229F4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/GhProjectsBoards.App.csproj",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/GhProjectsBoards.App.csproj",
+      "length": 967,
+      "originalSha256Before": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05",
+      "originalSha256After": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05",
+      "retainedSha256": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/InputCheckWindow.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/InputCheckWindow.cs",
+      "length": 8677,
+      "originalSha256Before": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D",
+      "originalSha256After": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D",
+      "retainedSha256": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MainWindow.xaml",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MainWindow.xaml",
+      "length": 510,
+      "originalSha256Before": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042",
+      "originalSha256After": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042",
+      "retainedSha256": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MainWindow.xaml.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MainWindow.xaml.cs",
+      "length": 5375,
+      "originalSha256Before": "218A2DB0447A59D18DCC45693063FB39BDC4E57D241F02CD68DDF196FFC52AF6",
+      "originalSha256After": "218A2DB0447A59D18DCC45693063FB39BDC4E57D241F02CD68DDF196FFC52AF6",
+      "retainedSha256": "218A2DB0447A59D18DCC45693063FB39BDC4E57D241F02CD68DDF196FFC52AF6"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MinuteEditor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/MinuteEditor.cs",
+      "length": 4874,
+      "originalSha256Before": "6AC302B90EFD15EDA098607D30EE965CECB6AE9E469425F5CD3BA6958B6A5299",
+      "originalSha256After": "6AC302B90EFD15EDA098607D30EE965CECB6AE9E469425F5CD3BA6958B6A5299",
+      "retainedSha256": "6AC302B90EFD15EDA098607D30EE965CECB6AE9E469425F5CD3BA6958B6A5299"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningBatch.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningBatch.cs",
+      "length": 4037,
+      "originalSha256Before": "9EEE397AD3F798F83E045E5DA1D2DB8CA556EAA7CA1AD460E9151FD73A817A94",
+      "originalSha256After": "9EEE397AD3F798F83E045E5DA1D2DB8CA556EAA7CA1AD460E9151FD73A817A94",
+      "retainedSha256": "9EEE397AD3F798F83E045E5DA1D2DB8CA556EAA7CA1AD460E9151FD73A817A94"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningEditor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningEditor.cs",
+      "length": 12227,
+      "originalSha256Before": "B7EDD150D5EA8C377B539C644F2263D74BE22C447074B8642325F632A9BA9984",
+      "originalSha256After": "B7EDD150D5EA8C377B539C644F2263D74BE22C447074B8642325F632A9BA9984",
+      "retainedSha256": "B7EDD150D5EA8C377B539C644F2263D74BE22C447074B8642325F632A9BA9984"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningSettings.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningSettings.cs",
+      "length": 10095,
+      "originalSha256Before": "AB0FE5B85CCA385D8F02765D4930A62D2E5A39421EE385CE7D14B6B88749EC21",
+      "originalSha256After": "AB0FE5B85CCA385D8F02765D4930A62D2E5A39421EE385CE7D14B6B88749EC21",
+      "retainedSha256": "AB0FE5B85CCA385D8F02765D4930A62D2E5A39421EE385CE7D14B6B88749EC21"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningSettingsPage.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningSettingsPage.cs",
+      "length": 14636,
+      "originalSha256Before": "8189CA28532FD89FA58476C9FB38A4877CD546468E5D91CDB61622C94D8ABBE1",
+      "originalSha256After": "8189CA28532FD89FA58476C9FB38A4877CD546468E5D91CDB61622C94D8ABBE1",
+      "retainedSha256": "8189CA28532FD89FA58476C9FB38A4877CD546468E5D91CDB61622C94D8ABBE1"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningTaskDetails.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/PlanningTaskDetails.cs",
+      "length": 25283,
+      "originalSha256Before": "8223525B5489637E005C7BD2E8AC01E0003E2FD60CF1F17B8A0EE081E4BA7801",
+      "originalSha256After": "8223525B5489637E005C7BD2E8AC01E0003E2FD60CF1F17B8A0EE081E4BA7801",
+      "retainedSha256": "8223525B5489637E005C7BD2E8AC01E0003E2FD60CF1F17B8A0EE081E4BA7801"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+      "length": 17891,
+      "originalSha256Before": "729C112978023ADAAFEC5007DBA13D695EF5AE448DC75383F7A52C2E24A26D3F",
+      "originalSha256After": "729C112978023ADAAFEC5007DBA13D695EF5AE448DC75383F7A52C2E24A26D3F",
+      "retainedSha256": "729C112978023ADAAFEC5007DBA13D695EF5AE448DC75383F7A52C2E24A26D3F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyDialogs.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyDialogs.cs",
+      "length": 33707,
+      "originalSha256Before": "7522C847859BA944012D1BA6D0BC220D7A9FED103C3C4B3DE6F5FC68763B1FC9",
+      "originalSha256After": "7522C847859BA944012D1BA6D0BC220D7A9FED103C3C4B3DE6F5FC68763B1FC9",
+      "retainedSha256": "7522C847859BA944012D1BA6D0BC220D7A9FED103C3C4B3DE6F5FC68763B1FC9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyResults.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationApplyResults.cs",
+      "length": 3477,
+      "originalSha256Before": "B45F5DBDD35D48734856D3187C230686765B2D3B26E7B40DECD56D4B7CF7B524",
+      "originalSha256After": "B45F5DBDD35D48734856D3187C230686765B2D3B26E7B40DECD56D4B7CF7B524",
+      "retainedSha256": "B45F5DBDD35D48734856D3187C230686765B2D3B26E7B40DECD56D4B7CF7B524"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationDiagnostics.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationDiagnostics.cs",
+      "length": 3173,
+      "originalSha256Before": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837",
+      "originalSha256After": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837",
+      "retainedSha256": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationHistoricalFields.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationHistoricalFields.cs",
+      "length": 13228,
+      "originalSha256Before": "E969DB29CDCB92DF1F01EA838737510CE1AEA10D148F44F194776535EE2A27D6",
+      "originalSha256After": "E969DB29CDCB92DF1F01EA838737510CE1AEA10D148F44F194776535EE2A27D6",
+      "retainedSha256": "E969DB29CDCB92DF1F01EA838737510CE1AEA10D148F44F194776535EE2A27D6"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationPanel.xaml",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationPanel.xaml",
+      "length": 20003,
+      "originalSha256Before": "33FBB6164D9CAFA7C0F5020751A7296FB350075B5887EB59FB823ED099AC977F",
+      "originalSha256After": "33FBB6164D9CAFA7C0F5020751A7296FB350075B5887EB59FB823ED099AC977F",
+      "retainedSha256": "33FBB6164D9CAFA7C0F5020751A7296FB350075B5887EB59FB823ED099AC977F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      "length": 34170,
+      "originalSha256Before": "96DA0DC48C4F2FB49728141EF69C7509412C778F1551A5140BE20731EC777800",
+      "originalSha256After": "96DA0DC48C4F2FB49728141EF69C7509412C778F1551A5140BE20731EC777800",
+      "retainedSha256": "96DA0DC48C4F2FB49728141EF69C7509412C778F1551A5140BE20731EC777800"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RowViewSettings.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/RowViewSettings.cs",
+      "length": 13497,
+      "originalSha256Before": "CE98BF4D80E3E42F137AC4E8B82B22BBB8E46CDBC41C61A7EE2DB7C3232011A4",
+      "originalSha256After": "CE98BF4D80E3E42F137AC4E8B82B22BBB8E46CDBC41C61A7EE2DB7C3232011A4",
+      "retainedSha256": "CE98BF4D80E3E42F137AC4E8B82B22BBB8E46CDBC41C61A7EE2DB7C3232011A4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SchedulingEditor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SchedulingEditor.cs",
+      "length": 17504,
+      "originalSha256Before": "8F570C8C62112BD4E0E24E767ADD3DF3FA67BB0CE503EE3F338114ED92EFDFA1",
+      "originalSha256After": "8F570C8C62112BD4E0E24E767ADD3DF3FA67BB0CE503EE3F338114ED92EFDFA1",
+      "retainedSha256": "8F570C8C62112BD4E0E24E767ADD3DF3FA67BB0CE503EE3F338114ED92EFDFA1"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetDiagnostics.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetDiagnostics.cs",
+      "length": 11202,
+      "originalSha256Before": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638",
+      "originalSha256After": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638",
+      "retainedSha256": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetInteraction.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetInteraction.cs",
+      "length": 11473,
+      "originalSha256Before": "595CABF6CD72D761EFDA33EF7950DAE8C84AF4E933ACDA3028CC70AA225E653E",
+      "originalSha256After": "595CABF6CD72D761EFDA33EF7950DAE8C84AF4E933ACDA3028CC70AA225E653E",
+      "retainedSha256": "595CABF6CD72D761EFDA33EF7950DAE8C84AF4E933ACDA3028CC70AA225E653E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetScrolling.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetScrolling.cs",
+      "length": 6182,
+      "originalSha256Before": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD",
+      "originalSha256After": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD",
+      "retainedSha256": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetViewCommands.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SheetViewCommands.cs",
+      "length": 13772,
+      "originalSha256Before": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A",
+      "originalSha256After": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A",
+      "retainedSha256": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SummaryView.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/SummaryView.cs",
+      "length": 16773,
+      "originalSha256Before": "6B581FD8764DDA9733558C6F33D964F8CC0033EE6F5C7FF695B0DE360C77BF28",
+      "originalSha256After": "6B581FD8764DDA9733558C6F33D964F8CC0033EE6F5C7FF695B0DE360C77BF28",
+      "retainedSha256": "6B581FD8764DDA9733558C6F33D964F8CC0033EE6F5C7FF695B0DE360C77BF28"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/app.manifest",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.App/app.manifest",
+      "length": 818,
+      "originalSha256Before": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D",
+      "originalSha256After": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D",
+      "retainedSha256": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/ConnectionViewModel.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/ConnectionViewModel.cs",
+      "length": 13083,
+      "originalSha256Before": "CC5AA6DECD095BC2D3C13FD6B770444B04CA1C3157DB2DF22986D62857470C21",
+      "originalSha256After": "CC5AA6DECD095BC2D3C13FD6B770444B04CA1C3157DB2DF22986D62857470C21",
+      "retainedSha256": "CC5AA6DECD095BC2D3C13FD6B770444B04CA1C3157DB2DF22986D62857470C21"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GhProjectsBoards.Core.csproj",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GhProjectsBoards.Core.csproj",
+      "length": 511,
+      "originalSha256Before": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC",
+      "originalSha256After": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC",
+      "retainedSha256": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhApi.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhApi.cs",
+      "length": 11253,
+      "originalSha256Before": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78",
+      "originalSha256After": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78",
+      "retainedSha256": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhConnection.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhConnection.cs",
+      "length": 13610,
+      "originalSha256Before": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366",
+      "originalSha256After": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366",
+      "retainedSha256": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhProcess.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GhProcess.cs",
+      "length": 6624,
+      "originalSha256Before": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418",
+      "originalSha256After": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418",
+      "retainedSha256": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GitHubAddress.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/GitHubAddress.cs",
+      "length": 464,
+      "originalSha256Before": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966",
+      "originalSha256After": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966",
+      "retainedSha256": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/TargetDiagnostics.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/GitHub/TargetDiagnostics.cs",
+      "length": 5302,
+      "originalSha256Before": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605",
+      "originalSha256After": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605",
+      "retainedSha256": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json",
+      "length": 4339,
+      "originalSha256Before": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361",
+      "originalSha256After": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361",
+      "retainedSha256": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyCandidates.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyCandidates.cs",
+      "length": 2116,
+      "originalSha256Before": "6AB02BB9C217A04D89C94BB37365A445CE67F5A1A64AD5391460BF33AC321A92",
+      "originalSha256After": "6AB02BB9C217A04D89C94BB37365A445CE67F5A1A64AD5391460BF33AC321A92",
+      "retainedSha256": "6AB02BB9C217A04D89C94BB37365A445CE67F5A1A64AD5391460BF33AC321A92"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyConfirmationPresentation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyConfirmationPresentation.cs",
+      "length": 12298,
+      "originalSha256Before": "4109562C3B4B2B0DA59FBBF76D528D4E1B7110B0132EDCE9FA4C1303B0D4D36E",
+      "originalSha256After": "4109562C3B4B2B0DA59FBBF76D528D4E1B7110B0132EDCE9FA4C1303B0D4D36E",
+      "retainedSha256": "4109562C3B4B2B0DA59FBBF76D528D4E1B7110B0132EDCE9FA4C1303B0D4D36E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyExecutor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyExecutor.cs",
+      "length": 8648,
+      "originalSha256Before": "F41D3B85DA90A9B7532751DBC91A384C1B0852611D1E987557F08F1D81E04B28",
+      "originalSha256After": "F41D3B85DA90A9B7532751DBC91A384C1B0852611D1E987557F08F1D81E04B28",
+      "retainedSha256": "F41D3B85DA90A9B7532751DBC91A384C1B0852611D1E987557F08F1D81E04B28"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyJournal.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyJournal.cs",
+      "length": 16280,
+      "originalSha256Before": "4BFAE97939C17DBB4FD071B45AD7A574F2FC85C76D6DC545D9961ED8879350D9",
+      "originalSha256After": "4BFAE97939C17DBB4FD071B45AD7A574F2FC85C76D6DC545D9961ED8879350D9",
+      "retainedSha256": "4BFAE97939C17DBB4FD071B45AD7A574F2FC85C76D6DC545D9961ED8879350D9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyRemote.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyRemote.cs",
+      "length": 4011,
+      "originalSha256Before": "7650E75D3281F6B215B2DBBBB72CAF5DEF099FBD36439D6DC3F13013A3DD2347",
+      "originalSha256After": "7650E75D3281F6B215B2DBBBB72CAF5DEF099FBD36439D6DC3F13013A3DD2347",
+      "retainedSha256": "7650E75D3281F6B215B2DBBBB72CAF5DEF099FBD36439D6DC3F13013A3DD2347"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyResultsPresentation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ApplyResultsPresentation.cs",
+      "length": 9074,
+      "originalSha256Before": "3D7ADD9970657ABCA815CE6986945AACD6E8AF8AD42FC1E005B5A7EFF7DE0976",
+      "originalSha256After": "3D7ADD9970657ABCA815CE6986945AACD6E8AF8AD42FC1E005B5A7EFF7DE0976",
+      "retainedSha256": "3D7ADD9970657ABCA815CE6986945AACD6E8AF8AD42FC1E005B5A7EFF7DE0976"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/BulkEditing.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/BulkEditing.cs",
+      "length": 8529,
+      "originalSha256Before": "DA9B7E008801E4D99DB4CF98C93D559C9AC678B45410E6D41310E07E7F72BB4A",
+      "originalSha256After": "DA9B7E008801E4D99DB4CF98C93D559C9AC678B45410E6D41310E07E7F72BB4A",
+      "retainedSha256": "DA9B7E008801E4D99DB4CF98C93D559C9AC678B45410E6D41310E07E7F72BB4A"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationExecutor.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationExecutor.cs",
+      "length": 11058,
+      "originalSha256Before": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357",
+      "originalSha256After": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357",
+      "retainedSha256": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationJournal.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationJournal.cs",
+      "length": 19896,
+      "originalSha256Before": "D8B9CE84EF12EF906B3A9024A6BF732CAFB77DE2F7042C3F364DFCC758D70B94",
+      "originalSha256After": "D8B9CE84EF12EF906B3A9024A6BF732CAFB77DE2F7042C3F364DFCC758D70B94",
+      "retainedSha256": "D8B9CE84EF12EF906B3A9024A6BF732CAFB77DE2F7042C3F364DFCC758D70B94"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationPlanning.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationPlanning.cs",
+      "length": 8888,
+      "originalSha256Before": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B",
+      "originalSha256After": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B",
+      "retainedSha256": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationRemote.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/CreationRemote.cs",
+      "length": 7696,
+      "originalSha256Before": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4",
+      "originalSha256After": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4",
+      "retainedSha256": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/DraftSnapshot.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/DraftSnapshot.cs",
+      "length": 4730,
+      "originalSha256Before": "18C7B730F6FF77D4FAA6936C2EC0C66932BF12A41622E90C6A1006B1AB464358",
+      "originalSha256After": "18C7B730F6FF77D4FAA6936C2EC0C66932BF12A41622E90C6A1006B1AB464358",
+      "retainedSha256": "18C7B730F6FF77D4FAA6936C2EC0C66932BF12A41622E90C6A1006B1AB464358"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/DraftStore.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/DraftStore.cs",
+      "length": 27613,
+      "originalSha256Before": "749AA56AA7575A21BC1940368D9684409696649EA9C2A865608367074EC31F28",
+      "originalSha256After": "749AA56AA7575A21BC1940368D9684409696649EA9C2A865608367074EC31F28",
+      "retainedSha256": "749AA56AA7575A21BC1940368D9684409696649EA9C2A865608367074EC31F28"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+      "length": 22018,
+      "originalSha256Before": "618CFA5BCCBA1B2D891B52B8617F35715F0870A2D2F27DBEB335893F72BDAA05",
+      "originalSha256After": "618CFA5BCCBA1B2D891B52B8617F35715F0870A2D2F27DBEB335893F72BDAA05",
+      "retainedSha256": "618CFA5BCCBA1B2D891B52B8617F35715F0870A2D2F27DBEB335893F72BDAA05"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "length": 3863,
+      "originalSha256Before": "C2D7668BB28C15E58E36CB3A6D979C76A56B075CEA611BD53D727CA0DAB34C4D",
+      "originalSha256After": "C2D7668BB28C15E58E36CB3A6D979C76A56B075CEA611BD53D727CA0DAB34C4D",
+      "retainedSha256": "C2D7668BB28C15E58E36CB3A6D979C76A56B075CEA611BD53D727CA0DAB34C4D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/HistoricalFieldDisposition.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/HistoricalFieldDisposition.cs",
+      "length": 14003,
+      "originalSha256Before": "39426757885D3D36F5DF546FBBAF42568ED87C8C69CB7E972EC1D8199788592A",
+      "originalSha256After": "39426757885D3D36F5DF546FBBAF42568ED87C8C69CB7E972EC1D8199788592A",
+      "retainedSha256": "39426757885D3D36F5DF546FBBAF42568ED87C8C69CB7E972EC1D8199788592A"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/LocalRows.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/LocalRows.cs",
+      "length": 24802,
+      "originalSha256Before": "856A6C82ADBA72730F3F8EA07929A5EE8E5D9C9F3A73F60CE2381CD210947762",
+      "originalSha256After": "856A6C82ADBA72730F3F8EA07929A5EE8E5D9C9F3A73F60CE2381CD210947762",
+      "retainedSha256": "856A6C82ADBA72730F3F8EA07929A5EE8E5D9C9F3A73F60CE2381CD210947762"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PerformanceTrace.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PerformanceTrace.cs",
+      "length": 2377,
+      "originalSha256Before": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14",
+      "originalSha256After": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14",
+      "retainedSha256": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningAssignment.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningAssignment.cs",
+      "length": 5983,
+      "originalSha256Before": "EC474D3C3ACED0ABFE89839DAAA48C06FA67D02499F8E95B24D2822988C5AF33",
+      "originalSha256After": "EC474D3C3ACED0ABFE89839DAAA48C06FA67D02499F8E95B24D2822988C5AF33",
+      "retainedSha256": "EC474D3C3ACED0ABFE89839DAAA48C06FA67D02499F8E95B24D2822988C5AF33"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningCellInput.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningCellInput.cs",
+      "length": 6511,
+      "originalSha256Before": "685C1FE43EA625BA7DCCB5F93C44743558171060ACB455028CF98A24526761CB",
+      "originalSha256After": "685C1FE43EA625BA7DCCB5F93C44743558171060ACB455028CF98A24526761CB",
+      "retainedSha256": "685C1FE43EA625BA7DCCB5F93C44743558171060ACB455028CF98A24526761CB"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningContract.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningContract.cs",
+      "length": 13868,
+      "originalSha256Before": "219DA6D79C6136EE75E811A5FCBA7BCE05EDF731F13FAE4788E9A7958B40F2B9",
+      "originalSha256After": "219DA6D79C6136EE75E811A5FCBA7BCE05EDF731F13FAE4788E9A7958B40F2B9",
+      "retainedSha256": "219DA6D79C6136EE75E811A5FCBA7BCE05EDF731F13FAE4788E9A7958B40F2B9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningDependencies.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningDependencies.cs",
+      "length": 8018,
+      "originalSha256Before": "F26C61EEBA277E2E254BA58F976F0470FD5905895BED19CCFF5A26A785A9A86E",
+      "originalSha256After": "F26C61EEBA277E2E254BA58F976F0470FD5905895BED19CCFF5A26A785A9A86E",
+      "retainedSha256": "F26C61EEBA277E2E254BA58F976F0470FD5905895BED19CCFF5A26A785A9A86E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningEngine.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningEngine.cs",
+      "length": 16272,
+      "originalSha256Before": "ECFA28F74834F5FF6F2CE9F87711221B4853998830AADF59ABD564D472F6DCD1",
+      "originalSha256After": "ECFA28F74834F5FF6F2CE9F87711221B4853998830AADF59ABD564D472F6DCD1",
+      "retainedSha256": "ECFA28F74834F5FF6F2CE9F87711221B4853998830AADF59ABD564D472F6DCD1"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningReconciliation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningReconciliation.cs",
+      "length": 6952,
+      "originalSha256Before": "ACD959FA64E62E803A6707C810BD9B863035FE64D5A4D3BF35EA11364AD135FA",
+      "originalSha256After": "ACD959FA64E62E803A6707C810BD9B863035FE64D5A4D3BF35EA11364AD135FA",
+      "retainedSha256": "ACD959FA64E62E803A6707C810BD9B863035FE64D5A4D3BF35EA11364AD135FA"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningScalars.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningScalars.cs",
+      "length": 3485,
+      "originalSha256Before": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611",
+      "originalSha256After": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611",
+      "retainedSha256": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningValidation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningValidation.cs",
+      "length": 1963,
+      "originalSha256Before": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED",
+      "originalSha256After": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED",
+      "retainedSha256": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+      "length": 20480,
+      "originalSha256Before": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305",
+      "originalSha256After": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305",
+      "retainedSha256": "BD1BD6BB50FEFBFE3D0FC0AAA01761F53C40BE597B1FCF1396E59FB42D6D4305"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectColumns.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectColumns.cs",
+      "length": 6143,
+      "originalSha256Before": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228",
+      "originalSha256After": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228",
+      "retainedSha256": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectDiscovery.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectDiscovery.cs",
+      "length": 8861,
+      "originalSha256Before": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557",
+      "originalSha256After": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557",
+      "retainedSha256": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectIssueIdentity.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectIssueIdentity.cs",
+      "length": 510,
+      "originalSha256Before": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2",
+      "originalSha256After": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2",
+      "retainedSha256": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectQueries.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectQueries.cs",
+      "length": 5142,
+      "originalSha256Before": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21",
+      "originalSha256After": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21",
+      "retainedSha256": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectReadModel.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectReadModel.cs",
+      "length": 3252,
+      "originalSha256Before": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B",
+      "originalSha256After": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B",
+      "retainedSha256": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectReader.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectReader.cs",
+      "length": 33481,
+      "originalSha256Before": "AA772B077DE33A5108D3F11057A24ADBECA81B62DE3DB721615EFBF00331BE71",
+      "originalSha256After": "AA772B077DE33A5108D3F11057A24ADBECA81B62DE3DB721615EFBF00331BE71",
+      "retainedSha256": "AA772B077DE33A5108D3F11057A24ADBECA81B62DE3DB721615EFBF00331BE71"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectRowViews.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/ProjectRowViews.cs",
+      "length": 11656,
+      "originalSha256Before": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04",
+      "originalSha256After": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04",
+      "retainedSha256": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/Reconciliation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/Reconciliation.cs",
+      "length": 9837,
+      "originalSha256Before": "36FE121B354DB205C445972B12CD5D62A1607C9B2E38DF7158316EB1E743677D",
+      "originalSha256After": "36FE121B354DB205C445972B12CD5D62A1607C9B2E38DF7158316EB1E743677D",
+      "retainedSha256": "36FE121B354DB205C445972B12CD5D62A1607C9B2E38DF7158316EB1E743677D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationApply.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationApply.cs",
+      "length": 11036,
+      "originalSha256Before": "7D69824609977E6BA4F8B175D51A999AD2DFC49B243B4078B9F63BFD680F972D",
+      "originalSha256After": "7D69824609977E6BA4F8B175D51A999AD2DFC49B243B4078B9F63BFD680F972D",
+      "retainedSha256": "7D69824609977E6BA4F8B175D51A999AD2DFC49B243B4078B9F63BFD680F972D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationCreation.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationCreation.cs",
+      "length": 9295,
+      "originalSha256Before": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F",
+      "originalSha256After": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F",
+      "retainedSha256": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationDiagnostics.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationDiagnostics.cs",
+      "length": 1479,
+      "originalSha256Before": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0",
+      "originalSha256After": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0",
+      "retainedSha256": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationHistoricalFields.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationHistoricalFields.cs",
+      "length": 5901,
+      "originalSha256Before": "30C362139D0B72A0B342703388864E26C8674017CBCF13E4B1466CD39A91FBD2",
+      "originalSha256After": "30C362139D0B72A0B342703388864E26C8674017CBCF13E4B1466CD39A91FBD2",
+      "retainedSha256": "30C362139D0B72A0B342703388864E26C8674017CBCF13E4B1466CD39A91FBD2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationStore.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationStore.cs",
+      "length": 14288,
+      "originalSha256Before": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42",
+      "originalSha256After": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42",
+      "retainedSha256": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationWorkspace.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/RegistrationWorkspace.cs",
+      "length": 18855,
+      "originalSha256Before": "12477F62DA8A100AAC018E0CF7E5C74B11F96DB6743C91A02258AD8905FF29EE",
+      "originalSha256After": "12477F62DA8A100AAC018E0CF7E5C74B11F96DB6743C91A02258AD8905FF29EE",
+      "retainedSha256": "12477F62DA8A100AAC018E0CF7E5C74B11F96DB6743C91A02258AD8905FF29EE"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/SummaryContract.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/SummaryContract.cs",
+      "length": 7005,
+      "originalSha256Before": "63E57146A1D6B24BD5E3E4D24C69F766F8A505476C7152D5AA1355691483707C",
+      "originalSha256After": "63E57146A1D6B24BD5E3E4D24C69F766F8A505476C7152D5AA1355691483707C",
+      "retainedSha256": "63E57146A1D6B24BD5E3E4D24C69F766F8A505476C7152D5AA1355691483707C"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/SummaryProjection.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/SummaryProjection.cs",
+      "length": 8955,
+      "originalSha256Before": "9D82122F8834436CA8B9BB9CD0A37614F2B536AF9567360E4B453D809A3C1EC3",
+      "originalSha256After": "9D82122F8834436CA8B9BB9CD0A37614F2B536AF9567360E4B453D809A3C1EC3",
+      "retainedSha256": "9D82122F8834436CA8B9BB9CD0A37614F2B536AF9567360E4B453D809A3C1EC3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/UndoHistory.cs",
+      "retained": "checks/daily-progress/final-focused-source/src/GhProjectsBoards.Core/Projects/UndoHistory.cs",
+      "length": 2202,
+      "originalSha256Before": "0123DBF5759B0319F0418067DA0BEDA9D49D9ADE0B62FDB85266F4C0CF3825CC",
+      "originalSha256After": "0123DBF5759B0319F0418067DA0BEDA9D49D9ADE0B62FDB85266F4C0CF3825CC",
+      "retainedSha256": "0123DBF5759B0319F0418067DA0BEDA9D49D9ADE0B62FDB85266F4C0CF3825CC"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyConfirmationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyConfirmationTests.cs",
+      "length": 6212,
+      "originalSha256Before": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E",
+      "originalSha256After": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E",
+      "retainedSha256": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyInformationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyInformationTests.cs",
+      "length": 9430,
+      "originalSha256Before": "08F2D201376D0E092DCCD89F8315FE2366975F136434277292147D8BC893E76F",
+      "originalSha256After": "08F2D201376D0E092DCCD89F8315FE2366975F136434277292147D8BC893E76F",
+      "retainedSha256": "08F2D201376D0E092DCCD89F8315FE2366975F136434277292147D8BC893E76F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyObservationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyObservationTests.cs",
+      "length": 2930,
+      "originalSha256Before": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11",
+      "originalSha256After": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11",
+      "retainedSha256": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyRecoveryTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyRecoveryTests.cs",
+      "length": 7990,
+      "originalSha256Before": "CC9523AAAF2DB16E685B8D1B9B1A9F975E875AB3CC6E9519AAA50EB0DA93E1A8",
+      "originalSha256After": "CC9523AAAF2DB16E685B8D1B9B1A9F975E875AB3CC6E9519AAA50EB0DA93E1A8",
+      "retainedSha256": "CC9523AAAF2DB16E685B8D1B9B1A9F975E875AB3CC6E9519AAA50EB0DA93E1A8"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyResultsPresentationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyResultsPresentationTests.cs",
+      "length": 11316,
+      "originalSha256Before": "A2D01347B05433C03EAEA7E8DCD129919AADB4CC4CB2DABED1518F8378F157DE",
+      "originalSha256After": "A2D01347B05433C03EAEA7E8DCD129919AADB4CC4CB2DABED1518F8378F157DE",
+      "retainedSha256": "A2D01347B05433C03EAEA7E8DCD129919AADB4CC4CB2DABED1518F8378F157DE"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ApplyTests.cs",
+      "length": 25371,
+      "originalSha256Before": "FE362E50B02897388B6E4247FF3462ED16486EB992395E4D219556C7AE43475F",
+      "originalSha256After": "FE362E50B02897388B6E4247FF3462ED16486EB992395E4D219556C7AE43475F",
+      "retainedSha256": "FE362E50B02897388B6E4247FF3462ED16486EB992395E4D219556C7AE43475F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/BulkEditingTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/BulkEditingTests.cs",
+      "length": 12256,
+      "originalSha256Before": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003",
+      "originalSha256After": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003",
+      "retainedSha256": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ColumnTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ColumnTests.cs",
+      "length": 13596,
+      "originalSha256Before": "610DDDF7D59DF6C37CC4796A7AB0DDF839B17A09FF5805AC9B4FCD1ECEC2B1D6",
+      "originalSha256After": "610DDDF7D59DF6C37CC4796A7AB0DDF839B17A09FF5805AC9B4FCD1ECEC2B1D6",
+      "retainedSha256": "610DDDF7D59DF6C37CC4796A7AB0DDF839B17A09FF5805AC9B4FCD1ECEC2B1D6"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ConfirmedUndoTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ConfirmedUndoTests.cs",
+      "length": 18287,
+      "originalSha256Before": "337B4E3E1B9948404F556F301FDEA60CEA9A7349DD4EA946A49F27EB05277864",
+      "originalSha256After": "337B4E3E1B9948404F556F301FDEA60CEA9A7349DD4EA946A49F27EB05277864",
+      "retainedSha256": "337B4E3E1B9948404F556F301FDEA60CEA9A7349DD4EA946A49F27EB05277864"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ConnectionViewModelTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ConnectionViewModelTests.cs",
+      "length": 1225,
+      "originalSha256Before": "F9D4D3EA6462205D3090D60A191CCF33EDCB68D7A570FE2A07A291650F989EC7",
+      "originalSha256After": "F9D4D3EA6462205D3090D60A191CCF33EDCB68D7A570FE2A07A291650F989EC7",
+      "retainedSha256": "F9D4D3EA6462205D3090D60A191CCF33EDCB68D7A570FE2A07A291650F989EC7"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/CreationHarness.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/CreationHarness.cs",
+      "length": 9128,
+      "originalSha256Before": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9",
+      "originalSha256After": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9",
+      "retainedSha256": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/CreationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/CreationTests.cs",
+      "length": 32384,
+      "originalSha256Before": "3F64F682F0477316E99435B141174BBE6A4C11F3AE98EE51A6879282FCE79E60",
+      "originalSha256After": "3F64F682F0477316E99435B141174BBE6A4C11F3AE98EE51A6879282FCE79E60",
+      "retainedSha256": "3F64F682F0477316E99435B141174BBE6A4C11F3AE98EE51A6879282FCE79E60"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/DraftLifetimeTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/DraftLifetimeTests.cs",
+      "length": 3769,
+      "originalSha256Before": "3D86FDE0C8224E451919B09CB323361269D507AC23D6DAD9D0043AD0B235A98D",
+      "originalSha256After": "3D86FDE0C8224E451919B09CB323361269D507AC23D6DAD9D0043AD0B235A98D",
+      "retainedSha256": "3D86FDE0C8224E451919B09CB323361269D507AC23D6DAD9D0043AD0B235A98D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/EditingTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/EditingTests.cs",
+      "length": 15527,
+      "originalSha256Before": "05B952B4FF62A7D01944657918CC5B777A41434431AEFBADB1CF406FAC31F5A2",
+      "originalSha256After": "05B952B4FF62A7D01944657918CC5B777A41434431AEFBADB1CF406FAC31F5A2",
+      "retainedSha256": "05B952B4FF62A7D01944657918CC5B777A41434431AEFBADB1CF406FAC31F5A2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/FakeCreation.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/FakeCreation.cs",
+      "length": 5876,
+      "originalSha256Before": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B",
+      "originalSha256After": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B",
+      "retainedSha256": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "length": 21287,
+      "originalSha256Before": "167379AFBE873713F3EC5E9C21DBF7B3A500836C0F225752C9FB86D45388F5BB",
+      "originalSha256After": "167379AFBE873713F3EC5E9C21DBF7B3A500836C0F225752C9FB86D45388F5BB",
+      "retainedSha256": "167379AFBE873713F3EC5E9C21DBF7B3A500836C0F225752C9FB86D45388F5BB"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "length": 6261,
+      "originalSha256Before": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28",
+      "originalSha256After": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28",
+      "retainedSha256": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "length": 4892,
+      "originalSha256Before": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171",
+      "originalSha256After": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171",
+      "retainedSha256": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhApiTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhApiTests.cs",
+      "length": 7227,
+      "originalSha256Before": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F",
+      "originalSha256After": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F",
+      "retainedSha256": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhConnectionTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhConnectionTests.cs",
+      "length": 10976,
+      "originalSha256Before": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B",
+      "originalSha256After": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B",
+      "retainedSha256": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhProcessTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhProcessTests.cs",
+      "length": 4721,
+      "originalSha256Before": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5",
+      "originalSha256After": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5",
+      "retainedSha256": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj",
+      "length": 1062,
+      "originalSha256Before": "C648192D77FEDF25759A81639212E90A22DA7F98D51492DB4F65EBC045CE31D0",
+      "originalSha256After": "C648192D77FEDF25759A81639212E90A22DA7F98D51492DB4F65EBC045CE31D0",
+      "retainedSha256": "C648192D77FEDF25759A81639212E90A22DA7F98D51492DB4F65EBC045CE31D0"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/HistoricalDispositionTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/HistoricalDispositionTests.cs",
+      "length": 28677,
+      "originalSha256Before": "1DA0E8FFE007D570CF52AFDE37C90D3E0FD644CE89CF89B197289A21131CD249",
+      "originalSha256After": "1DA0E8FFE007D570CF52AFDE37C90D3E0FD644CE89CF89B197289A21131CD249",
+      "retainedSha256": "1DA0E8FFE007D570CF52AFDE37C90D3E0FD644CE89CF89B197289A21131CD249"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveCreationProxy.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveCreationProxy.cs",
+      "length": 6372,
+      "originalSha256Before": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA",
+      "originalSha256After": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA",
+      "retainedSha256": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveFixtureBoundary.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveFixtureBoundary.cs",
+      "length": 8396,
+      "originalSha256Before": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC",
+      "originalSha256After": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC",
+      "retainedSha256": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveGitHubTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LiveGitHubTests.cs",
+      "length": 14224,
+      "originalSha256Before": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0",
+      "originalSha256After": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0",
+      "retainedSha256": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceGuardTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceGuardTests.cs",
+      "length": 14369,
+      "originalSha256Before": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534",
+      "originalSha256After": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534",
+      "retainedSha256": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceRun.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceRun.cs",
+      "length": 12707,
+      "originalSha256Before": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972",
+      "originalSha256After": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972",
+      "retainedSha256": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceRunner.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceRunner.cs",
+      "length": 19383,
+      "originalSha256Before": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F",
+      "originalSha256After": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F",
+      "retainedSha256": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceStageTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceStageTests.cs",
+      "length": 11893,
+      "originalSha256Before": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24",
+      "originalSha256After": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24",
+      "retainedSha256": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceStages.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LivePerformanceStages.cs",
+      "length": 23460,
+      "originalSha256Before": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411",
+      "originalSha256After": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411",
+      "retainedSha256": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LocalRowTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/LocalRowTests.cs",
+      "length": 18722,
+      "originalSha256Before": "6A48750EB21E4CB2365BBF9353924CD7BEF0BD251E42AFB61A28DFF38E4490FF",
+      "originalSha256After": "6A48750EB21E4CB2365BBF9353924CD7BEF0BD251E42AFB61A28DFF38E4490FF",
+      "retainedSha256": "6A48750EB21E4CB2365BBF9353924CD7BEF0BD251E42AFB61A28DFF38E4490FF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ManualPlanningTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ManualPlanningTests.cs",
+      "length": 6488,
+      "originalSha256Before": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8",
+      "originalSha256After": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8",
+      "retainedSha256": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ObservationIdentityTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ObservationIdentityTests.cs",
+      "length": 8180,
+      "originalSha256Before": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D",
+      "originalSha256After": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D",
+      "retainedSha256": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PerformanceRun.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PerformanceRun.cs",
+      "length": 8948,
+      "originalSha256Before": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F",
+      "originalSha256After": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F",
+      "retainedSha256": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningApplicationLiveTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningApplicationLiveTests.cs",
+      "length": 14668,
+      "originalSha256Before": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29",
+      "originalSha256After": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29",
+      "retainedSha256": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningAssignmentTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningAssignmentTests.cs",
+      "length": 9832,
+      "originalSha256Before": "C590CAF71772E82E00302800DD0303EC823CEFAFD593788910138C9BC3CE6EDC",
+      "originalSha256After": "C590CAF71772E82E00302800DD0303EC823CEFAFD593788910138C9BC3CE6EDC",
+      "retainedSha256": "C590CAF71772E82E00302800DD0303EC823CEFAFD593788910138C9BC3CE6EDC"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningCellInputTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningCellInputTests.cs",
+      "length": 8167,
+      "originalSha256Before": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012",
+      "originalSha256After": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012",
+      "retainedSha256": "3E177A85E6393FAAD3A2B12A695C08F6120D11EDE20F605A2D5EB79720F73012"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningContractTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningContractTests.cs",
+      "length": 13018,
+      "originalSha256Before": "D4D8EAA5BB45A1ED884794FB3731861C4E046E5424B17A22A764EBD1C2246C7B",
+      "originalSha256After": "D4D8EAA5BB45A1ED884794FB3731861C4E046E5424B17A22A764EBD1C2246C7B",
+      "retainedSha256": "D4D8EAA5BB45A1ED884794FB3731861C4E046E5424B17A22A764EBD1C2246C7B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningCreationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningCreationTests.cs",
+      "length": 9650,
+      "originalSha256Before": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E",
+      "originalSha256After": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E",
+      "retainedSha256": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningDependencyTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningDependencyTests.cs",
+      "length": 9268,
+      "originalSha256Before": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42",
+      "originalSha256After": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42",
+      "retainedSha256": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+      "length": 6573,
+      "originalSha256Before": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B",
+      "originalSha256After": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B",
+      "retainedSha256": "16CE5919BCBCBB68D6B2AD6A03D7D730F1505D49747552BF03147A5BC7E7913B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningFidelityLiveTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningFidelityLiveTests.cs",
+      "length": 15249,
+      "originalSha256Before": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3",
+      "originalSha256After": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3",
+      "retainedSha256": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningLocalRowTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningLocalRowTests.cs",
+      "length": 6950,
+      "originalSha256Before": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D",
+      "originalSha256After": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D",
+      "retainedSha256": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningPathTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningPathTests.cs",
+      "length": 8953,
+      "originalSha256Before": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478",
+      "originalSha256After": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478",
+      "retainedSha256": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningQueryTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningQueryTests.cs",
+      "length": 1176,
+      "originalSha256Before": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4",
+      "originalSha256After": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4",
+      "retainedSha256": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningReaderTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningReaderTests.cs",
+      "length": 2782,
+      "originalSha256Before": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF",
+      "originalSha256After": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF",
+      "retainedSha256": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningResponses.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningResponses.cs",
+      "length": 3049,
+      "originalSha256Before": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF",
+      "originalSha256After": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF",
+      "retainedSha256": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningReviewRegressionTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningReviewRegressionTests.cs",
+      "length": 7413,
+      "originalSha256Before": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF",
+      "originalSha256After": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF",
+      "retainedSha256": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningTransitionTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PlanningTransitionTests.cs",
+      "length": 7712,
+      "originalSha256Before": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4",
+      "originalSha256After": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4",
+      "retainedSha256": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PostMergeStabilizationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/PostMergeStabilizationTests.cs",
+      "length": 15035,
+      "originalSha256Before": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE",
+      "originalSha256After": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE",
+      "retainedSha256": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectIssueIdentityTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectIssueIdentityTests.cs",
+      "length": 968,
+      "originalSha256Before": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354",
+      "originalSha256After": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354",
+      "retainedSha256": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectReadLiveTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectReadLiveTests.cs",
+      "length": 7664,
+      "originalSha256Before": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B",
+      "originalSha256After": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B",
+      "retainedSha256": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectReaderTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ProjectReaderTests.cs",
+      "length": 31833,
+      "originalSha256Before": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3",
+      "originalSha256After": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3",
+      "retainedSha256": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ReconciliationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ReconciliationTests.cs",
+      "length": 20801,
+      "originalSha256Before": "EFDC288206D1B98819AF4689706A43423AB06AD784E8A42B9FD30B95EDA0F123",
+      "originalSha256After": "EFDC288206D1B98819AF4689706A43423AB06AD784E8A42B9FD30B95EDA0F123",
+      "retainedSha256": "EFDC288206D1B98819AF4689706A43423AB06AD784E8A42B9FD30B95EDA0F123"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RefreshLiveTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RefreshLiveTests.cs",
+      "length": 10844,
+      "originalSha256Before": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29",
+      "originalSha256After": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29",
+      "retainedSha256": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RefreshWorkflowTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RefreshWorkflowTests.cs",
+      "length": 7843,
+      "originalSha256Before": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875",
+      "originalSha256After": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875",
+      "retainedSha256": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationResponses.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationResponses.cs",
+      "length": 6472,
+      "originalSha256Before": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E",
+      "originalSha256After": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E",
+      "retainedSha256": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationStoreTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationStoreTests.cs",
+      "length": 1164,
+      "originalSha256Before": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2",
+      "originalSha256After": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2",
+      "retainedSha256": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationWorkflowTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RegistrationWorkflowTests.cs",
+      "length": 21445,
+      "originalSha256Before": "3E09A23B86987F6C3042F7BA94D0C6C61E275417B1105BAC4A5CB4FB10593DF3",
+      "originalSha256After": "3E09A23B86987F6C3042F7BA94D0C6C61E275417B1105BAC4A5CB4FB10593DF3",
+      "retainedSha256": "3E09A23B86987F6C3042F7BA94D0C6C61E275417B1105BAC4A5CB4FB10593DF3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RowViewTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/RowViewTests.cs",
+      "length": 17862,
+      "originalSha256Before": "C463E550A657B1DC01DFDB3845053698F9AD25BFE405E78A48094DFDD33A8661",
+      "originalSha256After": "C463E550A657B1DC01DFDB3845053698F9AD25BFE405E78A48094DFDD33A8661",
+      "retainedSha256": "C463E550A657B1DC01DFDB3845053698F9AD25BFE405E78A48094DFDD33A8661"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SafeLiveDiagnostic.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SafeLiveDiagnostic.cs",
+      "length": 3054,
+      "originalSha256Before": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D",
+      "originalSha256After": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D",
+      "retainedSha256": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SchedulingTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SchedulingTests.cs",
+      "length": 8584,
+      "originalSha256Before": "399F4C14FF6EF03E6A3F73300F6451645A507ABAC9785A507C0C26A8552F7980",
+      "originalSha256After": "399F4C14FF6EF03E6A3F73300F6451645A507ABAC9785A507C0C26A8552F7980",
+      "retainedSha256": "399F4C14FF6EF03E6A3F73300F6451645A507ABAC9785A507C0C26A8552F7980"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ScopedObservationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ScopedObservationTests.cs",
+      "length": 11197,
+      "originalSha256Before": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F",
+      "originalSha256After": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F",
+      "retainedSha256": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ScriptedRunner.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/ScriptedRunner.cs",
+      "length": 653,
+      "originalSha256Before": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455",
+      "originalSha256After": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455",
+      "retainedSha256": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryPlanningIntegrationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryPlanningIntegrationTests.cs",
+      "length": 6951,
+      "originalSha256Before": "52FC2E0914741BD5EAEEF7F191C9E6CB1CFCD9434B9BD2250198D2857B83E8F5",
+      "originalSha256After": "52FC2E0914741BD5EAEEF7F191C9E6CB1CFCD9434B9BD2250198D2857B83E8F5",
+      "retainedSha256": "52FC2E0914741BD5EAEEF7F191C9E6CB1CFCD9434B9BD2250198D2857B83E8F5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryTests.cs",
+      "length": 15510,
+      "originalSha256Before": "AAB0384ECE3EAFA4D5C421FB9D1BD7583519C128416AC404C91B91B6E3D962CF",
+      "originalSha256After": "AAB0384ECE3EAFA4D5C421FB9D1BD7583519C128416AC404C91B91B6E3D962CF",
+      "retainedSha256": "AAB0384ECE3EAFA4D5C421FB9D1BD7583519C128416AC404C91B91B6E3D962CF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryWorkload.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/SummaryWorkload.cs",
+      "length": 5315,
+      "originalSha256Before": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4",
+      "originalSha256After": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4",
+      "retainedSha256": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/TargetDiagnosticTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.Tests/TargetDiagnosticTests.cs",
+      "length": 4114,
+      "originalSha256Before": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720",
+      "originalSha256After": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720",
+      "retainedSha256": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyIaHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyIaHostedTests.cs",
+      "length": 15534,
+      "originalSha256Before": "2408037DCACC96B45263DCA6F8A9A573755504FEDC007CDBECF799B39E80CEE5",
+      "originalSha256After": "2408037DCACC96B45263DCA6F8A9A573755504FEDC007CDBECF799B39E80CEE5",
+      "retainedSha256": "2408037DCACC96B45263DCA6F8A9A573755504FEDC007CDBECF799B39E80CEE5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationEvidence.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationEvidence.cs",
+      "length": 2281,
+      "originalSha256Before": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197",
+      "originalSha256After": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197",
+      "retainedSha256": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationHostedTests.cs",
+      "length": 12974,
+      "originalSha256Before": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E",
+      "originalSha256After": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E",
+      "retainedSha256": "FE7C273E084B362520EE514B36F10B11AF9D1402DA5884E2702DE768FB98828E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationViewTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationViewTests.cs",
+      "length": 8629,
+      "originalSha256Before": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70",
+      "originalSha256After": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70",
+      "retainedSha256": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyRecoveryHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyRecoveryHostedTests.cs",
+      "length": 2688,
+      "originalSha256Before": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5",
+      "originalSha256After": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5",
+      "retainedSha256": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyResultsHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ApplyResultsHostedTests.cs",
+      "length": 19743,
+      "originalSha256Before": "E48942C6FBAF915B00D7AA165F048BEA5C2FFA37606C4EC50B269D924FD16776",
+      "originalSha256After": "E48942C6FBAF915B00D7AA165F048BEA5C2FFA37606C4EC50B269D924FD16776",
+      "retainedSha256": "E48942C6FBAF915B00D7AA165F048BEA5C2FFA37606C4EC50B269D924FD16776"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/BulkEditingHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/BulkEditingHostedTests.cs",
+      "length": 21552,
+      "originalSha256Before": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2",
+      "originalSha256After": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2",
+      "retainedSha256": "960A7313A26B4881CF240CDFAF1A0553A32F259C0334B305A113B196D9FE2FC2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ColumnHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ColumnHostedTests.cs",
+      "length": 11535,
+      "originalSha256Before": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D",
+      "originalSha256After": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D",
+      "retainedSha256": "CE595F8891D2F50775578A54D1234A0C600334F809790DB0E2E3BC7F29378C3D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ConfirmedEditUndoHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ConfirmedEditUndoHostedTests.cs",
+      "length": 12503,
+      "originalSha256Before": "8B66DBF89154DFD29CD3530D8671E8BBB066B7360F6E79D7F17ACA254E0F008B",
+      "originalSha256After": "8B66DBF89154DFD29CD3530D8671E8BBB066B7360F6E79D7F17ACA254E0F008B",
+      "retainedSha256": "8B66DBF89154DFD29CD3530D8671E8BBB066B7360F6E79D7F17ACA254E0F008B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ConnectionEntryHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ConnectionEntryHostedTests.cs",
+      "length": 9176,
+      "originalSha256Before": "E58FC5D1732E84FFED9925D6BB790745DE3347E0822623B15CC37F7FC0E773C0",
+      "originalSha256After": "E58FC5D1732E84FFED9925D6BB790745DE3347E0822623B15CC37F7FC0E773C0",
+      "retainedSha256": "E58FC5D1732E84FFED9925D6BB790745DE3347E0822623B15CC37F7FC0E773C0"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/CreationPromotionHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/CreationPromotionHostedTests.cs",
+      "length": 4262,
+      "originalSha256Before": "45AC54C53B76979FB5F75D38B4BAB16DBFA9269ACD0F4DCD23802F717691202A",
+      "originalSha256After": "45AC54C53B76979FB5F75D38B4BAB16DBFA9269ACD0F4DCD23802F717691202A",
+      "retainedSha256": "45AC54C53B76979FB5F75D38B4BAB16DBFA9269ACD0F4DCD23802F717691202A"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/DailyProgressHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/DailyProgressHostedTests.cs",
+      "length": 14098,
+      "originalSha256Before": "28A038FE87303AD22234623C1A71CC097DFC6CEE903CEBF3DC7E83EAA3BB324D",
+      "originalSha256After": "28A038FE87303AD22234623C1A71CC097DFC6CEE903CEBF3DC7E83EAA3BB324D",
+      "retainedSha256": "28A038FE87303AD22234623C1A71CC097DFC6CEE903CEBF3DC7E83EAA3BB324D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "length": 36762,
+      "originalSha256Before": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D",
+      "originalSha256After": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D",
+      "retainedSha256": "7FEF09F629A8F56A1F6773E272A08F4496647441BF1F3F15155DC2804F0FD84D"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj",
+      "length": 1417,
+      "originalSha256Before": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2",
+      "originalSha256After": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2",
+      "retainedSha256": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HistoricalDispositionHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HistoricalDispositionHostedTests.cs",
+      "length": 9153,
+      "originalSha256Before": "76C094382D187D79D794EC36B25CFE88F205D720DA8B6EAD5EE04335DDAE50FD",
+      "originalSha256After": "76C094382D187D79D794EC36B25CFE88F205D720DA8B6EAD5EE04335DDAE50FD",
+      "retainedSha256": "76C094382D187D79D794EC36B25CFE88F205D720DA8B6EAD5EE04335DDAE50FD"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HistoryConnectionHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HistoryConnectionHostedTests.cs",
+      "length": 6557,
+      "originalSha256Before": "2BA0C84664882728A58C6E19E1AC40D5D434FB38C4C06777D2EA974E1F75E9A4",
+      "originalSha256After": "2BA0C84664882728A58C6E19E1AC40D5D434FB38C4C06777D2EA974E1F75E9A4",
+      "retainedSha256": "2BA0C84664882728A58C6E19E1AC40D5D434FB38C4C06777D2EA974E1F75E9A4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs",
+      "length": 29110,
+      "originalSha256Before": "2C820388F86368D521485B1C9793E131B42A5ED285CE740FA16C02D46D7B4BE3",
+      "originalSha256After": "2C820388F86368D521485B1C9793E131B42A5ED285CE740FA16C02D46D7B4BE3",
+      "retainedSha256": "2C820388F86368D521485B1C9793E131B42A5ED285CE740FA16C02D46D7B4BE3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/InfrastructureTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/InfrastructureTests.cs",
+      "length": 1666,
+      "originalSha256Before": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF",
+      "originalSha256After": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF",
+      "retainedSha256": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+      "length": 35708,
+      "originalSha256Before": "24F7AB6091221DAC6AB36AF3BF989C4270E0FB36D26DDB2D6CA7999DFE5B6CA6",
+      "originalSha256After": "24F7AB6091221DAC6AB36AF3BF989C4270E0FB36D26DDB2D6CA7999DFE5B6CA6",
+      "retainedSha256": "24F7AB6091221DAC6AB36AF3BF989C4270E0FB36D26DDB2D6CA7999DFE5B6CA6"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningNavigationHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningNavigationHostedTests.cs",
+      "length": 8919,
+      "originalSha256Before": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8",
+      "originalSha256After": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8",
+      "retainedSha256": "BBCDC0B02A3BE8C1F8A8E79B0CBDAA81055950AB5007242312B84DE4046C38A8"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningPerformanceHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningPerformanceHostedTests.cs",
+      "length": 7893,
+      "originalSha256Before": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE",
+      "originalSha256After": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE",
+      "retainedSha256": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs",
+      "length": 25876,
+      "originalSha256Before": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084",
+      "originalSha256After": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084",
+      "retainedSha256": "F6887FCA7B5127E49AB99D301380B23D05D338AAD262EF4C397829FAEE94B084"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PostMergeHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/PostMergeHostedTests.cs",
+      "length": 6751,
+      "originalSha256Before": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4",
+      "originalSha256After": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4",
+      "retainedSha256": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/Program.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/Program.cs",
+      "length": 2172,
+      "originalSha256Before": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2",
+      "originalSha256After": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2",
+      "retainedSha256": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ProjectNavigationHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ProjectNavigationHostedTests.cs",
+      "length": 9413,
+      "originalSha256Before": "601EA4CF0FAE60FE4C12EFE58F68C7CF52F69F917AD72C2EF764D6C8783D22CE",
+      "originalSha256After": "601EA4CF0FAE60FE4C12EFE58F68C7CF52F69F917AD72C2EF764D6C8783D22CE",
+      "retainedSha256": "601EA4CF0FAE60FE4C12EFE58F68C7CF52F69F917AD72C2EF764D6C8783D22CE"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/RowApplyHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/RowApplyHostedTests.cs",
+      "length": 5896,
+      "originalSha256Before": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B",
+      "originalSha256After": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B",
+      "retainedSha256": "52EF5342197E2D887F6768ED04CDDE999A9DFA7444ACA57BD3F99469A17DA66B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/RowViewHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/RowViewHostedTests.cs",
+      "length": 7819,
+      "originalSha256Before": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E",
+      "originalSha256After": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E",
+      "retainedSha256": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SettingsFocusHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SettingsFocusHostedTests.cs",
+      "length": 5153,
+      "originalSha256Before": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F",
+      "originalSha256After": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F",
+      "retainedSha256": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetContextHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetContextHostedTests.cs",
+      "length": 14641,
+      "originalSha256Before": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B",
+      "originalSha256After": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B",
+      "retainedSha256": "1C03CD4ED2C0D3CC5ECE1A7B0B9109AD1F3EF4BAF2A9E33BA6E5EAB50F723A0B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetFocusedScrollHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetFocusedScrollHostedTests.cs",
+      "length": 21489,
+      "originalSha256Before": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E",
+      "originalSha256After": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E",
+      "retainedSha256": "8BDFA6300920FBDBDA675DE156D834F3256A175D623F54655CB6FA854C9DAE8E"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetHostedTests.cs",
+      "length": 4660,
+      "originalSha256Before": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13",
+      "originalSha256After": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13",
+      "retainedSha256": "AC12A821FCE89466C83CC4BA73F9B132DAD243EA2A9DE8F880DC7C1008B2AE13"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetNativeInput.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetNativeInput.cs",
+      "length": 7346,
+      "originalSha256Before": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513",
+      "originalSha256After": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513",
+      "retainedSha256": "8CAA19F83C376C0BCD5A4E02F46AD8113A30EB7B4EE36C71B986AF7033ADA513"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetRecyclingHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetRecyclingHostedTests.cs",
+      "length": 22137,
+      "originalSha256Before": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9",
+      "originalSha256After": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9",
+      "retainedSha256": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetViewportHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SheetViewportHostedTests.cs",
+      "length": 6383,
+      "originalSha256Before": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172",
+      "originalSha256After": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172",
+      "retainedSha256": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SummaryHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SummaryHostedTests.cs",
+      "length": 14488,
+      "originalSha256Before": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7",
+      "originalSha256After": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7",
+      "retainedSha256": "CC6B6B66D595D114A7402A0DD54DD38ABC95122491319DD1212CC1282C183AD7"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SummaryPerformanceHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/SummaryPerformanceHostedTests.cs",
+      "length": 5490,
+      "originalSha256Before": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B",
+      "originalSha256After": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B",
+      "retainedSha256": "52B0847D609DD15A4CF766F22917EA588CD2251DC518C03F2B92624A5CF4481B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ThemeHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/ThemeHostedTests.cs",
+      "length": 13107,
+      "originalSha256Before": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3",
+      "originalSha256After": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3",
+      "retainedSha256": "91763D600450492CECE32F291D8FD8C44DF002669D0348BC48C45AAA8A1A75A3"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/TrackedContext.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/TrackedContext.cs",
+      "length": 1131,
+      "originalSha256Before": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014",
+      "originalSha256After": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014",
+      "retainedSha256": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/Ui.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/Ui.cs",
+      "length": 9407,
+      "originalSha256Before": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656",
+      "originalSha256After": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656",
+      "retainedSha256": "E434860F0AD8F3E4EA5B21EC1CCDA3280C50DE7EAC7CDD611067556E94854656"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/UndoRowVisibilityHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/UndoRowVisibilityHostedTests.cs",
+      "length": 4704,
+      "originalSha256Before": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974",
+      "originalSha256After": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974",
+      "retainedSha256": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WeeklyRecoveryHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WeeklyRecoveryHostedTests.cs",
+      "length": 17573,
+      "originalSha256Before": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC",
+      "originalSha256After": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC",
+      "retainedSha256": "2F4114DFF6A2D1A35010861C9E08A8AF05419DE6C7228612E92113E083843BDC"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WindowLifetimeHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WindowLifetimeHostedTests.cs",
+      "length": 6783,
+      "originalSha256Before": "5F112384DEF6BEA7BBB97B0BF5B7888FF3F027946C7098EF0E06EBB8380CCD4F",
+      "originalSha256After": "5F112384DEF6BEA7BBB97B0BF5B7888FF3F027946C7098EF0E06EBB8380CCD4F",
+      "retainedSha256": "5F112384DEF6BEA7BBB97B0BF5B7888FF3F027946C7098EF0E06EBB8380CCD4F"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkflowPlanningHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkflowPlanningHostedTests.cs",
+      "length": 15388,
+      "originalSha256Before": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A",
+      "originalSha256After": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A",
+      "retainedSha256": "102B9B00C5C8F0D09D0CF53BE0298CAAC9CB866DE0740774BC08562E52A0800A"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceApplyPresentationTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceApplyPresentationTests.cs",
+      "length": 13358,
+      "originalSha256Before": "93DE209DB4BFFE0E620968642CA31E02C4143312FB1390DF2A81E60644A37750",
+      "originalSha256After": "93DE209DB4BFFE0E620968642CA31E02C4143312FB1390DF2A81E60644A37750",
+      "retainedSha256": "93DE209DB4BFFE0E620968642CA31E02C4143312FB1390DF2A81E60644A37750"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs",
+      "retained": "checks/daily-progress/final-focused-source/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs",
+      "length": 12435,
+      "originalSha256Before": "14E2ECB700EBD30E97018C48E8BEE7EE95051BB4CB81FE02A3FA8E84F5778C48",
+      "originalSha256After": "14E2ECB700EBD30E97018C48E8BEE7EE95051BB4CB81FE02A3FA8E84F5778C48",
+      "retainedSha256": "14E2ECB700EBD30E97018C48E8BEE7EE95051BB4CB81FE02A3FA8E84F5778C48"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-images/daily-progress-candidate.png",
+      "retained": "checks/daily-progress/final-images/daily-progress-candidate.png",
+      "length": 108824,
+      "originalSha256Before": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B",
+      "originalSha256After": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B",
+      "retainedSha256": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-images/daily-progress-sparse-actual-reports.png",
+      "retained": "checks/daily-progress/final-images/daily-progress-sparse-actual-reports.png",
+      "length": 104506,
+      "originalSha256Before": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030",
+      "originalSha256After": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030",
+      "retainedSha256": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/final-source-verification.json",
+      "retained": "checks/daily-progress/final-source-verification.json",
+      "length": 147,
+      "originalSha256Before": "9EE00922D51DAF4488EBAE33701E32B4BEFBAD6D99E5A714300F01C6276628D5",
+      "originalSha256After": "9EE00922D51DAF4488EBAE33701E32B4BEFBAD6D99E5A714300F01C6276628D5",
+      "retainedSha256": "9EE00922D51DAF4488EBAE33701E32B4BEFBAD6D99E5A714300F01C6276628D5"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/focused-validation-report.md",
+      "retained": "checks/daily-progress/focused-validation-report.md",
+      "length": 5596,
+      "originalSha256Before": "A9F397CF6D78AB27B9722F70AAF0C5B99FD3BA0F98C494AF54B34E03F5F19F06",
+      "originalSha256After": "A9F397CF6D78AB27B9722F70AAF0C5B99FD3BA0F98C494AF54B34E03F5F19F06",
+      "retainedSha256": "A9F397CF6D78AB27B9722F70AAF0C5B99FD3BA0F98C494AF54B34E03F5F19F06"
+    },
+    {
+      "original": "TestResults/issue73/blind-review/checks/daily-progress/independent-compound-review.md",
+      "retained": "checks/daily-progress/independent-compound-review.md",
+      "length": 6399,
+      "originalSha256Before": "F3534E631E2190B13AB3F058B66BB7337A04B9EEB6FF5A1F0FAA287840004C65",
+      "originalSha256After": "F3534E631E2190B13AB3F058B66BB7337A04B9EEB6FF5A1F0FAA287840004C65",
+      "retainedSha256": "F3534E631E2190B13AB3F058B66BB7337A04B9EEB6FF5A1F0FAA287840004C65"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/build.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/build.log",
+      "length": 4216,
+      "originalSha256Before": "14E7405E7BCC46DF1BAE439BBD1FB6E1493624CEF5C7FC0B52249323BE3F0B72",
+      "originalSha256After": "14E7405E7BCC46DF1BAE439BBD1FB6E1493624CEF5C7FC0B52249323BE3F0B72",
+      "retainedSha256": "14E7405E7BCC46DF1BAE439BBD1FB6E1493624CEF5C7FC0B52249323BE3F0B72"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/metadata.json",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/metadata.json",
+      "length": 11695,
+      "originalSha256Before": "618D504A3EE2724AF066B87B8E3ECBFF45957185D6B85701D9525AB66EA2E00D",
+      "originalSha256After": "618D504A3EE2724AF066B87B8E3ECBFF45957185D6B85701D9525AB66EA2E00D",
+      "retainedSha256": "618D504A3EE2724AF066B87B8E3ECBFF45957185D6B85701D9525AB66EA2E00D"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/results.xml",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/results.xml",
+      "length": 10498,
+      "originalSha256Before": "7AFD4B23573C000CE1BDC7D275F787C5D4D3D67E707FC4720BF37CEE84EC483A",
+      "originalSha256After": "7AFD4B23573C000CE1BDC7D275F787C5D4D3D67E707FC4720BF37CEE84EC483A",
+      "retainedSha256": "7AFD4B23573C000CE1BDC7D275F787C5D4D3D67E707FC4720BF37CEE84EC483A"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1311-db134e1c710a4b4f8f307c0aa695cecb\\daily-progress-candidate.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/screenshots/daily-progress-candidate.png",
+      "length": 108845,
+      "originalSha256Before": "68FBA2D95B69DCB9948B0F11745CC5015A53514D00615BEF290408916C4960C3",
+      "originalSha256After": "68FBA2D95B69DCB9948B0F11745CC5015A53514D00615BEF290408916C4960C3",
+      "retainedSha256": "68FBA2D95B69DCB9948B0F11745CC5015A53514D00615BEF290408916C4960C3"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1306-b0a85c09fe0045048303f2edd80d231d\\daily-progress-sparse-actual-reports.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/screenshots/daily-progress-sparse-actual-reports.png",
+      "length": 107213,
+      "originalSha256Before": "01B9A45714E10A38D13911E6DCA1D119C3DB77B003B589405EEDE2BB8C292C9B",
+      "originalSha256After": "01B9A45714E10A38D13911E6DCA1D119C3DB77B003B589405EEDE2BB8C292C9B",
+      "retainedSha256": "01B9A45714E10A38D13911E6DCA1D119C3DB77B003B589405EEDE2BB8C292C9B"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/source-diff.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/source-diff.log",
+      "length": 3818,
+      "originalSha256Before": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2",
+      "originalSha256After": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2",
+      "retainedSha256": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/source.diff",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/source.diff",
+      "length": 94017,
+      "originalSha256Before": "1CF7951E253B797F26EC1F35101685A97098C4A125493F0A90FDBAEEEDB85391",
+      "originalSha256After": "1CF7951E253B797F26EC1F35101685A97098C4A125493F0A90FDBAEEEDB85391",
+      "retainedSha256": "1CF7951E253B797F26EC1F35101685A97098C4A125493F0A90FDBAEEEDB85391"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/stderr.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/stderr.log",
+      "length": 2,
+      "originalSha256Before": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "originalSha256After": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "retainedSha256": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201112-410-77df5b96/stdout.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201112-410-77df5b96/stdout.log",
+      "length": 4047,
+      "originalSha256Before": "72F57287FBB320959BA44C8BA34A19F5156FA1D5265D4CA2DAA0158B91E20397",
+      "originalSha256After": "72F57287FBB320959BA44C8BA34A19F5156FA1D5265D4CA2DAA0158B91E20397",
+      "retainedSha256": "72F57287FBB320959BA44C8BA34A19F5156FA1D5265D4CA2DAA0158B91E20397"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/build.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/build.log",
+      "length": 7200,
+      "originalSha256Before": "6EEC107C7A8056EF0F2DF343671275823D3A593B7676CADA02DDCFABF90505A5",
+      "originalSha256After": "6EEC107C7A8056EF0F2DF343671275823D3A593B7676CADA02DDCFABF90505A5",
+      "retainedSha256": "6EEC107C7A8056EF0F2DF343671275823D3A593B7676CADA02DDCFABF90505A5"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/metadata.json",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/metadata.json",
+      "length": 11770,
+      "originalSha256Before": "A9B9999A6CB5D26E28DD892F099E551DE19ACFFC8A041EAC6D7115622A073623",
+      "originalSha256After": "A9B9999A6CB5D26E28DD892F099E551DE19ACFFC8A041EAC6D7115622A073623",
+      "retainedSha256": "A9B9999A6CB5D26E28DD892F099E551DE19ACFFC8A041EAC6D7115622A073623"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/results.xml",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/results.xml",
+      "length": 11192,
+      "originalSha256Before": "13B4D273EFDC82F2FBB62531E13BA02B313CEA844436E336547A78FF16E1B694",
+      "originalSha256After": "13B4D273EFDC82F2FBB62531E13BA02B313CEA844436E336547A78FF16E1B694",
+      "retainedSha256": "13B4D273EFDC82F2FBB62531E13BA02B313CEA844436E336547A78FF16E1B694"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1311-cbed8e196ff046c7a184fba24f64aab5\\daily-progress-candidate.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/screenshots/daily-progress-candidate.png",
+      "length": 108860,
+      "originalSha256Before": "E7BAA565FADAEEF48A61B1F773A8E97CAC96785A120892E0AB339218D254DC5B",
+      "originalSha256After": "E7BAA565FADAEEF48A61B1F773A8E97CAC96785A120892E0AB339218D254DC5B",
+      "retainedSha256": "E7BAA565FADAEEF48A61B1F773A8E97CAC96785A120892E0AB339218D254DC5B"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1306-a46e7ed33720462c864446f709e6dedd\\daily-progress-sparse-actual-reports.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/screenshots/daily-progress-sparse-actual-reports.png",
+      "length": 104129,
+      "originalSha256Before": "B25BB5D85B3AFBAED25F3CC133858C0CFBCD7FDB627219894B8B91429B09C02F",
+      "originalSha256After": "B25BB5D85B3AFBAED25F3CC133858C0CFBCD7FDB627219894B8B91429B09C02F",
+      "retainedSha256": "B25BB5D85B3AFBAED25F3CC133858C0CFBCD7FDB627219894B8B91429B09C02F"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/source-diff.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/source-diff.log",
+      "length": 3818,
+      "originalSha256Before": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2",
+      "originalSha256After": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2",
+      "retainedSha256": "CFF5A3E150CCB13AAD3E919FCFA2E231C727D046FD57A57C9369F4CBAFF65AA2"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/source.diff",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/source.diff",
+      "length": 94669,
+      "originalSha256Before": "43BE6E24855A97A57B1DB2ABD14AC45B7F8FB0C8C2EF7A9C96547EC0F5428A5B",
+      "originalSha256After": "43BE6E24855A97A57B1DB2ABD14AC45B7F8FB0C8C2EF7A9C96547EC0F5428A5B",
+      "retainedSha256": "43BE6E24855A97A57B1DB2ABD14AC45B7F8FB0C8C2EF7A9C96547EC0F5428A5B"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/stderr.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/stderr.log",
+      "length": 2,
+      "originalSha256Before": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "originalSha256After": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "retainedSha256": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201333-862-32314b72/stdout.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201333-862-32314b72/stdout.log",
+      "length": 3092,
+      "originalSha256Before": "375D0F2D361C26227016E8FFE9249BEB2CF6F949A1EEF737EC06D701909C007B",
+      "originalSha256After": "375D0F2D361C26227016E8FFE9249BEB2CF6F949A1EEF737EC06D701909C007B",
+      "retainedSha256": "375D0F2D361C26227016E8FFE9249BEB2CF6F949A1EEF737EC06D701909C007B"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/build.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/build.log",
+      "length": 7200,
+      "originalSha256Before": "A7B30A307CE559627635F0CBFA85DD6FEBFB40F9103EDEE4D4B2586DF6FDC7A5",
+      "originalSha256After": "A7B30A307CE559627635F0CBFA85DD6FEBFB40F9103EDEE4D4B2586DF6FDC7A5",
+      "retainedSha256": "A7B30A307CE559627635F0CBFA85DD6FEBFB40F9103EDEE4D4B2586DF6FDC7A5"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/metadata.json",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/metadata.json",
+      "length": 11891,
+      "originalSha256Before": "8E7F071AE532699F0B377751A80BB0AB26D5C1B7D64D13C884AEFF87822712B2",
+      "originalSha256After": "8E7F071AE532699F0B377751A80BB0AB26D5C1B7D64D13C884AEFF87822712B2",
+      "retainedSha256": "8E7F071AE532699F0B377751A80BB0AB26D5C1B7D64D13C884AEFF87822712B2"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/results.xml",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/results.xml",
+      "length": 7350,
+      "originalSha256Before": "0F8A0D46E86F44F04551A6BB3C1C4EEC4FF433F34DA79D6F0240DED88B521BE7",
+      "originalSha256After": "0F8A0D46E86F44F04551A6BB3C1C4EEC4FF433F34DA79D6F0240DED88B521BE7",
+      "retainedSha256": "0F8A0D46E86F44F04551A6BB3C1C4EEC4FF433F34DA79D6F0240DED88B521BE7"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1311-8146e9972c3c4924a0f7e58c866c32c1\\daily-progress-candidate.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/screenshots/daily-progress-candidate.png",
+      "length": 108824,
+      "originalSha256Before": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B",
+      "originalSha256After": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B",
+      "retainedSha256": "3062A490FCA9BB6F658BBEF15BA02357BA0BC60BAB00DB9375C887E5FDB9AD6B"
+    },
+    {
+      "original": "C:\\Users\\mwam0\\AppData\\Local\\Temp\\ghpb-review-1306-509927cf9e254a10b7bb6fdc27d90fb7\\daily-progress-sparse-actual-reports.png",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/screenshots/daily-progress-sparse-actual-reports.png",
+      "length": 104506,
+      "originalSha256Before": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030",
+      "originalSha256After": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030",
+      "retainedSha256": "7089CAE27591592EDB0CA2A21518950F91ED82EC84401F8D4A40985237DDE030"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/source-diff.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/source-diff.log",
+      "length": 4115,
+      "originalSha256Before": "CB57333B1C0D0548F2FB1FEF5C36531982E043659963787098206E354767931E",
+      "originalSha256After": "CB57333B1C0D0548F2FB1FEF5C36531982E043659963787098206E354767931E",
+      "retainedSha256": "CB57333B1C0D0548F2FB1FEF5C36531982E043659963787098206E354767931E"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/source.diff",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/source.diff",
+      "length": 100615,
+      "originalSha256Before": "9759B09AA76797F2133329838436FFFEEA1D2FEDE7CD615C95A4D792F0255B01",
+      "originalSha256After": "9759B09AA76797F2133329838436FFFEEA1D2FEDE7CD615C95A4D792F0255B01",
+      "retainedSha256": "9759B09AA76797F2133329838436FFFEEA1D2FEDE7CD615C95A4D792F0255B01"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/stderr.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/stderr.log",
+      "length": 2,
+      "originalSha256Before": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "originalSha256After": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6",
+      "retainedSha256": "7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6"
+    },
+    {
+      "original": "TestResults/ui-integration/run-20260927-201826-361-798682ef/stdout.log",
+      "retained": "checks/daily-progress/ui/run-20260927-201826-361-798682ef/stdout.log",
+      "length": 1453,
+      "originalSha256Before": "FBCBFE5A0E0541F2A7B3B4929FB3100DEBDFA82E1A723E49AC87A823E235CA9F",
+      "originalSha256After": "FBCBFE5A0E0541F2A7B3B4929FB3100DEBDFA82E1A723E49AC87A823E235CA9F",
+      "retainedSha256": "FBCBFE5A0E0541F2A7B3B4929FB3100DEBDFA82E1A723E49AC87A823E235CA9F"
+    }
+  ],
+  "excludedFiles": [],
+  "missingReferencedScreenshots": [],
+  "sourceAuthority": "checks/daily-progress/final-focused-source/receipt.json",
+  "outOfSnapshot": [
+    "Current App source and later working-tree edits; source authority is the frozen final-focused-source receipt.",
+    "Live round5-historical-m and all active N ordinary-evaluation work; no live tree enumeration or hashing.",
+    "Runtime binaries, build directories, credentials, unrelated output and later preparation/repair evidence."
+  ]
+}
