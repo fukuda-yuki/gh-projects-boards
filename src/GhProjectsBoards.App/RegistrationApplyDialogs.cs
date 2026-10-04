@@ -76,7 +76,7 @@ public sealed partial class RegistrationPanel
         applyDialog = true; ApplyHistory.IsEnabled = false;
         string? resolutionBatch = null; string? resolutionOperation = null; bool setupReview = false;
         string? resumeBatch = null; string? withdrawBatch = null;
-        bool reviewRemaining = false;
+        ApplyBatch? remainingReview = null;
         HistoricalFieldTarget? historicalTarget = null;
         string? historicalContinuation = null;
         try
@@ -176,7 +176,7 @@ public sealed partial class RegistrationPanel
                 var resume = new Button { Content = freshReview ? "未反映の変更を確認…" : "確認して再開", IsEnabled = owner.CanRead && !readOnly };
                 AutomationProperties.SetAutomationId(resume, ((batch.Creations ?? []).Any() ? "ResumeCreationBatch-" : "ResumeApplyBatch-") + batch.Id);
                 AutomationProperties.SetName(resume, $"{resume.Content}：{batch.ProjectName} / {batch.ReviewedAt.LocalDateTime:g}");
-                resume.Click += (_, _) => { if (!Current()) return; SaveListPlace(); if (freshReview) reviewRemaining = true; else resumeBatch = batch.Id; dialog.Hide(); };
+                resume.Click += (_, _) => { if (!Current()) return; SaveListPlace(); if (freshReview) remainingReview = batch; else resumeBatch = batch.Id; dialog.Hide(); };
                 var withdraw = new Button { Content = "承認を撤回", IsEnabled = !readOnly };
                 AutomationProperties.SetAutomationId(withdraw, "WithdrawApplyBatch-" + batch.Id);
                 AutomationProperties.SetName(withdraw, $"反映全体の承認を撤回：{batch.ProjectName} / {batch.ReviewedAt.LocalDateTime:g}");
@@ -405,7 +405,7 @@ public sealed partial class RegistrationPanel
         }
         finally { applyDialog = false; if (IsLoaded) Update(); }
         if (!Current()) return;
-        if (reviewRemaining) await ReviewApplyAsync(restartRemaining: true);
+        if (remainingReview is not null) await ReviewApplyAsync(restartRemaining: true, weeklyEffort: remainingReview.WeeklyEffort);
         else if (resumeBatch is not null)
         {
             var generation = applyViewGeneration;

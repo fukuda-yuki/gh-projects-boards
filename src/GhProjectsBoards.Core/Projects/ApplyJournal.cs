@@ -8,9 +8,13 @@ internal sealed record ApplyOperation(string Id, FieldKey Key, string ItemId, st
     string FieldName, string? Expected, LocalValue Intended, long Stamp, ApplyState State,
     ImmutableArray<ApplyAttempt> Attempts, string Reason, FieldObservation? Verification = null, DateTimeOffset? NotBefore = null);
 internal sealed record ApplyBatch(string Id, ScopedId Project, string ProjectName, long ReviewedRevision,
-    DateTimeOffset ReviewedAt, ImmutableArray<ApplyOperation> Operations, CreationOperation[]? Creations = null);
+    DateTimeOffset ReviewedAt, ImmutableArray<ApplyOperation> Operations, CreationOperation[]? Creations = null)
+{
+    public bool WeeklyEffort { get; init; }
+}
 internal sealed record ApplyReview(ApplyBatch Batch, string[] Blocked, int SelectedRows, int PendingBuffers)
 {
+    public bool WeeklyEffort => Batch.WeeklyEffort;
     public ApplyReviewProblem[] Problems { get; init; } = [];
     public string? HistoricalDecisionId { get; init; }
     public int UpdatedIssues => Batch.Operations.Select(o => o.IssueId).Distinct().Count();
@@ -87,28 +91,29 @@ internal sealed partial class EditingWorkspace
         Revision++;
     }
 
-    public ApplyReview ReviewApply(ProjectRegistration project, IReadOnlySet<string> selectedItems, IReadOnlyDictionary<string, CreationRepository>? destinations = null)
+    public ApplyReview ReviewApply(ProjectRegistration project, IReadOnlySet<string> selectedItems, IReadOnlyDictionary<string, CreationRepository>? destinations = null, bool weeklyEffort = false)
     {
         if (project.Snapshot.Id.Scope != Scope || !HasCheckpoint) throw new InvalidOperationException("保存済み同一プロフィールが必要です。");
         var p = project.Snapshot;
         var blocked = new List<ApplyReviewProblem>(); var operations = new List<ApplyOperation>();
+        bool Included(FieldKey key) => !weeklyEffort || IsWeeklyApplyField(project, key);
         var rows = ObservationWorkspace().OperationRows(project).Where(r => selectedItems.Contains(r.ItemId)).ToArray();
-        var locals = localRows.Where(r => r.ProjectId == p.Id.NodeId && selectedItems.Contains(r.Id)).ToArray();
+        var locals = localRows.Where(r => !weeklyEffort && r.ProjectId == p.Id.NodeId && selectedItems.Contains(r.Id)).ToArray();
         foreach (var id in selectedItems.Except(rows.Select(r => r.ItemId).Concat(locals.Select(r => r.Id))))
             blocked.Add(new(id, null, "選択した項目を現在のProjectで確認できません。"));
         var creations = ReviewCreations(project, locals, destinations, blocked);
         foreach (var row in rows)
         {
-        foreach (var decision in PlanningDecisions(p.Id.NodeId, row.ItemId))
+        foreach (var decision in PlanningDecisions(p.Id.NodeId, row.ItemId).Where(d => Included(d.Key)))
             blocked.Add(new(row.ItemId, decision.Key, ProjectionDecisionReason));
         var taskId = p.Items.Single(i => i.Id.NodeId == row.ItemId).ContentId?.NodeId;
-        if (Planning(p.Id.NodeId)?.Tasks.SingleOrDefault(t => t.Id == taskId)?.LocalLinks?.Any(l => l.PredecessorId.StartsWith("local-", StringComparison.Ordinal)) == true)
+        if (!weeklyEffort && Planning(p.Id.NodeId)?.Tasks.SingleOrDefault(t => t.Id == taskId)?.LocalLinks?.Any(l => l.PredecessorId.StartsWith("local-", StringComparison.Ordinal)) == true)
             blocked.Add(new(row.ItemId, null, "先行する新規行のIssue作成・所属検証を待っています。"));
         // A removed/unsupported field must not silently disappear from a selected row's payload.
-        foreach (var missing in fields.Values.Where(f => f.Change is not null && f.Key.Kind != "Title"
+        foreach (var missing in fields.Values.Where(f => Included(f.Key) && f.Change is not null && f.Key.Kind != "Title"
             && f.Key.ProjectId == p.Id.NodeId && f.Key.NodeId == row.ItemId && !row.Cells.Any(c => c.Key == f.Key)))
             blocked.Add(new(row.ItemId, missing.Key, "変更したフィールドを確認できません。行を対象外にするか、取得結果を確認してください。"));
-        foreach (var cell in row.Cells.Where(c => c.Key is not null))
+        foreach (var cell in row.Cells.Where(c => c.Key is not null && Included(c.Key)))
         {
             if (!fields.TryGetValue(cell.Key!, out var f) || f.Change is null || operations.Any(o => o.Key == f.Key)) continue;
             var reason = cell.Reason ?? (f.Conflict ? "未解決の競合" : f.Observation?.Reason);
@@ -124,8 +129,8 @@ internal sealed partial class EditingWorkspace
                 f.Baseline, f.Change, f.Stamp, ApplyState.Pending, [], "未送信"));
         }
         }
-        return new(new(Guid.NewGuid().ToString("N"), p.Id, p.Title, Revision, DateTimeOffset.UtcNow, operations.ToImmutableArray(), creations),
-            blocked.Select(b => b.Message).ToArray(), rows.Length + locals.Length, fields.Values.Count(f => f.Buffer is not null && rows.Any(r => r.Cells.Any(c => c.Key == f.Key)))
+        return new(new(Guid.NewGuid().ToString("N"), p.Id, p.Title, Revision, DateTimeOffset.UtcNow, operations.ToImmutableArray(), creations) { WeeklyEffort = weeklyEffort },
+            blocked.Select(b => b.Message).ToArray(), rows.Length + locals.Length, fields.Values.Count(f => Included(f.Key) && f.Buffer is not null && rows.Any(r => r.Cells.Any(c => c.Key == f.Key)))
                 + locals.Count(r => r.TitleBuffer is not null) + locals.Count(r => r.RepositoryBuffer is not null)) { Problems = blocked.ToArray() };
     }
     public void ConfirmApply(ApplyReview review)

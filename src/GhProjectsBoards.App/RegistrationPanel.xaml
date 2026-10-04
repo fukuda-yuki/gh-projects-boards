@@ -95,23 +95,25 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
                             </Grid>
                             <Grid x:Name="ProjectCommands" Grid.Column="1" ColumnSpacing="6" RowSpacing="4" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                 <Button x:Name="Refresh" Content="最新を取得" MinHeight="28" Padding="10,4" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
                                 <Button x:Name="Apply" Grid.Column="1" Content="GitHubに反映…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
-                                <Button x:Name="ApplyHistory" Grid.Column="2" Content="反映結果・履歴" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
-                                <Button x:Name="ProjectSettings" Grid.Column="3" Content="Project設定" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
+                                <Button x:Name="WeeklyApply" Grid.Column="2" Content="週次反映…" MinHeight="28" Padding="10,4" Click="ReviewWeeklyApply" ToolTipService.ToolTip="表示行の実績・残工数を選択して確認" AutomationProperties.AutomationId="ReviewWeeklyApplyButton"/>
+                                <Button x:Name="ApplyHistory" Grid.Column="3" Content="反映履歴" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
+                                <Button x:Name="PlanningSettingsCommand" Grid.Column="4" Content="計画の前提" MinHeight="28" Padding="10,4" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
+                                <Button x:Name="ProjectSettings" Grid.Column="5" Content="Project設定" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
                                     <Button.Flyout>
                                         <Flyout x:Name="ProjectSettingsFlyout" Placement="BottomEdgeAlignedRight">
                                             <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
                                                 <StackPanel Width="380" Spacing="12">
                                                     <TextBlock Text="Projectの情報と設定" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                                                    <Button Content="計画の前提" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
-                                                    <TextBlock x:Name="ProjectInformation" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ProjectInformation"/>
+                                                    <Expander Header="Project情報" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                                        <TextBlock x:Name="ProjectInformation" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ProjectInformation"/>
+                                                    </Expander>
                                                     <Button Content="対象のアクセス権限を確認…" Click="ShowTargetDiagnostics" AutomationProperties.AutomationId="ProjectTargetDiagnostics"/>
                                                     <Button Content="処理状況・診断…" Click="ShowStatusDetails" AutomationProperties.AutomationId="ProjectStatusDetailsButton"/>
-                                                    <TextBox x:Name="DefaultRepository" Header="新しいローカル行の既定Repository" PlaceholderText="owner/repo" AutomationProperties.AutomationId="DefaultRepository"/>
-                                                    <TextBlock Text="今後追加する行の宛先です。既存行の宛先や取得範囲は変わりません。" TextWrapping="Wrap"/>
+                                                    <TextBox x:Name="DefaultRepository" Header="新規行の既定Repository" PlaceholderText="owner/repo" ToolTipService.ToolTip="今後追加する行の宛先。既存行の宛先や取得範囲は変わりません。" AutomationProperties.AutomationId="DefaultRepository"/>
                                                     <Button x:Name="SaveSetting" Content="設定を保存" Click="SaveDefault" AutomationProperties.AutomationId="SaveProjectSettingButton"/>
                                                     <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
                                                         <Button x:Name="Remove" Content="ローカル登録を解除…" Click="RemoveProject" AutomationProperties.AutomationId="UnregisterProjectButton"/>
@@ -157,7 +159,7 @@
                     </Button.Flyout>
                 </Button>
                 <StackPanel x:Name="ApplyProgressPanel" Grid.Row="2" Grid.ColumnSpan="2" Margin="12,4" Spacing="4" Visibility="Collapsed">
-                    <TextBlock Text="反映の進行状況 — 中止は未送信の処理を止めます。完了したGitHub更新は取り消しません。" TextWrapping="Wrap"/>
+                    <TextBlock Text="反映中"/>
                     <ListView x:Name="ApplyProgressRows" MaxHeight="100" SelectionMode="None" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ApplyProgressRows">
                         <ListView.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"/></DataTemplate></ListView.ItemTemplate>
                     </ListView>

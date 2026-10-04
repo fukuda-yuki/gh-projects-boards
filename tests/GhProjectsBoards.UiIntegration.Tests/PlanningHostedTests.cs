@@ -64,7 +64,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Ready<TextBlock>("GridHeader6");
         await Ui.Run(() => {
             Assert.That(session.Workspace.Planning("P1")!.Tasks, Is.Empty, "Project setup must not invent per-task owners or dates.");
-            Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Text, Does.Contain("見積（人時）"));
+            Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Text, Is.EqualTo("日程未設定"));
             Assert.That(Ui.Find<TextBlock>("FirstPlanningHint").Visibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
             Assert.That(Ui.Tree(Ui.Find<Grid>("SheetHeader")).OfType<TextBlock>().Any(t => t.Text == "EndDate"), Is.True);
             FocusCell("GridCell0_2");

@@ -175,6 +175,14 @@ internal static class WorkspaceUi
         }
         if (ProjectSettingsControls.Contains(id) && Find(window, id) is null)
             InvokeRoute(window, "ProjectSettingsButton");
+        if (id == "ProjectInformation")
+        {
+            var section = Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByName("Project情報")),
+                TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100)).Result;
+            Assert.That(section, Is.Not.Null, "Project information must be available through its disclosure.");
+            section!.Patterns.ExpandCollapse.Pattern.Expand();
+            Wait(() => Visible(Find(window, id)), "Expanded Project information must be visible.");
+        }
         if (DiscoveryControls.Contains(id))
         {
             Wait(() => Visible(Find(window, "ProjectDiscoverySearchExpander")), "The discovery form must load before expanding its search route.");

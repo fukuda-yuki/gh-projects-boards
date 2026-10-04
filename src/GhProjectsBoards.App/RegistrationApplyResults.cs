@@ -84,7 +84,7 @@ public sealed partial class RegistrationPanel
         if (!IsCurrent(owner, expected) || outcome.Generation != applyViewGeneration || Workspace.Selected?.Snapshot.Id != outcome.Project
             || !ReferenceEquals(Workspace.Drafts, outcome.Session)) return;
         if (choice == ContentDialogResult.Secondary && Workspace.CanRestartApplyReview && CanReviewRemaining(batch, outcome.Session.Workspace))
-        { await ReviewApplyAsync(restartRemaining: true); return; }
+        { await ReviewApplyAsync(restartRemaining: true, weeklyEffort: batch.WeeklyEffort); return; }
         EditorHost.Children.OfType<EditingGrid>().SingleOrDefault()?.GoToApplyProblem(attention[0]);
     }
 

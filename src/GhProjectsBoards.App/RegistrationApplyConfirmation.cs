@@ -19,8 +19,9 @@ public sealed partial class RegistrationPanel
     }
 
     private async void ReviewApply(object sender, RoutedEventArgs e) => await ReviewApplyAsync();
+    private async void ReviewWeeklyApply(object sender, RoutedEventArgs e) => await ReviewApplyAsync(weeklyEffort: true);
 
-    private async Task ReviewApplyAsync(string? historicalDecisionId = null, bool restartRemaining = false)
+    private async Task ReviewApplyAsync(string? historicalDecisionId = null, bool restartRemaining = false, bool weeklyEffort = false)
     {
         if (applyDialog || Workspace.Selected is not { } initial || Workspace.Drafts is not { } session) return;
         if (!CanRefreshEditors())
@@ -31,10 +32,14 @@ public sealed partial class RegistrationPanel
         }
         var owner = Workspace; var expected = lifetime; var projectId = initial.Snapshot.Id; var login = owner.ProfileLogin;
         var visible = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault()?.DisplayedRowIds ?? [];
-        var selectedIds = new HashSet<string>();
         var continuation = historicalDecisionId is null ? null : session.Workspace.HistoricalDispositions.SingleOrDefault(d => d.Id == historicalDecisionId);
         if (historicalDecisionId is not null && continuation is null) return;
+        if (continuation is not null && HistoricalFieldHandling.Resolve(session.Workspace.Journal, continuation.Target) is { } source)
+            weeklyEffort = source.Batch.WeeklyEffort;
+        var selectedIds = new HashSet<string>();
         if (continuation is not null) selectedIds.Add(continuation.Observation.ItemId);
+        else if (weeklyEffort) selectedIds.UnionWith(session.Workspace.WeeklyApplyCandidates(initial)
+            .Where(c => visible.Contains(c.Id) && c.Fields.Any(f => f.Change is not null)).Select(c => c.Id));
         var table = new ApplyConfirmationTable();
         var status = ApplyText(""); AutomationProperties.SetAutomationId(status, "ApplyCheckStatus");
         var counts = ApplyText(""); AutomationProperties.SetAutomationId(counts, "ApplyTargetCounts");
@@ -79,13 +84,15 @@ public sealed partial class RegistrationPanel
             content.RowDefinitions.Add(new() { Height = height });
         var sections = new FrameworkElement[] { header, hidden, problem, table, auxiliary };
         for (var i = 0; i < sections.Length; i++) { Grid.SetRow(sections[i], i); content.Children.Add(sections[i]); }
-        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = "反映内容の確認", Content = content,
+        var dialog = new ContentDialog { XamlRoot = XamlRoot, Title = weeklyEffort ? "週次反映 — 実績・残工数" : "反映内容の確認", Content = content,
             PrimaryButtonText = "GitHubに反映（確認中）", IsPrimaryButtonEnabled = false,
             CloseButtonText = "編集へ戻る", DefaultButton = ContentDialogButton.Close };
         void SizeReview()
         {
             content.Width = Math.Min(1100, Math.Max(280, XamlRoot.Size.Width - 112));
-            content.Height = Math.Max(180, Math.Min(600, XamlRoot.Size.Height - 200));
+            // Let the native dialog subtract its measured title, padding and
+            // footer; an exact height can overflow that available content slot.
+            content.MaxHeight = Math.Max(180, Math.Min(600, XamlRoot.Size.Height - 200));
             dialog.Resources["ContentDialogMaxWidth"] = content.Width + 64;
             // The native flyout offers less content width than the review dialog.
             informationText.MaxWidth = Math.Max(160, Math.Min(400, XamlRoot.Size.Width - 112));
@@ -132,7 +139,7 @@ public sealed partial class RegistrationPanel
         {
             if (!Current()) { UpdateApproval(); return; }
             var p = owner.Selected!;
-            var fresh = session.Workspace.ApplyCandidates(p);
+            var fresh = weeklyEffort ? session.Workspace.WeeklyApplyCandidates(p) : session.Workspace.ApplyCandidates(p);
             foreach (var candidate in fresh) retainedCandidates[candidate.Id] = candidate;
             var candidates = fresh.Concat(retainedCandidates.Values.Where(c => selectedIds.Contains(c.Id) && fresh.All(n => n.Id != c.Id))
                 .Select(c => c with { Fields = c.Fields.Select(f => session.Workspace.Fields.SingleOrDefault(n => n.Key == f.Key) ?? f).ToArray() })).ToArray();
@@ -160,9 +167,9 @@ public sealed partial class RegistrationPanel
                     status.Text = "GitHubの最新状態を確認中…"; Populate();
                     var ids = selectedIds.ToHashSet();
                     var targets = new RowTargetSelection(projectId, visible, ids.ToArray(), includeHidden.IsChecked == true);
-                    if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets);
+                    if (restartThisCheck) await owner.RestartApplyReviewAsync(ids, targets, weeklyEffort);
                     else if (historicalDecisionId is not null) await owner.PrepareHistoricalFollowUpAsync(historicalDecisionId, ids, targets);
-                    else await owner.PrepareApplyAsync(ids, targets);
+                    else await owner.PrepareApplyAsync(ids, targets, weeklyEffort);
                     if (!Current()) break;
                     if (thisRequest != request) continue;
                     checking = false; review = owner.ApplyReview;

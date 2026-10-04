@@ -57,7 +57,13 @@ internal sealed partial class EditingGrid
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
             surface.RowDefinitions.Add(new() { Height = height });
         var identity = new TextBlock { Text = $"{RowIdentity(row)}  {work.Value(row.Cells[0]) ?? row.Cells[0].Display}", TextWrapping = TextWrapping.Wrap };
-        AutomationProperties.SetAutomationId(identity, "DailyTaskIdentity"); surface.Children.Add(identity);
+        AutomationProperties.SetAutomationId(identity, "DailyTaskIdentity");
+        var heading = new Grid { ColumnSpacing = 8 };
+        heading.ColumnDefinitions.Add(new()); heading.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        heading.Children.Add(identity);
+        var help = PlanningHelpButton("DailyProgressHelp", "実績・進捗のヘルプ",
+            "実績は報告対象最終日までの累計人時、残時間はこれから必要な工数です。実績だけでは進捗を変更しません。\n計画上の進捗は日程計算に使う工数を決めます。Projectの項目は連動せず、この画面で選んだ変更だけを一緒に確定します。\n日時を指定したタスクは進捗を変更しても自動計算に切り替わりません。");
+        SetColumn(help, 1); heading.Children.Add(help); surface.Children.Add(heading);
         var adopted = work.PlanFor(registration).Tasks.SingleOrDefault(t => t.Id == taskId);
         var schedule = new TextBlock { Text = adopted is null ? "採用日程：未設定"
             : $"採用日程：{DateText(adopted.Start)} → {DateText(adopted.Finish)}"
@@ -95,9 +101,8 @@ internal sealed partial class EditingGrid
         UpdateAmountPending();
         actual.IsReadOnly = actualContext is null || actualContext.MultipleReports;
         remaining.IsReadOnly = remainingCell is not { Editable: true };
-        content.Children.Add(new TextBlock { Text = "実績は累計、残時間はこれから必要な工数です。実績だけでは進捗を変更しません。", TextWrapping = TextWrapping.Wrap });
         if (actualProblem is not null || actualContext?.MultipleReports == true)
-            content.Children.Add(new TextBlock { Text = actualProblem ?? "複数人の実績は「タスクの詳細」で内訳を更新してください。合計を自動配分しません。", TextWrapping = TextWrapping.Wrap });
+            content.Children.Add(new TextBlock { Text = actualProblem ?? "複数人の実績は「タスクの詳細」で更新", TextWrapping = TextWrapping.Wrap });
         var report = new Grid { ColumnSpacing = 12, Visibility = actualContext is null or { MultipleReports: true } ? Visibility.Collapsed : Visibility.Visible };
         AutomationProperties.SetAutomationId(report, "DailyReportContext");
         report.ColumnDefinitions.Add(new()); report.ColumnDefinitions.Add(new()); content.Children.Add(report);
@@ -121,7 +126,6 @@ internal sealed partial class EditingGrid
         var progress = new FormComboBox { Header = "計画上の進捗（日程計算）", HorizontalAlignment = HorizontalAlignment.Stretch,
             ItemsSource = new[] { "未着手", "進行中", "完了", "再開" }, SelectedIndex = (int)task.Progress };
         AutomationProperties.SetAutomationId(progress, "DailyProgress"); content.Children.Add(progress);
-        content.Children.Add(new TextBlock { Text = "日程計算に使う工数を決めます。Projectの項目は別に変更します。", TextWrapping = TextWrapping.Wrap });
         var effect = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(effect, "DailyProgressEffect"); content.Children.Add(effect);
         var confirmRemaining = new CheckBox { Content = "再開時の残時間を確認" }; AutomationProperties.SetAutomationId(confirmRemaining, "DailyConfirmRemaining"); content.Children.Add(confirmRemaining);
         var start = new MinuteEditor("実績開始（日本時間）", "DailyActualStart", DateText(task.ActualStart));
@@ -134,10 +138,10 @@ internal sealed partial class EditingGrid
             start.Visibility = value != PlanningProgress.Unstarted || task.ActualStart is not null ? Visibility.Visible : Visibility.Collapsed;
             finish.Visibility = value == PlanningProgress.Completed || task.ActualFinish is not null ? Visibility.Visible : Visibility.Collapsed;
             effect.Text = value == PlanningProgress.Completed ? "完了には残時間0と実績開始・終了を入力してください。"
-                : task.Mode == PlanningMode.Manual ? "指定した日程を保持します。進捗の変更だけでは自動計算に切り替えません。"
-                : task.Mode == PlanningMode.Unplanned ? "日程は未設定です。「日程を編集」で計画方法を選んでください。"
-                : value is PlanningProgress.InProgress or PlanningProgress.Reopened ? $"確定後は残時間で計算します。再計画の基準：{DateText(plan.Cutoff)}"
-                : "確定後も見積で計算します。残時間を使うには進捗を変更してください。";
+                : task.Mode == PlanningMode.Manual ? "指定した日程を保持"
+                : task.Mode == PlanningMode.Unplanned ? "日程未設定"
+                : value is PlanningProgress.InProgress or PlanningProgress.Reopened ? $"残時間で計算 · 基準 {DateText(plan.Cutoff)}"
+                : "見積で計算";
         }
         progress.SelectionChanged += (_, _) => Explain(); Explain();
         var fieldChoice = new Grid { ColumnSpacing = 8 };
@@ -175,8 +179,8 @@ internal sealed partial class EditingGrid
             // abandon an already selected option for another field.
             projectField.IsEnabled = !dirty; resetField.Visibility = dirty ? Visibility.Visible : Visibility.Collapsed;
             fieldHint.Text = fieldProblem is not null ? fieldProblem + " 変更せずに日程計算の入力を確定できます。"
-                : dirty ? $"変更候補です。確定済み: {initialOptionLabel}。確定するまで変更しません。"
-                : "確定済みのローカル値です。選択肢を変えた場合だけ、確定に含めます。";
+                : dirty ? $"変更候補 · 確定済み: {initialOptionLabel}"
+                : "確定済みのローカル値";
         }
         void LoadProjectField()
         {

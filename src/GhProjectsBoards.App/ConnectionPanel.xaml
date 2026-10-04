@@ -7,10 +7,12 @@
         <StackPanel Orientation="Horizontal" Spacing="16" Margin="24,12">
             <Button x:Name="BackButton" Content="元の作業へ戻る" Click="GoBack" AutomationProperties.AutomationId="ProjectsPageButton"/>
             <TextBlock Text="接続設定" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center"/>
+            <Button Content="?" AutomationProperties.Name="接続設定のヘルプ" AutomationProperties.AutomationId="ConnectionHelp">
+                <Button.Flyout><Flyout><TextBlock MaxWidth="420" TextWrapping="Wrap" Text="接続先とアカウントを確認します。確認後は元の作業へ戻れます。Projectの取得や登録、GitHubへの反映はここでは行いません。&#x0a;&#x0a;対象の更新権限はProject設定や反映内容の確認で確認します。"/></Flyout></Button.Flyout>
+            </Button>
         </StackPanel>
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="ConnectionScreen">
-            <StackPanel Margin="24,12,24,24" Spacing="16" MaxWidth="900" HorizontalAlignment="Stretch">
-                <TextBlock Text="接続先とアカウントを確認します。確認後は元の作業へ戻れます。Projectの取得や登録、GitHubへの反映はここでは行いません。" TextWrapping="Wrap"/>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ConnectionScreen">
+            <StackPanel Margin="24,12,24,24" Spacing="16" MaxWidth="900" HorizontalAlignment="Left">
                 <TextBox x:Name="HostInput" Header="GitHub ホスト" AutomationProperties.AutomationId="HostInput"/>
                 <TextBlock Text="アカウント" FontWeight="SemiBold"/>
                 <TextBlock x:Name="AccountValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AccountValue"/>
@@ -21,7 +23,6 @@
                 </StackPanel>
                 <TextBlock x:Name="StatusValue" TextWrapping="Wrap" AutomationProperties.AutomationId="ConnectionStatus"/>
                 <TextBlock x:Name="UiMessage" TextWrapping="Wrap" AutomationProperties.AutomationId="UiMessage"/>
-                <TextBlock Text="接続の成功は、個別のProjectやIssueの更新権限を保証しません。対象の権限はProjectの追加・情報、反映内容の確認で確認します。" TextWrapping="Wrap"/>
                 <Expander Header="CLIと接続の詳細" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ConnectionDetails">
                     <StackPanel Spacing="12">
                         <TextBox x:Name="ExecutableInput" Header="GitHub CLI 実行ファイル" AutomationProperties.AutomationId="ExecutablePath"/>

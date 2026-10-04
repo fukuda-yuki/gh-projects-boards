@@ -235,6 +235,13 @@ internal sealed partial class EditingGrid : Grid
             if (detailsPane.Visibility == Visibility.Visible) ((ScrollViewer)detailsPane.Child).ChangeView(null, 0, null, true);
         };
         SetColumn(detailButton, 2); selectionBar.Children.Add(detailButton);
+        var inputHelpText = new TextBlock { MaxWidth = 420, TextWrapping = TextWrapping.Wrap,
+            Text = "Shift+クリック / Shift+矢印で範囲選択。F2で編集。\nCtrl+Dまたは右下のハンドルで下へコピー。Ctrl+VでTSVの複数行・列を貼り付け。\n実績は共通の報告日で更新し、各行の担当者を保持します。\n一括操作は「元に戻す」でまとめて取り消せます。編集はローカル保存され、GitHubへの反映は確認画面で承認します。" };
+        AutomationProperties.SetAutomationId(inputHelpText, "GridInputHelpText");
+        var inputHelp = new Button { Content = "?", MinHeight = 26, Padding = new(8, 2, 8, 2), Flyout = new Flyout { Content = inputHelpText } };
+        AutomationProperties.SetAutomationId(inputHelp, "GridInputHelp"); AutomationProperties.SetName(inputHelp, "表の操作ヘルプ");
+        selectionBar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        SetColumn(inputHelp, 3); selectionBar.Children.Add(inputHelp);
         footer.Children.Add(selectionBar); footer.Children.Add(columnNotice);
         SetRow(footer, 5); Children.Add(footer);
         InitializeWorkspaceStatus();
@@ -869,7 +876,7 @@ internal sealed partial class EditingGrid : Grid
         selection.Text = drag is { Fill: true } operation
             ? $"{layout.Visible[operation.Column].Name}：{Math.Abs(operation.EndRow - operation.SourceRow) + 1}行へコピー予定 · 離して確定 / Escで取消"
             : active ? SelectionRangeText()
-            : "セルを選択 · Shiftで範囲選択 · F2で編集";
+            : "";
         AutomationProperties.SetHelpText(selection, active ? $"先頭 {rows[anchorRow].ItemId} / アクティブ {rows[currentRow].ItemId}" : "");
         selectionBar.ColumnDefinitions[0].Width = new(HasSelectedRange ? 1.7 : 1, GridUnitType.Star);
         selectionBar.ColumnDefinitions[1].Width = new(HasSelectedRange ? 1 : 1.7, GridUnitType.Star);
@@ -1123,7 +1130,7 @@ internal sealed partial class EditingGrid : Grid
         var range = SelectedRange();
         if (range.ColumnCount != 1 || range.RowCount < 2) throw new InvalidOperationException("元セルを先頭に含む同じ列の範囲を選択してください。");
         if (!CanRefresh) throw new InvalidOperationException("IME変換中です。確定または取消してから実行してください。");
-        session.Workspace.Fill(projectId, rows, range.Row, range.Column, range.Row, range.Row + range.RowCount - 1);
+        session.Workspace.Fill(projectId, rows, range.Row, range.Column, range.Row, range.Row + range.RowCount - 1, confirmedActualThrough);
     }
     private async Task PasteAsync()
     {
@@ -1131,6 +1138,7 @@ internal sealed partial class EditingGrid : Grid
         var selected = active;
         var range = SelectedRange(); var revision = session.Workspace.Revision;
         var requestGeneration = generation;
+        var reportingDay = confirmedActualThrough;
         var destinations = rows.Select(row => row with { Cells = row.Cells.ToArray() }).ToArray();
         try
         {
@@ -1141,11 +1149,14 @@ internal sealed partial class EditingGrid : Grid
                 if (range.Single && TypedPlanning(destinations[range.Row].Cells[range.Column]))
                 {
                     var values = EditingWorkspace.ParseTsv(clipboard.Text);
-                    if (values.Length != 1 || values[0].Length != 1) throw new InvalidOperationException("実績・日時は対象を確認して1セルずつ入力してください。");
-                    session.Workspace.SetPlanningBuffer(destinations[range.Row].Cells[range.Column], values[0][0]);
-                    Select(range.Row, range.Column, false); UpdateCell(range.Row, range.Column);
+                    if (values.Length == 1 && values[0].Length == 1)
+                    {
+                        session.Workspace.SetPlanningBuffer(destinations[range.Row].Cells[range.Column], values[0][0]);
+                        Select(range.Row, range.Column, false); UpdateCell(range.Row, range.Column); return;
+                    }
+                    if (TypedDate(destinations[range.Row].Cells[range.Column])) throw new InvalidOperationException("日時は対象を確認して1セルずつ入力してください。");
                 }
-                else session.Workspace.PasteSelection(projectId, destinations, range, clipboard.Text, clipboard.Cells); });
+                session.Workspace.PasteSelection(projectId, destinations, range, clipboard.Text, clipboard.Cells, reportingDay); });
         }
         catch (Exception error) { diagnostics?.Record("paste-read-failure", new { type = error.GetType().Name, error.HResult }); ShowOperationProblem("クリップボードを読み取れません。"); }
     }
