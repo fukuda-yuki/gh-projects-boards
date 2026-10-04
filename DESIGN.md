@@ -12,7 +12,7 @@ This document owns the criteria for judging interface design. [AGENTS.md](AGENTS
 - **Good / bad:** A dense table with aligned Issue identities and before/after values supports comparison. Repeated explanations, idle process reports and decorative panels that displace those values add noise. An almost empty screen that hides every difference also fails.
 - **Check:** Can the user identify the work, compare relevant values and continue editing without reconstructing context? Do visible elements contribute to the current task?
 
-The product goal is a native Windows editing workspace, not a marketing page, a status dashboard or a reproduction of a web component library. The [product outline](docs/requirements.md#product-goal) defines the work it serves; this document does not select a new grid or invent a visual theme.
+The product goal is a native Windows PMO planning workspace: update actual and remaining effort, find insufficient capacity, inspect the contributing tasks, and replan locally before explicit GitHub publication. Summary, Boards and Gantt serve that connected job. Ordinary-state instructions must not displace the work; use concise labels and disclose supplementary explanations on request. The [product outline](docs/requirements.md#product-goal) defines the work it serves.
 
 ## Information architecture and surface roles
 

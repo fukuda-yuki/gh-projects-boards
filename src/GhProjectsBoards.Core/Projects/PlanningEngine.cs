@@ -2,7 +2,11 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal sealed record PlanningInput(PlanningTask Task, decimal? Estimate, decimal? Remaining,
     string[] Assignees, PlanningLink[] Predecessors, bool RelationshipsComplete = true, bool? RemoteClosed = null, decimal? ActualTotal = null,
-    string? SourceProblem = null);
+    string? SourceProblem = null, bool DoneStatus = false, string? DisplayName = null)
+{
+    public bool SatisfiesPrecedence => Task.Progress != PlanningProgress.Reopened
+        && (Task.Progress == PlanningProgress.Completed || RemoteClosed == true || DoneStatus);
+}
 internal sealed record TaskPlan(string Id, PlanningMode Mode, long SourceRevision, decimal? RawHours,
     decimal? ScheduledMinutes, DateTime? Start, DateTime? Finish, DateTime? SuggestedStart, DateTime? SuggestedFinish,
     string? Problem, string[] Warnings, string? Controller, PlanningWarningDetail[]? WarningDetails = null)
@@ -86,6 +90,15 @@ internal sealed class WorkingCalendar(PlanningCalendar calendar)
 
 internal static class PlanningEngine
 {
+    internal static string? DisplayReason(AdoptedPlan plan, string? text)
+    {
+        if (text?.StartsWith("先行 ", StringComparison.Ordinal) == true)
+        {
+            var id = text[3..];
+            return "先行 " + (plan.Inputs?.SingleOrDefault(i => i.Task.Id == id)?.DisplayName ?? "Project外のタスク");
+        }
+        return text;
+    }
     public static AdoptedPlan Calculate(ProjectPlanning project, PlanningInput[] inputs, long revision)
     {
         var calendar = new WorkingCalendar(project.Calendar);
@@ -159,12 +172,23 @@ internal static class PlanningEngine
                 {
                     if (link.Kind != "FS") throw new InvalidOperationException($"先行関係 {link.Kind} は自動計算に非対応です。関係は保持しています。");
                     DateTime? boundary = link.ExternalFinish;
+                    var label = byId.TryGetValue(link.PredecessorId, out var named) ? named.DisplayName ?? "先行タスク" : "Project外の先行タスク";
                     if (byId.TryGetValue(link.PredecessorId, out var predecessor))
                     {
-                        var previous = CalculateOne(predecessor); boundary = previous.Finish;
-                        if (previous.Problem is not null || previous.Warnings.Length != 0) Warn($"先行 {link.PredecessorId} に警告があります。", PlanningWarningKind.Inherited, link.PredecessorId);
+                        if (predecessor.SatisfiesPrecedence)
+                        {
+                            // Completion satisfies the edge, not missing historical
+                            // effort or dates. Never manufacture an actual finish.
+                            boundary = predecessor.Task.ActualFinish ?? (predecessor.Task.Mode == PlanningMode.Manual ? predecessor.Task.ManualFinish : null);
+                            if (boundary is null) continue;
+                        }
+                        else
+                        {
+                            var previous = CalculateOne(predecessor); boundary = previous.Finish;
+                            if (previous.Problem is not null || previous.Warnings.Length != 0) Warn($"先行 {label} に警告があります。", PlanningWarningKind.Inherited, link.PredecessorId);
+                        }
                     }
-                    if (boundary is null) throw new InvalidOperationException($"先行 {link.PredecessorId} の採用終了を確認できません。");
+                    if (boundary is null) throw new InvalidOperationException($"{label} の終了日を設定してください。");
                     if (boundary > anchor) { anchor = boundary.Value; controller = "先行 " + link.PredecessorId; }
                 }
                 if (task.FixedStart is { } fixedStart)
@@ -213,7 +237,7 @@ internal static class PlanningEngine
             if (active.TryGetValue(id, out var index)) { cycles.UnionWith(stack.Skip(index)); return; }
             if (!visited.Add(id)) return;
             active[id] = stack.Count; stack.Add(id);
-            foreach (var link in graph[id].Predecessors.Where(l => l.Kind == "FS" && graph.ContainsKey(l.PredecessorId))) Visit(link.PredecessorId);
+            foreach (var link in graph[id].Predecessors.Where(l => l.Kind == "FS" && graph.TryGetValue(l.PredecessorId, out var prior) && !prior.SatisfiesPrecedence)) Visit(link.PredecessorId);
             active.Remove(id); stack.RemoveAt(stack.Count - 1);
         }
         foreach (var input in inputs) Visit(input.Task.Id);

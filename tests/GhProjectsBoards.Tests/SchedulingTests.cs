@@ -9,6 +9,19 @@ internal sealed class SchedulingTests
     private static DateTime At(string text) => PlanningContractTests.At(text);
     private static ProjectPlanning Plan(decimal weight = 100) => PlanningPathTests.Plan() with { People = [new("U1", "Owner", weight)] };
     private static PlanningInput Input(string id, decimal? effort, string? predecessor = null) => new(new(id, PlanningMode.Auto, "U1"), effort, null, [], predecessor is null ? [] : [new(predecessor)]);
+    [TestCase(true), TestCase(false)]
+    public void CompletedPredecessorWithoutDatesDoesNotBlockOrInventActualDates(bool closedIssue)
+    {
+        var predecessor = Input("A", null) with { RemoteClosed = closedIssue,
+            Task = new("A", Progress: closedIssue ? PlanningProgress.Unstarted : PlanningProgress.Completed) };
+        var result = PlanningEngine.Calculate(Plan(), [predecessor, Input("B", 1, "A")], 1);
+        Assert.Multiple(() => {
+            Assert.That(result.Tasks[1].Start, Is.EqualTo(Plan().Start));
+            Assert.That(result.Tasks[1].Finish, Is.EqualTo(At("2026-10-05 10:00")));
+            Assert.That(result.Inputs![0].Task.ActualFinish, Is.Null);
+            Assert.That(result.Inputs[0].Remaining, Is.Null);
+        });
+    }
     [TestCase("2026-10-05 13:00", "2026-10-05 14:00")]
     [TestCase("2026-10-05 18:00", "2026-10-06 09:00")]
     public void PositiveWorkAtFinishBoundaryStartsInNextEligibleInterval(string anchor, string start)

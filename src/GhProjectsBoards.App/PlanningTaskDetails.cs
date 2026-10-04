@@ -208,7 +208,7 @@ internal sealed partial class EditingGrid
         var choices = registration.Snapshot.Issues.Values.Where(i => i.Id.NodeId != task.Id)
             .Select(i => new PredecessorChoice(i.Id.NodeId, $"{i.Repository.NameWithOwner} #{i.Number} {i.Title.Value}"))
             .Concat(work.LocalRows.Where(r => r.ProjectId == projectId && r.Id != task.Id).Select(r => new PredecessorChoice(r.Id, "新規: " + r.Title)))
-            .Concat(selected.Where(id => !registration.Snapshot.Issues.ContainsKey(new(work.Scope, id)) && !work.LocalRows.Any(r => r.Id == id)).Select(id => new PredecessorChoice(id, id + "（外部・未確認）"))).ToArray();
+            .Concat(selected.Where(id => !registration.Snapshot.Issues.ContainsKey(new(work.Scope, id)) && !work.LocalRows.Any(r => r.Id == id)).Select(id => new PredecessorChoice(id, "Project外の未確認タスク"))).ToArray();
         var search = PlanningText(links, "先行Issueを検索", "PlanPredecessorSearch", "");
         var list = new ListView { ItemsSource = choices, DisplayMemberPath = nameof(PredecessorChoice.Label), SelectionMode = ListViewSelectionMode.Multiple,
             IsMultiSelectCheckBoxEnabled = true, Height = 180 };
@@ -222,7 +222,7 @@ internal sealed partial class EditingGrid
             foreach (var choice in shown.Where(c => selected.Contains(c.Id))) list.SelectedItems.Add(choice); changing = false;
         };
         foreach (var unsupported in adopted.Where(l => l.Kind != "FS" || l.ExternalFinish is not null))
-            links.Children.Add(new TextBlock { Text = $"保持: {unsupported.PredecessorId} / {unsupported.Kind} / {DateText(unsupported.ExternalFinish)}", TextWrapping = TextWrapping.Wrap });
+            links.Children.Add(new TextBlock { Text = $"保持: {choices.FirstOrDefault(c => c.Id == unsupported.PredecessorId)?.Label ?? "Project外のタスク"} / {unsupported.Kind} / {DateText(unsupported.ExternalFinish)}", TextWrapping = TextWrapping.Wrap });
         var decisions = new List<(DraftField Field, ComboBox Choice)>();
         foreach (var field in work.PlanningDecisions(projectId, row.ItemId))
         {

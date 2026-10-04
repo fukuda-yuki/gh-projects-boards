@@ -2,6 +2,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using System.Globalization;
 
 namespace GhProjectsBoards.App;
@@ -98,6 +99,7 @@ internal sealed partial class EditingGrid
             if (!IsLoaded || session.Workspace.Planning(projectId) is null) return;
             var r = Array.FindIndex(rows, row => row.ItemId == rowId); if (r < 0) return; Select(r, 0, false, false);
         }
+        if (FocusManager.GetFocusedElement(XamlRoot) is TitleCell focused) focused.CommitOnLeave(anchor);
         var work = session.Workspace; var plan = work.Planning(projectId)!;
         var row = canonicalRows.Single(r => r.ItemId == rowId); var id = work.TaskId(registration, rowId);
         var current = work.PlanFor(registration).Tasks.Single(t => t.Id == id);
@@ -128,7 +130,7 @@ internal sealed partial class EditingGrid
         panel.Children.Add(new TextBlock { Text = person is null ? native?.Complete != true ? "GitHub担当者: 未取得" : native.Assignees.Length == 0 ? "GitHub担当者: 未設定" : "GitHub担当者: 複数（日時を指定できます）"
             : $"GitHub担当者: {person.Login} · Project配賦: {(weight is null ? "未設定" : weight.WeightPercent + "%")}", TextWrapping = TextWrapping.Wrap });
         if (oldTask is not null && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
-        { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? oldTask.OwnerId ?? "未割当"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
+        { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? "未確認"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
         var dateOnlyWarning = new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap };
         panel.Children.Add(dateOnlyWarning);
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(preview, "SchedulePreview");
@@ -173,7 +175,7 @@ internal sealed partial class EditingGrid
                     return;
                 }
                 preview.Text = string.Join("\n", changed
-                    .Select(t => $"{(t.Id == id ? "このタスク" : registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, t.Id))?.Title.Value ?? t.Id)}: 開始 {Endpoint(previous.GetValueOrDefault(t.Id)?.Start)} → {Endpoint(t.Start)} / 終了 {Endpoint(previous.GetValueOrDefault(t.Id)?.Finish)} → {Endpoint(t.Finish)}\n{(t.Mode == PlanningMode.Manual ? t.Resolved ? "指定した日時を採用します。" : MissingManualDate(t) + "片側のみ保存できます。" : t.Problem ?? t.Controller)}"));
+                    .Select(t => $"{(t.Id == id ? "このタスク" : staged.PlanFor(registration).Inputs?.SingleOrDefault(i => i.Task.Id == t.Id)?.DisplayName ?? "関連タスク")}: 開始 {Endpoint(previous.GetValueOrDefault(t.Id)?.Start)} → {Endpoint(t.Start)} / 終了 {Endpoint(previous.GetValueOrDefault(t.Id)?.Finish)} → {Endpoint(t.Finish)}\n{(t.Mode == PlanningMode.Manual ? t.Resolved ? "指定した日時を採用します。" : MissingManualDate(t) + "片側のみ保存できます。" : t.Problem ?? PlanningEngine.DisplayReason(staged.PlanFor(registration), t.Controller))}"));
                 static string Endpoint(DateTime? value) => value is null ? "未設定" : DateText(value);
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { preview.Text = e.Message; }

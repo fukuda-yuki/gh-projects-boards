@@ -4,7 +4,7 @@ Source of truth: [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/iss
 
 ## Product goal
 
-A native C#/.NET 10/WinUI 3 Windows workspace for PMO to plan and replan GitHub Project work. Boards is the editable table; Gantt and Summary consume the same plan as those surfaces are delivered. Normal weekly review is approximately 1,000 tasks and fewer than 20 people.
+A native C#/.NET 10/WinUI 3 Windows workspace for PMO to plan and replan GitHub Project work. Its primary value is effort/capacity comparison and local schedule simulation followed by explicit publication, rather than general-purpose Issue administration. Summary, the editable Boards table and Gantt consume the same plan. Normal weekly review is approximately 1,000 tasks and fewer than 20 people.
 
 ## Agreed boundaries
 

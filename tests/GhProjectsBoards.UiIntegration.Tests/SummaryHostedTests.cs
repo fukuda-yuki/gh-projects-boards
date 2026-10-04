@@ -21,7 +21,7 @@ public sealed class SummaryHostedTests
         work.SetAllowance(project, "A", 160, work.Revision); work.SetAllowance(project, "B", 80, work.Revision);
         root = Path.Combine(Path.GetTempPath(), "ghpb-summary-ui-" + Guid.NewGuid().ToString("N"));
         session = new(new DraftStore(root), work, 0); Assert.That(await session.FlushAsync(), Is.True);
-        await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new EditingGrid(project, session, () => Task.FromResult(true), allowSummary: true); });
+        await Ui.Run(() => { Ui.Window.AppWindow.Resize(new(1400, 1000)); grid = new EditingGrid(project, session, () => Task.FromResult(true)); });
         await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0"); await Ui.Idle();
     }
     [TearDown]
@@ -34,26 +34,48 @@ public sealed class SummaryHostedTests
     private async Task Open() { await Ui.Run(() => Views().SelectedItem = Views().Items[2]); await Ui.Ready<ListView>("SummaryPeople"); }
 
     [Test]
-    public async Task OrdinarySummaryEntryIsPreparingAndRememberedSelectionReturnsToBoards()
+    public async Task OrdinarySummaryEntryOpensPersonAndContributingTaskWithoutChangingWork()
     {
         await Ui.Unmount(grid);
         await Ui.Run(() => grid = new EditingGrid(project, session, () => Task.FromResult(true)));
-        await Ui.Mount(grid); await Ui.Ready<TextBox>("GridCell0_0");
+        await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_0");
         var before = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot());
         await Ui.Run(() => {
-            Assert.That(Views().Items[2].IsEnabled, Is.False);
-            Assert.That(Views().Items[2].Text, Does.Contain("準備中"));
+            Assert.That(Views().Items[2].IsEnabled, Is.True);
+            Assert.That(Views().Items[2].Text, Is.EqualTo("Summary"));
             grid.ShowProjectView(ProjectView.Summary, "P1T2", "B");
-            Assert.That(grid.CurrentProjectView, Is.EqualTo(ProjectView.Boards));
-            Assert.That(Ui.Find<TextBox>("GridCell0_0").IsLoaded, Is.True);
+            Assert.That(grid.CurrentProjectView, Is.EqualTo(ProjectView.Summary));
+            Assert.That(grid.SummaryPersonId, Is.EqualTo("B"));
+            Assert.That(Ui.Find<SummaryView>("SummaryView").SelectedRowId, Is.EqualTo("P1T2"));
         });
         Assert.That(System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot()), Is.EqualTo(before));
+    }
+
+    [Test, Category("PmoWorkflow")]
+    public async Task OverloadedPersonRevealsTheirTaskAndRemainingCorrectionUpdatesForecastWithUndo()
+    {
+        await Open();
+        await Ui.Run(() => {
+            var people = Ui.Find<ListView>("SummaryPeople");
+            Assert.That(((PersonSummary)people.Items[0]).Id, Is.EqualTo("B"));
+            people.SelectedItem = people.Items.Cast<PersonSummary>().Single(p => p.Id == "B");
+            Assert.That(Ui.Find<SummaryView>("SummaryView").SelectedRowId, Is.EqualTo("P1T2"));
+            Ui.Find<TextBox>("SummaryRemaining").Text = "8"; Ui.Click("SummaryRemainingUpdate");
+        });
+        await Ui.Run(() => {
+            var person = Ui.Find<SummaryView>("SummaryView").AdoptedSummary!.People.Single(p => p.Id == "B");
+            Assert.That(person.Forecast.Hours, Is.EqualTo(64)); Assert.That(person.Headroom, Is.EqualTo(16));
+            Assert.That(Ui.Find<TextBlock>("SummaryPersonDetail").Text, Does.Contain("余裕 2 人日"));
+            Assert.That(session.Workspace.Journal, Is.Empty);
+        });
+        await Ui.ClickCommand("SummaryUndo");
+        await Ui.Run(() => Assert.That(Ui.Find<SummaryView>("SummaryView").AdoptedSummary!.People.Single(p => p.Id == "B").Headroom, Is.EqualTo(-16)));
     }
 
     [Test]
     public async Task NonFirstBoardsAndGanttTaskEntersSummaryWithItsActualPerson()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell1_0").Focus(FocusState.Keyboard));
+        await SheetNativeInput.Click("GridCell1_0");
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         await Open();
         await Ui.Run(() => {
@@ -80,16 +102,18 @@ public sealed class SummaryHostedTests
     }
 
     [Test]
-    public async Task ActualControlsRetainPendingInputAndSameTaskAcrossAllThreeViews()
+    public async Task ViewNavigationCommitsValidTitleAndRetainsTheSameTaskAcrossAllThreeViews()
     {
         var work = session.Workspace;
-        await Ui.Run(() => { Ui.Find<TextBox>("GridCell0_0").Focus(FocusState.Keyboard); Ui.Find<TextBox>("GridCell0_0").Text = "未確定のタイトル"; });
+        await SheetNativeInput.Click("GridCell0_0");
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "未確定のタイトル");
         await Open();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("SummaryPeople").Items, Has.Count.EqualTo(2));
             Assert.That(Ui.Find<TextBlock>("SummaryTotals").Text, Does.Contain("見積 26 / 実績 13"));
             Assert.That(Ui.Find<TextBlock>("SummaryPersonDetail").Text, Does.Contain("9 人日 / 72 人時"));
-            Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
+            Assert.That(work.Buffer(work.Open(project)[0].Cells[0]), Is.Null);
+            Assert.That(work.Value(work.Open(project)[0].Cells[0]), Is.EqualTo("未確定のタイトル"));
             Ui.Find<TextBox>("SummaryFilter").Text = "no matching task";
         });
         await Ui.Until(() => Ui.Find<ListView>("SummaryTasks").Items.Count == 0);
@@ -109,7 +133,7 @@ public sealed class SummaryHostedTests
     [Test]
     public async Task ProtectedSummarySurvivesContextualGanttDateEditAndReturnsToTheSameTask()
     {
-        await Open(); await Ui.ClickCommand("SummaryEstablish"); await Ui.DialogReady("SummaryBaselineDialog");
+        await Open(); await Ui.Run(() => { var list = Ui.Find<ListView>("SummaryPeople"); list.SelectedItem = list.Items.Cast<PersonSummary>().Single(p => p.Id == "A"); }); await Ui.ClickCommand("SummaryEstablish"); await Ui.DialogReady("SummaryBaselineDialog");
         await Ui.Run(() => Ui.DialogButton("SummaryBaselineDialog", "PrimaryButton"));
         await Ui.Until(() => Ui.Dialog("SummaryBaselineDialog") is null);
         var baseline = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Planning("P1")!.Summary);
@@ -146,7 +170,7 @@ public sealed class SummaryHostedTests
     [Test]
     public async Task AllowanceSaveFailureRetainsCandidateAndRetryPersistsOnlyAllowanceThenUndo()
     {
-        await Open(); await Ui.ClickCommand("SummaryAllowance"); await Ui.DialogReady("SummaryAllowanceDialog");
+        await Open(); await Ui.Run(() => { var list = Ui.Find<ListView>("SummaryPeople"); list.SelectedItem = list.Items.Cast<PersonSummary>().Single(p => p.Id == "A"); }); await Ui.ClickCommand("SummaryAllowance"); await Ui.DialogReady("SummaryAllowanceDialog");
         await Ui.Run(() => Ui.Find<TextBox>("SummaryAllowanceHours", Ui.Dialog("SummaryAllowanceDialog")).Text = "0");
         using (var locked = new FileStream(Path.Combine(root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
@@ -168,7 +192,7 @@ public sealed class SummaryHostedTests
     [Test]
     public async Task ExplicitBaselineControlsKeepProtectedComparisonThroughTaskEditReplacementAndUndo()
     {
-        await Open(); await Ui.ClickCommand("SummaryEstablish"); await Ui.DialogReady("SummaryBaselineDialog");
+        await Open(); await Ui.Run(() => { var list = Ui.Find<ListView>("SummaryPeople"); list.SelectedItem = list.Items.Cast<PersonSummary>().Single(p => p.Id == "A"); }); await Ui.ClickCommand("SummaryEstablish"); await Ui.DialogReady("SummaryBaselineDialog");
         await Ui.Run(() => { Assert.That(Ui.DialogText("SummaryBaselineDialog"), Does.Contain("2タスク")); Ui.DialogButton("SummaryBaselineDialog", "PrimaryButton"); });
         await Ui.Until(() => Ui.Dialog("SummaryBaselineDialog") is null);
         var baseline = session.Workspace.Planning("P1")!.Summary!.Baseline!;

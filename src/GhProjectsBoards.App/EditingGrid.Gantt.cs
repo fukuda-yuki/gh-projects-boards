@@ -43,12 +43,13 @@ internal sealed partial class EditingGrid
         var header = new Grid();
         header.RowDefinitions.Add(new() { Height = GridLength.Auto }); header.RowDefinitions.Add(new() { Height = GridLength.Auto });
         header.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new());
+        header.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         SetColumn(commandRow, 1); header.Children.Add(commandRow);
         projectViews = new SelectorBar { Padding = new(8, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Stretch,
             Style = (Style)Application.Current.Resources["ProjectViewsStyle"] };
         AutomationProperties.SetAutomationId(projectViews, "ProjectViews");
         boardsView = new() { Text = "Boards" }; ganttView = new() { Text = "Gantt" };
-        summaryItem = new SelectorBarItem { Text = summaryEnabled ? "Summary" : "Summary（準備中）", IsEnabled = summaryEnabled };
+        summaryItem = new SelectorBarItem { Text = "Summary" };
         AutomationProperties.SetAutomationId(boardsView, "ProjectViewBoards"); AutomationProperties.SetAutomationId(ganttView, "ProjectViewGantt");
         AutomationProperties.SetAutomationId(summaryItem, "ProjectViewSummary");
         projectViews.Items.Add(boardsView); projectViews.Items.Add(ganttView); projectViews.Items.Add(summaryItem);
@@ -61,7 +62,11 @@ internal sealed partial class EditingGrid
             ShowProjectView(projectViews.SelectedItem == ganttView ? ProjectView.Gantt : projectViews.SelectedItem == summaryItem ? ProjectView.Summary : ProjectView.Boards);
         };
         header.Children.Add(projectViews);
-        if (firstPlanning is not null) { SetRow(firstPlanning, 1); SetColumnSpan(firstPlanning, 2); header.Children.Add(firstPlanning); }
+        var reporting = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        reporting.Children.Add(new TextBlock { Text = "報告日", VerticalAlignment = VerticalAlignment.Center });
+        reporting.Children.Add(actualThrough); reporting.Children.Add(actualContextButton);
+        SetColumn(reporting, 2); header.Children.Add(reporting);
+        if (firstPlanning is not null) { SetRow(firstPlanning, 1); SetColumnSpan(firstPlanning, 3); header.Children.Add(firstPlanning); }
         Children.Add(header);
     }
     internal void ShowProjectView(bool showGantt, string? selectedRowId = null)
@@ -69,8 +74,9 @@ internal sealed partial class EditingGrid
     internal void ShowProjectView(ProjectView view, string? selectedRowId = null, string? personId = null)
     {
         if (!CanRefresh || PlanningSettingsOpen || projectViews is null) return;
-        if (view == ProjectView.Summary && !summaryEnabled) view = ProjectView.Boards;
         var prior = CurrentProjectView; var id = selectedRowId ?? ViewSelection?.Item;
+        if (prior == ProjectView.Boards && view != prior && Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) is TitleCell focused)
+            focused.CommitOnLeave(projectViews);
         if (prior == ProjectView.Gantt && view != ProjectView.Gantt) retainedGanttPosition = gantt!.CapturePosition();
         if (selectedRowId is not null) { retainedGanttPosition = null; gantt?.CancelPositionRestore(); }
         switchingView = true; projectViews.SelectedItem = view == ProjectView.Gantt ? ganttView : view == ProjectView.Summary ? summaryItem : boardsView; switchingView = false;

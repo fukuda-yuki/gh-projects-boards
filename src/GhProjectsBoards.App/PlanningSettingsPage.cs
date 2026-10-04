@@ -71,7 +71,7 @@ internal sealed partial class EditingGrid
         page.RowDefinitions.Add(new() { Height = GridLength.Auto });
         var heading = new StackPanel { Spacing = 4 };
         heading.Children.Add(new TextBlock { Text = "計画の前提", Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"] });
-        heading.Children.Add(new TextBlock { Text = $"Project「{registration.Snapshot.Title}」全体に適用します。保存すると自動計算の日程を見直します。", TextWrapping = TextWrapping.Wrap });
+        heading.Children.Add(new TextBlock { Text = "Project " + registration.Snapshot.Title, TextWrapping = TextWrapping.Wrap });
         page.Children.Add(heading);
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
         PlanningInputException? inputProblem = null;
@@ -94,17 +94,16 @@ internal sealed partial class EditingGrid
             planningSettingsDirty = true;
             if (inputProblem?.Corrected() == true) ClearInputProblem();
         }
-        var start = new MinuteEditor("Project開始（日本時間）", "PlanProjectStart", DateText(plan.Start));
+        var start = new MinuteEditor("開始日時（日本時間）", "PlanProjectStart", DateText(plan.Start ?? DateTime.SpecifyKind(DateTime.UtcNow.AddHours(9).Date.AddHours(9), DateTimeKind.Unspecified)));
         var cutoff = new MinuteEditor("再計画の基準日時（日本時間）", "PlanCutoff", DateText(plan.Cutoff));
         TrackContextInput(start.Input); TrackContextInput(cutoff.Input);
         start.Edited += Changed; cutoff.Edited += Changed;
         content.Children.Add(start);
-        content.Children.Add(new TextBlock { Text = "自動計算の開始点です。日時を指定するタスクは、タスクの日程から編集できます。", TextWrapping = TextWrapping.Wrap });
+        ToolTipService.SetToolTip(start, "自動計算を始める日時");
         content.Children.Add(cutoff);
-        content.Children.Add(new TextBlock { Text = "進行中・再開したタスクの残作業を、いつ以降に計画するか。実績の報告日とは別です。", TextWrapping = TextWrapping.Wrap });
+        ToolTipService.SetToolTip(cutoff, "残作業をいつから再計画するか");
         var fields = new StackPanel { Spacing = 10 };
         content.Children.Add(new TextBlock { Text = "GitHubの列との対応", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        content.Children.Add(new TextBlock { Text = "見積時間を対応づけると表で入力できます。既存の列を確認して選んでください。その他の列は必要になった時に設定できます。", TextWrapping = TextWrapping.Wrap });
         content.Children.Add(fields);
         var mappings = new Dictionary<string, ComboBox>();
         foreach (var role in PlanningContract.Roles)
@@ -127,8 +126,8 @@ internal sealed partial class EditingGrid
         content.Children.Add(new TextBlock { Text = $"通常は平日9–13時・14–18時。採用祝日 {plan.Calendar.Holidays.FirstYear}–{plan.Calendar.Holidays.LastYear}。", TextWrapping = TextWrapping.Wrap });
         var extras = PlanningSettings(content, plan, Changed);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        var save = new Button { Content = "保存して戻る", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
-        var cancel = new Button { Content = "取消して戻る" };
+        var save = new Button { Content = "保存", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        var cancel = new Button { Content = "取消" };
         AutomationProperties.SetAutomationId(save, "PlanSettingsSave"); AutomationProperties.SetAutomationId(cancel, "PlanSettingsCancel");
         actions.Children.Add(save); actions.Children.Add(cancel); SetRow(actions, 3); page.Children.Add(actions);
         closePlanningSettings = saved => {
@@ -161,6 +160,8 @@ internal sealed partial class EditingGrid
                         label + "：日付と時刻を選択するか、yyyy-MM-dd HH:mmで入力してください。", () => ValidPlanningInput(() => PlanningDate(editor.Text))); }
                 }
                 var first = Date(start, "Project開始"); var cut = Date(cutoff, "再計画の基準日時");
+                if (first is null) throw new PlanningInputException(start.Input, "開始日時を選んでください。",
+                    () => ValidPlanningInput(() => { if (PlanningDate(start.Text) is null) throw new InvalidOperationException(); }));
                 var bindings = new List<PlanningFieldBinding>();
                 foreach (var (role, box) in mappings)
                 {

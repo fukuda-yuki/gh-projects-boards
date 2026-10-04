@@ -185,9 +185,9 @@ internal sealed partial class EditingGrid
             PlanningWarningImpact.Schedule => "日程の注意",
             _ => "原因を確認できない注意"
         };
-        var diagnostics = $"\n採用計画の記録: {mode} / {result.Controller} / リビジョン {plan.SourceRevision}"
-            + string.Concat(warnings.Causes.Select(cause => $"\n{ImpactLabel(cause.Impact)}: {cause.SourceTaskId} / {cause.Message}"));
-        var owner = task?.OwnerId is { } ownerId ? plan.Configuration?.People.SingleOrDefault(person => person.Id == ownerId)?.Name ?? $"未確認 [{ownerId}]" : "未設定";
+        var diagnostics = $"\n採用計画の記録: {mode} / {PlanningEngine.DisplayReason(plan, result.Controller)} / リビジョン {plan.SourceRevision}"
+            + string.Concat(warnings.Causes.Select(cause => $"\n{ImpactLabel(cause.Impact)}: {plan.Inputs?.FirstOrDefault(i => i.Task.Id == cause.SourceTaskId)?.DisplayName ?? "Project外のタスク"} / {cause.Message}"));
+        var owner = task?.OwnerId is { } ownerId ? plan.Configuration?.People.SingleOrDefault(person => person.Id == ownerId)?.Name ?? "未確認の担当者" : "未設定";
         var dates = result.Resolved ? $"{DateText(result.Start)} → {DateText(result.Finish)}" : "未確定";
         string Warning(PlanningWarningCause cause)
         {
@@ -195,7 +195,7 @@ internal sealed partial class EditingGrid
             if (!cause.Inherited) return message;
             var issue = registration.Snapshot.Issues.GetValueOrDefault(new(registration.Snapshot.Id.Scope, cause.SourceTaskId));
             var identity = issue is not null ? $"#{issue.Number} {issue.Repository.NameWithOwner}"
-                : session.Workspace.LocalRows.SingleOrDefault(local => local.Id == cause.SourceTaskId && local.ProjectId == projectId)?.Title ?? cause.SourceTaskId;
+                : session.Workspace.LocalRows.SingleOrDefault(local => local.Id == cause.SourceTaskId && local.ProjectId == projectId)?.Title ?? "Project外のタスク";
             return $"先行 {identity} — {message}";
         }
         var routine = $"\n計画担当: {owner}" + (progress is null ? "" : $" · 計画上の進捗: {progress}")

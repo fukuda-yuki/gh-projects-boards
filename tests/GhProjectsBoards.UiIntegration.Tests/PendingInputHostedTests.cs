@@ -18,7 +18,7 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 public sealed partial class PlanningHostedTests
 {
     [Test, Category("PendingInput")]
-    public async Task UnfinishedActualRemainsMarkedAfterSelectionMovesAndExplainsTheConfirmedCalculation()
+    public async Task InvalidActualRemainsRecoverableAcrossSelectionAndDailyEditorCancel()
     {
         await Ui.Unmount(grid);
         var work = session.Workspace; var row = work.Open(project)[0];
@@ -29,13 +29,12 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
         await Ui.Mount(grid); await ShowDateColumns();
         await FocusEstimateInput("GridCell0_4");
-        await SheetNativeInput.Press(VirtualKey.F2); await SheetNativeInput.Press(VirtualKey.Number8);
-        await Ui.Until(() => work.Buffer(actual) == "8");
+        await SheetNativeInput.Press(VirtualKey.F2); await SheetNativeInput.Press(VirtualKey.Number8); await SheetNativeInput.Press(VirtualKey.X);
+        await Ui.Until(() => work.Buffer(actual) == "8x");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PendingInputValue").Text, Is.EqualTo("入力途中: 8"));
+            Assert.That(Ui.Find<TextBlock>("PendingInputValue").Text, Is.EqualTo("入力途中: 8x"));
             Assert.That(Ui.Find<TextBlock>("ConfirmedInputValue").Text, Is.EqualTo("確定値: 4"));
-            Assert.That(Ui.Find<TextBlock>("PendingCalculationMeaning").Text, Does.Contain("日程計算は確定値"));
-            Assert.That(Ui.Find<Grid>("PendingInputContext").Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(Ui.Find<Grid>("PendingInputContext").Visibility, Is.EqualTo(Visibility.Collapsed));
             FocusCell("GridCell1_4");
         });
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
@@ -43,7 +42,7 @@ public sealed partial class PlanningHostedTests
             var marker = Ui.Find<TextBlock>("GridMarker0_4");
             Assert.That(marker.Visibility, Is.EqualTo(Visibility.Visible)); Assert.That(marker.Text, Is.EqualTo("…"));
             Assert.That(AutomationProperties.GetName(marker), Does.Contain("未確定"));
-            Assert.That(work.Value(actual), Is.EqualTo("4")); Assert.That(work.Buffer(actual), Is.EqualTo("8"));
+            Assert.That(work.Value(actual), Is.EqualTo("4")); Assert.That(work.Buffer(actual), Is.EqualTo("8x"));
             Assert.That(work.PlanFor(project).Tasks.Single(t => t.Id == "I1").Finish, Is.EqualTo(adopted.Finish));
             Assert.That(Ui.Find<Button>("GridPendingInput").Content, Is.EqualTo("入力途中 1セル"));
             Assert.That(Ui.Find<Grid>("PendingInputContext").Visibility, Is.EqualTo(Visibility.Collapsed));
@@ -51,7 +50,7 @@ public sealed partial class PlanningHostedTests
         });
         await Ui.Ready<TextBlock>("SelectedCellDetails");
         await Ui.Run(async () => {
-            Assert.That(Ui.Find<TextBlock>("SelectedCellDetails").Text, Does.Contain("入力途中: 8").And.Contain("確定値: 4"));
+            Assert.That(Ui.Find<TextBlock>("SelectedCellDetails").Text, Does.Contain("入力途中: 8x").And.Contain("確定値: 4"));
             Assert.That(work.Journal, Is.Empty);
             await ApplyInformationEvidence.Capture(grid, "pending-actual-and-confirmed-context");
         });
@@ -65,7 +64,7 @@ public sealed partial class PlanningHostedTests
         await Ui.ClickCommand("GridDailyProgress"); await Ui.DialogReady("DailyProgressDialog");
         await Ui.Run(() => {
             var dialog = Ui.Dialog("DailyProgressDialog")!;
-            Assert.That(Ui.Find<TextBox>("DailyActual", dialog).Text, Is.EqualTo("8"));
+            Assert.That(Ui.Find<TextBox>("DailyActual", dialog).Text, Is.EqualTo("8x"));
             Assert.That(Ui.Find<TextBlock>("DailyActualPending", dialog).Text, Is.EqualTo("入力途中 · 確定済み 4"));
             Assert.That(Ui.Find<TextBlock>("DailyActualPending", dialog).Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(Ui.Find<TextBlock>("DailyRemainingPending", dialog).Text, Is.EqualTo("入力途中 · 確定済み 2"));
@@ -83,7 +82,7 @@ public sealed partial class PlanningHostedTests
             Assert.That(work.Buffer(remaining), Is.EqualTo("9")); Assert.That(work.Buffer(actual), Is.EqualTo("4"));
             Ui.DialogButton("DailyProgressDialog", "CloseButton");
         });
-        await Ui.Until(() => Ui.Dialog("DailyProgressDialog") is null && work.Buffer(actual) == "8" && work.Buffer(remaining) == "2"
+        await Ui.Until(() => Ui.Dialog("DailyProgressDialog") is null && work.Buffer(actual) == "8x" && work.Buffer(remaining) == "2"
             && session.DurableRevision == work.Revision);
         await Ui.Run(() => {
             Assert.That(work.Value(actual), Is.EqualTo("4")); Assert.That(work.Value(remaining), Is.EqualTo("2"));
@@ -99,7 +98,7 @@ public sealed partial class PlanningHostedTests
         var work = session.Workspace; var rows = work.Open(project);
         var actual = rows[0].Cells.Single(c => c.Key?.FieldId == "F-Actual");
         var remaining = rows[1].Cells.Single(c => c.Key?.FieldId == "F-Remaining");
-        work.SetBuffer(rows[0].Cells[0], "unfinished title"); work.SetPlanningBuffer(actual, "8"); work.SetBuffer(remaining, "2");
+        work.SetBuffer(rows[0].Cells[0], ""); work.SetPlanningBuffer(actual, "8x"); work.SetBuffer(remaining, "2x");
         var columns = work.PrepareColumns(project);
         work.SaveColumns(columns with { Columns = columns.Columns.Select(c => c.Id.FieldId == "F-Actual" ? c with { Visible = false } : c).ToArray() });
         work.SaveRowView(work.PrepareRowView(project) with { Definition = new(Title: "Issue 1") });

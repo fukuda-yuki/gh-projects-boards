@@ -33,7 +33,8 @@ internal sealed partial class EditingGrid
             {
                 var staged = EditingWorkspace.Restore(work.Snapshot()); staged.CommitPlanning(registration, Candidate(), expected);
                 var results = staged.PlanFor(registration).Tasks.Where(t => ids.Contains(t.Id)).ToArray();
-                preview.ItemsSource = results.Select(t => $"{t.Id}: {DateText(t.Start)} → {DateText(t.Finish)} / {t.Problem ?? t.Controller}").ToArray();
+                var adoptedPreview = staged.PlanFor(registration);
+                preview.ItemsSource = results.Select(t => $"{adoptedPreview.Inputs?.SingleOrDefault(i => i.Task.Id == t.Id)?.DisplayName ?? "タスク"}: {DateText(t.Start)} → {DateText(t.Finish)} / {t.Problem ?? PlanningEngine.DisplayReason(adoptedPreview, t.Controller)}").ToArray();
                 notice.Text = $"計算済み {results.Count(t => t.Resolved)} / 未解決 {results.Count(t => !t.Resolved)}。保存はローカルのみです。"; return true;
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { notice.Text = e.Message; return false; }

@@ -89,15 +89,15 @@ public sealed partial class PlanningHostedTests
             if (holdWriterLock) writerLock = new FileStream(Path.Combine(root!, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             await FocusEstimateInput("GridCell0_2");
             // These setters exercise TextChanging and commit/status wiring; native text Undo is covered above.
-            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "9");
+            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "9x");
             if (holdWriterLock) await Ui.Until(() => session.Status.StartsWith("ローカル保存失敗"));
             await Ui.ClickCommand("GridUndo");
             await Ui.Until(() => Ui.Find<TextBlock>("DraftStatus").Text.Contains("元に戻せません"));
             await Ui.Run(() => {
                 var estimate = session.Workspace.Open(project)[0].Cells[2];
                 Assert.That(session.Workspace.Value(estimate), Is.EqualTo("8"));
-                Assert.That(session.Workspace.Buffer(estimate), Is.EqualTo("9"));
-                Assert.That(CellText("GridCell0_2"), Is.EqualTo("9"));
+                Assert.That(session.Workspace.Buffer(estimate), Is.EqualTo("9x"));
+                Assert.That(CellText("GridCell0_2"), Is.EqualTo("9x"));
                 if (holdWriterLock) Assert.That(Ui.Find<TextBlock>("WorkspaceSaveStatus").Text, Does.Contain("ローカル保存失敗"));
             });
 
@@ -151,13 +151,14 @@ public sealed partial class PlanningHostedTests
     {
         await EnterEstimate("8", VirtualKey.Number8);
         await FocusEstimateInput("GridCell0_2");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = rejectedUndo ? "9" : "8x");
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = rejectedUndo ? "9x" : "8x");
         var problem = rejectedUndo ? "元に戻せません" : "工数";
         if (rejectedUndo) await Ui.ClickCommand("GridUndo");
         else await SheetNativeInput.Press(VirtualKey.Enter);
         await Ui.Until(() => Ui.Find<TextBlock>("DraftStatus").Text.Contains(problem));
 
         await FocusEstimateInput("GridCell1_2");
+        problem = "工数"; // Leaving invalid input presents its correction instead of the earlier rejected Undo.
         await Ui.Run(() => Ui.Find<TextBox>("GridCell1_2").Text = "2");
         await SheetNativeInput.Press(VirtualKey.Enter);
         await Ui.Until(() => {
@@ -168,7 +169,7 @@ public sealed partial class PlanningHostedTests
             Assert.That(Ui.Find<TextBlock>("DraftStatus").Text, Does.Contain(problem));
             var first = session.Workspace.Open(project)[0].Cells[2];
             Assert.That(session.Workspace.Value(first), Is.EqualTo("8"));
-            Assert.That(session.Workspace.Buffer(first), Is.EqualTo(rejectedUndo ? "9" : "8x"));
+            Assert.That(session.Workspace.Buffer(first), Is.EqualTo(rejectedUndo ? "9x" : "8x"));
         });
 
         await FocusEstimateInput("GridCell0_2");

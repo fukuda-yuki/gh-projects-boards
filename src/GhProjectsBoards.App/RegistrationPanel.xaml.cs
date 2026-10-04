@@ -27,7 +27,7 @@ public sealed partial class RegistrationPanel : UserControl
     private ScopedId? navigationRepository;
     private readonly Dictionary<TreeViewNode, NavigationKey> nodeKeys = [];
     private readonly Dictionary<ScopedId, ((string Item, FieldKey? Field)? Selection, ProjectView View, string? Person,
-        GanttViewPosition? Gantt, string? DailyProjectFieldId)> projectViewPositions = [];
+        GanttViewPosition? Gantt, string? DailyProjectFieldId, DateOnly? ReportingDay)> projectViewPositions = [];
     internal RegistrationWorkspace Workspace => workspace!;
     public event EventHandler? ConnectionRequested;
     internal bool FocusHeader() => ConnectionSettings.Focus(FocusState.Programmatic);
@@ -191,7 +191,7 @@ public sealed partial class RegistrationPanel : UserControl
                     }
                     var previousGrid = EditorHost.Children.OfType<EditingGrid>().FirstOrDefault();
                     if (previousGrid is not null) projectViewPositions[previousGrid.RowProjection.Project] =
-                        (previousGrid.ViewSelection, previousGrid.CurrentProjectView, previousGrid.SummaryPersonId, previousGrid.GanttPosition, previousGrid.DailyProjectFieldId);
+                        (previousGrid.ViewSelection, previousGrid.CurrentProjectView, previousGrid.SummaryPersonId, previousGrid.GanttPosition, previousGrid.DailyProjectFieldId, previousGrid.ReportingDay);
                     var previousProjection = previousGrid?.RowProjection.Project == selected.Snapshot.Id && renderedRefreshGeneration == workspace.AcceptedRefreshGeneration ? previousGrid?.RowProjection : null;
                     var position = projectViewPositions.GetValueOrDefault(selected.Snapshot.Id);
                     var selection = position.Selection;
@@ -203,6 +203,7 @@ public sealed partial class RegistrationPanel : UserControl
                         // identity-based selection have been constructed.
                         grid.RestoreSelection(selection); EditorHost.Children.Clear(); EditorHost.Children.Add(grid);
                         grid.DailyProjectFieldId = position.DailyProjectFieldId;
+                        if (projectViewPositions.ContainsKey(selected.Snapshot.Id)) grid.ReportingDay = position.ReportingDay;
                         grid.ShowProjectView(position.View, selection?.Item, position.Person);
                         grid.RestoreGanttPosition(position.Gantt); Items.Visibility = Visibility.Collapsed; }
                     else { EditorHost.Children.Clear(); Items.Visibility = Visibility.Visible; Items.ItemsSource = PreviewRows(selected.Snapshot).ToArray(); }

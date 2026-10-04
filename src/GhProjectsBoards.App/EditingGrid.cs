@@ -88,9 +88,8 @@ internal sealed partial class EditingGrid : Grid
         var c = Array.FindIndex(rows[r].Cells, cell => cell.Key == target.Field);
         if (c >= 0) Select(r, c, false, false);
     }
-    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null, bool? allowSummary = null)
+    internal EditingGrid(ProjectRegistration registration, DraftSession session, Func<Task<bool>> prepareLocalRows, RowProjection? previousProjection = null, Func<Task<string>>? readClipboard = null, IEnumerable<string>? temporaryColumns = null)
     {
-        summaryEnabled = allowSummary ?? SummaryEvaluationEnabled();
         this.session = session; this.registration = registration; this.prepareLocalRows = prepareLocalRows; projectId = registration.Snapshot.Id.NodeId;
         recycledPresentation = Environment.GetEnvironmentVariable("GHPB_RECYCLED_PRESENTATION") != "0";
         showRepositoryIdentity = ProjectIssueIdentity.NeedsRepository(registration.Snapshot);
@@ -950,6 +949,8 @@ internal sealed partial class EditingGrid : Grid
     private void Select(int r, int c, bool extend, bool focus = true)
     {
         if (!RowStillPresent(r)) return;
+        if (active && (currentRow != r || currentColumn != c) && FocusManager.GetFocusedElement(XamlRoot) is TitleCell previous)
+            previous.CommitOnLeave(this);
         using var measured = diagnostics?.Span("select");
         diagnostics?.Record("select-request", new { row = r, column = c, extend, focus, item = rows[r].ItemId, key = rows[r].Cells[c].Key });
         EnsureRow(r);
@@ -1287,6 +1288,7 @@ internal sealed partial class EditingGrid : Grid
             if (owner.diagnostics is not null)
                 TextChanged += (_, _) => owner.diagnostics.Record("text-changed", new { row, column, length = Text.Length, restoring });
             GotFocus += (_, _) => { if (owner.CurrentEditor(row, column, this)) owner.FocusedCell(row, column); };
+            LostFocus += CommitAfterFocus;
             TextCompositionStarted += (_, _) => { composing = true; Editing = true; owner.UpdateSelectedDetails(); };
             TextCompositionEnded += (_, _) =>
             {
@@ -1314,6 +1316,40 @@ internal sealed partial class EditingGrid : Grid
                 }
                 _ = owner.FlushDraftsAsync("text-changing");
             };
+        }
+        private bool committingOnLeave;
+        private void CommitAfterFocus(object sender, RoutedEventArgs args)
+            => CommitOnLeave(FocusManager.GetFocusedElement(owner.XamlRoot) as DependencyObject);
+        internal void CommitOnLeave(DependencyObject? focused)
+        {
+            if (committingOnLeave || composing || !Editing || !owner.CurrentEditor(row, column, this)
+                || !owner.CanRefresh || owner.dailyProgressDialog is not null
+                || owner.session.Workspace.Buffer(cell) is not { } text) return;
+            // Modal editors own their candidate and consumed buffers. A window
+            // deactivation or virtualized unload is not a request to confirm it.
+            if (focused is null) return;
+            for (var target = focused; target is not null; target = VisualTreeHelper.GetParent(target))
+                if (target is ContentDialog || owner.TypedActual(cell) &&
+                    (ReferenceEquals(target, owner.actualInputPane) || ReferenceEquals(target, owner.actualContextButton)
+                    || ReferenceEquals(target, owner.actualThrough))) return;
+            if (owner.TypedDate(cell)) return;
+            committingOnLeave = true;
+            try
+            {
+                if (owner.TypedActual(cell))
+                {
+                    var context = owner.session.Workspace.ActualInput(owner.registration, owner.rows[row].ItemId);
+                    if (!context.HasPerson || context.MultipleReports) return;
+                    if (owner.confirmedActualThrough is not { } day) throw new InvalidOperationException("報告日を選んでください。");
+                    owner.session.Workspace.CommitActualInput(owner.registration, owner.rows[row].ItemId, text, day, context.PersonId, owner.session.Workspace.Revision);
+                }
+                else if (cell.Editable) owner.session.Workspace.Commit(owner.projectId, cell, text);
+                else return;
+                Editing = false; owner.ClearCellOperationProblem(cell.Key); owner.UpdateCell(row, column);
+                _ = owner.FlushDraftsAsync("cell-leave");
+            }
+            catch (InvalidOperationException error) { owner.ShowOperationProblem(error.Message, cell.Key is { } key ? [key] : null); }
+            finally { committingOnLeave = false; }
         }
         public void Reindex(int nextRow, int nextColumn, EditCell nextCell)
         {
@@ -1348,7 +1384,7 @@ internal sealed partial class EditingGrid : Grid
             { owner.SetCellBuffer(cell, null); Refresh(); SelectAll(); owner.Update("pending-state"); _ = owner.FlushDraftsAsync("edit-cancel"); e.Handled = true; }
             else if (Editing && e.Key is VirtualKey.Enter or VirtualKey.Tab)
             {
-                if (owner.TypedActual(cell)) { owner.CommitActualCell(confirmContext: false); e.Handled = true; return; }
+                if (owner.TypedActual(cell)) { if (owner.CommitActualCell(moveNext: false)) { Editing = false; owner.NavigateKey(row, column, e); } e.Handled = true; return; }
                 if (owner.TypedDate(cell)) { if (owner.CommitDateCell()) owner.NavigateKey(row, column, e); e.Handled = true; return; }
                 try { owner.session.Workspace.Commit(owner.projectId, cell, Text); owner.ClearCellOperationProblem(cell.Key); Editing = false; owner.NavigateKey(row, column, e); _ = owner.FlushDraftsAsync("cell-commit"); }
                 catch (InvalidOperationException ex) { owner.ShowOperationProblem(ex.Message, cell.Key is { } key ? [key] : null); e.Handled = true; }

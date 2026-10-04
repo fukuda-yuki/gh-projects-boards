@@ -325,7 +325,7 @@ internal sealed class GanttView : Grid
         var byId = CanonicalRows();
         return (row.Input?.Predecessors ?? []).Select(link => {
             var previous = byId.GetValueOrDefault(link.PredecessorId);
-            return new Relation($"先行 → [{link.Kind}] {previous?.Identity ?? link.PredecessorId} {previous?.Title ?? "外部・未確認"} / 終了 {Exact(previous?.Plan?.Finish ?? link.ExternalFinish)}", previous?.RowId);
+            return new Relation($"先行 → [{link.Kind}] {previous?.Identity ?? "Project外"} {previous?.Title ?? "未確認のタスク"} / 終了 {Exact(previous?.Plan?.Finish ?? link.ExternalFinish)}", previous?.RowId);
         }).Concat(byId.Values.Where(r => r.Input?.Predecessors.Any(l => l.PredecessorId == row.TaskId) == true)
             .Select(r => new Relation($"→ 後続 {r.Identity} {r.Title}", r.RowId))).ToArray();
     }
@@ -372,7 +372,7 @@ internal sealed class GanttView : Grid
         {
             var owner = config.People.FirstOrDefault(o => o.Id == input.Task.OwnerId);
             var provisional = input.Task.Assignment is not { Legacy: false } && input.Task.OwnerId is null && input.Assignees.Length == 0;
-            var ownerText = owner?.Name ?? (provisional ? "共通・暫定" : input.Task.OwnerId is null ? "担当者の選択が必要" : input.Task.OwnerId + "（未確認）");
+            var ownerText = owner?.Name ?? (provisional ? "共通・暫定" : input.Task.OwnerId is null ? "担当者の選択が必要" : "以前の担当者（未確認）");
             var weightText = owner is not null ? owner.WeightPercent + "%" : provisional ? "100%" : "未確認";
             var progress = input.Task.Progress switch { PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中", PlanningProgress.Completed => "完了", _ => "再開" };
             Text($"計画上の進捗: {progress}");
@@ -441,7 +441,7 @@ internal sealed class GanttView : Grid
                 records.Children.Add(block);
             }
             Record($"見積 {Hours(input.Estimate)} / 残時間 {Hours(input.Remaining)} / 実績 {Hours(input.ActualTotal)}");
-            Record($"自動案: {Exact(p?.SuggestedStart)} → {Exact(p?.SuggestedFinish)}\nタスクID: {row.TaskId}\nカレンダー: {config.Calendar.Revision}\n祝日: {config.Calendar.Holidays.Version} / {config.Calendar.Holidays.FirstYear}–{config.Calendar.Holidays.LastYear}\n採用祝日の出典: {config.Calendar.Holidays.Source}\nデータの検証値: {config.Calendar.Holidays.SourceSha256}" +
+            Record($"自動案: {Exact(p?.SuggestedStart)} → {Exact(p?.SuggestedFinish)}\nカレンダー: {config.Calendar.Revision}\n祝日: {config.Calendar.Holidays.Version} / {config.Calendar.Holidays.FirstYear}–{config.Calendar.Holidays.LastYear}\n採用祝日の出典: {config.Calendar.Holidays.Source}\nデータの検証値: {config.Calendar.Holidays.SourceSha256}" +
                 (config.Calendar.HolidaysNotConsidered ? "（祝日を考慮しない）" : "") + $"\n採用計画リビジョン: {projection.Plan.SourceRevision}\n軸の網掛けはProject共通です。"
                 + (calendarExplanation is null ? "\n稼働時間の採用根拠を確認できません。" : "担当者の稼働時間は上に表示しています。"), "GanttCalendarRecord");
             panel.Children.Add(new Expander { Header = "計算の記録", Content = records, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch });
@@ -663,7 +663,23 @@ internal sealed class GanttView : Grid
             }
             else
             {
-                canvas.Children.Add(new TextBlock { Text = row.StateText, Margin = new(8, 16, 0, 0), Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"] });
+                var problem = row.Plan?.Problem ?? "";
+                var predecessor = (row.Input?.Predecessors ?? []).Select(link => owner.projection.Rows.FirstOrDefault(r => r.TaskId == link.PredecessorId))
+                    .FirstOrDefault(r => r is not null && r.Plan?.Resolved != true && r.Input?.SatisfiesPrecedence != true);
+                var label = predecessor is not null ? "先行待ち" : problem.Contains("見積") ? "見積未入力"
+                    : problem.Contains("残工数") ? "残時間未入力" : problem.Contains("配賦") ? "稼働率を設定"
+                    : problem.Contains("Project開始") ? "開始日を設定" : row.State == GanttState.Unplanned ? "計画する" : "日程を確認";
+                var action = new Button { Content = "⚠ " + label, Margin = new(8, 10, 0, 0), MinHeight = 30, Padding = new(8, 2, 8, 2) };
+                AutomationProperties.SetAutomationId(action, "GanttResolve-" + row.RowId);
+                AutomationProperties.SetName(action, row.Identity + " " + label);
+                ToolTipService.SetToolTip(action, predecessor is not null ? predecessor.Identity + " " + predecessor.Title : problem);
+                action.Click += (_, _) => {
+                    if (predecessor is not null) owner.SelectRow(predecessor.RowId, true);
+                    else if (problem.Contains("Project開始") || problem.Contains("配賦") || owner.projection.Plan.Configuration is null) owner.SettingsRequested?.Invoke();
+                    else if (problem.Contains("見積") || problem.Contains("残工数")) owner.BoardsRequested?.Invoke(row.RowId);
+                    else owner.TaskDetailsRequested?.Invoke(row.RowId);
+                };
+                canvas.Children.Add(action);
             }
         }
     }

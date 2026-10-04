@@ -39,7 +39,7 @@ public sealed class SummaryPersonPresenter : ContentControl
     {
         if (DataContext is not PersonSummary p) return;
         var grid = Columns();
-        var name = p.Id.Length == 0 ? p.Name : p.Name + "\n" + p.Id;
+        var name = p.Name;
         var comparison = p.Headroom is { } h ? (h < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8m) : "比較未完";
         var values = new[] { name, p.Allowance is { } a ? SummaryText.Number(a / 8m) : "未設定", SummaryText.Value(p.Estimate), SummaryText.Value(p.Actual), SummaryText.Value(p.Forecast), comparison };
         for (var i = 0; i < values.Length; i++) Cell(grid, values[i], i);
@@ -54,6 +54,8 @@ internal sealed class SummaryView : Grid
     private readonly ListView tasks = new() { SelectionMode = ListViewSelectionMode.Single, SingleSelectionFollowsFocus = true,
         HorizontalContentAlignment = HorizontalAlignment.Stretch, DisplayMemberPath = nameof(TaskLine.Label) };
     private readonly TextBlock totals = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new(12, 4, 12, 4) };
+    private readonly TextBox remaining = new() { Header = "タスクの残時間（人時）", Width = 170 };
+    private readonly Button updateRemaining = new() { Content = "更新", VerticalAlignment = VerticalAlignment.Bottom };
     private readonly TextBlock context = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new(12, 4, 12, 4) };
     private readonly TextBlock actualHeader = new() { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock personDetail = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
@@ -66,6 +68,7 @@ internal sealed class SummaryView : Grid
     internal event Action<bool>? BaselineRequested;
     internal event Action<string, ProjectView>? TaskRequested;
     internal event Action<string>? EditRequested;
+    internal event Action<string, string>? RemainingRequested;
     internal event Action? UndoRequested, SettingsRequested;
     internal string? SelectedPersonId => (people.SelectedItem as PersonSummary)?.Id;
     internal string? SelectedRowId => (tasks.SelectedItem as TaskLine)?.RowId;
@@ -93,6 +96,7 @@ internal sealed class SummaryView : Grid
         Command("計画設定", "SummarySettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
         Children.Add(commands);
         SetRow(totals, 1); Children.Add(totals); AutomationProperties.SetAutomationId(totals, "SummaryTotals");
+        totals.Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"];
         SetRow(context, 2); Children.Add(context); AutomationProperties.SetAutomationId(context, "SummaryContext");
         people.ItemTemplate = (DataTemplate)Application.Current.Resources["SummaryPersonTemplate"];
         var header = SummaryPersonPresenter.Columns(); header.HorizontalAlignment = HorizontalAlignment.Left; header.Margin = new(12, 0, 0, 0);
@@ -116,14 +120,24 @@ internal sealed class SummaryView : Grid
         gantt = TaskCommand("Ganttで開く", "SummaryGantt", () => { if (SelectedRowId is { } id) TaskRequested?.Invoke(id, ProjectView.Gantt); });
         edit = TaskCommand("工数を編集", "SummaryEdit", () => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); });
         TaskCommand("内訳の詳細", "SummaryTaskDetails", ShowTask);
-        SetRow(taskCommands, 1); SetColumnSpan(taskCommands, 2); details.Children.Add(taskCommands);
+        SetRow(taskCommands, 1); details.Children.Add(taskCommands);
+        var correction = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        AutomationProperties.SetAutomationId(remaining, "SummaryRemaining"); AutomationProperties.SetAutomationId(updateRemaining, "SummaryRemainingUpdate");
+        correction.Children.Add(remaining); correction.Children.Add(updateRemaining);
+        SetRow(correction, 1); SetColumn(correction, 1); details.Children.Add(correction);
+        updateRemaining.Click += (_, _) => { if (SelectedRowId is { } id) RemainingRequested?.Invoke(id, remaining.Text); };
         SetRow(details, 4); Children.Add(details);
         AutomationProperties.SetAutomationId(tasks, "SummaryTasks"); AutomationProperties.SetName(tasks, "選択した担当者の工数内訳");
         SetRow(tasks, 5); Children.Add(tasks);
         AutomationProperties.SetAutomationId(status, "SummaryOperationStatus");
         SetRow(status, 6); Children.Add(status);
         people.SelectionChanged += (_, _) => { if (!presenting) { tasks.SelectedItem = null; ShowPerson(); } }; filter.TextChanged += (_, _) => { if (!presenting) FilterTasks(); };
-        tasks.SelectionChanged += (_, _) => { board.IsEnabled = gantt.IsEnabled = edit.IsEnabled = SelectedRowId is not null; };
+        tasks.SelectionChanged += (_, _) => {
+            board.IsEnabled = gantt.IsEnabled = edit.IsEnabled = remaining.IsEnabled = updateRemaining.IsEnabled = SelectedRowId is not null;
+            var task = tasks.SelectedItem as TaskLine;
+            var total = projection?.Comparisons.FirstOrDefault(c => c.TaskId == task?.Contribution.TaskId)?.Current?.Input?.Remaining;
+            remaining.Text = total is { } hours ? PlanningContract.CanonicalHours(hours) : "";
+        };
     }
     internal void Present(SummaryProjection value, string? selectedPerson = null, string? selectedRow = null)
     {
@@ -138,18 +152,27 @@ internal sealed class SummaryView : Grid
         }
         projection = value;
         actualHeader.Text = $"実績\n（{value.Cutoff:yyyy-MM-dd} 時点）";
-        totals.Text = $"Project 合計 · 見積 {SummaryText.Value(value.Estimate)} / 実績 {SummaryText.Value(value.Actual)} 人日";
+        var forecast = EffortValue.Sum(value.People.Select(p => p.Forecast));
+        var allowanceTotal = value.People.All(p => p.Allowance is not null) ? value.People.Sum(p => p.Allowance!.Value) : (decimal?)null;
+        var headroom = allowanceTotal is { } allowance && forecast.Complete ? allowance - forecast.Hours : (decimal?)null;
+        totals.Text = $"投入可能 { (allowanceTotal is { } total ? SummaryText.Number(total / 8) : "未設定") } · 見積 {SummaryText.Value(value.Estimate)} / 実績 {SummaryText.Value(value.Actual)}\n完了見込み {SummaryText.Value(forecast)} · "
+            + (headroom is { } margin ? (margin < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(margin) / 8) : "余裕 / 超過 未確認") + " 人日";
         context.Text = $"{value.ProjectTitle} · 1人日 = 8人時 · 本日 {value.Today:yyyy-MM-dd} / 報告基準 {value.Cutoff:yyyy-MM-dd} · {value.TaskCount}タスク"
             + (value.UnpublishedCount > 0 ? $"（未公開 {value.UnpublishedCount}件を含む）" : "")
             + (!value.Estimate.Complete || !value.Actual.Complete || value.People.Any(p => !p.Forecast.Complete) ? "\n未完: 入力・確認不足または古い報告" : "");
-        people.ItemsSource = value.People; people.SelectedItem = value.People.FirstOrDefault(p => p.Id == person) ?? value.People.FirstOrDefault();
+        var ordered = value.People.OrderBy(p => p.Headroom is < 0 ? 0 : p.Headroom is null ? 1 : 2).ThenBy(p => p.Headroom).ToArray();
+        people.ItemsSource = ordered; people.SelectedItem = ordered.FirstOrDefault(p => p.Id == person) ?? ordered.FirstOrDefault();
         establish.IsEnabled = value.Baseline is null; replace.IsEnabled = baseline.IsEnabled = value.Baseline is not null;
         presenting = false; ShowPerson(row);
+        if (people.SelectedItem is { } selected) people.ScrollIntoView(selected);
     }
     private void ShowPerson(string? selectedRow = null)
     {
         allowance.IsEnabled = SelectedPersonId is { Length: > 0 };
-        if (people.SelectedItem is PersonSummary p) personDetail.Text = $"{p.Name} · 内訳\n独立した残り: {SummaryText.Exact(p.Remaining)}";
+        if (people.SelectedItem is PersonSummary p) personDetail.Text = $"{p.Name} · "
+            + (p.Headroom is { } h ? (h < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8) + " 人日"
+                : p.Allowance is null ? "投入可能工数を設定" : "見通し未確認")
+            + $"\n残り: {SummaryText.Exact(p.Remaining)}";
         else personDetail.Text = "担当者を選択";
         FilterTasks(selectedRow);
     }
@@ -159,7 +182,7 @@ internal sealed class SummaryView : Grid
         var taskId = id is null ? null : projection?.TaskIdsByRow?.GetValueOrDefault(id);
         var lines = (projection?.Contributions ?? []).Where(c => c.PersonId == SelectedPersonId)
             .Where(c => (c.Title + " " + c.Identity).Contains(filter.Text, StringComparison.OrdinalIgnoreCase))
-            .Select(c => new TaskLine(c, taskId == c.TaskId ? id : c.RowId)).ToArray();
+            .OrderByDescending(c => c.Remaining.Hours).Select(c => new TaskLine(c, taskId == c.TaskId ? id : c.RowId)).ToArray();
         tasks.ItemsSource = lines; tasks.SelectedItem = id is null ? lines.FirstOrDefault() : lines.FirstOrDefault(l => l.RowId == id);
     }
     internal void ShowOperationStatus(string? problem)
@@ -171,7 +194,7 @@ internal sealed class SummaryView : Grid
     {
         if (tasks.SelectedItem is not TaskLine line) return;
         var c = line.Contribution;
-        var text = $"{c.Identity}\n{c.Title}\n{c.TaskId}\n見積: {SummaryText.Exact(c.Estimate)}\n実績: {SummaryText.Exact(c.Actual)}\n独立した残り: {SummaryText.Exact(c.Remaining)}\n完了見込み: {SummaryText.Exact(c.Forecast)}\n報告対象: {c.ReportedThrough?.ToString("yyyy-MM-dd") ?? "未入力"}\n{c.Problem}";
+        var text = $"{c.Identity}\n{c.Title}\n見積: {SummaryText.Exact(c.Estimate)}\n実績: {SummaryText.Exact(c.Actual)}\n残り: {SummaryText.Exact(c.Remaining)}\n完了見込み: {SummaryText.Exact(c.Forecast)}\n報告対象: {c.ReportedThrough?.ToString("yyyy-MM-dd") ?? "未入力"}\n{c.Problem}";
         if (projection?.Comparisons.FirstOrDefault(b => b.TaskId == c.TaskId) is { } comparison) text += "\n" + SummaryText.Comparison(comparison);
         var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, MaxWidth = 560 };
         AutomationProperties.SetAutomationId(block, "SummaryFullTask"); new Flyout { Content = new ScrollViewer { Content = block, MaxHeight = 440 } }.ShowAt(tasks);

@@ -13,7 +13,6 @@ internal sealed partial class EditingGrid
     private readonly Grid pendingContext = new() { ColumnSpacing = 12, Visibility = Visibility.Collapsed };
     private readonly TextBlock pendingValue = new() { TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock confirmedValue = new() { TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly TextBlock pendingCalculation = new() { Text = "日程計算は確定値を使用", TextWrapping = TextWrapping.Wrap, MaxWidth = 260 };
 
     private void InitializePendingInput(StackPanel footer)
     {
@@ -28,11 +27,8 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(pendingContext, "PendingInputContext");
         AutomationProperties.SetAutomationId(pendingValue, "PendingInputValue");
         AutomationProperties.SetAutomationId(confirmedValue, "ConfirmedInputValue");
-        AutomationProperties.SetAutomationId(pendingCalculation, "PendingCalculationMeaning");
         pendingContext.ColumnDefinitions.Add(new()); pendingContext.ColumnDefinitions.Add(new());
-        pendingContext.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         pendingContext.Children.Add(pendingValue); SetColumn(confirmedValue, 1); pendingContext.Children.Add(confirmedValue);
-        SetColumn(pendingCalculation, 2); pendingContext.Children.Add(pendingCalculation);
         footer.Children.Add(pendingContext);
     }
 
@@ -52,8 +48,7 @@ internal sealed partial class EditingGrid
         string Display(string? value) => cell.Key?.Kind is "Select" or "LocalSelect" ? SelectDisplay(cell, value) : value ?? "（空値）";
         pendingValue.Text = "入力途中: " + pending;
         confirmedValue.Text = "確定値: " + Display(work.Value(cell));
-        pendingCalculation.Visibility = IsPlanningField(cell) ? Visibility.Visible : Visibility.Collapsed;
-        pendingContext.Visibility = Visibility.Visible;
+        pendingContext.Visibility = CellHasProblem(cell) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private bool IsPlanningField(EditCell cell) => cell.Key?.FieldId is { } fieldId

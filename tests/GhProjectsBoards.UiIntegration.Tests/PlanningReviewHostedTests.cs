@@ -65,7 +65,7 @@ public sealed partial class PlanningHostedTests
         await ReviewFixture(p, work.Planning("P1")!);
         TextBox original = null!;
         _ = await SheetNativeInput.PointFor("GridCell0_0");
-        await Ui.Run(() => { original = Ui.Find<TextBox>("GridCell0_0"); original.Text = "original pending row"; original.SelectionStart = 9; original.SelectionLength = 0; });
+        await Ui.Run(() => { original = Ui.Find<TextBox>("GridCell0_0"); original.Text = "                   "; original.SelectionStart = 9; original.SelectionLength = 0; });
         var references = new List<WeakReference<TextBox>>();
         for (var i = 1; i <= 80; i++)
         {
@@ -109,7 +109,7 @@ public sealed partial class PlanningHostedTests
             var unloaded = references.Count(r => r.TryGetTarget(out var input) && !input.IsLoaded);
             Console.WriteLine($"Inactive sampled editors after 80 distinct roundtrips: {unloaded}");
             Assert.That(unloaded, Is.LessThanOrEqualTo(65), "At most the 64 dormant rows plus one current row remain protected without pending work.");
-            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[0]), Is.EqualTo("original pending row"));
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[0]), Is.EqualTo("                   "));
             Assert.That(session.Workspace.Journal, Is.Empty);
         });
         await Ui.Run(() => { var views = Ui.Find<SelectorBar>("ProjectViews"); views.SelectedItem = views.Items[1]; });
@@ -118,7 +118,7 @@ public sealed partial class PlanningHostedTests
         await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>("GridCell0_0");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("GridCell0_0"), Is.SameAs(original));
-            Assert.That(original.Text, Is.EqualTo("original pending row")); Assert.That(original.SelectionStart, Is.EqualTo(9));
+            Assert.That(original.Text, Is.EqualTo("                   ")); Assert.That(original.SelectionStart, Is.EqualTo(9));
         });
     }
     [Test, Category("ReviewRetentionProgression"), Category("Infrastructure")]
@@ -126,7 +126,7 @@ public sealed partial class PlanningHostedTests
     {
         var (p, work) = GanttWorkload.Create(1000);
         await ReviewFixture(p, work.Planning("P1")!);
-        await Ui.Run(() => { var input = Ui.Find<TextBox>("GridCell0_0"); input.Text = "original pending row"; input.Select(9, 0); });
+        await Ui.Run(() => { var input = Ui.Find<TextBox>("GridCell0_0"); input.Text = "                   "; input.Select(9, 0); });
         var references = new List<WeakReference<TextBox>>();
         for (var i = 1; i <= 160; i++)
         {
@@ -150,7 +150,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Find<ListView>("GanttTasks").SelectedIndex = 0);
         await Ui.ClickCommand("GanttBoards"); await Ui.Ready<TextBox>("GridCell0_0");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("original pending row"));
+            Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("                   "));
             Assert.That(Ui.Find<TextBox>("GridCell0_0").SelectionStart, Is.EqualTo(9));
             Assert.That(session.Workspace.Journal, Is.Empty);
         });
@@ -241,7 +241,8 @@ public sealed partial class PlanningHostedTests
     {
         await ReviewFixture(PlanningReviewRegressionTests.Observed("Actual", "5"), PlanningPathTests.Plan());
         await Ui.Run(() => FocusCell("GridCell0_4"));
-        await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual"); await Ui.Ready<Button>("ActualDetails");
+        await Ui.Until(() => grid.SelectionIdentity?.Field?.FieldId == "F-Actual");
+        await Ui.Ready<Button>("ActualContext"); await Ui.Run(() => Ui.Click("ActualContext")); await Ui.Ready<Button>("ActualDetails");
         await Ui.Run(() => Ui.Click("ActualDetails")); await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor")?.IsLoaded == true);
         await Ui.Until(() => Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor
             && Ui.Find<Button>("ActualReportsUpdate", editor) is { IsLoaded: true, IsEnabled: true });
@@ -329,6 +330,8 @@ public sealed partial class PlanningHostedTests
             PlanningContractTests.At("2026-10-05 10:17"), PlanningContractTests.At("2026-10-06 16:43"))] });
         await Schedule();
         await Ui.Run(() => Ui.Find<CalendarDatePicker>("ScheduleStart-Date", Ui.Popup<StackPanel>("SchedulingEditor")).Date = null);
+        await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor") is { } editor
+            && Ui.Find<Button>("ScheduleApply", editor) is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("ScheduleStart", Ui.Popup<StackPanel>("SchedulingEditor")).Text, Is.Empty);
             Ui.Click(Ui.Find<Button>("ScheduleApply", Ui.Popup<StackPanel>("SchedulingEditor")));

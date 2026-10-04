@@ -9,8 +9,19 @@ internal sealed class PlanningWarningPresentationTests
 {
     private static PlanningInput Input(string id, bool breakdown = false, params PlanningLink[] links)
         => new(new(id, PlanningMode.Auto, "U1", Contributions: breakdown ? null : [new("U1", 4, null)],
-            Assignment: new(["U1"], true, false)), 4, null, ["U1"], links);
+            Assignment: new(["U1"], true, false)), 4, null, ["U1"], links, DisplayName: id);
     private static AdoptedPlan Plan(params PlanningInput[] inputs) => PlanningEngine.Calculate(PlanningPathTests.Plan(), inputs, 23);
+
+    [Test]
+    public void MatchingHumanLabelsKeepBothPredecessorWarningSources()
+    {
+        var plan = Plan(Input("A", true) with { DisplayName = "#1 Review" },
+            Input("B", true) with { DisplayName = "#1 Review" },
+            Input("C", false, new PlanningLink("A"), new PlanningLink("B")));
+        var presentation = PlanningWarningPresentation.Create(plan, "C");
+        Assert.That(presentation.Causes.Select(c => c.SourceTaskId), Is.EquivalentTo(new[] { "A", "B" }));
+        Assert.That(presentation.HasScheduleAttention, Is.False);
+    }
 
     [TestCase("under", "EffortBreakdown", "見積の未割当: 2人時")]
     [TestCase("over", "ContributionInconsistency", "見積の内訳が合計を超えています。")]

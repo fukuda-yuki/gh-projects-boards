@@ -63,7 +63,7 @@ internal sealed partial class RegistrationWorkspace(RegistrationStore store)
             }
             catch (Exception) { blockedDrafts.Add(scope); }
         }
-        Status = loaded.Problems.Count == 0 ? "ローカル保存を読み込みました。プロフィールの選択は接続確認ではありません。"
+        Status = loaded.Problems.Count == 0 ? ""
             : "保存データに問題があります。自動修復・削除はしていません：" + string.Join(" / ", loaded.Problems.Select(p => $"{p.File}: {p.Kind}"));
         Changed?.Invoke();
         if (blockedDrafts.Count > 0) { Status = "下書きのスキーマ・破損・アクセスに問題があります。編集とキャッシュ置換を停止しています。元ファイルは保持しています。"; Changed?.Invoke(); }

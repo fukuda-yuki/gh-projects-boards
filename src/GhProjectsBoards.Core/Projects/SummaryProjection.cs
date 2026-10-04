@@ -29,19 +29,19 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
     IReadOnlyDictionary<string, string>? TaskIdsByRow = null)
 {
     internal const string Unattributed = "";
-    public static SummaryProjection Create(EditingWorkspace work, ProjectRegistration project, DateOnly today)
+    public static SummaryProjection Create(EditingWorkspace work, ProjectRegistration project, DateOnly today, DateOnly? reportingDay = null)
     {
         var p = work.Planning(project.Snapshot.Id.NodeId);
         var adopted = GanttProjection.Create(work, project, []);
         var rows = adopted.Rows.GroupBy(r => r.TaskId).Select(group => group.OrderBy(r => r.RowId, StringComparer.Ordinal).First()).ToArray();
-        var cutoff = p?.Cutoff is { } at && DateOnly.FromDateTime(at) < today ? DateOnly.FromDateTime(at) : today;
+        var cutoff = reportingDay ?? (p?.Cutoff is { } at && DateOnly.FromDateTime(at) < today ? DateOnly.FromDateTime(at) : today);
         var parents = project.Snapshot.Issues.Values.Select(i => i.Native?.Parent.Value?.NodeId).OfType<string>().ToHashSet();
         var contributions = new List<SummaryContribution>(); var estimates = new List<EffortValue>(); var actuals = new List<EffortValue>();
         var metadata = (p?.Tasks ?? []).ToDictionary(t => t.Id);
         void Add(GanttRow? row, PlanningTask task)
         {
             var id = task.Id;
-            var identity = row?.Identity ?? id; var title = row?.Title ?? id;
+            var identity = row?.Identity ?? "対象未確認"; var title = row?.Title ?? "現在の対象を未確認";
             var unavailable = row is null || row.Input is null;
             var ambiguous = task.LaborKind == TaskLaborKind.Unspecified && parents.Contains(id);
             var rollup = task.LaborKind == TaskLaborKind.Rollup;
@@ -71,7 +71,7 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
             {
                 reports.TryGetValue(person, out var report);
                 var actual = report is null ? (est.ContainsKey(person) || rem.ContainsKey(person) ? EffortValue.Missing : new(0))
-                    : report.ReportedThrough > cutoff ? EffortValue.Missing : new EffortValue(report.Hours, Stale: report.ReportedThrough < today ? 1 : 0);
+                    : report.ReportedThrough > cutoff ? EffortValue.Missing : new EffortValue(report.Hours, Stale: report.ReportedThrough < (reportingDay ?? today) ? 1 : 0);
                 actualValues.Add(actual);
                 var ev = est.GetValueOrDefault(person) ?? new(0); var rv = rem.GetValueOrDefault(person) ?? new(0);
                 if (ambiguous || unavailable) { ev = EffortValue.Missing; rv = EffortValue.Missing; }
@@ -87,12 +87,13 @@ internal sealed record SummaryProjection(PersonSummary[] People, EffortValue Est
         var rowIds = rows.Select(r => r.TaskId).ToHashSet();
         foreach (var task in metadata.Values.Where(t => !rowIds.Contains(t.Id) && !t.Id.StartsWith("local-", StringComparison.Ordinal))) Add(null, task);
         var configured = (p?.People ?? []).ToDictionary(p => p.Id, p => p.Name);
+        var observedPeople = project.Snapshot.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(p => p.Id.NodeId).ToDictionary(p => p.Id.NodeId, p => p.Login);
         var allowances = (p?.Summary?.Allowances ?? []).ToDictionary(a => a.PersonId, a => a.Hours);
         var groups = contributions.ToLookup(c => c.PersonId);
         var peopleRows = groups.Select(g => g.Key).Concat(configured.Keys).Concat(allowances.Keys).Distinct().Select(id => {
             var items = groups[id].Where(c => c.IncludedInTotals).ToArray();
             var e = EffortValue.Sum(items.Select(i => i.Estimate)); var a = EffortValue.Sum(items.Select(i => i.Actual)); var r = EffortValue.Sum(items.Select(i => i.Remaining));
-            return new PersonSummary(id, id == Unattributed ? "未割当・帰属未確認" : configured.GetValueOrDefault(id) ?? id,
+            return new PersonSummary(id, id == Unattributed ? "未割当・帰属未確認" : configured.GetValueOrDefault(id) ?? observedPeople.GetValueOrDefault(id) ?? "以前の担当者",
                 allowances.TryGetValue(id, out var allowance) ? allowance : null, e, a, r, EffortValue.Sum([a, r]));
         }).OrderBy(p => p.Id == Unattributed).ThenBy(p => p.Name, StringComparer.CurrentCulture).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
         var baseline = p?.Summary?.Baseline;

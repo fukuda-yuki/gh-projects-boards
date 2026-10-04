@@ -29,6 +29,14 @@ internal sealed record PlanningWarningPresentation(long SourceRevision, Planning
             foreach (var warning in result.Warnings)
             {
                 var details = result.WarningDetails?.Where(detail => detail.Message == warning).ToArray() ?? [];
+                if (details.Length > 1 && details.All(detail => detail.Kind == PlanningWarningKind.Inherited && detail.PredecessorId is not null))
+                {
+                    // Human labels can coincide; provenance comes from the
+                    // typed edges, never from a unique rendered message.
+                    foreach (var inheritedDetail in details)
+                        causes.AddRange(Resolve(inheritedDetail.PredecessorId!, warning));
+                    continue;
+                }
                 if (details.Length != 1)
                 {
                     causes.Add(Cause(id, warning, PlanningWarningImpact.Unknown));

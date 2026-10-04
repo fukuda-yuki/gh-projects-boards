@@ -51,7 +51,7 @@ public sealed partial class RegistrationPanel
         var restart = new Button { Content = "未反映の変更を確認…" }; AutomationProperties.SetAutomationId(restart, "ApplyRestartReview");
         var recovery = new Grid { ColumnSpacing = 8 };
         recovery.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); recovery.ColumnDefinitions.Add(new());
-        var recoveryHint = ApplyText("以前の結果とローカルの変更を保持して、残る変更を確認します。この操作では送信しません。");
+        var recoveryHint = ApplyText("未反映の変更だけを確認します。");
         recoveryHint.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(recoveryHint, 1);
         recovery.Children.Add(restart); recovery.Children.Add(recoveryHint);
         var informationText = ApplyText("");
@@ -60,7 +60,7 @@ public sealed partial class RegistrationPanel
         var legend = ApplyText("GitHubの値 → 反映する値（Projectフィールド）");
         var header = ApplyPanel(4);
         header.Children.Add(ApplyText($"{initial.Snapshot.Title} / {projectId.Scope.Host} / {login}", true));
-        if (continuation is not null) header.Children.Add(ApplyText("以前の処理から続ける、新しい変更の確認です。現在の確定済み入力を使い、未確定入力は送りません。"));
+        if (continuation is not null) header.Children.Add(ApplyText("残る変更の確認"));
         header.Children.Add(counts); header.Children.Add(status); header.Children.Add(legend);
         var hidden = ApplyPanel(4); hidden.Children.Add(hiddenText); hidden.Children.Add(includeHidden);
         var problem = ApplyPanel(4); problem.Children.Add(reasons);

@@ -7,25 +7,6 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class EditingGrid
 {
-    private readonly bool summaryEnabled;
-    private static bool SummaryEvaluationEnabled()
-    {
-        // The existing isolated fixture launcher is the temporary development
-        // boundary. Ordinary saved profiles keep the unfinished report contained.
-        var root = Environment.GetEnvironmentVariable("GHPB_DATA_ROOT");
-        if (string.IsNullOrWhiteSpace(root) || !System.IO.Path.IsPathFullyQualified(root)) return false;
-        try
-        {
-            using var marker = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(
-                System.IO.Path.Combine(root, "diagnostics", "summary-fixture.json")));
-            var value = marker.RootElement;
-            return value.GetProperty("kind").GetString() == "synthetic-summary-v2"
-                && value.GetProperty("validatedReadback").GetBoolean()
-                && string.Equals(value.GetProperty("dataRoot").GetString(), System.IO.Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception error) when (error is System.IO.IOException or UnauthorizedAccessException
-            or System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException) { return false; }
-    }
     private long summaryRevision = -1;
     private EditingWorkspace? summaryWorkspace;
     private DateOnly summaryDay;
@@ -38,6 +19,13 @@ internal sealed partial class EditingGrid
         summaryView.BaselineRequested += async replace => await BaselineDialogAsync(replace);
         summaryView.TaskRequested += (id, view) => { if (SelectGanttRow(id)) ShowProjectView(view, id); };
         summaryView.EditRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateSummary(true); } };
+        summaryView.RemainingRequested += (id, text) => Run(() => {
+            var work = session.Workspace;
+            var field = work.Planning(projectId)?.Fields.SingleOrDefault(f => f.Role == "Remaining")?.FieldId
+                ?? throw new InvalidOperationException("計画設定で残時間の列を選んでください。");
+            var cell = work.Open(registration).Single(r => r.ItemId == id).Cells.Single(c => c.Key?.FieldId == field);
+            work.Commit(projectId, cell, text); UpdateSummary(true); _ = FlushDraftsAsync("summary-remaining");
+        });
         summaryView.UndoRequested += () => { Run(Undo); UpdateSummary(true); };
         summaryView.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateSummary(true); };
     }
@@ -47,7 +35,7 @@ internal sealed partial class EditingGrid
         summaryView!.ShowOperationStatus(operationProblem);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9));
         if (!force && summaryWorkspace == session.Workspace && summaryRevision == session.Workspace.Revision && summaryDay == today) return;
-        summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today), person, row);
+        summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today, confirmedActualThrough), person, row);
         summaryWorkspace = session.Workspace; summaryRevision = session.Workspace.Revision; summaryDay = today;
     }
     private async Task AllowanceDialogAsync(string personId)
@@ -55,7 +43,7 @@ internal sealed partial class EditingGrid
         if (!CanRefresh) return;
         var person = summaryView?.AdoptedSummary?.People.SingleOrDefault(p => p.Id == personId); if (person is null) return;
         var panel = new StackPanel { Spacing = 12, MinWidth = 320 };
-        panel.Children.Add(new TextBlock { Text = person.Name + " / " + personId, TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new TextBlock { Text = person.Name, TextWrapping = TextWrapping.Wrap });
         var input = PlanningText(panel, "Project全体の投入可能工数（人時、空欄は未設定）", "SummaryAllowanceHours",
             person.Allowance is { } h ? PlanningContract.CanonicalHours(h) : "");
         var days = new TextBlock { TextWrapping = TextWrapping.Wrap }; panel.Children.Add(days);

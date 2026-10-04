@@ -9,11 +9,21 @@ internal sealed partial class EditingGrid
 {
     private readonly StackPanel actualInputPane = new() { Spacing = 4, Visibility = Visibility.Collapsed, Margin = new(0, 4, 0, 4) };
     private readonly TextBlock actualInputHeading = new() { TextWrapping = TextWrapping.Wrap };
-    private readonly CalendarDatePicker actualThrough = new() { Header = "報告対象最終日", PlaceholderText = "日付を確認", Width = 168 };
+    private readonly CalendarDatePicker actualThrough = new() { PlaceholderText = "報告日", Width = 152 };
+    private readonly Button actualContextButton = new() { Content = "実績の詳細", Visibility = Visibility.Collapsed };
     private readonly ComboBox actualWorker = new FormComboBox() { Header = "実績担当者", Width = 184, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
     private readonly Button actualUpdate = new() { Content = "更新", VerticalAlignment = VerticalAlignment.Bottom };
     private DateOnly? confirmedActualThrough;
-    private bool updatingActualContext;
+    internal DateOnly? ReportingDay
+    {
+        get => confirmedActualThrough;
+        set
+        {
+            confirmedActualThrough = value;
+            actualThrough.Date = value is { } date ? new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9)) : null;
+        }
+    }
+    private bool actualDetailsRequested;
     private (EditingWorkspace Work, string Row, long Stamp)? actualContext;
     private sealed record ActualWorkerChoice(string? Id, string Label);
 
@@ -25,7 +35,7 @@ internal sealed partial class EditingGrid
         AutomationProperties.SetAutomationId(actualWorker, "ActualWorker");
         AutomationProperties.SetAutomationId(actualUpdate, "ActualUpdate");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        actions.Children.Add(actualThrough); actions.Children.Add(actualWorker); actions.Children.Add(actualUpdate);
+        actions.Children.Add(actualWorker); actions.Children.Add(actualUpdate);
         var cancel = new Button { Content = "取消", VerticalAlignment = VerticalAlignment.Bottom };
         var remove = new Button { Content = "実績を削除", VerticalAlignment = VerticalAlignment.Bottom };
         var details = new Button { Content = "内訳", VerticalAlignment = VerticalAlignment.Bottom };
@@ -36,8 +46,17 @@ internal sealed partial class EditingGrid
         actualInputPane.Children.Add(new ScrollViewer { Content = actions, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollMode = ScrollMode.Enabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled });
         footer.Children.Add(actualInputPane);
-        actualThrough.DateChanged += (_, _) => { if (!updatingActualContext) confirmedActualThrough = null; };
-        actualUpdate.Click += (_, _) => CommitActualCell(confirmContext: true);
+        confirmedActualThrough = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9));
+        actualThrough.Date = new DateTimeOffset(confirmedActualThrough.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9));
+        AutomationProperties.SetName(actualThrough, "実績の報告基準日");
+        ToolTipService.SetToolTip(actualThrough, "このProjectで続けて入力する実績の報告日");
+        actualThrough.DateChanged += (_, _) => {
+            confirmedActualThrough = actualThrough.Date is { } date ? DateOnly.FromDateTime(date.DateTime) : null;
+            UpdateSummary(true);
+        };
+        AutomationProperties.SetAutomationId(actualContextButton, "ActualContext");
+        actualContextButton.Click += (_, _) => { actualDetailsRequested = !actualDetailsRequested; UpdateActualInput(); };
+        actualUpdate.Click += (_, _) => CommitActualCell();
         details.Click += (_, _) => ShowActualReports(details);
         cancel.Click += (_, _) => Run(() => {
             if (!active || !CanRefresh) return;
@@ -58,11 +77,14 @@ internal sealed partial class EditingGrid
     }
     private void UpdateActualInput()
     {
-        if (!active || currentRow >= rows.Length || ShowingGantt || !TypedActual(rows[currentRow].Cells[currentColumn]))
-        { actualInputPane.Visibility = Visibility.Collapsed; actualContext = null; return; }
-        actualInputPane.Visibility = Visibility.Visible;
+        if (!active || currentRow >= rows.Length || ShowingGantt || ShowingSummary || !TypedActual(rows[currentRow].Cells[currentColumn]))
+        { actualInputPane.Visibility = actualContextButton.Visibility = Visibility.Collapsed; actualContext = null; actualDetailsRequested = false; return; }
+        actualContextButton.Visibility = Visibility.Visible;
         var work = session.Workspace; var row = rows[currentRow]; var plan = work.Planning(projectId)!;
         var context = work.ActualInput(registration, row.ItemId);
+        if (actualContext?.Row != row.ItemId) actualDetailsRequested = false;
+        actualInputPane.Visibility = actualDetailsRequested || !context.HasPerson || context.MultipleReports || context.Problem is not null
+            ? Visibility.Visible : Visibility.Collapsed;
         actualInputHeading.Text = $"{(HasSelectedRange ? "現在のセル · " : "")}{RowIdentity(row)} · 累計実績（人時）" + (context.Historical ? " · 過去の報告担当者を保持" : "")
             + (context.MultipleReports ? " · 複数人の実績は内訳で更新" : "")
             + (context.Problem is { } problem ? "\n" + problem : "");
@@ -77,21 +99,13 @@ internal sealed partial class EditingGrid
         actualWorker.SelectedItem = context.HasPerson ? choices.SingleOrDefault(p => p.Id == context.PersonId) : null;
         actualWorker.IsEnabled = !context.Historical && !context.MultipleReports;
         actualUpdate.IsEnabled = !context.MultipleReports;
-        updatingActualContext = true;
-        var proposed = confirmedActualThrough ?? (plan.Cutoff is { } cutoff ? DateOnly.FromDateTime(cutoff) : (DateOnly?)null);
-        actualThrough.Date = proposed is { } day ? new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9)) : null;
-        updatingActualContext = false;
         string PersonName(string? id) => id is null ? "未割当" : plan.People.SingleOrDefault(p => p.Id == id)?.Name
-            ?? registration.Snapshot.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).FirstOrDefault(a => a.Id.NodeId == id)?.Login ?? id;
+            ?? registration.Snapshot.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).FirstOrDefault(a => a.Id.NodeId == id)?.Login ?? "以前の担当者";
     }
-    private bool CommitActualCell(bool confirmContext)
+    private bool CommitActualCell(bool moveNext = true)
     {
         if (!active || !CanRefresh || !TypedActual(rows[currentRow].Cells[currentColumn])) return false;
         UpdateActualInput();
-        if (!confirmContext && confirmedActualThrough is null)
-        {
-            ShowOperationProblem("報告対象日と実績担当者を確認して更新してください。"); actualUpdate.Focus(FocusState.Keyboard); return false;
-        }
         try
         {
             if (actualThrough.Date is not { } date) throw new InvalidOperationException("報告対象最終日を選んでください。");
@@ -102,7 +116,7 @@ internal sealed partial class EditingGrid
             session.Workspace.CommitActualInput(registration, rows[currentRow].ItemId, text, through, worker.Id, session.Workspace.Revision);
             confirmedActualThrough = through; operationProblem = null;
             UpdateCell(currentRow, currentColumn);
-            Select(Math.Min(currentRow + 1, rows.Length - 1), currentColumn, false);
+            if (moveNext) Select(Math.Min(currentRow + 1, rows.Length - 1), currentColumn, false);
             _ = FlushDraftsAsync("actual-cell-commit");
             return true;
         }

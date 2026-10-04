@@ -92,7 +92,7 @@ public sealed partial class PlanningHostedTests
             var details = Ui.Popup<StackPanel>("GanttTaskDetails")!;
             var text = string.Join("\n", Ui.Tree(details).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain(label).And.Contain(effort));
-            Assert.That(text.Contains("実績の入力だけでは進捗を変更しません"), Is.EqualTo(hasActual && progress == PlanningProgress.Unstarted));
+            Assert.That(text.Contains("実績の入力だけでは計画上の進捗を変更しません"), Is.EqualTo(hasActual && progress == PlanningProgress.Unstarted));
             Assert.That(Ui.Find<TextBlock>("GanttNotice").Text, Does.Not.Contain("日程の注意"), "Unallocated effort does not invalidate the adopted dates.");
             Assert.That(Ui.Find<Button>("GanttExplanationSettings", details).IsEnabled, Is.True);
             Assert.That(Ui.Tree(details).OfType<Expander>().Single(e => (string)e.Header == "計算の記録").IsExpanded, Is.False);

@@ -37,9 +37,9 @@ internal sealed partial class EditingWorkspace
         catch (InvalidOperationException) { problem = "取得した実績は工数の範囲外です。元の値を保持しています。訂正値・担当者・報告日を確認してください。"; }
         var issue = project.Snapshot.Issues.GetValueOrDefault(new(Scope, task.Id));
         var unique = issue?.Native is { Complete: true, Assignees.Length: 1 } native ? native.Assignees[0].Id.NodeId : null;
-        // A fetched total has no historical worker. Only a genuinely new report
-        // can propose the currently observed single assignee automatically.
-        return new(task.Id, value is null ? unique : null, value is null && unique is not null,
+        // A correction adopts the unique current worker unless an explicit
+        // historical report already owns the cumulative value.
+        return new(task.Id, problem is null ? unique : null, problem is null && unique is not null,
             false, actuals is { Length: > 1 }, total, null, problem);
     }
 

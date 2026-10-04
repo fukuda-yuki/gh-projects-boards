@@ -200,5 +200,6 @@ internal sealed class SummaryTests
         Assert.That(result.Comparisons.Single(c => c.TaskId == "I1").State, Is.EqualTo("現在の範囲を未確認"));
         Assert.That(result.People.Single(p => p.Id == "A").Actual.Hours, Is.EqualTo(48));
         Assert.That(result.People.Single(p => p.Id == "A").Forecast.Complete, Is.False);
+        Assert.That(result.Contributions.Where(c => c.TaskId == "I1").Select(c => c.Title), Has.All.EqualTo("現在の対象を未確認"));
     }
 }

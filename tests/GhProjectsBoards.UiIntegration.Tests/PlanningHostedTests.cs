@@ -178,7 +178,7 @@ public sealed partial class PlanningHostedTests
         });
     }
     [TestCase(2), TestCase(1000)]
-    public async Task ContextualActualUpdateAndNextRowPasteShareTheConfirmedDateAndRetainUndo(int itemCount)
+    public async Task OptionalActualDetailsAndNextRowPasteShareTheReportingDateAndRetainUndo(int itemCount)
     {
         await Ui.Unmount(grid);
         project = PlanningPathTests.Registration(itemCount);
@@ -191,6 +191,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Mount(grid); await Ui.Ready<FrameworkElement>("GridCell0_4");
         await Ui.Run(() => Assert.That(Ui.Find<ListView>("ProjectItems").Items.Count, Is.EqualTo(itemCount)));
         await Ui.Run(() => FocusCell("GridCell0_4"));
+        await Ui.Ready<Button>("ActualContext"); await Ui.Run(() => Ui.Click("ActualContext"));
         await Ui.Until(() => Ui.Find<StackPanel>("ActualCellEditor").Visibility == Visibility.Visible);
         await Ui.Ready<CalendarDatePicker>("ActualReportedThrough");
         await Ui.Run(() => {
@@ -198,10 +199,11 @@ public sealed partial class PlanningHostedTests
             Ui.Find<TextBox>("GridCell0_4").Text = "7";
             Ui.Find<CalendarDatePicker>("ActualReportedThrough").Date = new DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.FromHours(9));
         });
-        await Ui.Until(() => Ui.Find<Button>("ActualUpdate") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Ready<Button>("ActualUpdate");
         await Ui.Run(() => Ui.Click("ActualUpdate"));
         await Ui.Until(() => grid.SelectionIdentity?.Item == "P1T2");
         clipboard = "9"; await Ui.ClickCommand("GridPaste");
+        await Ui.Run(() => Ui.Click("ActualContext"));
         await Ui.Run(() => {
             Assert.That(Ui.Find<CalendarDatePicker>("ActualReportedThrough").Date?.Day, Is.EqualTo(13));
             Assert.That(Ui.Dialog("PlanningDialog"), Is.Null);
@@ -540,7 +542,7 @@ public sealed partial class PlanningHostedTests
         await Ui.ClickCommand("GridPaste");
         await ShowDateColumns();
         await Ui.Until(() => CellText("GridCell0_6") == "2026-10-06");
-        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "24");
+        await Ui.Run(() => Ui.Find<TextBox>("GridCell0_2").Text = "24x");
         await Ui.Run(() => Assert.That(session.Workspace.PlanFor(project).Tasks[0].Finish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00"))));
         await Ui.ClickCommand("GridPlanning"); await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
         await Ui.Run(() => {
@@ -556,7 +558,7 @@ public sealed partial class PlanningHostedTests
             Assert.That(task.Mode, Is.EqualTo(PlanningMode.Manual));
             Assert.That(task.ManualStart, Is.EqualTo(PlanningContractTests.At("2026-10-05 12:07")));
             Assert.That(task.ManualFinish, Is.EqualTo(PlanningContractTests.At("2026-10-06 18:00")));
-            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[2]), Is.EqualTo("24"));
+            Assert.That(session.Workspace.Buffer(session.Workspace.Open(project)[0].Cells[2]), Is.EqualTo("24x"));
             Assert.That(session.Workspace.Journal, Is.Empty);
         });
     }

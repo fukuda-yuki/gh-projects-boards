@@ -60,9 +60,21 @@ internal sealed partial class EditingWorkspace
             var links = AdoptedLinks(registration, taskId, task, dependencies[taskId]);
             var complete = row.IsLocal || issue?.Native?.Complete == true;
             if (dependencies[taskId].Any(f => f.Conflict || f.Observation?.Reason is not null)) complete = false;
+            var statusFields = registration.Snapshot.Fields.Where(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT"
+                && f.Availability == ValueAvailability.Present).ToArray();
+            bool Done(EditRow appearance)
+            {
+                if (statusFields.Length != 1) return false;
+                var cell = appearance.Cells.SingleOrDefault(c => c.Key?.FieldId == statusFields[0].Id.NodeId);
+                if (cell is null || cell.Reason is not null || Field(cell)?.Conflict == true || Field(cell)?.Observation?.Reason is not null) return false;
+                var label = cell.Options.SingleOrDefault(o => o.Id == Value(cell))?.Name;
+                return string.Equals(label, "Done", StringComparison.OrdinalIgnoreCase) || label == "完了";
+            }
+            var title = Value(row.Cells[0]) ?? row.Cells[0].Display;
             inputs.Add(new(task, Work("Estimate"), Work("Remaining"), issue?.Native?.Assignees.Select(a => a.Id.NodeId).ToArray() ?? [], links,
                 complete, issue?.State.Availability == ValueAvailability.Present ? issue.State.Value == IssueState.Closed : null,
-                task.Actuals is null ? Work("Actual") : task.Actuals.Length == 0 ? null : task.Actuals.Sum(a => a.Hours), sourceProblem));
+                task.Actuals is null ? Work("Actual") : task.Actuals.Length == 0 ? null : task.Actuals.Sum(a => a.Hours), sourceProblem,
+                appearances.All(Done), issue is null ? "新規 " + title : $"#{issue.Number} {title}"));
         }
         using (PerformanceTrace.Span("planning-schedule")) return calculatedPlans[id] = PlanningEngine.Calculate(plan, inputs.ToArray(), Revision);
     }
@@ -241,7 +253,8 @@ internal sealed partial class EditingWorkspace
                 throw new InvalidOperationException("選択したProject項目の選択肢IDを確認できません。");
             return (cell, edit.OptionId ?? "", edit.OptionId is null, true);
         }).ToArray();
-        Apply(registration.Snapshot.Id.NodeId, writes, projectPlan: false);
+        var affectsCompletion = edits.Any(edit => registration.Snapshot.Fields.Any(f => f.Id.NodeId == edit.FieldId && f.Name == "Status"));
+        Apply(registration.Snapshot.Id.NodeId, writes, projectPlan: affectsCompletion);
     }
     private void ProjectPlan(ProjectRegistration registration, Dictionary<FieldKey, FieldChange> changes,
         ProjectPlanning? previous = null, HashSet<FieldKey>? explicitEndpoints = null)
