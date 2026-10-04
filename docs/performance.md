@@ -1,6 +1,6 @@
 # Measured performance
 
-Issue #12 owns actual results, failures and acceptance. These runners do not establish human UX, enterprise or large-Project support. The 1,000-item fixture is a controlled scalability probe.
+Issue #12 owns actual results, failures and acceptance; #65 owns the sheet workload and current next-roadmap evidence is recorded in #73. These runners do not establish human UX, enterprise or large-Project support. Synthetic fixtures are controlled scalability probes.
 
 ## Reproduce
 
@@ -24,6 +24,8 @@ The fixed matrix covers no-change, ten titles, all 100 titles; ten titles and te
 
 ## Timing and counters
 
+The unpublished-work summary and Apply review share a read-only candidate projection. Candidate field association must scale with the visible and retained field set, preserving Project-scoped scalar keys, shared Issue titles, missing-field recovery, candidate order and read-only behavior. It must not scan the complete workspace field collection for every row. This is a calculation-cost boundary; ordinary input and scrolling measurements remain necessary before claiming a user-visible improvement.
+
 Fixture creation, remote seed changes, initial connection/registration, history preparation and user review are outside timing. `prepare` measures flush, complete retrieval/reconciliation and review generation. `execute` measures confirmation through durable acknowledgement/settlement. Their sum is product execution end-to-end, excluding review. Ordinary-app local editing is recorded separately from both. Desktop measurements include UI Automation polling and the edit helper's fixed 100 ms key-settling delay; they are not pure rendering or input latency. Checkpoint setup and calibration are outside the measured phases.
 
 All trace spans use monotonic Stopwatch ticks and record frequency. Span kinds and counters contain no request, title, token, raw response or content-bearing payload. The trace is an explicit in-memory diagnostic scope, not a file observer or recovery authority; it neither opens checkpoint files nor delays replacement. Disabled tracing bypasses byte counting. Checkpoint byte counts are the bytes actually serialized to temporary files; commits count only completed atomic replacement. No saves or attempt records are removed.
@@ -41,14 +43,14 @@ Publish each sample plus median/min/max. Do not infer tail percentiles from thes
 ./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-101 -Trace
 ./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-1000 -ItemCount 1000 -Trace
 ./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-columns -SelectFieldCount 12 -Trace
-# Optional physical Japanese composition probe, restricted to 101 rows:
+# Optional physical Japanese composition probe at the selected row count:
 ./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-ime -Ime -Trace
 # Use a previously copied complete app output; retain its source evidence separately.
 ./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-baseline -NoBuild `
     -Executable 'C:\evidence\baseline\GhProjectsBoards.App.exe' -SourceRevision '<40-character-source-SHA>'
 ```
 
-Rows accept 101–1,000 and single-select fields 1–12, with two additional ordinary columns. Start at 101 rows, then vary row count or column count independently; run 1,000×12 only for a relevant scaling question. These examples are selectable workloads, not a required Cartesian suite. Run serially on an unlocked desktop. The optional IME phase requires the existing Microsoft Japanese IME; it sends physical keys, keeps composition active across native wheel input, and checks IME confirmation separately from cell commit. It does not replace the broader IME suite or human typing acceptance.
+Rows accept 101–5,000 and single-select fields 1–12, with two additional ordinary columns. Start at 101 rows, then vary row count or column count independently; run 1,000×12 or a 2,000-row comparison only for a relevant scaling question. The diagnostic range is not a supported-performance claim. Compare unchanged source and candidate with the same row/column fixture, viewport, DPI, tracing, input sequence and repeated samples. Preserve visible row identity, pending input, final-row reachability, Undo, checkpoint readback and normal close alongside timing and presented-frame evidence. These examples are selectable workloads, not a required Cartesian suite. Run serially on an unlocked desktop. The optional IME phase requires the existing Microsoft Japanese IME; it sends physical keys, keeps composition active across native wheel input, and checks IME confirmation separately from cell commit. It does not replace the broader IME suite or human typing acceptance.
 
 The runner builds Release unless `-NoBuild` is supplied, then uses `Start-EditingCheck.ps1 -PrepareOnly` for a fresh, reread-validated seed. `-NoBuild` requires existing app, seed and driver outputs. An absolute `-Executable` selects an immutable copied app, independently of the current seed/driver binaries. `-SourceRevision` is optional caller-declared provenance, not verification that a binary matches current HEAD. Preserve the copied output's original build record. The runner records current HEAD, dirty patch, untracked source copies/hashes, binary hashes and before/after source hashes; builds do not silently establish provenance for older outputs.
 

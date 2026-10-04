@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="e4428989-b4af-4cea-b671-cc221e19312b" name="mwam0@RTX5070 2026-10-04 21:01:06" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T21:01:06.3499153+09:00" queuing="2026-10-04T21:01:06.3499154+09:00" start="2026-10-04T21:01:04.9306264+09:00" finish="2026-10-04T21:01:06.3567815+09:00" />
+  <TestSettings name="default" id="5ca3d3ed-5e1e-43a1-b4af-57236f39464d">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_21_01_06" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="05680733-58ec-4d11-9907-84e44826bed0" testId="a76e24ab-7e58-3fdf-d763-6afdbabf5cbb" testName="TwoThousandRowsKeepTheExactCandidateSetAcrossRepeatedReadOnlyProjection" computerName="RTX5070" duration="00:00:00.2387160" startTime="2026-10-04T21:01:05.9530973+09:00" endTime="2026-10-04T21:01:06.1917782+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="05680733-58ec-4d11-9907-84e44826bed0">
+      <Output>
+        <StdOut>{"rows":2000,"columns":2,"samples":[{"sample":-1,"warmup":true,"milliseconds":15.3931,"managedBytes":7376064},{"sample":0,"warmup":false,"milliseconds":10.1217,"managedBytes":7375000},{"sample":1,"warmup":false,"milliseconds":11.6748,"managedBytes":7375352},{"sample":2,"warmup":false,"milliseconds":7.9062,"managedBytes":7375000},{"sample":3,"warmup":false,"milliseconds":12.8938,"managedBytes":7375352},{"sample":4,"warmup":false,"milliseconds":7.6731,"managedBytes":7375000},{"sample":5,"warmup":false,"milliseconds":9.9238,"managedBytes":7375000},{"sample":6,"warmup":false,"milliseconds":7.8682,"managedBytes":7375352}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="TwoThousandRowsKeepTheExactCandidateSetAcrossRepeatedReadOnlyProjection" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\next-roadmap\nx5-core\bin\ghprojectsboards.tests\release\ghprojectsboards.tests.dll" id="a76e24ab-7e58-3fdf-d763-6afdbabf5cbb">
+      <Execution id="05680733-58ec-4d11-9907-84e44826bed0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\next-roadmap\nx5-core\bin\GhProjectsBoards.Tests\release\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.ApplyCandidatePerformanceTests" name="TwoThousandRowsKeepTheExactCandidateSetAcrossRepeatedReadOnlyProjection" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="a76e24ab-7e58-3fdf-d763-6afdbabf5cbb" executionId="05680733-58ec-4d11-9907-84e44826bed0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\next-roadmap\nx5-core\bin\GhProjectsBoards.Tests\release\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Explicit run&#xD;
+{"rows":2000,"columns":2,"samples":[{"sample":-1,"warmup":true,"milliseconds":15.3931,"managedBytes":7376064},{"sample":0,"warmup":false,"milliseconds":10.1217,"managedBytes":7375000},{"sample":1,"warmup":false,"milliseconds":11.6748,"managedBytes":7375352},{"sample":2,"warmup":false,"milliseconds":7.9062,"managedBytes":7375000},{"sample":3,"warmup":false,"milliseconds":12.8938,"managedBytes":7375352},{"sample":4,"warmup":false,"milliseconds":7.6731,"managedBytes":7375000},{"sample":5,"warmup":false,"milliseconds":9.9238,"managedBytes":7375000},{"sample":6,"warmup":false,"milliseconds":7.8682,"managedBytes":7375352}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}&#xD;
+&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.21_01_06.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

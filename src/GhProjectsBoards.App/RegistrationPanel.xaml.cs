@@ -43,13 +43,16 @@ public sealed partial class RegistrationPanel : UserControl
     {
         InitializeComponent();
         Owner.TextChanged += (_, _) => Repositories.ItemsSource = null;
-        Loaded += (_, _) => { Attach(); Update(); };
+        Loaded += (_, _) => { Attach(); Update(); FocusGettingStarted(); };
         Unloaded += (_, _) => Detach();
     }
     internal void Initialize(RegistrationWorkspace value)
     {
         Detach();
         workspace = value;
+        guideOpen = guideRegistration = guideReturnToDiscovery = guideReturnRegistration = false;
+        guideReturnFocus = null;
+        GettingStarted.Visibility = Visibility.Collapsed;
         rendered = null; revision = -1; displayedProfile = null;
         profileChoices = []; navigationKeys = []; nodeKeys.Clear(); navigationRepositories = []; navigationRepository = null;
         Navigation.RootNodes.Clear(); Profiles.ItemsSource = null;
@@ -164,6 +167,7 @@ public sealed partial class RegistrationPanel : UserControl
             Register.IsEnabled = choice is not null && workspace.CanRead && choice.Id.Scope == workspace.Profile && !workspace.IsBusy;
             DiscoveryForm.IsEnabled = !workspace.IsBusy;
             var settingsOpen = EditorHost.Children.OfType<EditingGrid>().Any(g => g.PlanningSettingsOpen);
+            UpdateGettingStarted(settingsOpen);
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy && !settingsOpen;
             Apply.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog && !settingsOpen;
             WeeklyApply.IsEnabled = Apply.IsEnabled && workspace.Drafts!.Workspace.Planning(workspace.Selected!.Snapshot.Id.NodeId) is not null;
@@ -388,7 +392,11 @@ public sealed partial class RegistrationPanel : UserControl
         for (var i = 0; i < commands.Length; i++)
         { Grid.SetColumn(commands[i], i % columns); Grid.SetRow(commands[i], i / columns); }
     }
-    private void BackToPreview(object sender, RoutedEventArgs e) => ShowPreview();
+    private void BackToPreview(object sender, RoutedEventArgs e)
+    {
+        if (guideRegistration) OpenGettingStarted();
+        else ShowPreview();
+    }
     private static IEnumerable<string> PreviewRows(ProjectReadModel p)
     {
         foreach (var item in p.Items)
@@ -409,9 +417,15 @@ public sealed partial class RegistrationPanel : UserControl
     private void ShowAdd(object sender, RoutedEventArgs e)
     {
         if (!CanLeaveForConnection()) return;
+        guideOpen = guideRegistration = false; GettingStarted.Visibility = Visibility.Collapsed;
+        DiscoveryBack.Content = "ワークスペースへ戻る";
         choice = null; Confirmation.Text = ""; DiscoveryForm.Visibility = Visibility.Visible; Preview.Visibility = Visibility.Collapsed; Update();
     }
-    private void ShowPreview() { DiscoveryForm.Visibility = Visibility.Collapsed; Preview.Visibility = Visibility.Visible; Update(); }
+    private void ShowPreview()
+    {
+        guideOpen = guideRegistration = false; GettingStarted.Visibility = Visibility.Collapsed;
+        DiscoveryForm.Visibility = Visibility.Collapsed; Preview.Visibility = Visibility.Visible; Update();
+    }
     private void CancelWork(object sender, RoutedEventArgs e) => Workspace.Cancel();
     private async void ProfileChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -477,10 +491,17 @@ public sealed partial class RegistrationPanel : UserControl
     private async void RegisterProject(object sender, RoutedEventArgs e)
     {
         if (choice is null) return;
+        var target = choice; var fromGuide = guideRegistration;
         var owner = Workspace; var expected = lifetime;
-        if (!await ConfirmPlanningNavigationAsync(choice.Id.Scope, choice.Id) || !IsCurrent(owner, expected)) return;
-        await owner.RegisterAsync(choice, InitialRepository.Text);
-        if (IsCurrent(owner, expected) && (owner.Selected is not null || owner.Incomplete is not null)) ShowPreview();
+        if (!await ConfirmPlanningNavigationAsync(target.Id.Scope, target.Id) || !IsCurrent(owner, expected)) return;
+        await owner.RegisterAsync(target, InitialRepository.Text);
+        if (!IsCurrent(owner, expected)) return;
+        if (fromGuide && owner.Selected?.Snapshot.Id == target.Id && owner.LatestAttempt is RegistrationAttempt.Complete or RegistrationAttempt.None)
+        {
+            guideReturnToDiscovery = guideReturnRegistration = false; guideReturnFocus = null;
+            OpenGettingStarted();
+        }
+        else if (owner.Selected is not null || owner.Incomplete is not null) ShowPreview();
     }
     private async void RefreshProject(object sender, RoutedEventArgs e)
     {

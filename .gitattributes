@@ -7,5 +7,6 @@ tests/regression-evidence/issue73-workflows/delivery-20261003/** -text
 tests/regression-evidence/issue73-workflows/weekly-review-20261003/** -text
 tests/regression-evidence/issue73-workflows/normal-workload-20261003/** -text
 tests/regression-evidence/issue73-polish/** -text
+tests/regression-evidence/issue73-next-roadmap/** -text
 # Preserve the selected official CSV bytes used for import provenance checks.
 tests/GhProjectsBoards.Tests/Fixtures/JapanHolidays.csv -text -diff

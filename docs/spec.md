@@ -111,6 +111,10 @@ GHEC + EMU IdP/browser authentication, enterprise host behavior, organization po
 
 ## Project registration and cache
 
+### First-use guide
+
+With no saved account, the workspace shows a compact guide through connection verification, registering an existing Project, and opening Boards. The guide reuses the ordinary connection and registration controls and derives progress from verified connection and durable registration state. It never runs authentication commands, creates a remote Project, or publishes work automatically. Missing CLI, authentication failure and registration failure keep their existing recovery actions. Users can leave the guide and reopen **開始ガイド**; restarting with a verified local registration uses the ordinary cached workspace without forcing onboarding. Saved accounts remain explicitly selected and cached content remains usable offline.
+
 Source: [#4](https://github.com/fukuda-yuki/gh-projects-boards/issues/4), with bounded navigation from [#5](https://github.com/fukuda-yuki/gh-projects-boards/issues/5).
 
 - The ordinary window exposes owner/repository-linked discovery, owner search and direct user/organization Project URLs after normal connection checking. Discovery queries use READ permission, existing URL validation and guarded preflight; they never require update permission or keyring storage merely to read. All discovery connections traverse to a terminal cursor; errors prevent a complete-list result.

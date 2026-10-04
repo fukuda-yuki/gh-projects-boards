@@ -24,7 +24,7 @@ internal static class FakeGhProgram
         {
             if (args.Length is not (2 or 4)) return 2;
             var count = 101; var fieldCount = 1;
-            if (args.Length == 4 && (!int.TryParse(args[2], out count) || count is < 1 or > 1000
+            if (args.Length == 4 && (!int.TryParse(args[2], out count) || count is < 1 or > 5000
                 || !int.TryParse(args[3], out fieldCount) || fieldCount is < 1 or > 12)) return 2;
             var root = args[1];
             var bulkSeed = args[0] == "--seed-bulk";

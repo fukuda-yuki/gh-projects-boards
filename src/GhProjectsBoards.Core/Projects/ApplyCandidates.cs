@@ -19,10 +19,17 @@ internal sealed partial class EditingWorkspace
         var rows = OperationRows(project, initializeFields);
         var candidates = new List<ApplyCandidate>();
         var included = new HashSet<FieldKey>();
+        // The status strip uses this projection during editing. Associate each
+        // row by identity instead of rescanning every workspace field per row.
+        // Retained scalar fields still belong to their item after a column disappears.
+        var fieldOrder = fields.Keys.Select((key, ordinal) => (key, ordinal)).ToDictionary(p => p.key, p => p.ordinal);
+        var itemFields = fields.Values.Where(f => f.Key.Kind is "Select" or "Number" or "Date"
+            && f.Key.ProjectId == project.Snapshot.Id.NodeId).ToLookup(f => f.Key.NodeId);
         foreach (var row in rows)
         {
-            var related = fields.Values.Where(f => row.Cells.Any(c => c.Key == f.Key)
-                || f.Key.Kind is "Select" or "Number" or "Date" && f.Key.NodeId == row.ItemId && f.Key.ProjectId == project.Snapshot.Id.NodeId).ToArray();
+            var related = row.Cells.Where(c => c.Key is not null && fields.ContainsKey(c.Key))
+                .Select(c => fields[c.Key!]).Concat(itemFields[row.ItemId]).DistinctBy(f => f.Key)
+                .OrderBy(f => fieldOrder[f.Key]).ToArray();
             foreach (var f in related) included.Add(f.Key);
             if (!row.IsLocal && !related.Any(f => f.Change is not null || f.Buffer is not null || f.Conflict || f.Observation?.Reason == ProjectionDecisionReason)) continue;
             var local = localRows.SingleOrDefault(r => r.Id == row.ItemId);

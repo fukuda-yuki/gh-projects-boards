@@ -48,6 +48,14 @@ public sealed class SummaryPersonPresenter : ContentControl
         for (var i = 0; i < values.Length; i++) {
             var cell = Cell(grid, values[i], i);
             if (i is 0 or 5) cell.Style = AttentionStyle(p.Headroom);
+            if (i == 5 && p.Headroom is < 0)
+            {
+                grid.Children.Remove(cell);
+                var highlight = new Border { Child = cell, VerticalAlignment = VerticalAlignment.Center,
+                    Style = (Style)Application.Current.Resources["SummaryOverloadHighlightStyle"] };
+                AutomationProperties.SetAutomationId(highlight, "SummaryHeadroomHighlight");
+                Grid.SetColumn(highlight, i); grid.Children.Add(highlight);
+            }
         }
         AutomationProperties.SetName(this, string.Join(" / ", values)); Content = grid;
     }
@@ -66,10 +74,16 @@ internal sealed class SummaryView : Grid
     private readonly TextBlock actualHeader = new() { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock personDetail = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly TextBox filter = new() { Header = "内訳を絞り込み", PlaceholderText = "タイトル・番号", Width = 220 };
+    private readonly Grid details = new() { Padding = new(12, 4, 12, 4), RowSpacing = 4 };
+    private readonly CommandBar taskCommands = new() { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true };
+    private readonly StackPanel correction = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
+    private readonly TextBlock remainingLabel = new() { Text = "残時間（人時）", VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
+    private readonly Flyout filterFlyout = new();
+    private readonly AppBarButton filterOpen = new() { Label = "内訳を絞り込み", Icon = new SymbolIcon(Symbol.Filter), Visibility = Visibility.Collapsed };
     private readonly InfoBar status = new() { IsClosable = false, Severity = InfoBarSeverity.Error };
     private readonly AppBarButton allowance, establish, replace, board, gantt, edit, baseline, copyReport;
     private SummaryProjection? projection;
-    private bool presenting;
+    private bool presenting, compact;
     internal event Action<string>? AllowanceRequested;
     internal event Action<bool>? BaselineRequested;
     internal event Action<string, ProjectView>? TaskRequested;
@@ -118,22 +132,22 @@ internal sealed class SummaryView : Grid
         ScrollViewer.SetHorizontalScrollMode(people, ScrollMode.Enabled); ScrollViewer.SetHorizontalScrollBarVisibility(people, ScrollBarVisibility.Auto);
         AutomationProperties.SetAutomationId(people, "SummaryPeople"); AutomationProperties.SetName(people, "担当者別の工数比較（人日）");
         SetRow(people, 3); Children.Add(people);
-        var details = new Grid { Padding = new(12, 4, 12, 4), RowSpacing = 4 };
         details.RowDefinitions.Add(new() { Height = GridLength.Auto }); details.RowDefinitions.Add(new() { Height = GridLength.Auto });
         details.ColumnDefinitions.Add(new()); details.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         details.Children.Add(personDetail); SetColumn(filter, 1); details.Children.Add(filter);
         AutomationProperties.SetAutomationId(personDetail, "SummaryPersonDetail"); AutomationProperties.SetAutomationId(filter, "SummaryFilter");
-        var taskCommands = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, IsDynamicOverflowEnabled = true };
         AppBarButton TaskCommand(string label, string id, Action action) { var b = new AppBarButton { Label = label, Icon = new SymbolIcon(Symbol.OpenFile) };
             AutomationProperties.SetAutomationId(b, id); b.Click += (_, _) => action(); taskCommands.PrimaryCommands.Add(b); return b; }
         board = TaskCommand("Boardsで開く", "SummaryBoards", () => { if (SelectedRowId is { } id) TaskRequested?.Invoke(id, ProjectView.Boards); });
         gantt = TaskCommand("Ganttで開く", "SummaryGantt", () => { if (SelectedRowId is { } id) TaskRequested?.Invoke(id, ProjectView.Gantt); });
         edit = TaskCommand("工数を編集", "SummaryEdit", () => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); });
         TaskCommand("内訳の詳細", "SummaryTaskDetails", ShowTask);
+        AutomationProperties.SetAutomationId(filterOpen, "SummaryFilterOpen"); AutomationProperties.SetName(filterOpen, "内訳を絞り込み");
+        filterOpen.Flyout = filterFlyout; taskCommands.SecondaryCommands.Add(filterOpen);
         SetRow(taskCommands, 1); details.Children.Add(taskCommands);
-        var correction = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         AutomationProperties.SetAutomationId(remaining, "SummaryRemaining"); AutomationProperties.SetAutomationId(updateRemaining, "SummaryRemainingUpdate");
-        correction.Children.Add(remaining); correction.Children.Add(updateRemaining);
+        AutomationProperties.SetName(remaining, "タスクの残時間（人時）");
+        correction.Children.Add(remainingLabel); correction.Children.Add(remaining); correction.Children.Add(updateRemaining);
         SetRow(correction, 1); SetColumn(correction, 1); details.Children.Add(correction);
         updateRemaining.Click += (_, _) => { if (SelectedRowId is { } id) RemainingRequested?.Invoke(id, remaining.Text); };
         SetRow(details, 4); Children.Add(details);
@@ -148,6 +162,38 @@ internal sealed class SummaryView : Grid
             var total = projection?.Comparisons.FirstOrDefault(c => c.TaskId == task?.Contribution.TaskId)?.Current?.Input?.Remaining;
             remaining.Text = total is { } hours ? PlanningContract.CanonicalHours(hours) : "";
         };
+        Loaded += (_, _) => UpdateCompactLayout();
+        SizeChanged += (_, _) => UpdateCompactLayout();
+        Unloaded += (_, _) => filterFlyout.Hide();
+    }
+    private void UpdateCompactLayout()
+    {
+        var next = ActualHeight is > 0 and < 480;
+        if (compact == next) return;
+        compact = next;
+        filterFlyout.Hide(); taskCommands.IsOpen = false;
+        // Keep both native list viewports usable when the app header leaves little vertical space.
+        if (compact)
+        {
+            details.Children.Remove(personDetail); taskCommands.Content = personDetail;
+            personDetail.MaxWidth = 320; personDetail.MaxLines = 2; personDetail.TextTrimming = TextTrimming.CharacterEllipsis;
+            details.Children.Remove(filter); filterFlyout.Content = filter;
+            SetRow(taskCommands, 0); SetRow(correction, 0);
+        }
+        else
+        {
+            taskCommands.Content = null; details.Children.Add(personDetail);
+            personDetail.MaxWidth = double.PositiveInfinity; personDetail.MaxLines = 0; personDetail.TextTrimming = TextTrimming.None;
+            filterFlyout.Content = null; details.Children.Add(filter);
+            SetRow(taskCommands, 1); SetRow(correction, 1);
+        }
+        filterOpen.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        remaining.Header = compact ? null : "タスクの残時間（人時）";
+        remaining.Width = compact ? 80 : 170;
+        remainingLabel.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        correction.VerticalAlignment = compact ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+        totals.Style = (Style)Application.Current.Resources[compact ? "BodyTextBlockStyle" : "SubtitleTextBlockStyle"];
+        RowDefinitions[3].Height = new GridLength(compact ? 1.35 : 1, GridUnitType.Star);
     }
     internal void Present(SummaryProjection value, string? selectedPerson = null, string? selectedRow = null)
     {
@@ -188,6 +234,7 @@ internal sealed class SummaryView : Grid
             + $"\n残り: {SummaryText.Exact(p.Remaining)}";
         }
         else personDetail.Text = "担当者を選択";
+        ToolTipService.SetToolTip(personDetail, personDetail.Text);
         FilterTasks(selectedRow);
     }
     private void FilterTasks(string? selectedRow = null)
@@ -251,7 +298,7 @@ internal sealed class SummaryView : Grid
     }
     internal void CycleFocus(bool backwards)
     {
-        var controls = new Control[] { people, filter, tasks, board, allowance };
+        var controls = new Control[] { people, compact ? filterOpen : filter, tasks, board, allowance };
         var focused = FocusManager.GetFocusedElement(XamlRoot); var index = Array.IndexOf(controls, focused);
         for (var n = 1; n <= controls.Length; n++) { var c = controls[(index + (backwards ? controls.Length - n : n) + controls.Length) % controls.Length]; if (c.IsEnabled && c.Focus(FocusState.Keyboard)) return; }
     }

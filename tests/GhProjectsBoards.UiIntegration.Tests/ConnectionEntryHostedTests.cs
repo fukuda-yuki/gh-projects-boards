@@ -25,7 +25,10 @@ public sealed partial class HostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("HostInput", connection).Text, Is.EqualTo(expectedHost));
             Assert.That(Ui.Find<TextBox>("ExecutablePath", connection).Text, Is.EqualTo("explicit-gh.exe"));
-            Assert.That(Ui.Find<TextBlock>("AccountValue", connection).Text, Is.EqualTo("不明"));
+            var account = Ui.Find<TextBlock>("AccountValue", connection).Text;
+            Assert.That(account, Does.Contain("未確認"));
+            if (cachedHost is null) Assert.That(account, Is.EqualTo("未確認"));
+            else Assert.That(account, Does.Contain("保存済み：cached-viewer").And.Contain("ID 42").And.Contain(expectedHost));
             Assert.That(model.Connection, Is.Null);
             Assert.That(Workspace.CanRead, Is.False);
             Assert.That(h.Writes, Is.Empty);
@@ -79,7 +82,8 @@ public sealed partial class HostedTests
         await Ui.Until(() => connection.Visibility == Visibility.Visible);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("HostInput", connection).Text, Is.EqualTo("github.com"));
-            Assert.That(Ui.Find<TextBlock>("AccountValue", connection).Text, Is.EqualTo("不明"));
+            Assert.That(Ui.Find<TextBlock>("AccountValue", connection).Text,
+                Does.Contain("保存済み：cached-viewer").And.Contain("ID 99").And.Contain("現在の認証：未確認").And.Not.Contain("ID 42"));
             Assert.That(model.Connection, Is.Null);
             Assert.That(Workspace.Profile, Is.EqualTo(new ConnectionScope("github.com", 99)));
             Assert.That(Workspace.CanRead, Is.False);

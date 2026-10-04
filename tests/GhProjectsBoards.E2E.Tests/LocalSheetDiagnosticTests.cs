@@ -38,7 +38,7 @@ public sealed class LocalSheetDiagnosticTests
         Assert.That(seed.GetProperty("validatedReadback").GetBoolean(), Is.True);
         var rows = seed.GetProperty("count").GetInt32();
         var fields = seed.GetProperty("selectFieldCount").GetInt32();
-        Assert.That(rows, Is.InRange(101, 1000));
+        Assert.That(rows, Is.InRange(101, 5000));
         Assert.That(fields, Is.InRange(1, 12));
         foreach (var (name, expected) in new[] { ("ROWS", rows), ("FIELDS", fields) })
             if (Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_" + name) is { } supplied)
@@ -65,8 +65,8 @@ public sealed class LocalSheetDiagnosticTests
             seedSha256 = Hash(seedFile), trace, physicalIme, timedFrames,
             repeatedActions = new { names = new[] { "select-visible-title", "arrows-up-down" }, warmup = 1, measured = 5 },
             singleObservationActions = new[] { "cached-project-ready", "commit-pending-title", "undo-title", "project-P2-P1" },
-            driverRevision = "paced-selection-v2",
-            pacing = "Each intentional click/arrow awaits the public selected row; clicks also await that editor's reported focus. No retry of input. Not the prior fast-queue workload.",
+            driverRevision = "paced-selection-v3-hit-target",
+            pacing = "Each intentional click first observes its public native hit target, then awaits the selected row and editor focus. Arrows await the selected row. No retry of input. Not the prior fast-queue workload.",
             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow, startTicks = Stopwatch.GetTimestamp(),
             os = Environment.OSVersion.ToString(), driver = "FlaUI UIA3 5.0.0",
             scope = "Ordinary cached local-sheet diagnosis. Physical input/public controls; no connection, refresh or Apply. No real gh fallback.",
@@ -231,13 +231,35 @@ public sealed class LocalSheetDiagnosticTests
             "The native input must reach the expected public selected row before the next input.");
         void ClickCell(int row)
         {
-            var cell = VisibleCell(row);
-            Record("native-cell-click-start", new { row, expectedIssue = "I" + (row + 1), bounds = cell.BoundingRectangle });
-            cell.Click();
+            var id = "GridCell" + row + "_0";
+            Point point = default; Rectangle bounds = default; string? lastBlocked = null;
+            // A closing command overflow can cover an otherwise visible editor.
+            // Observe the actual native hit target before sending one click;
+            // never retry a click that may already have invoked another command.
+            Wait(() => {
+                var cell = VisibleCell(row); bounds = cell.BoundingRectangle; point = cell.GetClickablePoint();
+                var hit = automation.FromPoint(point); var ancestry = new List<string>(); var matches = false;
+                for (var depth = 0; hit is not null && depth < 24; depth++, hit = hit.Parent)
+                {
+                    var target = hit.Properties.AutomationId.ValueOrDefault ?? "";
+                    ancestry.Add(target.Length == 0 ? hit.ControlType.ToString() : target);
+                    if (target == id && hit.Properties.ProcessId.ValueOrDefault == process.Id) { matches = true; break; }
+                }
+                if (matches && bounds.Contains(point)) return true;
+                var blocked = string.Join(" > ", ancestry);
+                if (lastBlocked != blocked)
+                {
+                    Record("native-cell-click-blocked", new { row, expectedIssue = "I" + (row + 1), point, bounds, hitAncestry = ancestry });
+                    lastBlocked = blocked;
+                }
+                return false;
+            }, "The intended editor must be the native hit target before a single pointer click is sent.");
+            Record("native-cell-click-start", new { row, expectedIssue = "I" + (row + 1), bounds, point, nativeHitTarget = id });
+            Mouse.Click(point);
             SelectedRow(row);
-            Wait(() => Element("GridCell" + row + "_0").Properties.HasKeyboardFocus.ValueOrDefault,
+            Wait(() => Element(id).Properties.HasKeyboardFocus.ValueOrDefault,
                 "The intentionally clicked editor must report focus before keyboard input; a timeout is retained as a diagnostic failure.");
-            Record("native-cell-click-observed", new { row, expectedIssue = "I" + (row + 1), bounds = cell.BoundingRectangle });
+            Record("native-cell-click-observed", new { row, expectedIssue = "I" + (row + 1), bounds = Element(id).BoundingRectangle });
         }
         void NativeKey(VirtualKeyShort key, bool imePacing = false)
         {
@@ -336,7 +358,11 @@ public sealed class LocalSheetDiagnosticTests
             Assert.That(Element("GridSelection").Name, Is.EqualTo(selected));
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
             Wait(() => NativeClipboardScope.ReadText() == "Issue 3\tTodo\r\nIssue 4\tTodo", "Offscreen range return must copy the original I3/I4 cells through the native shortcut.");
-            Assert.That(FirstTitle(Checkpoint("range-return")).GetProperty("Buffer").GetString(), Is.EqualTo("diagnostic"));
+            // Moving to another valid cell commits ordinary title input locally.
+            // The scroll roundtrip must preserve that confirmed value, not revive its buffer.
+            var retainedTitle = FirstTitle(Checkpoint("range-return"));
+            Assert.That(retainedTitle.GetProperty("Buffer").ValueKind, Is.EqualTo(JsonValueKind.Null));
+            Assert.That(retainedTitle.GetProperty("Change").GetProperty("Value").GetString(), Is.EqualTo("diagnostic"));
             Snapshot("range-return"); ClickCell(0);
         }
         JsonElement FirstTitle(JsonElement checkpoint) => checkpoint.GetProperty("Fields").EnumerateArray().Single(field =>
@@ -503,10 +529,10 @@ public sealed class LocalSheetDiagnosticTests
                 observed = new
                 {
                     reportedFocusId = focus?.Properties.AutomationId.ValueOrDefault, reportedFocusName = focus?.Properties.Name.ValueOrDefault,
-                    reportedFocusIsObservationOnly = true, selection = Element("GridSelection").Name,
+                    reportedFocusIsObservationOnly = true, selection = Element("GridSelection").Properties.Name.ValueOrDefault,
                     horizontal = scroll.HorizontalScrollPercent.Value, vertical = scroll.VerticalScrollPercent.Value,
-                    firstCell = window!.FindFirstDescendant(cf => cf.ByAutomationId("GridCell0_0"))?.Name,
-                    lastCell = window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell" + (rows - 1) + "_0"))?.Name
+                    firstCell = window!.FindFirstDescendant(cf => cf.ByAutomationId("GridCell0_0"))?.Properties.Name.ValueOrDefault,
+                    lastCell = window.FindFirstDescendant(cf => cf.ByAutomationId("GridCell" + (rows - 1) + "_0"))?.Properties.Name.ValueOrDefault
                 };
             }
             catch (COMException error) { observed = new { uiaError = error.HResult, error.Message }; }

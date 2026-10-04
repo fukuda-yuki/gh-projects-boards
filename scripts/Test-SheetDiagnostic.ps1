@@ -1,7 +1,7 @@
 # Opt-in local diagnosis. A completed driver is evidence collection, not product acceptance.
 [CmdletBinding()]
 param(
-    [ValidateRange(100, 1000)][int]$ItemCount = 101,
+    [ValidateRange(100, 5000)][int]$ItemCount = 101,
     [ValidateRange(1, 12)][int]$SelectFieldCount = 1,
     [ValidatePattern('^[A-Za-z0-9_-]+$')][string]$RunId = ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')),
     [switch]$NoBuild,

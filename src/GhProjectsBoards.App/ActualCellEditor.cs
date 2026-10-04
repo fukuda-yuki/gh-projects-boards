@@ -130,52 +130,113 @@ internal sealed partial class EditingGrid
         var row = rows[currentRow]; var cell = row.Cells[currentColumn];
         var plan = work.Planning(projectId)!; var taskId = work.TaskId(registration, row.ItemId);
         var task = plan.Tasks.SingleOrDefault(t => t.Id == taskId) ?? new(taskId);
+        var remainingId = plan.Fields.SingleOrDefault(f => f.Role == "Remaining")?.FieldId;
+        var remainingCell = remainingId is null ? null : row.Cells.SingleOrDefault(c => c.Key?.FieldId == remainingId);
+        var canAllocateRemaining = remainingCell is { Editable: true } && work.Field(remainingCell) is { Conflict: false };
         var content = new StackPanel { Spacing = 8, Width = Math.Max(280, Math.Min(520, ActualWidth - 64)) };
         AutomationProperties.SetAutomationId(content, "ActualReportsEditor");
-        content.Children.Add(new TextBlock { Text = RowIdentity(row) + " · 累計実績の内訳（人時）", TextWrapping = TextWrapping.Wrap });
+        content.Children.Add(new TextBlock { Text = RowIdentity(row) + " · 工数の内訳（人時）", TextWrapping = TextWrapping.Wrap });
+        var remainingTotal = new TextBox { Header = "タスクの残工数", PlaceholderText = "未入力", IsReadOnly = !canAllocateRemaining,
+            Text = remainingCell is null ? "" : work.Buffer(remainingCell) ?? work.Value(remainingCell) ?? "" };
+        AutomationProperties.SetAutomationId(remainingTotal, "ActualReportsRemainingTotal"); TrackContextInput(remainingTotal);
+        if (canAllocateRemaining) content.Children.Add(remainingTotal);
         var reportRows = new StackPanel { Spacing = 8 };
-        content.Children.Add(new ScrollViewer { Content = reportRows, MaxHeight = 240, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        var entries = new List<(string? Person, TextBox Hours, CalendarDatePicker Day, StackPanel View)>();
+        var reportScroll = new ScrollViewer { Content = reportRows, MaxHeight = Math.Max(112, Math.Min(240, ActualHeight - 380)), VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        AutomationProperties.SetAutomationId(reportScroll, "ActualReportsRows"); content.Children.Add(reportScroll);
+        var entries = new List<(string? Person, TextBox Hours, TextBox Remaining, CalendarDatePicker Day, StackPanel View)>();
         var dirty = false; var closingExplicitly = false;
         var error = new TextBlock { TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetAutomationId(error, "ActualReportsError");
         var total = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        AutomationProperties.SetAutomationId(total, "ActualReportsTotal");
         content.Children.Add(total);
         void UpdateTotal()
         {
-            try { total.Text = "内訳合計: " + PlanningContract.CanonicalHours(entries.Sum(e => PlanningContract.ParseHours(e.Hours.Text))) + "人時"
-                + (work.Buffer(cell) is { } target ? " / 入力中: " + target + "人時" : ""); }
-            catch (InvalidOperationException) { total.Text = "内訳に未入力・無効な工数があります。"; }
+            try
+            {
+                var actuals = entries.Where(e => !string.IsNullOrWhiteSpace(e.Hours.Text)).ToArray();
+                total.Text = actuals.Length == 0 ? "実績 未入力" : "実績合計 " + PlanningContract.CanonicalHours(actuals.Sum(e => PlanningContract.ParseHours(e.Hours.Text))) + "人時";
+                if (work.Buffer(cell) is { } target) total.Text += " / 入力中 " + target + "人時";
+                if (canAllocateRemaining)
+                {
+                    var assigned = entries.Where(e => e.Person is not null && !string.IsNullOrWhiteSpace(e.Remaining.Text)).Sum(e => PlanningContract.ParseHours(e.Remaining.Text));
+                    total.Text += "\n残工数 配分済み " + PlanningContract.CanonicalHours(assigned) + "人時";
+                    if (string.IsNullOrWhiteSpace(remainingTotal.Text)) total.Text += " / 合計 未入力";
+                    else
+                    {
+                        var balance = PlanningContract.ParseHours(remainingTotal.Text) - assigned;
+                        total.Text += balance < 0 ? " / 合計を超えています" : " / 未配分 " + PlanningContract.CanonicalHours(balance) + "人時";
+                    }
+                }
+            }
+            catch (InvalidOperationException) { total.Text = "工数を確認してください。"; }
         }
-        void Add(string? person, string label, decimal? hours, DateOnly? day)
+        void Changed() { dirty = true; error.Text = ""; UpdateTotal(); }
+        void Add(string? person, string label, decimal? hours, DateOnly? day, decimal? remaining = null)
         {
             if (entries.Any(e => e.Person == person)) { error.Text = "この担当者は既に内訳にあります。"; return; }
             var line = new StackPanel { Spacing = 4 };
-            var input = new TextBox { Header = label + "（累計人時）", Text = hours is { } h ? PlanningContract.CanonicalHours(h) : "" };
-            TrackContextInput(input);
-            var date = new CalendarDatePicker { Header = "報告対象最終日", Date = day is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9)) : null };
-            var remove = new Button { Content = "内訳を削除" };
+            line.Children.Add(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap });
+            var input = new TextBox { Header = "累計実績", PlaceholderText = "未入力", Text = hours is { } h ? PlanningContract.CanonicalHours(h) : "" };
+            var share = new TextBox { Header = "残工数", PlaceholderText = person is null ? "差額で保持" : "未入力", IsReadOnly = person is null || !canAllocateRemaining,
+                Text = remaining is { } r ? PlanningContract.CanonicalHours(r) : "" };
+            TrackContextInput(input); TrackContextInput(share);
+            var date = new CalendarDatePicker { Header = "報告日", Date = day is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(9)) : null };
+            var remove = new Button { Content = "内訳を削除", VerticalAlignment = VerticalAlignment.Bottom };
             AutomationProperties.SetAutomationId(input, "ActualReportHours-" + (person ?? "Unattributed"));
+            AutomationProperties.SetAutomationId(share, "ActualReportRemaining-" + (person ?? "Unattributed"));
             AutomationProperties.SetAutomationId(date, "ActualReportDate-" + (person ?? "Unattributed"));
             AutomationProperties.SetAutomationId(remove, "ActualReportRemove-" + (person ?? "Unattributed"));
-            line.Children.Add(input); line.Children.Add(date); line.Children.Add(remove); reportRows.Children.Add(line);
-            entries.Add((person, input, date, line));
-            input.TextChanged += (_, _) => { dirty = true; UpdateTotal(); };
-            date.DateChanged += (_, _) => dirty = true;
-            remove.Click += (_, _) => { dirty = true; entries.RemoveAll(e => e.View == line); reportRows.Children.Remove(line); UpdateTotal(); };
+            AutomationProperties.SetName(input, label + " 累計実績（人時）"); AutomationProperties.SetName(share, label + " 残工数（人時）");
+            AutomationProperties.SetName(date, label + " 報告対象最終日"); AutomationProperties.SetName(remove, label + "の内訳を削除");
+            var hoursLine = new Grid { ColumnSpacing = 8 };
+            hoursLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+            hoursLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+            hoursLine.Children.Add(input);
+            if (canAllocateRemaining) { Grid.SetColumn(share, 1); hoursLine.Children.Add(share); }
+            var dateLine = new Grid { ColumnSpacing = 8 };
+            dateLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+            dateLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            dateLine.Children.Add(date); Grid.SetColumn(remove, 1); dateLine.Children.Add(remove);
+            line.Children.Add(hoursLine); line.Children.Add(dateLine); reportRows.Children.Add(line);
+            entries.Add((person, input, share, date, line));
+            input.TextChanged += (_, _) => Changed(); share.TextChanged += (_, _) => Changed();
+            date.DateChanged += (_, _) => Changed();
+            remove.Click += (_, _) => { if (!CanRefresh) return; entries.RemoveAll(e => e.View == line); reportRows.Children.Remove(line); Changed(); };
         }
-        foreach (var report in task.Actuals ?? []) Add(report.PersonId,
-            report.PersonId is null ? "未割当" : plan.People.SingleOrDefault(p => p.Id == report.PersonId)?.Name ?? report.PersonId, report.Hours, report.ReportedThrough);
         var people = plan.People.Select(p => new ActualWorkerChoice(p.Id, p.Name))
             .Concat((registration.Snapshot.Issues.GetValueOrDefault(new(work.Scope, taskId))?.Native?.Assignees ?? []).Select(a => new ActualWorkerChoice(a.Id.NodeId, a.Login)))
+            .Concat((task.Actuals ?? []).Where(a => a.PersonId is not null).Select(a => new ActualWorkerChoice(a.PersonId, a.PersonId!)))
+            .Concat((task.Contributions ?? []).Select(a => new ActualWorkerChoice(a.PersonId, a.PersonId)))
             .DistinctBy(p => p.Id).Append(new(null, "未割当")).ToArray();
+        foreach (var person in (task.Actuals ?? []).Select(a => a.PersonId).Concat((task.Contributions ?? []).Select(c => c.PersonId)).Distinct())
+        {
+            var report = task.Actuals?.SingleOrDefault(a => a.PersonId == person);
+            Add(person, people.First(p => p.Id == person).Label, report?.Hours, report?.ReportedThrough ?? confirmedActualThrough,
+                task.Contributions?.SingleOrDefault(c => c.PersonId == person)?.RemainingHours);
+        }
         var choose = new FormComboBox { Header = "担当者を追加", ItemsSource = people, DisplayMemberPath = nameof(ActualWorkerChoice.Label) };
-        var add = new Button { Content = "追加" }; AutomationProperties.SetAutomationId(choose, "ActualReportAddWorker"); AutomationProperties.SetAutomationId(add, "ActualReportAdd");
-        add.Click += (_, _) => { if (choose.SelectedItem is ActualWorkerChoice person) { dirty = true; Add(person.Id, person.Label, null, confirmedActualThrough); } };
-        content.Children.Add(choose); content.Children.Add(add); content.Children.Add(error);
-        var save = new Button { Content = "更新" }; AutomationProperties.SetAutomationId(save, "ActualReportsUpdate"); content.Children.Add(save);
-        var flyout = new Flyout { Content = content, Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Top };
-        var cancel = new Button { Content = "取消" }; AutomationProperties.SetAutomationId(cancel, "ActualReportsCancel"); content.Children.Add(cancel);
+        var add = new Button { Content = "追加", VerticalAlignment = VerticalAlignment.Bottom }; AutomationProperties.SetAutomationId(choose, "ActualReportAddWorker"); AutomationProperties.SetAutomationId(add, "ActualReportAdd");
+        add.Click += (_, _) => {
+            if (!CanRefresh || choose.SelectedItem is not ActualWorkerChoice person) return;
+            if (entries.Any(e => e.Person == person.Id)) { error.Text = "この担当者は既に内訳にあります。"; return; }
+            Add(person.Id, person.Label, null, confirmedActualThrough); Changed();
+            var input = entries.Single(e => e.Person == person.Id).Hours;
+            reportRows.UpdateLayout(); input.Focus(FocusState.Programmatic); input.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
+        };
+        var addLine = new Grid { ColumnSpacing = 8 };
+        addLine.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); addLine.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        addLine.Children.Add(choose); Grid.SetColumn(add, 1); addLine.Children.Add(add);
+        content.Children.Add(addLine); content.Children.Add(error);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var save = new Button { Content = "更新" }; AutomationProperties.SetAutomationId(save, "ActualReportsUpdate"); actions.Children.Add(save);
+        var presenter = new Style(typeof(FlyoutPresenter));
+        presenter.Setters.Add(new Setter(MaxWidthProperty, Math.Min(560, XamlRoot.Size.Width - 32)));
+        presenter.Setters.Add(new Setter(MinWidthProperty, 0d));
+        var flyout = new Flyout { Content = content, FlyoutPresenterStyle = presenter,
+            Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Top };
+        var cancel = new Button { Content = "取消" }; AutomationProperties.SetAutomationId(cancel, "ActualReportsCancel"); actions.Children.Add(cancel); content.Children.Add(actions);
+        remainingTotal.TextChanged += (_, _) => Changed();
         cancel.Click += (_, _) => { if (!CanRefresh) return; closingExplicitly = true; flyout.Hide(); };
         flyout.Closing += (_, args) => { if (!closingExplicitly && dirty) { args.Cancel = true; error.Text = "内訳は未保存です。更新または取消してください。表の入力は保持しています。"; } };
         save.Click += (_, _) => {
@@ -183,13 +244,23 @@ internal sealed partial class EditingGrid
             {
                 if (!IsLoaded || request != generation || session.Workspace != work || work.Revision != revision || !CanRefresh)
                     throw new InvalidOperationException("入力対象が変わりました。現在の内訳を開き直してください。");
-                var reports = entries.Select(e => new ActualContribution(e.Person, PlanningContract.ParseHours(e.Hours.Text),
+                foreach (var entry in entries.Where(e => string.IsNullOrWhiteSpace(e.Hours.Text)))
+                    if (task.Actuals?.Any(a => a.PersonId == entry.Person) == true)
+                        throw new InvalidOperationException("実績を消すには対象の「内訳を削除」を選んでください。");
+                var reports = entries.Where(e => !string.IsNullOrWhiteSpace(e.Hours.Text)).Select(e => new ActualContribution(e.Person, PlanningContract.ParseHours(e.Hours.Text),
                     e.Day.Date is { } date ? DateOnly.FromDateTime(date.DateTime) : throw new InvalidOperationException("各内訳の報告対象最終日を確認してください。"))).ToArray();
-                work.CommitActualReports(registration, row.ItemId, reports, revision);
+                if (canAllocateRemaining)
+                    work.CommitWorkAllocation(registration, row.ItemId, reports,
+                        string.IsNullOrWhiteSpace(remainingTotal.Text) ? null : remainingTotal.Text,
+                        entries.Where(e => e.Person is not null).Select(e => new RemainingContribution(e.Person!,
+                            string.IsNullOrWhiteSpace(e.Remaining.Text) ? null : PlanningContract.ParseHours(e.Remaining.Text))).ToArray(), revision);
+                else work.CommitActualReports(registration, row.ItemId, reports, revision);
                 operationProblem = null; closingExplicitly = true; flyout.Hide(); Update("actual-reports"); RestoreWorkspaceFocus(); _ = FlushDraftsAsync("actual-reports");
             }
             catch (Exception e) when (e is InvalidOperationException or InvalidDataException) { error.Text = e.Message; }
         };
+        void CloseOnUnload(object sender, RoutedEventArgs args) { closingExplicitly = true; flyout.Hide(); }
+        Unloaded += CloseOnUnload; flyout.Closed += (_, _) => Unloaded -= CloseOnUnload;
         UpdateTotal(); flyout.ShowAt(anchor);
     }
 }

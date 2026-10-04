@@ -134,6 +134,11 @@
                 <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
+            <Style x:Key="SummaryOverloadHighlightStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource SystemFillColorCriticalBackgroundBrush}"/>
+                <Setter Property="Padding" Value="4"/>
+                <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+            </Style>
             <Style x:Key="SummaryIncompleteTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
                 <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCautionBrush}"/>
             </Style>

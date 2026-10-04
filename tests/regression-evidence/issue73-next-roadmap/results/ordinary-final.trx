@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="102d3f74-b990-4f86-99a4-cf80e818104b" name="mwam0@RTX5070 2026-10-04 21:38:54" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T21:38:54.6465963+09:00" queuing="2026-10-04T21:38:54.6465965+09:00" start="2026-10-04T21:38:40.6485393+09:00" finish="2026-10-04T21:39:17.8565591+09:00" />
+  <TestSettings name="default" id="06348ce7-7aac-41d9-9705-e85450605f23">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_21_38_54" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="fea0590e-c0ed-47a1-8f96-e5fa2bc5fa63" testId="af4636d8-bb90-fd76-e524-bc8c82b94472" testName="OrdinaryFirstRunGuideRegistersProjectAndRestartUsesOfflineCache" computerName="RTX5070" duration="00:00:08.1880340" startTime="2026-10-04T21:38:54.6221238+09:00" endTime="2026-10-04T21:39:02.8101572+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="fea0590e-c0ed-47a1-8f96-e5fa2bc5fa63" />
+    <UnitTestResult executionId="5b29782c-7625-45fa-a978-ee4772f7ede8" testId="ad22d536-5e70-6424-9c1d-4b5b9ae01b3e" testName="OrdinaryDependencyDragAndTwoWorkerAllocationCancelUndoAndRestartKeepOneLocalPlan" computerName="RTX5070" duration="00:00:12.7215370" startTime="2026-10-04T21:38:41.8998756+09:00" endTime="2026-10-04T21:38:54.6213688+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5b29782c-7625-45fa-a978-ee4772f7ede8">
+      <ResultFiles>
+        <ResultFile path="RTX5070\next-roadmap-allocation-candidate.png" />
+        <ResultFile path="RTX5070\next-roadmap-allocation-restarted.png" />
+        <ResultFile path="RTX5070\next-roadmap-allocation-saved.png" />
+        <ResultFile path="RTX5070\next-roadmap-dependency-preview.png" />
+        <ResultFile path="RTX5070\next-roadmap-dependency-restarted.png" />
+        <ResultFile path="RTX5070\next-roadmap-dependency-selected.png" />
+        <ResultFile path="RTX5070\next-roadmap-journey.json" />
+      </ResultFiles>
+    </UnitTestResult>
+    <UnitTestResult executionId="416b9f88-c50c-4136-be53-e16b9063fea0" testId="8046e103-7031-2e3a-63f3-b18ca37d853b" testName="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" computerName="RTX5070" duration="00:00:14.9040060" startTime="2026-10-04T21:39:02.8102185+09:00" endTime="2026-10-04T21:39:17.7142235+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="416b9f88-c50c-4136-be53-e16b9063fea0" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="OrdinaryFirstRunGuideRegistersProjectAndRestartUsesOfflineCache" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="af4636d8-bb90-fd76-e524-bc8c82b94472">
+      <Execution id="fea0590e-c0ed-47a1-8f96-e5fa2bc5fa63" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryFirstRunGuideRegistersProjectAndRestartUsesOfflineCache" />
+    </UnitTest>
+    <UnitTest name="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="8046e103-7031-2e3a-63f3-b18ca37d853b">
+      <Execution id="416b9f88-c50c-4136-be53-e16b9063fea0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" />
+    </UnitTest>
+    <UnitTest name="OrdinaryDependencyDragAndTwoWorkerAllocationCancelUndoAndRestartKeepOneLocalPlan" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="ad22d536-5e70-6424-9c1d-4b5b9ae01b3e">
+      <Execution id="5b29782c-7625-45fa-a978-ee4772f7ede8" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryDependencyDragAndTwoWorkerAllocationCancelUndoAndRestartKeepOneLocalPlan" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="af4636d8-bb90-fd76-e524-bc8c82b94472" executionId="fea0590e-c0ed-47a1-8f96-e5fa2bc5fa63" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ad22d536-5e70-6424-9c1d-4b5b9ae01b3e" executionId="5b29782c-7625-45fa-a978-ee4772f7ede8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8046e103-7031-2e3a-63f3-b18ca37d853b" executionId="416b9f88-c50c-4136-be53-e16b9063fea0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="3" executed="3" passed="3" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 3 of 3 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.21_39_17.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

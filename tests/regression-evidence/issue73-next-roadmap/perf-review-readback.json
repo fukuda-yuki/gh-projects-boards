@@ -1,0 +1,316 @@
+{
+  "boundary": "Agent visual inspection of exactly the listed original PNGs. The sampled images show readable populated table content with no full-viewport blank in inspected samples. Unsampled times and images are not classified. These observations do not establish frame rate, physical scanout latency, smoothness, or human acceptance.",
+  "imageCount": 20,
+  "images": [
+    {
+      "run": "nx5-baseline-2000-d",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-down/002.png",
+      "sha256": "B0DAFD19BA115880DA5AB770B18913A0DCB740FCF011835E4FEF08EBBF9B1A69",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-down-frames.json",
+      "captureBeginTicks": 816394374836,
+      "captureEndTicks": 816394496254,
+      "observation": "Rows 820-827 are populated and readable across title, workflow and repository columns; row 828 is partly visible at the viewport edge.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-d",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-down/004.png",
+      "sha256": "B0DAFD19BA115880DA5AB770B18913A0DCB740FCF011835E4FEF08EBBF9B1A69",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-down-frames.json",
+      "captureBeginTicks": 816395641930,
+      "captureEndTicks": 816395828134,
+      "observation": "Rows 820-827 remain populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-d",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-return/039.png",
+      "sha256": "9DC69336A4AA9CF79D5DA0F89ADCBB6B0B0CBBBA85B5E9386C76547BDD4CA653",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/burst-return-frames.json",
+      "captureBeginTicks": 816445624750,
+      "captureEndTicks": 816445832951,
+      "observation": "Top rows 1-8 are populated and readable. The first title editor retains diagnostic text and the footer shows one cell pending input.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-d",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/wheel-step/039.png",
+      "sha256": "0FB717FE830EEE57E9A952720C805E34906D1DB7ABF33A75B4B531D136EAFD43",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/wheel-step-frames.json",
+      "captureBeginTicks": 816472359058,
+      "captureEndTicks": 816472508698,
+      "observation": "Rows 10-17 are populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-d",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/scrollbar-drag/039.png",
+      "sha256": "8B6A866494F1F9C6ED63A1C6E54998AA082A18DC557DFE046F03DBFCCC8B53F6",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-d/observations/scrollbar-drag-frames.json",
+      "captureBeginTicks": 816588612489,
+      "captureEndTicks": 816588870309,
+      "observation": "Bottom rows 1993-2000 are populated and readable; scrollbar thumb is at the bottom.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-down/002.png",
+      "sha256": "99B5297D9D0DD968C2FE77608CD6C2C0D2607D7A03808C6BA190EB5B78DC4EC3",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-down-frames.json",
+      "captureBeginTicks": 817351224782,
+      "captureEndTicks": 817351415746,
+      "observation": "Rows 820-827 are populated and readable across title, workflow and repository columns; row 828 is partly visible at the viewport edge.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-down/004.png",
+      "sha256": "99B5297D9D0DD968C2FE77608CD6C2C0D2607D7A03808C6BA190EB5B78DC4EC3",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-down-frames.json",
+      "captureBeginTicks": 817352495683,
+      "captureEndTicks": 817352744828,
+      "observation": "Rows 820-827 remain populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-return/039.png",
+      "sha256": "33728B4937874533F52D4E38F85AA2CF7E0502407C16B108C30DDC52637CD835",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/burst-return-frames.json",
+      "captureBeginTicks": 817402605456,
+      "captureEndTicks": 817402750674,
+      "observation": "Top rows 1-8 are populated and readable. The first title editor retains diagnostic text and the footer shows one cell pending input.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/wheel-step/039.png",
+      "sha256": "D98F22B9EAA0788B4715BB971EAE23813440449422C8AB0876D972B05E382457",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/wheel-step-frames.json",
+      "captureBeginTicks": 817429189277,
+      "captureEndTicks": 817429438512,
+      "observation": "Rows 10-17 are populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/scrollbar-drag/039.png",
+      "sha256": "22E503A0AB94E8C97DEEE70512B7EAC4A007D2EA65D2BE02528349F0F936A6CB",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-b/observations/scrollbar-drag-frames.json",
+      "captureBeginTicks": 817546294025,
+      "captureEndTicks": 817546464532,
+      "observation": "Bottom rows 1993-2000 are populated and readable; scrollbar thumb is at the bottom.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-down/002.png",
+      "sha256": "279EAE79871D6FDC1DAA3AB0F052A7B235A4A86836EED4370434C064A8F1AF6F",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-down-frames.json",
+      "captureBeginTicks": 819028647447,
+      "captureEndTicks": 819028843587,
+      "observation": "Rows 820-827 are populated and readable across title, workflow and repository columns; row 828 is partly visible at the viewport edge.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-down/004.png",
+      "sha256": "279EAE79871D6FDC1DAA3AB0F052A7B235A4A86836EED4370434C064A8F1AF6F",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-down-frames.json",
+      "captureBeginTicks": 819029918236,
+      "captureEndTicks": 819030180171,
+      "observation": "Rows 820-827 remain populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-return/039.png",
+      "sha256": "3E53E890A41D3E749809CD79F6AF67DA04D0885D25345820327247D506F7A5FF",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/burst-return-frames.json",
+      "captureBeginTicks": 819079986940,
+      "captureEndTicks": 819080191889,
+      "observation": "Top rows 1-8 are populated and readable. The first title editor retains diagnostic text and the footer shows one cell pending input.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/wheel-step/039.png",
+      "sha256": "9797891F4C3C0FD79FF68A04C3446BB4C1DCFA4639EEB19DC140A41348D645C4",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/wheel-step-frames.json",
+      "captureBeginTicks": 819106637371,
+      "captureEndTicks": 819106865047,
+      "observation": "Rows 10-17 are populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "image": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/scrollbar-drag/039.png",
+      "sha256": "FB6658D70F6A5C40F0885DFC3906896EF342903560D585CB1789BE2589D883F2",
+      "metadata": "TestResults/sheet-diagnostic/nx5-baseline-2000-e/observations/scrollbar-drag-frames.json",
+      "captureBeginTicks": 819223451706,
+      "captureEndTicks": 819223564581,
+      "observation": "Bottom rows 1993-2000 are populated and readable; scrollbar thumb is at the bottom.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-down/002.png",
+      "sha256": "3CD8F25C543B5C3E9CEA515C28B98F1C39A53B751B157C9D66C59DD989059AD2",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-down-frames.json",
+      "captureBeginTicks": 819767516437,
+      "captureEndTicks": 819767706278,
+      "observation": "Rows 820-827 are populated and readable across title, workflow and repository columns; row 828 is partly visible at the viewport edge.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-down/004.png",
+      "sha256": "3CD8F25C543B5C3E9CEA515C28B98F1C39A53B751B157C9D66C59DD989059AD2",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-down-frames.json",
+      "captureBeginTicks": 819768926465,
+      "captureEndTicks": 819769042394,
+      "observation": "Rows 820-827 remain populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-return/039.png",
+      "sha256": "64A10BF233D6135BFE79C6B4764FA69F6C69E3950FF85EE948547876A17898D5",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/burst-return-frames.json",
+      "captureBeginTicks": 819818926256,
+      "captureEndTicks": 819819061720,
+      "observation": "Top rows 1-8 are populated and readable. The first title editor retains diagnostic text and the footer shows one cell pending input.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/wheel-step/039.png",
+      "sha256": "AE03BFB2B828DDFD7490344F57BA456E5727750E0C249D0FDD30DFEE6DD4F4A9",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/wheel-step-frames.json",
+      "captureBeginTicks": 819845587248,
+      "captureEndTicks": 819845730602,
+      "observation": "Rows 10-17 are populated and readable across title, workflow and repository columns.",
+      "fullViewportBlank": false
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "image": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/scrollbar-drag/039.png",
+      "sha256": "F577F2C84B77F73BB99547D9C9E2CA90C2E52972D00CBE1C41FAB508684691D6",
+      "metadata": "TestResults/sheet-diagnostic/nx5-candidate-2000-c/observations/scrollbar-drag-frames.json",
+      "captureBeginTicks": 819961837756,
+      "captureEndTicks": 819962096034,
+      "observation": "Bottom rows 1993-2000 are populated and readable; scrollbar thumb is at the bottom.",
+      "fullViewportBlank": false
+    }
+  ],
+  "metricsSource": "TestResults/next-roadmap/perf-analysis.json",
+  "sourceCommand": "C:/Python314/python.exe TestResults/next-roadmap/analyze-nx5.py nx5-baseline-2000-d nx5-candidate-2000-b nx5-baseline-2000-e nx5-candidate-2000-c",
+  "aggregateBoundary": "Synchronous update-aggregate-presentation spans, 14 per complete run, mixing the scripted edit/Undo/project-switch operations. Report runs separately; do not treat nested span totals as additive or driver durations as isolated product latency.",
+  "aggregateByRun": [
+    {
+      "run": "nx5-baseline-2000-d",
+      "driverRevision": "paced-selection-v3-hit-target",
+      "count": 14,
+      "durationMs": {
+        "count": 14,
+        "median": 501.86794999999995,
+        "p95": 706.3785949999999,
+        "max": 858.1586,
+        "sum": 5903.0046
+      },
+      "managedBytesOnThread": {
+        "count": 14,
+        "median": 710957144.0,
+        "p95": 1062920696.0,
+        "max": 1062920696,
+        "sum": 9935960136
+      },
+      "normalExit": true,
+      "completed": true,
+      "failures": 0,
+      "blockedNativeTargets": 1,
+      "appDllSha256": "03953F89B69A2A9D8B4C472ECE251D5BE42A9F73F1E41CFC82D828748B7FB8D6",
+      "testAssemblySha256": "3C7F1A7A7B8C448982FE4CB9E5A82643E69AFA1B6DBAFA8D5335332FF588E853"
+    },
+    {
+      "run": "nx5-candidate-2000-b",
+      "driverRevision": "paced-selection-v3-hit-target",
+      "count": 14,
+      "durationMs": {
+        "count": 14,
+        "median": 9.63425,
+        "p95": 18.54899,
+        "max": 21.3774,
+        "sum": 139.3907
+      },
+      "managedBytesOnThread": {
+        "count": 14,
+        "median": 8801688.0,
+        "p95": 9037659.2,
+        "max": 9037888,
+        "sum": 101992776
+      },
+      "normalExit": true,
+      "completed": true,
+      "failures": 0,
+      "blockedNativeTargets": 1,
+      "appDllSha256": "4915037843E06B37CB551EC0115998CD2B39EECFE1465AB20907F0ECCA8A9D46",
+      "testAssemblySha256": "3C7F1A7A7B8C448982FE4CB9E5A82643E69AFA1B6DBAFA8D5335332FF588E853"
+    },
+    {
+      "run": "nx5-baseline-2000-e",
+      "driverRevision": "paced-selection-v3-hit-target",
+      "count": 14,
+      "durationMs": {
+        "count": 14,
+        "median": 442.04375,
+        "p95": 652.6277799999999,
+        "max": 804.2434,
+        "sum": 5454.9739
+      },
+      "managedBytesOnThread": {
+        "count": 14,
+        "median": 710948768.0,
+        "p95": 1062920701.6,
+        "max": 1062920712,
+        "sum": 9935943384
+      },
+      "normalExit": true,
+      "completed": true,
+      "failures": 0,
+      "blockedNativeTargets": 1,
+      "appDllSha256": "03953F89B69A2A9D8B4C472ECE251D5BE42A9F73F1E41CFC82D828748B7FB8D6",
+      "testAssemblySha256": "65F81D06A46CE6B2EB3459ABA61E25EC4F55C20044B25E1187A9F0FED31A9298"
+    },
+    {
+      "run": "nx5-candidate-2000-c",
+      "driverRevision": "paced-selection-v3-hit-target",
+      "count": 14,
+      "durationMs": {
+        "count": 14,
+        "median": 9.614149999999999,
+        "p95": 18.80517,
+        "max": 21.9409,
+        "sum": 138.2365
+      },
+      "managedBytesOnThread": {
+        "count": 14,
+        "median": 8801800.0,
+        "p95": 9037401.2,
+        "max": 9037448,
+        "sum": 102034168
+      },
+      "normalExit": true,
+      "completed": true,
+      "failures": 0,
+      "blockedNativeTargets": 1,
+      "appDllSha256": "EE471D68DA54E5091FB1A8D44E1DF0D64D5F267479ADE5666B8B93CE5457DEB6",
+      "testAssemblySha256": "65F81D06A46CE6B2EB3459ABA61E25EC4F55C20044B25E1187A9F0FED31A9298"
+    }
+  ],
+  "comparability": "Same 2000-row/one-field workload and driver revision across four runs. Within d/b and e/c the test assembly SHA256 matches. Baseline binary is identical in d/e. Candidate b precedes guide/allocation UI sizing changes; candidate c is the measured candidate frozen at 21:14 JST. Both candidates contain the same ApplyCandidates aggregation implementation, so its improvement recurs with the same inputs. Candidate b and c are not two repetitions of one identical executable.",
+  "finalCandidateReceipt": "TestResults/next-roadmap/candidate-final-receipt.json",
+  "finalCandidateDllMatchesReceipt": true,
+  "retainedDriverFailure": "Earlier candidate-a with driver v2 failed after Undo because its next intended cell click added a row. Candidate-b v3 observed native hit ancestry GridAddRow > Pane > OverflowPopup before waiting for the intended I1 cell. Earlier failure remains retained and is not relabeled a pass.",
+  "postMeasurementSourceChange": "Subsequent changes for GanttView.cs link-overlay wheel forwarding and Summary compact layout are outside these measurements. The Gantt repair followed an observed native hosted Red; the root agent owns subsequent validation records for both changes. The measured candidate-c is the retained performance candidate frozen at 21:14 JST, not the later final application executable. The sheet aggregation implementation and matched NX5 raw observations were not changed or rerun."
+}

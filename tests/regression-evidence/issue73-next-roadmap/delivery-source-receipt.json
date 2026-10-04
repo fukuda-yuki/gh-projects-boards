@@ -1,0 +1,1763 @@
+{
+  "capturedAt": "2026-10-04T21:41:46.0795726+09:00",
+  "baseCommit": "237ec0fd51c72e0b9f73fa612aa1353abb9ae4e0",
+  "branch": "main",
+  "sourceState": "Local main working tree before implementation commit",
+  "ordinaryRun": "20261004-213830-902ed9a0c9524762b2addea0fd33c704",
+  "hostedRun": "run-20261004-213946-304-378ff776",
+  "binding": "Product inputs were unchanged between final ordinary and hosted execution. Test observers changed before hosted execution; each test assembly remains bound by its own run metadata. Git blobs permit comparison to the containing commit.",
+  "files": [
+    {
+      "path": ".config/dotnet-tools.json",
+      "sha256": "E807B6DD136E3FCF68048C7F83DECD56A9B26509C1D9C4A1E9219FBDBE488DDA",
+      "gitBlob": "5804950ea06b1a4212e37cdd9299e17c8a637bdb"
+    },
+    {
+      "path": "GhProjectsBoards.sln",
+      "sha256": "8313C03A5E5F021EB3249E5EDF7D185E6F589FDA2EE05103A91340FBEA47AC28",
+      "gitBlob": "167c06f2ab747bcc1cc45c9f7e60e7955277b0e0"
+    },
+    {
+      "path": "scripts/Backup-Workspace.ps1",
+      "sha256": "B02E073C8519951BAB257652C51DB94C4E019CB6F2CE13F44833904478BFFA50",
+      "gitBlob": "b27edfdf534ae0a7fd775e702771db01f8255398"
+    },
+    {
+      "path": "scripts/Compare-Performance.ps1",
+      "sha256": "54B1AC1848757BEAC698A2523A7D31D692284793D33BEDAC6F449FF692D4D1D8",
+      "gitBlob": "f22ef76de8e1853500ebe22faf7802e2444e634e"
+    },
+    {
+      "path": "scripts/Import-HolidayPreset.ps1",
+      "sha256": "F4A6688BBDDF1AFC319A09690FC3A7D4796341CB145A02F6AA79834ED89A44F2",
+      "gitBlob": "1e7c0e99c9ad2286f079030f96adbca4ed1b47ac"
+    },
+    {
+      "path": "scripts/Manage-RefreshFixture.ps1",
+      "sha256": "716624605D1694E3F168EB3E69D5B995803ADCA8E950FCA047AF886EB388FB26",
+      "gitBlob": "a6e30ada42531ef5760e71c4d6660d205892a105"
+    },
+    {
+      "path": "scripts/Measure-SustainedInput.ps1",
+      "sha256": "B0265F75FFD8832A59808C4A9892AA732C7FD8B08B4AA13BFDF7E45CCC528795",
+      "gitBlob": "8895cb4b42e0ddc43ec9454f751465325ea109fe"
+    },
+    {
+      "path": "scripts/Publish-PR.ps1",
+      "sha256": "683BDB2E921D396E88C68CB2F85D197B3F3ACF24A19A951BF6B8C5D865A8E6C0",
+      "gitBlob": "d690106a297066236e7e8d58e05f8fc0266664e7"
+    },
+    {
+      "path": "scripts/Read-InputRuntimeTrace.ps1",
+      "sha256": "1287C77E42D74A09E916436C661E8886283FFA4BFA8960B4233741EF52B6490B",
+      "gitBlob": "f635b6a23d7583642c7c4eb2aabafcccfc5c4ba3"
+    },
+    {
+      "path": "scripts/Start-App.ps1",
+      "sha256": "2588FF5E589E7129910EAD834B79B5E474782CA770B4420BEE16057E57C50045",
+      "gitBlob": "754b5612a3d7a1758a5203e239acaf746c47f9f8"
+    },
+    {
+      "path": "scripts/Start-EditingCheck.ps1",
+      "sha256": "56EA2FFCA853A57D40260FF1B6CA9C260FF36FE34EB1BCADDE482A652409BEAC",
+      "gitBlob": "2c1d44581c8de9c0ae2272d06eafd1d5fa0d8740"
+    },
+    {
+      "path": "scripts/Start-GanttCheck.ps1",
+      "sha256": "D3078F6AE4DD3F3651C6A377BB2A3831B8AD9B7BBA0F4AE64A894FD8E950F308",
+      "gitBlob": "eb8f52003f2774d7dd3af1bcabf361f5dafc8cd0"
+    },
+    {
+      "path": "scripts/Start-PlanningCheck.ps1",
+      "sha256": "C8ADE8D8698110EEF58C39FF26436BE8B9AED4F4EDD0F36B9C11935456D2F4D0",
+      "gitBlob": "72e5f1ac55fa0badd29586e5985c5ca84d0e1c31"
+    },
+    {
+      "path": "scripts/Start-SummaryCheck.ps1",
+      "sha256": "A1C2574FF8529E5E3A9B6868D4722AAF1E4E8C0216C10663DB3769F02157B48F",
+      "gitBlob": "bf2c0a2afe131e314819cfdabb131e1f2cd35ac6"
+    },
+    {
+      "path": "scripts/Test-ApplyLive.ps1",
+      "sha256": "5C4F297F8C0B6FE312744A56994806ED84A068231B3FDDDAA4A9ED38CD6BF7E6",
+      "gitBlob": "2faa14377d6df89552aaf631ee3e70c6faaa5bc0"
+    },
+    {
+      "path": "scripts/Test-Coverage.ps1",
+      "sha256": "CEEEA3FE072495FBFA755521013ADFECEDBA86B23DA5520D6AF845E65C999B1F",
+      "gitBlob": "d51d32336d657b82f9294c9a734f1150462940a6"
+    },
+    {
+      "path": "scripts/Test-CreationLive.ps1",
+      "sha256": "99F67B9FB8C481981C27A8FE038DF1246955C8B506367B3A9D131CB04221A683",
+      "gitBlob": "fba087f8e836bd0e19308835b55339ac6f6082a9"
+    },
+    {
+      "path": "scripts/Test-E2E.ps1",
+      "sha256": "243BA473F4CD561BADF30ADB2EFBDCBF0A699B934BAAE4452F8C575BA36A5577",
+      "gitBlob": "a6a3af1715b8a2318eda3c166ee58989b8c0ef9e"
+    },
+    {
+      "path": "scripts/Test-LiveGitHub.ps1",
+      "sha256": "1340651FEF792E8B875331211D807F530FC5132475855586678FB83BD63698DC",
+      "gitBlob": "603f90754dc34f2e0bfd7982e11e577a6196fc4d"
+    },
+    {
+      "path": "scripts/Test-Performance.ps1",
+      "sha256": "4A7648DBA879FE0DD2F655C8D03A84507F83C159C0AA7984FA363B9D0B0720C7",
+      "gitBlob": "7fdb490abcdd27159422472495cde184bb0af657"
+    },
+    {
+      "path": "scripts/Test-ProjectRead.ps1",
+      "sha256": "B916A8F8B5DE1F4C6EBE5568060097F22C3155E72FEE53DA1C4AE8DB4C72F503",
+      "gitBlob": "ff25817ea7cbc52b4fb1069c634dd02ad1bfdde9"
+    },
+    {
+      "path": "scripts/Test-ReadyInput.ps1",
+      "sha256": "87198F0BC4CAD4CA0245C5425D16BAA2B99B6DE4982E79CD672BE8FA9293F44F",
+      "gitBlob": "0add99a2a472d1dc55d91b0a30fc241412634f2f"
+    },
+    {
+      "path": "scripts/Test-RefreshLive.ps1",
+      "sha256": "9F44D727C860BE9E0B215BE67CD2F0D148101D8D2E36F3C8988C96E67105962F",
+      "gitBlob": "53a413fd05aae1ca64837fc9aa9e2eaf19bcb20c"
+    },
+    {
+      "path": "scripts/Test-SheetDiagnostic.ps1",
+      "sha256": "3CC7B1762E229838F5E94F4A036C66CD8A222EDB28396270AE33C5D413B8E57B",
+      "gitBlob": "145b78a1f3b4a5b7867535ded936f2adebe1f2f1"
+    },
+    {
+      "path": "scripts/Test-SustainedInput.ps1",
+      "sha256": "03495A0EE0D0B1F74958C051886823967BBB18C4B97FCF720F41BE184473A845",
+      "gitBlob": "171744b40a4eeec00edc677dbffe90610620819e"
+    },
+    {
+      "path": "scripts/Test-UiIntegration.ps1",
+      "sha256": "A7C9DDBFACE2198EE023E44EA86EB3724D74FBF4534E709CACB035095CC5F131",
+      "gitBlob": "eb56432c9518e8d4466d0a68290c2732f3fbe20f"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ActualCellEditor.cs",
+      "sha256": "84BAA8D547CDAF26AA5386A4298A0DC6171F78C799CB46F5F3C5EF8BC524E242",
+      "gitBlob": "495545816114e2dae0e9be33fb96c90ee9e530ee"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/app.manifest",
+      "sha256": "587363079B982443588452B1D661A855831FD552A71F435FFDFC1FEC40400A2D",
+      "gitBlob": "1c49ea0d57f20d2b3a904b0f8093a35f804d59be"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/App.xaml",
+      "sha256": "7209113832FB457AED6F01FE1F7A79F9F64FF05B29D82A64DA846235996265BF",
+      "gitBlob": "186f8c77be9ccda86e09bff24ce0a5286cc4fa46"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/App.xaml.cs",
+      "sha256": "B44A6D9D232C51DDC4FD6E45B429A9DABBDA195CB6452B119738A24D9BD9D721",
+      "gitBlob": "9ff55443c76da6b79a3ffc79d4f4796b060dd031"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ApplyConfirmationTable.xaml",
+      "sha256": "F5747F85867FB6E8DFC6C3FBB9306C812551FE1833C5234654B5413CDDBB88F8",
+      "gitBlob": "5536006b1d19cbd1a3aeaf411e43aa6f4d2733ed"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ApplyConfirmationTable.xaml.cs",
+      "sha256": "48913C3AF98CA8A1992959D3D723C8EFDC41D69C281E4C89596685B1B6E2B830",
+      "gitBlob": "5eabfdf29c4cedf5b5d6aea21c5c471d56b322e3"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ColumnSettings.cs",
+      "sha256": "69DFFC565096E3D9E7032AD1689827439109FEA60DE62109CD8E0F4F3BE87A72",
+      "gitBlob": "67623798ec5f8d8586a1ccd0fa674240603b2b59"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConflictComparison.cs",
+      "sha256": "60C75A866C424FB2964D5C778C3873F1E424586304139064CBB14192B9A6A65A",
+      "gitBlob": "ac675d0b87e68798eedf41b485aa78e2477cba75"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConnectionPanel.xaml",
+      "sha256": "43ECF2E84CFF92FAAA0FCFAE18FE082B6B6DA4620F94CEC41AB7CFD2CF7739D9",
+      "gitBlob": "b45ff6e1650d59312c2153afa31ed5283ecf9844"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/ConnectionPanel.xaml.cs",
+      "sha256": "982BFE4D5777F5916B6740F5D134E0ED85684EBAF3E9A7CF813E468D2B7D3A58",
+      "gitBlob": "9a83d11dd90a13f3fb0b7bcdc2baf9cad6546745"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/DailyProgressEditor.cs",
+      "sha256": "670C2BAD7809D0900013E3E2A29874A1D739B073AC637B5801EBF24F449DBCBA",
+      "gitBlob": "b314f8ab04c9d66c06ded40afcfa74cf7cd56daf"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.ApplyResults.cs",
+      "sha256": "C9A07D2AB05812F2D00796C2262E1CE3B409271ED4CC9627CD75F082279DDF97",
+      "gitBlob": "e28a9e25343c11bc08a392105ebdc860e3f53bbd"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.CreationPresentation.cs",
+      "sha256": "721D00037DF4E9BD83B2BEF50B662A09761F0F8F4A57E98798F39B2B0F86C41B",
+      "gitBlob": "9bc0b5a40bf0c5d5b5b9d07ae13ec916387f1619"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.cs",
+      "sha256": "C0D6E15854490E5DFB2C6B657D359DB210E50FE1325E736CF28AB3B845B1B3DD",
+      "gitBlob": "919c31b4bef2c8de5428f2f6a8e3f8dfa5816e99"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Gantt.cs",
+      "sha256": "CC80102F9DEBA2691CFF2FBF7654763985DA3F300AACB25A95616389B640929F",
+      "gitBlob": "dca152460d5f3e074fdb382089beb1d723d3bb57"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.PendingInput.cs",
+      "sha256": "AC0ADEAE01DC18467182151021AC9BC270EE130FD1A11347DC17F5D1B4C83CB6",
+      "gitBlob": "6e6d5e25d65ee698f64df4699a185d71090bdf88"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.RangeCommands.cs",
+      "sha256": "DA64C55BFB0BCDBDC0BFC49931EEF94F4B12B410465F6E6314D078A403B14E11",
+      "gitBlob": "0b39701018052d52becf09f1a1120fd1a135217f"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Recycling.cs",
+      "sha256": "DA7126154C26C483E50C24FBA30DBC982548077E85F8D4BD25C9FC866E787FD0",
+      "gitBlob": "bffa7f204f9543fb4b54a57821bddeff8e6ff0a9"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.Summary.cs",
+      "sha256": "BF79116FDD4B20278C2761E5C149E840CA4A188AD73D104589CA17173F7E675D",
+      "gitBlob": "4a55b8a3491f6e2d59b47a78cfcdaf28bf604540"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/EditingGrid.WorkspaceStatus.cs",
+      "sha256": "65820E2665D528594A5CE0E64204F3BE74726EB21D03ED1F771C6E062A1F066E",
+      "gitBlob": "ab7169b89fa637ee280e36c8c4ab2c6097997682"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/FormComboBox.cs",
+      "sha256": "87C64ADBBD644E3066BF1A766093A8B97C6CCAF66AD9B886AF796C7F346D22EA",
+      "gitBlob": "e6e955225df724de0a8fb8cb8df4a6d17b306fbd"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/GanttView.cs",
+      "sha256": "1CE04E60514D3BB1D029213F1DC0839DD95B7F75159153444EDAD593D5249914",
+      "gitBlob": "04af6dcb7f47578182f81c5b83d3cf469ac37a31"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/GhProjectsBoards.App.csproj",
+      "sha256": "BF79272FECC5DA3EDF83101EE606B37FD3B2C1D526A48ED385FFE96A2B855F05",
+      "gitBlob": "ca4a05663081337c0d4632e3b8b08edffc2340bf"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/InputCheckWindow.cs",
+      "sha256": "96B19C89CFA848E3FE648636E9E235993D22BC920BCFD122946C6D134B6CAA8D",
+      "gitBlob": "fec0e83f186128d29834833dcc2b1a395f963803"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MainWindow.xaml",
+      "sha256": "5041670F8BD353D706DBD83B7ECE1B26A4DF9B02F535CE841EA3456594448042",
+      "gitBlob": "6de54da2b56c6968c639163f2595d60e2ff2de16"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MainWindow.xaml.cs",
+      "sha256": "E3031D9BFF1982D4BE7BF782CCEB4C04CC9ED31DF27746057DBA6E3E1E49FAA5",
+      "gitBlob": "2f76df198562b8997ee64e4f334a336dff373bbb"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/MinuteEditor.cs",
+      "sha256": "2D3F359F6A75FA7BA666B07D83BF1E87F5389B67C04748F850F1E0AA65D44299",
+      "gitBlob": "81c36392b977ab9c90bd7251e361cc560cac22ef"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningBatch.cs",
+      "sha256": "C1E0E2757FEF77C008FFCF03866CA5771199BFF4B4E8A9AFACF8720126CA96AE",
+      "gitBlob": "5b69ff1c9ff9209da4472a146008a5d951a1ff27"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningEditor.cs",
+      "sha256": "489AE2C070EA034A45484A6D1C496799BF40DACA5BD16F54480E9933C0B4449E",
+      "gitBlob": "bed1f20039d79fc14d7724d45922021f118b296b"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningHolidayImport.cs",
+      "sha256": "8AC6798675B8EFB2294C1E0658FEB07185BE44E4EFBDFC79359FBCC9313149C8",
+      "gitBlob": "b25d0465d8c8c52c3255e8b382aac98ccce718aa"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningSettings.cs",
+      "sha256": "F5564FF24A0E4A1A04341355EE4ACA7184701A094EF47C30594581F1C41E6E9F",
+      "gitBlob": "a4b27167038eba40779c6f8c9c8f18b68bea516c"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningSettingsPage.cs",
+      "sha256": "74E09387896116AC8F70D0C9FCDA39BE022ABA817E6FC58BDE33786B0644E971",
+      "gitBlob": "9570eee792058fd173855db81d7881da9407e1c1"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/PlanningTaskDetails.cs",
+      "sha256": "FA10FF3F352C2A6D17577526A6026A268EDC8C043D84DA503848E8BECB37E170",
+      "gitBlob": "54f2e045e49b8fa76a4c937b7e122573a0d7760a"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyConfirmation.cs",
+      "sha256": "0435845BE850C7B396889D75183997CB5315ED971A147F0105801C46A0DA826F",
+      "gitBlob": "f1b21ee7d7f3275811fdbac96a03c26fd30d1633"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyDialogs.cs",
+      "sha256": "3070E854C97C02B5BCA94DD6A7CA2DA47113489F9016C4442023F6F27FD86D32",
+      "gitBlob": "7670309c1f018f4c4530bc48a70f6950c7386ecd"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationApplyResults.cs",
+      "sha256": "EF9959203ED1D6BB39DE6EE3CA37FEC2C86CB0A7A2C197EEEB710CE0D7D91737",
+      "gitBlob": "12bab51208a763d7a3e12dff9b2e853383124f7d"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationCreationComparison.cs",
+      "sha256": "FA7B83B6A380121655441FECC785846011096E41231852DC8DBD80732C62D540",
+      "gitBlob": "0e5fcb965fe365ae38687dad32e2a31feb0659c9"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationDiagnostics.cs",
+      "sha256": "B2968A8D4BDDD3AFF313487CB01BCC660171B549BBEF6F69A09F6C3EE496D837",
+      "gitBlob": "8407768c656958ccdf8c9ece0bf22973a0671f59"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationHistoricalFields.cs",
+      "sha256": "A1C919BB6C49AFA58704B918C4B68F1264E5DCE7CA801F0C4684F9EE7E487EC0",
+      "gitBlob": "57d1f896ae919fb5781af2811e73fadfa02ecc26"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationOnboarding.cs",
+      "sha256": "82CAB326714438FE17BB2BCF79D65C1363209E1FC1229ABB4CAC7CF6C539DA85",
+      "gitBlob": "61413bbd91544851408c1351d1a24fe2373172fc"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationPanel.xaml",
+      "sha256": "6E8C0A5FCD537DD46244A29C723A51F94242E7382085DCA0B814420614DEB353",
+      "gitBlob": "73431f069affcb528f3a2e366ffaad524ee30a18"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+      "sha256": "09C1DC0F717AC214539707D14880E20330D228DCA59AE9E9821607A272E20E7D",
+      "gitBlob": "42a6a5a65a50469eddff336792fda12274407962"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/RowViewSettings.cs",
+      "sha256": "43FE5FB5E28238F614C7A993C9DC65C81813230F8238AEDDC326AD54793E8687",
+      "gitBlob": "790839cd906d89e773bbe7a5f19c3329a6961599"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SchedulingEditor.cs",
+      "sha256": "DC716725FB9BBE33086BE5D48D34349E772689FA001FDD7898AA34BA2C4F66BB",
+      "gitBlob": "7dcf30879743dff043c2a2b53ce8b2d3e5ccb7d9"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetDiagnostics.cs",
+      "sha256": "EF8B429DEDB65021BD9BEFE0BFC9FE468038F658247BBA82B73F04EC59804638",
+      "gitBlob": "d60a4c8e0c8d25e74dab9af2669be4bb3662afbc"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetInteraction.cs",
+      "sha256": "94DDA0F75EA6D73F8A51D3EE43921CE92CB28970B6CA3608AFE5742DFEF310A6",
+      "gitBlob": "46d0cb2863c6e795fdb22d80a14275de95de8d0b"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetScrolling.cs",
+      "sha256": "7B9F3BCDAD647EC848B2690E541902A7490C86DB90A8D76D4BFB3BEB31AC76AD",
+      "gitBlob": "c8459595d304352325a73e8747a1bb32098b5171"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SheetViewCommands.cs",
+      "sha256": "85079F80276EF57D9C65D8A3479AAC227AD300FC10BF39342AD5EDCA2091DA5A",
+      "gitBlob": "abfde7bcef01fc828fe805da54d7dcc67f950bb3"
+    },
+    {
+      "path": "src/GhProjectsBoards.App/SummaryView.cs",
+      "sha256": "3F393D42AFA4B20155DAF2A9AAA7C8DBCC745332670196C7912C6B1C206926A6",
+      "gitBlob": "8e1923ab7fa0610a539d3b1a764364d6afb2daf3"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/ConnectionViewModel.cs",
+      "sha256": "453D4468E8AA973A7A5FD6B4F83F7965C175D47E145EA005B427DA476876D575",
+      "gitBlob": "280b6400e7682a9a5a63b9cef619bdd1f0faeb37"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GhProjectsBoards.Core.csproj",
+      "sha256": "757AD0496A38DE621ED32B9041247EBEF4357584E028F8264C49B227F8ECFCEC",
+      "gitBlob": "163e0c2ebff18cccd50b1590174b1f5733631837"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhApi.cs",
+      "sha256": "7A46FD8978639F3BAA1CD39D18FF5FD159B2E0E7C1662354A0A4151083946D78",
+      "gitBlob": "c4b1160361ef50c7412b0569239949b55cb4adad"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhConnection.cs",
+      "sha256": "AA779953FE297463E702584DF8A07E04E0117A5AF4926BDABF718BDC9D7C3366",
+      "gitBlob": "b2ce25b02805b2d96119c95b5e6d0056b257d683"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GhProcess.cs",
+      "sha256": "980B86EA8410B088226A3DEA7C44A3A1866CAF032A8C04D669A720597B559418",
+      "gitBlob": "38ede9f5f3076c7dcedbc77d16421c2321a37ebe"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/GitHubAddress.cs",
+      "sha256": "63AACB88AF2B4FB61248D8CE26C694F917EDD41C7ED8B8BF4B025806D7753966",
+      "gitBlob": "f5e9f87728dba27d9c1a7f90bc934c33d1d45177"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/GitHub/TargetDiagnostics.cs",
+      "sha256": "E97D52B00A215923FC82FDCDD96FE11C36C55E4D385F669447F72571EB738605",
+      "gitBlob": "9318aa1788e66abea47a4a297489387c08935fa2"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json",
+      "sha256": "35AF76BB4AE9BFAD0E7297CBC62822BD23007AA4096801C1A566454898918361",
+      "gitBlob": "a2593887e7967010b879884b83af8c3b89c45dd1"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyCandidates.cs",
+      "sha256": "5A26A5A2173AC25E843F5DD54D0024807CD6361EC09591C0FBCF4547CD1AC230",
+      "gitBlob": "ab812caf63d5ffff1e21f26660d62da2407a2043"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyConfirmationPresentation.cs",
+      "sha256": "837FE6CEC8DC2544B721654AC95120BFAC383CB6B0BBD37B0F7F18DB78ED5845",
+      "gitBlob": "4d355be1518ae88ec5d74ccee96096e9c7afaa7c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyExecutor.cs",
+      "sha256": "03E1BA9B8A08FA5845A24AF02D5221CB2EF294053AEA9C216E563012A45EE1BA",
+      "gitBlob": "b597ae8b2827f6284a4613114aefeec2dc7cff45"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyJournal.cs",
+      "sha256": "C486E50B840ECF87EEDE6ED471B2142D82AC8EB4DB25DECEF16CD04E68C2A966",
+      "gitBlob": "77598cc6918c1e98d9f3d9ea3c1f5985a8be684c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyRemote.cs",
+      "sha256": "5667955D2E7FFDB84291661C5D68C9E43D918436C98A4C2AAA6366F52AD46EAE",
+      "gitBlob": "10e9698488d08e2cc971b087e12b9dae8b19aad7"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ApplyResultsPresentation.cs",
+      "sha256": "A4DC43BCE79449B55B1A6B922CCE23AE3BAFB7FDB1AB9023F45E90F0424AD2D7",
+      "gitBlob": "30e198bf7c25ee4cc3014c6f319c14f937694f19"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/BulkEditing.cs",
+      "sha256": "8319F014BF649629255E86E479D93CC6421B4D69F4677B0491E3B9AB639DD5A9",
+      "gitBlob": "b4cf568381d7c5b0aca186377d1fdc2371bd886c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationExecutor.cs",
+      "sha256": "CDB3169A5330E30B54782DF84ED97D06EB2ED4C1D8BA77C36F51514464CBC357",
+      "gitBlob": "fff326259a4b24aa71bbc6ace04862b272ba2e88"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationJournal.cs",
+      "sha256": "AF576493132A68E7C760C575F6CA75C66620665650223446EE51C422A3371321",
+      "gitBlob": "3d19cef7a4864f07b72e150db3e5c4963353ebf1"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationKnowledgePresentation.cs",
+      "sha256": "C29151BA426CB238B2DD455833D35CD9C4AF9480A69F5FA51881DD67B7070FC7",
+      "gitBlob": "8b69ee107172cd0357e875a4b7ec96d1a9f81e41"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationPlanning.cs",
+      "sha256": "3085488B4302FB19EA15F7A3937A4CE8E963FA756ED026CC0EDCA4664405D65B",
+      "gitBlob": "ff9e189b42751560b883b27d570a29dd4ae7bee6"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/CreationRemote.cs",
+      "sha256": "C73C5A3270FEFD021979C1CE842AC02BDFB1F95CEFA241152590E3080881BBF4",
+      "gitBlob": "a2d8f4b18ce9200700a448fe2365b64523bef4f3"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/DraftSnapshot.cs",
+      "sha256": "543887316D10E3DC4086EEA99CFB529FA6CFB14D5187E87A59AA580D11E25BE3",
+      "gitBlob": "41b6c31e54bb10f62fc89d34ba6c079f4bd06b8c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/DraftStore.cs",
+      "sha256": "7E7DFC29E4B0904896D2F94A7678223C79E4CE021C230AA70FE2F6E42DBF764D",
+      "gitBlob": "e8f546554800c6c5c328dc7a2da8552f6248c4f5"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+      "sha256": "5E501734C1CF75538E6D7DDF89F5967C0886C8A955CE5645D82D768C30EFFA1B",
+      "gitBlob": "af63859cbf9962606de9f4b0d7b5bfa997884283"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/GanttDependencyEdit.cs",
+      "sha256": "D0063EE324A1AD55881A940077B283C6A948D8014AEE931D254B3DD09262ED50",
+      "gitBlob": "5963696625ee53ac549ac2a31555f9134be38d38"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/GanttProjection.cs",
+      "sha256": "80521309F9DCA1DC4CFCC129F93F68985B89719B9F36BBFD5E3F3EAF6D6E70D4",
+      "gitBlob": "227e7c1280d757d914510262dccfa7a4c9d711d6"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/GanttScheduleEdit.cs",
+      "sha256": "BAA98BD1B6A18C4B867C899E6C5A6FBFDB090B05F690550AFAF2BEB959A40C68",
+      "gitBlob": "b7addc98ced9c4882edb0a4d6792ec0908891b31"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/HistoricalFieldDisposition.cs",
+      "sha256": "2975C34364FCBDDCCE03EC350B6E363B18C5FB0A8634215ABE478DD0267932A4",
+      "gitBlob": "8feb7a7cea93245d771405e451b833b7e6762c12"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/HolidayCsvImport.cs",
+      "sha256": "6C1F5827AC338A65F1065D3B85EB332DC4F629D987CBD84E077DDEC3720C2D56",
+      "gitBlob": "0b2972e3a4b25f2e677b5d1874078229ec099c3e"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/LocalRows.cs",
+      "sha256": "CF35B69AC40675EC0FAF5FD0356D381996BF890919AA1F9626F533562DA2DCCA",
+      "gitBlob": "45655c1754800206ce6c1b0abfbdd6946208ecd7"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PerformanceTrace.cs",
+      "sha256": "212E397375A474F6F8D61B8373A9763E0EE455D995726EC17FC7CAC707195D14",
+      "gitBlob": "753fc6bb370a0c354d45041e3ce20e3675fa9fe0"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningAssignment.cs",
+      "sha256": "41F20A82D7495FAFD84B2B8846201B643D680E674EA92F4E296E2B1CB926F561",
+      "gitBlob": "ccf48c0473b4063c83c8fc05535e313fe1497400"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningCalendarExplanation.cs",
+      "sha256": "BB8E4F9189815E5EA1A39140ED6BEA110A376531096F7C3F2F850DDE52D6A397",
+      "gitBlob": "7a9411c4145074dac90b0a44d1e50e8ed754864e"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningCellInput.cs",
+      "sha256": "075BD5EAF00B971419F99457C54B0006E38DB540F43375AE561A8DE14342D832",
+      "gitBlob": "9dd7d334e3283b1c3d6c8d5f60e5358f72dbd622"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningContract.cs",
+      "sha256": "8CD3E7CE5BE62D4C3EF2826692337B717B87EEA825CA4CDD0CA0DC2EFE15FD61",
+      "gitBlob": "71f235919f9f74afb4d6f3182090dcce98da1d54"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningDependencies.cs",
+      "sha256": "B632042DEA80EEFC434D86C34129A6A9210E7719728445C1584752E75CAF65A8",
+      "gitBlob": "ea960dfcf8da70a2ffaf9862f5b1af8d6d217c1d"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningEngine.cs",
+      "sha256": "28DDC26F54EE075204E93888A5E3DA3B529A6C45274102C20A1EACFEF3BD889A",
+      "gitBlob": "5d8671360ef2dd2f43ede692296eda4975258d5c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningReconciliation.cs",
+      "sha256": "45A9ECFD3D8EFC056DF84A2A009F8389FD997C233531AE4777247EDE93C76444",
+      "gitBlob": "bd66a7cc05341930c39a09ad4c766cb3b86e1c0c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningScalars.cs",
+      "sha256": "15619101A9001B7ED1F89E7E1D90E0AE0E7D78ECB686F4504354214202D0B611",
+      "gitBlob": "c33e4e19978e87450fbe8c47acc87b1b5ad4337a"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningValidation.cs",
+      "sha256": "DC64A7FBC2099C0E22D63C97D1D5E43BA4FAFC24113D0C4EA0E8EB6CFA80FEED",
+      "gitBlob": "39d903bfb0b21e4ce070af3048383be9f764ca56"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningWarningPresentation.cs",
+      "sha256": "57829003980944D20AE79EDA79F1A676B1BABD0F111251F8B386805486E987A1",
+      "gitBlob": "5bbdba2b0f0e779dfba011aa5ad7b720f6bde9c9"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/PlanningWorkspace.cs",
+      "sha256": "7D0014515281F0AB718704D797F517FDDE4CB2E049B5C88FC865154E87A4823D",
+      "gitBlob": "4242edc10babc971e4f429d1dd3153ff6a46a4be"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectColumns.cs",
+      "sha256": "146F6E683F119D0C3D65FF14AD58A8DE56428E6100FBD9773755F42783004228",
+      "gitBlob": "1d15acb9301ff0e90c734f4e47b9a6892db89b8d"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectDiscovery.cs",
+      "sha256": "2B2B86AB0C2DDD653F44A1A7694D803D0504815217DF684C4A9D737D94E7F557",
+      "gitBlob": "6fa2adc8a28f2041ed19c544f60907849fe9d550"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectIssueIdentity.cs",
+      "sha256": "56CF5932FAC4C95812220196EF22D3E8114C3D1B97895C9465D272C4D6502DB2",
+      "gitBlob": "c8d06c60fd9e0528984cadad5912806ee31cf2e2"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectQueries.cs",
+      "sha256": "27CF0DFE9014A1CC80A9B4E756EBDF8999EB0132734C253C986E6808A90EDC21",
+      "gitBlob": "625954d26250c5fd273169a3ae8237ed91e55f9b"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectReader.cs",
+      "sha256": "EF4E60DB21E77A174ECBF214A9C380615593A9126ABB225AA361F4E4A80170D1",
+      "gitBlob": "f85b564c591e0cff5a15e5ee06b68cc2402b2be0"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectReadModel.cs",
+      "sha256": "E8647AC2445BAAB047D1B84F753C481BE44417A671CEC01AECCE8D98DE78902B",
+      "gitBlob": "d0baa06ad8d73a487fb08fd22ee2b90401513dfd"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/ProjectRowViews.cs",
+      "sha256": "EC2F7A64BC838F460C153E039B40AD5D11A82EE5FBE44651A4AA1268187A6B04",
+      "gitBlob": "5e837a6e6aa9c61ace5ba61444a60596dbb2e915"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/Reconciliation.cs",
+      "sha256": "81D28C857B4B69B5288CE6C791F5459AEF069DCAE28BD8A14842AF1A137FDEDE",
+      "gitBlob": "4971469e928a6d05837b4ea0645547f6cf91446c"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationApply.cs",
+      "sha256": "4095F4D9E5B720AE764314A2B710B5128185FBD87B9924E71A75398A7C329965",
+      "gitBlob": "300ae5e3a29b0bb6960ed368488a564130d4c47e"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationCreation.cs",
+      "sha256": "8052CA2C328C0CEF15B0529F990811CF17CCCBFE92AF5298E707F182D1A2207F",
+      "gitBlob": "d8c54dd4094a7bb49b4b4ebd1883c34a85fe05d7"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationDiagnostics.cs",
+      "sha256": "92B8D30C8B8DD5B790B580892376A4633AE0CB70AB5A8D1B590B2866CBD67AB0",
+      "gitBlob": "5332302a701482974bbd5f2077acc99d04e8bd67"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationHistoricalFields.cs",
+      "sha256": "C38D85CA642EE8D4B5C5951AE00B52EE17B68FEAF9B6339DE809604BD8F252EF",
+      "gitBlob": "18b151f8f2e5632c2e73d076d743e240a7a97e15"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationStore.cs",
+      "sha256": "D7A40FE1FD01902E5FFA850086B7E7987751721350596489423938D7B74DCC42",
+      "gitBlob": "18e9b06bbe022c8c17d5f3136864506e60b244fb"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/RegistrationWorkspace.cs",
+      "sha256": "9D3099E2BF8F4B3AF7D618F93795E499C80F8B318FF6931A4D0946F87E06F6AC",
+      "gitBlob": "d359a8d181cd2dce0ac9564a23ab8e611b7d55ed"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/SummaryContract.cs",
+      "sha256": "621E7A124E5C2FEE4EF1FFAE9CA91383D41114C0907BF0517675CFD93380A5FA",
+      "gitBlob": "ec8479f2bc34ce21481efca3a4d2a0fb0a756b2b"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/SummaryProjection.cs",
+      "sha256": "C66DDFCA01561E89B2F5709644CF86250A30A09178A543A11138FD151E2995BF",
+      "gitBlob": "8bf8974e8520f5c2d985cb91c6b004c549f40f90"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/UndoHistory.cs",
+      "sha256": "695E9038CB74BBF1A855E078F191CDCCCE300A7FC944C2381FD6F72FC090D042",
+      "gitBlob": "4137dd69613eb48e96d2cc73ad3529baa0b59ceb"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/WeeklyApply.cs",
+      "sha256": "66230A377873ED84D2A0B131875DD3B24F2DD4CC952AD848FE73C0687C19AEEA",
+      "gitBlob": "7ea2a480749a68cfa1bbf6d986ef11513295d6e5"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/WeeklyBulkEditing.cs",
+      "sha256": "58DDDB470516973B80A6642F4E65ED9217E21527572C554FA3E4F98B4900CA09",
+      "gitBlob": "c19e7229281b7d9690d2055fb9811d1480eaf020"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/WeeklySummaryReport.cs",
+      "sha256": "2F93EC9374BE2709B25254C256DAAAB2D04F2AFDBC5B9F3D27B41114CEE3E176",
+      "gitBlob": "661942756be8b2719c28ec947dae26a164b61313"
+    },
+    {
+      "path": "src/GhProjectsBoards.Core/Projects/WorkAllocationInput.cs",
+      "sha256": "D814244D4E9AA4BCB505A98442DA3FB97E78C123B6AD2A2340056F25A3AEF9ED",
+      "gitBlob": "964b863b0af02e8a38f8feff92504fec650a3e55"
+    },
+    {
+      "path": "tests/coverage.runsettings",
+      "sha256": "97C5D3D93389D257A87A361E4B1DC155E7446BB93CA8EF9C6938746C3006B541",
+      "gitBlob": "3c659d20448fc0904933682688242b35febbb077"
+    },
+    {
+      "path": "tests/Directory.Build.props",
+      "sha256": "7105E5D4CF9C7E9853E04750CBF9E2248F0EC82E3135146C816953E7A2CF75B0",
+      "gitBlob": "7b58b73ed22a328dc6398c2928422b3da65ae00c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ApplyInformationTests.cs",
+      "sha256": "70C7960394CEBF39F4832E14C359AD094E53436FC94CD18DDF617A5FB68FED6F",
+      "gitBlob": "8aaa8e5c6392f0432365c01e7ad2fc683011d071"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ApplyTests.cs",
+      "sha256": "1F621656F5E56CCF84FD2CE50956D1101F9C1A6ABD8D39AA82DA2EAE50D33F22",
+      "gitBlob": "b2f529775f6057ef2c9c3f9eea220537eb9515cb"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/BulkEditingJourney.cs",
+      "sha256": "CFF9F3CE4D5E3723F1366E2526C1DA027B41A0E682782DAD4AEF16ED7CC6DBD0",
+      "gitBlob": "2580f7ca95b58acb7dd373cefea98d187716c0fb"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/BulkPerformanceTests.cs",
+      "sha256": "4973EB3056617AC4E8858576EB7A3E2B1C0C9FA616246A8D8FA9C65E13F3BD4B",
+      "gitBlob": "ecfb4010293a3b5664ed7d6d9681e11f3bc8fc8a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ColumnTests.cs",
+      "sha256": "A73A00F6BC32EB1BFB8DAFD0B6CBCE6343BFB044C81DF3A9B0C8EF35DFE72A00",
+      "gitBlob": "f74cd1b281e13d8e52d0d9e6d77cd93d1183d563"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ConnectionTests.cs",
+      "sha256": "14FFC2B743719D5D9F6CDDAE39DC3F1F34D9C41D8FEC923279ED5F78A1730961",
+      "gitBlob": "e9c25ceaf95aa483fde7b2f49eb77b3acf3fcb4e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/CreationTests.cs",
+      "sha256": "3A97A4769EA53FC60F349A5C6592334A2325F9EB06F7F8D4573CCF222439AE93",
+      "gitBlob": "fcaf6a84fba121ce3dca2a8b1f617fba5233cba5"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/DesktopDpiScope.cs",
+      "sha256": "73755D531F0F4B7005474EB99D4F1337878B39260CBAECC8BBD53EC2CFDF563E",
+      "gitBlob": "8bcea3ae848e81f2ed8765a6a376917c64727ef6"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/DesktopFrameObserver.cs",
+      "sha256": "7CF4CEC3EBAE1B2B2A27BB886E8390F1893BE3C7CB01FC50304A250B6892D76D",
+      "gitBlob": "01f439d780b5692c4b236e988d7a39f4f7761b46"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/EditingGridTests.cs",
+      "sha256": "54EF3DAE783ED173F3E0BFF98374B65F20B6F61909057FEC13CCBC5F1F4FD2CD",
+      "gitBlob": "13581ba8eeed9ae17d1b1d544f63bccb5222a96a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/GanttJourneyTests.cs",
+      "sha256": "4167444CC9273CDC177B7719A4919B2901F34C59B86CE4D29EED837CEE4A2FFF",
+      "gitBlob": "c15680752192f7f07c645e409459525ecf0efdaa"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+      "sha256": "6C8B1BC7FED273BDF461922EA6700B22E817BBF6B85639EF032C79FFE31B7E61",
+      "gitBlob": "228da2ab0919f8f85ba35c7f7d4ca60cf86f61d9"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/HolidayPickerJourneyTests.cs",
+      "sha256": "42319C76D23321C22AA0137384691823B821E3D3524D48645674AF7D553148DB",
+      "gitBlob": "57500a68a66cc2a8c9f109b8f27230d8825db7e5"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveApplyTests.cs",
+      "sha256": "A6E06204877086A67BD2327B029988A9AE99A5572753B34A461AFEC237D61182",
+      "gitBlob": "3ccb9eeecaf261fa2a0b568bb9278f32ae047a1e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveConnectionTests.cs",
+      "sha256": "68C66F8299E25BE3543B34F3C0EE836CCEE91B6FF374A7722A4D441EEEA4A422",
+      "gitBlob": "4dbe8b04f9b556d05c654829d29ef2617dfeab7b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LiveCreationTests.cs",
+      "sha256": "F0DF24AC9761306E2EC75E95CBF1725FFC4CE8F8B8D4D5CDAA53EA3E2F56FBF9",
+      "gitBlob": "103f8a1ffa2aecb889e2568006da3b05bfac188b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LocalRowTests.cs",
+      "sha256": "2A61616BCB897B23F30DEE19248CFD2CBC7BC25B3639BF87498E29859DC7F0C8",
+      "gitBlob": "ff1a8c5508744e476978bc1a48f64497c69dafca"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs",
+      "sha256": "F67923EB1F014C255CFF4152AFC9620F7EE7457CF14B8FEBC21B8B0FC68A46EC",
+      "gitBlob": "a1d6eccb138e889ece851179a6d9ca4b4bd06129"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/NativeClipboardScope.cs",
+      "sha256": "F7B9F09818B9016A6B3E94CED2B87DBA5693D3FA4637F74C4F693D2ED83BCA7C",
+      "gitBlob": "2aae2015d2748aeb64771641d33400dec39e248d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/NativePointer.cs",
+      "sha256": "3FD3905A7156F789493C7B14AF1C86ADB7878F7FA15E56344C7FAC6DDE39F3C6",
+      "gitBlob": "bd0b50c1f08b7705255d7fc9b78ccd30059b2861"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/NextRoadmapJourneyTests.cs",
+      "sha256": "16035053BD394F8A4072E02C5BC91CFD3D825A3DE44D6D174C87B15DD0D4E879",
+      "gitBlob": "2f1e7c990832d4723d00ae6c8bb510a6a67bd30a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/OnboardingJourneyTests.cs",
+      "sha256": "AFDA35A75F3AEA697331B8980485F0869511F97585AEF460841C16E66948FC18",
+      "gitBlob": "6a6b809435bb659616d0228275f89a67f81101aa"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PerformanceTests.cs",
+      "sha256": "21B3828233F607465B289549A6A1DD4F2DF1F2D996A9EE13524B1D48645705F4",
+      "gitBlob": "9016224f826a85556217b13fdaf76eafaf3ec8f7"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PlanningJourneyTests.cs",
+      "sha256": "150BC5E111E63E391BE5B2C9D0119EA15CE2D12B4AA048EF42D6AE95264FDAAA",
+      "gitBlob": "549ff9c4e2e0c6b8adec2dd31094383eaac1070e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/PlanningPixelTests.cs",
+      "sha256": "F688472E71F3C092275EC4519826AFFAF98469C5E145E891E088B933381FB1A6",
+      "gitBlob": "0135ae947c9952e0915cc07f1753160979b52f28"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/ReadyInputTests.cs",
+      "sha256": "6D85CACDF780A95D60822C1217EB881A69E1C32E13014EDD629FAADB1945D685",
+      "gitBlob": "162199f53fe3cc3539c7c8f3d41631e41019786a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RecycledSheetGateTests.cs",
+      "sha256": "6866A1BD7196BD457AD3B07C42CDA6D747309308B6505529E8E558939C0C21C7",
+      "gitBlob": "9481b85f0ab8136f3e1e30808b05d62371dad653"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RefreshTests.cs",
+      "sha256": "4344897F445E844C06B2756A058C31E994596B8FE01FBAEDF61CE6037F4BA274",
+      "gitBlob": "884631b9b0bd937c79bb310f41c73690e224f659"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RegistrationTests.cs",
+      "sha256": "AB413E04A93A560D0A500805D97220E37F19AC7ACE014A92D1DA8C4FD2B57223",
+      "gitBlob": "e8165a8159974f0e4c6c00f0419625f1a28fe68d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/RowViewTests.cs",
+      "sha256": "86663659F1913938B9C8C8AA75E33ED0641DD1FB60549E7D6562C5197A61535F",
+      "gitBlob": "7f373699e0a2eba4f4cb8d7499396cd821e63f54"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SmokeTests.cs",
+      "sha256": "A0B74905E71D4DB6745D0D4C0B76B5A3AE67E0E55CD6C2F85EE7919499DC88FB",
+      "gitBlob": "5afaedad95355e93cadaff47eb5441459411d8fc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SummaryJourneyTests.cs",
+      "sha256": "157D3B12D2882C303E5A8FDA011525698ED32E7F7B18336236496A8F7E2F72E4",
+      "gitBlob": "b54ca8c7b84725a08480c823bf876fdd3884b2b4"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/SustainedInputDiagnosticTests.cs",
+      "sha256": "CA6ED36056AFE18089F93CE94325F4CFBA0CC36257285E31E7DF028D724A5A10",
+      "gitBlob": "f5ffbe50dc48c52b4f56e72dbc3fe683ca2cda0b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/TimestampedScreenCopy.cs",
+      "sha256": "D5FABB734D01EE8B0B29428CBAD9698F9BD1E7145F7C02E2668F4C69B783C2D6",
+      "gitBlob": "2f21da889c334ca63c302646bc70df171275bea6"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/TitleIdentityTests.cs",
+      "sha256": "21F5A00536B671F70AB2EE31C45DC69F9E1E7EB0C085B5B72621E20A0F1A7BC9",
+      "gitBlob": "436f9da579cb8d19a656a81128537f6572660e5e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WeeklyBulkJourneyTests.cs",
+      "sha256": "4277D056AD346F4200516E783EC28FD37A4C05430A521EE1FE06A399F90D87D3",
+      "gitBlob": "e5a179c405aefe9e960bc434a8960eed5a7955a8"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WinUiProcess.cs",
+      "sha256": "210F07F7D2EAAD53BED96DD4A9D4786523DB44F232CC63902342DBF9699EF7D0",
+      "gitBlob": "6ec8891a53313fad4825bac5e02e9cbf18acebad"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WorkspaceSessionTests.cs",
+      "sha256": "D060D7066927739E4E984643CE9789E79CCF864116B29F7430C559364FDB502C",
+      "gitBlob": "a227dfb2c3205d159d672c86d4e2bf62728e918b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.E2E.Tests/WorkspaceUi.cs",
+      "sha256": "4ECEE982E74707A27BE13B2405778C8D6EFB6C6B781A698E23691E2FD4E1EE66",
+      "gitBlob": "13b68543f05abd82fbb60058a50cff60a4510b62"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyCandidatePerformanceTests.cs",
+      "sha256": "0622E06664F397186B19746A20529DFC625C27A1E88D45D7E18B2E0D7865CD72",
+      "gitBlob": "056283f2a0cb6ffc64cfadf89ceb6b65a9c07224"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyConfirmationTests.cs",
+      "sha256": "D27B9135706854FFEE6F37B21A466E7E505C1E02D8F5C659102DACD927C6557E",
+      "gitBlob": "02296c14c668ab74a2482cad93396643008636da"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyInformationTests.cs",
+      "sha256": "4EEFCDF2C5790606B24A2268EF0CC3E6957A712D77641AF41D56D1BBCFB21761",
+      "gitBlob": "c1f3f1cec71d88dd1ba9be15e6c7c56face65b46"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyObservationTests.cs",
+      "sha256": "8F1A017E16405DF0AFEC30B36164DF759BAAEA10E53BB825DC295C7ABA14FA11",
+      "gitBlob": "c93f3bca3380045dea05255f50d4ce0195f6631f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyRecoveryTests.cs",
+      "sha256": "B5C3177022DBD2E1302365F74A778E685AFB080CE98B61AFA51B0DCA38B9E024",
+      "gitBlob": "4ebfe572f1ffb654e97af12ec9f0b565cd72aa42"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyResultsPresentationTests.cs",
+      "sha256": "C0440A1A22308A133F6E56AFDE6BFE54890F7C2AB20A6F6F825FB337E833BF38",
+      "gitBlob": "2a5da6487ec847c4793cefa1931a5f5e3ca4cc44"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplySupersessionReasonTests.cs",
+      "sha256": "58D42990DE23BB00D68A8FBA8BC7EED71B99D8E5BDE4382CF4F221B11DD5A83F",
+      "gitBlob": "e2410109b4e21e4ffb17b6fb3e0d4af0a60917b8"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ApplyTests.cs",
+      "sha256": "C7885C31FEE3E01D3528119F973FA4479450BCDB4D5E5579A71DBF6E1B5DCAD1",
+      "gitBlob": "7abaa54b49eb4e0d01f3c5d266540bef6023eadd"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/BulkEditingTests.cs",
+      "sha256": "A2861B0E148FB64A3D1FE03736724955D887B7BFB47FAA4C3A130B9EE5388003",
+      "gitBlob": "75400ca919255338882306fa06ab73c97a76925c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ColumnTests.cs",
+      "sha256": "E0516D01A7A4DCD37C7B331BDBB3B5F70308BB0D55B3B46581045780FFF728C4",
+      "gitBlob": "b0c6623299f07503d8f969f0021b67821e6c0fa9"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ConfirmedUndoTests.cs",
+      "sha256": "5871C5D298B917FD7D1C2E2843EEC2BE12B5153A02B53AC2C9565C22B1C49F5C",
+      "gitBlob": "ccbd7f74c8533c8fab8299a1fd308e2bf595a938"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ConnectionViewModelTests.cs",
+      "sha256": "53BD41DCA1AA6EE5B75C4D9B665457302134E1F9E16B342AD74729BE2ED52CE1",
+      "gitBlob": "85e717370e355c575f080efe14ddc32c2b8546b5"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/CreationHarness.cs",
+      "sha256": "6EB4EB104546F5635A2CEBF5B08B40359585E7761278383220CDDB85E5B931F9",
+      "gitBlob": "4d496871a9b022282108ba17ffe1bee2fb03cc62"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/CreationKnowledgePresentationTests.cs",
+      "sha256": "42E201883299A38E63DF35CC7A3FC5F2F205172476E58D6DA92F3F9DA08EFF53",
+      "gitBlob": "7c142876fe1f0bd1a79218f7dd88094c6dd708e0"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/CreationTests.cs",
+      "sha256": "07F0DE1085A77F7D54420E9B2AEFDBCECF2C53645CC8B9F7B5CE75F9676578BA",
+      "gitBlob": "81d7893e58df9c2e1cc558e18b0b0ed08333c241"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/DraftLifetimeTests.cs",
+      "sha256": "0B5A42620155753AAEBE7EC289892736AF63DED4408E47B64AB73752E896376D",
+      "gitBlob": "07aa0c5cbccbded35f590c9cd4afabbab5d092d7"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/EditingTests.cs",
+      "sha256": "6D6FD39B6B8CA6490B6F1E95E292DD8EB1D1F2EA8D20D11A3799320C09C6E9C2",
+      "gitBlob": "3435b013d8a920cc2293b3f620f529c073b3aa02"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/FakeCreation.cs",
+      "sha256": "6C66A5F4E92FE86BB94030A31308982D9C107543062B05CBCE53BE954BCEF67B",
+      "gitBlob": "8801c105300aa07d7b69528043f022c21a475324"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/FakeGhProgram.cs",
+      "sha256": "ABBB3EC9689130599D344316212516E205A0DE2697A9CE0F2BEF85CEC0492D2E",
+      "gitBlob": "81c6abfbe6c5e4f80f26bf6776ef4f5b297415b2"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttDependencyEditTests.cs",
+      "sha256": "9790CCB8E2C9EF267AFA6C882B75D813D5B24BA365DA65C2E35BB98C78046DF3",
+      "gitBlob": "c7858020021e62994361b8c1cd9ae04f0d461d2a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttProjectionTests.cs",
+      "sha256": "A63FB2421FAF97CDD0795EC7721DEFD84E465087F68F62F298453FDD66F7CD28",
+      "gitBlob": "3380c54c698b6ab228895786b090aac5339e7f01"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttScheduleEditTests.cs",
+      "sha256": "6F199DA2BD1F428672F4856091BC4D6487E16725E558714657BA1C58D9E31CA1",
+      "gitBlob": "be258ac86499e6b6ea5da05fe35ae37c0005008b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GanttWorkload.cs",
+      "sha256": "7AB270C07EF557543A6D6174C2D68537DE6C5B5089BB17797F9EB5EFF51D7171",
+      "gitBlob": "b83c8872f797de1a3bafe861cf059f303053c0fc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhApiTests.cs",
+      "sha256": "7F99E27C6592AC33E326F7F43F5E1F4C27E7996F7AA4A217D38F5A1C8F2DD49F",
+      "gitBlob": "0fc568386976c76cfdace5f705c4795486fd2443"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhConnectionTests.cs",
+      "sha256": "C38F03213571037AA86E4708728D1C55414B73F81EEBDB2AAC9B752A945F4B1B",
+      "gitBlob": "c31e8bdc0c611f706fc2df2e7fba58d6ca0328a3"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhProcessTests.cs",
+      "sha256": "4D1BF3F3F509608D11F2AAA88D467AE8D0818D8775953DB9626D72C258632EB5",
+      "gitBlob": "d2f77364e14ab65770e2818fb48936f0743b600f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj",
+      "sha256": "0A2425D08AB215D17854436C2CCCCFD47DD99B1BFDF09BD0434FFC2675B52AF6",
+      "gitBlob": "33b59d95b2fb80c6053e10bb60fe4cae4b749c6b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/HistoricalDispositionTests.cs",
+      "sha256": "265FDF1EE571B6212B82AD76E4D610D7737B4EE1686D751E861CDA1AF18136E6",
+      "gitBlob": "322676056d7aec3f2ba97190a0113154bdb8826c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/HolidayCsvImportTests.cs",
+      "sha256": "B35D46398F0E2FDDE497DC3915E8B3A38003A9E36361B9A1401BF565DF501A99",
+      "gitBlob": "36a27ba43be2602342f1a8e9c24642f4cfc28465"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveCreationProxy.cs",
+      "sha256": "BAF8E98DCEE661178165D95E0EEF9185F1F5425FF29110ED8C95A6E9352B55AA",
+      "gitBlob": "1174d32ae12fcd437923a2bc5a9bb467cede5025"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveFixtureBoundary.cs",
+      "sha256": "F058B6FA9EB946685D4232E6BE16E2D8391325FDF03308F97196EA93C0D217CC",
+      "gitBlob": "f4c38add2355325953ab404af99c14b20932a65a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LiveGitHubTests.cs",
+      "sha256": "54CDB73B6D5872D87EAB4DC6DAB8572B62C502ADACC589764393352CA1449DD0",
+      "gitBlob": "d8193f65aeba2f953f675a6b13d7faacab12537d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceGuardTests.cs",
+      "sha256": "7B4D41A611FF9452E1902EDEAACC36DFF28DA40537E3EC6682509A49D6F10534",
+      "gitBlob": "5fd96392325e7ccb3781ae1b3beecfa3a1d69dd7"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceRun.cs",
+      "sha256": "A91C5DFDEFCBA45165C193A2AB269A5EB9AB48B73BEE9A19EE3FC955A631C972",
+      "gitBlob": "dbeadcd4b4a3b00ab400e290e4dad6a4d4e12b86"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceRunner.cs",
+      "sha256": "E1DE77657E54FB9EAFB03658EE00194A36D790A75142426BB214CB7129A7334F",
+      "gitBlob": "f9acaf1cd2d1c892feea98ee8b5121158a002723"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceStages.cs",
+      "sha256": "70BB98859A5A5661DA8648D5729E32656D7398F9FBFD9FFC098C7D84CA182411",
+      "gitBlob": "5076b183384d66e844de8a4568946d931c1781c6"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LivePerformanceStageTests.cs",
+      "sha256": "9DB4D45A4974B801EE5C9D3BCD10DA4346A215C9A59E94E343569595A705BD24",
+      "gitBlob": "64266e486980b498789cac6c10b2f2b17e5046fc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/LocalRowTests.cs",
+      "sha256": "CE042AF5BFE43B410648399966578D55538C3873C6764A34FE08CF03376B5D8C",
+      "gitBlob": "e8f6add8c933855b28859e25c21088c99bf53faa"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ManualPlanningTests.cs",
+      "sha256": "D56D15BE3C742A8954B6E982B74B020B325ECBEEAF489A7643B67E3132F16FD8",
+      "gitBlob": "294469b2af77957f243867c7a3d7808ef2c2a0fd"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ObservationIdentityTests.cs",
+      "sha256": "34D3AFFACFCF03C5D296E7F309A4145256255F442263C5BD9E0FA538E47FA95D",
+      "gitBlob": "19578cdaaaaf531cbef1c45de07dc000e34de08b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PerformanceRun.cs",
+      "sha256": "63F1357C50067089E044B8271E3E8DF212835F1A97B7A8C1A8A8AEA7A2C3473F",
+      "gitBlob": "6af2b46931121c75a7a5b8c0e29250f931fc1f7d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningApplicationLiveTests.cs",
+      "sha256": "264DAE0916214036E73B95042773EF5AD7AE4D87B1AC3FDDC89AD0F6A7C7AD29",
+      "gitBlob": "43bf26f0610a595ea8f907a9b4c61dd4481e95cf"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningAssignmentTests.cs",
+      "sha256": "2FFE01849FAB9F32EF24553C58EF6D881937F2852657445552ED52A47BF62C04",
+      "gitBlob": "640d6e42bdfdf76bb963f2036828a359b9ffeccd"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningCalendarExplanationTests.cs",
+      "sha256": "CBA1666429E5002852F64DDACC689608EF62817625954F8CDC5D84D0EAB1A190",
+      "gitBlob": "ec9a611f05cc419d4a1efe305a1efa792afc4651"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningCellInputTests.cs",
+      "sha256": "56EDCA1F3091FEC2A0F968282A507561CC9B424708787FE0167E289BC85CC3A4",
+      "gitBlob": "19eb61c5cc1eb04dd53155c8561c768ad617b0b9"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningContractTests.cs",
+      "sha256": "0EC21FB769871E5960D2068C934E3EAE4946B4D2D0E8AE3842DC662C8C36D76D",
+      "gitBlob": "c056de75a43ba9bd5602e752d5beb4f23fe704ba"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningCreationTests.cs",
+      "sha256": "F148D128B4B46829A4085994F43C4C3B898ED16247518756A74D4CE1582EC94E",
+      "gitBlob": "851b90aa15b9f1b6ab074b398cb07b1db8e13520"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningDependencyTests.cs",
+      "sha256": "2FF0BC1FF215AC6AAFFCB435EED5221E27A517C412F4A36F7CAC3EAB07C4FF42",
+      "gitBlob": "4f93999243f613ca306ed4401509a4244d7d0c93"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningEvaluation.cs",
+      "sha256": "536228CE220D2F1F1C5D512487497666C77CDE3B40B093A2D8BB04387D458478",
+      "gitBlob": "0b123c70a7704d96061dcb42daed3458862a3684"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningFidelityLiveTests.cs",
+      "sha256": "D01FD8702948C5474327CF4C507A4741963E15FEDB83F124897EC3D817CF6CB3",
+      "gitBlob": "d9c39b02e3df217c3c89a591d1d9a24dff45e6f5"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningLocalRowTests.cs",
+      "sha256": "F18300C3B46E4275BD983180A4F42F8E672F67349B8279D22AE7EFF42E49891D",
+      "gitBlob": "c751bacf2fc43c10bd26b638f13aa1739f7f0340"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningPathTests.cs",
+      "sha256": "A89D800B7D7B124C471ED26979B009E0611273EA51DDBE93742DF3B4E697C478",
+      "gitBlob": "7fbdfad1d8a293c2232bd9d9707288e807665934"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningProjectFieldTests.cs",
+      "sha256": "3BA562556BBA84D1A368512230CB8374A17DE8C920703C6F5E41BDB2E6634B88",
+      "gitBlob": "e70540ea802457fc5232a802f610351c9e4bf8a7"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningQueryTests.cs",
+      "sha256": "20EAEE8E1CACA0839ED8DBA51368B7B03189DF24CC20D5C93998BB3905CC22D4",
+      "gitBlob": "8d3e8ca87c36e39767f89f8ebb2881b59ce73a43"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningReaderTests.cs",
+      "sha256": "5B21266F70C1968F34E9A453328FD2D8CD6557088D94627B7D38AE9D732878BF",
+      "gitBlob": "c0dfc22747ec772a77201f372add6d5700120364"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningResponses.cs",
+      "sha256": "D3A523B725ECB90F804871E3B581B14BFFC11DC5860BB95666FD6070B85C53EF",
+      "gitBlob": "f117b2f61eb38bf2c9e26e47e364c38204550562"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningReviewRegressionTests.cs",
+      "sha256": "14E6B33FB906BEFC6FAFBB3D05DB00A73A8A18E19FCD85B3268662D17E7588BF",
+      "gitBlob": "ab5f0c689719dc8e37ccc17ddbfa4ac4532d5bd6"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningTransitionTests.cs",
+      "sha256": "10B4EC77E21D83B2AF3B36430B8849AC1A95033E950B5FB7177541DBB0CFCFA4",
+      "gitBlob": "126b8a81f1bf2886634c4464fc1b5f0e0956f65e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PlanningWarningPresentationTests.cs",
+      "sha256": "82B2FF5E0C2389B171879D6FC3920BA8AC73346979CD12E1CF1C96272544926D",
+      "gitBlob": "3449ccda32d622bcf01772215a9b7f38b3cfd96e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PmoPlanningTests.cs",
+      "sha256": "511E3DD74408BDA51C79318E11D41A76EAE8D670E14DE98260BD66C3690CC552",
+      "gitBlob": "231ac5c933b7cb6828e88686dec36abbe2713e48"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/PostMergeStabilizationTests.cs",
+      "sha256": "51A0A85AC4D3BAA5128A7638D0DE6796B8A59D93CA967B75CB9FBC62DA5633DE",
+      "gitBlob": "c781338dd5420fb05c6177ec9c219537bec1166d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectIssueIdentityTests.cs",
+      "sha256": "B8D11B0BD886FCD77EB6512259865A9C396D1C2088A300E5A3334F9C74868354",
+      "gitBlob": "9dd2e96d8bc1c09afb234a2aae320b98832c5b8f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectReaderTests.cs",
+      "sha256": "79E737C4A6C858F7D2F178592BC853447F3BC81A24AE718E99921ED7E13923D3",
+      "gitBlob": "60fc242d137befbf4ec8abc9dd4e4d4b8c53cffd"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ProjectReadLiveTests.cs",
+      "sha256": "C349F34545B49E3C760A1CDD41DE3A5E7943CF62C5A6C9D501DE8CF8BD5B766B",
+      "gitBlob": "88be5e8aafdbfac3c248fd0cd1c9d87b1ec59ae3"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ReadApplyCandidatesTests.cs",
+      "sha256": "F347BAF3FF7DD6ED4C1A2686646CC72EEB0D09D81339D4AAA8D7EA14A91C29EA",
+      "gitBlob": "472d4826f2b7cfd0d8d86de47a7e4508c4c64432"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ReconciliationTests.cs",
+      "sha256": "6D246FB3A3B07F880730F7A7F37E64CD3E6C3DFB63B96A0D8DF836F4F9A579B7",
+      "gitBlob": "5cd348a7f13353a6d9520ae2b91e15553ddfde89"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RefreshLiveTests.cs",
+      "sha256": "7B587AD2B0961504DEB9CCF1481E330D7A03B6FB508BB25C081B3AC70384EB29",
+      "gitBlob": "9b6342c93e7c7526200d0fbb1555cd0a48d04122"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RefreshWorkflowTests.cs",
+      "sha256": "351B9DC92603B6E23BD6176AC818DBA3ABF581A8B62EC890F40F698F908BB875",
+      "gitBlob": "b56c76cd76af8ba739179cac4334763d0e03de0d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationResponses.cs",
+      "sha256": "D203CDC8BAE2740A2B8D24731D02DF17F6CE5876E79F3D0690264EA4FB9F228E",
+      "gitBlob": "d0a2d5e0d512d85f7dea0bd0fd4cd31353e8e496"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationStoreTests.cs",
+      "sha256": "0D6207F2795F68534B1A249EE9C2A1ABC5BC43574FB2800E943A6EEEACFD24E2",
+      "gitBlob": "c1c735b5437836d6f3745c2053a8be10661787ac"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RegistrationWorkflowTests.cs",
+      "sha256": "CAE640697B41262F3A9CA72C788673D2C7822FD83131568FA48F960CC3D545DF",
+      "gitBlob": "34cbc673c9b99526371d53ae150ce3fc1424b745"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/RowViewTests.cs",
+      "sha256": "52EE8D9DA0583DFE35B752F283A42E69A9859210C9F55786D6808C4DEB73E9AF",
+      "gitBlob": "2d412c8d140a5ac39c7a4fe8e3e209f13fc70215"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SafeLiveDiagnostic.cs",
+      "sha256": "27CA9AA5255F08D8F5A0CBC8E480572387EF6E054E9DC2E9DAA56701ECAF251D",
+      "gitBlob": "0d7faeca35c92ea6b63d7abefa03c9c529efb285"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SchedulingTests.cs",
+      "sha256": "C165CD9FE0F4D4C6197FF4EC3F1C86813BA1895766D86009A75B9CE588B2793F",
+      "gitBlob": "7a77fee4c3fad54fd97d33376755b738de2f479c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ScopedObservationTests.cs",
+      "sha256": "A84563C21881F11009BB41FFDCA3E84D7167F9DA3FE7612DDF499DB5FC3B684F",
+      "gitBlob": "86cea1424f23372151710d1e12d4a3d625708658"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/ScriptedRunner.cs",
+      "sha256": "B84E3CE3930CD350534F549DC4548F6A45EFC959A7E09797C44C527ED583D455",
+      "gitBlob": "ada6da359934d42cc2db89a68d7049f577c298db"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryPlanningIntegrationTests.cs",
+      "sha256": "89E4A93F31789752E4B29F13308EFC21622A4C4D87F5CFAF9820243D07BD5FBC",
+      "gitBlob": "bba89178813e18168f8ac69d36faa7aa51cf9ba2"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryTests.cs",
+      "sha256": "26B6D93CF34A809077AA2A4931C53E49BFF20003A4E9D18CE0F8278727D8C99A",
+      "gitBlob": "5e9303b7d04833f37fc1afd626fc16c0799390dc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/SummaryWorkload.cs",
+      "sha256": "43F7A0BEF3ADFFD2B34C2C9A410130E0DC8BC4DA287D8536BFF853E4DC813CB4",
+      "gitBlob": "7a3d1c4b56aa419567eea403b5213f422b2c736a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/TargetDiagnosticTests.cs",
+      "sha256": "9597F8E511F912AFF037E2229D0E56DB0563FA7C5502517A8E87032B62FCD720",
+      "gitBlob": "60371a20f19430c13c0d4782aff1e1d8e0f2f089"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/WeeklyApplyRecoveryTests.cs",
+      "sha256": "244BF77687B853B8367796CEBFF5CF335C66698AB505DF7D668DDB5C4113C8EF",
+      "gitBlob": "9a2e98dea58e45c98aec1b133080317ba2380907"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/WeeklyApplyTests.cs",
+      "sha256": "5ECE042AED79EC9BA452784C006FB7389CFCB5A9C89FC4BDC014192068C7134D",
+      "gitBlob": "6cd9e9ca43424ef1f661aabd07ea23b418daab10"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/WeeklyBulkEditingTests.cs",
+      "sha256": "0F1AAE61B96AE60DC1A6AD772778DB7F12FFECC76BC45819412CA77688FC2720",
+      "gitBlob": "fcd2c9dfb91e003b31ea33d2db694b52fc198373"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/WeeklySummaryReportTests.cs",
+      "sha256": "AF5D75CD61AC318536F2F69D354D5038717C9591AA0BA37DBF9F8B6AB222D157",
+      "gitBlob": "f7587c31e55cf524b46e03e1529b1859ce6cfc84"
+    },
+    {
+      "path": "tests/GhProjectsBoards.Tests/WorkAllocationInputTests.cs",
+      "sha256": "58DF7E557A1978A6F8AD33ECD3B7C6E90F2913B29F4D540F95B38AFF03BAB055",
+      "gitBlob": "e1b669293b2d21f86f4c2a0f8710e0c7b6ccaf3c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ActualAllocationHostedTests.cs",
+      "sha256": "53D339AD9864EF5BCD27F4A2C8D9D32BB042632CF366AA8B78F5A67962132860",
+      "gitBlob": "20c771af8a9694df8a165df82f326b5aa25fa0c9"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyIaHostedTests.cs",
+      "sha256": "90F1CE30134B2C0847F11031C289BBE8A5277DC3FEEE571E3D3BFD179BCB7A0D",
+      "gitBlob": "646519d73c9bcdccbb28432be1c1030ddbc73c3e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationEvidence.cs",
+      "sha256": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197",
+      "gitBlob": "c8b74bc965f46aa5bdc22c816b64139e12194929"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationHostedTests.cs",
+      "sha256": "005BD29CF3F66AF3DE2ACB632D9B19B4C5B0BACE2952522E03332DC33C1B2316",
+      "gitBlob": "7d8aaae66a2fe45fac4ecbc096f8a7fc5b4fb32a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyInformationViewTests.cs",
+      "sha256": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70",
+      "gitBlob": "245f2d1ded13cc83b85b0c654d4e6cb387387b9d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyRecoveryHostedTests.cs",
+      "sha256": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5",
+      "gitBlob": "6d7d1b0224bd058befed93e120829def2ab44c7e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ApplyResultsHostedTests.cs",
+      "sha256": "B006F3C91961CAA7A30F5934FB56D6CC4BDA00ACBA0CD86C6FF2AC69B9ADE00A",
+      "gitBlob": "6c52ac8fafc0bcbe4c82916ff8ee1b1e6ea7bd77"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/BoardsDailyProgressHostedTests.cs",
+      "sha256": "19653E208C736902A812100C3D8152420DF6A18D52B1637116179AA265FC62DA",
+      "gitBlob": "6eb0ecca859a052c70719fe3799ca28e4612367b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/BulkEditingHostedTests.cs",
+      "sha256": "86D3CB9D17E216CC1FCE85F130C0FBFF9BC69552A483BA6762D37986644C6F33",
+      "gitBlob": "12ed1e6a8307bb7b6924dc51f64aa0368c16897d"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ColumnHostedTests.cs",
+      "sha256": "4BD851A8355DD92FC0BA6E23C01AE558432349EA2F7856F47E33DA9D3AA96DEE",
+      "gitBlob": "f837633fd42baf02e8848600641adea4d10edd41"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ComboBoxWheelHostedTests.cs",
+      "sha256": "00BC13024A783CE7502E12C87C3D65CFDB93384842314B1978854623E1C2E256",
+      "gitBlob": "51fb38194d1126aaf486ef50ddbe0a4a2738b58f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ConfirmedEditUndoHostedTests.cs",
+      "sha256": "12518F7F44309C11054C5C85D0084A915150DDBF48AA3BD9FBCC74CD40F5F1E1",
+      "gitBlob": "3cc091df3e5ce766859f11edc3dd9fb27a80f287"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ConnectionEntryHostedTests.cs",
+      "sha256": "300DD68BD5E5292D644CF39C2209E3F9F1F6CCB67C61BB2AB0B40A2DD6A8B4B2",
+      "gitBlob": "606decf043a1be2e2ac379b3d1043055baf56abe"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ConnectionLayoutHostedTests.cs",
+      "sha256": "CDB3952E3E39683EA27C8C75ABC753AEDED518AA285ED1A437D7A3182CD2DAF6",
+      "gitBlob": "1353cd7373cacc5f8669121560e7fad626f46a7f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/CreationComparisonHostedTests.cs",
+      "sha256": "1772EDD35F066CB96FFD86F069A039F34B1D7F1892EC00E49F1B5D24C8084622",
+      "gitBlob": "3ac8e5bd7de881a605b1c20687cf60a4130dd561"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/CreationPromotionHostedTests.cs",
+      "sha256": "7075135B77C4A8A68072653EDA1363230FE6287F84B388EF99172546FDB2C0BD",
+      "gitBlob": "36693b316516ea53e4de8b676df22a676ab6d8ac"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/CreationRowPresentationHostedTests.cs",
+      "sha256": "DC6904BDADDE2E5528A548B5F070E75EA5C1F2D46952315281ACEB9BFD07F214",
+      "gitBlob": "2fa381b0a48318327f82b64a46b519c7fc6e1f36"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/DailyProgressHostedTests.cs",
+      "sha256": "AAF772CBAEDC991DDDD894D67D834B45EF43837252C76ECAB7A1235E34323C5F",
+      "gitBlob": "aac18de366d2036b22c9fe3701f490a9cf9d323a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/DailyProjectFieldHostedTests.cs",
+      "sha256": "4BE6A89E1EB115ED252FD55AEB19BE903B3755DA8C56BAA09B58330060EB5179",
+      "gitBlob": "a04923f0d1d53964482b809efcc29fad83854b2b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/DailyProjectFieldIdentityHostedTests.cs",
+      "sha256": "C2814D7515C0C6C315193E688FBD56C5F1F0FE44B07255B6BDB8F2639C2099C2",
+      "gitBlob": "1787c7514535c3f5433a0fd73ba76cfee524b450"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttContextHostedTests.cs",
+      "sha256": "E478B0FA0B690AFB51CC32FF9A5F9135AE28CA51B401313E9603862BB46FC700",
+      "gitBlob": "13f2ac72d92b69fe3eff56660db7e34d256e88d6"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttDependencyHostedTests.cs",
+      "sha256": "B277A6909B0B2659F02CCE973D04F1C3CB63F6157DB54A559BB0DE32C800D40D",
+      "gitBlob": "082d8c740ada798128cf5d850f85349c33373489"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttDependencyWheelHostedTests.cs",
+      "sha256": "0467C106AE373F774D2BB521C5DBE11C45F27175361238F1B9614E36AB547984",
+      "gitBlob": "85d7a3d823b257b0d166d442ac05255a21e631dc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttDragHostedTests.cs",
+      "sha256": "DEC727A8D0EEA82751B3246E8AF59A9084544219F007974F69C72E02DE6BB071",
+      "gitBlob": "7100c8aaf03e4352e4abfb0bcce0fcb0c2c9f128"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttHostedTests.cs",
+      "sha256": "6C77AE32310982BC75888D3D68730F2196163AB5DAA648CB71A88929C953E087",
+      "gitBlob": "30292dba3afd092676a30e89e8f7340781dc01f8"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GanttReasonsHostedTests.cs",
+      "sha256": "4CB2F38724D198FA5FB6D9B2C5CD39FE9602473A2865028335C2A6EA1DD98610",
+      "gitBlob": "9eac1a945c5a07dbd1a92738a7147a042a90114e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj",
+      "sha256": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2",
+      "gitBlob": "0b50388fcefbd40a0d3b26925c71e39fad5cc176"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/HistoricalDispositionHostedTests.cs",
+      "sha256": "2D75ABFBA6B548BC00D41229C4950611E84E4FA0164C4CEB9304619C4886AD44",
+      "gitBlob": "43545b7f40468e4f69f42d542cc6e8724e30024a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/HistoryConnectionHostedTests.cs",
+      "sha256": "7B751F88EE6AAA9750FF7FB1AB7AE20355CB79358FD8F4C43FADB870E8A38180",
+      "gitBlob": "95fc45a84f80cbf548b688ba1eac14bc810b86dc"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/HolidayImportHostedTests.cs",
+      "sha256": "3B9A8FD2038E3D3441343EEFC7A867DCB6E63181E924190684A6A9E6B37CC44D",
+      "gitBlob": "84652b8b5f7fa8cd08a4cdaf33d8a421b4b6094b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs",
+      "sha256": "9F263E22535E43F333A41D480902AF6451E7EC6FD562E215A770CF3AC29D173D",
+      "gitBlob": "6818406c4026f29a0f9be625ccb14a4e3770546e"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/InfrastructureTests.cs",
+      "sha256": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF",
+      "gitBlob": "ec9551e19ca254eb31fc863b0b5f8393a95b72d4"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs",
+      "sha256": "75C5DE1C1062EB7633BC9BFC21C6339B906123C233176895088765574CC2ED86",
+      "gitBlob": "dc9c677f9e755115bf0864bd2248d71733b448da"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PendingInputHostedTests.cs",
+      "sha256": "4A5349CCFBFB51798CF7FC25FA698C8EA3D6723E6BD735C6F1EDFB69C0487F6F",
+      "gitBlob": "abed9c0986befa5ff311b9a660df2acefa8f5f84"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs",
+      "sha256": "68C5A67F19B77EB7444DF629DF03B604C04996D595303A9EE7BFBA3FE7FB88F8",
+      "gitBlob": "0ff41a7e74dd05ab339588df39337bb7dbd49c72"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningNavigationHostedTests.cs",
+      "sha256": "70F1058223DE959093BA50EE99109174DAA255A64F2EF0D611EC7943A5F5F22F",
+      "gitBlob": "1a15931094539a9fbd696f09b5de7fd4fdc4ad12"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningPerformanceHostedTests.cs",
+      "sha256": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE",
+      "gitBlob": "684a7561999cb703762f1e7937ae537be974f573"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs",
+      "sha256": "4440FC665F09A31C292FAB48ED78E82D628F096DA14B42E82CD3382116B69AB6",
+      "gitBlob": "68a81ccfccf030e859531786478cc95989fd7192"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PmoWorkflowHostedTests.cs",
+      "sha256": "A1ECDF770103840B255A67FEE3EE4FF8C01764A0C3078A58C2616E1A49F24E5F",
+      "gitBlob": "08fc450cb02d87ff64907b4e939ab6332ac0b62a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/PostMergeHostedTests.cs",
+      "sha256": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4",
+      "gitBlob": "dacdf3a414d63631cde3b9ea16f44dac691dc2ce"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/Program.cs",
+      "sha256": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2",
+      "gitBlob": "cef1c3939dc0bbfb572356c1625d2fa1defee7d3"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ProjectNavigationHostedTests.cs",
+      "sha256": "23EF56427486F187117AD065AAC831D350330AF02D45DC5B5FFFED2A19CE58C3",
+      "gitBlob": "2e0e2ce3e87bf00d19056e316fdd32b0b19d7f87"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/RowApplyHostedTests.cs",
+      "sha256": "1EC3F2ABCFCC568B779B2E448479634048CECBEC04320B52B4B42F77C753EFDD",
+      "gitBlob": "3f86343fed2c860221fb23ad8f63dfc713351bde"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/RowViewHostedTests.cs",
+      "sha256": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E",
+      "gitBlob": "0fddfd6290fad361cc97e21610c543aed5b1e080"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SelectedDetailsHostedTests.cs",
+      "sha256": "B068E00839656909BC6F0002D371634B923CA65636B61E56E82F8BE6C059B65E",
+      "gitBlob": "6eaedf4a50062b1d0e871b1ed010ce732d361545"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SettingsFocusHostedTests.cs",
+      "sha256": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F",
+      "gitBlob": "ff0973d0cfdb7eed5e7d6e5c48b1bbe65ca4b534"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetContextHostedTests.cs",
+      "sha256": "891245E0E694DAB767DAE1B2DA01A4BFFB1F31A1A47F860B1383DC87FBD79655",
+      "gitBlob": "f44685d01a13d9128b5c0fe9ca64a1b026a2e2d1"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetFocusedScrollHostedTests.cs",
+      "sha256": "FC4CF3C188CB159313F20A9DCCF9BFACFEC904C229F2DFA5ACA549C3C88BB87D",
+      "gitBlob": "750f9b70d8b738ff8c99181bdb840ea1f19a072c"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetHostedTests.cs",
+      "sha256": "DD17CCC5FA695E5B2D03FD12D3A8C78EFDC82EE6488B461F9BF51A625DEEC495",
+      "gitBlob": "b76e9abd44505c39b22cfc0dc250e374331c8540"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetNativeInput.cs",
+      "sha256": "287BCBD9D15B2D55321A009A88AEF0033F37A3E989D71ED0D85A24084B584AAA",
+      "gitBlob": "88bfb27bc6b5ffa050d1d7134f1d42574e18d97a"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetRecyclingHostedTests.cs",
+      "sha256": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9",
+      "gitBlob": "dfa5eaa7f7bb9ccae5d4ed6750ede26d4248487f"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SheetViewportHostedTests.cs",
+      "sha256": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172",
+      "gitBlob": "eb5ed648bf232da7471d5bc942a48d3fbaa324b4"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SummaryCompactHostedTests.cs",
+      "sha256": "12CCB2D7A9980C8D63D04403889272EE210FC3FCC7E3CDFB7C39E03415BFEC42",
+      "gitBlob": "d9febd2820f74691523e164e8504f8dc4ad95e25"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SummaryHostedTests.cs",
+      "sha256": "156B35740348AE32969C1ABBCE6A31BB857BB3FA5894E71581C1E0CF2094EEDE",
+      "gitBlob": "0a5e21e30b02f7bde24e39d9df6c290117bd76b3"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/SummaryPerformanceHostedTests.cs",
+      "sha256": "614F3C1DB9D55B7B552F5D38583525D3BD59D0606445BB1A74A8500AEC8A1C23",
+      "gitBlob": "b981a8642a0d94c9afd3297d081d44e0870f0fea"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/ThemeHostedTests.cs",
+      "sha256": "B71E0EA20E678EC8651BD6A8BBD56D4593A7EB0A9D46207B90E23BB09B1A4627",
+      "gitBlob": "e9bf30677074f8a7c488b2503fc798fc117e0762"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/TrackedContext.cs",
+      "sha256": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014",
+      "gitBlob": "5114a58f07e5b76353dd1524070dd338bb17a023"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/Ui.cs",
+      "sha256": "1D392DAB23E49F5EBB81A14E2E0CB8E7E3C76D7A4F952FAF2ADD74AB03265051",
+      "gitBlob": "83886d135ef2bc75e3eeeedea1a68b216ac95116"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/UndoRowVisibilityHostedTests.cs",
+      "sha256": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974",
+      "gitBlob": "a24a70c11ce99867f701d3eb883a5c71ea5f32cb"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WeeklyApplyHostedTests.cs",
+      "sha256": "4C3923AD125AC4B516F298BAD1149E5CDBA26E3C389838B555F62BF2D4445BBE",
+      "gitBlob": "6eefbdcc5aeb3c1504a503d914926410c336cb46"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WeeklyBulkHostedTests.cs",
+      "sha256": "29012AFE754B0BD974292398B9B95A033A7343C870DA498D4B0CE4929B30F440",
+      "gitBlob": "80d51bd7d384cba11f63c662f0e341fd609b4a63"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WeeklyRecoveryHostedTests.cs",
+      "sha256": "086686C58F9FC85FEB0EE26E8C923683AA809E7D510927A1A55377590EFD2029",
+      "gitBlob": "ede1ab8a10ed48778dcc79cc9b8b68d05aa67b44"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WindowLifetimeHostedTests.cs",
+      "sha256": "43BCE2C2763A8CE2413FBEC8E1D65F219066120603449641972B06005B80C6CC",
+      "gitBlob": "4b457b8a3be8650e97246944555f6042fb4b41bb"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkflowPlanningHostedTests.cs",
+      "sha256": "1B220F060AF78193D1865D7D5ECD7CA035DAED8CD7F709414B209E10E7A9DAF7",
+      "gitBlob": "8d97bc6eeafcc788e22c99ae57185b245e0be6a7"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceApplyPresentationTests.cs",
+      "sha256": "08709A74B8613582414AD935693963DE9BC2E4441C54E1C11EC9D9544DCF04F4",
+      "gitBlob": "6fcfaddc6e44d95b0a0311037ee551b07366f771"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspacePolishHostedTests.cs",
+      "sha256": "0E9F06AD3E16E0D241EEE23837AC406925A4CC5B889676BDAB9158CD561E3120",
+      "gitBlob": "587bdb04608bac650a25e8340cbbe2236e64efbd"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs",
+      "sha256": "8B99EC9AE715B1480DB50EB901639CF7A6A28E76F55833443C37876EF06B9406",
+      "gitBlob": "685b27f92148a4af1e7d1a987f7446f6c16e2bf0"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceStatusHostedTests.cs",
+      "sha256": "57F31D012C450864BBA47D11926850D822C298BB51917EE379562322A205FEF3",
+      "gitBlob": "1ba0c871f09d9c343b3cd2197dc4757ff274896b"
+    },
+    {
+      "path": "tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceStatusReviewHostedTests.cs",
+      "sha256": "5ADEC1A4CD8B37C7634E088B05D5217044B62014422F58CD58A5871C462D6B4A",
+      "gitBlob": "35475d9589bfd4adebfc7fcec333bd0b3e20a8ad"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/common-harness-files.json",
+      "sha256": "11A5E5D804C570F4A6059037CFECDE77B613286FA3EADEAC04A2FB3FA9A07D07",
+      "gitBlob": "1e1ae8a8741b4a7809576303d892e7871fbe6c1b"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/diagnostic-readback.json",
+      "sha256": "1CFE7B7384E5C3995404692B3519A1AFDA06199E4E9B0B2C3510D5A534492E4B",
+      "gitBlob": "934d428bdd8fa22f5023c5e5954e29244731d3ba"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/diagnostic-stages.json",
+      "sha256": "A3A7E8843736CEC7A071548D1CAEB1CF36622D5B3B74854B4A18F9AEBFAE36DC",
+      "gitBlob": "60b75a44e6f0fc3f484d7cf715a2446ded91f6aa"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/environment.json",
+      "sha256": "5157DED2953C094E9089D881BE2D21B84ACCF34E2323FF7694CCD54AB0F6B424",
+      "gitBlob": "3bd5bd421c3cfef8696aaec805cd3f15ffe5c655"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/private-original-hashes.json",
+      "sha256": "52DD32CF7FAC9E48865D1974FABC1BA7C05F509D88A5D20A4487593B27301FDF",
+      "gitBlob": "a7502e285f3533998ea8c632471a2703c2481717"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/process-calibration.json",
+      "sha256": "7E5A9F0F66A77C22B607052C0B5B9371DED584B13F1E78883814CE2D64235FB3",
+      "gitBlob": "8d04005b19814a7f50fcf92597aa9ed0e743894e"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/recovered-archives.json",
+      "sha256": "76CBF3A0E99D9B4A7DA2AA058C9E4B910C413FB2EF9F4CE994882C390E144D1A",
+      "gitBlob": "0ddbeb41e754a32ce955071d57df942c607c38c9"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/sample-outcomes.json",
+      "sha256": "9BB4928996F1EF68FE59F63676BCD5283BE76F1149D291AD773B04673DCC1E32",
+      "gitBlob": "5a2cb0bed6fbddfe2f84d859e617827f3fab5824"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/samples.json",
+      "sha256": "445C7906F812327C90187D6269D9D27F9134604E7C2A5E2E1BC0C88E8996B893",
+      "gitBlob": "b65d769a6ee3237333be68123bd73f0af135607d"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/source-binary-map.json",
+      "sha256": "CF59C0B13BA5CF51F25E53122471E60AB2AA03EBAC4D0AB5E61D95C1F87FF288",
+      "gitBlob": "3fda43f4729b5c3c9a8afeaf89afe1d2eaa45743"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/summary.json",
+      "sha256": "3A515642C21CDF5D508AED760645760674CC4A54E838096BCE159C4EE5771867",
+      "gitBlob": "71967827f1ad9cd51fd5c608177eb68667dc0b1f"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/test-ledger.json",
+      "sha256": "276B1E7EAF78BAFE7D4C923569A0677007ED287EEA016B15611E72F37105BB14",
+      "gitBlob": "0c5b7eee6884f1c7bf119271708e34ef3db6a07b"
+    },
+    {
+      "path": "tests/performance-evidence/issue51/2026-09-19-candidate/ui-evidence.json",
+      "sha256": "A19C18615A77FFBA9B1A9BECBAF389B3553A853ECCBD0A243F2A1FBC735EF926",
+      "gitBlob": "d021db6b9c13095dc1c2f09358d2a9bac7f0b922"
+    }
+  ],
+  "binaries": [
+    {
+      "path": "src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.exe",
+      "bytes": 289792,
+      "sha256": "7FE98F88452CA8C0CE790B09AED87F78891D799C52C406D7747685F54549227A"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.dll",
+      "bytes": 971776,
+      "sha256": "7F0928CEFA84916D8440FB28A501139E83162A4EF81E121222E81AC73767C9F9"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.Core.dll",
+      "bytes": 997376,
+      "sha256": "56B478B63C841BA05A86BF3CA7BA4670762F7D30B4DDDEB728290F2D7CC4B85D"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.UI.Xaml.dll",
+      "bytes": 15083832,
+      "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C"
+    },
+    {
+      "path": "src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.UI.Xaml.Controls.dll",
+      "bytes": 6592312,
+      "sha256": "6E41078A44049D0AC8B50DFF7EF220CACC7384623B95331BB627620C7749E568"
+    }
+  ]
+}

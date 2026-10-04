@@ -70,6 +70,10 @@ public sealed class SummaryHostedTests
             var negativeText = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("超過"));
             var neutralText = Ui.Tree(neutral).OfType<TextBlock>().Single(t => t.Text.Contains("余裕"));
             Assert.That(negativeText.Text, Does.Contain("⚠ 超過 2"));
+            var highlight = Ui.Tree(overload).OfType<Border>().SingleOrDefault(b =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "SummaryHeadroomHighlight");
+            Assert.That(highlight, Is.Not.Null, "Known overload has a visible background beside its warning text.");
+            Assert.That(((Microsoft.UI.Xaml.Media.SolidColorBrush)highlight!.Background).Color.A, Is.GreaterThan(0));
             Assert.That(((Microsoft.UI.Xaml.Media.SolidColorBrush)negativeText.Foreground).Color,
                 Is.Not.EqualTo(((Microsoft.UI.Xaml.Media.SolidColorBrush)neutralText.Foreground).Color));
             var person = (PersonSummary)overload.DataContext;
@@ -77,12 +81,17 @@ public sealed class SummaryHostedTests
             overload.UpdateLayout();
             var missing = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("比較未完"));
             Assert.That(missing.Text, Is.EqualTo("△ 比較未完"));
+            Assert.That(Ui.Tree(overload).OfType<Border>().Any(b =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "SummaryHeadroomHighlight"), Is.False,
+                "A recycled unknown row must not retain known-overload emphasis.");
             Assert.That(((Microsoft.UI.Xaml.Media.SolidColorBrush)missing.Foreground).Color,
                 Is.Not.EqualTo(((Microsoft.UI.Xaml.Media.SolidColorBrush)negativeText.Foreground).Color));
             overload.DataContext = person with { Allowance = person.Forecast.Hours };
             overload.UpdateLayout();
             var zero = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("余裕"));
             Assert.That(zero.Text, Is.EqualTo("余裕 0"));
+            Assert.That(Ui.Tree(overload).OfType<Border>().Any(b =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "SummaryHeadroomHighlight"), Is.False);
         });
     }
 

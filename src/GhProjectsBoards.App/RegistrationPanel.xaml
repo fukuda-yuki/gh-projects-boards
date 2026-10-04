@@ -36,14 +36,17 @@
                                        AutomationProperties.AutomationId="NavigationFilterNotice" AutomationProperties.LiveSetting="Polite"/>
                         </StackPanel>
                         <TreeView x:Name="Navigation" Grid.Row="3" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
-                        <Button x:Name="Add" Grid.Row="4" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
+                        <StackPanel Grid.Row="4" Spacing="4">
+                            <Button x:Name="Add" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
+                            <Button x:Name="StartGuide" Content="開始ガイド" HorizontalAlignment="Stretch" Click="ShowGettingStarted" AutomationProperties.AutomationId="StartGuideButton"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
             </SplitView.Pane>
             <Grid>
                 <ScrollViewer x:Name="DiscoveryForm" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Spacing="12" Padding="20,16" MaxWidth="760" HorizontalAlignment="Left">
-                        <Button Content="ワークスペースへ戻る" Click="BackToPreview" AutomationProperties.AutomationId="CloseProjectDiscoveryButton"/>
+                        <Button x:Name="DiscoveryBack" Content="ワークスペースへ戻る" Click="BackToPreview" AutomationProperties.AutomationId="CloseProjectDiscoveryButton"/>
                         <TextBlock Text="Projectを追加" Style="{StaticResource TitleTextBlockStyle}"/>
                         <TextBlock x:Name="DiscoveryConnectionHint" Text="接続が必要です。接続設定を確認して、この登録作業へ戻ってください。" TextWrapping="Wrap"/>
                         <Button x:Name="DiscoveryConnection" Content="接続設定" Click="RequestConnection" AutomationProperties.AutomationId="RegistrationConnectionSettings"/>
@@ -139,6 +142,31 @@
                         <ListView.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"/></DataTemplate></ListView.ItemTemplate>
                     </ListView>
                 </Grid>
+                <ScrollViewer x:Name="GettingStarted" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled"
+                              AutomationProperties.AutomationId="GettingStartedGuide">
+                    <StackPanel MaxWidth="640" HorizontalAlignment="Left" Padding="24" Spacing="20">
+                        <TextBlock Text="開始ガイド" Style="{StaticResource TitleTextBlockStyle}"/>
+                        <TextBlock Text="GitHubに接続し、最初のProjectを開きます。" TextWrapping="Wrap"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="1. 接続を確認" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock x:Name="GuideConnectionStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="GuideConnectionStatus" AutomationProperties.LiveSetting="Polite"/>
+                            <TextBlock Text="接続設定でGitHubホストとgh.exeを確認します。ログインが必要なら「ログイン・権限追加の手順」のコマンドをPowerShellで実行し、再確認してください。" TextWrapping="Wrap"/>
+                            <Button x:Name="GuideConnection" Content="接続を確認" Click="RequestConnection" AutomationProperties.AutomationId="GuideConnectionButton"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="2. Projectを登録" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock x:Name="GuideProjectStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="GuideProjectStatus" AutomationProperties.LiveSetting="Polite"/>
+                            <TextBlock Text="既存のGitHub ProjectのURLを指定し、アカウントとProjectを確認して登録します。" TextWrapping="Wrap"/>
+                            <Button x:Name="GuideRegister" Content="Projectを登録" Click="RegisterFromGuide" AutomationProperties.AutomationId="GuideRegisterButton"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="3. Boardsで作業を始める" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="登録後はローカルで編集できます。GitHubへの反映は、変更内容を確認してから行います。" TextWrapping="Wrap"/>
+                            <Button x:Name="GuideOpenBoard" Content="Boardsで開く" Style="{StaticResource AccentButtonStyle}" Click="OpenBoardFromGuide" AutomationProperties.AutomationId="GuideOpenBoardButton"/>
+                        </StackPanel>
+                        <Button Content="後で" Click="DismissGettingStarted" AutomationProperties.AutomationId="GuideLaterButton"/>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
         </SplitView>
         <Border x:Name="WorkspaceStatusBar" Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">

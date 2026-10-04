@@ -3,7 +3,7 @@ param(
     [string]$DataRoot,
     [switch]$Resume,
     [switch]$PrepareOnly,
-    [ValidateRange(1, 1000)][int]$ItemCount = 101,
+    [ValidateRange(1, 5000)][int]$ItemCount = 101,
     [ValidateRange(1, 12)][int]$SelectFieldCount = 1,
     [switch]$BulkScenario
 )

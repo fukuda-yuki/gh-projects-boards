@@ -118,6 +118,14 @@ internal sealed partial class EditingGrid
                     });
                     UpdateGantt();
                 };
+                gantt.DependencyEdited += edit => {
+                    Run(() => {
+                        if (!IsLoaded || !ShowingGantt || !CanRefresh || ganttWorkspace != session.Workspace)
+                            throw new InvalidOperationException("作業が変わりました。現在の依存関係を確認してください。");
+                        session.Workspace.CommitGanttDependency(registration, edit);
+                    });
+                    UpdateGantt();
+                };
                 gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(); };
             }
             gantt.Visibility = Visibility.Visible; UpdateGantt(true, id);

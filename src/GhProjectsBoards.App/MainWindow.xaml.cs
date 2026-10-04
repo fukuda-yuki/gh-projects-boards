@@ -41,7 +41,11 @@ public sealed partial class MainWindow : Window
     }
     private async Task RestoreAsync()
     {
-        try { await workspace!.RestoreAsync(); }
+        try
+        {
+            await workspace!.RestoreAsync();
+            if (!closingRequested) ProjectsPage.OfferGettingStarted();
+        }
         catch (Exception)
         {
             ConnectionPage.ShowProblem("保存データを読み込めません。保存先を確認してください。自動削除はしていません。");
