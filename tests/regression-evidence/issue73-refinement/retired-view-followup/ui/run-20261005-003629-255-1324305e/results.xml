@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="375" result="Failed" start-time="2026-10-04T15:36:29.9843491Z" end-time="2026-10-04T15:36:32.4150193Z" duration="2.430651" total="5" initiated="5" passed="3" failed="2" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="5" random-seed="1199378021">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ 'PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts|FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork|FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft|InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261005-003629-255-1324305e\results.xml]]></command-line>
+  <filter>
+    <test re="1">PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts|FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork|FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft|InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation</test>
+  </filter>
+  <test-suite type="Assembly" id="1476" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="375" result="Failed" site="Child" start-time="2026-10-04T15:36:29.9843491Z" end-time="2026-10-04T15:36:32.4150193Z" duration="2.430651" total="5" initiated="5" passed="3" failed="2" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="5">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="2792" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1477" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="375" result="Failed" site="Child" start-time="2026-10-04T15:36:29.9869427Z" end-time="2026-10-04T15:36:32.4150163Z" duration="2.428073" total="5" initiated="5" passed="3" failed="2" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="5">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1478" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="375" result="Failed" site="Child" start-time="2026-10-04T15:36:29.9871070Z" end-time="2026-10-04T15:36:32.4150142Z" duration="2.427907" total="5" initiated="5" passed="3" failed="2" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="5">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1479" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="375" result="Failed" site="Child" start-time="2026-10-04T15:36:29.9871177Z" end-time="2026-10-04T15:36:32.4150114Z" duration="2.427894" total="5" initiated="5" passed="3" failed="2" warnings="0" completed="5" skipped="0" inconclusive="0" asserts="5">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1102" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="106" result="Failed" site="Child" start-time="2026-10-04T15:36:29.9871193Z" end-time="2026-10-04T15:36:31.5009099Z" duration="1.513791" total="4" initiated="4" passed="2" failed="2" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1223" name="FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" methodname="FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="794274294" result="Failed" start-time="2026-10-04T15:36:29.9881973Z" end-time="2026-10-04T15:36:30.8179187Z" duration="0.829798" asserts="0">
+              <failure>
+                <message><![CDATA[  Assert.That(Work.Buffer(Work.Open(selected)[0].Cells[0]), Is.EqualTo("retain this pending title"))
+  Expected: "retain this pending title"
+  But was:  null
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c__DisplayClass104_0.<FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork>b__3() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkspaceShellHostedTests.cs:line 99
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WorkspaceShellHostedTests.cs:line 94
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-0e85a295-4b63-4984-adbe-2a552e9e50e9; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1222" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-04T15:36:30.8189145Z" end-time="2026-10-04T15:36:31.3440394Z" duration="0.525125" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <test-case id="1220" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Overlay)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Overlay)" methodname="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="532896416" result="Passed" start-time="2026-10-04T15:36:30.8190242Z" end-time="2026-10-04T15:36:31.0849924Z" duration="0.265969" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-d77e43a1-aea6-4eb7-8b03-96938a824681; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+              </test-case>
+              <test-case id="1221" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Inline)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Inline)" methodname="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="137337656" result="Passed" start-time="2026-10-04T15:36:31.0850255Z" end-time="2026-10-04T15:36:31.3431404Z" duration="0.258115" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-053b1c7d-1224-4d9a-82e8-31abdb0dedd4; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1181" name="PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" methodname="PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1362906126" result="Failed" label="Error" start-time="2026-10-04T15:36:31.3442420Z" end-time="2026-10-04T15:36:31.5008224Z" duration="0.156581" asserts="2">
+              <failure>
+                <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Find[T](String id, DependencyObject root) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 92
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Click(String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 128
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c.<PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts>b__68_0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HostedTests.cs:line 194
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HostedTests.cs:line 194
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+              </failure>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-0eada845-0a56-48bf-8b53-00d4e2951437; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+              <assertions>
+                <assertion result="Error">
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Find[T](String id, DependencyObject root) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 92
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Click(String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 128
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.<>c.<PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts>b__68_0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HostedTests.cs:line 194
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.HostedTests.PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\HostedTests.cs:line 194
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1000" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="89" result="Passed" start-time="2026-10-04T15:36:31.5009288Z" end-time="2026-10-04T15:36:32.4150040Z" duration="0.914075" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="3">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1101" name="FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" methodname="FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="13061235" result="Passed" start-time="2026-10-04T15:36:31.5010113Z" end-time="2026-10-04T15:36:32.4149691Z" duration="0.913958" asserts="3">
+              <properties>
+                <property name="Category" value="WorkspaceStatus" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

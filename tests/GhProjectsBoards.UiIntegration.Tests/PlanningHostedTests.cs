@@ -131,20 +131,28 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => FocusCell("GridCell0_2"));
         await Ui.ClickCommand("GridPlanning");
         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
-        await Ui.Run(async () => {
-            var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
-            bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
-                t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
+        StackPanel editor = null!;
+        bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
+            t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
+        await Ui.Run(() => {
+            editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
             Assert.That(HasWarning(), Is.True, "Fetched dates without a time need an actionable explanation.");
-            if (correction == "auto")
-            {
-                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0;
+        });
+        if (correction == "auto")
+        {
+            await Ui.Run(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0);
+            // Wait for SelectionChanged to update the rendered warning.
+            await Ui.Until(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex == 0 && !HasWarning());
+            await Ui.Run(() => {
                 Assert.That(HasWarning(), Is.False, "Automatic scheduling does not require manually completing fetched dates.");
                 Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 1;
-                Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates.");
-            }
-            else
-            {
+            });
+            await Ui.Until(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex == 1 && HasWarning());
+            await Ui.Run(() => Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates."));
+        }
+        else
+        {
+            await Ui.Run(async () => {
                 Ui.Find<TextBox>("ScheduleStart", editor).Text = correction == "minute" ? "2026-10-05 12:07" : "";
                 Assert.That(HasWarning(), Is.True, "The other endpoint still has no time.");
                 Ui.Find<TextBox>("ScheduleFinish", editor).Text = correction == "minute" ? "2026-10-05 12:08" : "";
@@ -152,7 +160,9 @@ public sealed partial class PlanningHostedTests
                 await ApplyInformationEvidence.Capture(editor, "schedule-warning-" + correction);
                 Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-06";
                 Assert.That(HasWarning(), Is.True, "A newly incomplete date needs the warning again.");
-            }
+            });
+        }
+        await Ui.Run(() => {
             Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Preview and input do not adopt a task schedule.");
             Assert.That(work.Journal, Is.Empty, "Correction must not publish anything.");
             Ui.Click(Ui.Find<Button>("ScheduleClose", editor));

@@ -83,14 +83,27 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
         await Ui.Mount(grid); await OpenQuickAllocation();
         var before = JsonSerializer.Serialize(work.Snapshot());
+        StackPanel allocationEditor = null!;
         await Ui.Run(() => {
-            var editor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
+            var editor = allocationEditor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
             Ui.Find<TextBox>("ActualReportHours-U1", editor).Text = "5";
             Ui.Find<TextBox>("ActualReportRemaining-U1", editor).Text = "1";
             Ui.Find<TextBox>("ActualReportRemaining-U2", editor).Text = "1.5";
             Ui.Find<TextBox>("ActualReportsRemainingTotal", editor).Text = "3";
         });
-        await Ui.Until(() => Ui.Find<TextBlock>("ActualReportsTotal", Ui.Popup<StackPanel>("ActualReportsEditor")).Text.Contains("未配分 0.5"));
+        var reportedMissingPopup = false;
+        await Ui.Until(() => {
+            if (Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor)
+                return Ui.Find<TextBlock>("ActualReportsTotal", editor).Text.Contains("未配分 0.5");
+            if (!reportedMissingPopup)
+            {
+                reportedMissingPopup = true;
+                var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as DependencyObject;
+                TestContext.Out.WriteLine($"Allocation popup absent after editing: previousLoaded={allocationEditor.IsLoaded}, "
+                    + $"focusedType={focused?.GetType().Name}, focusedId={(focused is null ? null : Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(focused))}");
+            }
+            return false;
+        });
         await Ui.Run(() => {
             var editor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
             Assert.That(Ui.Find<TextBlock>("ActualReportsTotal", editor).Text, Does.Contain("未配分 0.5"));

@@ -1,0 +1,43 @@
+{
+  "phase": "returned-project",
+  "expectedIssue": null,
+  "expectedItem": null,
+  "captureTicks": 943394963356,
+  "observationStart": 943395381687,
+  "observationEnd": 943396265016,
+  "utc": "2026-10-04T15:42:19.713445+00:00",
+  "processWorkingSetBytes": 474955776,
+  "processPrivateBytes": 382623744,
+  "bounds": {
+    "Location": {
+      "IsEmpty": false,
+      "X": 24,
+      "Y": 24
+    },
+    "Size": {
+      "IsEmpty": false,
+      "Width": 1400,
+      "Height": 900
+    },
+    "X": 24,
+    "Y": 24,
+    "Width": 1400,
+    "Height": 900,
+    "Left": 24,
+    "Top": 24,
+    "Right": 1424,
+    "Bottom": 924,
+    "IsEmpty": false
+  },
+  "dpi": 120,
+  "observed": {
+    "reportedFocusId": null,
+    "reportedFocusName": "P1",
+    "reportedFocusIsObservationOnly": true,
+    "selection": "\u30BF\u30A4\u30C8\u30EB\uFF1A1\u884C\u30FB1\u30BB\u30EB",
+    "horizontal": 0,
+    "vertical": 0,
+    "firstCell": "\u884C 1 \u5217 1 \u30BF\u30A4\u30C8\u30EB Issue 1 ",
+    "lastCell": null
+  }
+}

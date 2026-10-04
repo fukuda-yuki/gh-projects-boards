@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "runId": "retired-view-flush-loaded-1000x12-b",
+  "phase": "diagnostic-completed",
+  "startedUtc": "2026-10-04T15:41:35.4875524+00:00",
+  "runnerPid": 7296,
+  "worktree": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards",
+  "rows": 1000,
+  "selectFields": 12,
+  "totalColumns": 14,
+  "app": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-dda0b6e2a63b478b9233a0eae3b8b8c3\\app\\GhProjectsBoards.App.exe",
+  "immutableOverride": true,
+  "declaredAppSourceRevision": "e20d9b5562ec2e7097e4581eb21f22ec2e229560",
+  "sourceClaim": "SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.",
+  "noBuild": true,
+  "bulkPerformance": false,
+  "bulkCorrectness": true,
+  "traceRequested": true,
+  "physicalImeRequested": false,
+  "timedFramesRequested": true,
+  "buildExitCode": null,
+  "testExitCode": 0,
+  "commands": [
+    {
+      "arguments": [
+        "build",
+        "GhProjectsBoards.sln",
+        "--configuration",
+        "Release"
+      ],
+      "executable": "dotnet",
+      "selected": false
+    },
+    {
+      "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\scripts\\Start-EditingCheck.ps1",
+      "arguments": [
+        "-DataRoot",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\data",
+        "-ItemCount",
+        "1000",
+        "-SelectFieldCount",
+        "12",
+        "-PrepareOnly"
+      ]
+    },
+    {
+      "executable": "dotnet",
+      "arguments": [
+        "test",
+        "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+        "--configuration",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName=GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests.CachedSheetFocusedNativeScrollAndLocalActions",
+        "--logger",
+        "trx;LogFileName=sheet-diagnostic.trx",
+        "--results-directory",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b",
+        "--",
+        "NUnit.NumberOfTestWorkers=0",
+        "RunConfiguration.TestSessionTimeout=600000"
+      ]
+    }
+  ],
+  "boundary": "Ordinary cached local-sheet diagnostic only. Driver waits and UIA calls are not isolated app latency. Pixels, app traces and durable state need separate review; no speedup or human acceptance claim.",
+  "seed": {
+    "bytes": 2148,
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\data\\diagnostics\\editing-seed.json",
+    "sha256": "665895A1AC253A80CEEDCF67F4F28E4C19B3556BD48A9C16FA69B1A742F83627"
+  },
+  "testStartedUtc": "2026-10-04T15:41:37.8796368+00:00",
+  "testFinishedUtc": "2026-10-04T15:42:27.0959857+00:00",
+  "result": {
+    "total": 1,
+    "failed": 0,
+    "cases": [
+      {
+        "name": "CachedSheetFocusedNativeScrollAndLocalActions",
+        "duration": "00:00:46.6006680",
+        "outcome": "Passed"
+      }
+    ],
+    "skipped": 0,
+    "trx": {
+      "bytes": 3894,
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\sheet-diagnostic.trx",
+      "sha256": "869E9CD3363F67F889923C429B4C23CEB8244630457E1529CA88D7E4DE5E7D08"
+    },
+    "passed": 1,
+    "executed": 1
+  },
+  "finishedUtc": "2026-10-04T15:42:27.1336549+00:00",
+  "appLifetime": {
+    "pid": 33196,
+    "completed": true,
+    "closeRequested": true,
+    "normal": true,
+    "forced": false,
+    "exitCode": 0
+  },
+  "trace": {
+    "available": true,
+    "requested": true,
+    "file": {
+      "bytes": 1640604,
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\app-trace.jsonl",
+      "sha256": "7BBF80E56995E5C57EAF95E40E053DDF7CEFBCDB7592C07F8E38ADFEAB894C73"
+    }
+  },
+  "omissions": []
+}

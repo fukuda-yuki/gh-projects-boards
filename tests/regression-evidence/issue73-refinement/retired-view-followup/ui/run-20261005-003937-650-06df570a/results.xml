@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="375" result="Passed" start-time="2026-10-04T15:39:50.0508149Z" end-time="2026-10-04T15:39:52.6684118Z" duration="2.617526" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="9" random-seed="321465176">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == GridLifetime or test =~ 'PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts|FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork|FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft|InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261005-003937-650-06df570a\results.xml]]></command-line>
+  <filter>
+    <or>
+      <cat>GridLifetime</cat>
+      <test re="1">PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts|FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork|FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft|InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1476" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:39:50.0508149Z" end-time="2026-10-04T15:39:52.6684118Z" duration="2.617526" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="9">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="8024" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1477" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:39:50.0530988Z" end-time="2026-10-04T15:39:52.6684084Z" duration="2.615309" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="9">
+      <test-suite type="TestSuite" id="1478" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:39:50.0532556Z" end-time="2026-10-04T15:39:52.6684037Z" duration="2.615148" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="9">
+        <test-suite type="TestSuite" id="1479" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:39:50.0532632Z" end-time="2026-10-04T15:39:52.6684016Z" duration="2.615139" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="9">
+          <test-suite type="TestFixture" id="1330" name="GridLifetimeHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-04T15:39:50.0532643Z" end-time="2026-10-04T15:39:50.6219514Z" duration="0.568688" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1331" name="UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" fullname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests.UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" methodname="UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" classname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" runstate="Runnable" seed="1415631350" result="Passed" start-time="2026-10-04T15:39:50.0545058Z" end-time="2026-10-04T15:39:50.6205159Z" duration="0.566045" asserts="4">
+              <properties>
+                <property name="Category" value="GridLifetime" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-grid-lifetime-76446500fd234af29244c505a93b69f9
+Native replacement events: previous-unloaded -> replacement-loaded
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1102" name="HostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="106" result="Passed" start-time="2026-10-04T15:39:50.6221171Z" end-time="2026-10-04T15:39:51.9080467Z" duration="1.285929" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1223" name="FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" methodname="FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="937121046" result="Passed" start-time="2026-10-04T15:39:50.6221999Z" end-time="2026-10-04T15:39:51.0189288Z" duration="0.396729" asserts="0">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-ffdb6cb8-38eb-4230-ac40-91f77a44fcc2; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1222" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-04T15:39:51.0189536Z" end-time="2026-10-04T15:39:51.6310407Z" duration="0.612087" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="0">
+              <test-case id="1220" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Overlay)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Overlay)" methodname="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1155315574" result="Passed" start-time="2026-10-04T15:39:51.0191188Z" end-time="2026-10-04T15:39:51.3113048Z" duration="0.292186" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-658eb25a-8348-4995-af95-21e65b68cb41; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+              </test-case>
+              <test-case id="1221" name="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Inline)" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation(Inline)" methodname="InvokingCachedProjectRevealsWorkspaceAndClosesOnlyOverlayNavigation" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1902466167" result="Passed" start-time="2026-10-04T15:39:51.3113286Z" end-time="2026-10-04T15:39:51.6309670Z" duration="0.319639" asserts="0">
+                <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-4fac8af4-82dd-4b41-99a0-8dfab1ecfbff; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-case id="1181" name="PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" fullname="GhProjectsBoards.UiIntegration.Tests.HostedTests.PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" methodname="PanelUnloadReleasesWorkspaceRefreshGuardAndRemounts" classname="GhProjectsBoards.UiIntegration.Tests.HostedTests" runstate="Runnable" seed="1402516390" result="Passed" start-time="2026-10-04T15:39:51.6310535Z" end-time="2026-10-04T15:39:51.9080101Z" duration="0.276957" asserts="2">
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-apply-b6e614f5-4d00-47cd-b7f0-a2bf32d799ff; production: C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.dll; MVID: 862f13b0-a0fa-4912-8cf5-1da62d9c2952
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1000" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="89" result="Passed" start-time="2026-10-04T15:39:51.9080606Z" end-time="2026-10-04T15:39:52.6683938Z" duration="0.760333" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="3">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1101" name="FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" methodname="FailedLocalSaveRemainsVisibleAndGanttRetryPersistsTheSameDraft" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="807150357" result="Passed" start-time="2026-10-04T15:39:51.9081360Z" end-time="2026-10-04T15:39:52.6683607Z" duration="0.760225" asserts="3">
+              <properties>
+                <property name="Category" value="WorkspaceStatus" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

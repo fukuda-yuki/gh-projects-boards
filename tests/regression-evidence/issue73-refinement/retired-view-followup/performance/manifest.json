@@ -1,0 +1,314 @@
+[
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\run.json",
+    "copy": "before\\run.json",
+    "sha256": "1b1d16aabb0cbed7fbdd7eb4ea3108a4490e91f5cba4a43eecb80ec2d04e3a02",
+    "bytes": 4121
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\sheet-diagnostic.trx",
+    "copy": "before\\sheet-diagnostic.trx",
+    "sha256": "fc66e079b6fddf938cc2a2488bfc378f9fcfc651bbd76c62b3a2defd6fa7cfa9",
+    "bytes": 3884
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\source-environment.json",
+    "copy": "before\\source-environment.json",
+    "sha256": "cae69daa0befc0adeecf401bbc0bf47f98b137032c067e6ecb130adb7910d6d7",
+    "bytes": 358962
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\source.patch",
+    "copy": "before\\source.patch",
+    "sha256": "408d0cea0614e7b362cd6f07b1afbae98870f24aa35f729d5a7779d8959b80ea",
+    "bytes": 147454
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\binaries.json",
+    "copy": "before\\binaries.json",
+    "sha256": "cde9f0541e5ec57680dea5dbcf97247035c3f2b09b87d9256c23394b98773a90",
+    "bytes": 3351
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\lifetime.json",
+    "copy": "before\\lifetime.json",
+    "sha256": "4b8213c00353b92ebbfeccd1b623487519eead68419619b547ce2dc869e33c6e",
+    "bytes": 126
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\plan.json",
+    "copy": "before\\plan.json",
+    "sha256": "f462692a45912ebbe395a4c4ba67d0d92b16bf7b8fd61011a993ffc131f9b240",
+    "bytes": 2266
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\driver.jsonl",
+    "copy": "before\\driver.jsonl",
+    "sha256": "65d70e5ae07f55901f498ae190ecca6a40de7d26380e005e770520f03716ab3f",
+    "bytes": 87223
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\app-trace.jsonl",
+    "copy": "before\\app-trace.jsonl",
+    "sha256": "8deed653e963c90556f6ae0b29111a962d147cb3fd52692dd7fcfc2996324d9b",
+    "bytes": 1642891
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\16-returned-project.png",
+    "copy": "before\\16-returned-project.png",
+    "sha256": "e5b0fe9bca9de3659af2f3b4e00458f68193cece8eca6603cd30f5e66fde34a7",
+    "bytes": 78387
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\16-returned-project.json",
+    "copy": "before\\16-returned-project.json",
+    "sha256": "2984622841bb3dd1e369af324f33023446c077b38a178278cd5995721c684af8",
+    "bytes": 1033
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\17-rapid-navigation-input.png",
+    "copy": "before\\17-rapid-navigation-input.png",
+    "sha256": "165151ae59367a72385fcde849aafcd4d5746404dab8a6ddca2cb9ecf8972b3e",
+    "bytes": 101129
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\refine-candidate-final-1000x12\\observations\\17-rapid-navigation-input.json",
+    "copy": "before\\17-rapid-navigation-input.json",
+    "sha256": "8848181957f17e177e7ff1784f3374731688def211493d9178f360b958096df0",
+    "bytes": 1102
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\run.json",
+    "copy": "after\\run.json",
+    "sha256": "523d67f7f72dde5466749dee10442f211d850e53c521d7c77cb539b08f47ff8a",
+    "bytes": 4150
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\sheet-diagnostic.trx",
+    "copy": "after\\sheet-diagnostic.trx",
+    "sha256": "869e9cd3363f67f889923c429b4c23ceb8244630457e1529ca88d7e4de5e7d08",
+    "bytes": 3894
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\source-environment.json",
+    "copy": "after\\source-environment.json",
+    "sha256": "b18aacfb4af1e23fc17fb5f7418081457a57c320cde6fa6bfdc6996053197b59",
+    "bytes": 388023
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\source.patch",
+    "copy": "after\\source.patch",
+    "sha256": "d10ba709b843e9920a3aa523a5af89c067d071103faf64e0634bca5021a78b89",
+    "bytes": 12405
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\binaries.json",
+    "copy": "after\\binaries.json",
+    "sha256": "4461613f15b570bca55c5691a0d9e6d82b4fe9e511b0f53c74c587eb8877b049",
+    "bytes": 3351
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\lifetime.json",
+    "copy": "after\\lifetime.json",
+    "sha256": "2a00f3d5a24b86eca8eb61068766d017d9cd3cab326775fcc576bcbf17649d3a",
+    "bytes": 126
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\plan.json",
+    "copy": "after\\plan.json",
+    "sha256": "b2b6141229aa3d66aed80aa6ae0e180ce7c3e66a0b9e1887b10340eba5cc33ce",
+    "bytes": 2276
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\driver.jsonl",
+    "copy": "after\\driver.jsonl",
+    "sha256": "a15efb3643c5e8941ae7cb7903dba31ac6a6a837e83873b0e521b7d9ad12566b",
+    "bytes": 87168
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\app-trace.jsonl",
+    "copy": "after\\app-trace.jsonl",
+    "sha256": "7bbf80e56995e5c57eaf95e40e053ddf7cefbcdb7592c07f8e38adfeab894c73",
+    "bytes": 1640604
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\16-returned-project.png",
+    "copy": "after\\16-returned-project.png",
+    "sha256": "cf2332580490fb231e24dd9a228950498174a70fa51578ccf43c137f0acfee8f",
+    "bytes": 58635
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\16-returned-project.json",
+    "copy": "after\\16-returned-project.json",
+    "sha256": "85fff83390eec12d9209c133a97d461e15279785f739be0d05cda9a00527dc0a",
+    "bytes": 1032
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\17-rapid-navigation-input.png",
+    "copy": "after\\17-rapid-navigation-input.png",
+    "sha256": "16a561b7a42c7a81b0a430e4951739284552b5fd5ef0379de9ce719d1cfd0463",
+    "bytes": 77949
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\17-rapid-navigation-input.json",
+    "copy": "after\\17-rapid-navigation-input.json",
+    "sha256": "29fc3373cbc7a48b9b818cfbb83c9d53059ea148658e9a7ed9a35adb4dde0a04",
+    "bytes": 1099
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\05-bottom-after-wheel.png",
+    "copy": "after\\05-bottom-after-wheel.png",
+    "sha256": "4462e33a362501f4a035d43a97a0f3232a4d7abd3dd2e803c10b658d6017ba1f",
+    "bytes": 61126
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\19-bulk-pasted.png",
+    "copy": "after\\19-bulk-pasted.png",
+    "sha256": "545a2d08faef87cd0f0bd3249e0cf79fbcff027e8b865c86caa3865c6f18b582",
+    "bytes": 84387
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12-b\\observations\\20-bulk-undone.png",
+    "copy": "after\\20-bulk-undone.png",
+    "sha256": "21967ee69ff057166abab905085c5455880ecf5ca3fb1ee6a41e01c6ec129f33",
+    "bytes": 78718
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\run.json",
+    "copy": "failed-foreground\\run.json",
+    "sha256": "7c9f7de57a9cf4a24f64aeaca520f2170bad9971209167693abf5599e0bc8abc",
+    "bytes": 4255
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\sheet-diagnostic.trx",
+    "copy": "failed-foreground\\sheet-diagnostic.trx",
+    "sha256": "0adc2090bc48903d8e6835c5a17f117a349bc5534b9235ee65ccc05e42d4a098",
+    "bytes": 5287
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\source-environment.json",
+    "copy": "failed-foreground\\source-environment.json",
+    "sha256": "c26d2ba4c3969868520be7dfc4695158cbad0db08440650e81f5e8ac8fa1b1b2",
+    "bytes": 388023
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\source.patch",
+    "copy": "failed-foreground\\source.patch",
+    "sha256": "d10ba709b843e9920a3aa523a5af89c067d071103faf64e0634bca5021a78b89",
+    "bytes": 12405
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\binaries.json",
+    "copy": "failed-foreground\\binaries.json",
+    "sha256": "2f06d966a53382040440268e6f8fcb17487fbf00cb15e9df793c8d973b7a765b",
+    "bytes": 3351
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\observations\\lifetime.json",
+    "copy": "failed-foreground\\lifetime.json",
+    "sha256": "5f1b81f1c9c284e87b24a25c6177fc0cd1d98e6f83e67cdc4012a47799c39374",
+    "bytes": 127
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\observations\\plan.json",
+    "copy": "failed-foreground\\plan.json",
+    "sha256": "03a0c653312ac5310d82b114024a38ad170318633e61276282b4d11157a0611d",
+    "bytes": 2272
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\observations\\driver.jsonl",
+    "copy": "failed-foreground\\driver.jsonl",
+    "sha256": "5c6b86ce2f563f0487a82ed22b6d7d3239cf070a2bc236a08371b1933fbcce3c",
+    "bytes": 20130
+  },
+  {
+    "source": "TestResults\\issue73-retired-view\\flush-loaded-load\\diagnostics\\launch-9d70a68bcf83472885921fe24abe42c9.json",
+    "copy": "frozen-after-receipt.json",
+    "sha256": "a0edbaa2305dadec536f369aaa4718a9f930d5ff05bd72ebcd5de0764c8f2acb",
+    "bytes": 310777
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\run.json",
+    "copy": "idle-return\\run.json",
+    "sha256": "8a20be7fdb0b1b6b0985b43302b3d19a42f642c31976a4c7995cb88e41267495",
+    "bytes": 4133
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\sheet-diagnostic.trx",
+    "copy": "idle-return\\sheet-diagnostic.trx",
+    "sha256": "a5d5591fe0a6dab76196e9cc951c7a59d3dc5586e286ad30f23b7a182ad8d579",
+    "bytes": 3888
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\source-environment.json",
+    "copy": "idle-return\\source-environment.json",
+    "sha256": "35cf10ece72ab5ccfd43d81a9f9a74dca74bcc95c93e3c5d2735fb0ea843d361",
+    "bytes": 406214
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\source.patch",
+    "copy": "idle-return\\source.patch",
+    "sha256": "698e48de5f9a72afe295103d95872aff4d7df8ce1ba4894b26fbec2b40d9ffba",
+    "bytes": 19745
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\binaries.json",
+    "copy": "idle-return\\binaries.json",
+    "sha256": "1215e6ed131b93d00e915ffd716cadb4009b225c00df13d9ad873bc1e19f3376",
+    "bytes": 3351
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\driver.jsonl",
+    "copy": "idle-return\\driver.jsonl",
+    "sha256": "98ecfe40910798421d267519f9e8b0839eba56d8907bad78bed2ac83d4d4795c",
+    "bytes": 87345
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\lifetime.json",
+    "copy": "idle-return\\lifetime.json",
+    "sha256": "e9a19b58f3308561af788bacbdcbf76072843fd2c5229fc169a93ea553676017",
+    "bytes": 126
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\plan.json",
+    "copy": "idle-return\\plan.json",
+    "sha256": "5aafca001c63978063c9fbbfe7a942d2e0584c81f0c3fb51216dc6cebec34e76",
+    "bytes": 2274
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project.json",
+    "copy": "idle-return\\16-returned-project.json",
+    "sha256": "4a8ffffab2bbec1f931cdd3dcf9e1f010951daffe1fc5573bb70ef76443449db",
+    "bytes": 1033
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project.png",
+    "copy": "idle-return\\16-returned-project.png",
+    "sha256": "71c2292930a8cbf5334d2c8c3e97be3c2c9af8f2f8991d330d02759c76ae6508",
+    "bytes": 56616
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project-idle.json",
+    "copy": "idle-return\\16-returned-project-idle.json",
+    "sha256": "f2f3a7d0d80bca6582750b7134c8ff2cd17ed3abef66d9f921aa3c0d0eede638",
+    "bytes": 1117
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project-idle-100ms.png",
+    "copy": "idle-return\\16-returned-project-idle-100ms.png",
+    "sha256": "91a6be8f9454268b4ab295bc5241d371672f2b0ac45c0fdc25bee88706589b22",
+    "bytes": 84477
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project-idle-500ms.png",
+    "copy": "idle-return\\16-returned-project-idle-500ms.png",
+    "sha256": "e7892e7d738d6d559e0b697adf38fc556b9e51eca60f4f1ec12a75ecc3050396",
+    "bytes": 87687
+  },
+  {
+    "source": "TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\observations\\16-returned-project-idle-1000ms.png",
+    "copy": "idle-return\\16-returned-project-idle-1000ms.png",
+    "sha256": "8f1fed5609b7976f5b76a9e3e3191867479cc0f079598c9e6040cd3a05d29ee7",
+    "bytes": 75946
+  }
+]

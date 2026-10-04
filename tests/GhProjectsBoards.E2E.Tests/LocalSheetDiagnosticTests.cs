@@ -67,7 +67,7 @@ public sealed class LocalSheetDiagnosticTests
             bulkTargets = bulkCorrectness ? Math.Min(rows, 100) : 0,
             repeatedActions = new { names = new[] { "select-visible-title", "arrows-up-down" }, warmup = 1, measured = 5 },
             singleObservationActions = new[] { "cached-project-ready", "commit-pending-title", "undo-title", "project-P2-P1" },
-            driverRevision = "paced-selection-v4-horizontal-bulk",
+            driverRevision = "paced-selection-v5-project-return-idle",
             pacing = "Each intentional click first observes its public native hit target, then awaits the selected row and editor focus. Arrows await the selected row. No retry of input. Not the prior fast-queue workload.",
             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow, startTicks = Stopwatch.GetTimestamp(),
             os = Environment.OSVersion.ToString(), driver = "FlaUI UIA3 5.0.0",
@@ -579,6 +579,7 @@ public sealed class LocalSheetDiagnosticTests
             var bounds = CaptureBounds();
             var captureTicks = Stopwatch.GetTimestamp();
             using (var capture = Capture.Rectangle(bounds)) capture.ToFile(Path.Combine(output, prefix + ".png"));
+            if (timedFrames && phase == "returned-project") CaptureIdleProjectReturn(prefix, bounds, captureTicks);
             var observationStart = Stopwatch.GetTimestamp();
             object observed;
             try
@@ -602,6 +603,30 @@ public sealed class LocalSheetDiagnosticTests
                 processWorkingSetBytes = process.WorkingSet64, processPrivateBytes = process.PrivateMemorySize64,
                 bounds, dpi = GetDpiForWindow(nativeWindow), observed });
             Record("snapshot", new { phase, prefix });
+        }
+        void CaptureIdleProjectReturn(string prefix, Rectangle bounds, long immediateCaptureStart)
+        {
+            // Capture before Snapshot's UIA queries: asking the provider for its
+            // tree must not become the action that restores a blank viewport.
+            var idleStart = Stopwatch.GetTimestamp();
+            var captured = new List<object>();
+            foreach (var targetMilliseconds in new[] { 100, 500, 1000 })
+            {
+                var target = idleStart + targetMilliseconds * Stopwatch.Frequency / 1000;
+                while (Stopwatch.GetTimestamp() < target)
+                    Thread.Sleep(Math.Max(1, (int)((target - Stopwatch.GetTimestamp()) * 1000 / Stopwatch.Frequency)));
+                Assert.That(GetForegroundWindow(), Is.EqualTo(nativeWindow), "Idle pixels must still belong to the selected product window.");
+                var begin = Stopwatch.GetTimestamp();
+                using var capture = Capture.Rectangle(bounds);
+                var end = Stopwatch.GetTimestamp();
+                var file = prefix + "-idle-" + targetMilliseconds + "ms.png";
+                capture.ToFile(Path.Combine(output, file));
+                captured.Add(new { targetMilliseconds, begin, end, file });
+            }
+            Write(prefix + "-idle.json", new { immediateCaptureStart, idleStart, frequency = Stopwatch.Frequency,
+                boundary = "Offsets begin after saving the original immediate image. GDI only; no input, focus, scrolling or UIA query until all idle captures finish.",
+                bounds, captured });
+            Record("project-return-idle-captured", new { prefix, idleStart, count = captured.Count });
         }
         Rectangle CaptureBounds()
         {

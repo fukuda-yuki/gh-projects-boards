@@ -215,7 +215,11 @@ public sealed class FirstProjectGuideHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("GettingStartedGuide").Visibility == Visibility.Collapsed
             && Ui.Tree(projects).OfType<EditingGrid>().Any(grid => grid.IsLoaded));
+        await Ui.Until(() => workspace.Drafts is { } drafts
+            && drafts.DurableRevision == drafts.Workspace.Revision
+            && Ui.Find<TextBlock>("WorkspaceSaveStatus").Text == "ローカル保存済み");
         var saved = await new RegistrationStore(root).LoadAsync();
+        Assert.That(saved.Problems, Is.Empty);
         Assert.That(saved.Registrations.Single().Snapshot.Id.NodeId, Is.EqualTo("P1"));
         Assert.That(workspace.Drafts!.Workspace.Journal, Is.Empty);
         boundary.AssertQueriesOnly();

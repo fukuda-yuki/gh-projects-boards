@@ -1,0 +1,43 @@
+{
+  "phase": "rapid-navigation-input",
+  "expectedIssue": "I4",
+  "expectedItem": "P1T4",
+  "captureTicks": 943405659858,
+  "observationStart": 943406023655,
+  "observationEnd": 943406797063,
+  "utc": "2026-10-04T15:42:20.7666495+00:00",
+  "processWorkingSetBytes": 479621120,
+  "processPrivateBytes": 387473408,
+  "bounds": {
+    "Location": {
+      "IsEmpty": false,
+      "X": 24,
+      "Y": 24
+    },
+    "Size": {
+      "IsEmpty": false,
+      "Width": 1400,
+      "Height": 900
+    },
+    "X": 24,
+    "Y": 24,
+    "Width": 1400,
+    "Height": 900,
+    "Left": 24,
+    "Top": 24,
+    "Right": 1424,
+    "Bottom": 924,
+    "IsEmpty": false
+  },
+  "dpi": 120,
+  "observed": {
+    "reportedFocusId": "GridCell3_0",
+    "reportedFocusName": "\u884C 4 \u5217 1 \u30BF\u30A4\u30C8\u30EB Issue 4 ",
+    "reportedFocusIsObservationOnly": true,
+    "selection": "\u30BF\u30A4\u30C8\u30EB\uFF1A1\u884C\u30FB1\u30BB\u30EB",
+    "horizontal": 0,
+    "vertical": 0,
+    "firstCell": "\u884C 1 \u5217 1 \u30BF\u30A4\u30C8\u30EB Issue 1 ",
+    "lastCell": null
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "runId": "retired-view-flush-loaded-1000x12",
+  "phase": "failed",
+  "startedUtc": "2026-10-04T15:40:47.9169630+00:00",
+  "runnerPid": 38872,
+  "worktree": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards",
+  "rows": 1000,
+  "selectFields": 12,
+  "totalColumns": 14,
+  "app": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-dda0b6e2a63b478b9233a0eae3b8b8c3\\app\\GhProjectsBoards.App.exe",
+  "immutableOverride": true,
+  "declaredAppSourceRevision": "e20d9b5562ec2e7097e4581eb21f22ec2e229560",
+  "sourceClaim": "SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.",
+  "noBuild": true,
+  "bulkPerformance": false,
+  "bulkCorrectness": true,
+  "traceRequested": true,
+  "physicalImeRequested": false,
+  "timedFramesRequested": true,
+  "buildExitCode": null,
+  "testExitCode": 1,
+  "commands": [
+    {
+      "executable": "dotnet",
+      "selected": false,
+      "arguments": [
+        "build",
+        "GhProjectsBoards.sln",
+        "--configuration",
+        "Release"
+      ]
+    },
+    {
+      "arguments": [
+        "-DataRoot",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\data",
+        "-ItemCount",
+        "1000",
+        "-SelectFieldCount",
+        "12",
+        "-PrepareOnly"
+      ],
+      "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\scripts\\Start-EditingCheck.ps1"
+    },
+    {
+      "arguments": [
+        "test",
+        "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+        "--configuration",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName=GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests.CachedSheetFocusedNativeScrollAndLocalActions",
+        "--logger",
+        "trx;LogFileName=sheet-diagnostic.trx",
+        "--results-directory",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12",
+        "--",
+        "NUnit.NumberOfTestWorkers=0",
+        "RunConfiguration.TestSessionTimeout=600000"
+      ],
+      "executable": "dotnet"
+    }
+  ],
+  "boundary": "Ordinary cached local-sheet diagnostic only. Driver waits and UIA calls are not isolated app latency. Pixels, app traces and durable state need separate review; no speedup or human acceptance claim.",
+  "seed": {
+    "bytes": 2144,
+    "sha256": "58CB1D9C96C1FBCE3DBB43454664DCE99D804871546A7D7AAFEE5FAD6C3A2C2E",
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\data\\diagnostics\\editing-seed.json"
+  },
+  "testStartedUtc": "2026-10-04T15:40:51.5990720+00:00",
+  "testFinishedUtc": "2026-10-04T15:41:04.1767249+00:00",
+  "result": {
+    "cases": [
+      {
+        "outcome": "Failed",
+        "duration": "00:00:10.5632100",
+        "name": "CachedSheetFocusedNativeScrollAndLocalActions"
+      }
+    ],
+    "total": 1,
+    "failed": 1,
+    "passed": 0,
+    "trx": {
+      "bytes": 5287,
+      "sha256": "0ADC2090BC48903D8E6835C5A17F117A349BC5534B9235EE65CCC05E42D4A098",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\sheet-diagnostic.trx"
+    },
+    "skipped": 0,
+    "executed": 1
+  },
+  "failure": "The exact diagnostic case did not complete once without failure/skips. Retain this attempt and inspect TRX/logs.",
+  "finishedUtc": "2026-10-04T15:41:04.3055523+00:00",
+  "appLifetime": {
+    "pid": 37408,
+    "completed": false,
+    "closeRequested": true,
+    "normal": true,
+    "forced": false,
+    "exitCode": 0
+  },
+  "trace": {
+    "available": true,
+    "file": {
+      "bytes": 268865,
+      "sha256": "DEE27858FCD81E70C2E7FB3F15084C9FC3A10541B5608810392CB84A10CDC5E8",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-flush-loaded-1000x12\\app-trace.jsonl"
+    },
+    "requested": true
+  },
+  "omissions": []
+}

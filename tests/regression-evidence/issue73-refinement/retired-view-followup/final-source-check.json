@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-04T15:54:27.1756444+00:00",
+  "baseRevision": "e20d9b5562ec2e7097e4581eb21f22ec2e229560",
+  "receipt": "performance/frozen-after-receipt.json",
+  "productionInputsChecked": 111,
+  "mismatches": 0,
+  "appDllSha256": "BF16CA30A98645C13EA6E207DA948F1C5EBB53DD8DEB5E95737D520328D3AF34",
+  "coreDllSha256": "C1DBEB500A9C8D0E5F98CCB0D216AB6A89FE5C01B2E6FA319E7DAB351D73930A"
+}

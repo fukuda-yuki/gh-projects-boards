@@ -181,7 +181,9 @@ public sealed partial class PlanningHostedTests
                 await Report("release-" + sample);
                 Console.WriteLine($"View retained after {releaseWait.Elapsed.TotalMilliseconds:F1} ms: {Retained(releasedView)}");
             }
-            Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
+            var retained = Retained(releasedView);
+            if (retained) await ReportRetainedViewOwners(releasedView, session);
+            Assert.That(retained, Is.False, "A replaced view must be collectible after native focus transfers.");
         }
         finally
         {
@@ -214,6 +216,73 @@ public sealed partial class PlanningHostedTests
     }
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static bool Retained(WeakReference<EditingGrid> reference) => reference.TryGetTarget(out _);
+    private static async Task ReportRetainedViewOwners(WeakReference<EditingGrid> reference, DraftSession owner)
+    {
+        // The failed verdict is already fixed. These temporary diagnostic references
+        // must neither alter that verdict nor turn an unavailable probe into its cause.
+        try
+        {
+            object Context()
+            {
+                var context = TestContext.CurrentContext;
+                return new { context.Test.ID, context.Test.FullName, failedAssertions = context.Result.AssertionResultCount,
+                    exceptionType = context.Result.RecordedException?.GetType().FullName };
+            }
+            object? Probe(Func<object?> read)
+            {
+                try { return read(); }
+                catch (Exception error) { return new { unavailable = error.GetType().FullName }; }
+            }
+            var census = new Dictionary<string, object?> {
+                ["boundary"] = "Failure-only known-owner observations; negative results do not identify a GC root.",
+                ["runnerContext"] = Probe(Context),
+                ["operationsBeforeProbe"] = Volatile.Read(ref TrackedContext.Operations),
+                ["postsBeforeProbe"] = Volatile.Read(ref TrackedContext.Posts),
+                ["fatalType"] = Ui.Fatal?.GetType().FullName
+            };
+            await Ui.Run(() => {
+                census["uiContext"] = Probe(Context);
+                census["targetAliveAtProbe"] = reference.TryGetTarget(out var released);
+                if (released is null) return Task.CompletedTask;
+                census["visual"] = Probe(() => {
+                    var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as DependencyObject;
+                    bool OwnsFocus()
+                    {
+                        for (var current = focused; current is not null; current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current))
+                            if (ReferenceEquals(current, released)) return true;
+                        return false;
+                    }
+                    return new { released.IsLoaded, parentType = released.Parent?.GetType().FullName,
+                        currentXamlRoot = ReferenceEquals(released.XamlRoot, Ui.Root.XamlRoot),
+                        inCurrentTree = Ui.Tree(Ui.Root).Any(element => ReferenceEquals(element, released)),
+                        focusedType = focused?.GetType().FullName,
+                        focusedId = focused is null ? null : Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(focused),
+                        ownsFocus = OwnsFocus() };
+                });
+                const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                census["sessionSubscribers"] = Probe(() => {
+                    var field = typeof(DraftSession).GetField("Changed", flags) ?? throw new MissingFieldException();
+                    return ((Delegate?)field.GetValue(owner))?.GetInvocationList().Select(handler => new {
+                        method = handler.Method.DeclaringType?.FullName + "." + handler.Method.Name,
+                        targetType = handler.Target?.GetType().FullName, targetsReleasedView = ReferenceEquals(handler.Target, released)
+                    }).ToArray();
+                });
+                census["session"] = Probe(() => {
+                    var field = typeof(DraftSession).GetField("pendingFlush", flags) ?? throw new MissingFieldException();
+                    return new { owner.DurableRevision, workspaceRevision = owner.Workspace.Revision,
+                        pendingFlushStatus = (field.GetValue(owner) as Task)?.Status.ToString() };
+                });
+                return Task.CompletedTask;
+            }, check: false);
+            Console.WriteLine("Retention owner census: " + System.Text.Json.JsonSerializer.Serialize(census));
+        }
+        catch (Exception error)
+        {
+            // Even diagnostic output failure must preserve the original assertion.
+            try { Console.WriteLine("Retention owner census unavailable: " + error.GetType().FullName); }
+            catch { }
+        }
+    }
     private async Task ReviewFixture(ProjectRegistration p, ProjectPlanning plan)
     {
         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));

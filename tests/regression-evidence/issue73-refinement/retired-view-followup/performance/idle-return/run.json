@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "runId": "retired-view-return-idle-1000x12",
+  "phase": "diagnostic-completed",
+  "startedUtc": "2026-10-04T15:48:55.2646565+00:00",
+  "runnerPid": 28144,
+  "worktree": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards",
+  "rows": 1000,
+  "selectFields": 12,
+  "totalColumns": 14,
+  "app": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-dda0b6e2a63b478b9233a0eae3b8b8c3\\app\\GhProjectsBoards.App.exe",
+  "immutableOverride": true,
+  "declaredAppSourceRevision": "e20d9b5562ec2e7097e4581eb21f22ec2e229560",
+  "sourceClaim": "SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.",
+  "noBuild": true,
+  "bulkPerformance": false,
+  "bulkCorrectness": true,
+  "traceRequested": true,
+  "physicalImeRequested": false,
+  "timedFramesRequested": true,
+  "buildExitCode": null,
+  "testExitCode": 0,
+  "commands": [
+    {
+      "selected": false,
+      "arguments": [
+        "build",
+        "GhProjectsBoards.sln",
+        "--configuration",
+        "Release"
+      ],
+      "executable": "dotnet"
+    },
+    {
+      "arguments": [
+        "-DataRoot",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\data",
+        "-ItemCount",
+        "1000",
+        "-SelectFieldCount",
+        "12",
+        "-PrepareOnly"
+      ],
+      "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\scripts\\Start-EditingCheck.ps1"
+    },
+    {
+      "arguments": [
+        "test",
+        "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+        "--configuration",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName=GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests.CachedSheetFocusedNativeScrollAndLocalActions",
+        "--logger",
+        "trx;LogFileName=sheet-diagnostic.trx",
+        "--results-directory",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12",
+        "--",
+        "NUnit.NumberOfTestWorkers=0",
+        "RunConfiguration.TestSessionTimeout=600000"
+      ],
+      "executable": "dotnet"
+    }
+  ],
+  "boundary": "Ordinary cached local-sheet diagnostic only. Driver waits and UIA calls are not isolated app latency. Pixels, app traces and durable state need separate review; no speedup or human acceptance claim.",
+  "seed": {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\data\\diagnostics\\editing-seed.json",
+    "sha256": "1E2B8A508087A2228304759BACBDECDAABCE74D297E1CBA338F2B84842403E52",
+    "bytes": 2142
+  },
+  "testStartedUtc": "2026-10-04T15:48:57.8872077+00:00",
+  "testFinishedUtc": "2026-10-04T15:49:47.1516801+00:00",
+  "result": {
+    "skipped": 0,
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "cases": [
+      {
+        "outcome": "Passed",
+        "name": "CachedSheetFocusedNativeScrollAndLocalActions",
+        "duration": "00:00:46.9007630"
+      }
+    ],
+    "trx": {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\sheet-diagnostic.trx",
+      "sha256": "A5D5591FE0A6DAB76196E9CC951C7A59D3DC5586E286AD30F23B7A182AD8D579",
+      "bytes": 3888
+    },
+    "executed": 1
+  },
+  "finishedUtc": "2026-10-04T15:49:47.1816779+00:00",
+  "appLifetime": {
+    "pid": 34676,
+    "completed": true,
+    "closeRequested": true,
+    "normal": true,
+    "forced": false,
+    "exitCode": 0
+  },
+  "trace": {
+    "requested": true,
+    "available": true,
+    "file": {
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\retired-view-return-idle-1000x12\\app-trace.jsonl",
+      "sha256": "AE02D9C7852A8E475824CF4218CB631477EBB10B2B6201B6530A11DD151AE64C",
+      "bytes": 1633375
+    }
+  },
+  "omissions": []
+}

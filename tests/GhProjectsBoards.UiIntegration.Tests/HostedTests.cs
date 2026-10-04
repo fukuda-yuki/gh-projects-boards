@@ -191,7 +191,7 @@ public sealed partial class HostedTests
         Assert.That((object?)Workspace.CanRefresh, Is.Null);
         await Ui.Mount(panel);
         Assert.That((object?)Workspace.CanRefresh, Is.Not.Null);
-        await Ui.Run(() => Ui.Click("GridAddRow"));
+        await Ui.ClickCommand("GridAddRow");
         await Ui.Until(() => Work.LocalRows.Count == 1);
     }
 

@@ -82,11 +82,16 @@ public sealed partial class HostedTests
     public async Task FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork()
     {
         var selected = Workspace.Selected!;
+        var title = Work.Open(selected)[0].Cells[0];
+        var originalTitle = Work.Value(title);
+        const string unfinishedTitle = "   ";
         await Ui.Run(async () => Assert.That(await Workspace.FlushDraftsAsync(), Is.True));
         using (var competing = new FileStream(Path.Combine(h.Existing.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await FocusFirstTitle();
-            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "retain this pending title");
+            // A valid title commits when focus leaves; an invalid candidate must
+            // remain recoverable when navigation also fails to save.
+            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = unfinishedTitle);
             await OpenNavigation(SplitViewDisplayMode.Overlay);
             await InvokeProjectNode(selected.Snapshot.Title);
             await Ui.Until(() => Workspace.Status.StartsWith("ローカル保存失敗"));
@@ -95,8 +100,9 @@ public sealed partial class HostedTests
             {
                 Assert.That(Workspace.Selected?.Snapshot.Id, Is.EqualTo(selected.Snapshot.Id));
                 Assert.That(Ui.Tree(panel).OfType<SplitView>().Single().IsPaneOpen, Is.True);
-                Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("retain this pending title"));
-                Assert.That(Work.Buffer(Work.Open(selected)[0].Cells[0]), Is.EqualTo("retain this pending title"));
+                Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo(unfinishedTitle));
+                Assert.That(Work.Buffer(title), Is.EqualTo(unfinishedTitle));
+                Assert.That(Work.Value(title), Is.EqualTo(originalTitle));
                 Assert.That(h.Writes, Is.Empty);
             });
         }

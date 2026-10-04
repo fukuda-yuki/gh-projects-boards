@@ -280,6 +280,9 @@ internal sealed partial class EditingGrid : Grid
                 EnsureRow(currentRow); RevealColumn(currentRow, currentColumn);
                 list.ScrollIntoView(list.Items[currentRow]);
             }
+            // Opening can initialize fields. Save them once this view owns the
+            // visible status, rather than notifying the view it will replace.
+            _ = FlushDraftsAsync("loaded");
         };
         if (diagnostics is not null)
         {
@@ -287,7 +290,7 @@ internal sealed partial class EditingGrid : Grid
             BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), targetType = args.TargetElement?.GetType().Name, originalType = args.OriginalSource?.GetType().Name, args.Handled, args.TargetRect, args.AnimationDesired,
                 args.HorizontalAlignmentRatio, args.VerticalAlignmentRatio, args.HorizontalOffset, args.VerticalOffset });
         }
-        Update("constructor"); _ = FlushDraftsAsync("constructor");
+        Update("constructor");
     }
     private EditRow[] SelectedRows()
     {

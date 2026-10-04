@@ -1,0 +1,342 @@
+diff --git a/docs/spec.md b/docs/spec.md
+index ad63214..a4a53b8 100644
+--- a/docs/spec.md
++++ b/docs/spec.md
+@@ -213,6 +213,8 @@ One versioned JSON draft record per host/stable viewer under `Drafts/` holds bas
+ 
+ Draft saves are serialized. Under a filesystem writer lock, the expected durable revision is checked, a temporary record is flushed and validated, and the complete profile record is atomically replaced with a last-good backup. A cross-field operation is recovered wholly or not at all. The session advances its acknowledged revision only after success and drains later changes before reporting a successful flush. Competing-process/stale saves fail instead of overwriting. Corruption, incompatible schema, mismatched scope and interrupted files are diagnosed without resetting source data. Intermediate edits after the last successful save may be lost on forced termination; normal transitions/close wait for a successful flush. Save failure keeps in-memory text and cancels navigation/close.
+ 
++Preparing an unmounted replacement table does not start a draft save or change the current table's save presentation. Once the replacement is mounted, it saves fields initialized by opening that Project and presents saving, failure and retry in the current table. Replaced tables stop presenting subsequent session changes. These presentation boundaries do not discard pending work or bypass the durable save required before navigation and normal close.
++
+ Refresh reconciles existing titles and Project-owned single-select fields using the contract below. The final checkpoint replacement rechecks local revision, operation generation, connection identity and active composition synchronously immediately before replacement. Unregistration settles owned work and defaults to cancellation, offering explicit retention or discard. Discard never removes Issue work shared by another registration; its pinned source provenance remains in the surviving draft record. Discard plus registration removal is one durable checkpoint decision; legacy files remain recovery material after migration.
+ 
+ ## Data identity and availability
+diff --git a/src/GhProjectsBoards.App/EditingGrid.cs b/src/GhProjectsBoards.App/EditingGrid.cs
+index 919c31b..fbcfaa1 100644
+--- a/src/GhProjectsBoards.App/EditingGrid.cs
++++ b/src/GhProjectsBoards.App/EditingGrid.cs
+@@ -280,6 +280,9 @@ internal sealed partial class EditingGrid : Grid
+                 EnsureRow(currentRow); RevealColumn(currentRow, currentColumn);
+                 list.ScrollIntoView(list.Items[currentRow]);
+             }
++            // Opening can initialize fields. Save them once this view owns the
++            // visible status, rather than notifying the view it will replace.
++            _ = FlushDraftsAsync("loaded");
+         };
+         if (diagnostics is not null)
+         {
+@@ -287,7 +290,7 @@ internal sealed partial class EditingGrid : Grid
+             BringIntoViewRequested += (_, args) => diagnostics.Record("bring-into-view-request", new { target = DiagnosticId(args.TargetElement), targetType = args.TargetElement?.GetType().Name, originalType = args.OriginalSource?.GetType().Name, args.Handled, args.TargetRect, args.AnimationDesired,
+                 args.HorizontalAlignmentRatio, args.VerticalAlignmentRatio, args.HorizontalOffset, args.VerticalOffset });
+         }
+-        Update("constructor"); _ = FlushDraftsAsync("constructor");
++        Update("constructor");
+     }
+     private EditRow[] SelectedRows()
+     {
+diff --git a/tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs b/tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs
+index 005d48c..f99d0f5 100644
+--- a/tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs
++++ b/tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs
+@@ -67,7 +67,7 @@ public sealed class LocalSheetDiagnosticTests
+             bulkTargets = bulkCorrectness ? Math.Min(rows, 100) : 0,
+             repeatedActions = new { names = new[] { "select-visible-title", "arrows-up-down" }, warmup = 1, measured = 5 },
+             singleObservationActions = new[] { "cached-project-ready", "commit-pending-title", "undo-title", "project-P2-P1" },
+-            driverRevision = "paced-selection-v4-horizontal-bulk",
++                driverRevision = "paced-selection-v5-project-return-idle",
+             pacing = "Each intentional click first observes its public native hit target, then awaits the selected row and editor focus. Arrows await the selected row. No retry of input. Not the prior fast-queue workload.",
+             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow, startTicks = Stopwatch.GetTimestamp(),
+             os = Environment.OSVersion.ToString(), driver = "FlaUI UIA3 5.0.0",
+@@ -579,6 +579,7 @@ public sealed class LocalSheetDiagnosticTests
+             var bounds = CaptureBounds();
+             var captureTicks = Stopwatch.GetTimestamp();
+             using (var capture = Capture.Rectangle(bounds)) capture.ToFile(Path.Combine(output, prefix + ".png"));
++            if (timedFrames && phase == "returned-project") CaptureIdleProjectReturn(prefix, bounds, captureTicks);
+             var observationStart = Stopwatch.GetTimestamp();
+             object observed;
+             try
+@@ -603,6 +604,30 @@ public sealed class LocalSheetDiagnosticTests
+                 bounds, dpi = GetDpiForWindow(nativeWindow), observed });
+             Record("snapshot", new { phase, prefix });
+         }
++        void CaptureIdleProjectReturn(string prefix, Rectangle bounds, long immediateCaptureStart)
++        {
++            // Capture before Snapshot's UIA queries: asking the provider for its
++            // tree must not become the action that restores a blank viewport.
++            var idleStart = Stopwatch.GetTimestamp();
++            var captured = new List<object>();
++            foreach (var targetMilliseconds in new[] { 100, 500, 1000 })
++            {
++                var target = idleStart + targetMilliseconds * Stopwatch.Frequency / 1000;
++                while (Stopwatch.GetTimestamp() < target)
++                    Thread.Sleep(Math.Max(1, (int)((target - Stopwatch.GetTimestamp()) * 1000 / Stopwatch.Frequency)));
++                Assert.That(GetForegroundWindow(), Is.EqualTo(nativeWindow), "Idle pixels must still belong to the selected product window.");
++                var begin = Stopwatch.GetTimestamp();
++                using var capture = Capture.Rectangle(bounds);
++                var end = Stopwatch.GetTimestamp();
++                var file = prefix + "-idle-" + targetMilliseconds + "ms.png";
++                capture.ToFile(Path.Combine(output, file));
++                captured.Add(new { targetMilliseconds, begin, end, file });
++            }
++            Write(prefix + "-idle.json", new { immediateCaptureStart, idleStart, frequency = Stopwatch.Frequency,
++                boundary = "Offsets begin after saving the original immediate image. GDI only; no input, focus, scrolling or UIA query until all idle captures finish.",
++                bounds, captured });
++            Record("project-return-idle-captured", new { prefix, idleStart, count = captured.Count });
++        }
+         Rectangle CaptureBounds()
+         {
+             // Pixel collection must remain independent of WinUI's UIA provider.
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/ActualAllocationHostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/ActualAllocationHostedTests.cs
+index 20c771a..5b20624 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/ActualAllocationHostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/ActualAllocationHostedTests.cs
+@@ -83,14 +83,27 @@ public sealed partial class PlanningHostedTests
+         await Ui.Run(() => grid = new(project, session, () => Task.FromResult(true)));
+         await Ui.Mount(grid); await OpenQuickAllocation();
+         var before = JsonSerializer.Serialize(work.Snapshot());
++        StackPanel allocationEditor = null!;
+         await Ui.Run(() => {
+-            var editor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
++            var editor = allocationEditor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
+             Ui.Find<TextBox>("ActualReportHours-U1", editor).Text = "5";
+             Ui.Find<TextBox>("ActualReportRemaining-U1", editor).Text = "1";
+             Ui.Find<TextBox>("ActualReportRemaining-U2", editor).Text = "1.5";
+             Ui.Find<TextBox>("ActualReportsRemainingTotal", editor).Text = "3";
+         });
+-        await Ui.Until(() => Ui.Find<TextBlock>("ActualReportsTotal", Ui.Popup<StackPanel>("ActualReportsEditor")).Text.Contains("未配分 0.5"));
++        var reportedMissingPopup = false;
++        await Ui.Until(() => {
++            if (Ui.Popup<StackPanel>("ActualReportsEditor") is { } editor)
++                return Ui.Find<TextBlock>("ActualReportsTotal", editor).Text.Contains("未配分 0.5");
++            if (!reportedMissingPopup)
++            {
++                reportedMissingPopup = true;
++                var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as DependencyObject;
++                TestContext.Out.WriteLine($"Allocation popup absent after editing: previousLoaded={allocationEditor.IsLoaded}, "
++                    + $"focusedType={focused?.GetType().Name}, focusedId={(focused is null ? null : Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(focused))}");
++            }
++            return false;
++        });
+         await Ui.Run(() => {
+             var editor = Ui.Popup<StackPanel>("ActualReportsEditor")!;
+             Assert.That(Ui.Find<TextBlock>("ActualReportsTotal", editor).Text, Does.Contain("未配分 0.5"));
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs
+index 6818406..afd162a 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/HostedTests.cs
+@@ -191,7 +191,7 @@ public sealed partial class HostedTests
+         Assert.That((object?)Workspace.CanRefresh, Is.Null);
+         await Ui.Mount(panel);
+         Assert.That((object?)Workspace.CanRefresh, Is.Not.Null);
+-        await Ui.Run(() => Ui.Click("GridAddRow"));
++        await Ui.ClickCommand("GridAddRow");
+         await Ui.Until(() => Work.LocalRows.Count == 1);
+     }
+ 
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs
+index 7186e17..d04dc31 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs
+@@ -215,7 +215,11 @@ public sealed class FirstProjectGuideHostedTests
+         });
+         await Ui.Until(() => Ui.Find<ScrollViewer>("GettingStartedGuide").Visibility == Visibility.Collapsed
+             && Ui.Tree(projects).OfType<EditingGrid>().Any(grid => grid.IsLoaded));
++        await Ui.Until(() => workspace.Drafts is { } drafts
++            && drafts.DurableRevision == drafts.Workspace.Revision
++            && Ui.Find<TextBlock>("WorkspaceSaveStatus").Text == "ローカル保存済み");
+         var saved = await new RegistrationStore(root).LoadAsync();
++        Assert.That(saved.Problems, Is.Empty);
+         Assert.That(saved.Registrations.Single().Snapshot.Id.NodeId, Is.EqualTo("P1"));
+         Assert.That(workspace.Drafts!.Workspace.Journal, Is.Empty);
+         boundary.AssertQueriesOnly();
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs
+index 0ff41a7..8f4f512 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/PlanningHostedTests.cs
+@@ -131,20 +131,28 @@ public sealed partial class PlanningHostedTests
+         await Ui.Run(() => FocusCell("GridCell0_2"));
+         await Ui.ClickCommand("GridPlanning");
+         await Ui.Until(() => Ui.Popup<StackPanel>("SchedulingEditor")?.IsLoaded == true);
+-        await Ui.Run(async () => {
+-            var editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
+-            bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
+-                t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
++        StackPanel editor = null!;
++        bool HasWarning() => Ui.Tree(editor).OfType<TextBlock>().Any(t =>
++            t.Visibility == Visibility.Visible && t.Text.Contains("時刻が未確認"));
++        await Ui.Run(() => {
++            editor = Ui.Popup<StackPanel>("SchedulingEditor")!;
+             Assert.That(HasWarning(), Is.True, "Fetched dates without a time need an actionable explanation.");
+-            if (correction == "auto")
+-            {
+-                Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0;
++        });
++        if (correction == "auto")
++        {
++            await Ui.Run(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 0);
++            // Wait for SelectionChanged to update the rendered warning.
++            await Ui.Until(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex == 0 && !HasWarning());
++            await Ui.Run(() => {
+                 Assert.That(HasWarning(), Is.False, "Automatic scheduling does not require manually completing fetched dates.");
+                 Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex = 1;
+-                Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates.");
+-            }
+-            else
+-            {
++            });
++            await Ui.Until(() => Ui.Find<RadioButtons>("ScheduleMethod", editor).SelectedIndex == 1 && HasWarning());
++            await Ui.Run(() => Assert.That(HasWarning(), Is.True, "Switching back to manual must explain the still-incomplete dates."));
++        }
++        else
++        {
++            await Ui.Run(async () => {
+                 Ui.Find<TextBox>("ScheduleStart", editor).Text = correction == "minute" ? "2026-10-05 12:07" : "";
+                 Assert.That(HasWarning(), Is.True, "The other endpoint still has no time.");
+                 Ui.Find<TextBox>("ScheduleFinish", editor).Text = correction == "minute" ? "2026-10-05 12:08" : "";
+@@ -152,7 +160,9 @@ public sealed partial class PlanningHostedTests
+                 await ApplyInformationEvidence.Capture(editor, "schedule-warning-" + correction);
+                 Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-06";
+                 Assert.That(HasWarning(), Is.True, "A newly incomplete date needs the warning again.");
+-            }
++            });
++        }
++        await Ui.Run(() => {
+             Assert.That(work.Planning("P1")!.Tasks, Is.Empty, "Preview and input do not adopt a task schedule.");
+             Assert.That(work.Journal, Is.Empty, "Correction must not publish anything.");
+             Ui.Click(Ui.Find<Button>("ScheduleClose", editor));
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs
+index 68a81cc..cbf6198 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/PlanningReviewHostedTests.cs
+@@ -181,7 +181,9 @@ public sealed partial class PlanningHostedTests
+                 await Report("release-" + sample);
+                 Console.WriteLine($"View retained after {releaseWait.Elapsed.TotalMilliseconds:F1} ms: {Retained(releasedView)}");
+             }
+-            Assert.That(Retained(releasedView), Is.False, "A replaced view must be collectible after native focus transfers.");
++            var retained = Retained(releasedView);
++            if (retained) await ReportRetainedViewOwners(releasedView, session);
++            Assert.That(retained, Is.False, "A replaced view must be collectible after native focus transfers.");
+         }
+         finally
+         {
+@@ -214,6 +216,73 @@ public sealed partial class PlanningHostedTests
+     }
+     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+     private static bool Retained(WeakReference<EditingGrid> reference) => reference.TryGetTarget(out _);
++    private static async Task ReportRetainedViewOwners(WeakReference<EditingGrid> reference, DraftSession owner)
++    {
++        // The failed verdict is already fixed. These temporary diagnostic references
++        // must neither alter that verdict nor turn an unavailable probe into its cause.
++        try
++        {
++            object Context()
++            {
++                var context = TestContext.CurrentContext;
++                return new { context.Test.ID, context.Test.FullName, failedAssertions = context.Result.AssertionResultCount,
++                    exceptionType = context.Result.RecordedException?.GetType().FullName };
++            }
++            object? Probe(Func<object?> read)
++            {
++                try { return read(); }
++                catch (Exception error) { return new { unavailable = error.GetType().FullName }; }
++            }
++            var census = new Dictionary<string, object?> {
++                ["boundary"] = "Failure-only known-owner observations; negative results do not identify a GC root.",
++                ["runnerContext"] = Probe(Context),
++                ["operationsBeforeProbe"] = Volatile.Read(ref TrackedContext.Operations),
++                ["postsBeforeProbe"] = Volatile.Read(ref TrackedContext.Posts),
++                ["fatalType"] = Ui.Fatal?.GetType().FullName
++            };
++            await Ui.Run(() => {
++                census["uiContext"] = Probe(Context);
++                census["targetAliveAtProbe"] = reference.TryGetTarget(out var released);
++                if (released is null) return Task.CompletedTask;
++                census["visual"] = Probe(() => {
++                    var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as DependencyObject;
++                    bool OwnsFocus()
++                    {
++                        for (var current = focused; current is not null; current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current))
++                            if (ReferenceEquals(current, released)) return true;
++                        return false;
++                    }
++                    return new { released.IsLoaded, parentType = released.Parent?.GetType().FullName,
++                        currentXamlRoot = ReferenceEquals(released.XamlRoot, Ui.Root.XamlRoot),
++                        inCurrentTree = Ui.Tree(Ui.Root).Any(element => ReferenceEquals(element, released)),
++                        focusedType = focused?.GetType().FullName,
++                        focusedId = focused is null ? null : Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(focused),
++                        ownsFocus = OwnsFocus() };
++                });
++                const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
++                census["sessionSubscribers"] = Probe(() => {
++                    var field = typeof(DraftSession).GetField("Changed", flags) ?? throw new MissingFieldException();
++                    return ((Delegate?)field.GetValue(owner))?.GetInvocationList().Select(handler => new {
++                        method = handler.Method.DeclaringType?.FullName + "." + handler.Method.Name,
++                        targetType = handler.Target?.GetType().FullName, targetsReleasedView = ReferenceEquals(handler.Target, released)
++                    }).ToArray();
++                });
++                census["session"] = Probe(() => {
++                    var field = typeof(DraftSession).GetField("pendingFlush", flags) ?? throw new MissingFieldException();
++                    return new { owner.DurableRevision, workspaceRevision = owner.Workspace.Revision,
++                        pendingFlushStatus = (field.GetValue(owner) as Task)?.Status.ToString() };
++                });
++                return Task.CompletedTask;
++            }, check: false);
++            Console.WriteLine("Retention owner census: " + System.Text.Json.JsonSerializer.Serialize(census));
++        }
++        catch (Exception error)
++        {
++            // Even diagnostic output failure must preserve the original assertion.
++            try { Console.WriteLine("Retention owner census unavailable: " + error.GetType().FullName); }
++            catch { }
++        }
++    }
+     private async Task ReviewFixture(ProjectRegistration p, ProjectPlanning plan)
+     {
+         await Ui.Unmount(grid); await Ui.Run(async () => Assert.That(await session.FlushAsync(), Is.True));
+diff --git a/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs b/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs
+index 685b27f..55c80d9 100644
+--- a/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs
++++ b/tests/GhProjectsBoards.UiIntegration.Tests/WorkspaceShellHostedTests.cs
+@@ -82,11 +82,16 @@ public sealed partial class HostedTests
+     public async Task FailedSaveWhileInvokingActiveProjectKeepsOverlayAndPendingWork()
+     {
+         var selected = Workspace.Selected!;
++        var title = Work.Open(selected)[0].Cells[0];
++        var originalTitle = Work.Value(title);
++        const string unfinishedTitle = "   ";
+         await Ui.Run(async () => Assert.That(await Workspace.FlushDraftsAsync(), Is.True));
+         using (var competing = new FileStream(Path.Combine(h.Existing.Root, ".writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+         {
+             await FocusFirstTitle();
+-            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = "retain this pending title");
++            // A valid title commits when focus leaves; an invalid candidate must
++            // remain recoverable when navigation also fails to save.
++            await Ui.Run(() => Ui.Find<TextBox>("GridCell0_0").Text = unfinishedTitle);
+             await OpenNavigation(SplitViewDisplayMode.Overlay);
+             await InvokeProjectNode(selected.Snapshot.Title);
+             await Ui.Until(() => Workspace.Status.StartsWith("ローカル保存失敗"));
+@@ -95,8 +100,9 @@ public sealed partial class HostedTests
+             {
+                 Assert.That(Workspace.Selected?.Snapshot.Id, Is.EqualTo(selected.Snapshot.Id));
+                 Assert.That(Ui.Tree(panel).OfType<SplitView>().Single().IsPaneOpen, Is.True);
+-                Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo("retain this pending title"));
+-                Assert.That(Work.Buffer(Work.Open(selected)[0].Cells[0]), Is.EqualTo("retain this pending title"));
++                Assert.That(Ui.Find<TextBox>("GridCell0_0").Text, Is.EqualTo(unfinishedTitle));
++                Assert.That(Work.Buffer(title), Is.EqualTo(unfinishedTitle));
++                Assert.That(Work.Value(title), Is.EqualTo(originalTitle));
+                 Assert.That(h.Writes, Is.Empty);
+             });
+         }
+diff --git a/tests/README.md b/tests/README.md
+index 4b70061..5925438 100644
+--- a/tests/README.md
++++ b/tests/README.md
+@@ -195,7 +195,7 @@ Focused hosted [workspace cases](GhProjectsBoards.UiIntegration.Tests/README.md#
+ 
+ The runner selects exactly that case, creates a new seed/output, and retains source/binary/seed hashes, dirty and untracked source, TRX/logs, screenshots, typed-target/checkpoint observations and process lifetime. `-NoBuild`, an absolute immutable `-Executable` and optional caller-declared `-SourceRevision` support separate baseline artifacts; none proves binary/source equivalence. See [measurement boundaries and override commands](../docs/performance.md#cached-local-sheet-diagnosis).
+ 
+-Choose 50–5,000 rows and 1–12 select fields for the question being investigated, not every combination. Twelve select fields plus Title and Repository are fourteen total columns. Native wheel/drag, focused pending input, commit/Undo and Project switching are observed at ordinary/wide sizes. Only selection/arrows have one warmup plus five samples; other actions are single observations. `-Frames` includes independent horizontal departure/return captures. The optional `-BulkCorrectness` phase checks a native multirow paste and one Undo against exact checkpoint field identities after the timing phases. `-Ime` adds physical Japanese composition/wheel/confirmation at the selected row count; default runs omit it and existing broader IME coverage remains separate. Compare performance using the same fixture, viewport, DPI and instrumentation on frozen baseline and candidate executables; the diagnostic range does not establish supported capacity.
++Choose 50–5,000 rows and 1–12 select fields for the question being investigated, not every combination. Twelve select fields plus Title and Repository are fourteen total columns. Native wheel/drag, focused pending input, commit/Undo and Project switching are observed at ordinary/wide sizes. Only selection/arrows have one warmup plus five samples; other actions are single observations. `-Frames` includes independent horizontal departure/return captures. After the immediate Project-return image it also captures the unchanged window at 100/500/1,000 ms target offsets, before UI Automation inspection or further input. Actual capture intervals and the immediate-image completion boundary are retained; these are sparse observations, not presentation deadlines. The optional `-BulkCorrectness` phase checks a native multirow paste and one Undo against exact checkpoint field identities after the timing phases. `-Ime` adds physical Japanese composition/wheel/confirmation at the selected row count; default runs omit it and existing broader IME coverage remains separate. Compare performance using the same fixture, viewport, DPI and instrumentation on frozen baseline and candidate executables; the diagnostic range does not establish supported capacity.
+ 
+ Raw UIA/driver waits are not product latency. App spans include managed probe allocations but exclude native XAML allocation; rendering callbacks are not presented pixels. Completion requires separate review of omissions, reached scroll endpoints, actual typed IDs, durable Buffer/Change conditions, screenshots and process outcome. Preserve failures and `wheel-endpoint-not-reached` observations. This diagnostic does not establish live-service behavior, timing thresholds or human usability acceptance; the existing test-selection and live policies are unchanged.
+ 

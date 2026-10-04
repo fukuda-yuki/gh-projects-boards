@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="375" result="Passed" start-time="2026-10-04T15:35:47.2206201Z" end-time="2026-10-04T15:35:47.9111298Z" duration="0.690486" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4" random-seed="1770444331">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "cat == GridLifetime" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261005-003534-353-ac40d2eb\results.xml]]></command-line>
+  <filter>
+    <cat>GridLifetime</cat>
+  </filter>
+  <test-suite type="Assembly" id="1476" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:35:47.2206201Z" end-time="2026-10-04T15:35:47.9111298Z" duration="0.690486" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="40796" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1477" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:35:47.2230936Z" end-time="2026-10-04T15:35:47.9110831Z" duration="0.687989" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+      <test-suite type="TestSuite" id="1478" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:35:47.2232830Z" end-time="2026-10-04T15:35:47.9110573Z" duration="0.687775" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+        <test-suite type="TestSuite" id="1479" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="375" result="Passed" start-time="2026-10-04T15:35:47.2233683Z" end-time="2026-10-04T15:35:47.9110057Z" duration="0.687638" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+          <test-suite type="TestFixture" id="1330" name="GridLifetimeHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-04T15:35:47.2233712Z" end-time="2026-10-04T15:35:47.9103938Z" duration="0.687023" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="4">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1331" name="UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" fullname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests.UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" methodname="UnmountedReplacementKeepsCurrentSavePresentationThenMountedRetryPersistsBothProjects" classname="GhProjectsBoards.UiIntegration.Tests.GridLifetimeHostedTests" runstate="Runnable" seed="980913848" result="Passed" start-time="2026-10-04T15:35:47.2253086Z" end-time="2026-10-04T15:35:47.9072830Z" duration="0.682073" asserts="4">
+              <properties>
+                <property name="Category" value="GridLifetime" />
+              </properties>
+              <output><![CDATA[Store: C:\Users\mwam0\AppData\Local\Temp\ghpb-grid-lifetime-b535459276a2477f89bf5f00ff3a8c44
+Native replacement events: replacement-loaded -> previous-unloaded
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,0 +1,62 @@
+[
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\coreclr.dll",
+    "sha256": "128AEE8C62A673D64739E585E3876B61133571CEC83A46240A62581D5465639B",
+    "bytes": 4614992
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.dll",
+    "sha256": "9322ECD1FE6A6C6BFC796B1FF466C8C24EA1164A622E425A0602B906D6BCC3D0",
+    "bytes": 977408
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.exe",
+    "sha256": "C85B25EF47001EE76C2B5EEABD9D9EFEF7AB4E777F2BFEF143EA3F435C52F3EA",
+    "bytes": 289792
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.runtimeconfig.json",
+    "sha256": "564EDFAD8990E994033CABA1FBFC6D7B10E935CDB4842F9C9A6225A4C09F70AA",
+    "bytes": 431
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.Core.dll",
+    "sha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A",
+    "bytes": 998400
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\Microsoft.UI.Xaml.dll",
+    "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+    "bytes": 15083832
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\FlaUI.Core.dll",
+    "sha256": "1696C344D2FF54598FB5AE869E9CBCF363C0BE3EBFF744CC50BA834056B43B6F",
+    "bytes": 267776
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\FlaUI.UIA3.dll",
+    "sha256": "D00FA5203C56B9D1C7B0BC624CFFA84D599D6B8DFA6F27C0324E3059F343754C",
+    "bytes": 108544
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+    "sha256": "54C0C53CE08B3C4A0190599764A39BF7156BE62D3EB658C39538AAA0A8CBD5D2",
+    "bytes": 703488
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Core.dll",
+    "sha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A",
+    "bytes": 998400
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Tests.dll",
+    "sha256": "91120D4EF65C7E9D7372E764778B6657227EA409B12E02E4BC9E7870F3F63662",
+    "bytes": 1706496
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Tests.exe",
+    "sha256": "F63383FE72CBC0DBA1ACDB60AC07F73DF0E2A9E7191C62BFCE7BC84ACF043F23",
+    "bytes": 162816
+  }
+]
