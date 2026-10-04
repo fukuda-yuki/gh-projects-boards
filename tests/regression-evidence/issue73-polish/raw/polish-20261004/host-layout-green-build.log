@@ -1,0 +1,12 @@
+  復元対象のプロジェクトを決定しています...
+  復元対象のすべてのプロジェクトは最新です。
+  GhProjectsBoards.Core -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.Core.dll
+  GhProjectsBoards.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.Tests.dll
+  GhProjectsBoards.App -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.App.dll
+  GhProjectsBoards.UiIntegration.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll
+
+ビルドに成功しました。
+    0 個の警告
+    0 エラー
+
+経過時間 00:00:05.83

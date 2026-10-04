@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="a192f697-b823-4689-ab17-6bcd9b742d6a" name="mwam0@RTX5070 2026-10-04 18:31:29" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T18:31:29.4782030+09:00" queuing="2026-10-04T18:31:29.4782032+09:00" start="2026-10-04T18:31:00.2038746+09:00" finish="2026-10-04T18:32:03.1841167+09:00" />
+  <TestSettings name="default" id="2458197e-4636-4b85-af97-32a6a3d6b1b4">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_18_31_29" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="ff94d1bb-5c11-4a5f-a191-7a0a52a0a278" testId="1440c140-dbeb-df83-2a25-77dca355ded9" testName="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" computerName="RTX5070" duration="00:00:33.6801950" startTime="2026-10-04T18:31:29.4584630+09:00" endTime="2026-10-04T18:32:03.1386573+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ff94d1bb-5c11-4a5f-a191-7a0a52a0a278">
+      <Output>
+        <ErrorInfo>
+          <Message>  Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result, Is.True)&#xD;
+  Expected: True&#xD;
+  But was:  False&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Edit(Window w, Int32 row, String text) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 42&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass76_0.&lt;OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort&gt;b__7(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 60&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 54&#xD;
+
+1)    at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Edit(Window w, Int32 row, String text) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 42&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass76_0.&lt;OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort&gt;b__7(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 60&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 54&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="bdda68d5-da12-49f4-87ab-cc613926e372" testId="08c496da-f5ff-923e-b44b-d3bf1cdcd699" testName="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" computerName="RTX5070" duration="00:00:28.5345550" startTime="2026-10-04T18:31:00.9231958+09:00" endTime="2026-10-04T18:31:29.4577154+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bdda68d5-da12-49f4-87ab-cc613926e372">
+      <Output>
+        <ErrorInfo>
+          <Message>  Assert.That(Retry.WhileFalse(condition, TimeSpan.FromSeconds(20), TimeSpan.FromMilliseconds(100)).Result, Is.True)&#xD;
+  Expected: True&#xD;
+  But was:  False&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Edit(Window w, Int32 row, String text) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 42&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_0.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__1(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 36&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 32&#xD;
+
+1)    at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Edit(Window w, Int32 row, String text) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 42&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_0.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__1(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 36&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 32&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults/polish-20261004/e2e-driver-v4/ghprojectsboards.e2e.tests.dll" id="1440c140-dbeb-df83-2a25-77dca355ded9">
+      <Execution id="ff94d1bb-5c11-4a5f-a191-7a0a52a0a278" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v4/GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" />
+    </UnitTest>
+    <UnitTest name="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults/polish-20261004/e2e-driver-v4/ghprojectsboards.e2e.tests.dll" id="08c496da-f5ff-923e-b44b-d3bf1cdcd699">
+      <Execution id="bdda68d5-da12-49f4-87ab-cc613926e372" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v4/GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="1440c140-dbeb-df83-2a25-77dca355ded9" executionId="ff94d1bb-5c11-4a5f-a191-7a0a52a0a278" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="08c496da-f5ff-923e-b44b-d3bf1cdcd699" executionId="bdda68d5-da12-49f4-87ab-cc613926e372" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="2" executed="2" passed="0" failed="2" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v4/GhProjectsBoards.E2E.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 2 of 2 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

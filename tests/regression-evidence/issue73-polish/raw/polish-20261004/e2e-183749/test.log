@@ -1,0 +1,23 @@
+VSTest のバージョン 18.7.0 (x64)
+
+テスト実行を開始しています。お待ちください...
+合計 1 個のテスト ファイルが指定されたパターンと一致しました。
+  失敗 OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort [7 s]
+  エラー メッセージ:
+   Missing control: ProjectSummary
+  スタック トレース:
+     at GhProjectsBoards.E2E.Tests.WorkspaceUi.Element(Window window, String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WorkspaceUi.cs:line 209
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Text(Window w, String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 135
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.<>c__DisplayClass20_0.<Register>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 33
+   at FlaUI.Core.Tools.Retry.While[T](Func`1 retryMethod, Func`2 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage, Boolean lastValueOnTimeout, T defaultOnTimeout)
+   at FlaUI.Core.Tools.Retry.WhileFalse(Func`1 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage)
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Register(Window w, Int32 number) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\EditingGridTests.cs:line 33
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.<>c__DisplayClass76_0.<OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort>b__7(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 57
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 54
+
+
+結果ファイル: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\e2e-183749\e2e.trx
+
+失敗!   -失敗:     1、合格:     1、スキップ:     0、合計:     2、期間: 26 s - GhProjectsBoards.E2E.Tests.dll (net10.0)

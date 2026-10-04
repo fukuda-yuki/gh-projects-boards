@@ -17,6 +17,7 @@ internal sealed partial class EditingGrid
         public Point StartPosition { get; init; }
         public Point Position { get; set; }
         public bool Moved { get; set; }
+        public DateOnly? ReportedThrough { get; init; }
     }
     private SheetDrag? drag;
     private UIElement? dragCapture;
@@ -59,7 +60,7 @@ internal sealed partial class EditingGrid
             {
                 if (!CanRefresh) throw new InvalidOperationException("IME変換中です。確定または取消してから実行してください。");
                 // Validate the source without changing any value or creating history.
-                session.Workspace.Fill(projectId, rows, row, column, row, row);
+                session.Workspace.Fill(projectId, rows, row, column, row, row, confirmedActualThrough);
                 StartDrag(true, row, column, args);
             }
             catch (InvalidOperationException error) { ShowOperationProblem(error.Message); }
@@ -88,7 +89,8 @@ internal sealed partial class EditingGrid
         { status.Text = "ドラッグを開始できません。もう一度操作してください。"; return; }
         dragCapture = target;
         var position = args.GetCurrentPoint(this).Position;
-        drag = new(fill, row, column, generation, session.Workspace.Revision, args.Pointer.PointerId) { Position = position, StartPosition = position };
+        drag = new(fill, row, column, generation, session.Workspace.Revision, args.Pointer.PointerId) {
+            Position = position, StartPosition = position, ReportedThrough = confirmedActualThrough };
         dragScroll.Start(); PaintRealizedSelection();
     }
     private void DragMoved(object sender, PointerRoutedEventArgs args)
@@ -139,7 +141,7 @@ internal sealed partial class EditingGrid
         if (operation.Fill)
         {
             Run(() => session.Workspace.Fill(projectId, rows, operation.SourceRow, operation.Column,
-                Math.Min(operation.SourceRow, lastRow), Math.Max(operation.SourceRow, lastRow)));
+                Math.Min(operation.SourceRow, lastRow), Math.Max(operation.SourceRow, lastRow), operation.ReportedThrough));
         }
         else if (active) Select(currentRow, currentColumn, true);
         PaintRealizedSelection(); UpdateSelection();
@@ -183,7 +185,7 @@ internal sealed partial class EditingGrid
                 ? new(column == minColumn ? 1 : 0, row == minRow ? 1 : 0, column == maxColumn ? 1 : 0, row == maxRow ? 1 : 0) : new(0);
             frame.Style = (Style)Application.Current.Resources[controls[row][column] is TitleCell { Editing: true } ? "SheetEditingFrameStyle" : "SheetSelectionFrameStyle"];
         }
-        var showHandle = current && minRow == maxRow && minColumn == maxColumn && cell.Editable
+        var showHandle = current && minRow == maxRow && minColumn == maxColumn && (cell.Editable || TypedActual(cell))
             && !problem && session.Workspace.Buffer(cell) is null && !string.IsNullOrEmpty(session.Workspace.Value(cell));
         var handle = fillHandles[row][column];
         if (handle is null && showHandle)

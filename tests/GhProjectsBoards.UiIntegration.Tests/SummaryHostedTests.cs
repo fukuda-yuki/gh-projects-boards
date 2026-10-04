@@ -34,6 +34,59 @@ public sealed class SummaryHostedTests
     private async Task Open() { await Ui.Run(() => Views().SelectedItem = Views().Items[2]); await Ui.Ready<ListView>("SummaryPeople"); }
 
     [Test]
+    public async Task WeeklyReportCommandCopiesTheDisplayedProjectToNativeClipboardWithoutChangingWork()
+    {
+        GhProjectsBoards.E2E.Tests.NativeClipboardScope saved = null!;
+        await Ui.Run(() => saved = new());
+        try
+        {
+            await Open();
+            string expected = "";
+            await Ui.Run(() => {
+                Ui.Find<TextBox>("SummaryFilter").Text = "no matching task";
+                expected = WeeklySummaryReport.Create(Ui.Find<SummaryView>("SummaryView").AdoptedSummary!);
+            });
+            var before = System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot());
+            await Ui.Run(() => GhProjectsBoards.E2E.Tests.NativeClipboardScope.WriteTestFormats("sentinel"));
+
+            await Ui.ClickCommand("SummaryCopyReport");
+
+            await Ui.Until(() => GhProjectsBoards.E2E.Tests.NativeClipboardScope.ReadText() == expected);
+            await Ui.Run(() => Assert.That(Ui.Find<AppBarButton>("SummaryCopyReport").Label, Is.EqualTo("コピー済み")));
+            Assert.That(System.Text.Json.JsonSerializer.Serialize(session.Workspace.Snapshot()), Is.EqualTo(before));
+        }
+        finally { await Ui.Run(() => saved.Dispose()); }
+    }
+
+    [TestCase(ElementTheme.Light), TestCase(ElementTheme.Dark)]
+    public async Task NegativeAndUnknownHeadroomHaveDistinctVisibleMarkersAndThemeColors(ElementTheme theme)
+    {
+        await Ui.Run(() => grid.RequestedTheme = theme); await Open(); await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var people = Ui.Find<ListView>("SummaryPeople");
+            var presenters = Ui.Tree(people).OfType<SummaryPersonPresenter>().ToArray();
+            var overload = presenters.Single(p => ((PersonSummary)p.DataContext).Id == "B");
+            var neutral = presenters.Single(p => ((PersonSummary)p.DataContext).Id == "A");
+            var negativeText = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("超過"));
+            var neutralText = Ui.Tree(neutral).OfType<TextBlock>().Single(t => t.Text.Contains("余裕"));
+            Assert.That(negativeText.Text, Does.Contain("⚠ 超過 2"));
+            Assert.That(((Microsoft.UI.Xaml.Media.SolidColorBrush)negativeText.Foreground).Color,
+                Is.Not.EqualTo(((Microsoft.UI.Xaml.Media.SolidColorBrush)neutralText.Foreground).Color));
+            var person = (PersonSummary)overload.DataContext;
+            overload.DataContext = person with { Forecast = EffortValue.Missing };
+            overload.UpdateLayout();
+            var missing = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("比較未完"));
+            Assert.That(missing.Text, Is.EqualTo("△ 比較未完"));
+            Assert.That(((Microsoft.UI.Xaml.Media.SolidColorBrush)missing.Foreground).Color,
+                Is.Not.EqualTo(((Microsoft.UI.Xaml.Media.SolidColorBrush)negativeText.Foreground).Color));
+            overload.DataContext = person with { Allowance = person.Forecast.Hours };
+            overload.UpdateLayout();
+            var zero = Ui.Tree(overload).OfType<TextBlock>().Single(t => t.Text.Contains("余裕"));
+            Assert.That(zero.Text, Is.EqualTo("余裕 0"));
+        });
+    }
+
+    [Test]
     public async Task OrdinarySummaryEntryOpensPersonAndContributingTaskWithoutChangingWork()
     {
         await Ui.Unmount(grid);

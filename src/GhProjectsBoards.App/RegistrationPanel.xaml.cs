@@ -151,13 +151,14 @@ public sealed partial class RegistrationPanel : UserControl
             StatusDetailsText.Text = workspace.Status;
             ToolTipService.SetToolTip(Status, workspace.Status);
             Identity.Text = workspace.Profile is { } profile
-                ? $"{profile.Host}  /  {workspace.ProfileLogin}  /  {(workspace.CanRead ? "接続確認済み" : "未認証・キャッシュのみ")}" : "アカウント未選択 — 保存済みアカウントを選択、または接続設定で確認";
+                ? $"{profile.Host}  /  {workspace.ProfileLogin}  /  {(workspace.CanRead ? "接続確認済み" : "未認証・キャッシュのみ")}" : "アカウント未選択";
             ToolTipService.SetToolTip(Identity, workspace.Profile is { } identity ? $"{Identity.Text}\nアカウント ID {identity.ViewerId}" : Identity.Text);
             Add.IsEnabled = !workspace.IsBusy;
             DiscoveryConnectionHint.Visibility = DiscoveryConnection.Visibility = workspace.CanRead ? Visibility.Collapsed : Visibility.Visible;
             Cancel.IsEnabled = workspace.IsBusy;
             Cancel.Visibility = workspace.IsBusy ? Visibility.Visible : Visibility.Collapsed;
-            Cancel.Content = workspace.ExecutingBatchId is null ? "処理をキャンセル" : "未送信の処理を止める";
+            Cancel.Content = "中止";
+            ToolTipService.SetToolTip(Cancel, workspace.ExecutingBatchId is null ? "実行中の処理を中止" : "未送信の処理を止めます。完了したGitHub更新は取り消しません。");
             UpdateApplyProgress();
             Progress.Visibility = workspace.IsBusy ? Visibility.Visible : Visibility.Collapsed;
             Register.IsEnabled = choice is not null && workspace.CanRead && choice.Id.Scope == workspace.Profile && !workspace.IsBusy;
@@ -165,6 +166,8 @@ public sealed partial class RegistrationPanel : UserControl
             var settingsOpen = EditorHost.Children.OfType<EditingGrid>().Any(g => g.PlanningSettingsOpen);
             Refresh.IsEnabled = workspace.Selected is not null && workspace.CanRead && !workspace.IsBusy && !settingsOpen;
             Apply.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog && !settingsOpen;
+            WeeklyApply.IsEnabled = Apply.IsEnabled && workspace.Drafts!.Workspace.Planning(workspace.Selected!.Snapshot.Id.NodeId) is not null;
+            PlanningSettingsCommand.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog && !settingsOpen;
             ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
             Remove.IsEnabled = workspace.Selected is not null;
             ProjectSettings.IsEnabled = workspace.Selected is not null && !settingsOpen;
@@ -218,7 +221,7 @@ public sealed partial class RegistrationPanel : UserControl
                 ProjectContext.Visibility = Visibility.Visible;
                 ToolTipService.SetToolTip(ProjectContext, ProjectContext.Text);
                 ToolTipService.SetToolTip(Summary, Summary.Text);
-                ProjectInformation.Text = $"{p.Title}\n{selected.OwnerLogin} / Project #{p.Number}\n{p.Url}\n{p.Id.Scope.Host} / アカウント ID {p.Id.Scope.ViewerId}\nProject ID: {p.Id.NodeId}\n\n最終成功：{selected.RetrievedAt.LocalDateTime:g}\n最新の試行：{RegistrationWorkspace.AttemptText(workspace.LatestAttempt)}\n項目 {p.Items.Count} / Issue {p.Issues.Count}\n非対応フィールド {p.Fields.Count(f => f.Availability == ValueAvailability.Unsupported)} / 閲覧不可 {p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable)}\n\n編集はローカルに保存します。GitHubへの反映は、対象と内容をレビューして実行します。";
+                ProjectInformation.Text = $"{p.Title}\n{selected.OwnerLogin} / Project #{p.Number}\n{p.Url}\n{p.Id.Scope.Host} / アカウント ID {p.Id.Scope.ViewerId}\nProject ID: {p.Id.NodeId}\n\n最終成功：{selected.RetrievedAt.LocalDateTime:g}\n最新の試行：{RegistrationWorkspace.AttemptText(workspace.LatestAttempt)}\n項目 {p.Items.Count} / Issue {p.Issues.Count}\n非対応フィールド {p.Fields.Count(f => f.Availability == ValueAvailability.Unsupported)} / 閲覧不可 {p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable)}";
                 if (workspace.Incomplete is { } staged)
                 {
                     Grid.SetRow(Items, 3); Items.MaxHeight = 160;
@@ -237,9 +240,9 @@ public sealed partial class RegistrationPanel : UserControl
                 ProjectContext.Text = ""; ProjectContext.Visibility = Visibility.Collapsed;
                 EmptyWorkspace.Visibility = workspace.Incomplete is null ? Visibility.Visible : Visibility.Collapsed;
                 EmptyHint.Text = workspace.Profile is null
-                    ? "左の保存済みアカウントを選ぶと、前回保存したProjectを開けます。初めて利用する場合は、右上の「接続設定」でGitHubへの接続を確認してください。"
-                    : workspace.CanRead ? "左の登録済みProjectを選択してください。「Projectを追加」から別のProjectを取得できます。"
-                    : "左の登録済みProjectを選ぶと、キャッシュを使ってローカル編集できます。最新の取得やGitHubへの反映には「接続設定」が必要です。";
+                    ? "保存済みアカウントを選択、または「接続設定」へ。"
+                    : workspace.CanRead ? "登録済みProjectを選択、または「Projectを追加」へ。"
+                    : "保存済みProjectを選択できます。接続は未確認です。";
                 if (workspace.Incomplete is null) Items.Visibility = Visibility.Collapsed;
             }
         }
@@ -373,18 +376,17 @@ public sealed partial class RegistrationPanel : UserControl
     }
     private void HeaderSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var narrow = e.NewSize.Width < 720;
+        var narrow = e.NewSize.Width < 1000;
         Grid.SetColumn(ProjectCommands, narrow ? 0 : 1);
         Grid.SetRow(ProjectCommands, narrow ? 1 : 0);
         Grid.SetColumnSpan(ProjectCommands, narrow ? 2 : 1);
         Grid.SetColumnSpan(ProjectHeading, narrow ? 2 : 1);
         Grid.SetRow(ProjectIdentityContext, narrow ? 2 : 1);
-        var compact = e.NewSize.Width < 420;
-        ProjectCommands.RowSpacing = compact ? 4 : 0;
-        Grid.SetColumn(ApplyHistory, compact ? 0 : 2);
-        Grid.SetRow(ApplyHistory, compact ? 1 : 0);
-        Grid.SetColumn(ProjectSettings, compact ? 1 : 3);
-        Grid.SetRow(ProjectSettings, compact ? 1 : 0);
+        var columns = e.NewSize.Width < 420 ? 2 : e.NewSize.Width < 660 ? 3 : 6;
+        ProjectCommands.RowSpacing = columns < 6 ? 4 : 0;
+        var commands = new FrameworkElement[] { Refresh, Apply, WeeklyApply, ApplyHistory, PlanningSettingsCommand, ProjectSettings };
+        for (var i = 0; i < commands.Length; i++)
+        { Grid.SetColumn(commands[i], i % columns); Grid.SetRow(commands[i], i / columns); }
     }
     private void BackToPreview(object sender, RoutedEventArgs e) => ShowPreview();
     private static IEnumerable<string> PreviewRows(ProjectReadModel p)

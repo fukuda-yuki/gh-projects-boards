@@ -1,0 +1,27 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "519D16D6104341CDEBE776F3A69AB53E06D533384347A44630382EE1A76E8D6F",
+    "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\issue73-lifetime-baseline\\gh-projects-boards\\TestResults\\lifetime-clean-head\\host\\GhProjectsBoards.UiIntegration.Tests.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "159F27C09985FC1754B9EC09235CC83B5A6E135D7E12028A987A9BB43ADBE531",
+    "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\issue73-lifetime-baseline\\gh-projects-boards\\TestResults\\lifetime-clean-head\\host\\GhProjectsBoards.UiIntegration.Tests.dll"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "58096DEFC3222716941121A491E5C2787B96EE10E5A1E61F0416EFD3BAF32057",
+    "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\issue73-lifetime-baseline\\gh-projects-boards\\TestResults\\lifetime-clean-head\\host\\GhProjectsBoards.App.dll"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F1D1065DCC844F09A0BCA9B4014D45083C306A50C3CCC721600F830023E67B57",
+    "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\issue73-lifetime-baseline\\gh-projects-boards\\TestResults\\lifetime-clean-head\\host\\GhProjectsBoards.Core.dll"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+    "Path": "C:\\Users\\mwam0\\.codex\\worktrees\\issue73-lifetime-baseline\\gh-projects-boards\\TestResults\\lifetime-clean-head\\host\\Microsoft.UI.Xaml.dll"
+  }
+]

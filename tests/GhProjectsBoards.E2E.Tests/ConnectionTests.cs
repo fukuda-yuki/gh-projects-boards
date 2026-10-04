@@ -146,12 +146,22 @@ public sealed class ConnectionTests
         });
     }
 
-    private static Window WaitForPicker(Window window)
+    internal static Window WaitForPicker(Window window)
     {
         Window? picker = null;
-        WaitFor(() => (picker = window.FindFirstDescendant(cf => cf.ByClassName("#32770"))?.AsWindow()) is not null);
+        var owner = GetAncestor(window.Properties.NativeWindowHandle.Value, 3);
+        WaitFor(() => {
+            picker = window.FindFirstDescendant(cf => cf.ByClassName("#32770"))?.AsWindow();
+            // WinRT can host the native dialog in PickerHost.exe. Its native
+            // root owner still identifies this app without selecting another app's picker.
+            picker ??= window.Automation.GetDesktop().FindAllChildren(cf => cf.ByClassName("#32770"))
+                .SingleOrDefault(dialog => GetAncestor(dialog.Properties.NativeWindowHandle.Value, 3) == owner)?.AsWindow();
+            return picker is not null;
+        });
         return picker!;
     }
+
+    [DllImport("user32.dll")] private static extern nint GetAncestor(nint window, uint flags);
 
     private static void CloseFromChrome(Window window, bool altF4)
     {

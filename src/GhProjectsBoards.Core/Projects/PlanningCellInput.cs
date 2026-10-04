@@ -27,7 +27,12 @@ internal sealed partial class EditingWorkspace
 
     public ActualInputContext ActualInput(ProjectRegistration project, string rowId)
     {
-        var (row, cell, task) = PlanningInputTarget(project, rowId, "Actual");
+        var (_, cell, task) = PlanningInputTarget(project, rowId, "Actual");
+        return ActualInput(project, cell, task);
+    }
+
+    private ActualInputContext ActualInput(ProjectRegistration project, EditCell cell, PlanningTask task)
+    {
         var actuals = task.Actuals;
         if (actuals is { Length: 1 })
             return new(task.Id, actuals[0].PersonId, true, true, false, actuals[0].Hours, actuals[0].ReportedThrough);
@@ -70,12 +75,12 @@ internal sealed partial class EditingWorkspace
         CommitPlanningInput(project, cell, task with { Actuals = reports }, expectedRevision);
     }
 
-    private (EditRow Row, EditCell Cell, PlanningTask Task) PlanningInputTarget(ProjectRegistration project, string rowId, string role)
+    private (EditRow Row, EditCell Cell, PlanningTask Task) PlanningInputTarget(ProjectRegistration project, string rowId, string role, EditRow[]? currentRows = null)
     {
         if (project.Snapshot.Id.Scope != Scope) throw new InvalidOperationException("別プロフィールの計画です。");
         var plan = Planning(project.Snapshot.Id.NodeId) ?? throw new InvalidOperationException("Projectの計画設定が必要です。");
         var binding = plan.Fields.SingleOrDefault(f => f.Role == role) ?? throw new InvalidOperationException("計画フィールドを設定してください。");
-        var row = ReadRows(project).SingleOrDefault(r => r.ItemId == rowId) ?? throw new InvalidOperationException("入力対象の行を確認できません。");
+        var row = (currentRows ?? ReadRows(project)).SingleOrDefault(r => r.ItemId == rowId) ?? throw new InvalidOperationException("入力対象の行を確認できません。");
         var cell = row.Cells.SingleOrDefault(c => c.Key?.FieldId == binding.FieldId);
         if (cell is null || PlanningInputRole(cell) != role) throw new InvalidOperationException("この計画セルは現在入力できません。比較画面で取得値を確認してください。");
         var id = TaskId(project, rowId);

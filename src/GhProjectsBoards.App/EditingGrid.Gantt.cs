@@ -77,7 +77,7 @@ internal sealed partial class EditingGrid
         var prior = CurrentProjectView; var id = selectedRowId ?? ViewSelection?.Item;
         if (prior == ProjectView.Boards && view != prior && Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) is TitleCell focused)
             focused.CommitOnLeave(projectViews);
-        if (prior == ProjectView.Gantt && view != ProjectView.Gantt) retainedGanttPosition = gantt!.CapturePosition();
+        if (prior == ProjectView.Gantt && view != ProjectView.Gantt) { gantt!.CancelScheduleDrag(); retainedGanttPosition = gantt.CapturePosition(); }
         if (selectedRowId is not null) { retainedGanttPosition = null; gantt?.CancelPositionRestore(); }
         switchingView = true; projectViews.SelectedItem = view == ProjectView.Gantt ? ganttView : view == ProjectView.Summary ? summaryItem : boardsView; switchingView = false;
         if (prior == ProjectView.Boards && view != ProjectView.Boards)
@@ -95,7 +95,7 @@ internal sealed partial class EditingGrid
         {
             if (gantt is null)
             {
-                gantt = new GanttView { Visibility = Visibility.Collapsed };
+                gantt = new GanttView { Visibility = Visibility.Collapsed, CurrentRevision = () => session.Workspace.Revision };
                 SetRow(gantt, 1); SetRowSpan(gantt, RowDefinitions.Count - 2); Children.Add(gantt);
                 gantt.EditRequested += async id => { if (SelectGanttRow(id)) { await ShowSchedulingEditorAsync(gantt.SchedulingAnchor); UpdateGantt(); } };
                 gantt.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateGantt(); } };
@@ -110,6 +110,14 @@ internal sealed partial class EditingGrid
                 };
                 gantt.BoardsRequested += id => { if (SelectGanttRow(id)) ShowProjectView(false); };
                 gantt.UndoRequested += () => { Run(Undo); gantt.ShowChangedSchedule(null); UpdateGantt(); };
+                gantt.ScheduleDragged += edit => {
+                    Run(() => {
+                        if (!IsLoaded || !ShowingGantt || !CanRefresh || ganttWorkspace != session.Workspace)
+                            throw new InvalidOperationException("作業が変わりました。現在の日程を確認してください。");
+                        session.Workspace.CommitGanttSchedule(registration, edit);
+                    });
+                    UpdateGantt();
+                };
                 gantt.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateGantt(); };
             }
             gantt.Visibility = Visibility.Visible; UpdateGantt(true, id);

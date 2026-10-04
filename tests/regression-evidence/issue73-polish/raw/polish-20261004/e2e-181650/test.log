@@ -1,0 +1,22 @@
+VSTest のバージョン 18.7.0 (x64)
+
+テスト実行を開始しています。お待ちください...
+合計 1 個のテスト ファイルが指定されたパターンと一致しました。
+ソース `C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-host/GhProjectsBoards.E2E.Tests.dll` の Testhost プロセスがエラーで終了しました: You must install or update .NET to run this application.
+App: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\e2e-host\testhost.exe
+Architecture: x64
+Framework: 'Microsoft.NETCore.App', version '10.0.0' (x64)
+.NET location: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\e2e-host\
+No frameworks were found.
+The following frameworks for other architectures were found:
+  x86
+    8.0.31 at [C:\Program Files (x86)\dotnet\shared\Microsoft.NETCore.App]
+    10.0.12 at [C:\Program Files (x86)\dotnet\shared\Microsoft.NETCore.App]
+Learn more:
+https://aka.ms/dotnet/app-launch-failed
+To install missing framework, download:
+https://aka.ms/dotnet-core-applaunch?framework=Microsoft.NETCore.App&framework_version=10.0.0&arch=x64&rid=win-x64&os=win10
+。詳細については、診断ログを確認してください。
+結果ファイル: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\e2e-181650\e2e.trx
+
+テスト実行が中止されました。

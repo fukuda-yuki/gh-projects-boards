@@ -1,0 +1,29 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-10-04 09:48:55Z
+    End time: 2026-10-04 09:48:55Z
+    Duration: 0.080 seconds
+
+Test Filters
+    Where: test =~ 'ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges'
+
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Passed
+  Test Count: 1, Passed: 1, Failed: 0, Warnings: 0, Inconclusive: 0, Skipped: 0
+  Start time: 2026-10-04 09:48:55Z
+    End time: 2026-10-04 09:48:57Z
+    Duration: 1.302 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-184854-664-47a7c00c\results.xml
+

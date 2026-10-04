@@ -130,6 +130,14 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <Style x:Key="SummaryOverloadTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+            <Style x:Key="SummaryIncompleteTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCautionBrush}"/>
+            </Style>
+            <Style x:Key="SummaryNeutralTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}"/>
             <Style x:Key="SheetDetailsStyle" TargetType="Border">
                 <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
             </Style>

@@ -88,6 +88,8 @@ internal sealed partial class EditingGrid
         foreach (var value in Enum.GetValues<PlanningProgress>()) progress.Items.Add(new ComboBoxItem { Content = value switch {
             PlanningProgress.Unstarted => "未着手", PlanningProgress.InProgress => "進行中", PlanningProgress.Completed => "完了", _ => "再開" }, Tag = value });
         progress.SelectedIndex = (int)task.Progress; effort.Children.Add(progress);
+        effort.Children.Add(PlanningHelpButton("PlanProgressHelp", "工数・進捗のヘルプ",
+            "未着手は見積、進行中・再開は残時間を使って計算します。日時を指定したタスクは進捗を変更しても自動計算に切り替わりません。\nProjectの項目は連動しません。変更する場合は「実績・進捗」か表で選択してください。"));
         inputSections[progress] = sections[effort];
         edits.Add(() => progress.SelectedIndex != (int)task.Progress);
         var confirmRemaining = new CheckBox { Content = "再開時の残時間を確認", Visibility = Visibility.Collapsed };
@@ -106,13 +108,12 @@ internal sealed partial class EditingGrid
             var role = selectedProgress is PlanningProgress.InProgress or PlanningProgress.Reopened ? "Remaining" : "Estimate";
             var number = numbers.SingleOrDefault(n => n.Role == role); var text = number.Input?.Text;
             var amount = string.IsNullOrEmpty(text) ? "未入力" : ValidPlanningInput(() => PlanningContract.ParseHours(text)) ? text + "人時" : "入力を確認";
-            effect.Text = task.Mode == PlanningMode.Manual ? "指定した日程を保持します。進捗の変更だけでは自動計算に切り替えません。"
-                : task.Mode == PlanningMode.Unplanned ? "日程は未設定です。日程を作るには「自動計算」か「日時を指定」を選んでください。"
-                : selectedProgress == PlanningProgress.Completed ? "保存後の日程には実績開始・終了を採用します。"
-                : $"保存後の計算：{(number.Input?.IsReadOnly == true ? "確定済みの" : "")}{(role == "Remaining" ? "残時間" : "見積")} {amount}"
-                    + (role == "Remaining" ? $"\nProject共通の再計画基準：{(plan.Cutoff is null ? "未設定" : DateText(plan.Cutoff))}" : "");
+            effect.Text = task.Mode == PlanningMode.Manual ? "指定した日程を保持"
+                : task.Mode == PlanningMode.Unplanned ? "日程未設定"
+                : selectedProgress == PlanningProgress.Completed ? "採用予定: 実績開始・終了"
+                : $"計算: {(number.Input?.IsReadOnly == true ? "確定済みの" : "")}{(role == "Remaining" ? "残時間" : "見積")} {amount}"
+                    + (role == "Remaining" ? $"\n基準 { (plan.Cutoff is null ? "未設定" : DateText(plan.Cutoff)) }" : "");
             if (selectedProgress == PlanningProgress.Completed) effect.Text += "\n完了には残時間0と実績開始・終了を入力してください。";
-            effect.Text += "\nProjectの項目は連動しません。変更する場合は「実績・進捗」か表で選択してください。";
         }
         progress.SelectionChanged += (_, _) => { ExplainProgress(); changed(); };
         foreach (var number in numbers) number.Input.TextChanged += (_, _) => ExplainProgress();
@@ -140,8 +141,12 @@ internal sealed partial class EditingGrid
         var removeActuals = false;
         edits.Add(() => removeActuals && task.Actuals is not { Length: 0 });
         var removeReports = new Button { Content = "実績を削除" };
-        AutomationProperties.SetAutomationId(removeReports, "PlanRemoveReports"); reports.Children.Add(removeReports);
-        reports.Children.Add(new TextBlock { Text = "累計人時と報告対象最終日。残時間は独立した見積です。記録のない担当者は追加して入力します。", TextWrapping = TextWrapping.Wrap });
+        AutomationProperties.SetAutomationId(removeReports, "PlanRemoveReports");
+        var reportCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        reportCommands.Children.Add(removeReports);
+        reportCommands.Children.Add(PlanningHelpButton("PlanReportsHelp", "実績内訳のヘルプ",
+            "累計人時と報告対象最終日を記録します。残時間は独立した見積です。記録のない担当者は追加して入力します。"));
+        reports.Children.Add(reportCommands);
         var reportRows = new List<(string? Id, TextBox Hours, TextBox Day)>();
         var shareRows = new List<(string Id, TextBox Estimate, TextBox Remaining)>();
         var people = plan.People.Select(p => (Id: p.Id, Name: p.Name)).Concat((native?.Assignees ?? []).Select(p => (p.Id.NodeId, p.Login)))
@@ -178,7 +183,8 @@ internal sealed partial class EditingGrid
             input.Focus(FocusState.Programmatic); input.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
         };
         var attribution = Section(effort, "担当者別の工数集計（任意）");
-        attribution.Children.Add(new TextBlock { Text = "日程計算の担当・配賦とは別の記録です。空欄は不明、差額は担当者別に未配分のまま保持します。", TextWrapping = TextWrapping.Wrap });
+        attribution.Children.Add(PlanningHelpButton("PlanAttributionHelp", "担当者別工数のヘルプ",
+            "日程計算の担当・配賦とは別の記録です。空欄は不明、差額は未配分として保持します。内訳の合計はタスク工数以下とし、担当者へ自動配分しません。"));
         foreach (var person in people)
         {
             var share = task.Contributions?.SingleOrDefault(c => c.PersonId == person.Item1);
@@ -196,7 +202,6 @@ internal sealed partial class EditingGrid
                 !ValidPlanningInput(() => Hours(number.Input)) || parts.Any(p => !ValidPlanningInput(() => Hours(p)))
                 || Hours(number.Input) is not { } total || parts.Sum(p => Hours(p) ?? 0) <= total);
         }
-        attribution.Children.Add(new TextBlock { Text = "内訳の合計をタスク工数以下にします。担当者へ自動配分しません。", TextWrapping = TextWrapping.Wrap });
         var constraints = Section(parent, "日程の制約");
         var earliest = Date(constraints, "最早開始", "PlanEarliest", task.EarliestStart);
         var fixedStart = Date(constraints, "固定開始", "PlanFixedStart", task.FixedStart);

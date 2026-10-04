@@ -1,0 +1,13 @@
+  復元対象のプロジェクトを決定しています...
+  復元対象のすべてのプロジェクトは最新です。
+  GhProjectsBoards.Core -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\baseline-seed\GhProjectsBoards.Core.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+  GhProjectsBoards.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\baseline-seed\GhProjectsBoards.Tests.dll
+
+ビルドに成功しました。
+
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+    1 個の警告
+    0 エラー
+
+経過時間 00:00:01.43

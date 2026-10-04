@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-final\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="348" result="Passed" start-time="2026-10-04T09:26:17.4655112Z" end-time="2026-10-04T09:26:24.0218624Z" duration="6.556333" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8" random-seed="619838817">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-final\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "class == GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-182616-517-c0077309\results.xml]]></command-line>
+  <filter>
+    <class>GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests</class>
+  </filter>
+  <test-suite type="Assembly" id="1441" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-final\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="348" result="Passed" start-time="2026-10-04T09:26:17.4655112Z" end-time="2026-10-04T09:26:24.0218624Z" duration="6.556333" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-final" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-final" />
+    </settings>
+    <properties>
+      <property name="_PID" value="2208" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1442" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="348" result="Passed" start-time="2026-10-04T09:26:17.4676939Z" end-time="2026-10-04T09:26:24.0218602Z" duration="6.554166" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+      <test-suite type="TestSuite" id="1443" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="348" result="Passed" start-time="2026-10-04T09:26:17.4679029Z" end-time="2026-10-04T09:26:24.0218577Z" duration="6.553955" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+        <test-suite type="TestSuite" id="1444" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="348" result="Passed" start-time="2026-10-04T09:26:17.4679137Z" end-time="2026-10-04T09:26:24.0218560Z" duration="6.553942" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+          <test-suite type="TestFixture" id="1428" name="WeeklyApplyHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-10-04T09:26:17.4679149Z" end-time="2026-10-04T09:26:24.0218486Z" duration="6.553934" total="4" initiated="4" passed="4" failed="0" warnings="0" completed="4" skipped="0" inconclusive="0" asserts="8">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1433" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-04T09:26:17.4689179Z" end-time="2026-10-04T09:26:22.6224750Z" duration="5.153557" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="4">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+              <test-case id="1431" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(False)" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(False)" methodname="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="1948877944" result="Passed" start-time="2026-10-04T09:26:17.4690092Z" end-time="2026-10-04T09:26:20.3554258Z" duration="2.886462" asserts="2" />
+              <test-case id="1432" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(True)" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(True)" methodname="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="122439218" result="Passed" start-time="2026-10-04T09:26:20.3562605Z" end-time="2026-10-04T09:26:22.6217111Z" duration="2.265451" asserts="2" />
+            </test-suite>
+            <test-case id="1429" name="WeeklyCommandPreselectsChangedRowsAndDisplaysOnlyActualAndRemainingWithoutSending" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.WeeklyCommandPreselectsChangedRowsAndDisplaysOnlyActualAndRemainingWithoutSending" methodname="WeeklyCommandPreselectsChangedRowsAndDisplaysOnlyActualAndRemainingWithoutSending" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="1486410839" result="Passed" start-time="2026-10-04T09:26:22.6226422Z" end-time="2026-10-04T09:26:23.2208193Z" duration="0.598178" asserts="2">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+            </test-case>
+            <test-case id="1430" name="WeeklyHiddenRowsRequireExplicitInclusionAndSelectionBeforeTheyJoinTheReview" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.WeeklyHiddenRowsRequireExplicitInclusionAndSelectionBeforeTheyJoinTheReview" methodname="WeeklyHiddenRowsRequireExplicitInclusionAndSelectionBeforeTheyJoinTheReview" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="1275715795" result="Passed" start-time="2026-10-04T09:26:23.2208484Z" end-time="2026-10-04T09:26:24.0217586Z" duration="0.800911" asserts="2">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

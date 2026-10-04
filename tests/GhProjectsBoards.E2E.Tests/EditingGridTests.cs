@@ -30,7 +30,7 @@ public sealed partial class RegistrationTests
     private static void Register(Window w, int number)
     {
         AddUrl(w, number); Invoke(w, "RegisterProjectButton");
-        Wait(() => Text(w, "ProjectSummary").StartsWith("Project " + number));
+        Wait(() => WorkspaceUi.HasVisibleElement(w, "ProjectSummary") && Text(w, "ProjectSummary").StartsWith("Project " + number));
     }
     private static void Key(params VirtualKeyShort[] keys)
     { foreach (var key in keys) { Keyboard.Type(key); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Thread.Sleep(100); } }

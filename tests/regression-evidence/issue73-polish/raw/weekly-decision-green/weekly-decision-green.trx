@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="7f211d9e-cce8-4cc1-9909-331e2b6f8e1d" name="mwam0@RTX5070 2026-10-04 17:42:15" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T17:42:15.7901548+09:00" queuing="2026-10-04T17:42:15.7901549+09:00" start="2026-10-04T17:42:13.6526826+09:00" finish="2026-10-04T17:42:16.5598677+09:00" />
+  <TestSettings name="default" id="7b421a76-1a4f-400b-9906-4f60ead19e37">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_17_42_15" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="eb5f048f-f7e7-423a-9376-55818799bfaa" testId="bc381608-e0d6-45cd-5ec5-93de14da3386" testName="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" computerName="RTX5070" duration="00:00:01.0923030" startTime="2026-10-04T17:42:15.2996959+09:00" endTime="2026-10-04T17:42:16.3919984+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eb5f048f-f7e7-423a-9376-55818799bfaa" />
+    <UnitTestResult executionId="b023e686-690a-4797-8623-9b2b32c4e930" testId="88934b95-773e-2dcb-6b8e-7716708e5d96" testName="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" computerName="RTX5070" duration="00:00:00.2717290" startTime="2026-10-04T17:42:14.9668652+09:00" endTime="2026-10-04T17:42:15.2385942+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b023e686-690a-4797-8623-9b2b32c4e930" />
+    <UnitTestResult executionId="f736d3b1-4857-4d13-9ce6-9a0421a7f329" testId="f6c4111b-7f6f-d754-5b5d-d0692aa681ae" testName="OutsideActualChangeRetainsReportReconciliationInWeeklyCandidatesWithoutLocalScalarChange" computerName="RTX5070" duration="00:00:00.2232370" startTime="2026-10-04T17:42:14.7428709+09:00" endTime="2026-10-04T17:42:14.9660730+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f736d3b1-4857-4d13-9ce6-9a0421a7f329">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : Sequence contains more than one element</Message>
+          <StackTrace>   at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()&#xD;
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean&amp; found)&#xD;
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source)&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.OutsideActualChangeRetainsReportReconciliationInWeeklyCandidatesWithoutLocalScalarChange() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 65&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()&#xD;
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean&amp; found)&#xD;
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source)&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.OutsideActualChangeRetainsReportReconciliationInWeeklyCandidatesWithoutLocalScalarChange() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 65&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ddd3f719-3fa0-4494-b202-a4564814f70d" testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" testName="WeeklyReviewCannotSelectNewIssueCreation" computerName="RTX5070" duration="00:00:00.0102270" startTime="2026-10-04T17:42:16.3920421+09:00" endTime="2026-10-04T17:42:16.4022687+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ddd3f719-3fa0-4494-b202-a4564814f70d" />
+    <UnitTestResult executionId="3bd69790-71d7-401f-bfbb-1c1ba1f186ef" testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" computerName="RTX5070" duration="00:00:00.0016710" startTime="2026-10-04T17:42:16.4067885+09:00" endTime="2026-10-04T17:42:16.4084599+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3bd69790-71d7-401f-bfbb-1c1ba1f186ef" />
+    <UnitTestResult executionId="01d52ebb-8554-499e-8f9d-82636fdd3c5d" testId="a2387e6a-17c6-8b1b-ee1c-8793a092abb9" testName="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" computerName="RTX5070" duration="00:00:00.0600080" startTime="2026-10-04T17:42:15.2386364+09:00" endTime="2026-10-04T17:42:15.2986439+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="01d52ebb-8554-499e-8f9d-82636fdd3c5d" />
+    <UnitTestResult executionId="9b89c689-3414-418c-895f-e80f4a177152" testId="a5267826-6e85-7b26-f3b3-f197b638444f" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" computerName="RTX5070" duration="00:00:00.0019420" startTime="2026-10-04T17:42:16.4048265+09:00" endTime="2026-10-04T17:42:16.4067685+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9b89c689-3414-418c-895f-e80f4a177152" />
+    <UnitTestResult executionId="ed790838-0c45-4357-b78e-181915d09b2f" testId="36202419-f4c9-2685-6d60-74381504dd1c" testName="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" computerName="RTX5070" duration="00:00:00.0024600" startTime="2026-10-04T17:42:16.4023055+09:00" endTime="2026-10-04T17:42:16.4047653+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ed790838-0c45-4357-b78e-181915d09b2f" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="a5267826-6e85-7b26-f3b3-f197b638444f">
+      <Execution id="9b89c689-3414-418c-895f-e80f4a177152" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewCannotSelectNewIssueCreation" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="93b6d719-6cc8-bdaa-3d73-e7827ac490f5">
+      <Execution id="ddd3f719-3fa0-4494-b202-a4564814f70d" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewCannotSelectNewIssueCreation" />
+    </UnitTest>
+    <UnitTest name="OutsideActualChangeRetainsReportReconciliationInWeeklyCandidatesWithoutLocalScalarChange" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="f6c4111b-7f6f-d754-5b5d-d0692aa681ae">
+      <Execution id="f736d3b1-4857-4d13-9ce6-9a0421a7f329" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="OutsideActualChangeRetainsReportReconciliationInWeeklyCandidatesWithoutLocalScalarChange" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="f37ca015-3b4e-1141-16af-ee62c3eacb1a">
+      <Execution id="3bd69790-71d7-401f-bfbb-1c1ba1f186ef" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" />
+    </UnitTest>
+    <UnitTest name="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="bc381608-e0d6-45cd-5ec5-93de14da3386">
+      <Execution id="eb5f048f-f7e7-423a-9376-55818799bfaa" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" />
+    </UnitTest>
+    <UnitTest name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="88934b95-773e-2dcb-6b8e-7716708e5d96">
+      <Execution id="b023e686-690a-4797-8623-9b2b32c4e930" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" />
+    </UnitTest>
+    <UnitTest name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="a2387e6a-17c6-8b1b-ee1c-8793a092abb9">
+      <Execution id="01d52ebb-8554-499e-8f9d-82636fdd3c5d" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="36202419-f4c9-2685-6d60-74381504dd1c">
+      <Execution id="ed790838-0c45-4357-b78e-181915d09b2f" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="bc381608-e0d6-45cd-5ec5-93de14da3386" executionId="eb5f048f-f7e7-423a-9376-55818799bfaa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="88934b95-773e-2dcb-6b8e-7716708e5d96" executionId="b023e686-690a-4797-8623-9b2b32c4e930" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f6c4111b-7f6f-d754-5b5d-d0692aa681ae" executionId="f736d3b1-4857-4d13-9ce6-9a0421a7f329" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" executionId="ddd3f719-3fa0-4494-b202-a4564814f70d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" executionId="3bd69790-71d7-401f-bfbb-1c1ba1f186ef" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a2387e6a-17c6-8b1b-ee1c-8793a092abb9" executionId="01d52ebb-8554-499e-8f9d-82636fdd3c5d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a5267826-6e85-7b26-f3b3-f197b638444f" executionId="9b89c689-3414-418c-895f-e80f4a177152" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="36202419-f4c9-2685-6d60-74381504dd1c" executionId="ed790838-0c45-4357-b78e-181915d09b2f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="8" executed="8" passed="7" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 8 of 8 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.17_42_16.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

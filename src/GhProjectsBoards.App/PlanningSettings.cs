@@ -43,9 +43,8 @@ internal sealed partial class EditingGrid
         var adopt = new CheckBox { Content = $"同梱祝日を採用（{preset.FirstYear}–{preset.LastYear}）" };
         AutomationProperties.SetAutomationId(adopt, "PlanAdoptHolidays"); calendarPanel.Children.Add(adopt);
         adopt.Checked += (_, _) => edited(); adopt.Unchecked += (_, _) => edited();
-        calendarPanel.Children.Add(new TextBlock { Text = differences.Length == 0 ? "採用済み祝日との差分なし。個別例外・Manual・実績は保持します。"
-            : "変更日: " + string.Join("、", differences.Select(d => d.ToString("yyyy-MM-dd"))), TextWrapping = TextWrapping.Wrap });
-        calendarPanel.Children.Add(new TextBlock { Text = "日付例外：空の時間帯は休日。担当者別 → Project共通 → 通常週・祝日の順で採用します。", TextWrapping = TextWrapping.Wrap });
+        if (differences.Length > 0) calendarPanel.Children.Add(new TextBlock { Text = "変更日: " + string.Join("、", differences.Select(d => d.ToString("yyyy-MM-dd"))), TextWrapping = TextWrapping.Wrap });
+        var importedHolidays = CreateHolidayImport(calendarPanel, plan.Calendar.Holidays, adopt, edited);
         var exceptions = new List<(StackPanel Row, TextBox Day, ComboBox Person, TextBox Intervals)>();
         var exceptionList = new StackPanel { Spacing = 12 }; calendarPanel.Children.Add(exceptionList);
         void AddException(CalendarException? existing)
@@ -66,6 +65,7 @@ internal sealed partial class EditingGrid
         }
         foreach (var exception in plan.Calendar.Exceptions) AddException(exception);
         var add = new Button { Content = "日付例外を追加" }; AutomationProperties.SetAutomationId(add, "PlanAddException");
+        ToolTipService.SetToolTip(add, "空の時間帯は休日。担当者別 → Project共通 → 通常週・祝日の順で採用します。");
         add.Click += (_, _) => { AddException(null); edited(); }; calendarPanel.Children.Add(add);
         int Minute(string value)
         {
@@ -111,7 +111,7 @@ internal sealed partial class EditingGrid
                         () => !exceptions.Contains(duplicate) || exceptions.Count(e => e.Day.Text == duplicate.Day.Text
                             && (string)((ComboBoxItem)e.Person.SelectedItem).Tag == (string)((ComboBoxItem)duplicate.Person.SelectedItem).Tag) <= 1, (Expander)calendarPanel.Tag);
                 }
-            return (selected, plan.Calendar with { Revision = Guid.NewGuid().ToString("N"), Holidays = adopt.IsChecked == true ? preset : plan.Calendar.Holidays,
+            return (selected, plan.Calendar with { Revision = Guid.NewGuid().ToString("N"), Holidays = importedHolidays() ?? (adopt.IsChecked == true ? preset : plan.Calendar.Holidays),
                 HolidaysNotConsidered = ignore.IsChecked == true, Exceptions = dates });
         };
     }

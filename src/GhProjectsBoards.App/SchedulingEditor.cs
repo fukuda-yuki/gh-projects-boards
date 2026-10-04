@@ -19,6 +19,16 @@ internal sealed partial class EditingGrid
         ? task.Finish is null ? "開始・終了日時が未設定です。" : "開始日時が未設定です。"
         : "終了日時が未設定です。";
 
+    private static Button PlanningHelpButton(string id, string name, string explanation)
+    {
+        var text = new TextBlock { Text = explanation, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, MaxWidth = 420 };
+        AutomationProperties.SetAutomationId(text, id + "Content");
+        var button = new Button { Content = "?", MinWidth = 32, HorizontalAlignment = HorizontalAlignment.Left,
+            Flyout = new Flyout { Content = text } };
+        AutomationProperties.SetAutomationId(button, id); AutomationProperties.SetName(button, name);
+        ToolTipService.SetToolTip(button, name); return button;
+    }
+
     private void InitializeDateInput(StackPanel footer)
     {
         AutomationProperties.SetAutomationId(dateInputState, "DateInputState");
@@ -36,7 +46,7 @@ internal sealed partial class EditingGrid
         var work = session.Workspace; var config = work.Planning(projectId);
         var plan = config is null ? null : work.PlanFor(registration);
         var estimate = config?.Fields.SingleOrDefault(f => f.Role == "Estimate");
-        planningHint.Text = estimate is null ? "" : $"タスクの「{registration.Snapshot.Fields.FirstOrDefault(f => f.Id.NodeId == estimate.FieldId)?.Name ?? "見積"}」に見積（人時）を入力。確定すると日程を自動計算します。";
+        planningHint.Text = "日程未設定";
         var selectingRange = HasSelectedRange && !CurrentCellInputActive;
         planningHint.Visibility = !ShowingGantt && !selectingRange && config is not null && estimate is not null && plan?.Tasks.Any(t => t.Resolved) != true ? Visibility.Visible : Visibility.Collapsed;
         if (!active || currentRow >= rows.Length || ShowingGantt || plan is null || selectingRange || TypedActual(rows[currentRow].Cells[currentColumn])) { dateInputPane.Visibility = Visibility.Collapsed; return; }
@@ -59,7 +69,7 @@ internal sealed partial class EditingGrid
         if (!TypedDate(cell))
         {
             dateInputState.Text = identity + " · " + (current.Resolved ? (current.Mode == PlanningMode.Manual ? "日時を指定" : "自動計算")
-                + $"（採用済み） {DateText(current.Start)} → {DateText(current.Finish)}" : current.Mode == PlanningMode.Unplanned ? "未計画 · 見積を入力するか、日時を指定"
+                + $"（採用済み） {DateText(current.Start)} → {DateText(current.Finish)}" : current.Mode == PlanningMode.Unplanned ? "日程未設定"
                 : current.Mode == PlanningMode.Manual ? MissingManualDate(current) : current.Problem ?? "日程を確認してください。");
             return;
         }
@@ -119,7 +129,7 @@ internal sealed partial class EditingGrid
         method.Items.Add("自動計算"); method.Items.Add("日時を指定");
         method.SelectedIndex = retained?.Method ?? (dateCells.Any(c => work.Buffer(c) is not null) || current.Mode == PlanningMode.Manual ? 1 : current.Mode == PlanningMode.Auto ? 0 : -1);
         AutomationProperties.SetAutomationId(method, "ScheduleMethod"); panel.Children.Add(method);
-        if (current.Mode == PlanningMode.Unplanned) panel.Children.Add(new TextBlock { Text = "日程はまだ設定されていません。" });
+        if (current.Mode == PlanningMode.Unplanned) panel.Children.Add(new TextBlock { Text = "日程未設定" });
         var start = new MinuteEditor("開始日時", "ScheduleStart", Initial("Start"));
         var finish = new MinuteEditor("終了日時", "ScheduleFinish", Initial("Finish"));
         TrackContextInput(start.Input); TrackContextInput(finish.Input);
@@ -130,7 +140,7 @@ internal sealed partial class EditingGrid
         panel.Children.Add(new TextBlock { Text = person is null ? native?.Complete != true ? "GitHub担当者: 未取得" : native.Assignees.Length == 0 ? "GitHub担当者: 未設定" : "GitHub担当者: 複数（日時を指定できます）"
             : $"GitHub担当者: {person.Login} · Project配賦: {(weight is null ? "未設定" : weight.WeightPercent + "%")}", TextWrapping = TextWrapping.Wrap });
         if (oldTask is not null && (oldTask.Assignment is null || oldTask.Assignment.Legacy)) panel.Children.Add(new TextBlock
-        { Text = $"以前の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? "未確認"}。日時とともに保持中。自動計算を選ぶと現在のGitHub担当者との差分を比較します。", TextWrapping = TextWrapping.Wrap });
+        { Text = $"保持中の計画担当者: {plan.People.SingleOrDefault(p => p.Id == oldTask.OwnerId)?.Name ?? "未確認"}", TextWrapping = TextWrapping.Wrap });
         var dateOnlyWarning = new TextBlock { Text = "日付だけの項目は時刻が未確認です。正確な日時を入力するか、消去してください。", TextWrapping = TextWrapping.Wrap };
         panel.Children.Add(dateOnlyWarning);
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap }; AutomationProperties.SetAutomationId(preview, "SchedulePreview");
@@ -139,7 +149,10 @@ internal sealed partial class EditingGrid
         var apply = new Button { Content = "適用" }; var close = new Button { Content = "閉じる" }; var settings = new Button { Content = "計画の前提" };
         AutomationProperties.SetAutomationId(apply, "ScheduleApply"); AutomationProperties.SetAutomationId(close, "ScheduleClose");
         AutomationProperties.SetAutomationId(settings, "ScheduleSettings");
-        actions.Children.Add(apply); actions.Children.Add(close); actions.Children.Add(settings); panel.Children.Add(actions);
+        actions.Children.Add(apply); actions.Children.Add(close); actions.Children.Add(settings);
+        actions.Children.Add(PlanningHelpButton("ScheduleHelp", "日程の決め方のヘルプ",
+            "自動計算はGitHub担当者・配賦・カレンダーと工数を使います。未着手は見積、進行中・再開は残時間で計算します。見積（人時）を確定すると、日程未設定のタスクは自動計算を開始します。\n日時を指定すると開始・終了を保持します。片側だけの保存も可能です。自動計算に戻すときは現在の担当者と日程の差分を確認します。"));
+        panel.Children.Add(actions);
         // Anchor to a stable toolbar or contextual control, never an overflow
         // item that disappears or the full-height workspace.
         // The closing animation must not intercept the next task's first click.
@@ -169,9 +182,9 @@ internal sealed partial class EditingGrid
                 if (changed.Length == 0)
                 {
                     preview.Text = !current.Resolved ? current.Mode == PlanningMode.Manual ? MissingManualDate(current) : current.Problem ?? "日程はまだ確定していません。"
-                        : explicitAuto ? "現在のGitHub担当者で自動計算を採用します。日程の変更はありません。"
-                        : dateCells.Any(c => work.Buffer(c) is not null) || retained is not null ? "入力を適用しても採用日程は変わりません。"
-                        : "採用済みの日程です。確認だけなら適用は不要です。";
+                        : explicitAuto ? "現在のGitHub担当者で自動計算 · 日程変更なし"
+                        : dateCells.Any(c => work.Buffer(c) is not null) || retained is not null ? "日程変更なし"
+                        : "採用済み";
                     return;
                 }
                 preview.Text = string.Join("\n", changed

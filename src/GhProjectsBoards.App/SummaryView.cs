@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace GhProjectsBoards.App;
 
@@ -31,18 +32,23 @@ public sealed class SummaryPersonPresenter : ContentControl
         foreach (var width in new[] { 160d, 160, 120, 160, 140, 120 }) grid.ColumnDefinitions.Add(new() { Width = new(width) });
         return grid;
     }
-    internal static void Cell(Grid grid, string text, int column) {
+    internal static TextBlock Cell(Grid grid, string text, int column) {
         var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(block, column); grid.Children.Add(block);
+        Grid.SetColumn(block, column); grid.Children.Add(block); return block;
     }
+    internal static Style AttentionStyle(decimal? headroom) => (Style)Application.Current.Resources[headroom is < 0
+        ? "SummaryOverloadTextStyle" : headroom is null ? "SummaryIncompleteTextStyle" : "SummaryNeutralTextStyle"];
     private void Present()
     {
         if (DataContext is not PersonSummary p) return;
         var grid = Columns();
         var name = p.Name;
-        var comparison = p.Headroom is { } h ? (h < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8m) : "比較未完";
+        var comparison = p.Headroom is { } h ? (h < 0 ? "⚠ 超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8m) : "△ 比較未完";
         var values = new[] { name, p.Allowance is { } a ? SummaryText.Number(a / 8m) : "未設定", SummaryText.Value(p.Estimate), SummaryText.Value(p.Actual), SummaryText.Value(p.Forecast), comparison };
-        for (var i = 0; i < values.Length; i++) Cell(grid, values[i], i);
+        for (var i = 0; i < values.Length; i++) {
+            var cell = Cell(grid, values[i], i);
+            if (i is 0 or 5) cell.Style = AttentionStyle(p.Headroom);
+        }
         AutomationProperties.SetName(this, string.Join(" / ", values)); Content = grid;
     }
 }
@@ -61,7 +67,7 @@ internal sealed class SummaryView : Grid
     private readonly TextBlock personDetail = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly TextBox filter = new() { Header = "内訳を絞り込み", PlaceholderText = "タイトル・番号", Width = 220 };
     private readonly InfoBar status = new() { IsClosable = false, Severity = InfoBarSeverity.Error };
-    private readonly AppBarButton allowance, establish, replace, board, gantt, edit, baseline;
+    private readonly AppBarButton allowance, establish, replace, board, gantt, edit, baseline, copyReport;
     private SummaryProjection? projection;
     private bool presenting;
     internal event Action<string>? AllowanceRequested;
@@ -90,10 +96,14 @@ internal sealed class SummaryView : Grid
         }
         allowance = Command("投入可能工数", "SummaryAllowance", Symbol.Edit, () => { if (SelectedPersonId is { Length: > 0 } id) AllowanceRequested?.Invoke(id); });
         baseline = Command("基準と比較", "SummaryCompare", Symbol.List, ShowBaseline);
+        copyReport = Command("週次報告をコピー", "SummaryCopyReport", Symbol.Copy, async () => await CopyReportAsync());
+        copyReport.IsEnabled = false;
+        ToolTipService.SetToolTip(copyReport, "報告基準日時点の工数と超過担当者をMarkdownでコピー");
         Command("元に戻す", "SummaryUndo", Symbol.Undo, () => UndoRequested?.Invoke());
         establish = Command("基準を確立…", "SummaryEstablish", Symbol.Save, () => BaselineRequested?.Invoke(false), true);
         replace = Command("基準を置換…", "SummaryReplace", Symbol.Refresh, () => BaselineRequested?.Invoke(true), true);
         Command("計画設定", "SummarySettings", Symbol.Setting, () => SettingsRequested?.Invoke(), true);
+        Command("表示の見方", "SummaryHelp", Symbol.Help, ShowHelp, true);
         Children.Add(commands);
         SetRow(totals, 1); Children.Add(totals); AutomationProperties.SetAutomationId(totals, "SummaryTotals");
         totals.Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"];
@@ -151,15 +161,16 @@ internal sealed class SummaryView : Grid
             if (selectedRow is not null || person != SelectedPersonId) filter.Text = "";
         }
         projection = value;
+        copyReport.IsEnabled = true; copyReport.Label = "週次報告をコピー";
         actualHeader.Text = $"実績\n（{value.Cutoff:yyyy-MM-dd} 時点）";
         var forecast = EffortValue.Sum(value.People.Select(p => p.Forecast));
         var allowanceTotal = value.People.All(p => p.Allowance is not null) ? value.People.Sum(p => p.Allowance!.Value) : (decimal?)null;
         var headroom = allowanceTotal is { } allowance && forecast.Complete ? allowance - forecast.Hours : (decimal?)null;
         totals.Text = $"投入可能 { (allowanceTotal is { } total ? SummaryText.Number(total / 8) : "未設定") } · 見積 {SummaryText.Value(value.Estimate)} / 実績 {SummaryText.Value(value.Actual)}\n完了見込み {SummaryText.Value(forecast)} · "
             + (headroom is { } margin ? (margin < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(margin) / 8) : "余裕 / 超過 未確認") + " 人日";
-        context.Text = $"{value.ProjectTitle} · 1人日 = 8人時 · 本日 {value.Today:yyyy-MM-dd} / 報告基準 {value.Cutoff:yyyy-MM-dd} · {value.TaskCount}タスク"
+        context.Text = $"報告基準 {value.Cutoff:yyyy-MM-dd} · {value.TaskCount}タスク"
             + (value.UnpublishedCount > 0 ? $"（未公開 {value.UnpublishedCount}件を含む）" : "")
-            + (!value.Estimate.Complete || !value.Actual.Complete || value.People.Any(p => !p.Forecast.Complete) ? "\n未完: 入力・確認不足または古い報告" : "");
+            + (!value.Estimate.Complete || !value.Actual.Complete || value.People.Any(p => !p.Forecast.Complete) ? " · △ 未確認あり" : "");
         var ordered = value.People.OrderBy(p => p.Headroom is < 0 ? 0 : p.Headroom is null ? 1 : 2).ThenBy(p => p.Headroom).ToArray();
         people.ItemsSource = ordered; people.SelectedItem = ordered.FirstOrDefault(p => p.Id == person) ?? ordered.FirstOrDefault();
         establish.IsEnabled = value.Baseline is null; replace.IsEnabled = baseline.IsEnabled = value.Baseline is not null;
@@ -169,10 +180,13 @@ internal sealed class SummaryView : Grid
     private void ShowPerson(string? selectedRow = null)
     {
         allowance.IsEnabled = SelectedPersonId is { Length: > 0 };
-        if (people.SelectedItem is PersonSummary p) personDetail.Text = $"{p.Name} · "
-            + (p.Headroom is { } h ? (h < 0 ? "超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8) + " 人日"
+        if (people.SelectedItem is PersonSummary p) {
+            personDetail.Style = SummaryPersonPresenter.AttentionStyle(p.Headroom);
+            personDetail.Text = $"{p.Name} · "
+            + (p.Headroom is { } h ? (h < 0 ? "⚠ 超過 " : "余裕 ") + SummaryText.Number(Math.Abs(h) / 8) + " 人日"
                 : p.Allowance is null ? "投入可能工数を設定" : "見通し未確認")
             + $"\n残り: {SummaryText.Exact(p.Remaining)}";
+        }
         else personDetail.Text = "担当者を選択";
         FilterTasks(selectedRow);
     }
@@ -189,6 +203,31 @@ internal sealed class SummaryView : Grid
     {
         status.Message = problem;
         status.IsOpen = problem is not null;
+    }
+    private async Task CopyReportAsync()
+    {
+        if (projection is not { } source) return;
+        try {
+            var content = new DataPackage(); content.SetText(WeeklySummaryReport.Create(source));
+            Clipboard.SetContent(content);
+            // Clipboard listeners may briefly hold the package after SetContent.
+            for (var attempt = 0; ; attempt++) {
+                try { Clipboard.Flush(); break; }
+                catch (System.Runtime.InteropServices.COMException error) when (error.HResult == unchecked((int)0x800401D0) && attempt < 4)
+                { await Task.Delay(10 * (attempt + 1)); }
+            }
+            if (projection == source) copyReport.Label = "コピー済み";
+        }
+        catch (Exception error) when (error is InvalidOperationException or System.Runtime.InteropServices.COMException) {
+            ShowOperationStatus("クリップボードを利用できません。コピーをやり直してください。");
+        }
+    }
+    private void ShowHelp()
+    {
+        var block = new TextBlock { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, MaxWidth = 480,
+            Text = "工数は人日（1人日 = 8人時）。完了見込みは累計実績 + 残り、余裕 / 超過は投入可能工数との差です。\n未完・比較未完は未入力、未確認または古い実績報告を含みます。担当者を選ぶと内訳から工数を修正できます。\n週次報告は表示中の報告基準日のローカル値です。週初の実績記録がないため今週の増分は未算出です。" };
+        AutomationProperties.SetAutomationId(block, "SummaryHelpDetails");
+        new Flyout { Content = block }.ShowAt(totals);
     }
     private void ShowTask()
     {

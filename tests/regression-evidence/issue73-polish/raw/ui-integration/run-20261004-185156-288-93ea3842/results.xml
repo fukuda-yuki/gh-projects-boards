@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="349" result="Failed" start-time="2026-10-04T09:51:56.9438647Z" end-time="2026-10-04T09:51:59.4349811Z" duration="2.491063" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2" random-seed="639089959">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ 'ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-185156-288-93ea3842\results.xml]]></command-line>
+  <filter>
+    <test re="1">ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges</test>
+  </filter>
+  <test-suite type="Assembly" id="1442" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="349" result="Failed" site="Child" start-time="2026-10-04T09:51:56.9438647Z" end-time="2026-10-04T09:51:59.4349811Z" duration="2.491063" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout" />
+    </settings>
+    <properties>
+      <property name="_PID" value="34024" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1443" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="349" result="Failed" site="Child" start-time="2026-10-04T09:51:56.9463550Z" end-time="2026-10-04T09:51:59.4349787Z" duration="2.488623" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1444" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="349" result="Failed" site="Child" start-time="2026-10-04T09:51:56.9465115Z" end-time="2026-10-04T09:51:59.4349761Z" duration="2.488464" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1445" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="349" result="Failed" site="Child" start-time="2026-10-04T09:51:56.9465257Z" end-time="2026-10-04T09:51:59.4349631Z" duration="2.488438" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1428" name="WeeklyApplyHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="5" result="Failed" site="Child" start-time="2026-10-04T09:51:56.9465269Z" end-time="2026-10-04T09:51:59.4347568Z" duration="2.488230" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1434" name="ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" methodname="ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="971852151" result="Failed" start-time="2026-10-04T09:51:56.9475451Z" end-time="2026-10-04T09:51:59.4327950Z" duration="2.485303" asserts="2">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+              <failure>
+                <message><![CDATA[  ApplyCheckAgain must be completely visible above the native dialog footer.
+Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(height + 1))
+  Expected: less than or equal to 587.4000244140625d
+  But was:  600.0d
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.<ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges>b__7_7() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 210
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 174
+   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 188
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -16,8 +16,8 @@ internal sealed partial class RegistrationWorkspace
         b.Operations.Any(o => o.State is not (ApplyState.Succeeded or ApplyState.Superseded))).ToArray() ?? [];
     public bool CanRestartApplyReview => CanRead && Selected is { } selected && UnfinishedApplyBatches is { Length: > 0 } batches
         && batches.All(b => b.Project == selected.Snapshot.Id && (b.Creations ?? []).Length == 0);
-    public Task RestartApplyReviewAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null)
-        => PrepareApplyCoreAsync(items, viewSelection, restart: true);
+    public Task RestartApplyReviewAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null, bool weeklyEffort = false)
+        => PrepareApplyCoreAsync(items, viewSelection, restart: true, weeklyEffort: weeklyEffort);
     public string? ApplyBlockReason(ApplyReview? review)
     {
         if (!CanRead) return "接続を確認してください。保存済みの変更は保持しています。";
@@ -34,9 +34,9 @@ internal sealed partial class RegistrationWorkspace
         if (review.IssueCount == 0) return "選択した行に反映できる変更がありません。未確定入力は送信しません。";
         return null;
     }
-    public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null)
-        => PrepareApplyCoreAsync(items, viewSelection, restart: false);
-    private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart, string? historicalDecisionId = null) => RunAsync(async token =>
+    public Task PrepareApplyAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection = null, bool weeklyEffort = false)
+        => PrepareApplyCoreAsync(items, viewSelection, restart: false, weeklyEffort: weeklyEffort);
+    private Task PrepareApplyCoreAsync(IReadOnlySet<string> items, RowTargetSelection? viewSelection, bool restart, string? historicalDecisionId = null, bool weeklyEffort = false) => RunAsync(async token =>
     {
         ApplyReview = null; ApplyCheckFailures = []; ApplySelectionInvalidated = false;
         if (context is null)
@@ -48,6 +48,11 @@ internal sealed partial class RegistrationWorkspace
         if (Selected is not { } selected || Drafts is not { } session) return;
         if (historicalDecisionId is not null && session.Workspace.HistoricalFollowUpProblem(historicalDecisionId, selected.Snapshot.Id) is { } historicalProblem)
         { Status = historicalProblem; return; }
+        if (historicalDecisionId is not null)
+        {
+            var decision = session.Workspace.HistoricalDispositions.Single(d => d.Id == historicalDecisionId);
+            weeklyEffort = HistoricalFieldHandling.Resolve(session.Workspace.Journal, decision.Target)!.Batch.WeeklyEffort;
+        }
         if (restart && !CanRestartApplyReview)
         { Status = "このProjectの既存フィールドの反映だけをやり直せます。「反映結果・履歴」で対象を確認してください。"; return; }
         var previousApprovals = restart ? UnfinishedApplyBatches.Select(b => b.Id).ToArray() : [];
@@ -86,13 +91,13 @@ internal sealed partial class RegistrationWorkspace
         }
         var destinations = new Dictionary<string, CreationRepository>();
         var remote = new ApplyRemote(service!, context!);
-        foreach (var row in session.Workspace.LocalRows.Where(r => items.Contains(r.Id) && r.ProjectId == fetched.Snapshot.Id.NodeId))
+        foreach (var row in session.Workspace.LocalRows.Where(r => !weeklyEffort && items.Contains(r.Id) && r.ProjectId == fetched.Snapshot.Id.NodeId))
         {
             var destination = await remote.ResolveCreationRepositoryAsync(fetched.Snapshot.Id, row.Repository, token);
             if (destination is not null) destinations[row.Id] = destination;
         }
         if (!Current() || Selected != fetched) return;
-        ApplyReview = session.Workspace.ReviewApply(fetched, items, destinations) with { HistoricalDecisionId = historicalDecisionId };
+        ApplyReview = session.Workspace.ReviewApply(fetched, items, destinations, weeklyEffort) with { HistoricalDecisionId = historicalDecisionId };
         applyConnectionRevision = connection;
         Status = ApplyBlockReason(ApplyReview) ?? "反映する値と送信先を確認して「GitHubに反映」を押してください。未確定入力は送信しません。";
     });

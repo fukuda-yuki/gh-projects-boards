@@ -1,0 +1,52 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-10-04 09:52:32Z
+    End time: 2026-10-04 09:52:32Z
+    Duration: 0.048 seconds
+
+Test Filters
+    Where: class == GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests or class == GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests
+
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1459-3896ded972c341b68be045e0687454a6\gantt-drag-GanttBar-P1T1.png
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1466-0384c3ef2ba3459984dcb6609f713625\gantt-drag-GanttResizeStart-P1T1.png
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1473-54be65d0366e4ff98f80b3b9e1629940\gantt-drag-GanttResizeFinish-P1T1.png
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1488-8cb6b5184f5346b689d2a9cbf1f73113\weekly-review-commands-962.png
+ApplyCheckAgain: 0,388.8,132.8,32; visible=1100x420.79998779296875
+ApplyCheckAgain: 24,452,132.8,32; visible=1148x508.79998779296875
+ApplyCheckAgain: 24,452,132.8,32; visible=1148x508.79998779296875
+ApplyReviewIdentity: 140.8,388.8,79.2,32; visible=1100x420.79998779296875
+ApplyReviewIdentity: 164.8,452,79.2,32; visible=1148x508.79998779296875
+ApplyReviewIdentity: 164.8,452,79.2,32; visible=1148x508.79998779296875
+ApplyReviewHistory: 228,388.8,114.399994,32; visible=1100x420.79998779296875
+ApplyReviewHistory: 252,452,114.399994,32; visible=1148x508.79998779296875
+ApplyReviewHistory: 252,452,114.399994,32; visible=1148x508.79998779296875
+Rendered review evidence: C:\Users\mwam0\AppData\Local\Temp\ghpb-review-1490-02347f0faa924ca48eb683f2c0077307\weekly-review-commands-682.png
+ApplyCheckAgain: 0,388.8,132.8,32; visible=1100x420.79998779296875
+ApplyCheckAgain: 24,452,132.8,32; visible=1148x508.79998779296875
+ApplyCheckAgain: 24,452,132.8,32; visible=1148x508.79998779296875
+ApplyReviewIdentity: 140.8,388.8,79.2,32; visible=1100x420.79998779296875
+ApplyReviewIdentity: 164.8,452,79.2,32; visible=1148x508.79998779296875
+ApplyReviewIdentity: 164.8,452,79.2,32; visible=1148x508.79998779296875
+ApplyReviewHistory: 228,388.8,114.399994,32; visible=1100x420.79998779296875
+ApplyReviewHistory: 252,452,114.399994,32; visible=1148x508.79998779296875
+ApplyReviewHistory: 252,452,114.399994,32; visible=1148x508.79998779296875
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Passed
+  Test Count: 11, Passed: 11, Failed: 0, Warnings: 0, Inconclusive: 0, Skipped: 0
+  Start time: 2026-10-04 09:52:32Z
+    End time: 2026-10-04 09:52:48Z
+    Duration: 15.894 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-185231-442-6c54492a\results.xml
+

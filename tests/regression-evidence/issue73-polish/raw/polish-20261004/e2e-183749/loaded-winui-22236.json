@@ -1,0 +1,7 @@
+{
+  "test": "GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort",
+  "pid": 22236,
+  "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\polish-20261004\\final-app-v3\\Microsoft.UI.Xaml.dll",
+  "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+  "version": "3.1.8.2503 (C42BDAF2A0A4(ContainerAdministrator)-c03f50c96989525a1487cf9404f2306b314a23d0)"
+}

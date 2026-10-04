@@ -1,0 +1,21 @@
+{
+  "sourceReceipt": "final-app-v3 source manifest, including weekly history recovery fix",
+  "started": "2026-10-04T09:37:49.5458814Z",
+  "excludedPendingChanges": "none; retained-view failure independently reproduced from completely clean base commit",
+  "fakeGh": "709D5AD6779D028CA2280F4D8736C0ABEF9E6FF7CBF72DF85B89B20E757FB242",
+  "liveGitHub": false,
+  "tests": "8276B4A1612B483DB37271B7EDE474E4D6BF254A78BDA2D76D0DB37F7904AD83",
+  "filter": "FullyQualifiedName~OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort|FullyQualifiedName~OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart",
+  "performance": "not_measured",
+  "mechanism": "ordinary WinUI exe; FlaUI UIA3 and native clipboard/picker; isolated fake-gh",
+  "branch": "codex/issue-73-pmo-polish",
+  "app": "FD3CFA55F13F0FA130093A362F3F6489DCA976FCF89E8E988E04A5FEE22DBB01",
+  "source": "654930a3f7a8810695a806a13a86f3c9d28f9ed4 + task changes compiled in final-app-v3",
+  "userAppChange": "pre-existing crash diagnostics compiled, excluded from delivery",
+  "core": "9323425B0E4C854C41D29CA3FB397CA629D4C17A9AAD7C110B543B2005FAB28B",
+  "humanAcceptance": "not_run",
+  "fakeGhAssembly": "62D38CA6FC71CA7674B62FE76B38F72DF3A1A4056FD6DD3B1C6886E167FF05AD",
+  "fakeGhCore": "71634C29DF18FB17996750A68FEAF349090DE596E40378F5AF8258540C9FCC60",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "sdk": "10.0.401"
+}

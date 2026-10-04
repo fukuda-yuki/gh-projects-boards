@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
+using Windows.System;
 
 namespace GhProjectsBoards.App;
 
@@ -49,6 +50,12 @@ internal sealed class GanttView : Grid
     private ScrollViewer? vertical;
     private GanttViewPosition? pendingPosition;
     private WorkingCalendar? calendar;
+    private ScheduleDrag? scheduleDrag;
+    private sealed record ScheduleDrag(GanttRow Row, GanttProjection Projection, long Revision, GanttDragPart Part, uint PointerId, double StartX)
+    {
+        internal int Days { get; set; }
+        internal PlanningTask? Preview { get; set; } = Row.Input!.Task;
+    }
     internal event Action<string>? EditRequested;
     internal event Action<string>? TaskDetailsRequested;
     internal event Action<string>? ProgressRequested;
@@ -56,6 +63,8 @@ internal sealed class GanttView : Grid
     internal event Action<string>? BoardsRequested;
     internal event Action? UndoRequested;
     internal event Action? SettingsRequested;
+    internal event Action<GanttScheduleEdit>? ScheduleDragged;
+    internal Func<long>? CurrentRevision { get; init; }
     internal string? SelectedRowId => (list.SelectedItem as GanttRow)?.RowId;
     internal GanttProjection AdoptedProjection => projection;
     internal GanttAxis Axis => axis;
@@ -108,12 +117,12 @@ internal sealed class GanttView : Grid
             Padding = new(0), SingleSelectionFollowsFocus = true, ItemTemplate = (DataTemplate)Application.Current.Resources["GanttRowTemplate"] };
         AutomationProperties.SetAutomationId(list, "GanttTasks"); AutomationProperties.SetName(list, "採用計画のタスク");
         ScrollViewer.SetHorizontalScrollMode(list, ScrollMode.Disabled); ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
-        list.SelectionChanged += (_, _) => { if (!updating) { UpdateSelection(); Draw(); } };
+        list.SelectionChanged += (_, _) => { if (!updating) { CancelScheduleDrag(); UpdateSelection(); Draw(); } };
         list.DoubleTapped += (_, _) => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); };
         SetRow(list, 3); Children.Add(list); SetRow(lines, 3); Children.Add(lines);
         horizontal.Content = horizontalExtent; horizontal.Margin = new(identityWidth, 0, 16, 0);
         AutomationProperties.SetAutomationId(horizontal, "GanttHorizontal"); AutomationProperties.SetName(horizontal, "時間軸の横スクロール");
-        horizontal.ViewChanged += (_, _) => Draw(); SetRow(horizontal, 4); Children.Add(horizontal);
+        horizontal.ViewChanged += (_, _) => { CancelScheduleDrag(); Draw(); }; SetRow(horizontal, 4); Children.Add(horizontal);
         var selected = new Grid { ColumnSpacing = 12, Padding = new(12, 6, 12, 8) };
         selected.ColumnDefinitions.Add(new()); selected.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         selected.RowDefinitions.Add(new() { Height = GridLength.Auto }); selected.RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -132,6 +141,7 @@ internal sealed class GanttView : Grid
         SetRow(operationStatus, 6); Children.Add(operationStatus);
         scale.SelectionChanged += (_, _) => {
             if (updating) return;
+            CancelScheduleDrag();
             CancelPositionRestore();
             var day = horizontal.HorizontalOffset / axis.DayWidth;
             axis = GanttAxis.For(projection, scale.SelectedIndex == 1); horizontalExtent.Width = axis.Width;
@@ -139,18 +149,70 @@ internal sealed class GanttView : Grid
         };
         search.TextChanged += (_, _) => { if (!updating) Filter(); };
         SizeChanged += (_, _) => {
+            CancelScheduleDrag();
             identityWidth = ActualWidth < 1000 ? 270 : 330;
             header.ColumnDefinitions[0].Width = new(identityWidth); horizontal.Margin = new(identityWidth, 0, 16, 0);
             related.MaxWidth = ActualWidth < 900 ? 230 : 430;
             Draw();
         };
         ActualThemeChanged += (_, _) => Draw();
+        AddHandler(PointerMovedEvent, new PointerEventHandler(SchedulePointerMoved), true);
+        AddHandler(PointerReleasedEvent, new PointerEventHandler(SchedulePointerReleased), true);
+        PointerCaptureLost += (_, _) => CancelScheduleDrag();
+        PointerCanceled += (_, _) => CancelScheduleDrag();
+        PreviewKeyDown += (_, args) => {
+            if (args.Key == VirtualKey.Escape && scheduleDrag is not null) { CancelScheduleDrag(); args.Handled = true; }
+        };
         Loaded += (_, _) => {
             vertical = EditingGrid.Descendants(list).OfType<ScrollViewer>().FirstOrDefault();
             if (vertical is not null) vertical.ViewChanged += VerticalChanged;
             Draw();
         };
-        Unloaded += (_, _) => { CancelPositionRestore(); if (vertical is not null) vertical.ViewChanged -= VerticalChanged; vertical = null; };
+        Unloaded += (_, _) => { CancelScheduleDrag(); CancelPositionRestore(); if (vertical is not null) vertical.ViewChanged -= VerticalChanged; vertical = null; };
+    }
+    private void BeginScheduleDrag(GanttRow row, GanttDragPart part, PointerRoutedEventArgs args)
+    {
+        if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed || !GanttScheduleEdit.CanDrag(row)
+            || !projection.Rows.Contains(row)) return;
+        CancelScheduleDrag();
+        SelectRow(row.RowId, false); list.Focus(FocusState.Pointer);
+        if (!CapturePointer(args.Pointer)) return;
+        scheduleDrag = new(row, projection, CurrentRevision?.Invoke() ?? projection.Plan.SourceRevision, part, args.Pointer.PointerId, args.GetCurrentPoint(this).Position.X);
+        args.Handled = true;
+    }
+    private void SchedulePointerMoved(object sender, PointerRoutedEventArgs args)
+    {
+        if (scheduleDrag is not { } operation || operation.PointerId != args.Pointer.PointerId) return;
+        if (!IsLoaded || Visibility != Visibility.Visible || operation.Projection != projection) { CancelScheduleDrag(); return; }
+        var days = (int)Math.Round((args.GetCurrentPoint(this).Position.X - operation.StartX) / axis.DayWidth, MidpointRounding.AwayFromZero);
+        if (operation.Days != days)
+        {
+            operation.Days = days;
+            try
+            {
+                operation.Preview = GanttScheduleEdit.Preview(operation.Row.Input!.Task, operation.Part, days);
+                ShowOperationStatus(null);
+                selectedText.Text = $"{operation.Row.Identity}  {operation.Row.Title}\nプレビュー  {Exact(operation.Preview.ManualStart)} → {Exact(operation.Preview.ManualFinish)}";
+            }
+            catch (InvalidOperationException error) { operation.Preview = null; UpdateSelection(); ShowOperationStatus(error.Message); }
+            Draw();
+        }
+        args.Handled = true;
+    }
+    private void SchedulePointerReleased(object sender, PointerRoutedEventArgs args)
+    {
+        if (scheduleDrag is not { } operation || operation.PointerId != args.Pointer.PointerId) return;
+        SchedulePointerMoved(sender, args);
+        if (scheduleDrag is null) return;
+        CancelScheduleDrag(); args.Handled = true;
+        if (operation.Preview is not null && operation.Days != 0)
+            ScheduleDragged?.Invoke(new(operation.Row.RowId, operation.Row.TaskId, operation.Revision, operation.Part, operation.Days));
+    }
+    internal void CancelScheduleDrag()
+    {
+        if (scheduleDrag is null) return;
+        scheduleDrag = null;
+        ReleasePointerCaptures(); UpdateSelection(); Draw();
     }
     internal GanttViewPosition CapturePosition()
     {
@@ -194,7 +256,7 @@ internal sealed class GanttView : Grid
         vertical.ChangeView(null, Math.Clamp(rowOffset, 0, vertical.ScrollableHeight), null, true);
         Draw();
     }
-    private void VerticalChanged(object? sender, ScrollViewerViewChangedEventArgs e) { DrawLinks(); UpdateChangedSchedule(); }
+    private void VerticalChanged(object? sender, ScrollViewerViewChangedEventArgs e) { CancelScheduleDrag(); DrawLinks(); UpdateChangedSchedule(); }
     internal void CycleFocus(bool backwards)
     {
         var focused = FocusManager.GetFocusedElement(XamlRoot);
@@ -211,6 +273,7 @@ internal sealed class GanttView : Grid
     }
     internal void Present(GanttProjection value, string? selectedId = null)
     {
+        CancelScheduleDrag();
         var selected = selectedId ?? SelectedRowId;
         var oldOrigin = axis.Origin; var day = horizontal.HorizontalOffset / axis.DayWidth;
         var verticalOffset = vertical?.VerticalOffset;
@@ -237,6 +300,7 @@ internal sealed class GanttView : Grid
     }
     private void Filter(string? selected = null)
     {
+        CancelScheduleDrag();
         selected ??= SelectedRowId;
         var next = projection.Rows.Where(MatchesSearch).ToArray();
         updating = true;
@@ -273,7 +337,7 @@ internal sealed class GanttView : Grid
         edit.IsEnabled = row?.Input is not null || row?.State == GanttState.Unplanned;
         dailyProgress.IsEnabled = !dailyProgressActive && row?.Input is not null;
         board.IsEnabled = reveal.IsEnabled = context.IsEnabled = row is not null;
-        selectedText.Text = row is null ? "タスクを選ぶと、正確な日時と変更理由を確認できます。" : $"{row.Identity}  {row.Title}\n{row.StateText}  {Dates(row)}";
+        selectedText.Text = row is null ? "タスク未選択" : $"{row.Identity}  {row.Title}\n{row.StateText}  {Dates(row)}";
         var p = row?.Plan;
         var causes = row is null ? [] : WarningCauses(row);
         var warnings = causes.Where(IsScheduleWarning).ToArray();
@@ -628,7 +692,7 @@ internal sealed class GanttView : Grid
             AutomationProperties.SetAutomationId(state, "GanttState-" + row.RowId); identity.Children.Add(state);
             Children.Add(identity); SetColumn(canvas, 1); Children.Add(canvas);
             Loaded += (_, _) => { owner.realized.Add(this); Draw(); };
-            Unloaded += (_, _) => owner.realized.Remove(this);
+            Unloaded += (_, _) => { owner.realized.Remove(this); if (owner.scheduleDrag?.Row == row) owner.CancelScheduleDrag(); };
             SizeChanged += (_, _) => Draw();
         }
         internal void Draw()
@@ -647,14 +711,36 @@ internal sealed class GanttView : Grid
             }
             if (row.HasBar)
             {
-                var x = owner.axis.Position(row.Plan!.Start!.Value) - owner.horizontal.HorizontalOffset;
-                var finish = owner.axis.Position(row.Plan.Finish!.Value) - owner.horizontal.HorizontalOffset;
-                // The row is the hit target. Never inflate the time interval to make a short bar clickable.
+                var preview = owner.scheduleDrag?.Row == row ? owner.scheduleDrag.Preview : null;
+                var x = owner.axis.Position((preview?.ManualStart ?? row.Plan!.Start)!.Value) - owner.horizontal.HorizontalOffset;
+                var finish = owner.axis.Position((preview?.ManualFinish ?? row.Plan!.Finish)!.Value) - owner.horizontal.HorizontalOffset;
+                // Keep the bar's interval exact. Separate grips outside the endpoints
+                // keep short/zero-length Manual tasks editable without faking duration.
                 var bar = new Rectangle { Width = Math.Max(0, finish - x), Height = 16,
-                    Style = (Style)Application.Current.Resources[row.Plan.Mode == PlanningMode.Manual ? "GanttManualBarStyle" : "GanttAutoBarStyle"] };
+                    Style = (Style)Application.Current.Resources[row.Plan!.Mode == PlanningMode.Manual ? "GanttManualBarStyle" : "GanttAutoBarStyle"] };
                 AutomationProperties.SetAutomationId(bar, "GanttBar-" + row.RowId);
                 Canvas.SetLeft(bar, x); Canvas.SetTop(bar, 18); canvas.Children.Add(bar);
                 if (finish - x < 1) { var tick = new Line { X1 = x, X2 = x, Y1 = 17, Y2 = 35, Style = (Style)Application.Current.Resources["GanttEndpointStyle"] }; canvas.Children.Add(tick); }
+                if (GanttScheduleEdit.CanDrag(row))
+                {
+                    bar.PointerPressed += (_, args) => owner.BeginScheduleDrag(row, GanttDragPart.Move, args);
+                    ToolTipService.SetToolTip(bar, "ドラッグで日程を移動（日単位）。Escで取消。正確な日時は「日程を編集」。");
+                    if (owner.SelectedRowId == row.RowId)
+                    {
+                        void Grip(GanttDragPart part, string name, double left)
+                        {
+                            var grip = new ScheduleGrip(owner, row, part) { Content = "│", Width = 18, Height = 32,
+                                MinWidth = 0, MinHeight = 0, Padding = new(0), IsTabStop = false };
+                            AutomationProperties.SetAutomationId(grip, "GanttResize" + part + "-" + row.RowId);
+                            AutomationProperties.SetName(grip, row.Identity + " " + name);
+                            ToolTipService.SetToolTip(grip, name + "をドラッグ（日単位）。正確な日時は「日程を編集」。");
+                            grip.Click += (_, _) => owner.EditRequested?.Invoke(row.RowId);
+                            Canvas.SetLeft(grip, left); Canvas.SetTop(grip, 10); canvas.Children.Add(grip);
+                        }
+                        Grip(GanttDragPart.Start, "開始日", x - 18);
+                        Grip(GanttDragPart.Finish, "終了日", finish);
+                    }
+                }
             }
             else if (row.State == GanttState.Partial)
             {
@@ -682,6 +768,10 @@ internal sealed class GanttView : Grid
                 canvas.Children.Add(action);
             }
         }
+    }
+    private sealed class ScheduleGrip(GanttView owner, GanttRow row, GanttDragPart part) : Button
+    {
+        protected override void OnPointerPressed(PointerRoutedEventArgs args) => owner.BeginScheduleDrag(row, part, args);
     }
 }
 
