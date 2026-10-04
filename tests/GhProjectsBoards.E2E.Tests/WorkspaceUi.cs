@@ -54,11 +54,13 @@ internal static class WorkspaceUi
     {
         // During native pane animation the closing content can still report visible.
         // The public toggle name reflects the actual open/closed navigation state.
-        if (Find(window, "ToggleProjectNavigation")?.Name == "Project一覧を折りたたむ" && Visible(Find(window, "SavedProfiles"))) return false;
-        InvokeRoute(window, "ToggleProjectNavigation");
+        var alreadyOpen = Find(window, "ToggleProjectNavigation")?.Name == "Project一覧を折りたたむ";
+        // Cached accounts can finish loading after the pane opens. Toggling in
+        // that interval would close the requested pane instead of waiting for it.
+        if (!alreadyOpen) InvokeRoute(window, "ToggleProjectNavigation");
         Wait(() => Find(window, "ToggleProjectNavigation")?.Name == "Project一覧を折りたたむ" && Visible(Find(window, "SavedProfiles")),
             "Project navigation must be open and visible before selecting saved work.");
-        return true;
+        return !alreadyOpen;
     }
     internal static void CloseProjectNavigation(Window window)
     {

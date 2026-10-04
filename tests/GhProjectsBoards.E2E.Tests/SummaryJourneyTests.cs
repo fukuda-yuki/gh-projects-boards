@@ -28,7 +28,9 @@ public sealed partial class RegistrationTests
             Capture(w, f.Root, "summary-ordinary-initial");
             Invoke(w, "SummaryGantt"); Wait(() => Text(w, "GanttSelected").Contains("#1"));
             ChooseView(w, "ProjectViewSummary"); Invoke(w, "SummaryBoards"); Wait(() => CellText(w, 0) == "pending Summary title");
-            ChooseView(w, "ProjectViewSummary"); Invoke(w, "SummaryEdit"); Wait(() => WorkspaceUi.HasVisibleElement(w, "PlanningDialog"));
+            ChooseView(w, "ProjectViewSummary");
+            Element(w, "SummaryTaskCommands").FindFirstDescendant(cf => cf.ByAutomationId("MoreButton"))!.AsButton().Invoke();
+            Invoke(w, "SummaryTaskEdit"); Wait(() => WorkspaceUi.HasVisibleElement(w, "PlanningDialog"));
             Element(w, "PlanSection-工数・進捗・実績").Patterns.ExpandCollapse.Pattern.Expand();
             Element(w, "PlanWork-Remaining").Focus();
             Wait(() => WorkspaceUi.HasVisibleElement(w, "PlanWork-Remaining") && Element(w, "PlanWork-Remaining").Properties.HasKeyboardFocus.Value);

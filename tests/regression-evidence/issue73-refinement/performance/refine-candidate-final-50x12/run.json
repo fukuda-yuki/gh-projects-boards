@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "runId": "refine-candidate-final-50x12",
+  "phase": "diagnostic-completed",
+  "startedUtc": "2026-10-04T14:35:53.2494475+00:00",
+  "runnerPid": 35620,
+  "worktree": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards",
+  "rows": 50,
+  "selectFields": 12,
+  "totalColumns": 14,
+  "app": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.exe",
+  "immutableOverride": true,
+  "declaredAppSourceRevision": "bb2c8bc5d821e0b5518ce8d1336f1081c2fc6eaa",
+  "sourceClaim": "SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.",
+  "noBuild": true,
+  "bulkPerformance": false,
+  "bulkCorrectness": true,
+  "traceRequested": true,
+  "physicalImeRequested": false,
+  "timedFramesRequested": true,
+  "buildExitCode": null,
+  "testExitCode": 0,
+  "commands": [
+    {
+      "arguments": [
+        "build",
+        "GhProjectsBoards.sln",
+        "--configuration",
+        "Release"
+      ],
+      "executable": "dotnet",
+      "selected": false
+    },
+    {
+      "executable": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\scripts\\Start-EditingCheck.ps1",
+      "arguments": [
+        "-DataRoot",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\data",
+        "-ItemCount",
+        "50",
+        "-SelectFieldCount",
+        "12",
+        "-PrepareOnly"
+      ]
+    },
+    {
+      "executable": "dotnet",
+      "arguments": [
+        "test",
+        "tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj",
+        "--configuration",
+        "Release",
+        "--no-build",
+        "--filter",
+        "FullyQualifiedName=GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests.CachedSheetFocusedNativeScrollAndLocalActions",
+        "--logger",
+        "trx;LogFileName=sheet-diagnostic.trx",
+        "--results-directory",
+        "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12",
+        "--",
+        "NUnit.NumberOfTestWorkers=0",
+        "RunConfiguration.TestSessionTimeout=600000"
+      ]
+    }
+  ],
+  "boundary": "Ordinary cached local-sheet diagnostic only. Driver waits and UIA calls are not isolated app latency. Pixels, app traces and durable state need separate review; no speedup or human acceptance claim.",
+  "seed": {
+    "bytes": 2124,
+    "sha256": "AACB2CA80A92D89532D814EAB839A9545ADF07D1FD8A5F09F61B0745FA17A058",
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\data\\diagnostics\\editing-seed.json"
+  },
+  "testStartedUtc": "2026-10-04T14:35:55.1125738+00:00",
+  "testFinishedUtc": "2026-10-04T14:36:38.5415194+00:00",
+  "result": {
+    "failed": 0,
+    "skipped": 0,
+    "total": 1,
+    "executed": 1,
+    "cases": [
+      {
+        "name": "CachedSheetFocusedNativeScrollAndLocalActions",
+        "outcome": "Passed",
+        "duration": "00:00:41.6607750"
+      }
+    ],
+    "passed": 1,
+    "trx": {
+      "bytes": 3880,
+      "sha256": "062D8432CD2B2DAE0D744AA504CB352A876E15E5DA1CC91D11A7235EAD9E132C",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\sheet-diagnostic.trx"
+    }
+  },
+  "finishedUtc": "2026-10-04T14:36:38.5750047+00:00",
+  "appLifetime": {
+    "pid": 40168,
+    "completed": true,
+    "closeRequested": true,
+    "normal": true,
+    "forced": false,
+    "exitCode": 0
+  },
+  "trace": {
+    "file": {
+      "bytes": 1201541,
+      "sha256": "9BE643B550DC4CD55EB2345E2A486854449AEBE7883713ED18893EFFEF446815",
+      "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\app-trace.jsonl"
+    },
+    "available": true,
+    "requested": true
+  },
+  "omissions": []
+}

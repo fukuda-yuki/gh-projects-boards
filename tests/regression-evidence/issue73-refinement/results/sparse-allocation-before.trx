@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="3f2247a2-6ceb-4e4c-82cf-4d5ea4a25d75" name="mwam0@RTX5070 2026-10-04 23:15:43" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T23:15:43.2735029+09:00" queuing="2026-10-04T23:15:43.2735030+09:00" start="2026-10-04T23:15:41.3056560+09:00" finish="2026-10-04T23:15:43.2810648+09:00" />
+  <TestSettings name="default" id="871987df-2931-4328-b2d8-13f9cccf325f">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_23_15_43" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="bb0b4227-2f84-4a98-b8f2-babbd68b12e4" testId="9238653d-3bb8-53af-cf3d-df83a69bdab7" testName="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" computerName="RTX5070" duration="00:00:00.6193130" startTime="2026-10-04T23:15:42.4848933+09:00" endTime="2026-10-04T23:15:43.1041641+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bb0b4227-2f84-4a98-b8f2-babbd68b12e4">
+      <Output>
+        <StdOut>{"rows":1000,"selectFields":12,"projects":2,"maximumManagedBytes":8388608,"samples":[{"milliseconds":47.4889,"managedBytes":13867800},{"milliseconds":28.7914,"managedBytes":13868152},{"milliseconds":28.225,"managedBytes":13868152},{"milliseconds":29.9862,"managedBytes":13867800},{"milliseconds":27.6416,"managedBytes":13868152},{"milliseconds":43.5474,"managedBytes":13868536},{"milliseconds":32.4317,"managedBytes":13868152}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}</StdOut>
+        <ErrorInfo>
+          <Message>  Sparse status reads must halve the observed full-row projection allocation for this fixed workload.&#xD;
+Assert.That(samples.Max(s =&gt; s.Bytes), Is.LessThanOrEqualTo(8 * 1024 * 1024))&#xD;
+  Expected: less than or equal to 8388608&#xD;
+  But was:  13868536&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.Tests.ApplyCandidatePerformanceTests.ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\ApplyCandidatePerformanceTests.cs:line 48&#xD;
+
+1)    at GhProjectsBoards.Tests.ApplyCandidatePerformanceTests.ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\ApplyCandidatePerformanceTests.cs:line 48&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="9238653d-3bb8-53af-cf3d-df83a69bdab7">
+      <Execution id="bb0b4227-2f84-4a98-b8f2-babbd68b12e4" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.ApplyCandidatePerformanceTests" name="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="9238653d-3bb8-53af-cf3d-df83a69bdab7" executionId="bb0b4227-2f84-4a98-b8f2-babbd68b12e4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" passed="0" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Explicit run&#xD;
+{"rows":1000,"selectFields":12,"projects":2,"maximumManagedBytes":8388608,"samples":[{"milliseconds":47.4889,"managedBytes":13867800},{"milliseconds":28.7914,"managedBytes":13868152},{"milliseconds":28.225,"managedBytes":13868152},{"milliseconds":29.9862,"managedBytes":13867800},{"milliseconds":27.6416,"managedBytes":13868152},{"milliseconds":43.5474,"managedBytes":13868536},{"milliseconds":32.4317,"managedBytes":13868152}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}&#xD;
+&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.23_15_43.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

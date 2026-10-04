@@ -1,0 +1,270 @@
+{
+  "phase": "horizontal-burst-return",
+  "bounds": {
+    "Location": {
+      "IsEmpty": false,
+      "X": 24,
+      "Y": 24
+    },
+    "Size": {
+      "IsEmpty": false,
+      "Width": 1080,
+      "Height": 760
+    },
+    "X": 24,
+    "Y": 24,
+    "Width": 1080,
+    "Height": 760,
+    "Left": 24,
+    "Top": 24,
+    "Right": 1104,
+    "Bottom": 784,
+    "IsEmpty": false
+  },
+  "inputStart": 884825416614,
+  "inputEnd": 884825423376,
+  "frequency": 10000000,
+  "input": "native horizontal wheel -120",
+  "captured": [
+    {
+      "frame": 0,
+      "begin": 884824870410,
+      "end": 884825323071,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\000.png"
+    },
+    {
+      "frame": 1,
+      "begin": 884825797132,
+      "end": 884825980297,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\001.png"
+    },
+    {
+      "frame": 2,
+      "begin": 884826418706,
+      "end": 884826636229,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\002.png"
+    },
+    {
+      "frame": 3,
+      "begin": 884827191794,
+      "end": 884827645099,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\003.png"
+    },
+    {
+      "frame": 4,
+      "begin": 884828122545,
+      "end": 884828291988,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\004.png"
+    },
+    {
+      "frame": 5,
+      "begin": 884828757515,
+      "end": 884828965488,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\005.png"
+    },
+    {
+      "frame": 6,
+      "begin": 884829545809,
+      "end": 884829948267,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\006.png"
+    },
+    {
+      "frame": 7,
+      "begin": 884830482997,
+      "end": 884830650112,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\007.png"
+    },
+    {
+      "frame": 8,
+      "begin": 884831112665,
+      "end": 884831298423,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\008.png"
+    },
+    {
+      "frame": 9,
+      "begin": 884831731629,
+      "end": 884831961107,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\009.png"
+    },
+    {
+      "frame": 10,
+      "begin": 884832522806,
+      "end": 884832964801,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\010.png"
+    },
+    {
+      "frame": 11,
+      "begin": 884833472024,
+      "end": 884833633720,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\011.png"
+    },
+    {
+      "frame": 12,
+      "begin": 884834101765,
+      "end": 884834289982,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\012.png"
+    },
+    {
+      "frame": 13,
+      "begin": 884834736877,
+      "end": 884834969241,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\013.png"
+    },
+    {
+      "frame": 14,
+      "begin": 884835526706,
+      "end": 884835970766,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\014.png"
+    },
+    {
+      "frame": 15,
+      "begin": 884836474027,
+      "end": 884836641118,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\015.png"
+    },
+    {
+      "frame": 16,
+      "begin": 884837103949,
+      "end": 884837309401,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\016.png"
+    },
+    {
+      "frame": 17,
+      "begin": 884837881925,
+      "end": 884838330678,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\017.png"
+    },
+    {
+      "frame": 18,
+      "begin": 884838811053,
+      "end": 884838976667,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\018.png"
+    },
+    {
+      "frame": 19,
+      "begin": 884839441023,
+      "end": 884839639987,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\019.png"
+    },
+    {
+      "frame": 20,
+      "begin": 884840076765,
+      "end": 884840311094,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\020.png"
+    },
+    {
+      "frame": 21,
+      "begin": 884840858083,
+      "end": 884841314095,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\021.png"
+    },
+    {
+      "frame": 22,
+      "begin": 884841804145,
+      "end": 884841973745,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\022.png"
+    },
+    {
+      "frame": 23,
+      "begin": 884842443555,
+      "end": 884842635105,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\023.png"
+    },
+    {
+      "frame": 24,
+      "begin": 884843065895,
+      "end": 884843326850,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\024.png"
+    },
+    {
+      "frame": 25,
+      "begin": 884843862685,
+      "end": 884844316198,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\025.png"
+    },
+    {
+      "frame": 26,
+      "begin": 884844801333,
+      "end": 884844970297,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\026.png"
+    },
+    {
+      "frame": 27,
+      "begin": 884845432258,
+      "end": 884845648129,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\027.png"
+    },
+    {
+      "frame": 28,
+      "begin": 884846205889,
+      "end": 884846647331,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\028.png"
+    },
+    {
+      "frame": 29,
+      "begin": 884847135978,
+      "end": 884847336471,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\029.png"
+    },
+    {
+      "frame": 30,
+      "begin": 884847758943,
+      "end": 884847967390,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\030.png"
+    },
+    {
+      "frame": 31,
+      "begin": 884848394612,
+      "end": 884848637987,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\031.png"
+    },
+    {
+      "frame": 32,
+      "begin": 884849175107,
+      "end": 884849318958,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\032.png"
+    },
+    {
+      "frame": 33,
+      "begin": 884849792589,
+      "end": 884849977544,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\033.png"
+    },
+    {
+      "frame": 34,
+      "begin": 884850432769,
+      "end": 884850649343,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\034.png"
+    },
+    {
+      "frame": 35,
+      "begin": 884851064186,
+      "end": 884851311025,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\035.png"
+    },
+    {
+      "frame": 36,
+      "begin": 884851842671,
+      "end": 884851981991,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\036.png"
+    },
+    {
+      "frame": 37,
+      "begin": 884852472922,
+      "end": 884852650517,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\037.png"
+    },
+    {
+      "frame": 38,
+      "begin": 884853103045,
+      "end": 884853327035,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\038.png"
+    },
+    {
+      "frame": 39,
+      "begin": 884853883092,
+      "end": 884854326673,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\horizontal-burst-return\\039.png"
+    }
+  ]
+}

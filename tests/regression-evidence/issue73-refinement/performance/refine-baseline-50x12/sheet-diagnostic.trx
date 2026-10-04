@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="f21c9ca4-1396-4db0-a34b-1d2c5093af0e" name="mwam0@RTX5070 2026-10-04 23:04:07" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T23:04:07.0075869+09:00" queuing="2026-10-04T23:04:07.0075871+09:00" start="2026-10-04T23:03:23.4094698+09:00" finish="2026-10-04T23:04:07.0153395+09:00" />
+  <TestSettings name="default" id="d91ad758-ab97-4f7e-9369-6cdc7fba71c1">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_23_04_07" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="8a2d467f-ab91-42d9-950d-c2045facbc08" testId="dbc7514e-1db0-1af9-1714-22fe287fb8d0" testName="CachedSheetFocusedNativeScrollAndLocalActions" computerName="RTX5070" duration="00:00:42.2317130" startTime="2026-10-04T23:03:24.6041706+09:00" endTime="2026-10-04T23:04:06.8358451+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8a2d467f-ab91-42d9-950d-c2045facbc08">
+      <Output>
+        <StdOut>Local sheet diagnostic artifacts: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\sheet-diagnostic\refine-baseline-50x12\observations</StdOut>
+      </Output>
+      <ResultFiles>
+        <ResultFile path="RTX5070\driver.jsonl" />
+      </ResultFiles>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="CachedSheetFocusedNativeScrollAndLocalActions" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="dbc7514e-1db0-1af9-1714-22fe287fb8d0">
+      <Execution id="8a2d467f-ab91-42d9-950d-c2045facbc08" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.LocalSheetDiagnosticTests" name="CachedSheetFocusedNativeScrollAndLocalActions" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="dbc7514e-1db0-1af9-1714-22fe287fb8d0" executionId="8a2d467f-ab91-42d9-950d-c2045facbc08" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Explicit run&#xD;
+Local sheet diagnostic artifacts: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\sheet-diagnostic\refine-baseline-50x12\observations&#xD;
+&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.23_04_06.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

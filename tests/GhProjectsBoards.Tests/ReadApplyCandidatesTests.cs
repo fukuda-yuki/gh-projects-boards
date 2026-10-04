@@ -143,5 +143,31 @@ internal sealed class ReadApplyCandidatesTests
         Assert.That(State(work), Is.EqualTo(before));
     }
 
+    [Test]
+    public void SharedTitleKeepsEveryDuplicateAppearanceAndProjectionDecisionNeedsNoChangedValue()
+    {
+        var project = PlanningPathTests.Registration(2);
+        var duplicate = project.Snapshot.Items[0] with { Id = new(project.Snapshot.Id.Scope, "P1T3") };
+        project = project with { Snapshot = project.Snapshot with { Items = project.Snapshot.Items.Append(duplicate).ToArray() } };
+        var work = new EditingWorkspace(project.Snapshot.Id.Scope); work.SetRegistrations([project]);
+        work.SetPlanning(PlanningPathTests.Plan(), 0);
+        var rows = work.Open(project); work.SetBuffer(rows[0].Cells[0], "Shared unfinished title");
+        var decision = rows[1].Cells.Single(c => c.Key?.FieldId == "F-Estimate").Key;
+        var snapshot = work.Snapshot();
+        work = EditingWorkspace.Restore(snapshot with { Fields = snapshot.Fields.Select(field => field.Key == decision
+            ? field with { Observation = new("projection-observation", project.Snapshot.Id, project.RetrievedAt,
+                field.Baseline, field.Baseline is null ? ValueAvailability.Empty : ValueAvailability.Present,
+                EditingWorkspace.ProjectionDecisionReason, []) } : field).ToArray() });
+        var before = State(work);
+
+        var candidates = work.ReadApplyCandidates(project);
+
+        Assert.That(candidates.Select(c => c.Id), Is.EqualTo(new[] { "P1T1", "P1T2", "P1T3" }));
+        Assert.That(candidates.Where(c => c.Id != "P1T2").All(c => c.Fields.Single(f => f.Key.Kind == "Title").Buffer == "Shared unfinished title"), Is.True);
+        Assert.That(candidates.Single(c => c.Id == "P1T2").Changes, Is.Zero);
+        Assert.That(candidates.Single(c => c.Id == "P1T2").Fields.Single(f => f.Key == decision).Conflict, Is.False);
+        Assert.That(State(work), Is.EqualTo(before));
+    }
+
     private static string State(EditingWorkspace work) => JsonSerializer.Serialize(work.Snapshot());
 }

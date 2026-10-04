@@ -214,6 +214,7 @@ public sealed partial class PlanningHostedTests
             Ui.Find<TextBox>("ScheduleFinish", editor).Text = "2026-10-05 13:00";
         });
         await Ui.Until(() => Ui.Find<RadioButtons>("ScheduleMethod", Ui.Popup<StackPanel>("SchedulingEditor")).SelectedIndex == 1);
+        await Ui.Until(() => Ui.Popup<Button>("ScheduleSettings") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("ScheduleSettings", Ui.Popup<StackPanel>("SchedulingEditor"))));
         await Ui.Ready<Button>("PlanSettingsCancel");
         await Ui.Run(() => Ui.Click("PlanSettingsCancel"));

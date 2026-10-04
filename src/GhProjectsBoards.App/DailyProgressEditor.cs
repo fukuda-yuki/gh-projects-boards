@@ -36,7 +36,9 @@ internal sealed partial class EditingGrid
         var work = session.Workspace;
         var plan = work.Planning(projectId);
         if (plan is null) { await ShowPlanningSettingsAsync(); return; }
-        var row = rows[currentRow]; var taskId = work.TaskId(registration, row.ItemId);
+        // Effort editing follows the task, including fields hidden in Boards.
+        var row = canonicalRows.Single(candidate => candidate.ItemId == rows[currentRow].ItemId);
+        var taskId = work.TaskId(registration, row.ItemId);
         var task = plan.Tasks.SingleOrDefault(t => t.Id == taskId)
             ?? (plan.Version >= 3 ? EditingWorkspace.WithObservedAssignment(registration, new(taskId)) : new(taskId));
         var expected = work.Revision;

@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="2ffc99a5-b6b7-4161-8d14-800260d908d9" name="mwam0@RTX5070 2026-10-04 23:17:42" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T23:17:42.4699873+09:00" queuing="2026-10-04T23:17:42.4699875+09:00" start="2026-10-04T23:17:40.7556217+09:00" finish="2026-10-04T23:17:42.4781353+09:00" />
+  <TestSettings name="default" id="32397412-a733-498d-9bf8-c141899d4086">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_23_17_42" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="347d0bfd-f87b-4463-9259-56035c8179c9" testId="9238653d-3bb8-53af-cf3d-df83a69bdab7" testName="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" computerName="RTX5070" duration="00:00:00.3437130" startTime="2026-10-04T23:17:41.9306984+09:00" endTime="2026-10-04T23:17:42.2743759+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="347d0bfd-f87b-4463-9259-56035c8179c9">
+      <Output>
+        <StdOut>{"rows":1000,"selectFields":12,"projects":2,"maximumManagedBytes":8388608,"samples":[{"milliseconds":7.8287,"managedBytes":2491880},{"milliseconds":7.557,"managedBytes":2491528},{"milliseconds":7.2058,"managedBytes":2491528},{"milliseconds":7.1077,"managedBytes":2491528},{"milliseconds":7.1765,"managedBytes":2491528},{"milliseconds":7.1974,"managedBytes":2491528},{"milliseconds":7.2099,"managedBytes":2491528}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="9238653d-3bb8-53af-cf3d-df83a69bdab7">
+      <Execution id="347d0bfd-f87b-4463-9259-56035c8179c9" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.ApplyCandidatePerformanceTests" name="ThousandRowsTwelveFieldsKeepSparseCandidatesWithinTheAllocationBudget" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="9238653d-3bb8-53af-cf3d-df83a69bdab7" executionId="347d0bfd-f87b-4463-9259-56035c8179c9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Explicit run&#xD;
+{"rows":1000,"selectFields":12,"projects":2,"maximumManagedBytes":8388608,"samples":[{"milliseconds":7.8287,"managedBytes":2491880},{"milliseconds":7.557,"managedBytes":2491528},{"milliseconds":7.2058,"managedBytes":2491528},{"milliseconds":7.1077,"managedBytes":2491528},{"milliseconds":7.1765,"managedBytes":2491528},{"milliseconds":7.1974,"managedBytes":2491528},{"milliseconds":7.2099,"managedBytes":2491528}],"boundary":"Synchronous read-only Core projection, excluding fixture setup and assertions; not UI latency."}&#xD;
+&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.23_17_42.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

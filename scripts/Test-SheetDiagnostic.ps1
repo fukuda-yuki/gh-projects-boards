@@ -1,7 +1,7 @@
 # Opt-in local diagnosis. A completed driver is evidence collection, not product acceptance.
 [CmdletBinding()]
 param(
-    [ValidateRange(100, 5000)][int]$ItemCount = 101,
+    [ValidateRange(50, 5000)][int]$ItemCount = 101,
     [ValidateRange(1, 12)][int]$SelectFieldCount = 1,
     [ValidatePattern('^[A-Za-z0-9_-]+$')][string]$RunId = ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')),
     [switch]$NoBuild,
@@ -10,12 +10,14 @@ param(
     [switch]$Trace,
     [switch]$Ime,
     [switch]$Frames,
-    [switch]$BulkPerformance
+    [switch]$BulkPerformance,
+    [switch]$BulkCorrectness
 )
 
 $ErrorActionPreference = 'Stop'
 if ($BulkPerformance -and $SelectFieldCount -ne 12) { throw 'Bulk performance requires twelve single-select fields.' }
-if (!$BulkPerformance -and $ItemCount -lt 101) { throw 'The existing local diagnostic requires at least 101 rows.' }
+if ($BulkPerformance -and $ItemCount -lt 100) { throw 'Bulk performance requires at least 100 rows.' }
+if ($BulkPerformance -and $BulkCorrectness) { throw 'BulkCorrectness is an optional local-sheet phase, separate from the fixed pixel-performance campaign.' }
 if ($env:OS -ne 'Windows_NT') { throw 'This diagnostic requires Windows and an unlocked interactive desktop.' }
 foreach ($command in @('dotnet', 'git')) {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $command" }
@@ -37,7 +39,7 @@ $buildArguments = @('build', 'GhProjectsBoards.sln', '--configuration', 'Release
 $testArguments = @('test', $testProject, '--configuration', 'Release', '--no-build', '--filter', $filter,
     '--logger', 'trx;LogFileName=sheet-diagnostic.trx', '--results-directory', $run, '--',
     'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=600000')
-$environmentNames = @('APP', 'DATA_ROOT', 'OUTPUT', 'TRACE', 'ROWS', 'FIELDS', 'IME', 'FRAMES') | ForEach-Object { "GHPB_DIAGNOSTIC_$_" }
+$environmentNames = @('APP', 'DATA_ROOT', 'OUTPUT', 'TRACE', 'ROWS', 'FIELDS', 'IME', 'FRAMES', 'BULK_CORRECTNESS') | ForEach-Object { "GHPB_DIAGNOSTIC_$_" }
 $previous = @{}
 foreach ($name in $environmentNames) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 New-Item -ItemType Directory -Path $run | Out-Null
@@ -46,7 +48,7 @@ $state = [ordered]@{
     runnerPid = $PID; worktree = $repo; rows = $ItemCount; selectFields = $SelectFieldCount; totalColumns = $SelectFieldCount + 2
     app = $app; immutableOverride = [bool]$Executable; declaredAppSourceRevision = $SourceRevision
     sourceClaim = 'SourceRevision is caller-declared. Binary hashes identify the executed artifacts; NoBuild does not prove they match current source.'
-    noBuild = [bool]$NoBuild; bulkPerformance = [bool]$BulkPerformance; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; timedFramesRequested = [bool]$Frames; buildExitCode = $null; testExitCode = $null
+    noBuild = [bool]$NoBuild; bulkPerformance = [bool]$BulkPerformance; bulkCorrectness = [bool]$BulkCorrectness; traceRequested = [bool]$Trace; physicalImeRequested = [bool]$Ime; timedFramesRequested = [bool]$Frames; buildExitCode = $null; testExitCode = $null
     commands = @(
         @{ executable = 'dotnet'; arguments = $buildArguments; selected = !$NoBuild },
         @{ executable = (Join-Path $PSScriptRoot 'Start-EditingCheck.ps1'); arguments = @('-DataRoot', $data, '-ItemCount', "$ItemCount", '-SelectFieldCount', "$SelectFieldCount", '-PrepareOnly') },
@@ -144,6 +146,7 @@ try {
     $env:GHPB_DIAGNOSTIC_FIELDS = "$SelectFieldCount"
     [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_IME', $(if ($Ime) { '1' } else { $null }), 'Process')
     [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_FRAMES', $(if ($Frames) { '1' } else { $null }), 'Process')
+    [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_BULK_CORRECTNESS', $(if ($BulkCorrectness) { '1' } else { $null }), 'Process')
     $tracePath = Join-Path $run 'app-trace.jsonl'
     [Environment]::SetEnvironmentVariable('GHPB_DIAGNOSTIC_TRACE', $(if ($Trace) { $tracePath } else { $null }), 'Process')
     $state.phase = 'executing-diagnostic'; $state.testStartedUtc = [DateTimeOffset]::UtcNow.ToString('o'); Save-State

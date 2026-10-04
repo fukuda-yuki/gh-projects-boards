@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="379d86d2-ac2c-4068-8657-9d24f2a33200" name="mwam0@RTX5070 2026-10-04 23:46:39" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T23:46:39.3558746+09:00" queuing="2026-10-04T23:46:39.3558747+09:00" start="2026-10-04T23:46:21.5186635+09:00" finish="2026-10-04T23:46:53.4033490+09:00" />
+  <TestSettings name="default" id="d1eab03b-3992-469a-a6ed-3449cac18904">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_23_46_39" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="dc5d716b-3710-4a53-817a-8813aa1c60b8" testId="dd040e9f-b2f8-1ef9-a803-4a4857a2a8c4" testName="OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections" computerName="RTX5070" duration="00:00:16.8530400" startTime="2026-10-04T23:46:22.4765630+09:00" endTime="2026-10-04T23:46:39.3295361+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dc5d716b-3710-4a53-817a-8813aa1c60b8">
+      <Output>
+        <ErrorInfo>
+          <Message>  Assert.That(Text(w, "GanttSelected"), Does.Contain("Manual"))&#xD;
+  Expected: String containing "Manual"&#xD;
+  But was:  "sample-user/first #1  Issue 1&#xD;
+日時を指定  2026-10-05 09:00 → 2026-10-06 16:19"&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass49_0.&lt;OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections&gt;b__0(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\PlanningJourneyTests.cs:line 85&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\PlanningJourneyTests.cs:line 16&#xD;
+
+1)    at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass49_0.&lt;OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections&gt;b__0(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\PlanningJourneyTests.cs:line 85&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\PlanningJourneyTests.cs:line 16&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ee087ae3-f297-430b-8784-692b2f7e58df" testId="8046e103-7031-2e3a-63f3-b18ca37d853b" testName="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" computerName="RTX5070" duration="00:00:13.9081570" startTime="2026-10-04T23:46:39.3305328+09:00" endTime="2026-10-04T23:46:53.2386889+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ee087ae3-f297-430b-8784-692b2f7e58df" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="8046e103-7031-2e3a-63f3-b18ca37d853b">
+      <Execution id="ee087ae3-f297-430b-8784-692b2f7e58df" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinarySummaryThousandTaskEditRoundtripProjectIsolationAndRestart" />
+    </UnitTest>
+    <UnitTest name="OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.e2e.tests\bin\release\net10.0-windows10.0.26100.0\ghprojectsboards.e2e.tests.dll" id="dd040e9f-b2f8-1ef9-a803-4a4857a2a8c4">
+      <Execution id="dc5d716b-3710-4a53-817a-8813aa1c60b8" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryBoardsManualDependencyWeeklyReplanGanttRestartsAndPublishesReviewedProjections" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="dd040e9f-b2f8-1ef9-a803-4a4857a2a8c4" executionId="dc5d716b-3710-4a53-817a-8813aa1c60b8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8046e103-7031-2e3a-63f3-b18ca37d853b" executionId="ee087ae3-f297-430b-8784-692b2f7e58df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="2" executed="2" passed="1" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\bin\Release\net10.0-windows10.0.26100.0\GhProjectsBoards.E2E.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 2 of 2 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.23_46_53.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

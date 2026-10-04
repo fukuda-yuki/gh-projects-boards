@@ -78,6 +78,7 @@ public sealed partial class RegistrationPanel : UserControl
     }
     private async void ShowPlanningSettings(object sender, RoutedEventArgs e)
     {
+        ProjectCommands.IsOpen = false;
         ProjectSettingsFlyout.Hide();
         if (EditorHost.Children.OfType<EditingGrid>().FirstOrDefault() is { } grid) await grid.ShowPlanningSettingsAsync();
     }
@@ -146,7 +147,7 @@ public sealed partial class RegistrationPanel : UserControl
                 Confirmation.Text = "接続が変わりました。登録対象のURLまたは検索結果を再確認してください。";
             }
             Status.Text = workspace.Status;
-            WorkspaceStatusBar.Visibility = workspace.Selected is null || workspace.IsBusy || workspace.Status.Contains("失敗")
+            WorkspaceStatusBar.Visibility = workspace.IsBusy || workspace.Selected is null && workspace.Status.Length > 0 || workspace.Status.Contains("失敗")
                 || workspace.Status.Contains("中断") || workspace.Status.Contains("保持") || workspace.Status.Contains("不明")
                 || workspace.Status.Contains("IME変換中")
                 ? Visibility.Visible : Visibility.Collapsed;
@@ -173,6 +174,11 @@ public sealed partial class RegistrationPanel : UserControl
             WeeklyApply.IsEnabled = Apply.IsEnabled && workspace.Drafts!.Workspace.Planning(workspace.Selected!.Snapshot.Id.NodeId) is not null;
             PlanningSettingsCommand.IsEnabled = workspace.Selected is not null && workspace.Drafts is not null && !workspace.IsBusy && !applyDialog && !settingsOpen;
             ApplyHistory.IsEnabled = workspace.Drafts is not null && !workspace.IsBusy && !applyDialog;
+            var hasProject = workspace.Selected is not null;
+            foreach (var command in new[] { Refresh, Apply, WeeklyApply, PlanningSettingsCommand, ProjectSettings })
+                command.Visibility = hasProject ? Visibility.Visible : Visibility.Collapsed;
+            ApplyHistory.Visibility = workspace.Drafts is not null ? Visibility.Visible : Visibility.Collapsed;
+            ProjectCommands.Visibility = ProjectHeader.Visibility = hasProject || workspace.Drafts is not null ? Visibility.Visible : Visibility.Collapsed;
             Remove.IsEnabled = workspace.Selected is not null;
             ProjectSettings.IsEnabled = workspace.Selected is not null && !settingsOpen;
             SaveSetting.IsEnabled = workspace.Selected is not null && !workspace.IsBusy;
@@ -243,10 +249,6 @@ public sealed partial class RegistrationPanel : UserControl
                 ProjectIdentityButton.Content = ""; ProjectIdentityUrl.Text = "";
                 ProjectContext.Text = ""; ProjectContext.Visibility = Visibility.Collapsed;
                 EmptyWorkspace.Visibility = workspace.Incomplete is null ? Visibility.Visible : Visibility.Collapsed;
-                EmptyHint.Text = workspace.Profile is null
-                    ? "保存済みアカウントを選択、または「接続設定」へ。"
-                    : workspace.CanRead ? "登録済みProjectを選択、または「Projectを追加」へ。"
-                    : "保存済みProjectを選択できます。接続は未確認です。";
                 if (workspace.Incomplete is null) Items.Visibility = Visibility.Collapsed;
             }
         }
@@ -264,6 +266,9 @@ public sealed partial class RegistrationPanel : UserControl
         if (Profiles.SelectedIndex != profileIndex) Profiles.SelectedIndex = profileIndex;
         var registered = Workspace.Registrations.Where(r => r.Snapshot.Id.Scope == Workspace.Profile)
             .OrderBy(r => r.OwnerLogin, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Snapshot.Number).ToArray();
+        Profiles.Visibility = profileChoices.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        NavigationHeading.Visibility = NavigationFilterPanel.Visibility = registered.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Add.Visibility = Workspace.Profile is not null ? Visibility.Visible : Visibility.Collapsed;
         if (navigationRepository?.Scope != Workspace.Profile) navigationRepository = null;
         var repositories = registered.SelectMany(r => r.Repositories).DistinctBy(r => r.Id)
             .OrderBy(r => r.NameWithOwner, StringComparer.OrdinalIgnoreCase).Select(r => new RepositoryChoice(r.Id, r.NameWithOwner)).ToList();
@@ -377,20 +382,6 @@ public sealed partial class RegistrationPanel : UserControl
         WorkspaceSplitView.DisplayMode = mode;
         WorkspaceSplitView.IsPaneOpen = mode == SplitViewDisplayMode.Inline;
         AutomationProperties.SetName(NavigationToggle, WorkspaceSplitView.IsPaneOpen ? "Project一覧を折りたたむ" : "Project一覧を表示");
-    }
-    private void HeaderSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var narrow = e.NewSize.Width < 1000;
-        Grid.SetColumn(ProjectCommands, narrow ? 0 : 1);
-        Grid.SetRow(ProjectCommands, narrow ? 1 : 0);
-        Grid.SetColumnSpan(ProjectCommands, narrow ? 2 : 1);
-        Grid.SetColumnSpan(ProjectHeading, narrow ? 2 : 1);
-        Grid.SetRow(ProjectIdentityContext, narrow ? 2 : 1);
-        var columns = e.NewSize.Width < 420 ? 2 : e.NewSize.Width < 660 ? 3 : 6;
-        ProjectCommands.RowSpacing = columns < 6 ? 4 : 0;
-        var commands = new FrameworkElement[] { Refresh, Apply, WeeklyApply, ApplyHistory, PlanningSettingsCommand, ProjectSettings };
-        for (var i = 0; i < commands.Length; i++)
-        { Grid.SetColumn(commands[i], i % columns); Grid.SetRow(commands[i], i / columns); }
     }
     private void BackToPreview(object sender, RoutedEventArgs e)
     {

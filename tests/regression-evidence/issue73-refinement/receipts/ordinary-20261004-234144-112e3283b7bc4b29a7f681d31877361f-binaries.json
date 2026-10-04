@@ -1,0 +1,104 @@
+[
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.exe",
+    "sha256": "C85B25EF47001EE76C2B5EEABD9D9EFEF7AB4E777F2BFEF143EA3F435C52F3EA",
+    "version": "1.0.0.0",
+    "bytes": 289792
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.dll",
+    "sha256": "9322ECD1FE6A6C6BFC796B1FF466C8C24EA1164A622E425A0602B906D6BCC3D0",
+    "version": "1.0.0.0",
+    "bytes": 977408
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.Core.dll",
+    "sha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A",
+    "version": "1.0.0.0",
+    "bytes": 998400
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.UI.Xaml.dll",
+    "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C",
+    "version": "3.1.8.2503 (C42BDAF2A0A4(ContainerAdministrator)-c03f50c96989525a1487cf9404f2306b314a23d0)",
+    "bytes": 15083832
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.UI.Xaml.Controls.dll",
+    "sha256": "6E41078A44049D0AC8B50DFF7EF220CACC7384623B95331BB627620C7749E568",
+    "version": "3.1.8.2608 (CD3AC2B906A4(ContainerAdministrator)-b497e527e22752d08aabb176820923028f16f003)",
+    "bytes": 6592312
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\DWriteCore.dll",
+    "sha256": "599579BD5D0DD27020E5563F9D7908BD9AA5BFF4E2DF291D06FE5377B233B32A",
+    "version": "1.8.1.2512",
+    "bytes": 3098184
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.Windows.Widgets.dll",
+    "sha256": "544784D1EEE6EF7C18F5208B879403E888CEF8ABD9DCA11EBECCFA9A7DE67D47",
+    "version": "1.8",
+    "bytes": 2404896
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.Windows.Widgets.Projection.dll",
+    "sha256": "B7CC844DE38D3D363F98B5652B57355AABA8804704B9258EF35DFD5D93488966",
+    "version": "1.0.0.0",
+    "bytes": 167496
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\Microsoft.Windows.Widgets.winmd",
+    "sha256": "08F4676E4440E48F4A46567E802C59F09AA8F7B7D64A0B7A71A60A888BEFC382",
+    "version": null,
+    "bytes": 36384
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\coreclr.dll",
+    "sha256": "128AEE8C62A673D64739E585E3876B61133571CEC83A46240A62581D5465639B",
+    "version": "10,0,1226,42308 @Commit: 95017c711e6afc1085133d440e42b4bd78155701",
+    "bytes": 4614992
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\src\\GhProjectsBoards.App\\bin\\Release\\net10.0-windows10.0.26100.0\\win-x64\\GhProjectsBoards.App.runtimeconfig.json",
+    "sha256": "564EDFAD8990E994033CABA1FBFC6D7B10E935CDB4842F9C9A6225A4C09F70AA",
+    "version": null,
+    "bytes": 431
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Tests.exe",
+    "sha256": "F63383FE72CBC0DBA1ACDB60AC07F73DF0E2A9E7191C62BFCE7BC84ACF043F23",
+    "version": "1.0.0.0",
+    "bytes": 162816
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Tests.dll",
+    "sha256": "91120D4EF65C7E9D7372E764778B6657227EA409B12E02E4BC9E7870F3F63662",
+    "version": "1.0.0.0",
+    "bytes": 1706496
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Core.dll",
+    "sha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A",
+    "version": "1.0.0.0",
+    "bytes": 998400
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\GhProjectsBoards.E2E.Tests.dll",
+    "sha256": "54C0C53CE08B3C4A0190599764A39BF7156BE62D3EB658C39538AAA0A8CBD5D2",
+    "version": "1.0.0.0",
+    "bytes": 703488
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\FlaUI.Core.dll",
+    "sha256": "1696C344D2FF54598FB5AE869E9CBCF363C0BE3EBFF744CC50BA834056B43B6F",
+    "version": "5.0.0.0",
+    "bytes": 267776
+  },
+  {
+    "path": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.E2E.Tests\\bin\\Release\\net10.0-windows10.0.26100.0\\FlaUI.UIA3.dll",
+    "sha256": "D00FA5203C56B9D1C7B0BC624CFFA84D599D6B8DFA6F27C0324E3059F343754C",
+    "version": "5.0.0.0",
+    "bytes": 108544
+  }
+]

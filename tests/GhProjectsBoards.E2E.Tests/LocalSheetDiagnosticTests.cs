@@ -29,6 +29,7 @@ public sealed class LocalSheetDiagnosticTests
         var trace = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_TRACE");
         var physicalIme = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_IME") == "1";
         var timedFrames = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_FRAMES") == "1";
+        var bulkCorrectness = Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_BULK_CORRECTNESS") == "1";
         var seedFile = Path.Combine(data, "diagnostics", "editing-seed.json");
         Assert.That(Environment.UserInteractive && File.Exists(executable), Is.True);
         Assert.That(File.ReadAllText(Path.Combine(data, "synthetic-editing-check.txt")).Trim(),
@@ -38,7 +39,7 @@ public sealed class LocalSheetDiagnosticTests
         Assert.That(seed.GetProperty("validatedReadback").GetBoolean(), Is.True);
         var rows = seed.GetProperty("count").GetInt32();
         var fields = seed.GetProperty("selectFieldCount").GetInt32();
-        Assert.That(rows, Is.InRange(101, 5000));
+        Assert.That(rows, Is.InRange(50, 5000));
         Assert.That(fields, Is.InRange(1, 12));
         foreach (var (name, expected) in new[] { ("ROWS", rows), ("FIELDS", fields) })
             if (Environment.GetEnvironmentVariable("GHPB_DIAGNOSTIC_" + name) is { } supplied)
@@ -62,10 +63,11 @@ public sealed class LocalSheetDiagnosticTests
         {
             executable, executableSha256 = Hash(executable), appDll, appDllSha256 = Hash(appDll),
             testAssemblySha256 = Hash(typeof(LocalSheetDiagnosticTests).Assembly.Location), data, rows, fields,
-            seedSha256 = Hash(seedFile), trace, physicalIme, timedFrames,
+            seedSha256 = Hash(seedFile), trace, physicalIme, timedFrames, bulkCorrectness,
+            bulkTargets = bulkCorrectness ? Math.Min(rows, 100) : 0,
             repeatedActions = new { names = new[] { "select-visible-title", "arrows-up-down" }, warmup = 1, measured = 5 },
             singleObservationActions = new[] { "cached-project-ready", "commit-pending-title", "undo-title", "project-P2-P1" },
-            driverRevision = "paced-selection-v3-hit-target",
+            driverRevision = "paced-selection-v4-horizontal-bulk",
             pacing = "Each intentional click first observes its public native hit target, then awaits the selected row and editor focus. Arrows await the selected row. No retry of input. Not the prior fast-queue workload.",
             frequency = Stopwatch.Frequency, startedUtc = DateTimeOffset.UtcNow, startTicks = Stopwatch.GetTimestamp(),
             os = Environment.OSVersion.ToString(), driver = "FlaUI UIA3 5.0.0",
@@ -151,6 +153,12 @@ public sealed class LocalSheetDiagnosticTests
             Snapshot("returned-pending", expectedIssue: "I1");
             if (fields > 1)
             {
+                if (timedFrames)
+                {
+                    Mouse.Position = SheetPoint();
+                    CaptureFrames("horizontal-burst-right", () => Mouse.HorizontalScroll(120), "native horizontal wheel +120");
+                    CaptureFrames("horizontal-burst-return", () => Mouse.HorizontalScroll(-120), "native horizontal wheel -120");
+                }
                 Wheel("horizontal-right", 100, true); Snapshot("horizontal-right", expectedIssue: "I1");
                 Wheel("horizontal-left", 0, true); Snapshot("horizontal-return", expectedIssue: "I1");
             }
@@ -197,6 +205,7 @@ public sealed class LocalSheetDiagnosticTests
             Snapshot("returned-project"); Checkpoint("after-project-roundtrip");
             if (timedFrames) { RapidNavigationInput(); RangeScrollRoundtrip(); }
             if (physicalIme) PhysicalImeRoundtrip();
+            if (bulkCorrectness) BulkPasteAndUndo();
             closeRequested = true; window.Close();
             Wait(() => process.HasExited, "Ordinary normal close must end the original process.", 15);
             normal = process.ExitCode == 0;
@@ -364,6 +373,56 @@ public sealed class LocalSheetDiagnosticTests
             Assert.That(retainedTitle.GetProperty("Buffer").ValueKind, Is.EqualTo(JsonValueKind.Null));
             Assert.That(retainedTitle.GetProperty("Change").GetProperty("Value").GetString(), Is.EqualTo("diagnostic"));
             Snapshot("range-return"); ClickCell(0);
+        }
+        void BulkPasteAndUndo()
+        {
+            using var clipboard = new NativeClipboardScope();
+            ClickCell(0); NativeKey(VirtualKeyShort.RIGHT);
+            Wait(() => Element("GridCell0_1").Properties.HasKeyboardFocus.ValueOrDefault,
+                "The first select field must own native focus before bulk paste.");
+            var before = Checkpoint("bulk-before");
+            var count = Math.Min(rows, 100);
+            var targetIds = Enumerable.Range(1, count).Select(i => "P1T" + i).ToHashSet();
+            bool Target(JsonElement field)
+            {
+                var key = field.GetProperty("Key");
+                return key.GetProperty("Kind").GetString() == "Select"
+                    && key.GetProperty("ProjectId").GetString() == "P1"
+                    && key.GetProperty("FieldId").GetString() == "P1-status"
+                    && targetIds.Contains(key.GetProperty("NodeId").GetString()!);
+            }
+            string KeyOf(JsonElement field) => field.GetProperty("Key").GetRawText();
+            string StateOf(JsonElement field) => JsonSerializer.Serialize(new
+            {
+                baseline = field.GetProperty("Baseline"), change = field.GetProperty("Change"),
+                buffer = field.GetProperty("Buffer"), observation = field.GetProperty("Observation"), conflict = field.GetProperty("Conflict")
+            });
+            var beforeStates = before.GetProperty("Fields").EnumerateArray().ToDictionary(KeyOf, StateOf);
+            var beforeNonTargets = before.GetProperty("Fields").EnumerateArray().Where(field => !Target(field)).ToDictionary(KeyOf, StateOf);
+            Assert.That(before.GetProperty("Fields").EnumerateArray().Where(Target).Count(), Is.EqualTo(count));
+            NativeClipboardScope.WriteTestFormats(string.Join('\n', Enumerable.Repeat("Done", count)));
+            Record("bulk-paste-input", new { count, field = "P1-status", firstItem = "P1T1", lastItem = "P1T" + count,
+                boundary = "Correctness phase after the timing/scroll probes; not input-to-pixel latency." });
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
+            Wait(() => ReadCheckpoint().GetProperty("Fields").EnumerateArray().Where(Target).Count(field =>
+                field.GetProperty("Change") is { ValueKind: JsonValueKind.Object } change
+                && change.GetProperty("Value").GetString() == "done" && !change.GetProperty("Clear").GetBoolean()
+                && field.GetProperty("Buffer").ValueKind == JsonValueKind.Null) == count,
+                "Every explicitly targeted row must contain the pasted option in the durable checkpoint.");
+            var pasted = Checkpoint("bulk-pasted");
+            Assert.That(pasted.GetProperty("Fields").EnumerateArray().Where(field => !Target(field))
+                .ToDictionary(KeyOf, StateOf).OrderBy(pair => pair.Key).ToArray(),
+                Is.EqualTo(beforeNonTargets.OrderBy(pair => pair.Key).ToArray()));
+            Assert.That(pasted.GetProperty("Journal").GetArrayLength(), Is.Zero, "Local paste must not dispatch GitHub work.");
+            Snapshot("bulk-pasted", "I1");
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_Z);
+            Wait(() => ReadCheckpoint().GetProperty("Fields").EnumerateArray().ToDictionary(KeyOf, StateOf)
+                .OrderBy(pair => pair.Key).SequenceEqual(beforeStates.OrderBy(pair => pair.Key)),
+                "One Undo must restore every field's prior value, pending input and observation state.");
+            var restored = Checkpoint("bulk-undone");
+            Assert.That(restored.GetProperty("Journal").GetArrayLength(), Is.Zero);
+            Snapshot("bulk-undone", "I1");
+            Record("bulk-paste-and-undo-completed", new { targets = count, preservedNonTargets = beforeStates.Count - count, journalEntries = 0 });
         }
         JsonElement FirstTitle(JsonElement checkpoint) => checkpoint.GetProperty("Fields").EnumerateArray().Single(field =>
             field.GetProperty("Key").GetProperty("Kind").GetString() == "Title" && field.GetProperty("Key").GetProperty("NodeId").GetString() == "I1");

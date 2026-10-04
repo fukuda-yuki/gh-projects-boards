@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="374" result="Passed" start-time="2026-10-04T14:24:54.5718281Z" end-time="2026-10-04T14:24:57.6743929Z" duration="3.102548" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5" random-seed="177343421">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "class == GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-232448-834-416b5b25\results.xml]]></command-line>
+  <filter>
+    <class>GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests</class>
+  </filter>
+  <test-suite type="Assembly" id="1474" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="374" result="Passed" start-time="2026-10-04T14:24:54.5718281Z" end-time="2026-10-04T14:24:57.6743929Z" duration="3.102548" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="37844" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1475" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="374" result="Passed" start-time="2026-10-04T14:24:54.5740810Z" end-time="2026-10-04T14:24:57.6743902Z" duration="3.100309" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5">
+      <test-suite type="TestSuite" id="1476" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="374" result="Passed" start-time="2026-10-04T14:24:54.5742277Z" end-time="2026-10-04T14:24:57.6743862Z" duration="3.100158" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5">
+        <test-suite type="TestSuite" id="1477" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="374" result="Passed" start-time="2026-10-04T14:24:54.5742840Z" end-time="2026-10-04T14:24:57.6743790Z" duration="3.100095" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5">
+          <test-suite type="TestFixture" id="1427" name="SummaryCompactHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-04T14:24:54.5742856Z" end-time="2026-10-04T14:24:57.6742255Z" duration="3.099940" total="2" initiated="2" passed="2" failed="0" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="5">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1429" name="CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" methodname="CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" seed="1560526242" result="Passed" start-time="2026-10-04T14:24:54.5755553Z" end-time="2026-10-04T14:24:56.7505547Z" duration="2.175036" asserts="1">
+              <properties>
+                <property name="Category" value="NextRoadmap" />
+              </properties>
+            </test-case>
+            <test-case id="1428" name="PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" methodname="PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" seed="854112555" result="Passed" start-time="2026-10-04T14:24:56.7513709Z" end-time="2026-10-04T14:24:57.6735276Z" duration="0.922157" asserts="4">
+              <properties>
+                <property name="Category" value="SummaryHeader" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

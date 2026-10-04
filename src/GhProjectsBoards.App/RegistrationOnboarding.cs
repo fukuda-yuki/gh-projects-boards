@@ -41,17 +41,19 @@ public sealed partial class RegistrationPanel
     {
         var available = !Workspace.IsBusy && !applyDialog && !settingsOpen;
         StartGuide.IsEnabled = available;
-        GuideConnection.IsEnabled = available;
-        GuideRegister.IsEnabled = available && Workspace.CanRead;
-        GuideOpenBoard.IsEnabled = available && Workspace.Selected is not null;
-        GuideConnectionStatus.Text = Workspace.CanRead
-            ? $"確認済み: {Workspace.ProfileLogin} / {Workspace.Profile!.Host}"
-            : "接続は未確認です。保存済みProjectはオフラインでも開けます。";
-        GuideProjectStatus.Text = Workspace.Selected is { } selected
-            ? $"登録済み: {selected.Snapshot.Title} / {selected.OwnerLogin} / Project #{selected.Snapshot.Number}"
-            : Workspace.Registrations.Any(r => r.Snapshot.Id.Scope == Workspace.Profile)
-                ? "登録済みProjectを左の一覧から選んでください。"
-                : "Projectは未登録です。接続を確認すると登録できます。";
+        var savedProfile = Workspace.Profile is null && Workspace.Registrations.Count > 0;
+        var savedProject = Workspace.Registrations.Any(r => r.Snapshot.Id.Scope == Workspace.Profile);
+        var label = Workspace.Selected is not null ? "Boardsで開く"
+            : savedProfile ? "保存済みProjectを開く"
+            : savedProject ? "Projectを選ぶ"
+            : Workspace.CanRead ? "Projectを追加" : "GitHubに接続";
+        GuideNextAction.Content = EmptyNextAction.Content = label;
+        GuideNextAction.IsEnabled = EmptyNextAction.IsEnabled = available;
+        GuideTitle.Text = EmptyTitle.Text = savedProfile || savedProject ? "作業を続ける" : "Projectを開く";
+        GuideContext.Text = Workspace.Selected?.Snapshot.Title ?? "";
+        GuideContext.Visibility = GuideContext.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyHint.Text = savedProject && !Workspace.CanRead ? "保存済みデータ" : "";
+        EmptyHint.Visibility = EmptyHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (guideOpen)
         {
             DiscoveryForm.Visibility = Preview.Visibility = Visibility.Collapsed;
@@ -62,8 +64,33 @@ public sealed partial class RegistrationPanel
     private void FocusGettingStarted()
     {
         if (!guideOpen || !IsLoaded || Visibility != Visibility.Visible) return;
-        var next = Workspace.Selected is not null ? GuideOpenBoard : Workspace.CanRead ? GuideRegister : GuideConnection;
-        next.Focus(FocusState.Programmatic);
+        GuideNextAction.Focus(FocusState.Programmatic);
+    }
+
+    private void ContinueGettingStarted(object sender, RoutedEventArgs e)
+    {
+        if (Workspace.IsBusy || !CanLeaveForConnection()) return;
+        if (Workspace.Selected is not null) { OpenBoardFromGuide(sender, e); return; }
+        if (Workspace.Profile is null && Workspace.Registrations.Count > 0)
+        {
+            ShowPreview(); OpenProjectNavigation(); Profiles.Focus(FocusState.Programmatic); Profiles.IsDropDownOpen = true; return;
+        }
+        if (Workspace.Registrations.Any(r => r.Snapshot.Id.Scope == Workspace.Profile))
+        {
+            ShowPreview(); OpenProjectNavigation(); Navigation.Focus(FocusState.Programmatic); return;
+        }
+        if (Workspace.CanRead)
+        {
+            if (guideOpen) RegisterFromGuide(sender, e); else ShowAdd(sender, e);
+            return;
+        }
+        RequestConnection(sender, e);
+    }
+
+    private void OpenProjectNavigation()
+    {
+        WorkspaceSplitView.IsPaneOpen = true;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(NavigationToggle, "Project一覧を折りたたむ");
     }
 
     private void RegisterFromGuide(object sender, RoutedEventArgs e)
@@ -71,7 +98,7 @@ public sealed partial class RegistrationPanel
         if (!Workspace.CanRead || Workspace.IsBusy || !CanLeaveForConnection()) return;
         ShowAdd(sender, e);
         guideRegistration = true;
-        DiscoveryBack.Content = "ガイドへ戻る";
+        DiscoveryBack.Content = "戻る";
         Url.Focus(FocusState.Programmatic);
     }
 
@@ -86,11 +113,12 @@ public sealed partial class RegistrationPanel
             DiscoveryForm.Visibility = Visibility.Visible;
             Preview.Visibility = Visibility.Collapsed;
             guideRegistration = returnToRegistration;
-            DiscoveryBack.Content = guideRegistration ? "ガイドへ戻る" : "ワークスペースへ戻る";
+            DiscoveryBack.Content = guideRegistration ? "戻る" : "ワークスペースへ戻る";
         }
         if (guideReturnFocus is { } focus && focus.TryGetTarget(out var previous) && previous.IsLoaded && previous.IsEnabled)
             previous.Focus(FocusState.Programmatic);
-        else StartGuide.Focus(FocusState.Programmatic);
+        else if (StartGuide.Visibility == Visibility.Visible) StartGuide.Focus(FocusState.Programmatic);
+        else EmptyNextAction.Focus(FocusState.Programmatic);
         guideReturnFocus = null;
     }
 

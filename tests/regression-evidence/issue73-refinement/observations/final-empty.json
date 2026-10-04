@@ -1,0 +1,21 @@
+{
+  "window": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.exe",
+    "id": 115740104,
+    "title": "GitHub Projects Boards"
+  },
+  "accessibility": {
+    "focused_element": "0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise",
+    "tree": "Window: \"GitHub Projects Boards\", App: GhProjectsBoards.App.exe.\n\t0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise\n\t\t1 ウィンドウ\n\t\t\t2 ウィンドウ\n\t\t\t\t3 button Project一覧を折りたたむ ID: ToggleProjectNavigation\n\t\t\t\t4 テキスト アカウント未選択 ID: WorkspaceIdentity\n\t\t\t\t5 button 接続設定 ID: ConnectionPageButton\n\t\t\t\t6 リンク マニュアル ID: UserManualButton\n\t\t\t\t7 window Secondary Actions: Raise ID: PaneRoot\n\t\t\t\t\t8 tree ID: ListControl\n\t\t\t\t\t9 button 作業を始める ID: StartGuideButton\n\t\t\t\t10 pane ID: GettingStartedGuide\n\t\t\t\t\t11 テキスト Projectを開く ID: GuideTitle\n\t\t\t\t\t12 button GitHubに接続 ID: GuideNextButton\n\t\t\t\t\t13 button 後で ID: GuideLaterButton\n\t\t\t\t\t14 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar\n\t\t15 タイトル バー (settable, string) Value: GitHub Projects Boards\n\t\t\t16 メニュー バー システム ID: MenuBar\n\t\t\t\t21 メニュー項目 システム\n\t\t\t18 ボタン 最小化\n\t\t\t19 ボタン 最大化\n\t\t\t20 ボタン 閉じる\n\nThe focused UI element is 0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise."
+  },
+  "screenshots": [
+    {
+      "height": 794,
+      "id": "screenshot-0",
+      "originX": 928,
+      "originY": 190,
+      "width": 1267,
+      "zIndex": 0
+    }
+  ]
+}

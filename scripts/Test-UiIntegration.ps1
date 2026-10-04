@@ -1,5 +1,5 @@
 param(
-    [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance',
+    [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance and cat != SummaryIme',
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,

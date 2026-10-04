@@ -131,13 +131,19 @@ internal static class Ui
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
         ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(checkbox).GetPattern(PatternInterface.Toggle)).Toggle();
     }
-    public static Button ProjectCommand(string id) => id == "ApplyHistoryButton" ? Find<Button>(id) : ((StackPanel)((ScrollViewer)
-        ((Flyout)Find<Button>("ProjectSettingsButton").Flyout).Content).Content).Children.OfType<Button>()
-        .Single(button => AutomationProperties.GetAutomationId(button) == id);
+    public static Button ProjectCommand(string id)
+    {
+        var commands = Find<CommandBar>("ProjectCommandBar");
+        var command = commands.PrimaryCommands.Concat(commands.SecondaryCommands).OfType<Button>()
+            .SingleOrDefault(button => AutomationProperties.GetAutomationId(button) == id);
+        if (command is not null) return command;
+        var settings = (AppBarButton)commands.PrimaryCommands.Single(button => AutomationProperties.GetAutomationId((DependencyObject)button) == "ProjectSettingsButton");
+        return ((StackPanel)((ScrollViewer)((Flyout)settings.Flyout).Content).Content).Children.OfType<Button>()
+            .Single(button => AutomationProperties.GetAutomationId(button) == id);
+    }
     public static async Task OpenHistory()
     {
-        await Until(() => ProjectCommand("ApplyHistoryButton") is { IsLoaded: true, IsEnabled: true });
-        await Run(() => Click(ProjectCommand("ApplyHistoryButton")));
+        await ClickCommand("ApplyHistoryButton");
     }
     public static async Task ChooseCell(string id, string optionId)
     {

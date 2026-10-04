@@ -14,29 +14,56 @@ internal sealed partial class EditingGrid
     {
         if (summaryView is not null) return;
         summaryView = new SummaryView { Visibility = Visibility.Collapsed };
+        TrackContextInput(summaryView.RemainingEditor);
+        summaryView.RemainingState = id => {
+            var cell = SummaryRemainingCell(id); var work = session.Workspace;
+            return cell is null ? ("", false, false)
+                : (work.Buffer(cell) ?? work.Value(cell) ?? "", work.Buffer(cell) is not null, cell.Editable);
+        };
         SetRow(summaryView, 1); SetRowSpan(summaryView, RowDefinitions.Count - 2); Children.Add(summaryView);
         summaryView.AllowanceRequested += async id => await AllowanceDialogAsync(id);
         summaryView.BaselineRequested += async replace => await BaselineDialogAsync(replace);
         summaryView.TaskRequested += (id, view) => { if (SelectGanttRow(id)) ShowProjectView(view, id); };
-        summaryView.EditRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateSummary(true); } };
-        summaryView.RemainingRequested += (id, text) => Run(() => {
-            var work = session.Workspace;
-            var field = work.Planning(projectId)?.Fields.SingleOrDefault(f => f.Role == "Remaining")?.FieldId
-                ?? throw new InvalidOperationException("計画設定で残時間の列を選んでください。");
-            var cell = work.Open(registration).Single(r => r.ItemId == id).Cells.Single(c => c.Key?.FieldId == field);
-            work.Commit(projectId, cell, text); UpdateSummary(true); _ = FlushDraftsAsync("summary-remaining");
-        });
+        summaryView.EditRequested += async id => {
+            if (!SelectGanttRow(id)) return;
+            summaryView.SetEditActive(true);
+            try { await DailyProgressDialogAsync(); UpdateSummary(true); }
+            finally { summaryView.SetEditActive(false); }
+        };
+        summaryView.TaskDetailsRequested += async id => { if (SelectGanttRow(id)) { await PlanningDialogAsync(false); UpdateSummary(true); } };
+        summaryView.RemainingInputChanged += (id, text) => {
+            if (SummaryRemainingCell(id) is not { Editable: true } cell) return;
+            session.Workspace.SetBuffer(cell, text);
+            if (text is null) ClearCellOperationProblem(cell.Key);
+            RefreshStatus(); _ = FlushDraftsAsync("summary-remaining-input");
+        };
+        summaryView.RemainingRequested += (id, text) => {
+            var cell = SummaryRemainingCell(id);
+            try {
+                if (!CanRefresh) throw new InvalidOperationException("IME入力を確定・取消してから更新してください。");
+                if (cell is null) throw new InvalidOperationException("計画設定で残時間の列を選んでください。");
+                session.Workspace.Commit(projectId, cell, text); ClearCellOperationProblem(cell.Key);
+                Update("summary-remaining"); _ = FlushDraftsAsync("summary-remaining");
+            }
+            catch (InvalidOperationException error) { ShowOperationProblem(error.Message, cell?.Key is { } key ? [key] : null); }
+        };
         summaryView.UndoRequested += () => { Run(Undo); UpdateSummary(true); };
         summaryView.SettingsRequested += async () => { await PlanningDialogAsync(true); UpdateSummary(true); };
+    }
+    private EditCell? SummaryRemainingCell(string id)
+    {
+        var field = session.Workspace.Planning(projectId)?.Fields.SingleOrDefault(f => f.Role == "Remaining")?.FieldId;
+        return field is null ? null : canonicalRows.FirstOrDefault(row => row.ItemId == id)?.Cells.SingleOrDefault(cell => cell.Key?.FieldId == field);
     }
     private void UpdateSummary(bool force = false, string? person = null, string? row = null)
     {
         if (!ShowingSummary) return;
+        if (!CanRefresh) { if (force) summaryRevision = -1; deferredRefresh = true; return; }
         summaryView!.ShowOperationStatus(operationProblem);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(9));
-        if (!force && summaryWorkspace == session.Workspace && summaryRevision == session.Workspace.Revision && summaryDay == today) return;
+        if (!force && summaryWorkspace == session.Workspace && summaryRevision == session.Workspace.PresentationRevision && summaryDay == today) return;
         summaryView.Present(SummaryProjection.Create(session.Workspace, registration, today, confirmedActualThrough), person, row);
-        summaryWorkspace = session.Workspace; summaryRevision = session.Workspace.Revision; summaryDay = today;
+        summaryWorkspace = session.Workspace; summaryRevision = session.Workspace.PresentationRevision; summaryDay = today;
     }
     private async Task AllowanceDialogAsync(string personId)
     {

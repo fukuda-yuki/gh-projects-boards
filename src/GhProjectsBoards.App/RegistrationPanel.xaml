@@ -8,7 +8,7 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
             <Grid Padding="8,2" ColumnSpacing="8">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Button x:Name="NavigationToggle" MinHeight="28" Padding="8,4" Click="ToggleNavigation" ToolTipService.ToolTip="Project一覧を表示 / 非表示"
                         AutomationProperties.AutomationId="ToggleProjectNavigation" AutomationProperties.Name="Project一覧を折りたたむ">
                     <SymbolIcon Symbol="GlobalNavigationButton"/>
@@ -17,6 +17,9 @@
                            AutomationProperties.AutomationId="WorkspaceIdentity"/>
                 <Button x:Name="Cancel" Grid.Column="2" Content="処理をキャンセル" MinHeight="28" Padding="10,4" Click="CancelWork" AutomationProperties.AutomationId="CancelProjectButton"/>
                 <Button x:Name="ConnectionSettings" Grid.Column="3" Content="接続設定" MinHeight="28" Padding="10,4" Click="RequestConnection" AutomationProperties.AutomationId="ConnectionPageButton"/>
+                <HyperlinkButton Grid.Column="4" Content="マニュアル" MinHeight="28" Padding="8,4"
+                                 NavigateUri="https://github.com/fukuda-yuki/gh-projects-boards/blob/main/docs/user-manual.md"
+                                 AutomationProperties.AutomationId="UserManualButton"/>
             </Grid>
         </Border>
         <SplitView x:Name="WorkspaceSplitView" Grid.Row="1" DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="212" CompactPaneLength="0">
@@ -26,8 +29,8 @@
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <local:FormComboBox x:Name="Profiles" Header="保存済みアカウント" PlaceholderText="アカウントを選択" HorizontalAlignment="Stretch"
                                   SelectionChanged="ProfileChanged" AutomationProperties.AutomationId="SavedProfiles"/>
-                        <TextBlock Grid.Row="1" Text="登録済みProject" FontWeight="SemiBold" Margin="8,0"/>
-                        <StackPanel Grid.Row="2" Spacing="4">
+                        <TextBlock x:Name="NavigationHeading" Grid.Row="1" Text="Project" FontWeight="SemiBold" Margin="8,0"/>
+                        <StackPanel x:Name="NavigationFilterPanel" Grid.Row="2" Spacing="4">
                             <local:FormComboBox x:Name="NavigationRepository" Header="関連Repositoryで探す" HorizontalAlignment="Stretch"
                                       SelectionChanged="NavigationRepositoryChanged" AutomationProperties.AutomationId="NavigationRepositoryFilter"/>
                             <Button x:Name="ClearNavigationRepository" Content="絞り込みを解除" Click="ClearNavigationRepositoryFilter"
@@ -38,7 +41,7 @@
                         <TreeView x:Name="Navigation" Grid.Row="3" ItemInvoked="Navigate" SelectionMode="Single" AutomationProperties.AutomationId="ProjectNavigation"/>
                         <StackPanel Grid.Row="4" Spacing="4">
                             <Button x:Name="Add" Content="Projectを追加…" HorizontalAlignment="Stretch" Click="ShowAdd" AutomationProperties.AutomationId="AddProjectButton"/>
-                            <Button x:Name="StartGuide" Content="開始ガイド" HorizontalAlignment="Stretch" Click="ShowGettingStarted" AutomationProperties.AutomationId="StartGuideButton"/>
+                            <Button x:Name="StartGuide" Content="作業を始める" HorizontalAlignment="Stretch" Click="ShowGettingStarted" AutomationProperties.AutomationId="StartGuideButton"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -73,13 +76,9 @@
                 <Grid x:Name="Preview">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
-                        <Grid x:Name="ProjectHeader" Padding="12,4" ColumnSpacing="12" RowSpacing="2" SizeChanged="HeaderSizeChanged">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                            <StackPanel x:Name="ProjectHeading" VerticalAlignment="Center">
-                                <TextBlock x:Name="Summary" Style="{StaticResource SubtitleTextBlockStyle}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectSummary"/>
-                            </StackPanel>
-                            <Grid x:Name="ProjectIdentityContext" Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="8" Visibility="Collapsed" AutomationProperties.AutomationId="ProjectIdentityContext">
+                        <Grid x:Name="ProjectHeader" Padding="8,0" RowSpacing="2">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <Grid x:Name="ProjectIdentityContext" Grid.Row="1" ColumnSpacing="8" Visibility="Collapsed" AutomationProperties.AutomationId="ProjectIdentityContext">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <Button x:Name="ProjectIdentityButton" MinHeight="24" Padding="4,0" MaxWidth="420"
                                         AutomationProperties.AutomationId="ProjectIdentityButton" ToolTipService.ToolTip="ProjectのURLを確認・コピー">
@@ -97,16 +96,19 @@
                                 <TextBlock x:Name="ProjectContext" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectCacheDestination"/>
                             </Grid>
-                            <Grid x:Name="ProjectCommands" Grid.Column="1" ColumnSpacing="6" RowSpacing="4" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                <Button x:Name="Refresh" Content="最新を取得" MinHeight="28" Padding="10,4" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
-                                <Button x:Name="Apply" Grid.Column="1" Content="GitHubに反映…" MinHeight="28" Padding="10,4" Style="{StaticResource AccentButtonStyle}" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
-                                <Button x:Name="WeeklyApply" Grid.Column="2" Content="週次反映…" MinHeight="28" Padding="10,4" Click="ReviewWeeklyApply" ToolTipService.ToolTip="表示行の実績・残工数を選択して確認" AutomationProperties.AutomationId="ReviewWeeklyApplyButton"/>
-                                <Button x:Name="ApplyHistory" Grid.Column="3" Content="反映履歴" MinHeight="28" Padding="10,4" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
-                                <Button x:Name="PlanningSettingsCommand" Grid.Column="4" Content="計画の前提" MinHeight="28" Padding="10,4" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
-                                <Button x:Name="ProjectSettings" Grid.Column="5" Content="Project設定" MinHeight="28" Padding="8,4" ToolTipService.ToolTip="Projectの情報と設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
-                                    <Button.Flyout>
+                            <CommandBar x:Name="ProjectCommands" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True"
+                                        HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectCommandBar">
+                                <CommandBar.Content>
+                                    <TextBlock x:Name="Summary" MaxWidth="240" Margin="4,0,12,0" VerticalAlignment="Center"
+                                               Style="{StaticResource SubtitleTextBlockStyle}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="ProjectSummary"/>
+                                </CommandBar.Content>
+                                <AppBarButton x:Name="Apply" Label="GitHubに反映…" Icon="Upload" Click="ReviewApply" AutomationProperties.AutomationId="ReviewApplyButton"/>
+                                <AppBarButton x:Name="Refresh" Label="最新を取得" Icon="Refresh" Click="RefreshProject" AutomationProperties.AutomationId="RefreshProjectButton"/>
+                                <AppBarButton x:Name="WeeklyApply" Label="週次反映…" Icon="Upload" Click="ReviewWeeklyApply" ToolTipService.ToolTip="表示行の実績・残工数を選択して確認" AutomationProperties.AutomationId="ReviewWeeklyApplyButton"/>
+                                <AppBarButton x:Name="ApplyHistory" Label="反映履歴" Icon="Clock" Click="ShowApplyHistory" AutomationProperties.AutomationId="ApplyHistoryButton"/>
+                                <AppBarButton x:Name="PlanningSettingsCommand" Label="計画の前提" Icon="Calendar" Click="ShowPlanningSettings" AutomationProperties.AutomationId="ProjectPlanningSettings"/>
+                                <AppBarButton x:Name="ProjectSettings" Label="Project設定" Icon="Setting" ToolTipService.ToolTip="Project設定" AutomationProperties.Name="Project設定" AutomationProperties.AutomationId="ProjectSettingsButton">
+                                    <AppBarButton.Flyout>
                                         <Flyout x:Name="ProjectSettingsFlyout" Placement="BottomEdgeAlignedRight">
                                             <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled">
                                                 <StackPanel Width="380" Spacing="12">
@@ -124,9 +126,9 @@
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </Flyout>
-                                    </Button.Flyout>
-                                </Button>
-                            </Grid>
+                                    </AppBarButton.Flyout>
+                                </AppBarButton>
+                            </CommandBar>
                         </Grid>
                     </Border>
                     <Grid x:Name="EditorHost" Grid.Row="1"/>
@@ -135,8 +137,10 @@
                              AutomationProperties.AutomationId="IncompleteObservationNotice"/>
                     <StackPanel x:Name="EmptyWorkspace" Grid.Row="1" Spacing="12" Margin="32" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
                         <SymbolIcon Symbol="List" Width="40" Height="40"/>
-                        <TextBlock Text="Projectを開いて作業を始める" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="EmptyTitle" Text="Projectを開く" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="EmptyHint" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <Button x:Name="EmptyNextAction" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center"
+                                Click="ContinueGettingStarted" AutomationProperties.AutomationId="EmptyWorkspaceAction"/>
                     </StackPanel>
                     <ListView x:Name="Items" Grid.Row="1" SelectionMode="None" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="ProjectItems">
                         <ListView.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"/></DataTemplate></ListView.ItemTemplate>
@@ -144,32 +148,18 @@
                 </Grid>
                 <ScrollViewer x:Name="GettingStarted" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled"
                               AutomationProperties.AutomationId="GettingStartedGuide">
-                    <StackPanel MaxWidth="640" HorizontalAlignment="Left" Padding="24" Spacing="20">
-                        <TextBlock Text="開始ガイド" Style="{StaticResource TitleTextBlockStyle}"/>
-                        <TextBlock Text="GitHubに接続し、最初のProjectを開きます。" TextWrapping="Wrap"/>
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="1. 接続を確認" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock x:Name="GuideConnectionStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="GuideConnectionStatus" AutomationProperties.LiveSetting="Polite"/>
-                            <TextBlock Text="接続設定でGitHubホストとgh.exeを確認します。ログインが必要なら「ログイン・権限追加の手順」のコマンドをPowerShellで実行し、再確認してください。" TextWrapping="Wrap"/>
-                            <Button x:Name="GuideConnection" Content="接続を確認" Click="RequestConnection" AutomationProperties.AutomationId="GuideConnectionButton"/>
-                        </StackPanel>
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="2. Projectを登録" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock x:Name="GuideProjectStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="GuideProjectStatus" AutomationProperties.LiveSetting="Polite"/>
-                            <TextBlock Text="既存のGitHub ProjectのURLを指定し、アカウントとProjectを確認して登録します。" TextWrapping="Wrap"/>
-                            <Button x:Name="GuideRegister" Content="Projectを登録" Click="RegisterFromGuide" AutomationProperties.AutomationId="GuideRegisterButton"/>
-                        </StackPanel>
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="3. Boardsで作業を始める" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock Text="登録後はローカルで編集できます。GitHubへの反映は、変更内容を確認してから行います。" TextWrapping="Wrap"/>
-                            <Button x:Name="GuideOpenBoard" Content="Boardsで開く" Style="{StaticResource AccentButtonStyle}" Click="OpenBoardFromGuide" AutomationProperties.AutomationId="GuideOpenBoardButton"/>
-                        </StackPanel>
-                        <Button Content="後で" Click="DismissGettingStarted" AutomationProperties.AutomationId="GuideLaterButton"/>
+                    <StackPanel MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="32" Spacing="12">
+                        <SymbolIcon Symbol="List" Width="40" Height="40"/>
+                        <TextBlock x:Name="GuideTitle" Text="Projectを開く" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="GuideContext" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="GuideContext"/>
+                        <Button x:Name="GuideNextAction" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center"
+                                Click="ContinueGettingStarted" AutomationProperties.AutomationId="GuideNextButton"/>
+                        <Button Content="後で" HorizontalAlignment="Center" Click="DismissGettingStarted" AutomationProperties.AutomationId="GuideLaterButton"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
         </SplitView>
-        <Border x:Name="WorkspaceStatusBar" Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+        <Border x:Name="WorkspaceStatusBar" Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" AutomationProperties.AutomationId="WorkspaceStatusBar">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

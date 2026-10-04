@@ -1,0 +1,270 @@
+{
+  "phase": "burst-down",
+  "bounds": {
+    "Location": {
+      "IsEmpty": false,
+      "X": 24,
+      "Y": 24
+    },
+    "Size": {
+      "IsEmpty": false,
+      "Width": 1080,
+      "Height": 760
+    },
+    "X": 24,
+    "Y": 24,
+    "Width": 1080,
+    "Height": 760,
+    "Left": 24,
+    "Top": 24,
+    "Right": 1104,
+    "Bottom": 784,
+    "IsEmpty": false
+  },
+  "inputStart": 884690768714,
+  "inputEnd": 884690774382,
+  "frequency": 10000000,
+  "input": "native wheel -10000",
+  "captured": [
+    {
+      "frame": 0,
+      "begin": 884690471593,
+      "end": 884690622138,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\000.png"
+    },
+    {
+      "frame": 1,
+      "begin": 884691190625,
+      "end": 884691612520,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\001.png"
+    },
+    {
+      "frame": 2,
+      "begin": 884692118905,
+      "end": 884692301556,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\002.png"
+    },
+    {
+      "frame": 3,
+      "begin": 884692737919,
+      "end": 884692937482,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\003.png"
+    },
+    {
+      "frame": 4,
+      "begin": 884693363057,
+      "end": 884693606905,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\004.png"
+    },
+    {
+      "frame": 5,
+      "begin": 884694145468,
+      "end": 884694303196,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\005.png"
+    },
+    {
+      "frame": 6,
+      "begin": 884694780360,
+      "end": 884694948020,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\006.png"
+    },
+    {
+      "frame": 7,
+      "begin": 884695405927,
+      "end": 884695625764,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\007.png"
+    },
+    {
+      "frame": 8,
+      "begin": 884696183545,
+      "end": 884696615254,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\008.png"
+    },
+    {
+      "frame": 9,
+      "begin": 884697124887,
+      "end": 884697273226,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\009.png"
+    },
+    {
+      "frame": 10,
+      "begin": 884697755768,
+      "end": 884697954833,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\010.png"
+    },
+    {
+      "frame": 11,
+      "begin": 884698368517,
+      "end": 884698606529,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\011.png"
+    },
+    {
+      "frame": 12,
+      "begin": 884699151023,
+      "end": 884699603580,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\012.png"
+    },
+    {
+      "frame": 13,
+      "begin": 884700097260,
+      "end": 884700271843,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\013.png"
+    },
+    {
+      "frame": 14,
+      "begin": 884700734342,
+      "end": 884700944648,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\014.png"
+    },
+    {
+      "frame": 15,
+      "begin": 884701354339,
+      "end": 884701601324,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\015.png"
+    },
+    {
+      "frame": 16,
+      "begin": 884702140889,
+      "end": 884702282126,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\016.png"
+    },
+    {
+      "frame": 17,
+      "begin": 884702769650,
+      "end": 884702937096,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\017.png"
+    },
+    {
+      "frame": 18,
+      "begin": 884703402767,
+      "end": 884703601461,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\018.png"
+    },
+    {
+      "frame": 19,
+      "begin": 884704033345,
+      "end": 884704272003,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\019.png"
+    },
+    {
+      "frame": 20,
+      "begin": 884704822182,
+      "end": 884705271785,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\020.png"
+    },
+    {
+      "frame": 21,
+      "begin": 884705752004,
+      "end": 884705934003,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\021.png"
+    },
+    {
+      "frame": 22,
+      "begin": 884706382946,
+      "end": 884706604192,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\022.png"
+    },
+    {
+      "frame": 23,
+      "begin": 884707020364,
+      "end": 884707262452,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\023.png"
+    },
+    {
+      "frame": 24,
+      "begin": 884707802443,
+      "end": 884707938025,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\024.png"
+    },
+    {
+      "frame": 25,
+      "begin": 884708438431,
+      "end": 884708602859,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\025.png"
+    },
+    {
+      "frame": 26,
+      "begin": 884709063791,
+      "end": 884709271462,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\026.png"
+    },
+    {
+      "frame": 27,
+      "begin": 884709833278,
+      "end": 884710263738,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\027.png"
+    },
+    {
+      "frame": 28,
+      "begin": 884710768832,
+      "end": 884710935316,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\028.png"
+    },
+    {
+      "frame": 29,
+      "begin": 884711404066,
+      "end": 884711600591,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\029.png"
+    },
+    {
+      "frame": 30,
+      "begin": 884712030130,
+      "end": 884712278864,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\030.png"
+    },
+    {
+      "frame": 31,
+      "begin": 884712817565,
+      "end": 884712925266,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\031.png"
+    },
+    {
+      "frame": 32,
+      "begin": 884713439774,
+      "end": 884713606052,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\032.png"
+    },
+    {
+      "frame": 33,
+      "begin": 884714066699,
+      "end": 884714273664,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\033.png"
+    },
+    {
+      "frame": 34,
+      "begin": 884714837064,
+      "end": 884715269630,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\034.png"
+    },
+    {
+      "frame": 35,
+      "begin": 884715770327,
+      "end": 884715952170,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\035.png"
+    },
+    {
+      "frame": 36,
+      "begin": 884716373263,
+      "end": 884716604819,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\036.png"
+    },
+    {
+      "frame": 37,
+      "begin": 884717012721,
+      "end": 884717280970,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\037.png"
+    },
+    {
+      "frame": 38,
+      "begin": 884717788848,
+      "end": 884717940475,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\038.png"
+    },
+    {
+      "frame": 39,
+      "begin": 884718424321,
+      "end": 884718603862,
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-baseline-1000x12\\observations\\burst-down\\039.png"
+    }
+  ]
+}

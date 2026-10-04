@@ -16,7 +16,21 @@ internal sealed partial class EditingWorkspace
 
     private ApplyCandidate[] ApplyCandidates(ProjectRegistration project, bool initializeFields)
     {
-        var rows = OperationRows(project, initializeFields);
+        HashSet<string>? itemIds = null;
+        if (!initializeFields)
+        {
+            var pending = fields.Values.Where(f => f.Change is not null || f.Buffer is not null || f.Conflict
+                || f.Observation?.Reason == ProjectionDecisionReason).ToArray();
+            itemIds = pending.Where(f => f.Key.Kind is "Select" or "Number" or "Date"
+                && f.Key.ProjectId == project.Snapshot.Id.NodeId).Select(f => f.Key.NodeId).ToHashSet();
+            var issueIds = pending.Where(f => f.Key.Kind == "Title" || f.Key.Kind == "Dependency"
+                && f.Key.ProjectId == project.Snapshot.Id.NodeId).Select(f => f.Key.NodeId).ToHashSet();
+            // Shared Issue work follows every actual item appearance, including duplicates.
+            // Untouched fetched rows need no cells; local rows and orphan recovery remain below.
+            foreach (var item in project.Snapshot.Items.Where(i => i.ContentId is { } id && issueIds.Contains(id.NodeId)))
+                itemIds.Add(item.Id.NodeId);
+        }
+        var rows = OperationRows(project, initializeFields, itemIds);
         var candidates = new List<ApplyCandidate>();
         var included = new HashSet<FieldKey>();
         // The status strip uses this projection during editing. Associate each

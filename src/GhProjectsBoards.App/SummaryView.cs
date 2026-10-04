@@ -3,6 +3,7 @@ using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Windows.System;
 using Microsoft.UI.Xaml.Input;
 using Windows.ApplicationModel.DataTransfer;
 
@@ -83,12 +84,16 @@ internal sealed class SummaryView : Grid
     private readonly InfoBar status = new() { IsClosable = false, Severity = InfoBarSeverity.Error };
     private readonly AppBarButton allowance, establish, replace, board, gantt, edit, baseline, copyReport;
     private SummaryProjection? projection;
-    private bool presenting, compact;
+    private bool presenting, compact, presentingTasks, presentingRemaining, remainingComposing, editActive;
     internal event Action<string>? AllowanceRequested;
     internal event Action<bool>? BaselineRequested;
     internal event Action<string, ProjectView>? TaskRequested;
     internal event Action<string>? EditRequested;
+    internal event Action<string>? TaskDetailsRequested;
     internal event Action<string, string>? RemainingRequested;
+    internal event Action<string, string?>? RemainingInputChanged;
+    internal Func<string, (string Text, bool Pending, bool Editable)>? RemainingState { get; set; }
+    internal TextBox RemainingEditor => remaining;
     internal event Action? UndoRequested, SettingsRequested;
     internal string? SelectedPersonId => (people.SelectedItem as PersonSummary)?.Id;
     internal string? SelectedRowId => (tasks.SelectedItem as TaskLine)?.RowId;
@@ -123,15 +128,48 @@ internal sealed class SummaryView : Grid
         totals.Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"];
         SetRow(context, 2); Children.Add(context); AutomationProperties.SetAutomationId(context, "SummaryContext");
         people.ItemTemplate = (DataTemplate)Application.Current.Resources["SummaryPersonTemplate"];
-        var header = SummaryPersonPresenter.Columns(); header.HorizontalAlignment = HorizontalAlignment.Left; header.Margin = new(12, 0, 0, 0);
+        var header = SummaryPersonPresenter.Columns(); header.HorizontalAlignment = HorizontalAlignment.Left; header.Margin = new(20, 0, 0, 0);
         var labels = new[] { "担当者", "投入可能工数\n（設定値）", "見積合計", "実績", "完了見込み", "余裕 / 超過" };
         for (var i = 0; i < labels.Length; i++)
             if (i == 3) { SetColumn(actualHeader, i); header.Children.Add(actualHeader); }
             else SummaryPersonPresenter.Cell(header, labels[i], i);
-        people.Header = header;
+        // The native list keeps both scrollbars at the viewport edges. Only the
+        // fixed labels follow its horizontal offset; rows keep native scrolling.
+        var headerExtent = new Grid(); headerExtent.Children.Add(header);
+        var headerScroll = new ScrollViewer { Content = headerExtent, HorizontalScrollMode = ScrollMode.Enabled,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollMode = ScrollMode.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, IsTabStop = false, IsHitTestVisible = false };
+        ScrollViewer? peopleViewport = null; long horizontalRangeSubscription = 0;
+        void AlignHeader()
+        {
+            if (peopleViewport is null) return;
+            var width = headerScroll.ViewportWidth + peopleViewport.ScrollableWidth;
+            if (width > 0) headerExtent.Width = width;
+            headerScroll.ChangeView(peopleViewport.HorizontalOffset, null, null, true);
+        }
+        void PeopleViewChanged(object? sender, ScrollViewerViewChangedEventArgs args) => AlignHeader();
+        headerScroll.SizeChanged += (_, _) => AlignHeader();
+        headerExtent.SizeChanged += (_, _) => AlignHeader();
+        people.Loaded += (_, _) => {
+            peopleViewport = EditingGrid.Descendants(people).OfType<ScrollViewer>().FirstOrDefault();
+            if (peopleViewport is null) return;
+            peopleViewport.ViewChanged += PeopleViewChanged;
+            horizontalRangeSubscription = peopleViewport.RegisterPropertyChangedCallback(ScrollViewer.ScrollableWidthProperty, (_, _) => AlignHeader());
+            AlignHeader();
+        };
+        people.Unloaded += (_, _) => {
+            if (peopleViewport is null) return;
+            peopleViewport.ViewChanged -= PeopleViewChanged;
+            peopleViewport.UnregisterPropertyChangedCallback(ScrollViewer.ScrollableWidthProperty, horizontalRangeSubscription);
+            peopleViewport = null;
+        };
+        var comparison = new Grid();
+        comparison.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        comparison.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
+        comparison.Children.Add(headerScroll); SetRow(people, 1); comparison.Children.Add(people);
         ScrollViewer.SetHorizontalScrollMode(people, ScrollMode.Enabled); ScrollViewer.SetHorizontalScrollBarVisibility(people, ScrollBarVisibility.Auto);
         AutomationProperties.SetAutomationId(people, "SummaryPeople"); AutomationProperties.SetName(people, "担当者別の工数比較（人日）");
-        SetRow(people, 3); Children.Add(people);
+        SetRow(comparison, 3); Children.Add(comparison);
         details.RowDefinitions.Add(new() { Height = GridLength.Auto }); details.RowDefinitions.Add(new() { Height = GridLength.Auto });
         details.ColumnDefinitions.Add(new()); details.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         details.Children.Add(personDetail); SetColumn(filter, 1); details.Children.Add(filter);
@@ -140,8 +178,11 @@ internal sealed class SummaryView : Grid
             AutomationProperties.SetAutomationId(b, id); b.Click += (_, _) => action(); taskCommands.PrimaryCommands.Add(b); return b; }
         board = TaskCommand("Boardsで開く", "SummaryBoards", () => { if (SelectedRowId is { } id) TaskRequested?.Invoke(id, ProjectView.Boards); });
         gantt = TaskCommand("Ganttで開く", "SummaryGantt", () => { if (SelectedRowId is { } id) TaskRequested?.Invoke(id, ProjectView.Gantt); });
-        edit = TaskCommand("工数を編集", "SummaryEdit", () => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); });
+        edit = TaskCommand("実績・進捗", "SummaryEdit", () => { if (SelectedRowId is { } id) EditRequested?.Invoke(id); });
         TaskCommand("内訳の詳細", "SummaryTaskDetails", ShowTask);
+        AutomationProperties.SetAutomationId(taskCommands, "SummaryTaskCommands");
+        var taskDetails = TaskCommand("タスクの詳細", "SummaryTaskEdit", () => { if (SelectedRowId is { } id) TaskDetailsRequested?.Invoke(id); });
+        taskCommands.PrimaryCommands.Remove(taskDetails); taskCommands.SecondaryCommands.Add(taskDetails);
         AutomationProperties.SetAutomationId(filterOpen, "SummaryFilterOpen"); AutomationProperties.SetName(filterOpen, "内訳を絞り込み");
         filterOpen.Flyout = filterFlyout; taskCommands.SecondaryCommands.Add(filterOpen);
         SetRow(taskCommands, 1); details.Children.Add(taskCommands);
@@ -150,21 +191,50 @@ internal sealed class SummaryView : Grid
         correction.Children.Add(remainingLabel); correction.Children.Add(remaining); correction.Children.Add(updateRemaining);
         SetRow(correction, 1); SetColumn(correction, 1); details.Children.Add(correction);
         updateRemaining.Click += (_, _) => { if (SelectedRowId is { } id) RemainingRequested?.Invoke(id, remaining.Text); };
+        remaining.TextChanging += (_, _) => {
+            if (presentingRemaining || SelectedRowId is not { } id || remaining.IsReadOnly) return;
+            RemainingInputChanged?.Invoke(id, remaining.Text);
+            updateRemaining.Content = "確定";
+        };
+        remaining.TextCompositionStarted += (_, _) => remainingComposing = true;
+        remaining.TextCompositionEnded += (_, _) => remainingComposing = false;
+        remaining.Unloaded += (_, _) => remainingComposing = false;
+        foreach (var control in new Control[] { people, tasks, filter })
+            control.GettingFocus += (_, args) => { if (remainingComposing) args.Cancel = true; };
+        remaining.PreviewKeyDown += (_, args) => {
+            if (remainingComposing || SelectedRowId is not { } id || remaining.IsReadOnly) return;
+            if (args.Key == VirtualKey.Enter) { RemainingRequested?.Invoke(id, remaining.Text); args.Handled = true; }
+            else if (args.Key == VirtualKey.Escape) { RemainingInputChanged?.Invoke(id, null); PresentRemaining(); args.Handled = true; }
+        };
         SetRow(details, 4); Children.Add(details);
         AutomationProperties.SetAutomationId(tasks, "SummaryTasks"); AutomationProperties.SetName(tasks, "選択した担当者の工数内訳");
         SetRow(tasks, 5); Children.Add(tasks);
         AutomationProperties.SetAutomationId(status, "SummaryOperationStatus");
         SetRow(status, 6); Children.Add(status);
         people.SelectionChanged += (_, _) => { if (!presenting) { tasks.SelectedItem = null; ShowPerson(); } }; filter.TextChanged += (_, _) => { if (!presenting) FilterTasks(); };
-        tasks.SelectionChanged += (_, _) => {
-            board.IsEnabled = gantt.IsEnabled = edit.IsEnabled = remaining.IsEnabled = updateRemaining.IsEnabled = SelectedRowId is not null;
-            var task = tasks.SelectedItem as TaskLine;
-            var total = projection?.Comparisons.FirstOrDefault(c => c.TaskId == task?.Contribution.TaskId)?.Current?.Input?.Remaining;
-            remaining.Text = total is { } hours ? PlanningContract.CanonicalHours(hours) : "";
-        };
+        tasks.SelectionChanged += (_, _) => { if (!presentingTasks) PresentRemaining(); };
         Loaded += (_, _) => UpdateCompactLayout();
         SizeChanged += (_, _) => UpdateCompactLayout();
         Unloaded += (_, _) => filterFlyout.Hide();
+    }
+    internal void SetEditActive(bool value)
+    {
+        editActive = value; edit.IsEnabled = !value && SelectedRowId is not null;
+    }
+    private void PresentRemaining()
+    {
+        board.IsEnabled = gantt.IsEnabled = SelectedRowId is not null;
+        edit.IsEnabled = SelectedRowId is not null && !editActive;
+        var task = tasks.SelectedItem as TaskLine;
+        var total = projection?.Comparisons.FirstOrDefault(c => c.TaskId == task?.Contribution.TaskId)?.Current?.Input?.Remaining;
+        var state = SelectedRowId is { } id && RemainingState is not null ? RemainingState(id)
+            : (Text: total is { } hours ? PlanningContract.CanonicalHours(hours) : "", Pending: false, Editable: SelectedRowId is not null);
+        remaining.IsEnabled = SelectedRowId is not null;
+        remaining.IsReadOnly = !state.Editable; updateRemaining.IsEnabled = state.Editable;
+        presentingRemaining = true;
+        try { if (remaining.Text != state.Text) remaining.Text = state.Text; }
+        finally { presentingRemaining = false; }
+        updateRemaining.Content = state.Pending ? "確定" : "更新";
     }
     private void UpdateCompactLayout()
     {
@@ -244,7 +314,12 @@ internal sealed class SummaryView : Grid
         var lines = (projection?.Contributions ?? []).Where(c => c.PersonId == SelectedPersonId)
             .Where(c => (c.Title + " " + c.Identity).Contains(filter.Text, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(c => c.Remaining.Hours).Select(c => new TaskLine(c, taskId == c.TaskId ? id : c.RowId)).ToArray();
-        tasks.ItemsSource = lines; tasks.SelectedItem = id is null ? lines.FirstOrDefault() : lines.FirstOrDefault(l => l.RowId == id);
+        // Replacing the projection briefly clears selection. Do not replace the
+        // active editor's text/caret with that transient empty selection.
+        presentingTasks = true;
+        try { tasks.ItemsSource = lines; tasks.SelectedItem = id is null ? lines.FirstOrDefault() : lines.FirstOrDefault(l => l.RowId == id); }
+        finally { presentingTasks = false; }
+        PresentRemaining();
     }
     internal void ShowOperationStatus(string? problem)
     {

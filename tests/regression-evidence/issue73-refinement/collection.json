@@ -1,0 +1,7 @@
+{
+  "generatedAt": "2026-10-04T14:58:16.9225423+00:00",
+  "startingCommit": "bb2c8bc5d821e0b5518ce8d1336f1081c2fc6eaa",
+  "branch": "codex/issue-73-workspace-refinement",
+  "executions": 27,
+  "rejectedLocalCaptures": "observations/candidate-*.png and .json: the helper reused an earlier baseline state. Retained locally, excluded from evidence. ui1-* stores the explicitly observed candidate states."
+}

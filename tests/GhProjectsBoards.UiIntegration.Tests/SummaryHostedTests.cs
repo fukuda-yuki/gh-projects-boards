@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 [TestFixture, NonParallelizable, FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public sealed class SummaryHostedTests
+public sealed partial class SummaryHostedTests
 {
     private EditingGrid grid = null!;
     private DraftSession session = null!;
@@ -27,7 +27,7 @@ public sealed class SummaryHostedTests
     [TearDown]
     public async Task Teardown()
     {
-        await Ui.Run(() => { foreach (var id in new[] { "PlanningDialog", "SummaryAllowanceDialog", "SummaryBaselineDialog" }) Ui.Dialog(id)?.Hide(); });
+        await Ui.Run(() => { foreach (var id in new[] { "PlanningDialog", "DailyProgressDialog", "SummaryAllowanceDialog", "SummaryBaselineDialog" }) Ui.Dialog(id)?.Hide(); });
         await Ui.Unmount(grid); Assert.That(await session.FlushAsync(), Is.True); await Ui.Idle();
     }
     private static SelectorBar Views() => Ui.Find<SelectorBar>("ProjectViews");
@@ -258,7 +258,7 @@ public sealed class SummaryHostedTests
         await Ui.Run(() => { Assert.That(Ui.DialogText("SummaryBaselineDialog"), Does.Contain("2タスク")); Ui.DialogButton("SummaryBaselineDialog", "PrimaryButton"); });
         await Ui.Until(() => Ui.Dialog("SummaryBaselineDialog") is null);
         var baseline = session.Workspace.Planning("P1")!.Summary!.Baseline!;
-        await Ui.ClickCommand("SummaryEdit"); await Ui.DialogReady("PlanningDialog");
+        await Ui.ClickCommand("SummaryTaskEdit"); await Ui.DialogReady("PlanningDialog");
         await Ui.Run(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<Expander>().Single(e => (string)e.Header == "工数・進捗・実績").IsExpanded = true);
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<TextBox>().Any(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t) == "PlanWork-Remaining"));
         await Ui.Run(() => {

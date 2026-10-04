@@ -8,23 +8,48 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 public sealed partial class HostedTests
 {
+    [Test, Category("WorkspaceRefinement")]
+    public async Task NarrowProjectCommandsStayReachableAndHistorySurvivesNoProjectSelection()
+    {
+        await Ui.Run(() => panel.Width = 760);
+        await Ui.Until(() => panel.ActualWidth == 760);
+        await Ui.Run(() => {
+            var commands = Ui.Find<CommandBar>("ProjectCommandBar");
+            Assert.That(commands.ActualHeight, Is.LessThanOrEqualTo(56), "Project commands must not consume multiple workspace rows.");
+            commands.IsOpen = true;
+        });
+        await Ui.ClickCommand("ProjectPlanningSettings");
+        await Ui.Ready<Button>("PlanSettingsCancel");
+        await Ui.Run(() => Ui.Click("PlanSettingsCancel"));
+        await Ui.Until(() => !Ui.Tree(panel).OfType<EditingGrid>().Single().PlanningSettingsOpen);
+        await Ui.Run(async () => await Workspace.SelectProfileAsync(Workspace.Profile));
+        await Ui.Run(() => {
+            var commands = Ui.Find<CommandBar>("ProjectCommandBar");
+            Assert.That(commands.Visibility, Is.EqualTo(Visibility.Visible));
+            var buttons = commands.PrimaryCommands.Concat(commands.SecondaryCommands).OfType<AppBarButton>().ToArray();
+            Assert.That(buttons.Where(button => button.Visibility == Visibility.Visible).Select(button => AutomationProperties.GetAutomationId(button)),
+                Is.EquivalentTo(new[] { "ApplyHistoryButton" }));
+            Assert.That(Workspace.Selected, Is.Null);
+            Assert.That(Workspace.Drafts, Is.Not.Null);
+            Assert.That(h.Writes, Is.Empty);
+        });
+        await Ui.ClickCommand("ApplyHistoryButton");
+        await Ui.DialogReady("ApplyHistoryDialog");
+        await Ui.Run(() => Ui.DialogButton("ApplyHistoryDialog", "CloseButton"));
+    }
+
     [Test, Category("WorkspacePolish")]
     public async Task PlanningIsDirectlyAvailableWithoutOpeningInfrastructureSettingsAndReturnsToWork()
     {
-        await Ui.Run(() => {
-            var planning = Ui.Tree(panel).OfType<Button>().SingleOrDefault(b => AutomationProperties.GetAutomationId(b) == "ProjectPlanningSettings");
-            Assert.That(planning, Is.Not.Null, "Planning is a visible Project command, not a settings flyout entry.");
-            Assert.That(planning!.IsLoaded && planning.IsEnabled && planning.ActualWidth > 0, Is.True);
-            Ui.Click(planning);
-        });
+        await Ui.ClickCommand("ProjectPlanningSettings");
         await Ui.Ready<Button>("PlanSettingsCancel");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<Button>("ReviewWeeklyApplyButton").IsEnabled, Is.False);
+            Assert.That(Ui.ProjectCommand("ReviewWeeklyApplyButton").IsEnabled, Is.False);
             Ui.Click("PlanSettingsCancel");
         });
         await Ui.Until(() => !Ui.Tree(panel).OfType<EditingGrid>().Single().PlanningSettingsOpen);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<Button>("ProjectPlanningSettings").IsEnabled, Is.True);
+            Assert.That(Ui.ProjectCommand("ProjectPlanningSettings").IsEnabled, Is.True);
             Assert.That(Work.Journal, Is.Empty);
             Assert.That(h.Writes, Is.Empty);
         });

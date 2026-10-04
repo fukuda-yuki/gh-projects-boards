@@ -1,0 +1,364 @@
+{
+  "source": "bb2c8bc5d821e0b5518ce8d1336f1081c2fc6eaa",
+  "changes": [
+    " M DESIGN.md",
+    " M README.md",
+    " M docs/performance.md",
+    " M docs/planning.md",
+    " M docs/spec.md",
+    " M docs/user-manual.md",
+    " M scripts/Test-SheetDiagnostic.ps1",
+    " M src/GhProjectsBoards.App/DailyProgressEditor.cs",
+    " M src/GhProjectsBoards.App/EditingGrid.Summary.cs",
+    " M src/GhProjectsBoards.App/RegistrationOnboarding.cs",
+    " M src/GhProjectsBoards.App/RegistrationPanel.xaml",
+    " M src/GhProjectsBoards.App/RegistrationPanel.xaml.cs",
+    " M src/GhProjectsBoards.App/SummaryView.cs",
+    " M src/GhProjectsBoards.Core/Projects/ApplyCandidates.cs",
+    " M src/GhProjectsBoards.Core/Projects/EditingWorkspace.cs",
+    " M src/GhProjectsBoards.Core/Projects/PlanningDependencies.cs",
+    " M tests/GhProjectsBoards.E2E.Tests/LocalSheetDiagnosticTests.cs",
+    " M tests/GhProjectsBoards.E2E.Tests/OnboardingJourneyTests.cs",
+    " M tests/GhProjectsBoards.E2E.Tests/SummaryJourneyTests.cs",
+    " M tests/GhProjectsBoards.Tests/ApplyCandidatePerformanceTests.cs",
+    " M tests/GhProjectsBoards.Tests/ReadApplyCandidatesTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/OnboardingHostedTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/SummaryCompactHostedTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/SummaryHostedTests.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/Ui.cs",
+    " M tests/GhProjectsBoards.UiIntegration.Tests/WorkspacePolishHostedTests.cs",
+    " M tests/README.md",
+    "?? tests/GhProjectsBoards.UiIntegration.Tests/SummaryContinuityHostedTests.cs"
+  ],
+  "command": ".\\scripts\\Test-UiIntegration.ps1 -Where 'test == GhProjectsBoards.UiIntegration.Tests.HostedTests.GettingStartedCanBeReopenedAndDismissedWithoutChangingCachedWork'",
+  "where": "test == GhProjectsBoards.UiIntegration.Tests.HostedTests.GettingStartedCanBeReopenedAndDismissedWithoutChangingCachedWork",
+  "discoveryOnly": false,
+  "sdk": "10.0.401",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "started": "2026-10-04T14:20:00.2543483Z",
+  "results": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\ui-integration\\run-20261004-232000-074-7bda654f",
+  "sources": [
+    {
+      "name": "ActualAllocationHostedTests.cs",
+      "sha256": "53D339AD9864EF5BCD27F4A2C8D9D32BB042632CF366AA8B78F5A67962132860"
+    },
+    {
+      "name": "ApplyIaHostedTests.cs",
+      "sha256": "90F1CE30134B2C0847F11031C289BBE8A5277DC3FEEE571E3D3BFD179BCB7A0D"
+    },
+    {
+      "name": "ApplyInformationEvidence.cs",
+      "sha256": "E1DD22341A67BBC474FB3F5F29CF8CF404F5D4854D01329DCA823E8E1708E197"
+    },
+    {
+      "name": "ApplyInformationHostedTests.cs",
+      "sha256": "005BD29CF3F66AF3DE2ACB632D9B19B4C5B0BACE2952522E03332DC33C1B2316"
+    },
+    {
+      "name": "ApplyInformationViewTests.cs",
+      "sha256": "B017C5205022C1A988500EFEEFBB3B0B47D49A4CC0AAB5A24211EE99FE6D1B70"
+    },
+    {
+      "name": "ApplyRecoveryHostedTests.cs",
+      "sha256": "0F582036C2816E5F5362B47B6BA75BD544ECD378DEEBF0185ADDF50168FB30B5"
+    },
+    {
+      "name": "ApplyResultsHostedTests.cs",
+      "sha256": "B006F3C91961CAA7A30F5934FB56D6CC4BDA00ACBA0CD86C6FF2AC69B9ADE00A"
+    },
+    {
+      "name": "BoardsDailyProgressHostedTests.cs",
+      "sha256": "19653E208C736902A812100C3D8152420DF6A18D52B1637116179AA265FC62DA"
+    },
+    {
+      "name": "BulkEditingHostedTests.cs",
+      "sha256": "86D3CB9D17E216CC1FCE85F130C0FBFF9BC69552A483BA6762D37986644C6F33"
+    },
+    {
+      "name": "ColumnHostedTests.cs",
+      "sha256": "4BD851A8355DD92FC0BA6E23C01AE558432349EA2F7856F47E33DA9D3AA96DEE"
+    },
+    {
+      "name": "ComboBoxWheelHostedTests.cs",
+      "sha256": "00BC13024A783CE7502E12C87C3D65CFDB93384842314B1978854623E1C2E256"
+    },
+    {
+      "name": "ConfirmedEditUndoHostedTests.cs",
+      "sha256": "12518F7F44309C11054C5C85D0084A915150DDBF48AA3BD9FBCC74CD40F5F1E1"
+    },
+    {
+      "name": "ConnectionEntryHostedTests.cs",
+      "sha256": "300DD68BD5E5292D644CF39C2209E3F9F1F6CCB67C61BB2AB0B40A2DD6A8B4B2"
+    },
+    {
+      "name": "ConnectionLayoutHostedTests.cs",
+      "sha256": "CDB3952E3E39683EA27C8C75ABC753AEDED518AA285ED1A437D7A3182CD2DAF6"
+    },
+    {
+      "name": "CreationComparisonHostedTests.cs",
+      "sha256": "1772EDD35F066CB96FFD86F069A039F34B1D7F1892EC00E49F1B5D24C8084622"
+    },
+    {
+      "name": "CreationPromotionHostedTests.cs",
+      "sha256": "7075135B77C4A8A68072653EDA1363230FE6287F84B388EF99172546FDB2C0BD"
+    },
+    {
+      "name": "CreationRowPresentationHostedTests.cs",
+      "sha256": "DC6904BDADDE2E5528A548B5F070E75EA5C1F2D46952315281ACEB9BFD07F214"
+    },
+    {
+      "name": "DailyProgressHostedTests.cs",
+      "sha256": "AAF772CBAEDC991DDDD894D67D834B45EF43837252C76ECAB7A1235E34323C5F"
+    },
+    {
+      "name": "DailyProjectFieldHostedTests.cs",
+      "sha256": "4BE6A89E1EB115ED252FD55AEB19BE903B3755DA8C56BAA09B58330060EB5179"
+    },
+    {
+      "name": "DailyProjectFieldIdentityHostedTests.cs",
+      "sha256": "C2814D7515C0C6C315193E688FBD56C5F1F0FE44B07255B6BDB8F2639C2099C2"
+    },
+    {
+      "name": "GanttContextHostedTests.cs",
+      "sha256": "E478B0FA0B690AFB51CC32FF9A5F9135AE28CA51B401313E9603862BB46FC700"
+    },
+    {
+      "name": "GanttDependencyHostedTests.cs",
+      "sha256": "B277A6909B0B2659F02CCE973D04F1C3CB63F6157DB54A559BB0DE32C800D40D"
+    },
+    {
+      "name": "GanttDependencyWheelHostedTests.cs",
+      "sha256": "0467C106AE373F774D2BB521C5DBE11C45F27175361238F1B9614E36AB547984"
+    },
+    {
+      "name": "GanttDragHostedTests.cs",
+      "sha256": "DEC727A8D0EEA82751B3246E8AF59A9084544219F007974F69C72E02DE6BB071"
+    },
+    {
+      "name": "GanttHostedTests.cs",
+      "sha256": "6C77AE32310982BC75888D3D68730F2196163AB5DAA648CB71A88929C953E087"
+    },
+    {
+      "name": "GanttReasonsHostedTests.cs",
+      "sha256": "4CB2F38724D198FA5FB6D9B2C5CD39FE9602473A2865028335C2A6EA1DD98610"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.csproj",
+      "sha256": "418EAA97A88D072F74E19FC7AF1B07A0081A4BA21F3F037A3330498DEAF6BBB2"
+    },
+    {
+      "name": "HistoricalDispositionHostedTests.cs",
+      "sha256": "2D75ABFBA6B548BC00D41229C4950611E84E4FA0164C4CEB9304619C4886AD44"
+    },
+    {
+      "name": "HistoryConnectionHostedTests.cs",
+      "sha256": "7B751F88EE6AAA9750FF7FB1AB7AE20355CB79358FD8F4C43FADB870E8A38180"
+    },
+    {
+      "name": "HolidayImportHostedTests.cs",
+      "sha256": "3B9A8FD2038E3D3441343EEFC7A867DCB6E63181E924190684A6A9E6B37CC44D"
+    },
+    {
+      "name": "HostedTests.cs",
+      "sha256": "9F263E22535E43F333A41D480902AF6451E7EC6FD562E215A770CF3AC29D173D"
+    },
+    {
+      "name": "InfrastructureTests.cs",
+      "sha256": "19A6DC828E03D17DE609E796D31165C82F191758F7F099BA77E4009968E901FF"
+    },
+    {
+      "name": "OnboardingHostedTests.cs",
+      "sha256": "FAA8865F9EF8799D650936DA0AC3DC17CBC654C92228AB5D584107C7E9E95C53"
+    },
+    {
+      "name": "PendingInputHostedTests.cs",
+      "sha256": "4A5349CCFBFB51798CF7FC25FA698C8EA3D6723E6BD735C6F1EDFB69C0487F6F"
+    },
+    {
+      "name": "PlanningHostedTests.cs",
+      "sha256": "68C5A67F19B77EB7444DF629DF03B604C04996D595303A9EE7BFBA3FE7FB88F8"
+    },
+    {
+      "name": "PlanningNavigationHostedTests.cs",
+      "sha256": "70F1058223DE959093BA50EE99109174DAA255A64F2EF0D611EC7943A5F5F22F"
+    },
+    {
+      "name": "PlanningPerformanceHostedTests.cs",
+      "sha256": "15987C483A7D73F3A5755F9620C79FF0A256EA03F370C167064ED60C8CD131AE"
+    },
+    {
+      "name": "PlanningReviewHostedTests.cs",
+      "sha256": "4440FC665F09A31C292FAB48ED78E82D628F096DA14B42E82CD3382116B69AB6"
+    },
+    {
+      "name": "PmoWorkflowHostedTests.cs",
+      "sha256": "A1ECDF770103840B255A67FEE3EE4FF8C01764A0C3078A58C2616E1A49F24E5F"
+    },
+    {
+      "name": "PostMergeHostedTests.cs",
+      "sha256": "C4F91D5A9D0CAED70FAF60743F5FD573EBB923BF72A0007F409207C0D2B7D6E4"
+    },
+    {
+      "name": "Program.cs",
+      "sha256": "D7CF44D8806B08A4B4F0191419208B7DAE3107AC3C9432BFD5E3907A3870B9B2"
+    },
+    {
+      "name": "ProjectNavigationHostedTests.cs",
+      "sha256": "23EF56427486F187117AD065AAC831D350330AF02D45DC5B5FFFED2A19CE58C3"
+    },
+    {
+      "name": "README.md",
+      "sha256": "5A5C3A374C77C254539A0770D8444970EF8D6DBBA398444596EB9C6C3B68022F"
+    },
+    {
+      "name": "RowApplyHostedTests.cs",
+      "sha256": "1EC3F2ABCFCC568B779B2E448479634048CECBEC04320B52B4B42F77C753EFDD"
+    },
+    {
+      "name": "RowViewHostedTests.cs",
+      "sha256": "E14DFBCC744F1E3F1E376F59EF53AAFEDBDD7C31C2AF5594337A7A8B2727443E"
+    },
+    {
+      "name": "SelectedDetailsHostedTests.cs",
+      "sha256": "B068E00839656909BC6F0002D371634B923CA65636B61E56E82F8BE6C059B65E"
+    },
+    {
+      "name": "SettingsFocusHostedTests.cs",
+      "sha256": "B3568F39E3C6DB8B9F21F58C050AACAF4DCBFF767EA3B780CDE8BF72AFB86C8F"
+    },
+    {
+      "name": "SheetContextHostedTests.cs",
+      "sha256": "891245E0E694DAB767DAE1B2DA01A4BFFB1F31A1A47F860B1383DC87FBD79655"
+    },
+    {
+      "name": "SheetFocusedScrollHostedTests.cs",
+      "sha256": "FC4CF3C188CB159313F20A9DCCF9BFACFEC904C229F2DFA5ACA549C3C88BB87D"
+    },
+    {
+      "name": "SheetHostedTests.cs",
+      "sha256": "DD17CCC5FA695E5B2D03FD12D3A8C78EFDC82EE6488B461F9BF51A625DEEC495"
+    },
+    {
+      "name": "SheetNativeInput.cs",
+      "sha256": "287BCBD9D15B2D55321A009A88AEF0033F37A3E989D71ED0D85A24084B584AAA"
+    },
+    {
+      "name": "SheetRecyclingHostedTests.cs",
+      "sha256": "A05C99F0977B82014E914527A931483C5CA2623B28A61FE6790A5DCA5B51F9B9"
+    },
+    {
+      "name": "SheetViewportHostedTests.cs",
+      "sha256": "BBD03725EB18B1CF92C552CF28CCFFFCF82F4E4B0274C66EBD9E9BC4833C4172"
+    },
+    {
+      "name": "SummaryCompactHostedTests.cs",
+      "sha256": "F616C6F11E2440D07163683D8D5D5A2DA67DDB113CA7B1E836EB14A53B0AF30C"
+    },
+    {
+      "name": "SummaryContinuityHostedTests.cs",
+      "sha256": "47B93C3DB423B5770B0B7B86AE528A037BFFC321860F822B59DC288D1A98D9C1"
+    },
+    {
+      "name": "SummaryHostedTests.cs",
+      "sha256": "B7583212EEF1FF4787344A8F44D361CDC5F0443862AE8B7CFC959A26BFE7E587"
+    },
+    {
+      "name": "SummaryPerformanceHostedTests.cs",
+      "sha256": "614F3C1DB9D55B7B552F5D38583525D3BD59D0606445BB1A74A8500AEC8A1C23"
+    },
+    {
+      "name": "ThemeHostedTests.cs",
+      "sha256": "B71E0EA20E678EC8651BD6A8BBD56D4593A7EB0A9D46207B90E23BB09B1A4627"
+    },
+    {
+      "name": "TrackedContext.cs",
+      "sha256": "6CFEF219ED3A5EDA5513A161BD2BDD957373866BC08590D484BAB8782FE44014"
+    },
+    {
+      "name": "Ui.cs",
+      "sha256": "4A258A5EFF7D7FC26AFF7B13E5DF408AA01FB972C1706583F418FE59813E64A2"
+    },
+    {
+      "name": "UndoRowVisibilityHostedTests.cs",
+      "sha256": "E11D0A4857988EEE569CED413586A4B93897EBC3111DFD3A0604AB74A5394974"
+    },
+    {
+      "name": "WeeklyApplyHostedTests.cs",
+      "sha256": "4C3923AD125AC4B516F298BAD1149E5CDBA26E3C389838B555F62BF2D4445BBE"
+    },
+    {
+      "name": "WeeklyBulkHostedTests.cs",
+      "sha256": "29012AFE754B0BD974292398B9B95A033A7343C870DA498D4B0CE4929B30F440"
+    },
+    {
+      "name": "WeeklyRecoveryHostedTests.cs",
+      "sha256": "086686C58F9FC85FEB0EE26E8C923683AA809E7D510927A1A55377590EFD2029"
+    },
+    {
+      "name": "WindowLifetimeHostedTests.cs",
+      "sha256": "43BCE2C2763A8CE2413FBEC8E1D65F219066120603449641972B06005B80C6CC"
+    },
+    {
+      "name": "WorkflowPlanningHostedTests.cs",
+      "sha256": "1B220F060AF78193D1865D7D5ECD7CA035DAED8CD7F709414B209E10E7A9DAF7"
+    },
+    {
+      "name": "WorkspaceApplyPresentationTests.cs",
+      "sha256": "08709A74B8613582414AD935693963DE9BC2E4441C54E1C11EC9D9544DCF04F4"
+    },
+    {
+      "name": "WorkspacePolishHostedTests.cs",
+      "sha256": "0295AB4B61F48E22A0F9DF7E1741FDE4485E08E2844E9C5B97FF4BD84F887640"
+    },
+    {
+      "name": "WorkspaceShellHostedTests.cs",
+      "sha256": "8B99EC9AE715B1480DB50EB901639CF7A6A28E76F55833443C37876EF06B9406"
+    },
+    {
+      "name": "WorkspaceStatusHostedTests.cs",
+      "sha256": "57F31D012C450864BBA47D11926850D822C298BB51917EE379562322A205FEF3"
+    },
+    {
+      "name": "WorkspaceStatusReviewHostedTests.cs",
+      "sha256": "5ADEC1A4CD8B37C7634E088B05D5217044B62014422F58CD58A5871C462D6B4A"
+    }
+  ],
+  "buildSeconds": 10.1394448,
+  "binaries": [
+    {
+      "name": "GhProjectsBoards.App.dll",
+      "sha256": "D8525BE0B325390422B4FA38ACC86861BDADBD907E75D30F83EF7E5AF69FF4C9"
+    },
+    {
+      "name": "GhProjectsBoards.Core.dll",
+      "sha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.dll",
+      "sha256": "16AEFCF8583A453FE54B9D2BCBF66BC6D36B2B6C04063D4EE728339EF0BB616D"
+    },
+    {
+      "name": "Microsoft.UI.Xaml.dll",
+      "sha256": "95F5F5B7CEC1CA2FA30580121F5298122E32DB96ED5F04D9D1A74224511E5F0C"
+    },
+    {
+      "name": "GhProjectsBoards.App.pri",
+      "sha256": "01C73CCCAF887A94B296AACBFD2CA80C9FCB990CE43E3280ABA802B201EA7AFA"
+    },
+    {
+      "name": "GhProjectsBoards.UiIntegration.Tests.pri",
+      "sha256": "27D29A0A2E85F49F6BA621DA8C63455B26500E9E4910A7AA7748CB3E3E548152"
+    }
+  ],
+  "packageAssets": "C9CD0CD5CC204E13C764C5944D3AC42E6A2F8542D2ED42A7DD561420BB2B47B4",
+  "processId": 4228,
+  "exitCode": 1,
+  "counts": {
+    "passed": "0",
+    "total": "1",
+    "inconclusive": "0",
+    "failed": "1",
+    "skipped": "0"
+  },
+  "elapsedSeconds": 11.5673706
+}

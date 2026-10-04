@@ -60,14 +60,15 @@ internal sealed partial class EditingWorkspace
     public bool Changed(EditCell cell) => cell.Key is { } key && fields.TryGetValue(key, out var f) && f.Change is not null;
     public EditRow[] Open(ProjectRegistration registration) => ProjectRows(registration, initializeFields: true);
     internal EditRow[] ReadRows(ProjectRegistration registration) => ProjectRows(registration, initializeFields: false);
-    private EditRow[] ProjectRows(ProjectRegistration registration, bool initializeFields)
+    private EditRow[] ProjectRows(ProjectRegistration registration, bool initializeFields, IReadOnlySet<string>? itemIds = null)
     {
         var p = registration.Snapshot;
         if (p.Id.Scope != Scope) throw new InvalidOperationException("Scope mismatch");
         var columns = LocalColumns(registration);
         var dependencyKeys = fields.Keys.Where(k => k.Kind == "Dependency" && k.ProjectId == p.Id.NodeId).ToLookup(k => k.NodeId);
         string? Permission(CapabilityObservation? c) => c?.CanUpdate switch { true when c.ObservedAt != default => null, false => "更新権限なし（取得時の観測）", _ => "更新権限未確認" };
-        return p.Items.Where(item => !Creations.Any(c => c.Verified is not null && c.Verified.Id == item.ContentId?.NodeId
+        return p.Items.Where(item => (itemIds is null || itemIds.Contains(item.Id.NodeId))
+            && !Creations.Any(c => c.Verified is not null && c.Verified.Id == item.ContentId?.NodeId
             && localRows.Any(r => r.Id == c.LocalId && r.ProjectId == p.Id.NodeId))).Select(item =>
         {
             var cells = new List<EditCell>();

@@ -1,0 +1,4 @@
+# Preserve exact tool output bytes, including native CRLF line endings.
+*.json -text whitespace=cr-at-eol
+*.xml -text whitespace=cr-at-eol
+*.trx -text whitespace=cr-at-eol

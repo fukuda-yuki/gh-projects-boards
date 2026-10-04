@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="374" result="Failed" start-time="2026-10-04T14:23:28.7314945Z" end-time="2026-10-04T14:23:31.6262170Z" duration="2.894702" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1" random-seed="2140100598">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "class == GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-232319-282-75b17357\results.xml]]></command-line>
+  <filter>
+    <class>GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests</class>
+  </filter>
+  <test-suite type="Assembly" id="1474" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="374" result="Failed" site="Child" start-time="2026-10-04T14:23:28.7314945Z" end-time="2026-10-04T14:23:31.6262170Z" duration="2.894702" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\bin\Release\net10.0-windows10.0.26100.0\win-x64" />
+    </settings>
+    <properties>
+      <property name="_PID" value="41744" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1475" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="374" result="Failed" site="Child" start-time="2026-10-04T14:23:28.7336796Z" end-time="2026-10-04T14:23:31.6262145Z" duration="2.892535" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1476" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="374" result="Failed" site="Child" start-time="2026-10-04T14:23:28.7338252Z" end-time="2026-10-04T14:23:31.6262120Z" duration="2.892387" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1477" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="374" result="Failed" site="Child" start-time="2026-10-04T14:23:28.7338867Z" end-time="2026-10-04T14:23:31.6262050Z" duration="2.892318" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1427" name="SummaryCompactHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-04T14:23:28.7338881Z" end-time="2026-10-04T14:23:31.6260722Z" duration="2.892184" total="2" initiated="2" passed="1" failed="1" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="1">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1429" name="CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" methodname="CompactViewportShowsCompleteComparisonAndTaskRowsWithCorrectionAndFilterReachable" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" seed="389081021" result="Passed" start-time="2026-10-04T14:23:28.7351208Z" end-time="2026-10-04T14:23:31.0187213Z" duration="2.283636" asserts="1">
+              <properties>
+                <property name="Category" value="NextRoadmap" />
+              </properties>
+            </test-case>
+            <test-case id="1428" name="PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" fullname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" methodname="PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation" classname="GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests" runstate="Runnable" seed="1804706952" result="Failed" label="Error" start-time="2026-10-04T14:23:31.0195328Z" end-time="2026-10-04T14:23:31.6255626Z" duration="0.606030" asserts="0">
+              <properties>
+                <property name="Category" value="SummaryHeader" />
+              </properties>
+              <failure>
+                <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.<>c__DisplayClass0_0.<PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation>g__AssertHeaderAndRow|5() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 100
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.<>c__DisplayClass0_0.<PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation>b__9() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 44
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 43
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 84
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.<>c__DisplayClass3_0.<PerformWork>b__0()
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass1_0`1.<DoIsolated>b__0(Object _)
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass2_0.<DoIsolated>b__0(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated(ContextCallback callback, Object state)
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated[T](Func`1 func)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.PerformWork()]]></stack-trace>
+              </failure>
+              <assertions>
+                <assertion result="Error">
+                  <message><![CDATA[System.InvalidOperationException : Sequence contains no matching element]]></message>
+                  <stack-trace><![CDATA[   at System.Linq.ThrowHelper.ThrowNoMatchException()
+   at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source, Func`2 predicate)
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.<>c__DisplayClass0_0.<PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation>g__AssertHeaderAndRow|5() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 100
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.<>c__DisplayClass0_0.<PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation>b__9() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 44
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass5_0.<Run>b__0() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 43
+   at GhProjectsBoards.UiIntegration.Tests.SummaryCompactHostedTests.PersonComparisonKeepsColumnLabelsAlignedThroughVerticalAndHorizontalScrollingAndKeyboardNavigation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\SummaryCompactHostedTests.cs:line 84
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.<>c__DisplayClass3_0.<PerformWork>b__0()
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass1_0`1.<DoIsolated>b__0(Object _)
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass2_0.<DoIsolated>b__0(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated(ContextCallback callback, Object state)
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated[T](Func`1 func)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.PerformWork()]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -14,6 +14,8 @@ This document owns the criteria for judging interface design. [AGENTS.md](AGENTS
 
 The product goal is a native Windows PMO planning workspace: update actual and remaining effort, find insufficient capacity, inspect the contributing tasks, and replan locally before explicit GitHub publication. Summary, Boards and Gantt serve that connected job. Ordinary-state instructions must not displace the work; use concise labels and disclose supplementary explanations on request. The [product outline](docs/requirements.md#product-goal) defines the work it serves.
 
+The empty workspace offers one next action appropriate to its state. Put setup procedures, keyboard reference and extended explanations in the [user manual](docs/user-manual.md), reached from the app. A manual complements recognizable controls; it must not compensate for an unclear ordinary task. Project commands use the native CommandBar and overflow so settings do not consume additional rows of the planning surface. Daily effort correction from Summary uses the same focused input as the table and returns to the same person and task.
+
 ## Information architecture and surface roles
 
 ### Organize work before arranging navigation
@@ -124,6 +126,8 @@ References consulted on **2026-09-19**. The adopted criteria above are maintaine
 
 | Source | Adopted idea and boundary |
 | --- | --- |
+| GitHub [Projects table layout](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-table-layout), Primer [Empty states](https://primer.style/product/ui-patterns/empty-states/), and Microsoft [CommandBar](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/command-bar) (reviewed 2026-10-04) | Keep the table central, configuration grouped, the empty state's next action singular, and commands in native overflow. Preserve target identity, recovery and keyboard access. These references inform concrete behavior, not a claim of comparative usability or a requirement to copy web components. |
+| Azure Boards [Bulk modify work items](https://learn.microsoft.com/en-us/azure/devops/boards/backlogs/bulk-modify-work-items?view=azure-devops) (reviewed 2026-10-04) | Bulk editing already exists in established products. This product must justify its value through the connected local planning, actual/remaining correction, load comparison and explicit publication job, not through the existence of a table or bulk command alone. |
 | OpenAI: [Harness engineering](https://openai.com/index/harness-engineering/) and [AGENTS.md guidance](https://developers.openai.com/codex/guides/agents-md/) | A concise entry point routes agents to documents with distinct responsibilities. Explicitly require reading this document through AGENTS.md; its filename alone is not a default instruction-loading mechanism. Do not transplant the article's repository structure or automation system. |
 | NN/G: [Aesthetic and Minimalist Design](https://www.nngroup.com/articles/aesthetic-minimalist-design/) | Prioritize useful information and reduce competing noise; this is not a requirement for sparse screens. |
 | NN/G: [Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/) | Keep frequent needs accessible and reveal secondary detail when needed. Do not hide ordinary comparison requirements. |

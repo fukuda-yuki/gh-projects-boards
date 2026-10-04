@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "count": 50,
+  "selectFieldCount": 12,
+  "totalColumns": 14,
+  "bulkSeed": false,
+  "scope": "Isolated synthetic cached Projects; no authentication or GitHub requests.",
+  "seedAssembly": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tests\\GhProjectsBoards.Tests\\bin\\Release\\net10.0-windows\\GhProjectsBoards.Tests.dll",
+  "seedAssemblySha256": "91120D4EF65C7E9D7372E764778B6657227EA409B12E02E4BC9E7870F3F63662",
+  "validatedReadback": true,
+  "projects": [
+    {
+      "projectId": "P1",
+      "firstItem": "P1T1",
+      "lastItem": "P1T50",
+      "firstIssue": "I1",
+      "lastIssue": "I50",
+      "fields": [
+        "P1-status",
+        "P1-diagnostic-1",
+        "P1-diagnostic-2",
+        "P1-diagnostic-3",
+        "P1-diagnostic-4",
+        "P1-diagnostic-5",
+        "P1-diagnostic-6",
+        "P1-diagnostic-7",
+        "P1-diagnostic-8",
+        "P1-diagnostic-9",
+        "P1-diagnostic-10",
+        "P1-diagnostic-11"
+      ],
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\data\\324959C297674FCD60A4174EC4884191CFD8CB2DFF1DB5ACA509DBE4DB7276C8.json",
+      "sha256": "5D940CC7AAE46F22B194361CC438357D09D93BF2CFF8F53AABDC1FE52C867095"
+    },
+    {
+      "projectId": "P2",
+      "firstItem": "P2T1",
+      "lastItem": "P2T50",
+      "firstIssue": "I1",
+      "lastIssue": "I50",
+      "fields": [
+        "P2-status",
+        "P2-diagnostic-1",
+        "P2-diagnostic-2",
+        "P2-diagnostic-3",
+        "P2-diagnostic-4",
+        "P2-diagnostic-5",
+        "P2-diagnostic-6",
+        "P2-diagnostic-7",
+        "P2-diagnostic-8",
+        "P2-diagnostic-9",
+        "P2-diagnostic-10",
+        "P2-diagnostic-11"
+      ],
+      "file": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\sheet-diagnostic\\refine-candidate-final-50x12\\data\\4C1C2A79C01C3E784639D882C9CED78EFB8552482D0F89572581262EFDF7EFBD.json",
+      "sha256": "D228EC0999F8A1032C3847282725D4B3EF0A954E9EFD41B0DC033AC97A36F5A5"
+    }
+  ]
+}

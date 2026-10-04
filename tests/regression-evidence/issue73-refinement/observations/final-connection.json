@@ -1,0 +1,22 @@
+{
+  "window": {
+    "app": "process:C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\TestResults\\planning-build-5e284ca4f356402f82a4a1ed29689d0b\\app\\GhProjectsBoards.App.exe",
+    "id": 115740104,
+    "title": "GitHub Projects Boards"
+  },
+  "accessibility": {
+    "document_text": "github.com",
+    "focused_element": "30 edit (settable, string) GitHub ホスト Value: github.com ID: HostInput",
+    "tree": "Window: \"GitHub Projects Boards\", App: GhProjectsBoards.App.exe.\n\t0 ウィンドウ GitHub Projects Boards Secondary Actions: Raise\n\t\t1 ウィンドウ\n\t\t\t2 ウィンドウ\n\t\t\t\t26 button 元の作業へ戻る ID: ProjectsPageButton\n\t\t\t\t27 テキスト 接続設定\n\t\t\t\t28 button 接続設定のヘルプ ID: ConnectionHelp\n\t\t\t\t29 pane ID: ConnectionScreen\n\t\t\t\t\t30 edit (settable, string) GitHub ホスト Value: github.com ID: HostInput\n\t\t\t\t\t\t31 テキスト GitHub ホスト\n\t\t\t\t\t32 テキスト アカウント\n\t\t\t\t\t33 テキスト 未確認 ID: AccountValue\n\t\t\t\t\t34 button 接続を確認 / 再確認 ID: CheckConnectionButton\n\t\t\t\t\t35 button (disabled) 新しい接続として確認 ID: NewConnectionButton\n\t\t\t\t\t36 button (disabled) 接続確認を中止 ID: CancelConnectionButton\n\t\t\t\t\t37 テキスト 接続は未確認です。接続先とgh.exeを確認してください。 ID: ConnectionStatus\n\t\t\t\t\t38 テキスト ID: UiMessage\n\t\t\t\t\t39 button CLIと接続の詳細 ID: ConnectionDetails\n\t\t\t\t\t\t40 テキスト CLIと接続の詳細\n\t\t\t\t\t41 button ログイン・権限追加の手順 ID: LoginHelpExpander\n\t\t\t\t\t\t42 テキスト ログイン・権限追加の手順\n\t\t\t\t\t43 scroll bar (settable, float) 垂直 Value: 0 ID: VerticalScrollBar\n\t\t15 タイトル バー (settable, string) Value: GitHub Projects Boards\n\t\t\t16 メニュー バー システム ID: MenuBar\n\t\t\t\t21 メニュー項目 システム\n\t\t\t18 ボタン 最小化\n\t\t\t19 ボタン 最大化\n\t\t\t20 ボタン 閉じる\n\nDocument text: ```\ngithub.com\n```"
+  },
+  "screenshots": [
+    {
+      "height": 794,
+      "id": "screenshot-0",
+      "originX": 928,
+      "originY": 190,
+      "width": 1267,
+      "zIndex": 0
+    }
+  ]
+}

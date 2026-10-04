@@ -77,6 +77,7 @@ public sealed partial class PlanningHostedTests
         await Ui.Run(() => Ui.Find<ListView>("GanttTasks").SelectedIndex = 0);
         await Ui.ClickCommand("GanttDetails");
         await Ui.Until(() => Ui.Popup<StackPanel>("GanttTaskDetails")?.IsLoaded == true);
+        await Ui.Until(() => Ui.Popup<Button>("GanttExplanationProgress") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Click(Ui.Find<Button>("GanttExplanationProgress", Ui.Popup<StackPanel>("GanttTaskDetails"))));
         await Ui.DialogReady("PlanningDialog");
         await Ui.Until(() => Ui.Tree(Ui.Dialog("PlanningDialog")!).OfType<ComboBox>().Any(c => AutomationProperties.GetAutomationId(c) == "PlanProgress" && c.IsLoaded));
