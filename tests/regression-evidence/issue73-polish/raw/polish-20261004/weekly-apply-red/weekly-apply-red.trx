@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="9f112232-c6fc-49ac-94e9-300341e15ad6" name="mwam0@RTX5070 2026-10-04 17:31:52" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T17:31:52.7070115+09:00" queuing="2026-10-04T17:31:52.7070116+09:00" start="2026-10-04T17:31:51.1697449+09:00" finish="2026-10-04T17:31:52.7147147+09:00" />
+  <TestSettings name="default" id="7135c626-795e-41ba-bb4c-2892e8401da0">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_17_31_52" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="6ea627f0-2120-4767-9e0a-d20d8a998496" testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" testName="WeeklyReviewCannotSelectNewIssueCreation" computerName="RTX5070" duration="00:00:00.0331040" startTime="2026-10-04T17:31:52.5269416+09:00" endTime="2026-10-04T17:31:52.5600095+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6ea627f0-2120-4767-9e0a-d20d8a998496">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 計画は変更されています。現在の値を確認してください。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewCannotSelectNewIssueCreation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 43&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewCannotSelectNewIssueCreation() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 43&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="97df48c7-dd4a-469a-a976-7a94e38d08ea" testId="a5267826-6e85-7b26-f3b3-f197b638444f" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" computerName="RTX5070" duration="00:00:00.0005400" startTime="2026-10-04T17:31:52.5616371+09:00" endTime="2026-10-04T17:31:52.5621773+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="97df48c7-dd4a-469a-a976-7a94e38d08ea">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 計画は変更されています。現在の値を確認してください。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Boolean removed) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 54&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Boolean removed) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 54&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c22dce9b-cd3b-4b6a-97ad-4aad81cfdb18" testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" computerName="RTX5070" duration="00:00:00.0004060" startTime="2026-10-04T17:31:52.5621863+09:00" endTime="2026-10-04T17:31:52.5625918+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c22dce9b-cd3b-4b6a-97ad-4aad81cfdb18">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 計画は変更されています。現在の値を確認してください。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Boolean removed) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 54&#xD;
+   at InvokeStub_WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Boolean removed) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 54&#xD;
+   at InvokeStub_WeeklyApplyTests.WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b91545a1-3412-46d7-a441-4a431fc7efac" testId="36202419-f4c9-2685-6d60-74381504dd1c" testName="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" computerName="RTX5070" duration="00:00:00.0008630" startTime="2026-10-04T17:31:52.5607366+09:00" endTime="2026-10-04T17:31:52.5615997+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b91545a1-3412-46d7-a441-4a431fc7efac">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 計画は変更されています。現在の値を確認してください。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 27&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.SetPlanning(ProjectPlanning plan, Int64 expectedStamp) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\PlanningContract.cs:line 182&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.ChangedWork() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 15&#xD;
+   at GhProjectsBoards.Tests.WeeklyApplyTests.WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyTests.cs:line 27&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\weekly-apply-tests\ghprojectsboards.tests.dll" id="a5267826-6e85-7b26-f3b3-f197b638444f">
+      <Execution id="97df48c7-dd4a-469a-a976-7a94e38d08ea" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-apply-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewCannotSelectNewIssueCreation" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\weekly-apply-tests\ghprojectsboards.tests.dll" id="93b6d719-6cc8-bdaa-3d73-e7827ac490f5">
+      <Execution id="6ea627f0-2120-4767-9e0a-d20d8a998496" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-apply-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewCannotSelectNewIssueCreation" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\weekly-apply-tests\ghprojectsboards.tests.dll" id="f37ca015-3b4e-1141-16af-ee62c3eacb1a">
+      <Execution id="c22dce9b-cd3b-4b6a-97ad-4aad81cfdb18" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-apply-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\weekly-apply-tests\ghprojectsboards.tests.dll" id="36202419-f4c9-2685-6d60-74381504dd1c">
+      <Execution id="b91545a1-3412-46d7-a441-4a431fc7efac" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-apply-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" executionId="6ea627f0-2120-4767-9e0a-d20d8a998496" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a5267826-6e85-7b26-f3b3-f197b638444f" executionId="97df48c7-dd4a-469a-a976-7a94e38d08ea" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" executionId="c22dce9b-cd3b-4b6a-97ad-4aad81cfdb18" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="36202419-f4c9-2685-6d60-74381504dd1c" executionId="b91545a1-3412-46d7-a441-4a431fc7efac" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="4" executed="4" passed="0" failed="4" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-apply-tests\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 4 of 4 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.17_31_52.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

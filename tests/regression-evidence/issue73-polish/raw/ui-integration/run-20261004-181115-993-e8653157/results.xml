@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\gantt-lifetime-baseline\host\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="348" result="Failed" start-time="2026-10-04T09:11:17.2217196Z" end-time="2026-10-04T09:12:09.6966546Z" duration="52.474916" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1" random-seed="139182422">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\gantt-lifetime-baseline\host\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test == GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-181115-993-e8653157\results.xml]]></command-line>
+  <filter>
+    <test>GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown</test>
+  </filter>
+  <test-suite type="Assembly" id="1441" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\gantt-lifetime-baseline\host\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:11:17.2217196Z" end-time="2026-10-04T09:12:09.6966546Z" duration="52.474916" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\gantt-lifetime-baseline\host" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\gantt-lifetime-baseline\host" />
+    </settings>
+    <properties>
+      <property name="_PID" value="12248" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1442" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:11:17.2241411Z" end-time="2026-10-04T09:12:09.6966528Z" duration="52.472511" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1443" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:11:17.2244395Z" end-time="2026-10-04T09:12:09.6966507Z" duration="52.472211" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1444" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:11:17.2244611Z" end-time="2026-10-04T09:12:09.6966389Z" duration="52.472178" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1129" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="84" result="Failed" site="Child" start-time="2026-10-04T09:11:17.2244639Z" end-time="2026-10-04T09:12:09.6964907Z" duration="52.472027" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1177" name="NativeEditorRetentionProgressionAndViewTeardown" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown" methodname="NativeEditorRetentionProgressionAndViewTeardown" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1378786459" result="Failed" start-time="2026-10-04T09:11:17.2257419Z" end-time="2026-10-04T09:12:09.6950199Z" duration="52.469320" asserts="1">
+              <properties>
+                <property name="Category" value="ReviewRetentionProgression" />
+                <property name="Category" value="Infrastructure" />
+              </properties>
+              <failure>
+                <message><![CDATA[  A replaced view must be collectible after native focus transfers.
+Assert.That(Retained(releasedView), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 184
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 191
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+              <output><![CDATA[Released view still alive: True
+Released view after focus transfer: True
+View retained after 454.3 ms: True
+View retained after 913.3 ms: True
+View retained after 1369.0 ms: True
+View retained after 1832.3 ms: True
+View retained after 2290.0 ms: True
+]]></output>
+              <assertions>
+                <assertion result="Failed">
+                  <message><![CDATA[  A replaced view must be collectible after native focus transfers.
+Assert.That(Retained(releasedView), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 184
+]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

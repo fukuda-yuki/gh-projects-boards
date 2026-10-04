@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="349" result="Passed" start-time="2026-10-04T09:48:55.8164130Z" end-time="2026-10-04T09:48:57.1181127Z" duration="1.301678" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2" random-seed="1419975881">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test =~ 'ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges'" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-184854-664-47a7c00c\results.xml]]></command-line>
+  <filter>
+    <test re="1">ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges</test>
+  </filter>
+  <test-suite type="Assembly" id="1442" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="349" result="Passed" start-time="2026-10-04T09:48:55.8164130Z" end-time="2026-10-04T09:48:57.1181127Z" duration="1.301678" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout" />
+    </settings>
+    <properties>
+      <property name="_PID" value="37016" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <test-suite type="TestSuite" id="1443" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="349" result="Passed" start-time="2026-10-04T09:48:55.8187014Z" end-time="2026-10-04T09:48:57.1181101Z" duration="1.299408" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+      <test-suite type="TestSuite" id="1444" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="349" result="Passed" start-time="2026-10-04T09:48:55.8188542Z" end-time="2026-10-04T09:48:57.1181073Z" duration="1.299253" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+        <test-suite type="TestSuite" id="1445" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="349" result="Passed" start-time="2026-10-04T09:48:55.8188708Z" end-time="2026-10-04T09:48:57.1180923Z" duration="1.299221" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+          <test-suite type="TestFixture" id="1428" name="WeeklyApplyHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-10-04T09:48:55.8188720Z" end-time="2026-10-04T09:48:57.1179067Z" duration="1.299035" total="1" initiated="1" passed="1" failed="0" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="2">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-case id="1434" name="ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" methodname="ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="1777593962" result="Passed" start-time="2026-10-04T09:48:55.8199994Z" end-time="2026-10-04T09:48:57.1164779Z" duration="1.296515" asserts="2">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

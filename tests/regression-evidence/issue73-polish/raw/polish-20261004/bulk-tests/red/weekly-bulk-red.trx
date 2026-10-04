@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="0e2ba62b-cdde-484e-9ee8-775cb38f7a52" name="mwam0@RTX5070 2026-10-04 17:28:14" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T17:28:14.3537813+09:00" queuing="2026-10-04T17:28:14.3537815+09:00" start="2026-10-04T17:28:12.6633209+09:00" finish="2026-10-04T17:28:14.4777437+09:00" />
+  <TestSettings name="default" id="c7ea8ded-c91b-4968-8b27-5f843335e87c">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_17_28_14" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="bda16ec5-a1a3-46aa-aaaf-7f196373b709" testId="a26e2d16-510e-31d1-462f-81c7a83d5882" testName="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;down&quot;)" computerName="RTX5070" duration="00:00:00.0015220" startTime="2026-10-04T17:28:14.3105552+09:00" endTime="2026-10-04T17:28:14.3120767+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bda16ec5-a1a3-46aa-aaaf-7f196373b709">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 行 1 [P1T1] / Actual [F-Actual]: 参照専用</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.Fill(String projectId, EditRow[] rows, Int32 sourceRow, Int32 column, Int32 firstRow, Int32 lastRow, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 55&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 68&#xD;
+   at InvokeStub_WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.Fill(String projectId, EditRow[] rows, Int32 sourceRow, Int32 column, Int32 firstRow, Int32 lastRow, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 55&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 68&#xD;
+   at InvokeStub_WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5506c8cc-3349-443e-87b5-85cd09ba44af" testId="c9d0bd98-914c-6170-0649-3e95a47ee446" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;multiple-reports&quot;)" computerName="RTX5070" duration="00:00:00.0019180" startTime="2026-10-04T17:28:14.3273226+09:00" endTime="2026-10-04T17:28:14.3292405+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5506c8cc-3349-443e-87b5-85cd09ba44af" />
+    <UnitTestResult executionId="e1182325-75b5-4d70-ae5a-dae966b39c5b" testId="1dd1314e-488a-68d6-1b22-651d15296b96" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;date&quot;)" computerName="RTX5070" duration="00:00:00.0016920" startTime="2026-10-04T17:28:14.3153773+09:00" endTime="2026-10-04T17:28:14.3170689+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e1182325-75b5-4d70-ae5a-dae966b39c5b" />
+    <UnitTestResult executionId="6dfa2d98-e97a-4f97-ba98-c2601c118782" testId="52bbf539-f2b8-49bc-ab6b-00e3492ca45f" testName="WeeklyRectangleUsesDisplayedIdsAndEachWorkerThenDurableUndoRestoresAllWorkTogether" computerName="RTX5070" duration="00:00:00.0030630" startTime="2026-10-04T17:28:14.3314774+09:00" endTime="2026-10-04T17:28:14.3345402+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6dfa2d98-e97a-4f97-ba98-c2601c118782">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 行 1 [P1T3] / Actual [F-Actual]: 参照専用</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.PasteSelection(String projectId, EditRow[] rows, CellRange selection, String tsv, CopiedCells copied, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 106&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.WeeklyRectangleUsesDisplayedIdsAndEachWorkerThenDurableUndoRestoresAllWorkTogether() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 40&#xD;
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()&#xD;
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)&#xD;
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)&#xD;
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)&#xD;
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)&#xD;
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.&lt;&gt;c__DisplayClass3_0.&lt;PerformWork&gt;b__0()&#xD;
+   at NUnit.Framework.Internal.ContextUtils.&lt;&gt;c__DisplayClass1_0`1.&lt;DoIsolated&gt;b__0(Object _)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.&lt;&gt;c__DisplayClass2_0.&lt;DoIsolated&gt;b__0(Object s)&#xD;
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated(ContextCallback callback, Object state)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated[T](Func`1 func)&#xD;
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.PerformWork()
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.PasteSelection(String projectId, EditRow[] rows, CellRange selection, String tsv, CopiedCells copied, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 106&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.WeeklyRectangleUsesDisplayedIdsAndEachWorkerThenDurableUndoRestoresAllWorkTogether() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 40&#xD;
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()&#xD;
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)&#xD;
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)&#xD;
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)&#xD;
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)&#xD;
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.&lt;&gt;c__DisplayClass3_0.&lt;PerformWork&gt;b__0()&#xD;
+   at NUnit.Framework.Internal.ContextUtils.&lt;&gt;c__DisplayClass1_0`1.&lt;DoIsolated&gt;b__0(Object _)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.&lt;&gt;c__DisplayClass2_0.&lt;DoIsolated&gt;b__0(Object s)&#xD;
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated(ContextCallback callback, Object state)&#xD;
+   at NUnit.Framework.Internal.ContextUtils.DoIsolated[T](Func`1 func)&#xD;
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.PerformWork()
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0e2f131f-ffd9-4b30-bcd4-0dbacb29dfc0" testId="191c2ae7-12b0-d80c-25a0-2c3f78bd3189" testName="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;fill&quot;)" computerName="RTX5070" duration="00:00:00.0275270" startTime="2026-10-04T17:28:14.2829475+09:00" endTime="2026-10-04T17:28:14.3104738+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0e2f131f-ffd9-4b30-bcd4-0dbacb29dfc0">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 行 1 [P1T1] / Actual [F-Actual]: 参照専用</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.Fill(String projectId, EditRow[] rows, Int32 sourceRow, Int32 column, Int32 firstRow, Int32 lastRow, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 55&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 68&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.Fill(String projectId, EditRow[] rows, Int32 sourceRow, Int32 column, Int32 firstRow, Int32 lastRow, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 55&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 68&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="04e05515-30f4-4dc2-bfda-6982e40de4e6" testId="2eb1c6cc-e93d-eac0-ada3-b1eb9a3a56e1" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-actual&quot;)" computerName="RTX5070" duration="00:00:00.0010570" startTime="2026-10-04T17:28:14.3292545+09:00" endTime="2026-10-04T17:28:14.3303116+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="04e05515-30f4-4dc2-bfda-6982e40de4e6" />
+    <UnitTestResult executionId="d159bfc9-4906-4e47-9dc5-4cb7c202eb80" testId="7acc0d19-bb14-b072-a664-c5bd15742179" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;missing-worker&quot;)" computerName="RTX5070" duration="00:00:00.0012760" startTime="2026-10-04T17:28:14.3260295+09:00" endTime="2026-10-04T17:28:14.3273050+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d159bfc9-4906-4e47-9dc5-4cb7c202eb80" />
+    <UnitTestResult executionId="47e26c27-b0eb-4305-8061-6a5e773ce383" testId="69a1e39e-df5d-057d-66cd-6fe733ba63f7" testName="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;broadcast&quot;)" computerName="RTX5070" duration="00:00:00.0025030" startTime="2026-10-04T17:28:14.3120881+09:00" endTime="2026-10-04T17:28:14.3145907+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="47e26c27-b0eb-4305-8061-6a5e773ce383">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : 行 1 [P1T1] / Actual [F-Actual]: 参照専用</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.PasteSelection(String projectId, EditRow[] rows, CellRange selection, String tsv, CopiedCells copied, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 106&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 67&#xD;
+   at InvokeStub_WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CheckBulkCell(EditRow row, EditCell cell, Int32 position, Boolean pending) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 47&#xD;
+   at GhProjectsBoards.Core.Projects.EditingWorkspace.PasteSelection(String projectId, EditRow[] rows, CellRange selection, String tsv, CopiedCells copied, Nullable`1 reportedThrough) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\BulkEditing.cs:line 106&#xD;
+   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(String route) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 67&#xD;
+   at InvokeStub_WeeklyBulkEditingTests.CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="38618967-1d5d-471e-a9a0-f34c0e368285" testId="17c9e5af-4372-3b80-9db3-11c1ac9f5071" testName="ActualRectangleCannotAlsoWriteUnrelatedFields" computerName="RTX5070" duration="00:00:00.1832980" startTime="2026-10-04T17:28:14.0989152+09:00" endTime="2026-10-04T17:28:14.2821798+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="38618967-1d5d-471e-a9a0-f34c0e368285" />
+    <UnitTestResult executionId="63ec6069-036d-4542-998a-ec8bf5af4663" testId="20cf94e0-bdeb-e521-0f88-8ea7ff61c6e7" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;invalid-final&quot;)" computerName="RTX5070" duration="00:00:00.0089320" startTime="2026-10-04T17:28:14.3170784+09:00" endTime="2026-10-04T17:28:14.3260097+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="63ec6069-036d-4542-998a-ec8bf5af4663" />
+    <UnitTestResult executionId="1b503b68-aa23-477b-8510-345f50f6132d" testId="d1719b94-6c66-7a91-6834-b740c97fa522" testName="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-remaining&quot;)" computerName="RTX5070" duration="00:00:00.0010820" startTime="2026-10-04T17:28:14.3303249+09:00" endTime="2026-10-04T17:28:14.3314067+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1b503b68-aa23-477b-8510-345f50f6132d" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;date&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="1dd1314e-488a-68d6-1b22-651d15296b96">
+      <Execution id="e1182325-75b5-4d70-ae5a-dae966b39c5b" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;date&quot;)" />
+    </UnitTest>
+    <UnitTest name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;broadcast&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="69a1e39e-df5d-057d-66cd-6fe733ba63f7">
+      <Execution id="47e26c27-b0eb-4305-8061-6a5e773ce383" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;broadcast&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-remaining&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="d1719b94-6c66-7a91-6834-b740c97fa522">
+      <Execution id="1b503b68-aa23-477b-8510-345f50f6132d" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-remaining&quot;)" />
+    </UnitTest>
+    <UnitTest name="WeeklyRectangleUsesDisplayedIdsAndEachWorkerThenDurableUndoRestoresAllWorkTogether" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="52bbf539-f2b8-49bc-ab6b-00e3492ca45f">
+      <Execution id="6dfa2d98-e97a-4f97-ba98-c2601c118782" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="WeeklyRectangleUsesDisplayedIdsAndEachWorkerThenDurableUndoRestoresAllWorkTogether" />
+    </UnitTest>
+    <UnitTest name="ActualRectangleCannotAlsoWriteUnrelatedFields" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="17c9e5af-4372-3b80-9db3-11c1ac9f5071">
+      <Execution id="38618967-1d5d-471e-a9a0-f34c0e368285" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="ActualRectangleCannotAlsoWriteUnrelatedFields" />
+    </UnitTest>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;missing-worker&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="7acc0d19-bb14-b072-a664-c5bd15742179">
+      <Execution id="d159bfc9-4906-4e47-9dc5-4cb7c202eb80" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;missing-worker&quot;)" />
+    </UnitTest>
+    <UnitTest name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;down&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="a26e2d16-510e-31d1-462f-81c7a83d5882">
+      <Execution id="bda16ec5-a1a3-46aa-aaaf-7f196373b709" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;down&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;invalid-final&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="20cf94e0-bdeb-e521-0f88-8ea7ff61c6e7">
+      <Execution id="63ec6069-036d-4542-998a-ec8bf5af4663" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;invalid-final&quot;)" />
+    </UnitTest>
+    <UnitTest name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;fill&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="191c2ae7-12b0-d80c-25a0-2c3f78bd3189">
+      <Execution id="0e2f131f-ffd9-4b30-bcd4-0dbacb29dfc0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="CopyingActualHoursRetainsEachTargetWorkerAndTheEarlierSourceUndo(&quot;fill&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-actual&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="2eb1c6cc-e93d-eac0-ada3-b1eb9a3a56e1">
+      <Execution id="04e05515-30f4-4dc2-bfda-6982e40de4e6" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;pending-actual&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;multiple-reports&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="c9d0bd98-914c-6170-0649-3e95a47ee446">
+      <Execution id="5506c8cc-3349-443e-87b5-85cd09ba44af" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="InvalidWeeklyDestinationRejectsTheWholeRectangleAndPreservesInputAndHistory(&quot;multiple-reports&quot;)" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="a26e2d16-510e-31d1-462f-81c7a83d5882" executionId="bda16ec5-a1a3-46aa-aaaf-7f196373b709" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c9d0bd98-914c-6170-0649-3e95a47ee446" executionId="5506c8cc-3349-443e-87b5-85cd09ba44af" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1dd1314e-488a-68d6-1b22-651d15296b96" executionId="e1182325-75b5-4d70-ae5a-dae966b39c5b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="52bbf539-f2b8-49bc-ab6b-00e3492ca45f" executionId="6dfa2d98-e97a-4f97-ba98-c2601c118782" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="191c2ae7-12b0-d80c-25a0-2c3f78bd3189" executionId="0e2f131f-ffd9-4b30-bcd4-0dbacb29dfc0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2eb1c6cc-e93d-eac0-ada3-b1eb9a3a56e1" executionId="04e05515-30f4-4dc2-bfda-6982e40de4e6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7acc0d19-bb14-b072-a664-c5bd15742179" executionId="d159bfc9-4906-4e47-9dc5-4cb7c202eb80" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="69a1e39e-df5d-057d-66cd-6fe733ba63f7" executionId="47e26c27-b0eb-4305-8061-6a5e773ce383" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17c9e5af-4372-3b80-9db3-11c1ac9f5071" executionId="38618967-1d5d-471e-a9a0-f34c0e368285" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="20cf94e0-bdeb-e521-0f88-8ea7ff61c6e7" executionId="63ec6069-036d-4542-998a-ec8bf5af4663" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d1719b94-6c66-7a91-6834-b740c97fa522" executionId="1b503b68-aa23-477b-8510-345f50f6132d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="11" executed="11" passed="7" failed="4" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 11 of 11 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.17_28_14.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

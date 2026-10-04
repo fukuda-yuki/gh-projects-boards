@@ -1,0 +1,119 @@
+Runtime Environment
+   OS Version: Microsoft Windows 10.0.26200
+  CLR Version: 10.0.12
+
+Test Files
+    C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout\GhProjectsBoards.UiIntegration.Tests.dll
+
+Test Discovery
+  Start time: 2026-10-04 09:50:10Z
+    End time: 2026-10-04 09:50:10Z
+    Duration: 0.040 seconds
+
+Test Filters
+    Where: test =~ 'ReviewCommandsRemainFullyVisibleWhenTheWindowHeightChanges'
+
+ApplyCheckAgain: parent=Grid/, bounds=0,0,132.8,32, actual=342.3999938964844x32, slot=0,568,1100,32
+ApplyCheckAgain: parent=Grid/, bounds=0,568,132.8,32, actual=1100x600, slot=0,0,1100,586.4
+ApplyCheckAgain: parent=ContentPresenter/Content, bounds=0,568,132.8,32, actual=1100x586.4000244140625, slot=24,63.2,1100,586.4
+ApplyCheckAgain: parent=Grid/, bounds=24,631.2,132.8,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyCheckAgain: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=24,631.2,132.8,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyCheckAgain: parent=Grid/, bounds=24,631.2,132.8,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyCheckAgain: parent=Border/Root, bounds=24,631.2,132.8,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyCheckAgain: parent=ScrollViewer/ContentScrollViewer, bounds=24,631.2,132.8,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyCheckAgain: 24,631.2,132.8,32; viewport=1148x674.4000244140625
+ApplyCheckAgain: parent=Grid/DialogSpace, bounds=24,631.2,132.8,32, actual=1148x754.4000244140625, slot=0.8,0.8,1148,754.4
+ApplyCheckAgain: parent=Border/BackgroundElement, bounds=24.8,632,132.8,32, actual=1149.5999755859375x756, slot=0,0,1385.6,962.4
+ApplyCheckAgain: parent=Grid/LayoutRoot, bounds=143.2,735.2,132.8,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyCheckAgain: parent=Border/Container, bounds=143.2,735.2,132.8,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyCheckAgain: parent=ContentDialog/, bounds=143.2,735.2,132.8,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyCheckAgain: parent=Canvas/, bounds=143.2,735.2,132.8,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewIdentity: parent=Grid/, bounds=140.8,0,79.2,32, actual=342.3999938964844x32, slot=0,568,1100,32
+ApplyReviewIdentity: parent=Grid/, bounds=140.8,568,79.2,32, actual=1100x600, slot=0,0,1100,586.4
+ApplyReviewIdentity: parent=ContentPresenter/Content, bounds=140.8,568,79.2,32, actual=1100x586.4000244140625, slot=24,63.2,1100,586.4
+ApplyReviewIdentity: parent=Grid/, bounds=164.8,631.2,79.2,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewIdentity: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=164.8,631.2,79.2,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewIdentity: parent=Grid/, bounds=164.8,631.2,79.2,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewIdentity: parent=Border/Root, bounds=164.8,631.2,79.2,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewIdentity: parent=ScrollViewer/ContentScrollViewer, bounds=164.8,631.2,79.2,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewIdentity: 164.8,631.2,79.2,32; viewport=1148x674.4000244140625
+ApplyReviewIdentity: parent=Grid/DialogSpace, bounds=164.8,631.2,79.2,32, actual=1148x754.4000244140625, slot=0.8,0.8,1148,754.4
+ApplyReviewIdentity: parent=Border/BackgroundElement, bounds=165.6,632,79.2,32, actual=1149.5999755859375x756, slot=0,0,1385.6,962.4
+ApplyReviewIdentity: parent=Grid/LayoutRoot, bounds=284,735.2,79.20001,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewIdentity: parent=Border/Container, bounds=284,735.2,79.20001,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewIdentity: parent=ContentDialog/, bounds=284,735.2,79.20001,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewIdentity: parent=Canvas/, bounds=284,735.2,79.20001,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewHistory: parent=Grid/, bounds=228,0,114.399994,32, actual=342.3999938964844x32, slot=0,568,1100,32
+ApplyReviewHistory: parent=Grid/, bounds=228,568,114.399994,32, actual=1100x600, slot=0,0,1100,586.4
+ApplyReviewHistory: parent=ContentPresenter/Content, bounds=228,568,114.399994,32, actual=1100x586.4000244140625, slot=24,63.2,1100,586.4
+ApplyReviewHistory: parent=Grid/, bounds=252,631.2,114.399994,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewHistory: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=252,631.2,114.399994,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewHistory: parent=Grid/, bounds=252,631.2,114.399994,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewHistory: parent=Border/Root, bounds=252,631.2,114.399994,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewHistory: parent=ScrollViewer/ContentScrollViewer, bounds=252,631.2,114.399994,32, actual=1148x674.4000244140625, slot=0,0,1148,674.4
+ApplyReviewHistory: 252,631.2,114.399994,32; viewport=1148x674.4000244140625
+ApplyReviewHistory: parent=Grid/DialogSpace, bounds=252,631.2,114.399994,32, actual=1148x754.4000244140625, slot=0.8,0.8,1148,754.4
+ApplyReviewHistory: parent=Border/BackgroundElement, bounds=252.8,632,114.40001,32, actual=1149.5999755859375x756, slot=0,0,1385.6,962.4
+ApplyReviewHistory: parent=Grid/LayoutRoot, bounds=371.2,735.2,114.399994,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewHistory: parent=Border/Container, bounds=371.2,735.2,114.399994,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewHistory: parent=ContentDialog/, bounds=371.2,735.2,114.399994,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyReviewHistory: parent=Canvas/, bounds=371.2,735.2,114.399994,32, actual=1385.5999755859375x962.4000244140625, slot=0,0,1385.6,962.4
+ApplyCheckAgain: parent=Grid/, bounds=0,0,132.8,32, actual=342.3999938964844x32, slot=0,450.4,1100,32
+ApplyCheckAgain: parent=Grid/, bounds=0,450.4,132.8,32, actual=1100x482.3999938964844, slot=0,0,1100,482.4
+ApplyCheckAgain: parent=ContentPresenter/Content, bounds=0,450.4,132.8,32, actual=1100x482.3999938964844, slot=24,63.2,1100,482.4
+ApplyCheckAgain: parent=Grid/, bounds=24,513.6,132.8,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyCheckAgain: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=24,513.6,132.8,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyCheckAgain: parent=Grid/, bounds=24,513.6,132.8,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyCheckAgain: parent=Border/Root, bounds=24,513.6,132.8,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyCheckAgain: parent=ScrollViewer/ContentScrollViewer, bounds=24,513.6,132.8,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyCheckAgain: 24,513.6,132.8,32; viewport=1148x570.4000244140625
+ApplyCheckAgain: parent=Grid/DialogSpace, bounds=24,513.6,132.8,32, actual=1148x650.4000244140625, slot=0.8,0.8,1148,650.4
+ApplyCheckAgain: parent=Border/BackgroundElement, bounds=24.8,514.39996,132.8,32, actual=1149.5999755859375x652, slot=0,0,1385.6,682.4
+ApplyCheckAgain: parent=Grid/LayoutRoot, bounds=143.2,529.6,132.8,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyCheckAgain: parent=Border/Container, bounds=143.2,529.6,132.8,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyCheckAgain: parent=ContentDialog/, bounds=143.2,529.6,132.8,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyCheckAgain: parent=Canvas/, bounds=143.2,529.6,132.8,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewIdentity: parent=Grid/, bounds=140.8,0,79.2,32, actual=342.3999938964844x32, slot=0,450.4,1100,32
+ApplyReviewIdentity: parent=Grid/, bounds=140.8,450.4,79.2,32, actual=1100x482.3999938964844, slot=0,0,1100,482.4
+ApplyReviewIdentity: parent=ContentPresenter/Content, bounds=140.8,450.4,79.2,32, actual=1100x482.3999938964844, slot=24,63.2,1100,482.4
+ApplyReviewIdentity: parent=Grid/, bounds=164.8,513.6,79.2,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewIdentity: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=164.8,513.6,79.2,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewIdentity: parent=Grid/, bounds=164.8,513.6,79.2,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewIdentity: parent=Border/Root, bounds=164.8,513.6,79.2,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewIdentity: parent=ScrollViewer/ContentScrollViewer, bounds=164.8,513.6,79.2,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewIdentity: 164.8,513.6,79.2,32; viewport=1148x570.4000244140625
+ApplyReviewIdentity: parent=Grid/DialogSpace, bounds=164.8,513.6,79.2,32, actual=1148x650.4000244140625, slot=0.8,0.8,1148,650.4
+ApplyReviewIdentity: parent=Border/BackgroundElement, bounds=165.6,514.39996,79.2,32, actual=1149.5999755859375x652, slot=0,0,1385.6,682.4
+ApplyReviewIdentity: parent=Grid/LayoutRoot, bounds=284,529.6,79.20001,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewIdentity: parent=Border/Container, bounds=284,529.6,79.20001,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewIdentity: parent=ContentDialog/, bounds=284,529.6,79.20001,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewIdentity: parent=Canvas/, bounds=284,529.6,79.20001,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewHistory: parent=Grid/, bounds=228,0,114.399994,32, actual=342.3999938964844x32, slot=0,450.4,1100,32
+ApplyReviewHistory: parent=Grid/, bounds=228,450.4,114.399994,32, actual=1100x482.3999938964844, slot=0,0,1100,482.4
+ApplyReviewHistory: parent=ContentPresenter/Content, bounds=228,450.4,114.399994,32, actual=1100x482.3999938964844, slot=24,63.2,1100,482.4
+ApplyReviewHistory: parent=Grid/, bounds=252,513.6,114.399994,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewHistory: parent=ScrollContentPresenter/ScrollContentPresenter, bounds=252,513.6,114.399994,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewHistory: parent=Grid/, bounds=252,513.6,114.399994,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewHistory: parent=Border/Root, bounds=252,513.6,114.399994,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewHistory: parent=ScrollViewer/ContentScrollViewer, bounds=252,513.6,114.399994,32, actual=1148x570.4000244140625, slot=0,0,1148,570.4
+ApplyReviewHistory: 252,513.6,114.399994,32; viewport=1148x570.4000244140625
+ApplyReviewHistory: parent=Grid/DialogSpace, bounds=252,513.6,114.399994,32, actual=1148x650.4000244140625, slot=0.8,0.8,1148,650.4
+ApplyReviewHistory: parent=Border/BackgroundElement, bounds=252.8,514.39996,114.40001,32, actual=1149.5999755859375x652, slot=0,0,1385.6,682.4
+ApplyReviewHistory: parent=Grid/LayoutRoot, bounds=371.2,529.6,114.399994,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewHistory: parent=Border/Container, bounds=371.2,529.6,114.399994,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewHistory: parent=ContentDialog/, bounds=371.2,529.6,114.399994,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+ApplyReviewHistory: parent=Canvas/, bounds=371.2,529.6,114.399994,32, actual=1385.5999755859375x682.4000244140625, slot=0,0,1385.6,682.4
+Run Settings
+    Number of Test Workers: 0
+    Work Directory: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host-layout
+    Internal Trace: Off
+
+Test Run Summary
+  Overall result: Passed
+  Test Count: 1, Passed: 1, Failed: 0, Warnings: 0, Inconclusive: 0, Skipped: 0
+  Start time: 2026-10-04 09:50:10Z
+    End time: 2026-10-04 09:50:11Z
+    Duration: 1.275 seconds
+
+Results (nunit3) saved as C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-185009-489-996517eb\results.xml
+

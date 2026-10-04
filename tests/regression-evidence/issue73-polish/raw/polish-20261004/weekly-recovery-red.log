@@ -1,0 +1,35 @@
+  復元対象のプロジェクトを決定しています...
+  復元対象のすべてのプロジェクトは最新です。
+  GhProjectsBoards.Core -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\recovery-tests\GhProjectsBoards.Core.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+  GhProjectsBoards.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\recovery-tests\GhProjectsBoards.Tests.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\recovery-tests\GhProjectsBoards.Tests.dll (.NETCoreApp,Version=v10.0) のテスト実行
+合計 1 個のテスト ファイルが指定されたパターンと一致しました。
+  失敗 HistoricalWeeklyContinuationKeepsItsFieldScopeAndRetainsOtherDraftsAfterReload [1 s]
+  エラー メッセージ:
+     Assert.That(review.Batch.WeeklyEffort, Is.True)
+  Expected: True
+  But was:  False
+
+  スタック トレース:
+     at GhProjectsBoards.Tests.WeeklyApplyRecoveryTests.HistoricalWeeklyContinuationKeepsItsFieldScopeAndRetainsOtherDraftsAfterReload() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyRecoveryTests.cs:line 37
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.<>c__DisplayClass3_0.<PerformWork>b__0()
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass1_0`1.<DoIsolated>b__0(Object _)
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass2_0.<DoIsolated>b__0(Object s)
+
+1)    at GhProjectsBoards.Tests.WeeklyApplyRecoveryTests.HistoricalWeeklyContinuationKeepsItsFieldScopeAndRetainsOtherDraftsAfterReload() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyApplyRecoveryTests.cs:line 37
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+
+
+結果ファイル: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-recovery-red\weekly-recovery-red.trx
+
+失敗!   -失敗:     1、合格:     0、スキップ:     0、合計:     1、期間: 1 s - GhProjectsBoards.Tests.dll (net10.0)
+
+添付ファイル:
+  C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\weekly-recovery-red\94405194-554c-40ba-9c03-5957b1088331\mwam0_RTX5070_2026-10-04.18_15_50.cobertura.xml

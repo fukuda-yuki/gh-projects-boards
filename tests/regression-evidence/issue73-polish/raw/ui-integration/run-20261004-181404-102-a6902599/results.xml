@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host\GhProjectsBoards.UiIntegration.Tests.dll" testcasecount="348" result="Failed" start-time="2026-10-04T09:14:04.8810412Z" end-time="2026-10-04T09:15:06.6144349Z" duration="61.733376" total="9" initiated="9" passed="6" failed="3" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="37" random-seed="560708071">
+  <command-line><![CDATA[C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host\GhProjectsBoards.UiIntegration.Tests.dll --workers=0 --where "test == GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown or class == GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests or test =~ HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" --noheader --result=C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\ui-integration\run-20261004-181404-102-a6902599\results.xml]]></command-line>
+  <filter>
+    <or>
+      <test>GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown</test>
+      <class>GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests</class>
+      <test re="1">HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts</test>
+    </or>
+  </filter>
+  <test-suite type="Assembly" id="1441" name="GhProjectsBoards.UiIntegration.Tests.dll" fullname="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host\GhProjectsBoards.UiIntegration.Tests.dll" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:14:04.8810412Z" end-time="2026-10-04T09:15:06.6144349Z" duration="61.733376" total="9" initiated="9" passed="6" failed="3" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="37">
+    <environment framework-version="4.6.0.0" clr-version="10.0.12" os-version="Microsoft Windows 10.0.26200" platform="Win32NT" cwd="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host" machine-name="RTX5070" user="mwam0" user-domain="RTX5070" culture="ja-JP" uiculture="ja-JP" os-architecture="x64" />
+    <settings>
+      <setting name="NumberOfTestWorkers" value="0" />
+      <setting name="WorkDirectory" value="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host" />
+    </settings>
+    <properties>
+      <property name="_PID" value="13124" />
+      <property name="_APPDOMAIN" value="GhProjectsBoards.UiIntegration.Tests" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1442" name="GhProjectsBoards" fullname="GhProjectsBoards" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:14:04.8833364Z" end-time="2026-10-04T09:15:06.6144322Z" duration="61.731096" total="9" initiated="9" passed="6" failed="3" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="37">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1443" name="UiIntegration" fullname="GhProjectsBoards.UiIntegration" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:14:04.8834766Z" end-time="2026-10-04T09:15:06.6144298Z" duration="61.730953" total="9" initiated="9" passed="6" failed="3" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="37">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1444" name="Tests" fullname="GhProjectsBoards.UiIntegration.Tests" runstate="Runnable" testcasecount="348" result="Failed" site="Child" start-time="2026-10-04T09:14:04.8834833Z" end-time="2026-10-04T09:15:06.6144266Z" duration="61.730943" total="9" initiated="9" passed="6" failed="3" warnings="0" completed="9" skipped="0" inconclusive="0" asserts="37">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestFixture" id="1279" name="GanttDragHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-10-04T09:14:04.8834845Z" end-time="2026-10-04T09:14:10.6786982Z" duration="5.795214" total="6" initiated="6" passed="6" failed="0" warnings="0" completed="6" skipped="0" inconclusive="0" asserts="32">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <test-suite type="ParameterizedMethod" id="1287" name="InterruptedNativeDragDoesNotCommitDates" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.InterruptedNativeDragDoesNotCommitDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-10-04T09:14:04.8845344Z" end-time="2026-10-04T09:14:06.2015782Z" duration="1.317044" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="17">
+              <test-case id="1284" name="InterruptedNativeDragDoesNotCommitDates(&quot;escape&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.InterruptedNativeDragDoesNotCommitDates(&quot;escape&quot;)" methodname="InterruptedNativeDragDoesNotCommitDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="913358301" result="Passed" start-time="2026-10-04T09:14:04.8846131Z" end-time="2026-10-04T09:14:05.5701767Z" duration="0.685601" asserts="7" />
+              <test-case id="1285" name="InterruptedNativeDragDoesNotCommitDates(&quot;capture&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.InterruptedNativeDragDoesNotCommitDates(&quot;capture&quot;)" methodname="InterruptedNativeDragDoesNotCommitDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="1935742141" result="Passed" start-time="2026-10-04T09:14:05.5709620Z" end-time="2026-10-04T09:14:05.8423842Z" duration="0.271422" asserts="5" />
+              <test-case id="1286" name="InterruptedNativeDragDoesNotCommitDates(&quot;revision&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.InterruptedNativeDragDoesNotCommitDates(&quot;revision&quot;)" methodname="InterruptedNativeDragDoesNotCommitDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="1133149472" result="Passed" start-time="2026-10-04T09:14:05.8424219Z" end-time="2026-10-04T09:14:06.2008241Z" duration="0.358403" asserts="5" />
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1283" name="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-10-04T09:14:06.2017273Z" end-time="2026-10-04T09:14:10.6786833Z" duration="4.476956" total="3" initiated="3" passed="3" failed="0" warnings="0" completed="3" skipped="0" inconclusive="0" asserts="15">
+              <test-case id="1280" name="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttBar-P1T1&quot;,&quot;2026-10-06 12:07&quot;,&quot;2026-10-09 16:19&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttBar-P1T1&quot;,&quot;2026-10-06 12:07&quot;,&quot;2026-10-09 16:19&quot;)" methodname="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="1679804093" result="Passed" start-time="2026-10-04T09:14:06.2017761Z" end-time="2026-10-04T09:14:07.7076988Z" duration="1.505923" asserts="5" />
+              <test-case id="1281" name="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttResizeStart-P1T1&quot;,&quot;2026-10-06 12:07&quot;,&quot;2026-10-08 16:19&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttResizeStart-P1T1&quot;,&quot;2026-10-06 12:07&quot;,&quot;2026-10-08 16:19&quot;)" methodname="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="1631084414" result="Passed" start-time="2026-10-04T09:14:07.7077490Z" end-time="2026-10-04T09:14:09.1814215Z" duration="1.473673" asserts="5" />
+              <test-case id="1282" name="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttResizeFinish-P1T1&quot;,&quot;2026-10-05 12:07&quot;,&quot;2026-10-09 16:19&quot;)" fullname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests.NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates(&quot;GanttResizeFinish-P1T1&quot;,&quot;2026-10-05 12:07&quot;,&quot;2026-10-09 16:19&quot;)" methodname="NativeDragPreviewsThenCommitsOnceAndUndoRestoresExactDates" classname="GhProjectsBoards.UiIntegration.Tests.GanttDragHostedTests" runstate="Runnable" seed="757983532" result="Passed" start-time="2026-10-04T09:14:09.1814667Z" end-time="2026-10-04T09:14:10.6785739Z" duration="1.497108" asserts="5" />
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1129" name="PlanningHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" testcasecount="84" result="Failed" site="Child" start-time="2026-10-04T09:14:10.6787146Z" end-time="2026-10-04T09:15:02.0059385Z" duration="51.327224" total="1" initiated="1" passed="0" failed="1" warnings="0" completed="1" skipped="0" inconclusive="0" asserts="1">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-case id="1177" name="NativeEditorRetentionProgressionAndViewTeardown" fullname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown" methodname="NativeEditorRetentionProgressionAndViewTeardown" classname="GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests" runstate="Runnable" seed="1362506953" result="Failed" start-time="2026-10-04T09:14:10.6788194Z" end-time="2026-10-04T09:15:02.0057295Z" duration="51.326911" asserts="1">
+              <properties>
+                <property name="Category" value="ReviewRetentionProgression" />
+                <property name="Category" value="Infrastructure" />
+              </properties>
+              <failure>
+                <message><![CDATA[  A replaced view must be collectible after native focus transfers.
+Assert.That(Retained(releasedView), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 184
+   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 191
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+              </failure>
+              <output><![CDATA[Released view still alive: True
+Released view after focus transfer: True
+View retained after 427.8 ms: True
+View retained after 898.4 ms: True
+View retained after 1359.3 ms: True
+View retained after 1797.3 ms: True
+View retained after 2238.6 ms: True
+]]></output>
+              <assertions>
+                <assertion result="Failed">
+                  <message><![CDATA[  A replaced view must be collectible after native focus transfers.
+Assert.That(Retained(releasedView), Is.False)
+  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.PlanningHostedTests.NativeEditorRetentionProgressionAndViewTeardown() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\PlanningReviewHostedTests.cs:line 184
+]]></stack-trace>
+                </assertion>
+              </assertions>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1428" name="WeeklyApplyHostedTests" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="4" result="Failed" site="Child" start-time="2026-10-04T09:15:02.0059605Z" end-time="2026-10-04T09:15:06.6144213Z" duration="4.608461" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="4">
+            <properties>
+              <property name="ParallelScope" value="None" />
+            </properties>
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="ParameterizedMethod" id="1433" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-10-04T09:15:02.0060305Z" end-time="2026-10-04T09:15:06.6144110Z" duration="4.608380" total="2" initiated="2" passed="0" failed="2" warnings="0" completed="2" skipped="0" inconclusive="0" asserts="4">
+              <properties>
+                <property name="Category" value="WeeklyApply" />
+              </properties>
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1431" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(False)" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(False)" methodname="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="147721780" result="Failed" start-time="2026-10-04T09:15:02.0060476Z" end-time="2026-10-04T09:15:04.4790101Z" duration="2.472963" asserts="2">
+                <failure>
+                  <message><![CDATA[  Assert.That(dialog.Title, Is.EqualTo("週次反映 — 実績・残工数"))
+  Expected string length 13 but was 7. Strings differ at index 0.
+  Expected: "週次反映 — 実績・残工数"
+  But was:  "反映内容の確認"
+  -----------^
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.<>c__DisplayClass6_0.<HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts>b__5() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 140
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(Boolean historical) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 139
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1432" name="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(True)" fullname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(True)" methodname="HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts" classname="GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests" runstate="Runnable" seed="1655343158" result="Failed" start-time="2026-10-04T09:15:04.4790429Z" end-time="2026-10-04T09:15:06.6143794Z" duration="2.135337" asserts="2">
+                <failure>
+                  <message><![CDATA[  Assert.That(dialog.Title, Is.EqualTo("週次反映 — 実績・残工数"))
+  Expected string length 13 but was 7. Strings differ at index 0.
+  Expected: "週次反映 — 実績・残工数"
+  But was:  "反映内容の確認"
+  -----------^
+]]></message>
+                  <stack-trace><![CDATA[   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.<>c__DisplayClass6_0.<HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts>b__5() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 140
+   at GhProjectsBoards.UiIntegration.Tests.Ui.<>c__DisplayClass6_0.<<Run>b__0>d.MoveNext() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 28
+--- End of stack trace from previous location ---
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Func`1 action, Boolean check) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 31
+   at GhProjectsBoards.UiIntegration.Tests.Ui.Run(Action action) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\Ui.cs:line 22
+   at GhProjectsBoards.UiIntegration.Tests.WeeklyApplyHostedTests.HistoryRecoveryRetainsWeeklyPresetAndDoesNotSendOtherDrafts(Boolean historical) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.UiIntegration.Tests\WeeklyApplyHostedTests.cs:line 139
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.BlockUntilCompleted()
+   at NUnit.Framework.Internal.MessagePumpStrategy.NoMessagePumpStrategy.WaitForCompletion(AwaitAdapter awaiter)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+]]></stack-trace>
+                </failure>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

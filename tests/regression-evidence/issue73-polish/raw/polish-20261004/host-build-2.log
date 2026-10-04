@@ -1,0 +1,23 @@
+  復元対象のプロジェクトを決定しています...
+  復元対象のすべてのプロジェクトは最新です。
+  GhProjectsBoards.Core -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host\GhProjectsBoards.Core.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+  GhProjectsBoards.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\host\GhProjectsBoards.Tests.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\PlanningHolidayImport.cs(37,122): error CS0103: 現在のコンテキストに 'AutomationLiveSetting' という名前は存在しません [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.nuget\packages\microsoft.windowsappsdk.winui\1.8.260803003\buildTransitive\Microsoft.UI.Xaml.Markup.Compiler.interop.targets(847,9): XamlCompiler warning WMC1509: No LocalAssembly parameter given during MarkupCompilePass2 for the currently building project.  This will likely cause type resolution errors for any types from the current project. [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\App.xaml(58,18): XamlCompiler error WMC0001: Unknown type 'SummaryPersonPresenter' in XML namespace 'using:GhProjectsBoards.App' [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\App.xaml(55,18): XamlCompiler error WMC0001: Unknown type 'GanttRowPresenter' in XML namespace 'using:GhProjectsBoards.App' [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.nuget\packages\microsoft.windowsappsdk.winui\1.8.260803003\buildTransitive\Microsoft.UI.Xaml.Markup.Compiler.interop.targets(847,9): Xaml Internal Error error WMC9999: オブジェクト参照がオブジェクト インスタンスに設定されていません。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+
+ビルドに失敗しました。
+
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+C:\Users\mwam0\.nuget\packages\microsoft.windowsappsdk.winui\1.8.260803003\buildTransitive\Microsoft.UI.Xaml.Markup.Compiler.interop.targets(847,9): XamlCompiler warning WMC1509: No LocalAssembly parameter given during MarkupCompilePass2 for the currently building project.  This will likely cause type resolution errors for any types from the current project. [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\PlanningHolidayImport.cs(37,122): error CS0103: 現在のコンテキストに 'AutomationLiveSetting' という名前は存在しません [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\App.xaml(58,18): XamlCompiler error WMC0001: Unknown type 'SummaryPersonPresenter' in XML namespace 'using:GhProjectsBoards.App' [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\App.xaml(55,18): XamlCompiler error WMC0001: Unknown type 'GanttRowPresenter' in XML namespace 'using:GhProjectsBoards.App' [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\Users\mwam0\.nuget\packages\microsoft.windowsappsdk.winui\1.8.260803003\buildTransitive\Microsoft.UI.Xaml.Markup.Compiler.interop.targets(847,9): Xaml Internal Error error WMC9999: オブジェクト参照がオブジェクト インスタンスに設定されていません。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+    2 個の警告
+    4 エラー
+
+経過時間 00:00:06.01

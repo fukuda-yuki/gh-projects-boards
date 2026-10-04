@@ -1,0 +1,27 @@
+VSTest のバージョン 18.7.0 (x64)
+
+テスト実行を開始しています。お待ちください...
+合計 1 個のテスト ファイルが指定されたパターンと一致しました。
+  失敗 OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort [49 s]
+  エラー メッセージ:
+   System.ArgumentException : Property Length was not found on System.Linq.Enumerable+ArrayWhereIterator`1[System.Text.Json.JsonElement]. (Parameter '_name')
+  ParamName: _name
+  スタック トレース:
+     at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.<>c__DisplayClass76_0.<OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort>b__8(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 112
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 77
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo[TActual](TActual actual)
+   at NUnit.Framework.Assert.That[TActual](TActual actual, IResolveConstraint expression, NUnitString message, String actualExpression, String constraintExpression)
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.<>c__DisplayClass76_0.<OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort>b__8(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 112
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 77
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+結果ファイル: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\e2e-183929\e2e.trx
+
+失敗!   -失敗:     1、合格:     0、スキップ:     0、合計:     1、期間: 49 s - GhProjectsBoards.E2E.Tests.dll (net10.0)

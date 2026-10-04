@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="d7de9213-b358-42ea-bbf0-bdf4c1024dfe" name="mwam0@RTX5070 2026-10-04 17:37:38" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T17:37:38.2708565+09:00" queuing="2026-10-04T17:37:38.2708566+09:00" start="2026-10-04T17:37:36.1903964+09:00" finish="2026-10-04T17:37:39.0359430+09:00" />
+  <TestSettings name="default" id="a88dac00-3a21-49ec-ba73-607de18dd176">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_17_37_38" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="c0a931b6-e73f-4d82-9a76-1e72ce71a34b" testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" computerName="RTX5070" duration="00:00:00.0014300" startTime="2026-10-04T17:37:38.8657854+09:00" endTime="2026-10-04T17:37:38.8672149+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c0a931b6-e73f-4d82-9a76-1e72ce71a34b" />
+    <UnitTestResult executionId="e6fcf54d-f42c-4cf4-be39-98fb5216d26e" testId="a5267826-6e85-7b26-f3b3-f197b638444f" testName="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" computerName="RTX5070" duration="00:00:00.0019840" startTime="2026-10-04T17:37:38.8637844+09:00" endTime="2026-10-04T17:37:38.8657679+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e6fcf54d-f42c-4cf4-be39-98fb5216d26e" />
+    <UnitTestResult executionId="0bdb5fbb-f398-499e-9a88-b79838f7a887" testId="88934b95-773e-2dcb-6b8e-7716708e5d96" testName="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" computerName="RTX5070" duration="00:00:00.4153030" startTime="2026-10-04T17:37:37.2516544+09:00" endTime="2026-10-04T17:37:37.6669211+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0bdb5fbb-f398-499e-9a88-b79838f7a887" />
+    <UnitTestResult executionId="b2c6e372-e152-4204-b9d8-318f0a169633" testId="a2387e6a-17c6-8b1b-ee1c-8793a092abb9" testName="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" computerName="RTX5070" duration="00:00:00.0654349" startTime="2026-10-04T17:37:37.6675889+09:00" endTime="2026-10-04T17:37:37.7330232+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b2c6e372-e152-4204-b9d8-318f0a169633" />
+    <UnitTestResult executionId="06bc8754-3188-4b22-a3b6-81f7f832b44c" testId="36202419-f4c9-2685-6d60-74381504dd1c" testName="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" computerName="RTX5070" duration="00:00:00.0120700" startTime="2026-10-04T17:37:38.8516607+09:00" endTime="2026-10-04T17:37:38.8637300+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="06bc8754-3188-4b22-a3b6-81f7f832b44c" />
+    <UnitTestResult executionId="0ccebd90-b3f3-494a-a54c-c8600dc62ed0" testId="58d1a6e0-f1ce-0224-bce3-e303473994d4" testName="WeeklyInternalRectangleRejectsUnfinishedSourceInputAddedAfterCopy" computerName="RTX5070" duration="00:00:00.0377520" startTime="2026-10-04T17:37:38.8678713+09:00" endTime="2026-10-04T17:37:38.9056223+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0ccebd90-b3f3-494a-a54c-c8600dc62ed0">
+      <Output>
+        <ErrorInfo>
+          <Message>  Assert.That(() =&gt; work.PasteSelection("P1", destinations, new(0, actual, 2), "5\n2", copied, ReportingDay), Throws.InvalidOperationException)&#xD;
+  Expected: &lt;System.InvalidOperationException&gt;&#xD;
+  But was:  no exception thrown&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.Tests.WeeklyBulkEditingTests.WeeklyInternalRectangleRejectsUnfinishedSourceInputAddedAfterCopy() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 126&#xD;
+
+1)    at GhProjectsBoards.Tests.WeeklyBulkEditingTests.WeeklyInternalRectangleRejectsUnfinishedSourceInputAddedAfterCopy() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\WeeklyBulkEditingTests.cs:line 126&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="76c53f3d-f449-4363-b04e-ec9e227c6a82" testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" testName="WeeklyReviewCannotSelectNewIssueCreation" computerName="RTX5070" duration="00:00:00.0120970" startTime="2026-10-04T17:37:38.8395339+09:00" endTime="2026-10-04T17:37:38.8516310+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="76c53f3d-f449-4363-b04e-ec9e227c6a82" />
+    <UnitTestResult executionId="c1cb4523-591f-4444-8083-c85f3a39bff9" testId="bc381608-e0d6-45cd-5ec5-93de14da3386" testName="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" computerName="RTX5070" duration="00:00:01.1050610" startTime="2026-10-04T17:37:37.7344336+09:00" endTime="2026-10-04T17:37:38.8394939+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c1cb4523-591f-4444-8083-c85f3a39bff9" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="WeeklyInternalRectangleRejectsUnfinishedSourceInputAddedAfterCopy" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="58d1a6e0-f1ce-0224-bce3-e303473994d4">
+      <Execution id="0ccebd90-b3f3-494a-a54c-c8600dc62ed0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyBulkEditingTests" name="WeeklyInternalRectangleRejectsUnfinishedSourceInputAddedAfterCopy" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="a5267826-6e85-7b26-f3b3-f197b638444f">
+      <Execution id="e6fcf54d-f42c-4cf4-be39-98fb5216d26e" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(True)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewCannotSelectNewIssueCreation" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="93b6d719-6cc8-bdaa-3d73-e7827ac490f5">
+      <Execution id="76c53f3d-f449-4363-b04e-ec9e227c6a82" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewCannotSelectNewIssueCreation" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="f37ca015-3b4e-1141-16af-ee62c3eacb1a">
+      <Execution id="c0a931b6-e73f-4d82-9a76-1e72ce71a34b" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewUsesMappedIdentityAndRetainsUnavailableSelectedFieldsAsProblems(False)" />
+    </UnitTest>
+    <UnitTest name="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="bc381608-e0d6-45cd-5ec5-93de14da3386">
+      <Execution id="c1cb4523-591f-4444-8083-c85f3a39bff9" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyPrepareAndConfirmPublishOnlyActualAndRemainingAndRetainOtherDraftsAfterReload" />
+    </UnitTest>
+    <UnitTest name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="88934b95-773e-2dcb-6b8e-7716708e5d96">
+      <Execution id="0bdb5fbb-f398-499e-9a88-b79838f7a887" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;fields&quot;)" />
+    </UnitTest>
+    <UnitTest name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="a2387e6a-17c6-8b1b-ee1c-8793a092abb9">
+      <Execution id="b2c6e372-e152-4204-b9d8-318f0a169633" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyConfirmationRejectsFreshFieldOrIssueIdentityChangesWithoutDispatch(&quot;issue&quot;)" />
+    </UnitTest>
+    <UnitTest name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults\polish-20261004\bulk-tests\ghprojectsboards.tests.dll" id="36202419-f4c9-2685-6d60-74381504dd1c">
+      <Execution id="06bc8754-3188-4b22-a3b6-81f7f832b44c" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.WeeklyApplyTests" name="WeeklyReviewExcludesOtherChangedFieldsAndDoesNotAlterTheDraft" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="f37ca015-3b4e-1141-16af-ee62c3eacb1a" executionId="c0a931b6-e73f-4d82-9a76-1e72ce71a34b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a5267826-6e85-7b26-f3b3-f197b638444f" executionId="e6fcf54d-f42c-4cf4-be39-98fb5216d26e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="88934b95-773e-2dcb-6b8e-7716708e5d96" executionId="0bdb5fbb-f398-499e-9a88-b79838f7a887" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a2387e6a-17c6-8b1b-ee1c-8793a092abb9" executionId="b2c6e372-e152-4204-b9d8-318f0a169633" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="36202419-f4c9-2685-6d60-74381504dd1c" executionId="06bc8754-3188-4b22-a3b6-81f7f832b44c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="58d1a6e0-f1ce-0224-bce3-e303473994d4" executionId="0ccebd90-b3f3-494a-a54c-c8600dc62ed0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="93b6d719-6cc8-bdaa-3d73-e7827ac490f5" executionId="76c53f3d-f449-4363-b04e-ec9e227c6a82" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bc381608-e0d6-45cd-5ec5-93de14da3386" executionId="c1cb4523-591f-4444-8083-c85f3a39bff9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="8" executed="8" passed="7" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\bulk-tests\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 8 of 8 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.17_37_38.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

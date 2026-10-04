@@ -1,0 +1,16 @@
+  GhProjectsBoards.Core -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\bin\Release\net10.0\GhProjectsBoards.Core.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\PlanningProjectFieldTests.cs(86,68): warning CS8602: null 参照の可能性があるものの逆参照です。 [C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj]
+  GhProjectsBoards.Tests -> C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll
+C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll (.NETCoreApp,Version=v10.0) のテスト実行
+合計 1 個のテスト ファイルが指定されたパターンと一致しました。
+  スキップ RoundTripsIssueAndProjectChangesThroughTheProductionAdapterAndCleansUp [17 ms]
+  スキップ ProductionPlanningRoundTripsOwnedNumberDateAndDependencyThenReconcilesExternalDate [4 ms]
+  スキップ NumberDateAndNativePredecessorRoundtrip [3 ms]
+  スキップ ReadsExistingSandboxProjectThroughProductionReaderWithoutMutation [1 ms]
+  スキップ ProductionRefreshResolvesLocallyWhileFixtureRemoteValueRemainsUnchanged [2 ms]
+結果ファイル: C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\core-all\core-all.trx
+
+成功!   -失敗:     0、合格:   924、スキップ:     5、合計:   929、期間: 4 m 43 s - GhProjectsBoards.Tests.dll (net10.0)
+
+添付ファイル:
+  C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults\polish-20261004\core-all\a6cbcced-dca0-4e9b-85aa-de01aeacd457\mwam0_RTX5070_2026-10-04.17_49_23.cobertura.xml

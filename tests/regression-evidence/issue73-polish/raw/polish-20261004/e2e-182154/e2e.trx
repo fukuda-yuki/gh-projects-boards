@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="ed629c66-00b4-417c-b0a5-be5f930165b0" name="mwam0@RTX5070 2026-10-04 18:22:07" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T18:22:07.9302159+09:00" queuing="2026-10-04T18:22:07.9302163+09:00" start="2026-10-04T18:21:54.9329611+09:00" finish="2026-10-04T18:22:15.1714195+09:00" />
+  <TestSettings name="default" id="6b91bcc6-0f2d-4942-af63-2d375663fbb5">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_18_22_07" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="63f0f652-6869-435c-a970-6751778688f4" testId="08c496da-f5ff-923e-b44b-d3bf1cdcd699" testName="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" computerName="RTX5070" duration="00:00:12.0340350" startTime="2026-10-04T18:21:55.8706264+09:00" endTime="2026-10-04T18:22:07.9045872+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="63f0f652-6869-435c-a970-6751778688f4">
+      <Output>
+        <ErrorInfo>
+          <Message>System.Runtime.InteropServices.COMException : Operation timed out. (0x80131505)&#xD;
+  ErrorCode: -2146233083</Message>
+          <StackTrace>   at Interop.UIAutomationClient.IUIAutomationElement.FindFirst(TreeScope scope, IUIAutomationCondition condition)&#xD;
+   at FlaUI.UIA3.UIA3FrameworkAutomationElement.FindFirst(TreeScope treeScope, ConditionBase condition)&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_1.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__11() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 56&#xD;
+   at FlaUI.Core.Tools.Retry.While[T](Func`1 retryMethod, Func`2 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage, Boolean lastValueOnTimeout, T defaultOnTimeout)&#xD;
+   at FlaUI.Core.Tools.Retry.WhileFalse(Func`1 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage)&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_0.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__1(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 56&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 32&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at Interop.UIAutomationClient.IUIAutomationElement.FindFirst(TreeScope scope, IUIAutomationCondition condition)&#xD;
+   at FlaUI.UIA3.UIA3FrameworkAutomationElement.FindFirst(TreeScope treeScope, ConditionBase condition)&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_1.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__11() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 56&#xD;
+   at FlaUI.Core.Tools.Retry.While[T](Func`1 retryMethod, Func`2 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage, Boolean lastValueOnTimeout, T defaultOnTimeout)&#xD;
+   at FlaUI.Core.Tools.Retry.WhileFalse(Func`1 checkMethod, Nullable`1 timeout, Nullable`1 interval, Boolean throwOnTimeout, Boolean ignoreException, String timeoutMessage)&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Wait(Func`1 condition) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 138&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass38_0.&lt;OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart&gt;b__1(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 56&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\HolidayPickerJourneyTests.cs:line 32&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="eb10b094-6d08-4e94-9a14-c77d65d1b3db" testId="1440c140-dbeb-df83-2a25-77dca355ded9" testName="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" computerName="RTX5070" duration="00:00:07.2190530" startTime="2026-10-04T18:22:07.9057631+09:00" endTime="2026-10-04T18:22:15.1248160+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eb10b094-6d08-4e94-9a14-c77d65d1b3db">
+      <Output>
+        <ErrorInfo>
+          <Message>  Project information must be available through its disclosure.&#xD;
+Assert.That(section, Is.Not.Null)&#xD;
+  Expected: not null&#xD;
+  But was:  null&#xD;
+</Message>
+          <StackTrace>   at GhProjectsBoards.E2E.Tests.WorkspaceUi.Element(Window window, String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WorkspaceUi.cs:line 180&#xD;
+   at GhProjectsBoards.E2E.Tests.WorkspaceUi.ProjectInformation(Window window) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WorkspaceUi.cs:line 148&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass75_0.&lt;OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort&gt;b__7(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 58&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 54&#xD;
+
+1)    at GhProjectsBoards.E2E.Tests.WorkspaceUi.Element(Window window, String id) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WorkspaceUi.cs:line 180&#xD;
+   at GhProjectsBoards.E2E.Tests.WorkspaceUi.ProjectInformation(Window window) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WorkspaceUi.cs:line 148&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.&lt;&gt;c__DisplayClass75_0.&lt;OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort&gt;b__7(Window w) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 58&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.Fixture.Run(Action`1 action, Boolean alreadyClosed, Boolean interrupt) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\RegistrationTests.cs:line 167&#xD;
+   at GhProjectsBoards.E2E.Tests.RegistrationTests.OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.E2E.Tests\WeeklyBulkJourneyTests.cs:line 54&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults/polish-20261004/e2e-driver-v2/ghprojectsboards.e2e.tests.dll" id="1440c140-dbeb-df83-2a25-77dca355ded9">
+      <Execution id="eb10b094-6d08-4e94-9a14-c77d65d1b3db" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v2/GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryWeeklyPasteHundredOfThousandRowsUndoesRestartsAndApprovesOnlyVisibleEffort" />
+    </UnitTest>
+    <UnitTest name="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\testresults/polish-20261004/e2e-driver-v2/ghprojectsboards.e2e.tests.dll" id="08c496da-f5ff-923e-b44b-d3bf1cdcd699">
+      <Execution id="63f0f652-6869-435c-a970-6751778688f4" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v2/GhProjectsBoards.E2E.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.E2E.Tests.RegistrationTests" name="OrdinaryHolidayPickerPreviewsBeforeExplicitAdoptionAndRetainsCurrentWorkAfterRestart" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="08c496da-f5ff-923e-b44b-d3bf1cdcd699" executionId="63f0f652-6869-435c-a970-6751778688f4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1440c140-dbeb-df83-2a25-77dca355ded9" executionId="eb10b094-6d08-4e94-9a14-c77d65d1b3db" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="2" executed="2" passed="0" failed="2" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\TestResults/polish-20261004/e2e-driver-v2/GhProjectsBoards.E2E.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 2 of 2 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

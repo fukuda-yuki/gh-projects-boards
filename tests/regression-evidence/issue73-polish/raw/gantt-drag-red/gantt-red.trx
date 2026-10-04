@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="2fa79950-a8e4-4276-a559-4e4609deef6b" name="mwam0@RTX5070 2026-10-04 17:28:28" runUser="RTX5070\mwam0" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-04T17:28:28.7661902+09:00" queuing="2026-10-04T17:28:28.7661904+09:00" start="2026-10-04T17:28:27.3543013+09:00" finish="2026-10-04T17:28:28.8910087+09:00" />
+  <TestSettings name="default" id="fa64d514-8b11-496c-a6f9-11225a0e7d96">
+    <Deployment runDeploymentRoot="mwam0_RTX5070_2026-10-04_17_28_28" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="ceeb5082-9f93-46b9-a611-87f68a76e358" testId="aab570ab-8abe-fb8e-ea40-c1f7ebd5ef13" testName="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Move,&quot;2026-10-07 12:07&quot;,&quot;2026-10-10 16:19&quot;)" computerName="RTX5070" duration="00:00:00.1229490" startTime="2026-10-04T17:28:28.5216139+09:00" endTime="2026-10-04T17:28:28.6445255+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ceeb5082-9f93-46b9-a611-87f68a76e358">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : ガントの日程操作は未実装です。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="595f6939-08ec-4a0d-b96b-f9a9f221eff2" testId="643d70bc-dada-908b-f9ce-c5afc9d57c68" testName="InvalidOrChangedDragCannotMutateWork(&quot;wrong-task&quot;)" computerName="RTX5070" duration="00:00:00.0011360" startTime="2026-10-04T17:28:28.7259136+09:00" endTime="2026-10-04T17:28:28.7270493+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="595f6939-08ec-4a0d-b96b-f9a9f221eff2" />
+    <UnitTestResult executionId="4c2eea86-b340-47d3-90cb-c4b96fc28e64" testId="4c01aad2-8e6c-9ec1-b26d-24adf4baf9c0" testName="InvalidOrChangedDragCannotMutateWork(&quot;reversed&quot;)" computerName="RTX5070" duration="00:00:00.0005980" startTime="2026-10-04T17:28:28.7433640+09:00" endTime="2026-10-04T17:28:28.7439621+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4c2eea86-b340-47d3-90cb-c4b96fc28e64" />
+    <UnitTestResult executionId="31ddb768-772b-48cd-9fb6-c40960307113" testId="a7a3baa3-99bf-bc60-c540-78ec8ba15f1d" testName="ZeroDayDragDoesNotCreateHistoryOrChangeRevision" computerName="RTX5070" duration="00:00:00.0008630" startTime="2026-10-04T17:28:28.7454767+09:00" endTime="2026-10-04T17:28:28.7463399+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="31ddb768-772b-48cd-9fb6-c40960307113">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : ガントの日程操作は未実装です。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.ZeroDayDragDoesNotCreateHistoryOrChangeRevision() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 71&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.ZeroDayDragDoesNotCreateHistoryOrChangeRevision() in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 71&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8420ed4f-e013-4fc1-a905-a5fc9e73deeb" testId="8f330410-45bc-1bfb-d27a-d3c822a6c3b3" testName="InvalidOrChangedDragCannotMutateWork(&quot;auto&quot;)" computerName="RTX5070" duration="00:00:00.0006360" startTime="2026-10-04T17:28:28.7277499+09:00" endTime="2026-10-04T17:28:28.7283857+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8420ed4f-e013-4fc1-a905-a5fc9e73deeb" />
+    <UnitTestResult executionId="3811d910-6b57-4538-9999-c952f23499a7" testId="a7172ade-6817-f797-611e-3c4db6cb2279" testName="InvalidOrChangedDragCannotMutateWork(&quot;date-buffer&quot;)" computerName="RTX5070" duration="00:00:00.0014740" startTime="2026-10-04T17:28:28.7439688+09:00" endTime="2026-10-04T17:28:28.7454427+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3811d910-6b57-4538-9999-c952f23499a7" />
+    <UnitTestResult executionId="925beb8c-23ba-461d-adf2-3bcf46eee654" testId="40e59e13-108b-2970-43ae-b0852755e729" testName="InvalidOrChangedDragCannotMutateWork(&quot;missing-row&quot;)" computerName="RTX5070" duration="00:00:00.0006750" startTime="2026-10-04T17:28:28.7270636+09:00" endTime="2026-10-04T17:28:28.7277382+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="925beb8c-23ba-461d-adf2-3bcf46eee654" />
+    <UnitTestResult executionId="735b09bd-7591-44ca-8e41-fa3a32b3ea45" testId="f35e7cd5-a4cc-4bd4-f268-ce07128b6719" testName="InvalidOrChangedDragCannotMutateWork(&quot;completed&quot;)" computerName="RTX5070" duration="00:00:00.0138540" startTime="2026-10-04T17:28:28.7283964+09:00" endTime="2026-10-04T17:28:28.7422503+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="735b09bd-7591-44ca-8e41-fa3a32b3ea45" />
+    <UnitTestResult executionId="a8d456cf-70dd-48c8-a8c0-15b68fbb9ba1" testId="123be82f-6570-54a1-58e5-c3811c36f4d8" testName="InvalidOrChangedDragCannotMutateWork(&quot;partial&quot;)" computerName="RTX5070" duration="00:00:00.0010790" startTime="2026-10-04T17:28:28.7422714+09:00" endTime="2026-10-04T17:28:28.7433500+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a8d456cf-70dd-48c8-a8c0-15b68fbb9ba1" />
+    <UnitTestResult executionId="c3ff5e57-a89f-41c1-8265-53871ed504df" testId="1f0e0375-8d09-d048-9b7e-9889f975c289" testName="InvalidOrChangedDragCannotMutateWork(&quot;stale&quot;)" computerName="RTX5070" duration="00:00:00.0776960" startTime="2026-10-04T17:28:28.6481896+09:00" endTime="2026-10-04T17:28:28.7258848+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c3ff5e57-a89f-41c1-8265-53871ed504df" />
+    <UnitTestResult executionId="c43c55e5-fa67-4e79-a501-e2f88644bd0f" testId="fb4e48fe-ab73-2cc1-c291-045528563daf" testName="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Finish,&quot;2026-10-05 12:07&quot;,&quot;2026-10-10 16:19&quot;)" computerName="RTX5070" duration="00:00:00.0005170" startTime="2026-10-04T17:28:28.6468378+09:00" endTime="2026-10-04T17:28:28.6473549+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c43c55e5-fa67-4e79-a501-e2f88644bd0f">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : ガントの日程操作は未実装です。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at InvokeStub_GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at InvokeStub_GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="47b595be-4b3a-4a8a-8e65-cdcd7df628d0" testId="4227034a-059f-53ea-7558-cb12385a20bc" testName="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Start,&quot;2026-10-07 12:07&quot;,&quot;2026-10-08 16:19&quot;)" computerName="RTX5070" duration="00:00:00.0015200" startTime="2026-10-04T17:28:28.6453024+09:00" endTime="2026-10-04T17:28:28.6468222+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="47b595be-4b3a-4a8a-8e65-cdcd7df628d0">
+      <Output>
+        <ErrorInfo>
+          <Message>System.InvalidOperationException : ガントの日程操作は未実装です。</Message>
+          <StackTrace>   at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at InvokeStub_GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+1)    at GhProjectsBoards.Core.Projects.EditingWorkspace.CommitGanttSchedule(ProjectRegistration project, GanttScheduleEdit edit) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\GanttScheduleEdit.cs:line 28&#xD;
+   at GhProjectsBoards.Tests.GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(GanttDragPart part, String start, String finish) in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\GanttScheduleEditTests.cs:line 31&#xD;
+   at InvokeStub_GanttScheduleEditTests.CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;date-buffer&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="a7172ade-6817-f797-611e-3c4db6cb2279">
+      <Execution id="3811d910-6b57-4538-9999-c952f23499a7" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;date-buffer&quot;)" />
+    </UnitTest>
+    <UnitTest name="ZeroDayDragDoesNotCreateHistoryOrChangeRevision" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="a7a3baa3-99bf-bc60-c540-78ec8ba15f1d">
+      <Execution id="31ddb768-772b-48cd-9fb6-c40960307113" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="ZeroDayDragDoesNotCreateHistoryOrChangeRevision" />
+    </UnitTest>
+    <UnitTest name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Finish,&quot;2026-10-05 12:07&quot;,&quot;2026-10-10 16:19&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="fb4e48fe-ab73-2cc1-c291-045528563daf">
+      <Execution id="c43c55e5-fa67-4e79-a501-e2f88644bd0f" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Finish,&quot;2026-10-05 12:07&quot;,&quot;2026-10-10 16:19&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;completed&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="f35e7cd5-a4cc-4bd4-f268-ce07128b6719">
+      <Execution id="735b09bd-7591-44ca-8e41-fa3a32b3ea45" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;completed&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;wrong-task&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="643d70bc-dada-908b-f9ce-c5afc9d57c68">
+      <Execution id="595f6939-08ec-4a0d-b96b-f9a9f221eff2" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;wrong-task&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;partial&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="123be82f-6570-54a1-58e5-c3811c36f4d8">
+      <Execution id="a8d456cf-70dd-48c8-a8c0-15b68fbb9ba1" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;partial&quot;)" />
+    </UnitTest>
+    <UnitTest name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Move,&quot;2026-10-07 12:07&quot;,&quot;2026-10-10 16:19&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="aab570ab-8abe-fb8e-ea40-c1f7ebd5ef13">
+      <Execution id="ceeb5082-9f93-46b9-a611-87f68a76e358" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Move,&quot;2026-10-07 12:07&quot;,&quot;2026-10-10 16:19&quot;)" />
+    </UnitTest>
+    <UnitTest name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Start,&quot;2026-10-07 12:07&quot;,&quot;2026-10-08 16:19&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="4227034a-059f-53ea-7558-cb12385a20bc">
+      <Execution id="47b595be-4b3a-4a8a-8e65-cdcd7df628d0" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="CalendarDayDragRetainsExactMinutesAndOtherWorkAndOneUndoRestoresThePlan(Start,&quot;2026-10-07 12:07&quot;,&quot;2026-10-08 16:19&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;reversed&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="4c01aad2-8e6c-9ec1-b26d-24adf4baf9c0">
+      <Execution id="4c2eea86-b340-47d3-90cb-c4b96fc28e64" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;reversed&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;missing-row&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="40e59e13-108b-2970-43ae-b0852755e729">
+      <Execution id="925beb8c-23ba-461d-adf2-3bcf46eee654" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;missing-row&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;stale&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="1f0e0375-8d09-d048-9b7e-9889f975c289">
+      <Execution id="c3ff5e57-a89f-41c1-8265-53871ed504df" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;stale&quot;)" />
+    </UnitTest>
+    <UnitTest name="InvalidOrChangedDragCannotMutateWork(&quot;auto&quot;)" storage="c:\users\mwam0\.copilot\repos\gh-projects-boards\tests\ghprojectsboards.tests\bin\release\net10.0-windows\ghprojectsboards.tests.dll" id="8f330410-45bc-1bfb-d27a-d3c822a6c3b3">
+      <Execution id="8420ed4f-e013-4fc1-a905-a5fc9e73deeb" />
+      <TestMethod codeBase="C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="GhProjectsBoards.Tests.GanttScheduleEditTests" name="InvalidOrChangedDragCannotMutateWork(&quot;auto&quot;)" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="aab570ab-8abe-fb8e-ea40-c1f7ebd5ef13" executionId="ceeb5082-9f93-46b9-a611-87f68a76e358" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="643d70bc-dada-908b-f9ce-c5afc9d57c68" executionId="595f6939-08ec-4a0d-b96b-f9a9f221eff2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4c01aad2-8e6c-9ec1-b26d-24adf4baf9c0" executionId="4c2eea86-b340-47d3-90cb-c4b96fc28e64" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7a3baa3-99bf-bc60-c540-78ec8ba15f1d" executionId="31ddb768-772b-48cd-9fb6-c40960307113" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8f330410-45bc-1bfb-d27a-d3c822a6c3b3" executionId="8420ed4f-e013-4fc1-a905-a5fc9e73deeb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7172ade-6817-f797-611e-3c4db6cb2279" executionId="3811d910-6b57-4538-9999-c952f23499a7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="40e59e13-108b-2970-43ae-b0852755e729" executionId="925beb8c-23ba-461d-adf2-3bcf46eee654" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f35e7cd5-a4cc-4bd4-f268-ce07128b6719" executionId="735b09bd-7591-44ca-8e41-fa3a32b3ea45" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="123be82f-6570-54a1-58e5-c3811c36f4d8" executionId="a8d456cf-70dd-48c8-a8c0-15b68fbb9ba1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1f0e0375-8d09-d048-9b7e-9889f975c289" executionId="c3ff5e57-a89f-41c1-8265-53871ed504df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fb4e48fe-ab73-2cc1-c291-045528563daf" executionId="c43c55e5-fa67-4e79-a501-e2f88644bd0f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4227034a-059f-53ea-7558-cb12385a20bc" executionId="47b595be-4b3a-4a8a-8e65-cdcd7df628d0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="12" executed="12" passed="8" failed="4" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 1.0.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\mwam0\.copilot\repos\gh-projects-boards\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 12 of 12 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="RTX5070" uri="datacollector://microsoft/CodeCoverage/2.0" collectorDisplayName="Code Coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="RTX5070\mwam0_RTX5070_2026-10-04.17_28_28.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>
