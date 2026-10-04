@@ -13,6 +13,7 @@ Write agent-facing and shared development documents in English. Respond to the u
 ## Product and implementation
 
 - Build a native Windows desktop application with C#, .NET 10 and WinUI 3 / Windows App SDK. This is the platform, not an open selection task. It is not a web application.
+- Treat this as an internal-use tool under active development. Do not preserve backwards compatibility or maintain data migration shims; refactor directly toward the ideal, simplest design adhering to KISS principles.
 - Keep GitHub access, identity, validation and application orchestration independent of UI frameworks. Preserve their behavior and regression tests; change them only for an authorized requirement or demonstrated defect.
 - Implement UI from the agreed behavior using native WinUI controls and public APIs. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
 - Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid candidate is not an accepted component merely because it compiles.
@@ -29,6 +30,11 @@ Write agent-facing and shared development documents in English. Respond to the u
 
 - Inspect the branch, worktree and existing changes before editing; preserve the user's work. Work on an Issue-linked branch unless explicitly instructed otherwise.
 - When creating a feature branch from `origin/main`, use `git switch --no-track -c <branch> origin/main`. Its upstream must never be `origin/main`. Before handing off publication, check `branch.<branch>.remote` and `branch.<branch>.merge`: an existing upstream must name the intended same-name remote branch. For an unpublished branch, use repository-local `branch.autoSetupMerge=simple`, `push.default=simple` and `push.autoSetupRemote=true` so an ordinary first push establishes the same-name upstream. Do not change global Git configuration or push to main to work around an upstream mismatch.
+- Drive development through a disciplined docs-first, test-driven cycle:
+  1. **Documentation first:** Update shared documentation and specifications first; verify that no contradictions or outdated statements remain before writing code.
+  2. **Write tests (TDD):** Define expected behavior through automated tests before modifying production code.
+  3. **Minimal implementation:** Write the simplest coherent change satisfying the tests; avoid speculative abstractions.
+  4. **Final audit:** Verify that obsolete code and documentation discrepancies are eliminated before completing the task.
 - Make the smallest coherent change. Do not prebuild later Issues or treat a skeleton as a completed feature. Do not merge unrelated experimental branches to obtain reusable code.
 - Define concrete UI operations, visible states and failure conditions in the owning Issue; do not claim completion without corresponding execution evidence.
 - Pin required dependencies and review their exact artifacts and terms. Dependency changes require authority for the current outcome. Required commercial use must not depend on paid or company-size/revenue eligibility.
