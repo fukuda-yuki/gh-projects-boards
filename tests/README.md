@@ -355,3 +355,16 @@ dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj 
 ```
 
 The timing case creates 1,000 tasks, 20 people, 900 FS edges and mixed progress; five warmups precede 20 measured complete recalculations. It prints all samples, median, maximum and runtime/OS/processor count. Input/settings construction is excluded; model validation, dependency traversal, calculation and result construction are included. NUnit/coverage instrumentation may affect timing. This does not measure editing, rendering, compositor completion or the 0.2-second ordinary-app target.
+
+## Planning editor local document (#78 / #79 / #81)
+
+`PlanDocumentTests` exercises real commands, scheduling, operation patches and isolated filesystem storage. The boundary is Core plus storage integration: there are no UI controls, fake save services or network endpoints. It covers each operation and exact Undo/Redo, atomic rejection, retained invalid source values, restart and the 200-step bound, unpublished markers, scope isolation, portable settings, concurrent/external writers, retryable failures, corrupt/unreadable/interrupted files and untouched legacy data. Invalid imports preserve the complete document and history.
+
+```powershell
+Set-Location C:\w\g76;
+dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlanDocumentTests&FullyQualifiedName!~ThousandTasks' --logger 'trx;LogFileName=phase3-document.trx' --results-directory C:\w\g76\TestResults\phase3
+# Explicit real-filesystem timing experiment; no CI threshold assertion:
+dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --filter 'FullyQualifiedName~ThousandTasksAutosaveAndRestoreReportLatencyAndBytes' --logger 'console;verbosity=normal' --logger 'trx;LogFileName=phase3-storage-performance.trx' --results-directory C:\w\g76\TestResults\phase3
+```
+
+The timing case starts with 1,000 existing rows, applies one 1,000-cell Remaining paste and measures synchronous command return, command through durable save, restart and checkpoint bytes. It verifies exact restoration and one-step Undo after restart. This is one observed storage sample, including serialization, actual writes and durable flush; it is not an edit-to-screen or rendering measurement. The NUnit runner and coverage instrumentation may affect results. For a normal close, callers await `FlushAsync`; failed saves retain memory and require explicit retry or reconciliation.
