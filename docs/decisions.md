@@ -127,3 +127,15 @@ Use one versioned JSON draft/checkpoint record per host/stable viewer with exist
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
 
 The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. Their applicability to the app-local payloads remains unresolved and blocks distribution. Preserve the exact [terms and package provenance](dependencies.md).
+
+### Core scheduling representation (#78)
+
+Use the independent `PlanEditor` namespace alongside legacy planning until its screens are replaced. Keep nullable day inputs and baseline dates separate from derived date cells; working-hour endpoints exist only inside recalculation. Reuse the bundled holiday reader and validated holiday CSV parser without extending legacy planning metadata. Their neutral holiday contracts can move when legacy planning is removed.
+
+The [current scheduling contract](spec.md#current-planning-editor-scheduling-contract-78) keeps ordinary zero-effort entry reachable as a milestone: an open task with no planned/performed positive work and at least one zero effort value is a milestone, including Estimate entry that fills Remaining with zero. Closed work, or zero Remaining after positive planned/performed work, is complete. Fixed dates still take precedence over calculating a milestone.
+
+Isolate bad refreshed effort/dates to row warnings and retained GitHub dates, excluding their dependency endpoints. Propagate isolation to summaries containing invalid children so incomplete roll-ups cannot be published as calculated values. Pure edit transformations refuse negative effort and inverted typed pairs whose dates are kept; moving an automatic start past an old end remains valid because its end recalculates; structural errors, invalid settings and cycles still reject the calculation. This preserves the rest of the plan without silently repairing another person's data.
+
+Use exact rational working hours internally, constructed from decimal inputs with BigInteger arithmetic from the standard library. Integer-minute rounding would change subminute effort; tolerances would risk changing true near-boundary work. Exact arithmetic preserves working-interval endpoints across chains and rate changes without either policy or a new dependency. The optional explicit status date overrides a caller-supplied today on each calculation; persistence of the optional choice belongs to Phase 3.
+
+Preserve missing effort in summaries instead of inventing zero totals. Summary predecessors propagate to descendants. Rates are (0, 100] percent; zero capacity is rejected rather than creating a schedule that cannot finish. Retained in-progress starts are historical, while remaining work starts no earlier than the effective 状況日. Deterministic reason tie-breaking and warning strings are owned by the scheduling contract.
