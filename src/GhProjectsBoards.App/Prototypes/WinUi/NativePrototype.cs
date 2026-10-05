@@ -13,7 +13,7 @@ public sealed class NativePrototype : Grid
 {
     internal readonly PrototypePlan Plan = new();
     internal readonly HashSet<PrototypeNativeRow> Visible = [];
-    private readonly PrototypeMetrics metrics = new("winui");
+    private readonly PrototypeMetrics metrics = new();
     private readonly TextBlock error = new();
     private readonly Dictionary<(int Row, int Column), string> invalidInputs = [];
     private readonly ListView list;

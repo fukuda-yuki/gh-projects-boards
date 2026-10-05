@@ -7,8 +7,8 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         var arguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
-        window = arguments.Length == 2 && arguments[0] == "--prototype" && arguments[1] is "winui" or "webview"
-            ? new Prototypes.PrototypeWindow(arguments[1])
+        window = arguments.SequenceEqual(["--prototype", "winui"])
+            ? new Prototypes.PrototypeWindow()
             : arguments.SequenceEqual(["--input-check"]) ? new InputCheckWindow() : new MainWindow();
         window.Activate();
     }

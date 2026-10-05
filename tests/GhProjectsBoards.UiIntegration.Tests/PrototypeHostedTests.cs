@@ -1,10 +1,8 @@
 using GhProjectsBoards.App.Prototypes.WinUi;
-using GhProjectsBoards.App.Prototypes.WebView;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Shapes;
 using NUnit.Framework;
-using Windows.System;
 namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable]
 public sealed class PrototypeHostedTests
@@ -63,27 +61,6 @@ public sealed class PrototypeHostedTests
                 foreach (var row in view.Visible.Where(r => r.Index >= 0))
                     Assert.That(Ui.Find<TextBox>($"PrototypeCell{row.Index}_2").Text, Is.EqualTo(view.Plan.Rows[row.Index].Start), $"Rendered start for row {row.Index + 1}");
             });
-        }
-        finally { await Ui.Unmount(view); }
-    }
-    [Test]
-    public async Task WebRemainingEnterChangesDisplayedSuccessorDateAndBar()
-    {
-        WebPrototype view = null!;
-        await Ui.Run(() => view = new()); await Ui.Mount(view);
-        try
-        {
-            try { await Ui.Until(() => { Assert.That(view.Failure, Is.Empty); return view.Ready; }); }
-            catch (Exception ex) { string stage = ""; await Ui.Run(() => stage = view.Stage); throw new InvalidOperationException("Web initialization: " + stage, ex); }
-            await Ui.Run(async () => await view.Browser.ExecuteScriptAsync("const input=document.getElementById('cell-0-1');input.focus();input.value='16';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));"));
-            string result = "";
-            for (var attempt = 0; attempt < 100; attempt++)
-            {
-                await Ui.Run(async () => result = await view.Browser.ExecuteScriptAsync("[document.getElementById('end-0').textContent,document.getElementById('cell-1-2').value,document.getElementById('bar-0').getBoundingClientRect().width,document.getElementById('bar-1').getAttribute('x')].join('|')"));
-                if (result == "\"2026-10-07|2026-10-07|48|48\"") break;
-                await Task.Delay(20);
-            }
-            Assert.That(result, Is.EqualTo("\"2026-10-07|2026-10-07|48|48\""));
         }
         finally { await Ui.Unmount(view); }
     }
