@@ -37,7 +37,8 @@ One PMO maintains the plan. Normal scale is about 1,000 tasks, fewer than 20 peo
 | Plan sheet with Gantt: tasks, effort, assignees, predecessors, automatic dates | [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78) |
 | Refresh and publish, including assignees and new Issues | [#79](https://github.com/fukuda-yuki/gh-projects-boards/issues/79) |
 | People view: daily load, allowance, forecast | [#80](https://github.com/fukuda-yuki/gh-projects-boards/issues/80) |
+| CSV import of new tasks with predecessors and parents (after #78 and #79) | [#82](https://github.com/fukuda-yuki/gh-projects-boards/issues/82) |
 
 ## Explicit exclusions
 
-Generic Issue administration, Kanban, Gantt drag editing, critical path, MS Project import, automatic resource leveling, minute-precision schedules, realtime synchronization, cross-Project publish and organization-wide load. CSV file import, baseline comparison, weekly report copy and distribution/company-environment validation are deferred until the child Issues above are accepted; bulk creation is covered by pasting rows into the plan sheet.
+Generic Issue administration, Kanban, Gantt drag editing, critical path, MS Project import, task creation by pasting from Excel, automatic resource leveling, minute-precision schedules, realtime synchronization, cross-Project publish and organization-wide load. Baseline comparison, weekly report copy and distribution/company-environment validation are deferred until the child Issues above are accepted. CSV import of new tasks is required and follows #78 and #79.

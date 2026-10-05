@@ -13,7 +13,7 @@ Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-board
 - **Inputs are persisted, dates are derived.** Open tasks with work that are not 日程固定 are calculated from their inputs; completed tasks, 日程固定 tasks and tasks without effort keep their GitHub dates. A calculated date that differs from GitHub is an unpublished change. The schedule is shown by day, so minute endpoints are not stored. Exact rules: [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78).
 - **Reproducible from GitHub plus settings.** Title and assignees (Issue), predecessors (`blockedBy`), hierarchy (sub-issues), Estimate/Remaining/Actual (Project number fields), Start/Target (Project date fields), and the added 開始日指定 (date) and 日程固定 (single select) fields hold the published plan. Calendar, rates and allowances are local settings that can be exported and imported as a file; unpublished edits and Undo stay local. Another data root with the same settings reproduces the plan by refreshing.
 - **One status date.** 状況日 replaces the separate report date and replanning cutoff.
-- **No MS Project import.** Existing plans are not migrated by file. Bulk creation is done by pasting rows into the plan sheet.
+- **No MS Project import and no task creation by pasting from Excel.** Existing plans are not migrated by file. New tasks can be imported from a CSV file once the plan sheet and publishing exist ([#82](https://github.com/fukuda-yuki/gh-projects-boards/issues/82)).
 - **Local data starts fresh.** The new local format does not read previous checkpoints and leaves old files untouched, following the internal-tool policy in AGENTS.md.
 
 Sources: [MS Project views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d), [Azure Boards capacity](https://learn.microsoft.com/en-us/azure/devops/boards/sprints/set-capacity?view=azure-devops), [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects), [official holidays](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html).
@@ -46,7 +46,7 @@ Prefer behavior and state assertions to interaction assertions. Assert the obser
 
 Keep test scope, driver/runtime mechanics and environment/evidence requirements distinct. Physical IME, native focus, clipboard/picker, process lifetime and live GitHub may require real facilities but do not automatically make a test E2E. App-level E2E with fake gh is not real-GitHub acceptance, and focused live adapter verification is not necessarily application E2E. Preserve performance and human acceptance separately.
 
-Select execution for a stated risk or acceptance need; permission and historical suite inventories are not blanket execution requirements. Reclassification requires case-level scope evidence; moving coverage down requires observed replacement assertions before retiring redundant checks. Discovery and compilation do not establish runtime acceptance. The [test policy](../tests/README.md) owns selection, reporting and migration rules.
+Select execution for a stated risk or acceptance need; permission and historical suite inventories are not blanket execution requirements. Reclassification requires case-level scope evidence. Discovery and compilation do not establish runtime acceptance. The [test policy](../tests/README.md) owns selection, reporting and migration rules.
 
 ## Native table-input lifecycle
 
@@ -85,6 +85,7 @@ Use one versioned JSON draft/checkpoint record per host/stable viewer with exist
 | Plan sheet, scheduling rules and status date | #78 |
 | Refresh, publish, conflicts and creation guard | #79 |
 | People view and allowance | #80 |
+| CSV import of new tasks | #82 |
 | Distribution, notices, signing and company-environment validation | Deferred under #76 (previous findings in closed #13) |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
