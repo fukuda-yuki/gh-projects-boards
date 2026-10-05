@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:prototype="using:GhProjectsBoards.App.Prototypes.WinUi"
     xmlns:local="using:GhProjectsBoards.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -51,6 +52,7 @@
                                             Margin="{TemplateBinding Padding}"/>
                 </Grid>
             </ControlTemplate>
+            <DataTemplate x:Key="PrototypeNativeRowTemplate"><prototype:PrototypeNativeRow /></DataTemplate>
             <DataTemplate x:Key="GanttRowTemplate">
                 <local:GanttRowPresenter HorizontalContentAlignment="Stretch"/>
             </DataTemplate>
