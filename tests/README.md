@@ -301,8 +301,44 @@ GitHub repository settings the maintainer must set once (Actions cannot do this)
 
 Report changed behaviors and their test scopes, real/replaced dependencies and entry/result boundaries, separately from driver/process/environment details. State the reason for selected E2E/IME/live execution and relevant coverage that was outside scope or unavailable. For executed checks, report exact source/build, command, environment, executed/passed/failed/skipped counts and artifact locations. Preserve failed attempts. Build success, discovery, scoped UI integration, ordinary-product E2E, sandbox validation and human acceptance support different claims. GHEC + EMU, distribution, storage recovery and 100-item performance require their own evidence in #12/#13.
 
-## #77 isolated rendering prototypes
+## Native plan rendering base
 
-`PrototypePlanTests` covers only the shared disposable 8-hour/calendar-day stand-in, its chain boundaries and rejected input; it is not #78 scheduler coverage. `PrototypeHostedTests` mounts the actual prototype controls and checks dates and bar geometry after a Remaining edit. Native input uses the real TextBox/focus event path; the WebView2 case uses DOM input/keydown through ExecuteScriptAsync and the actual C# bridge. Neither is physical IME evidence. Select these cases with `scripts/Test-UiIntegration.ps1 -NoBuild -Where 'class == GhProjectsBoards.UiIntegration.Tests.PrototypeHostedTests'` after building the host. An optional `GHPB_PROTOTYPE_CAPTURE` folder captures the native XAML render for inspection; this is not a desktop screen capture. Web runtime startup failures remain failures, not skips.
+The native renderer is selected under [#77](../docs/decisions.md#plan-sheet-and-gantt-rendering-77). `PrototypeHostedTests` mounts its real controls: the Remaining focus-loss path changes visible dates and bar geometry, and invalid text/error survives another cell's commit until corrected (including correction to the original value). `PrototypePlanTests` covers only the isolated rendering fixture's 8-hour/calendar-day calculation and invalid inputs; it is not #78 scheduler coverage. Keep this fixture executable while replacing its model in #78. No WebView2 test/runtime is needed.
 
-`tests/MeasurePlanningSandbox.Tests.ps1` is an offline orchestration/file test with only GraphQL transport replaced; the real structural document guard remains active. It checks dry-run/scope refusal, creation-response loss, repeatable cleanup, protection of an existing marker/evidence, null and non-Issue item content, nested pagination documents, error diagnostics, malformed-document rejection, auto-add visibility, partial/all-duplicate add batches, nonrecoverable errors, bounded reconciliation, single-Issue deletion receipts, already-removed outcomes, resource-limit stops and update readback mismatch. Poll waits are substituted; these cases establish the polling policy, not live consistency latency. It does not execute gh or establish live schema/rate-limit compatibility. Launch commands, metric boundaries and the PMO's separate native/IME/live checks are in [the prototype contract](../docs/rendering-prototypes.md).
+```powershell
+Set-Location C:\w\g76
+dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
+dotnet build C:\w\g76\tests\GhProjectsBoards.UiIntegration.Tests\GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
+dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --filter FullyQualifiedName~PrototypePlanTests
+& C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'class == GhProjectsBoards.UiIntegration.Tests.PrototypeHostedTests'
+$env:GHPB_PROTOTYPE_METRICS='C:\w\g76\TestResults\native-plan-frames.jsonl'
+& C:\w\g76\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe --prototype winui
+```
+
+The native-only ordinary-app preview never reads workspace data or contacts GitHub. It has 1,000 synthetic rows, 20 people, ten-task FS chains and editable title/Remaining/Start date; the fixture uses calendar days, eight hours per day rounded up, and an exclusive finish boundary. It is not the production plan. Change row 1 Remaining from 8 to 16: its end and row 2 start become 2026-10-07, the first bar spans 48 logical pixels, and the next chain stays unchanged. Row `i`, column `c` has AutomationId `PrototypeCell{i}_{c}`; columns 0/1/2 are title/Remaining/Start. Invalid input stays visible across focus loss and another commit; correct it to clear its error. The fixed 50-day horizon beginning 2026-10-05 is a fixture limitation, not a scheduling rule.
+
+`GHPB_PROTOTYPE_METRICS` selects JSONL samples from the native commit callback through recalculation, visible-control refresh and the next CompositionTarget.Rendered callback. Initial frames are not edits; superseded/invalid/unloaded records are not successful frames. Report missing samples. This boundary does not prove compositor completion, physical display latency or scrolling FPS. `GHPB_PROTOTYPE_CAPTURE` optionally captures the hosted native XAML render; it is not a desktop screenshot.
+
+On the ordinary preview, verify Enter advances after commit. With physical Microsoft Japanese IME input, conversion confirmation Enter must leave the cell focused and create no successful sample; the next Enter commits and advances once. Also check direct/F2 input, cancellation and reconversion, recording physical versus injected keys. Scroll slowly, by fast wheel steps and scrollbar drag to rows 500/1,000 and back, including an active editor; inspect timestamped desktop captures for blanks, clipping and sheet/bar/arrow alignment. Native focus/IME, density and long-session acceptance are separate from the mounted tests. Range selection, inter-cell clipboard, fill and Ctrl+D are #78 work; existing BulkEditingTests / BulkEditingHostedTests inform the implementation, not a claim that the preview already supports them.
+
+## Sandbox throughput measurement
+
+Keep `scripts/Measure-PlanningSandbox.ps1` as the standalone baseline until #79 has ordinary-product performance evidence. Product targets and operation-specific batch limits are in [decisions](../docs/decisions.md#throughput-targets-for-79).
+
+```powershell
+Set-Location C:\w\g76
+& C:\w\g76\tests\MeasurePlanningSandbox.Tests.ps1
+$measurementPlan = & C:\w\g76\scripts\Measure-PlanningSandbox.ps1 -Mode Plan | ConvertFrom-Json
+# PMO desktop with network and sandbox authorization:
+& C:\w\g76\scripts\Measure-PlanningSandbox.ps1 -Mode Run -RunMarker $measurementPlan.marker
+# After interruption, use the original marker and honor recorded cooldown:
+& C:\w\g76\scripts\Measure-PlanningSandbox.ps1 -Mode Cleanup -RunMarker <original-marker>
+```
+
+Plan makes no requests or mutations. Run is allowlisted to github.com repository fukuda-yuki/codex-sandbox and fukuda-yuki Project 3; it resolves their IDs and preserves #1. It requires existing NUMBER/DATE fields, creates 50 marked Issues with 10-alias create/add requests, samples three fully paged reads including overflowing nested connections, and measures serial update batches 1/10/25/50. Each update series has 300 writes over 100 cells; final values are independently read back.
+
+`TestResults/live/<marker>/results.json` contains identities, timings, rate headers/data, partial responses, creation dispatches, auto-add observations/reconciliation, deletion receipts and cleanup verification. It contains no credentials. Auto-add observation uses up to three reads and 1 s/2 s waits; first-seen times are sampled visibility bounds, not workflow timestamps. The create/add timer includes those waits. Duplicate add aliases are resolved by Project/content identity while successful siblings are retained. Creation/add mutations are never retried automatically. Keep every failed run; a fresh Run needs a new marker.
+
+Cleanup rediscovers exactly marked Issues on every attempt, deletes one per request, accepts scoped NOT_FOUND/410 as already removed, and verifies original Project item order, fields and #1. Resource limits and rate throttling remain distinct stop reasons. Only an explicit later Cleanup resumes; unrelated resources are never deleted to restore a baseline. Success requires `measurementCompleted`, `updatesVerified` and `cleanup.verified`, eight timing entries and no unresolved stop. No-throttle request cost is not a guarantee for another Project; header deltas may include other clients.
+
+The offline tests run real document guards, response policy, orchestration and files with transport/poll waits substituted. They cover scope refusal, malformed queries, null content, nested pagination, creation uncertainty, partial/all-duplicate adds, delayed/invisible membership, unrelated errors, deletion receipts and resumable cleanup. They do not establish service schema, auth, live consistency latency or product throughput. Retain source/environment/commands/counts/artifacts and distinguish estimated 1,000-item time from an actual measurement.

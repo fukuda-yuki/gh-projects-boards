@@ -20,17 +20,53 @@ Sources: [MS Project views](https://support.microsoft.com/en-gb/office/overview-
 
 ## Publishing
 
-Publishing reads the Project once to detect fields changed both locally and on GitHub since the last refresh, checks the bound gh identity once, sends several updates per GraphQL request one request at a time, and verifies with one read afterwards. The current per-field dispatch with repeated identity checks costs about two seconds per field, which makes weekly publishing impractical. The batch size is set from the measurement in [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77).
+Publishing reads the Project once to detect fields changed both locally and on GitHub since the last refresh, checks the bound gh identity once, sends several updates per GraphQL request one request at a time, and verifies with one read afterwards. The current per-field dispatch with repeated identity checks costs about two seconds per field, which makes weekly publishing impractical. Use up to 50 aliases per field-update request, 10 per createIssue request and 10 per addProjectV2ItemById request; send requests serially. These are operation-specific sizes, not a general mutation limit.
 
 Field value updates set an absolute value, so a failed or uncertain update is sent again by the next explicit publish. Issue creation is not idempotent: a new task keeps its local identity until a verified Issue exists, and an uncertain creation is checked against GitHub before any new attempt. Honor Retry-After and rate-limit reset headers; never send requests in parallel. Use `updateIssue`, assignee mutations, `updateProjectV2ItemFieldValue` / `clearProjectV2ItemFieldValue`, `addBlockedBy` / `removeBlockedBy`, sub-issue mutations, `updateProjectV2ItemPosition`, `createIssue` and `addProjectV2ItemById`; `createProjectV2Field` only when the PMO explicitly adds 開始日指定 or 日程固定 from settings. Undo after publishing creates new unpublished changes and never writes to GitHub by itself. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
+### Throughput targets for #79
+
+Use these engineering acceptance ceilings on a responsive github.com connection with the PMO's gh process-per-request transport, no rate-limit response, no conflict and no unrelated concurrent edits. Measure the ordinary product; the standalone tool is the baseline, not acceptance of the new publish pipeline. Use 1,000 Issue tasks, 20 people, all configured plan fields and predecessor/parent data; retain complete pagination. The creation case starts with 950 existing tasks and ends with 1,000.
+
+| Operation | Product elapsed-time ceiling | Included boundary / diagnostic budget |
+| --- | --- | --- |
+| Refresh 1,000 tasks | **60 s** | Command accepted through complete fetch, local reconciliation/recalculation and updated visible dates/bars. |
+| Publish 300 field updates | **180 s** | Publish command accepted through one identity check, one full conflict read, all writes, one complete verification read, durable local adoption and updated UI; exclude only human review dwell. The write-request phase must be **45 s or less**. |
+| Create 50 Issues and add them to the Project | **200 s** | Publish command accepted through the same preflight/readback/local-adoption boundary; exclude only human review dwell. Creation + membership reconciliation/add phase must be **65 s or less**. |
+
+The full publish ceilings reserve two 60 s reads plus the write budget and 15 s for remaining orchestration. They are targets, not demonstrated 1,000-task results. Test 300 actual number/date field changes; do not satisfy the target by deduplicating the baseline's 100 cells written three times. Creation excludes optional assignee/dependency/hierarchy writes; measure those separately. Record failures and rate-limited runs separately rather than treating them as latency passes. For product acceptance retain three complete runs per workload and require each to meet its ceiling; report all timings and request counts.
+
+Basis: PMO Project 3 measurement with gh 2.100, 54–55 items: refresh 2.03–2.72 s; linear 1,000-item estimate 37–49 s includes fixed process costs and is not a measurement. For 300 writes, batches 1/10/25/50 took 216.1/43.7/34.6/30.2 s; 50 creates + adds at 10 aliases took 51.0 s including observation waits; about 458/5,000 hourly points for 446 requests, no primary/secondary throttle. Evidence belongs to [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77).
+
+Built-in **Auto-add to project** may make an Issue a member before explicit add. Preserve successful aliases from partial responses; for the exact already-present add outcome, resolve the item by content identity in the bound Project. Never recreate the Issue or discard successful siblings. Record visibility/read waits separately; the measurement tool's fixed observation waits are not a required product delay. Uncertain creation still follows the creation guard; other errors stop and preserve evidence. `RESOURCE_LIMITS_EXCEEDED` is distinct from rate throttling. Ten-alias `deleteIssue` hit this limit while create/add at 10 and field updates up to 50 did not; cleanup uses one Issue per request and rediscovers survivors. Do not infer higher safe sizes or general GraphQL capacity from these observations.
+
 ## Desktop platform
 
-Use **C# + .NET 10** with a **WinUI 3 / Windows App SDK** window as the shell. Application rules, GitHub access and scheduling remain in one UI-independent Core library. The plan sheet and Gantt are rendered either with WinUI controls or with web components hosted in WebView2; [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77) decides by comparing input (including Japanese IME), scale, paste/fill, Gantt interaction, build effort and license terms.
+Use **C# + .NET 10** with a **WinUI 3 / Windows App SDK** window as the shell. Application rules, GitHub access and scheduling remain in one UI-independent Core library. Render the plan sheet and Gantt with native WinUI controls, as selected below under [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77).
 
 Windows App SDK is pinned to `1.8.260804001` in the app project. The development target is `net10.0-windows10.0.26100.0`, x64, with minimum platform 19041. The development executable is unpackaged and self-contained to make ordinary-executable checks explicit. These are build settings, not a final supported-device or distribution promise.
 
 Select dependencies only for demonstrated requirements and acceptable unconditional commercial terms.
+
+## Plan sheet and Gantt rendering (#77)
+
+Choose **native WinUI** for the PMO's weekly task editing and schedule comparison. Keep one virtualized vertical viewport for sheet cells, bars and predecessor arrows. Native cell automation and a usable local UI-test runtime outweigh the web candidate's better initial density; repair density in the selected implementation rather than maintaining two renderers.
+
+| #77 criterion | Decision basis and remaining contract |
+| --- | --- |
+| Edit to dates/bars within 0.2 s; scrolling | PMO's 1,000-row native samples were 23.4–45.6 ms to Rendered versus web 10.8–69.0 ms to the second animation frame including the bridge. Both fit the prototype budget; their boundaries differ and neither proves physical presentation or the real scheduler's speed. Both showed no blanks in six fast-wheel captures. Long sessions and broader scroll workloads remain unverified. |
+| Japanese IME | Both prototypes separate composition confirmation from cell commit in code; physical-key confirmation, cancellation and reconversion remain mandatory #78 checks. Native TextBox keeps composition in the existing native input path. No physical IME pass is claimed. |
+| Range selection, rectangular copy/paste, fill, Ctrl+D | Neither prototype supplies these. Adapt the existing WinUI selection/editor and transaction behavior evidenced by BulkEditingTests / BulkEditingHostedTests to the new plan identities; do not import the legacy workspace or Apply journal. Web would need new JS selection/drag/clipboard behavior plus a C# bridge. |
+| Arrows, row alignment and presentation | Both prototypes draw FS arrows and align sheet/chart rows through one scroll surface. Native still needs a fixed header, unclipped ID and compact readable rows; web had a sticky header and denser rows. #78 also owns day/week/month scales. Gantt drag editing is excluded. |
+| UI test approach | Native cells expose AutomationIds and work in the mounted WinUI host and PMO ordinary executable. Web exposed zero external UIA Edit controls and relied on ExecuteScriptAsync; renderer/GPU failures also prevented local web UI execution. Select native event/control tests plus public UIA for ordinary-app journeys. |
+| Effort for #78 | Native reuses one C# input/test stack and the existing range-operation contracts. Both still require model binding, columns, selected/editing state, operation Undo and zoom. Native must repair layout and validate recycling/focus; web would additionally require bridge ordering, accessible cells and a second input implementation. This is an integration-effort judgment, not a delivery-time promise. |
+| License terms | Use the pinned Windows App SDK 1.8.260804001 / resolved WinUI 1.8.260803003 and original rendering code; no paid grid or company-size/revenue condition is introduced. Cached SDK/WinUI license.txt permits Windows development/testing and bundled binary redistribution subject to its terms/notices; distribution review remains separate. The alternative used original JS and WebView2 SDK 1.0.3179.45 with permissive attribution terms, but Evergreen runtime redistribution terms were not verified offline. |
+
+The web review also found invalid text/error loss across other edits or scrolling, and stale typed Start values against calculated dates/bars. Those are additional reasons not to retain the web input path; deleting it does not establish that those behaviors were fixed.
+
+Retain `Prototypes/WinUi/NativePrototype.cs` as the #78 rendering base: virtualized rows, native editors with cell-owned invalid input, date/bar refresh and aligned arrows. The native-only preview window, frame metrics, 1,000-row `PrototypePlan` and their tests remain solely as its executable rendering fixture; the 8-hour/calendar-day calculation is disposable and must be replaced when #78 connects the real Core plan. They are not a product scheduler or another app. No web renderer, HTML asset, web launch route or web-only tests remain. Keep the standalone sandbox measurement tool until #79 is measured through the ordinary product; its execution contract is in [tests/README.md](../tests/README.md#sandbox-throughput-measurement).
+
+For #78, put scheduling/validation/Undo combinations in Core tests, then mount real native views and drive focus, text and commands to assert pending input, committed values, dates and bar geometry. Keep row/field AutomationIds for external UIA/FlaUI and use the ordinary executable with isolated fake gh for representative publish journeys. Physical-key Japanese IME, actual clipboard transport, focus under scrolling, Light/Dark/High Contrast, readable density and visible-frame performance require their own native/desktop checks. DOM injection is not a second test path. Commands and fixture boundaries are in [tests/README.md](../tests/README.md#native-plan-rendering-base).
 
 ## Testing
 
@@ -50,7 +86,7 @@ Select execution for a stated risk or acceptance need; permission and historical
 
 ## Native table-input lifecycle
 
-This applies to the current WinUI grid and to any WinUI rendering chosen in #77; a web rendering must meet the same input contract.
+This applies to the current WinUI grid and the native plan renderer selected in #77.
 
 Use an input-ready native WinUI TextBox for the cell editor, preparing focus and replacement selection during cell selection. Keep application Selected/Editing state and committed values separate from native editability. Start application editing on actual composition/text changes or F2, rather than changing read-only state on the first character. This lets the native IME own composition without replaying input or using private APIs.
 
@@ -80,7 +116,7 @@ Use one versioned JSON draft/checkpoint record per host/stable viewer with exist
 
 | Topic | Owner |
 | --- | --- |
-| Rendering choice and publish batch size | #77 |
+| Native rendering choice and initial publish targets | #77; adopted above |
 | Workspace shell, Project switching, settings and column mapping | #81 |
 | Plan sheet, scheduling rules and status date | #78 |
 | Refresh, publish, conflicts and creation guard | #79 |

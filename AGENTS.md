@@ -14,12 +14,12 @@ Write agent-facing and shared development documents in English. Respond to the u
 
 ## Product and implementation
 
-- Build a Windows desktop application with C# and .NET 10, using the WinUI 3 / Windows App SDK window as the shell. It is not a hosted web service. The rendering of the plan sheet and Gantt (native WinUI or web components hosted in WebView2) is decided by [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77); until then, limit work on the current Boards/Gantt/Summary screens to that prototype.
+- Build a Windows desktop application with C# and .NET 10, using the WinUI 3 / Windows App SDK window as the shell. It is not a hosted web service. Follow the [native rendering decision](docs/decisions.md#plan-sheet-and-gantt-rendering-77) from #77. Replace the current Boards/Gantt/Summary screens only in the owning redesign Issues.
 - Treat this as an internal-use tool under active development. Do not preserve backwards compatibility or maintain data migration shims; refactor directly toward the ideal, simplest design adhering to KISS principles.
 - Keep GitHub access, identity, validation, scheduling and application orchestration in the UI-independent Core. Preserve their behavior and regression tests; change them only for an authorized requirement or demonstrated defect.
-- Implement UI from the agreed behavior using WinUI controls and public APIs, or the web components selected in #77 for the plan sheet and Gantt. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
+- Implement UI from the agreed behavior using WinUI controls and public APIs. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
 - Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid or Gantt candidate is not an accepted component merely because it compiles.
-- Develop the shell, agent instructions, build and test infrastructure independently of the rendering choice or release-packaging work. A blocker stops only the work that actually depends on it.
+- Develop the shell, agent instructions, build and test infrastructure independently of plan-renderer delivery or release-packaging work. A blocker stops only the work that actually depends on it.
 - Preserve Project-scoped work, local editing with explicit publish, account/host isolation, selection versus editing, IME confirmation versus cell commit, and operation-level Undo. Keep internal save, buffer and journal states out of ordinary screens. Do not replace required editable behavior with a read-only demonstration.
 
 ## UI design and review
