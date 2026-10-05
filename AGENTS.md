@@ -7,23 +7,26 @@ Write agent-facing and shared development documents in English. Respond to the u
 ## Authority
 
 - Develop from the relevant GitHub Issue and its comments. The user's current request defines the authorized scope and supersedes an outdated plan. Reconcile the owning Issue when the direction changes.
+- The product is being redesigned as a planning editor for GitHub Projects under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). [Requirements](docs/requirements.md) and [decisions](docs/decisions.md) describe the target. [Specification](docs/spec.md), [planning](docs/planning.md) and [architecture](docs/architecture.md) still describe the implementation being replaced; where they conflict with requirements or decisions, the latter prevail. Rewrite an affected section in the child Issue that changes that behavior.
 - Issues own acceptance criteria, unresolved decisions, task status and execution evidence. Use [requirements](docs/requirements.md) for the product outline, [specification](docs/spec.md) for agreed behavior, [design](DESIGN.md) for UI/UX/IA judgment criteria, [architecture](docs/architecture.md) for structure, and [decisions](docs/decisions.md) for accepted choices.
 - Write shared documents as the current product contract. Keep implementation chronology, rejected experiments and progress reports in Git, Issues and PRs, not in product or agent documentation. Do not falsify execution results or rewrite Git history to simplify documentation.
+- Keep Issues short enough for the user to read: state the goal, behavior, acceptance and outcome. Put evidence in a concise result comment with links to artifacts instead of long narrative logs, and close Issues that no longer guide work.
 
 ## Product and implementation
 
-- Build a native Windows desktop application with C#, .NET 10 and WinUI 3 / Windows App SDK. This is the platform, not an open selection task. It is not a web application.
+- Build a Windows desktop application with C# and .NET 10, using the WinUI 3 / Windows App SDK window as the shell. It is not a hosted web service. The rendering of the plan sheet and Gantt (native WinUI or web components hosted in WebView2) is decided by [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77); until then, limit work on the current Boards/Gantt/Summary screens to that prototype.
 - Treat this as an internal-use tool under active development. Do not preserve backwards compatibility or maintain data migration shims; refactor directly toward the ideal, simplest design adhering to KISS principles.
-- Keep GitHub access, identity, validation and application orchestration independent of UI frameworks. Preserve their behavior and regression tests; change them only for an authorized requirement or demonstrated defect.
-- Implement UI from the agreed behavior using native WinUI controls and public APIs. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
-- Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid candidate is not an accepted component merely because it compiles.
-- Develop the shell, agent instructions, build and test infrastructure independently of unresolved grid-input or release-packaging work. A blocker stops only the work that actually depends on it.
-- Preserve Project-scoped work, explicit GitHub apply, local drafts, account/host isolation, selection versus editing, IME confirmation versus cell commit, and operation-level Undo. Do not replace required editable behavior with a read-only demonstration.
+- Keep GitHub access, identity, validation, scheduling and application orchestration in the UI-independent Core. Preserve their behavior and regression tests; change them only for an authorized requirement or demonstrated defect.
+- Implement UI from the agreed behavior using WinUI controls and public APIs, or the web components selected in #77 for the plan sheet and Gantt. Keep window lifetime, binding/presentation, dialogs, clipboard and UI Automation in the UI boundary. Do not introduce compatibility shells or speculative framework layers.
+- Use one real core library and one app. Add another project, abstraction or dependency only for a concrete current need. A grid or Gantt candidate is not an accepted component merely because it compiles.
+- Develop the shell, agent instructions, build and test infrastructure independently of the rendering choice or release-packaging work. A blocker stops only the work that actually depends on it.
+- Preserve Project-scoped work, local editing with explicit publish, account/host isolation, selection versus editing, IME confirmation versus cell commit, and operation-level Undo. Keep internal save, buffer and journal states out of ordinary screens. Do not replace required editable behavior with a read-only demonstration.
 
 ## UI design and review
 
 - Read [DESIGN.md](DESIGN.md) before designing, implementing or reviewing changes to appearance, wording, information presentation, navigation or interaction flows.
 - Define the user's task and decision for the affected surface, then apply the relevant design principles alongside the owning Issue and specification. Review the resulting presentation and behavior against those principles; record justified exceptions and unverified conditions in the Issue/PR.
+- Judge a UI change by the PMO planning job in [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76): run it in the ordinary app with realistic data and look at the rendered screens before reporting it complete. Passing tests do not establish usability.
 - Select validation through the [test policy](tests/README.md); use DESIGN.md's checks for design judgment without duplicating either document's rules here.
 
 ## Execution
@@ -65,6 +68,7 @@ Read [test policy](tests/README.md) before changing production behavior.
 - Select executions by changed behavior, boundary risk and explicit acceptance needs. Targeted runs are valid evidence for their stated scope; full regression remains available when warranted. Historical all-suite execution records and suite-preservation rules are not instructions to rerun every suite on each iteration. Explain the boundary-specific reason for E2E, physical IME or live checks and report relevant omitted or unavailable coverage without calling it passed.
 - Report test scope, execution mechanism and environment separately. Preserve native focus, physical-key IME, clipboard/picker, process-lifetime, performance and human acceptance evidence where required; these concerns do not automatically make a test E2E. Unicode insertion is not IME evidence, and sandbox permission is not an execution schedule.
 - Never weaken, delete or skip contractual tests merely to obtain a pass. Reclassifying existing cases requires a case-level rationale based on their actual scope, not a tool or project rename. Moving coverage down requires an explicit behavior mapping and observed replacement coverage before retiring redundant higher-layer checks; retain native/end-to-end checks that the replacement cannot establish. Follow the Issue and test policy for such changes.
+- A test whose asserted behavior is removed by an accepted decision in [decisions](docs/decisions.md) is no longer contractual. Delete it in the PR that removes that behavior and name the decision there. Behavior that survives the redesign keeps or regains coverage at the lowest reliable layer.
 - Record source, environment, command, executed/passed/failed/skipped counts and artifacts for executed checks. Zero execution, discovery-only and skip-only outcomes are not passing acceptance. Keep failed attempts; do not repurpose another executable's results.
 
 ## Authorized GitHub sandbox

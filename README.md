@@ -2,7 +2,7 @@
 
 A native Windows desktop application built with **C#, .NET 10 and WinUI 3 / Windows App SDK** for preparing GitHub Issue and Project changes in a table.
 
-GitHub is authoritative for native values and relationships; exact planning metadata has the local authority defined in the planning contract. Editing is local; only explicit reviewed Apply publishes changes. Product requirements and acceptance belong to [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) and its linked Issues.
+The product is being redesigned as a planning editor for GitHub Projects (plan sheet + Gantt, local editing, batched publish) under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76); see [requirements](docs/requirements.md) and [decisions](docs/decisions.md). The rest of this README describes the current build. Editing is local; only explicit reviewed Apply publishes changes.
 
 Follow [Working in the workspace](docs/workspace.md) for an isolated local quickstart and a complete edit, view, compare, Apply and restart session.
 
@@ -18,6 +18,8 @@ Use Windows x64, the .NET 10 SDK and Windows SDK 10.0.26100.0. Run from the repo
 dotnet build GhProjectsBoards.sln --configuration Release
 .\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
 ```
+
+Windows App SDK packaging copies files under `obj/.../MsixContent`; a long checkout or worktree path can exceed the Windows 260-character path limit and fail with MSB3030. Build from a shorter path in that case.
 
 The development executable is unpackaged with app-local .NET and Windows App SDK runtimes. Ordinary startup opens **ワークスペース**, requires no GitHub login and performs no network request. Use **接続設定** for an explicit connection check. End-user packaging, signing, notice manifests and clean-machine acceptance are owned by [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13); a development build is not a distributable release.
 

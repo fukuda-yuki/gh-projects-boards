@@ -2,43 +2,35 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
-## Planning fidelity and portability
+## Planning editor for GitHub Projects
 
-Adopt the [planning ownership matrix](planning.md) and checkpoint v9. GitHub NUMBER supplies selected work scalars; DATE is only a day projection. Exact intraday Manual/Auto provenance, per-person reports, weights and adopted calendar belong in typed local metadata, never Issue prose. Existing scalar drafts/reconciliation/Apply retain their authority; no second store or queue. Copy adopted holidays into the Project checkpoint so a bundle update cannot rewrite the plan.
+Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). The product replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. GitHub Projects has no way to build a schedule from effort, assignees and predecessors, so the app provides that job and leaves general Issue work to GitHub.
 
-Use validated full-checkpoint backup and same-host/viewer restore into an empty root. Preserve unfinished/unknown dispatch evidence; independent copies are not concurrent synchronization. Unknown versions reject rather than reset. Native `blockedBy` means directed FS predecessor, distinct from hierarchy; unsupported richer links remain explicit. External contracts: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects), [official holidays](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html). #2 owns bounded proofs, #61 production integration, #13 distribution notices.
+- **Local editing with explicit publish.** The PMO edits a local copy and publishes adopted changes, as with MS Project and the TFS Office integration. This avoids a request per edit during weekly adjustment. Ordinary screens show changed-cell markers and the unpublished count; conflicts are resolved before publishing.
+- **One central screen.** A plan sheet with a row-aligned Gantt, modeled on the MS Project Gantt Chart view, plus a people view modeled on Resource Usage and a single settings page. Project commands are **最新の情報に更新** and **発行**, the names used by the TFS Office integration. Columns backed by a GitHub field show the GitHub field name as the header, because the PMO recognizes fields by those names.
+- **Person-hours and TFS work fields.** Effort is entered and shown in person-hours (人時); one working day is eight hours. Estimate is the original estimate, Remaining is what is left and drives scheduling, Actual is cumulative and counts for the task's current assignee.
+- **A bounded subset of MS Project auto-scheduling.** Effort, the assignee's Project rate, the calendar and finish-to-start predecessors determine dates. A typed start date is kept as **開始日指定** (start no earlier than); **日程固定** keeps typed start and end. No per-task mode selection, lag, other link or constraint types, critical path, leveling or cost. Parity with MS Project is not a goal.
+- **Inputs are persisted, dates are derived.** Open tasks with work that are not 日程固定 are calculated from their inputs; completed tasks, 日程固定 tasks and tasks without effort keep their GitHub dates. A calculated date that differs from GitHub is an unpublished change. The schedule is shown by day, so minute endpoints are not stored. Exact rules: [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78).
+- **Reproducible from GitHub plus settings.** Title and assignees (Issue), predecessors (`blockedBy`), hierarchy (sub-issues), Estimate/Remaining/Actual (Project number fields), Start/Target (Project date fields), and the added 開始日指定 (date) and 日程固定 (single select) fields hold the published plan. Calendar, rates and allowances are local settings that can be exported and imported as a file; unpublished edits and Undo stay local. Another data root with the same settings reproduces the plan by refreshing.
+- **One status date.** 状況日 replaces the separate report date and replanning cutoff.
+- **No MS Project import.** Existing plans are not migrated by file. Bulk creation is done by pasting rows into the plan sheet.
+- **Local data starts fresh.** The new local format does not read previous checkpoints and leaves old files untouched, following the internal-tool policy in AGENTS.md.
 
-## Table-centered workspace
+Sources: [MS Project views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d), [Azure Boards capacity](https://learn.microsoft.com/en-us/azure/devops/boards/sprints/set-capacity?view=azure-devops), [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects), [official holidays](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html).
 
-Microsoft Project's [sheet-oriented views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d) and [optional lower detail view](https://support.microsoft.com/en-gb/project/split-a-view-in-project-desktop) inform the chosen table-centered workspace. [DESIGN.md](../DESIGN.md) owns the general UI/UX/IA criteria; the [workspace contract](spec.md#workspace-presentation) owns concrete layout and interaction behavior.
+## Publishing
 
-The compact account/connection strip, collapsible owner/Project navigation and optional bottom details preserve space for fields. Each scoped Project is one work context even when linked to multiple repositories. A repository association can narrow the registered-Project choices without changing the active work; unregistered-Project discovery remains available in registration. Distinct same-named Projects need readable disambiguation before selection. The current command set does not justify the height of a large ribbon, and permanent side details would compete with the widest columns. Project identity and cache time stay in the header; the default new-row destination belongs in Project settings under the workspace contract, separating an infrequent default from routine editing and Apply commands.
+Publishing reads the Project once to detect fields changed both locally and on GitHub since the last refresh, checks the bound gh identity once, sends several updates per GraphQL request one request at a time, and verifies with one read afterwards. The current per-field dispatch with repeated identity checks costs about two seconds per field, which makes weekly publishing impractical. The batch size is set from the measurement in [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77).
 
-Native command overflow and responsive Project commands provide compact command access. General reachability and context criteria live in [Interaction and context](../DESIGN.md#interaction-and-context); the workspace contract specifies window sizing, status routes and focus restoration. Native input controls and public focus APIs remain the implementation choice.
+Field value updates set an absolute value, so a failed or uncertain update is sent again by the next explicit publish. Issue creation is not idempotent: a new task keeps its local identity until a verified Issue exists, and an uncertain creation is checked against GitHub before any new attempt. Honor Retry-After and rate-limit reset headers; never send requests in parallel. Use `updateIssue`, assignee mutations, `updateProjectV2ItemFieldValue` / `clearProjectV2ItemFieldValue`, `addBlockedBy` / `removeBlockedBy`, sub-issue mutations, `updateProjectV2ItemPosition`, `createIssue` and `addProjectV2ItemById`; `createProjectV2Field` only when the PMO explicitly adds 開始日指定 or 日程固定 from settings. Undo after publishing creates new unpublished changes and never writes to GitHub by itself. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
-Keep row/column definitions in the existing scoped profile checkpoint and preserve canonical row/field identities beneath presentation changes. Transient pane visibility, selection and scrolling do not acquire a separate persistence owner. Reuse the established draft, conflict and Apply engines; this presentation decision adds no dependency or storage schema. Human visual/usability acceptance remains owned by #65.
+## Desktop platform
 
-Frozen row identity and table-local header commands support comparison across columns. Native choice buttons open their option controls on request to reduce idle per-cell templates, while retained active/pending editors protect native text/IME input. The [input contract](spec.md#selection-input-and-rectangular-operations) owns that behavior. One viewport and nonanimated wheel/scrollbar updates keep row identity and fields aligned; touch/precision-touchpad behavior requires its own native acceptance evidence. The workspace and [column](spec.md#project-specific-columns) contracts specify the corresponding controls and operations.
+Use **C# + .NET 10** with a **WinUI 3 / Windows App SDK** window as the shell. Application rules, GitHub access and scheduling remain in one UI-independent Core library. The plan sheet and Gantt are rendered either with WinUI controls or with web components hosted in WebView2; [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77) decides by comparing input (including Japanese IME), scale, paste/fill, Gantt interaction, build effort and license terms.
 
-## Existing-field mutation and journal
+Windows App SDK is pinned to `1.8.260804001` in the app project. The development target is `net10.0-windows10.0.26100.0`, x64, with minimum platform 19041. The development executable is unpackaged and self-contained to make ordinary-executable checks explicit. These are build settings, not a final supported-device or distribution promise.
 
-Use `updateIssue` with only `id/title`, `updateProjectV2ItemFieldValue` with Project/item/field IDs and `singleSelectOptionId`, and `clearProjectV2ItemFieldValue` for explicit clear. Their documented inputs expose no expected-value/revision conditional update. `clientMutationId` is not a lock or a proven idempotency key. Verify the returned identity (and title) plus a separate authoritative field read; unknown or mismatching outcomes remain unapplied. Sources: [Issue schema](https://docs.github.com/en/graphql/reference/issues), [Project schema](https://docs.github.com/en/graphql/reference/projects).
-
-Use sequential dispatch with at least one second between mutation starts, revalidating after the wait. Honor Retry-After and primary reset headers; absent timing defaults to one minute with exponential increases. Rescheduling is bounded to three waits per execution and always revalidates. Only a known rate-limit rejection permits automatic mutation rescheduling. Ambiguous writes require explicit reconciliation. Transport never retries mutations. Source: [GitHub API guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
-
-Keep execution records in the existing version 8 profile checkpoint, preserving older records and recovery files. A separate OS file lease prevents concurrent executors of the same data root/profile; it is not server-wide exclusion. Baseline acknowledgement and journal outcomes commit together. This cannot remove remote read/write races or provide remote atomicity. The complete Project reader is reused conservatively for identity/structure checks; existing Apply performance belongs to #51 and integrated local latency to #65.
-
-## Local preparation identity and recovery
-
-Keep local new rows separate from fetched Issue/item records so incomplete preparation never needs a fictitious remote baseline or update capability. Capture destination per row; defaults only seed subsequent work. Store local lifetime changes in the existing guarded transaction history and version 8 profile checkpoint to make values, removal and Undo recover together. Preserve selected IDs and saved labels when definitions disappear rather than remapping by name. Remote Apply can invalidate its own old baseline history while retaining a mixed operation's local Undo remainder. Sources: #7/#8/#9; remote creation handoff: #11.
-
-## Native platform
-
-Use **C# + .NET 10 + WinUI 3 / Windows App SDK** for the native Windows desktop app. Native controls and public Windows APIs provide the UI boundary; application rules remain in one UI-independent Core library. Implement screens from their behavioral contracts, not from another framework's visual tree.
-
-Windows App SDK is pinned to `1.8.260804001` in the app project. The development target is `net10.0-windows10.0.26100.0`, x64, with minimum platform 19041. The development executable is unpackaged and self-contained to make ordinary-executable checks explicit. These are build settings, not a final supported-device or distribution promise. See [Microsoft WinUI 3 documentation](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/) and [#13](https://github.com/fukuda-yuki/gh-projects-boards/issues/13).
-
-No grid library, MVVM framework or persistence technology is selected by the platform decision. Select dependencies only for demonstrated requirements and acceptable unconditional commercial terms.
+Select dependencies only for demonstrated requirements and acceptable unconditional commercial terms.
 
 ## Testing
 
@@ -58,6 +50,8 @@ Select execution for a stated risk or acceptance need; permission and historical
 
 ## Native table-input lifecycle
 
+This applies to the current WinUI grid and to any WinUI rendering chosen in #77; a web rendering must meet the same input contract.
+
 Use an input-ready native WinUI TextBox for the cell editor, preparing focus and replacement selection during cell selection. Keep application Selected/Editing state and committed values separate from native editability. Start application editing on actual composition/text changes or F2, rather than changing read-only state on the first character. This lets the native IME own composition without replaying input or using private APIs.
 
 Retain the method in the ordinary app's explicit input-check window. Its behavioral contract includes direct and F2 input, range selection, separate draft/committed values, IME confirmation versus cell commit, cancellation and reconversion. Full grid layout, virtualization, paste/Undo and keyboard edge policies still require their own implementation and validation. The selected method does not introduce a TableView dependency.
@@ -66,7 +60,7 @@ Retain the method in the ordinary app's explicit input-check window. Its behavio
 
 Use stored gh authentication. Exclude all four gh token environment overrides from children, expose only safe authentication metadata and require recognized keyring storage before writes. Plaintext and unknown storage remain diagnosable without permitting writes.
 
-Use `ArgumentList`, UTF-8 JSON stdin, explicit hostname/target, asynchronous execution, a 30-second process timeout, cancellation and structured results. Bind stable viewer identity and recheck before dispatch. Never automatically resend a failed or uncertain write.
+Use `ArgumentList`, UTF-8 JSON stdin, explicit hostname/target, asynchronous execution, a 30-second process timeout, cancellation and structured results. Bind stable viewer identity and recheck it before each publish. Never resend a write without an explicit publish; Issue creation follows the duplicate guard above.
 
 These rules avoid a second credential owner and keep issue content as data. See [gh environment variables](https://cli.github.com/manual/gh_help_environment), [login](https://cli.github.com/manual/gh_auth_login), [auth status](https://cli.github.com/manual/gh_auth_status) and [specification](spec.md).
 
@@ -82,17 +76,17 @@ Discovery uses the current official [Repository.projectsV2](https://docs.github.
 
 ## Decision ownership
 
-Use one versioned JSON draft/checkpoint record per host/stable viewer with existing .NET libraries. Cross-field operations, shared Issue-title work, local rows, Project preferences and Apply history commit coherently without coordinating per-Project draft files. Before checkpoint migration, registration caches are independent records; after migration, retained legacy files are recovery material and the checkpoint is authoritative. Reuse checked temporary writes, write-through flush, same-directory replacement and locking, with session save serialization and optimistic durable-revision checks. This is a local store, not multi-device synchronization. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
+Use one versioned JSON draft/checkpoint record per host/stable viewer with existing .NET libraries. Reuse checked temporary writes, write-through flush, same-directory replacement and locking, with session save serialization and optimistic durable-revision checks. This is a local store, not multi-device synchronization. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
 
 | Topic | Owner |
 | --- | --- |
-| Supported field/item matrix and component suitability | #2 |
-| Few-row Japanese input contract | #24 |
-| Boards planning and its data lifecycle | #61 |
-| Feature persistence and recovery | #61 / #64 / #63 |
-| Cross-feature validation and inherited performance under the layered test policy | #65 |
-| Distribution, component notices, signing, update/rollback and enterprise validation | #13 |
+| Rendering choice and publish batch size | #77 |
+| Workspace shell, Project switching, settings and column mapping | #81 |
+| Plan sheet, scheduling rules and status date | #78 |
+| Refresh, publish, conflicts and creation guard | #79 |
+| People view and allowance | #80 |
+| Distribution, notices, signing and company-environment validation | Deferred under #76 (previous findings in closed #13) |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
 
-The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. Their applicability to the app-local payloads remains unresolved and blocks distribution under #13. The approved transfer from #22 is a scope decision, not license clearance. Preserve the exact [terms and package provenance](dependencies.md).
+The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. Their applicability to the app-local payloads remains unresolved and blocks distribution. Preserve the exact [terms and package provenance](dependencies.md).

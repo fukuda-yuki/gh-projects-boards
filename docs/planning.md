@@ -1,5 +1,7 @@
 # Planning data contract
 
+> **Being replaced.** This document describes the current implementation. The product is being redesigned under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76); [requirements](requirements.md) and [decisions](decisions.md) define the target and prevail where they conflict. Each child Issue rewrites the sections it changes.
+
 [#2](https://github.com/fukuda-yuki/gh-projects-boards/issues/2) owns these decisions and their bounded proofs. [#61](https://github.com/fukuda-yuki/gh-projects-boards/issues/61) owns the production Boards path. [#15](https://github.com/fukuda-yuki/gh-projects-boards/issues/15) owns Gantt inspection and linked editing. [#1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1) owns routing/status; Issues own acceptance/evidence. Gantt and later Summary (#64), load (#62) and new-task CSV (#63) consume the same adopted plan.
 
 ## Identity and storage

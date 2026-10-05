@@ -1,6 +1,8 @@
 # Specification
 
-This document records agreed behavior from [Epic #1](https://github.com/fukuda-yuki/gh-projects-boards/issues/1). Acceptance and remaining scope belong to the owning Issues.
+> **Being replaced.** This document describes the current implementation. The product is being redesigned under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76); [requirements](requirements.md) and [decisions](decisions.md) define the target and prevail where they conflict. Each child Issue rewrites the sections it changes.
+
+Acceptance and remaining scope belong to the owning Issues. Issue numbers below #76 are historical sources of existing behavior; they are closed.
 
 ## Planning and execution ownership
 
