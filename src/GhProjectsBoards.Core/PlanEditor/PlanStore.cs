@@ -49,13 +49,13 @@ internal sealed class PlanStore(string dataRoot)
             CheckInterrupted(path, old is null);
             if ((old is null ? null : Fingerprint(old)) != expectedFingerprint)
                 return new(false, PlanSaveFailure.ChangedFile, "保存元が別の操作で変更されました。現在の編集を保持して確認してください。", null);
-            // Loaded history was validated when the session opened. Its fingerprint prevents later corruption from being replaced.
+            // A new checkpoint must satisfy the same contract as reopening it, including every history state.
             var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(checkpoint, PlanJson.Options);
             temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await WriteCandidate(temporary, bytes).ConfigureAwait(false);
             var verified = await File.ReadAllBytesAsync(temporary).ConfigureAwait(false);
             if (!bytes.AsSpan().SequenceEqual(verified)) throw new IOException("保存後の検証が一致しません。");
-            _ = PlanJson.Read<PlanCheckpoint>(verified);
+            PlanJson.Validate(PlanJson.Read<PlanCheckpoint>(verified), checkpoint.Document.Project);
             // Recheck noncooperating external editors immediately before replacement as well.
             var latest = await ReadExisting(path).ConfigureAwait(false);
             if ((latest is null ? null : Fingerprint(latest)) != expectedFingerprint)

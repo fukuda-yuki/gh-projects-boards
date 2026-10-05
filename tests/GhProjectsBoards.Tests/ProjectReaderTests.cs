@@ -244,6 +244,7 @@ internal sealed class ProjectReaderTests
         Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
         Assert.That(result.Project!.ItemsComplete, Is.False);
         Assert.That(result.Problems, Is.Not.Empty);
+        Assert.That(result.Problems.Any(p => p.Kind == ReadProblemKind.ConcurrentChange), Is.EqualTo(defect == "changed-total"));
     }
 
     [TestCase("fields")]

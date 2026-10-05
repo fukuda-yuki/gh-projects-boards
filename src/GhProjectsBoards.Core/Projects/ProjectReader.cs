@@ -4,11 +4,11 @@ using GhProjectsBoards.App.GitHub;
 
 namespace GhProjectsBoards.Core.Projects;
 
-internal sealed class ProjectReader(GhConnectionService service)
+internal sealed class ProjectReader(GhConnectionService service, GhConnectionService.OperationLease? lease = null)
 {
     public Task<ProjectReadResult> ReadAsync(ConnectionContext context, ScopedId project,
         CancellationToken cancellationToken = default, Action<ProjectReadProgress>? progress = null)
-        => new ReadSession(service, context, project, cancellationToken, progress).RunAsync();
+        => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
 
     public Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ConnectionContext context,
         ApplyBatch batch, ApplyOperation operation, CancellationToken token)
@@ -19,7 +19,7 @@ internal sealed class ProjectReader(GhConnectionService service)
         => new ReadSession(service, context, batch.Project, token, null).ObserveFieldCoreAsync(operation, historical: true);
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress)
+        ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress, GhConnectionService.OperationLease? lease = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -34,6 +34,20 @@ internal sealed class ProjectReader(GhConnectionService service)
 
         private async Task<ApiResult> SendAsync(string query, object variables)
         {
+            if (lease is not null)
+            {
+                var leaserequest = ApiRequest.GraphQl(query.Insert(query.LastIndexOf('}'), " viewer { databaseId } "), variables);
+                var response = await lease.SendAsync(leaserequest, cancellationToken);
+                if (!response.IsSuccess) return response;
+                if (response.Data is not { } leasebody || !leasebody.TryGetProperty("data", out var leasedata) ||
+                    !leasedata.TryGetProperty("viewer", out var leaseviewer) || !leaseviewer.TryGetProperty("databaseId", out var leaseid) ||
+                    !leaseid.TryGetInt64(out var actual) || actual != context.ViewerId)
+                {
+                    context.Invalidate();
+                    return new(ApiOutcome.Failed, FailureKind.IdentityChanged);
+                }
+                return response;
+            }
             if (observationScope is null)
                 return await service.SendAsync(context, ApiRequest.GraphQl(query, variables), cancellationToken);
             // Each contributing response identifies its own authenticated principal.
@@ -158,7 +172,7 @@ internal sealed class ProjectReader(GhConnectionService service)
                 fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
                     ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
                 if (!stopped)
-                    itemsComplete = await WalkAsync("items", ProjectQueries.Items, projectId.NodeId,
+                    itemsComplete = await WalkAsync("items", lease is null ? ProjectQueries.Items : ProjectQueries.Items.Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}"), projectId.NodeId,
                         node => { MatchNode(node, projectId.NodeId, "ProjectV2"); return Property(node, "items"); },
                         AddItemAsync);
             }
@@ -286,7 +300,12 @@ internal sealed class ProjectReader(GhConnectionService service)
             var parent = Property(issue, "parent");
             var parentValue = parent.ValueKind == JsonValueKind.Null ? new ReadValue<ScopedId>(ValueAvailability.Empty)
                 : new ReadValue<ScopedId>(ValueAvailability.Present, Id(parent));
-            return new(assignees.Values.ToArray(), predecessors.ToArray(), parentValue, peopleComplete && linksComplete);
+            var children = new List<ScopedId>(); var childrenComplete = true;
+            if (lease is not null)
+                childrenComplete = await WalkAsync("subIssues", ProjectQueries.SubIssues, id.NodeId,
+                    node => { MatchNode(node, id.NodeId, "Issue"); return Property(node, "subIssues"); },
+                    node => { var child = Id(node); if (children.Contains(child)) throw new ReadException(ReadProblemKind.DuplicateIdentity); children.Add(child); return Task.CompletedTask; }, Property(issue, "subIssues"));
+            return new(assignees.Values.ToArray(), predecessors.ToArray(), parentValue, peopleComplete && linksComplete && childrenComplete) { SubIssues = children.ToArray() };
         }
 
         private void AddValue(ItemBuilder item, JsonElement node)
@@ -414,6 +433,9 @@ internal sealed class ProjectReader(GhConnectionService service)
                         }
                         page = connection(node);
                     }
+                    var expected = NonnegativeInt(page, "totalCount");
+                    if (total is not null && total != expected) throw new ReadException(ReadProblemKind.ConcurrentChange);
+                    total = expected;
                     var nodes = Array(page, "nodes");
                     foreach (var node in nodes.EnumerateArray())
                     {
@@ -421,9 +443,6 @@ internal sealed class ProjectReader(GhConnectionService service)
                         await accept(node);
                         count++;
                     }
-                    var expected = NonnegativeInt(page, "totalCount");
-                    if (total is not null && total != expected) throw new ReadException(ReadProblemKind.IncompleteTraversal);
-                    total = expected;
                     var info = Property(page, "pageInfo");
                     var next = Boolean(info, "hasNextPage");
                     var cursor = OptionalText(info, "endCursor");

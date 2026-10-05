@@ -25,6 +25,31 @@ internal sealed class ApiResult(ApiOutcome outcome, FailureKind failure = Failur
     public TimeSpan? RetryAfter { get; } = retryAfter;
     public TimeSpan Elapsed { get; } = elapsed;
     public bool IsSuccess => Outcome == ApiOutcome.Success;
+    // Opt-in user-facing reasons use only a bounded error message, never response data or process output.
+    public string FailureReason(string? alias = null)
+    {
+        if (Data is { ValueKind: JsonValueKind.Object } body && body.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var error in errors.EnumerateArray())
+            {
+                if (error.ValueKind != JsonValueKind.Object) continue;
+                if (alias is not null && error.TryGetProperty("path", out var path) && path.ValueKind == JsonValueKind.Array && path.GetArrayLength() > 0 &&
+                    path[0].ValueKind == JsonValueKind.String && path[0].GetString() != alias) continue;
+                var type = error.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+                if (type is null || !Regex.IsMatch(type, "^[A-Z_0-9]{1,64}$")) type = Failure.ToString();
+                var message = error.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() ?? "" : "";
+                message = Regex.Replace(message, @"(?i)\b(?:authorization)\s*[:=][^\r\n,;]+", "authorization: [redacted]");
+                message = Regex.Replace(message, """(?i)\b(?:(?:access[_-]?|refresh[_-]?|gh_|github_)?token|password|secret|api[_-]?key)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)""", "[redacted]");
+                message = Regex.Replace(message, @"(?i)\b(?:github_pat_[a-z0-9_]+|gh[pousr]_[a-z0-9_]+|(?:bearer|basic)\s+\S+)", "[redacted]");
+                message = Regex.Replace(message, @"://[^\s/@]+:[^\s/@]+@", "://[redacted]@");
+                message = Regex.Replace(message, @"\{[\s\S]*\}|\[[\s\S]*\]", "[details omitted]");
+                message = Regex.Replace(message, @"[\s\p{C}]+", " ").Trim();
+                var reason = message.Length == 0 ? type : type + ": " + message;
+                return reason.Length <= 240 ? reason : reason[..239] + "…";
+            }
+        }
+        return Failure == FailureKind.None ? "InvalidResponse" : Failure.ToString();
+    }
     public override string ToString() => $"{Outcome}: {Failure}; HTTP {HttpStatus}; exit {ExitCode}";
 }
 
@@ -134,7 +159,7 @@ internal sealed class GhApiTransport(IGhProcessRunner runner, string executable,
             if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
             {
                 // Error messages can echo request data. Return classified codes;
-                // callers may inspect transient data, but diagnostics never use raw messages.
+                // selected callers can request a bounded, redacted failure reason.
                 var codes = errors.EnumerateArray().Select(ErrorCode).ToArray();
                 var partial = root.TryGetProperty("data", out var partialData) && partialData.ValueKind != JsonValueKind.Null;
                 var failure = !partial && codes.All(code => code == "FORBIDDEN" || code == "INSUFFICIENT_SCOPES")

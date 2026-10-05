@@ -12,6 +12,7 @@ internal static class ProjectQueries
     private const string Native = "assignees(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id login } } blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id } } parent { id }";
     public static readonly string Assignees = "query PlanningAssignees($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id assignees(first:100, after:$after) { " + PageInfo + " nodes { id login } } } } }";
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
+    public static readonly string SubIssues = "query PlanSubIssues($id:ID!,$after:String){node(id:$id){__typename ... on Issue{id subIssues(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
     private const string FieldReference = "field { ... on ProjectV2FieldCommon { id project { id } } }";
     private const string Values = """
         nodes {

@@ -9,6 +9,7 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.FirstOrDefault() == "--plan-publish-live" && args.Length == 3) return await PlanPublisherLive.Run(args[1], args[2]);
         if (args.FirstOrDefault() == "--seed-gantt" && args.Length == 2) return await GanttWorkload.Seed(args[1]);
         if (args.FirstOrDefault() == "--seed-summary" && args.Length == 2) return await SummaryWorkload.Seed(args[1]);
         if (args.FirstOrDefault() == "--seed-planning-check" && args.Length == 3) return await PlanningEvaluation.Seed(args[1], args[2]);
@@ -145,7 +146,11 @@ internal static class FakeGhProgram
             Console.Write(JsonSerializer.Serialize(new[] { new { host, login = "fixture-user", active = true, state, tokenSource = source, scopes = "repo,project,read:org" } }));
             return 0;
         }
-        if (query is not null && input is not null && settings.TryGetProperty("creation", out var creation) && creation.GetBoolean())
+        if (query is not null && input is not null && settings.TryGetProperty("planEditor", out var planEditor) && planEditor.GetBoolean())
+        {
+            using var planPayload = JsonDocument.Parse(input);
+            return await FakePlanEditor.Handle(query, planPayload.RootElement.GetProperty("variables"), directory, settings);
+        }        if (query is not null && input is not null && settings.TryGetProperty("creation", out var creation) && creation.GetBoolean())
         {
             using var creationPayload = JsonDocument.Parse(input);
             var handled = FakeCreation.Handle(query, creationPayload.RootElement.GetProperty("variables"), directory, host);

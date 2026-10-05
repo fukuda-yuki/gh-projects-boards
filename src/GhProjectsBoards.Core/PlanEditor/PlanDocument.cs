@@ -3,8 +3,8 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal enum PlanField { Title, Repository, Status, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask }
-internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings }
+internal enum PlanField { Title, Repository, Status, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder }
+internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType);
 internal sealed record PlanColumnMapping(PlanField Role, string FieldId, string Name, string DataType);
 internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance, ImmutableArray<DateOnly> DaysOff);
@@ -45,7 +45,7 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
 }
 internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns);
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
-internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State);
+internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State) { public PlanSync Sync { get; init; } = new(); }
 internal sealed record PlanCellChange(string Identity, PlanField Field, object? Value);
 internal abstract record PlanCommand;
 internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand;
@@ -58,7 +58,14 @@ internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanC
 internal sealed record PlanRowChange(string Identity, PlanRow? Before, PlanRow? After);
 internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowChange> Rows,
     ImmutableArray<string>? BeforeOrder, ImmutableArray<string>? AfterOrder,
-    ProjectPlanSettings? BeforeSettings, ProjectPlanSettings? AfterSettings);
+    ProjectPlanSettings? BeforeSettings, ProjectPlanSettings? AfterSettings)
+{
+    public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
+    public ImmutableArray<string>? BeforeUnavailable { get; init; }
+    public ImmutableArray<string>? AfterUnavailable { get; init; }
+    public ImmutableArray<PlanConflict>? BeforeConflicts { get; init; }
+    public ImmutableArray<PlanConflict>? AfterConflicts { get; init; }
+}
 internal sealed record PlanCheckpoint(int Version, long Revision, PlanDocument Document, ImmutableArray<PlanPatch> Undo, ImmutableArray<PlanPatch> Redo);
 internal enum PlanLoadStatus { Missing, Loaded, Blocked }
 internal enum PlanSaveFailure { None, Io, ChangedFile, InvalidFile }

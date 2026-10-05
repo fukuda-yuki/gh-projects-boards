@@ -230,6 +230,16 @@ internal static class PlanOperations
         Require(order.Length == rows.Count && order.Distinct().Count() == order.Length && order.All(rows.ContainsKey), "操作履歴の行順が不正です。");
         return new(order.Select(id => rows[id]).ToImmutableArray(), nextSettings ?? state.Settings);
     }
+    internal static PlanBaseline ReplayBaseline(PlanBaseline baseline, PlanPatch patch, bool forward)
+    {
+        Require(!patch.DiscardedRows.IsDefault, "操作履歴の利用不可行が不正です。");
+        var discarded = patch.DiscardedRows.Select(r => r.Identity).ToHashSet();
+        return baseline with { Rows = forward ? baseline.Rows.Where(r => !discarded.Contains(r.Identity)).ToImmutableArray()
+            : baseline.Rows.AddRange(patch.DiscardedRows.Where(r => !baseline.Rows.Any(current => current.Identity == r.Identity))) };
+    }
+    internal static bool IsSummaryEffort(bool summary, PlanField field) => summary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual;
+    internal static bool IsLocalConstraint(PlanField field, ProjectPlanSettings settings)
+        => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
     internal static PlanUnpublished Changes(PlanDocument d, DateOnly today)
     {
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
@@ -244,12 +254,13 @@ internal static class PlanOperations
             var fields = ImmutableArray.CreateBuilder<PlanField>();
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Closed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
-                if (!Equals(Value(r, field), Value(old, field))) fields.Add(field);
+                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryEffort(calculated.IsSummary, field) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
             if (calculated.Start.Value != old.Start) fields.Add(PlanField.Start);
             if (calculated.End.Value != old.End) fields.Add(PlanField.End);
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
+            if (d.Sync.NativeOrders.TryGetValue(r.Identity, out var siblings) && !siblings.Where(id => baseline.ContainsKey(id)).SequenceEqual(d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity))) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
         return new(result.ToImmutable());
