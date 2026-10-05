@@ -179,8 +179,10 @@ internal static class PlanScheduler
                 {
                     static decimal? Sum(IEnumerable<decimal?> values)
                     {
+                        var known = values.ToArray();
+                        if (known.Any(value => value is null)) return null;
                         decimal sum = 0;
-                        foreach (var value in values) { if (value is null) return null; sum += value.Value; }
+                        foreach (var value in known) sum += value!.Value;
                         return sum;
                     }
                     var starts = values.Where(v => v.Start.HasValue).Select(v => v.Start!.Value).ToArray();

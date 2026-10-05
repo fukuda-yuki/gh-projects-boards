@@ -579,6 +579,25 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Calculated));
         Assert.That(result.Warnings, Is.Empty);
     }
+    [TestCase(false), TestCase(true)]
+    public void MissingSummaryEffortPreventsOverflowRegardlessOfChildOrder(bool missingFirst)
+    {
+        var children = new[]
+        {
+            Task(2, decimal.MaxValue) with { Parent = "issue:1", Remaining = 1 },
+            Task(3, 1) with { Parent = "issue:1", Remaining = 1 },
+            Task(4, null) with { Parent = "issue:1", Remaining = 1 }
+        };
+        if (missingFirst) children = [children[2], children[0], children[1]];
+        var rows = new[] { Task() }.Concat(children).Append(Task(5) with { Predecessors = ["issue:1"] }).ToArray();
+        var result = Calculate(rows, Settings);
+        var parent = result.Single(r => r.Input.RowId == 1);
+        Assert.That(parent.Estimate, Is.Null);
+        Assert.That(parent.Remaining, Is.EqualTo(3));
+        Assert.That(parent.Warnings, Is.Empty);
+        Dates(parent, "2026-10-05", "2026-10-05");
+        Dates(result.Single(r => r.Input.RowId == 5), "2026-10-05", "2026-10-06");
+    }
     [Test, Explicit("Deterministic timing experiment, not a CI timing gate")]
     public void ThousandTasksReportTwentyRecalculationSamples()
     {
