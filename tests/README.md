@@ -176,6 +176,20 @@ dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj 
 
 For planning-editor UI phases, report the complete default hosted suite in addition to focused checks. Hosted asynchronous failures remain in the run outcome; each following case starts a fresh tracking context so an earlier failure does not become its failure. Teardown must remove the visual root even when idle/failure checks throw.
 
+## People view (#80)
+
+`PlanPeopleTests` covers the two Issue acceptance examples, period boundaries and weighted aggregation, daily scheduler allocation across FS endpoints, personal holidays, fixed/completed/summary tasks, current assignment, ambiguous assignment groups and missing inputs. It exercises the real scheduler and pure aggregation without UI or remote access.
+
+The people cases in `PlanWorkspaceHostedTests` exercise actual controls, overload text/color, period changes, expansion, all four task edit fields, allowance persistence, invalid input/navigation, one-step Undo and bounds for 20 people plus both assignment groups at 1280×720. The complete default hosted suite remains the phase regression boundary. `PlanningPeopleJourneyTests` opens 1,000 synthetic tasks with 20 people through the ordinary executable and public UI Automation, checks logical client dimensions and visible person bounds, switches day/week, edits allowance and restarts. Only the GitHub endpoint is replaced by fake gh; screenshots require inspection and do not become visual evidence merely because the journey passes.
+
+```powershell
+Set-Location C:\w\g76
+dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
+dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter '(FullyQualifiedName~PlanPeopleTests|FullyQualifiedName~PlanEditorSchedulingTests)&FullyQualifiedName!~ThousandTasks'
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
+C:\w\g76\scripts\Test-E2E.ps1 -Filter 'FullyQualifiedName~PlanningPeopleJourneyTests'
+```
+
 ## Publish workspace (#79)
 
 `PlanWorkspaceHostedTests` invokes real controls for before/after review, explicit confirm/close, conflict choices, refresh adoption and read failure, stage presentation, new Issue creation, row failures/unverified state, retry and local Undo after publish. It uses the real publisher, isolated checkpoint files and fake-gh subprocesses. `PlanSheetHostedTests.SaveFailureKeepsTheEditAndRetryPersistsItWithoutAnotherUndo` covers edit autosave failure at the sheet boundary. Run the entire default hosted suite, not only new cases.

@@ -41,5 +41,7 @@ internal enum DateOrigin { Kept, Calculated }
 internal sealed record PlanDate(DateOnly? Value, DateOrigin Origin, bool DiffersFromGitHub);
 internal sealed record ScheduledTask(PlanTask Input, PlanDate Start, PlanDate End,
     decimal? Estimate, decimal? Remaining, decimal? Actual, bool IsSummary,
-    string StartReason, IReadOnlyList<string> Warnings);
-
+    string StartReason, IReadOnlyList<string> Warnings)
+{
+    public IReadOnlyDictionary<DateOnly, decimal>? PlannedHours { get; init; }
+}

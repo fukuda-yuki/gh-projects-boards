@@ -63,7 +63,17 @@ internal sealed partial class PlanWorkspaceView
                 AddReviewLine(document, caption, field, oldValue, newValue, conflict);
             }
         }
-        foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field is PlanField.Order or PlanField.SubIssueOrder))
+        foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!)
+            .Concat(document.Sync.Conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
+        {
+            if (!document.State.Rows.Any(r => r.Identity == parent)) continue;
+            var previous = document.Sync.NativeOrders.GetValueOrDefault(parent, []).Where(id => document.State.Rows.Any(r => r.Identity == id)).ToArray();
+            var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
+            var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
+            if (!previous.SequenceEqual(children) || conflict is not null)
+                AddReviewLine(document, Caption(document, parent), PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict);
+        }
+        foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field == PlanField.Order))
             AddReviewLine(document, Caption(document, conflict.Identity), conflict.Field, conflict.Baseline, conflict.Local, conflict);
         if (session.Changes(Today).Fields.Any(p => p.Value.Contains(PlanField.Order)))
             reviewLines.Items.Add(Label("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
@@ -92,6 +102,14 @@ internal sealed partial class PlanWorkspaceView
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
         line.Children.Add(Label($"{caption}  {label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}"));
+        if (field is PlanField.Parent or PlanField.Predecessors &&
+            new[] { before, after, conflict?.Remote }.Any(json => ReviewValue(document, field, json).Contains("未取得")))
+        {
+            var source = document.State.Rows.FirstOrDefault(r => Caption(document, r.Identity) == caption);
+            if (source is not null && document.Sync.IssueLinks.TryGetValue(source.Identity, out var link) &&
+                Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == document.Project.Scope.Host)
+                line.Children.Add(new HyperlinkButton { Content = $"{link.Caption} の関連Issueを確認", NavigateUri = uri });
+        }
         if (conflict is not null)
         {
             line.Children.Add(Label("競合  GitHub: " + ReviewValue(document, field, conflict.Remote)));
@@ -109,7 +127,8 @@ internal sealed partial class PlanWorkspaceView
     private static string Caption(PlanDocument document, string identity)
     {
         var index = document.State.Rows.IndexOf(document.State.Rows.FirstOrDefault(r => r.Identity == identity)!);
-        return index < 0 ? "プロジェクト" : $"{index + 1} {document.State.Rows[index].Title}";
+        return index >= 0 ? $"{index + 1} {document.State.Rows[index].Title}" : identity == document.Project.NodeId ? "プロジェクト" :
+            document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "計画外Issue（未取得）";
     }
     private static string ReviewValue(PlanDocument document, PlanField field, string? json)
     {
@@ -153,6 +172,7 @@ internal sealed partial class PlanWorkspaceView
         foreach (var button in toolbar.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
         if (sheet is not null) sheet.SetRemoteBusy(busy);
         settingsScroll.IsEnabled = !busy;
+        if (peopleView is not null) peopleView.IsEnabled = !busy;
         confirmPublish.IsEnabled = !busy;
         foreach (var button in reviewLines.Items.OfType<StackPanel>().SelectMany(p => p.Children.OfType<Button>())) button.IsEnabled = !busy;
     }

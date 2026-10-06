@@ -101,7 +101,7 @@ internal sealed class PlanWorkspace(PlanStore store)
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
                 var remote = PlanSnapshot.From(read, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
-                { Sync = new() { DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, PeopleNames = remote.PeopleNames } };
+                { Sync = new() { DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = remote.PeopleNames } };
                 session = await PlanSession.CreateAsync(store, document, DateOnly.FromDateTime(DateTime.Today));
                 RequireSave(await session.FlushAsync());
             }

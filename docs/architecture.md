@@ -10,7 +10,9 @@ MainWindow hosts PlanWorkspaceView, sizes the ordinary window and cancels UI-own
 
 PlanWorkspace reuses GhConnectionService, ProjectDiscovery, ProjectReader, PlanSession, PlanStore and PlanPublisher. It retains one session per scoped Project and writes an atomic workspace catalog beneath PlanningEditor/v1 before adopting a changed Project selection. Opening a new Project reads its complete snapshot and matches typed columns. Opening an existing Project restores its local document; refreshing is explicit. Authentication is always rechecked; a saved Project does not imply a connected identity. The catalog does not read old registrations or checkpoints.
 
-Column mappings, calendar, people rates and days off, Project start and repository are ProjectPlanSettings. Each accepted setting operation goes through ReplacePlanSettings, the same scheduler and bounded Undo history. Settings export/import use the existing Core JSON contract. Refreshed assignee display names are remote metadata in PlanSync, separate from locally chosen rates. File pickers remain in the view; the test substitution replaces only picking a path.
+Column mappings, calendar, people rates, allowances and days off, Project start and repository are ProjectPlanSettings. Each accepted setting operation goes through ReplacePlanSettings, the same scheduler and bounded Undo history. Settings export/import use the existing Core JSON contract. Refreshed assignee display names and Issue links are remote metadata in PlanSync, separate from locally chosen rates. File pickers remain in the view; the test substitution replaces only picking a path.
+
+PlanPeople aggregates the selected document's scheduler output and resource calendar into daily, weekly or monthly load and whole-Project forecasts. The scheduler exposes daily work quantities while retaining exact internal time endpoints. PlanPeopleView owns period navigation, expansion and controls; task edits use PlanSheetEditing and EditPlanCells, and allowance/rate edits use ReplacePlanSettings. Both use the existing PlanSession history and persistence. It has no remote writer or leveling operation.
 
 ## Planning editor Core
 

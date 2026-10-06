@@ -28,10 +28,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Dictionary<ScopedId, PlanSheetView> sheets = [];
     private PlanSheetView? sheet;
     private readonly Grid taskArea = new();
+    private readonly Grid peopleArea = new();
+    private PlanPeopleView? peopleView;
     private readonly Button retrySave;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 22 }, "OpenProjectName");
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
-    private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanError");
+    private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
     private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com" }, "PlanHost");
     private readonly TextBox url = Id(new TextBox { Header = "Project URL" }, "PlanProjectUrl");
@@ -70,12 +72,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
         body.Children.Add(title);
         body.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.Children.Add(Button("計画", "PlanShowTasks", () => { Show("tasks"); return Task.CompletedTask; }));
+        toolbar.Children.Add(Button("担当者", "PlanShowPeople", () => { RenderPeople(); Show("people"); return Task.CompletedTask; }));
         toolbar.Children.Add(Button("設定", "PlanShowSettings", () => { RenderSettings(); Show("settings"); return Task.CompletedTask; }));
         toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { try { await workspace.Refresh(OperationToken); } finally { RenderTasks(); RenderSettings(); } }));
         toolbar.Children.Add(Button("元に戻す", "PlanUndo", async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
         InitializePublishing();
         toolbar.Children.Add(unpublished);
         var problem = new StackPanel { Spacing = 4 };
+        error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = error.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible);
         problem.Children.Add(error);
         problem.Children.Add(publishStage);
         retrySave = Button("保存を再試行", "PlanRetrySave", async () => {
@@ -101,7 +105,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, settingsScroll, publishReview }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
         Unloaded += (_, _) => { closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
         Content = root;
         Show("connection");
@@ -157,6 +161,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void Show(string page)
     {
+        peopleArea.Visibility = page == "people" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
@@ -191,6 +196,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         sheet.Refresh();
         unpublished.Text = $"未発行 {sheet.Unpublished.TaskCount} タスク";
         if (!publishing && publishReview.Visibility == Visibility.Visible) RenderReview();
+        if (peopleArea.Visibility == Visibility.Visible) RenderPeople();
+    }
+    private void RenderPeople()
+    {
+        if (workspace.Session is not { } session) return;
+        if (peopleView?.Session != session) {
+            peopleView = new(session);
+            peopleView.Changed += () => { sheet?.Refresh(); unpublished.Text = $"未発行 {session.Changes(Today).TaskCount} タスク"; };
+            peopleArea.Children.Clear(); peopleArea.Children.Add(peopleView);
+        } else peopleView.Refresh();
     }
     private async Task ChangeSettings(Func<ProjectPlanSettings, ProjectPlanSettings> change)
     {
@@ -318,6 +333,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task CommitPending()
     {
         if (sheet is not null) await sheet.FlushInput();
+        if (peopleView is not null) await peopleView.FlushInput();
         foreach (var commit in pendingSettings.ToArray()) await commit();
     }
     private FrameworkElement DateListSetting(string label, string id, Func<ImmutableArray<DateOnly>> current, Func<ImmutableArray<DateOnly>, Task> apply)

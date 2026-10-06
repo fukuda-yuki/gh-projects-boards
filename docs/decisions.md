@@ -142,6 +142,10 @@ Autosave runs in one background loop and coalesces pending revisions while retai
 
 Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout in this phase. Row order and hierarchy are independent: moving selected rows preserves parent identities; indent/outdent changes parent identities without an implicit reorder. These bounded Core commands do not implement CSV parsing, network refresh/publish or UI behavior.
 
+## People load allocation (#80)
+
+Automatic tasks use the scheduler's remaining-work allocation, including partial working days. Fixed tasks keep their specified dates and distribute Remaining evenly across available working days in that interval: the fixed interval is authoritative, so this view does not front-load or reschedule it. If no working day exists, the work remains explicitly unallocated. Completed tasks contribute no future load. Unassigned and multiply assigned tasks stay in separate groups with unknown capacity rather than duplicating hours across people. Weeks run Monday–Sunday and months use full calendar boundaries; aggregate hours and capacity before computing a percentage.
+
 ## Planning editor publish recovery (#79)
 
 - Removed Project members remain unavailable conflicts rather than silently discarding local work or recreating Issues. Explicit discard or copy-to-new resolves their disposition.

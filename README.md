@@ -2,7 +2,7 @@
 
 A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 3. [Requirements](docs/requirements.md), [specification](docs/spec.md) and [decisions](docs/decisions.md) define the product under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76).
 
-The ordinary app opens the new Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry. The people view is delivered separately.
+The ordinary app opens the Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. **担当者** compares daily, weekly and monthly load, whole-Project allowances and forecasts; expanding a person allows task corrections with the same Undo history. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry.
 
 ## Build and run
 

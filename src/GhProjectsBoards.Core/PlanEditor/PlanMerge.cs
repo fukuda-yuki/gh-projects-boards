@@ -6,6 +6,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal sealed record PlanConflict(string Identity, PlanField Field, string? Baseline, string? Local, string? Remote);
 internal sealed record PlanPublishFailure(string Identity, PlanField Field, string Reason);
+internal sealed record PlanIssueLink(string Caption, string Url);
 internal sealed record PlanSync
 {
     public ImmutableArray<string> Unverified { get; init; } = [];
@@ -15,6 +16,7 @@ internal sealed record PlanSync
     public DateTimeOffset? NotBefore { get; init; }
     public PlanPublishProgress? Publish { get; init; }
     public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
+    public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
     public int DraftCount { get; init; }
     public int PullRequestCount { get; init; }
     public ImmutableArray<PlanConflict> Conflicts { get; init; } = [];

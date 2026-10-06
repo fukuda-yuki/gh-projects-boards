@@ -41,6 +41,13 @@ internal static class PlanScheduler
         public static bool operator >(Hours a, Hours b) => a.CompareTo(b) > 0;
         public static bool operator <=(Hours a, Hours b) => a.CompareTo(b) <= 0;
         public static bool operator >=(Hours a, Hours b) => a.CompareTo(b) >= 0;
+        public decimal DailyValue()
+        {
+            // Daily capacity is at most eight hours. Split the integer part so the
+            // scaled fraction fits decimal while retaining its available precision.
+            var whole = BigInteger.DivRem(numerator, denominator, out var fraction);
+            return (decimal)whole + (decimal)(fraction * BigInteger.Pow(10, 28) / denominator) / 10_000_000_000_000_000_000_000_000_000m;
+        }
     }
     // Working-hour endpoints deliberately never escape the calculation result.
     private readonly record struct Point(int Day, Hours Hour) : IComparable<Point>
@@ -266,8 +273,9 @@ internal static class PlanScheduler
                 start = Normalize(remainingStart, person);
             }
             remainingStart = Normalize(remainingStart, person);
-            end = AddWork(remainingStart, work, rate, person);
-            return Create(task, start, end, startOrigin, DateOrigin.Calculated, reason, warnings);
+            end = AddWork(remainingStart, work, rate, person, out var daily);
+            var scheduled = Create(task, start, end, startOrigin, DateOrigin.Calculated, reason, warnings);
+            return scheduled with { Row = scheduled.Row with { PlannedHours = daily } };
 
             void WarnConflict(Point? value)
             {
@@ -295,18 +303,27 @@ internal static class PlanScheduler
             }
         }
 
-        private Point AddWork(Point start, decimal work, Hours rate, PlanPerson? person)
+        private Point AddWork(Point start, decimal work, Hours rate, PlanPerson? person, out IReadOnlyDictionary<DateOnly, decimal> daily)
         {
             // Even an always-working calendar cannot place more than this in the supported date range.
             Hours remaining = work;
             if (remaining / rate > (Hours)((DateOnly.MaxValue.DayNumber - start.Day + 1m) * 8m))
                 throw new ArgumentOutOfRangeException(nameof(work));
             var point = start;
+            var allocated = new Dictionary<DateOnly, Hours>();
             while (true)
             {
                 var boundary = point.Hour < 13 ? 13 : 18;
                 var capacity = (boundary - point.Hour) * rate;
-                if (remaining <= capacity) return point with { Hour = point.Hour + remaining / rate };
+                var used = remaining <= capacity ? remaining : capacity;
+                allocated[point.Date] = (allocated.TryGetValue(point.Date, out var previous) ? previous : (Hours)0) + used;
+                if (remaining <= capacity)
+                {
+                    var values = allocated.ToDictionary(p => p.Key, p => p.Value.DailyValue());
+                    values[point.Date] += work - values.Values.Sum();
+                    daily = values;
+                    return point with { Hour = point.Hour + remaining / rate };
+                }
                 remaining -= capacity;
                 point = Normalize(point with { Hour = boundary }, person);
             }
