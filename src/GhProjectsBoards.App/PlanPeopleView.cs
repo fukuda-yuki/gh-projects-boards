@@ -42,7 +42,7 @@ internal sealed class PlanPeopleView : UserControl
     private bool rendering;
     private PeoplePlan report = null!;
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
-    private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 64];
+    private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 112];
     internal PlanPeopleView(PlanSession session)
     {
         Session = session; anchor = session.Document.State.Settings.StatusDate ?? Today;
@@ -211,10 +211,11 @@ internal sealed class PlanPeopleView : UserControl
             } else { Add(line, Text("—"), 1); Add(line, Text("—"), 2); }
             var totals = new[] { person.Estimate, person.Actual, person.Remaining, person.Forecast, person.Difference };
             for (var i = 0; i < totals.Length; i++) {
-                var label = Id(Text(Number(totals[i])), $"PeopleTotal_{person.Identity}_{i}");
-                AutomationProperties.SetName(label, person.Name + " " + names[i + 3] + " " + label.Text);
-                ToolTipService.SetToolTip(label, label.Text + (person.Missing.Count > 0 ? " — " + string.Join("、", person.Missing) : ""));
+                var groupDifference = i == 4 && person.Rate is null;
+                var label = Id(Text(groupDifference ? "—" : Number(totals[i])), $"PeopleTotal_{person.Identity}_{i}");
                 if (i == 4 && person.Difference < 0) { label.Text += " 超過"; label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"]; }
+                AutomationProperties.SetName(label, person.Name + " " + names[i + 3] + " " + label.Text);
+                ToolTipService.SetToolTip(label, label.Text + (!groupDifference && person.Missing.Count > 0 ? " — " + string.Join("、", person.Missing) : ""));
                 Add(line, label, i + 3);
             }
             for (var i = 0; i < report.Periods.Count; i++) {

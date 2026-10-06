@@ -311,6 +311,49 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.EqualTo("80")));
     }
 
+    [TestCase(228, "-108 超過")]
+    [TestCase(1120, "-1000 超過")]
+    public async Task PeopleOverAllowanceDifferenceShowsTheWholeWarning(int forecast, string expected)
+    {
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with {
+            Row = state.Issues[0].Row with { Estimate = forecast, Remaining = forecast } }] });
+        await Open();
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            People = [new("U1", "alice", 100, 120, [])] }), DateOnly.FromDateTime(DateTime.Today));
+        await Ui.Run(() => { view.Width = 1280; view.Height = 720; Ui.Click("PlanShowPeople"); });
+        await Ui.Ready<TextBlock>("PeopleTotal_U1_4");
+        await Ui.Run(() => {
+            view.UpdateLayout();
+            var difference = Ui.Find<TextBlock>("PeopleTotal_U1_4");
+            Assert.That(difference.ActualWidth, Is.GreaterThan(0));
+            using (Assert.EnterMultipleScope()) {
+                Assert.That(difference.Text, Is.EqualTo(expected));
+                Assert.That(difference.IsTextTrimmed, Is.False, "The amount and warning must both fit after layout.");
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(difference), Does.EndWith(expected));
+            }
+        });
+    }
+
+    [Test]
+    public async Task PeopleGroupDifferenceIsNotApplicableWhilePersonAllowanceIsMissing()
+    {
+        await Open();
+        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.Empty);
+            var person = Ui.Find<TextBlock>("PeopleTotal_U1_4");
+            Assert.That(person.Text, Is.EqualTo("未入力"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(person), Does.EndWith(" 差分 未入力"));
+            foreach (var (identity, name) in new[] { (PlanPeople.Unassigned, "担当者なし"), (PlanPeople.Multiple, "担当者が複数") }) {
+                var difference = Ui.Find<TextBlock>($"PeopleTotal_{identity}_4");
+                Assert.That(difference.Text, Is.EqualTo("—"), name);
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(difference), Is.EqualTo(name + " 差分 —"));
+                Assert.That(ToolTipService.GetToolTip(difference), Is.EqualTo("—"));
+            }
+        });
+    }
+
     [Test]
     public async Task PeopleAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
     {
