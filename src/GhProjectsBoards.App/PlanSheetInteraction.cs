@@ -3,6 +3,8 @@ using System.Text.Json;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Input;
+using Microsoft.UI.Dispatching;
+using DispatcherQueueController = Microsoft.UI.Dispatching.DispatcherQueueController;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -155,26 +157,51 @@ internal sealed partial class PlanSheetView
         if (Pending.Keys.Any(k => ids.Contains(k.Identity) && columns.Contains(k.Field)))
             throw new InvalidOperationException("未確定入力があります。確定または取消してください。");
     }
-    private readonly Func<Task<PlanClipboardContent>> readClipboard;
-    private readonly Action<PlanClipboardContent> writeClipboard;
-    private static async Task<PlanClipboardContent> ReadClipboard()
+    private readonly Func<CancellationToken, Task<PlanClipboardContent>> readClipboard;
+    private readonly Action<PlanClipboardContent, CancellationToken> writeClipboard;
+    private static async Task<PlanClipboardContent> ReadClipboard(CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         var content = Clipboard.GetContent();
         if (!content.Contains(StandardDataFormats.Text)) throw new ArgumentException("貼り付けるテキストがありません。");
-        return new(await content.GetTextAsync(), content.Contains(ClipboardFormat) ? await content.GetDataAsync(ClipboardFormat) as string : null);
+        token.ThrowIfCancellationRequested();
+        return new(await content.GetTextAsync().AsTask(token), content.Contains(ClipboardFormat) ? await content.GetDataAsync(ClipboardFormat).AsTask(token) as string : null);
     }
-    private static void WriteClipboard(PlanClipboardContent content)
+    private static void WriteClipboard(PlanClipboardContent content, CancellationToken token)
     {
         var data = new DataPackage(); data.SetText(content.Text);
         if (content.Metadata is not null) data.SetData(ClipboardFormat, content.Metadata);
-        Clipboard.SetContent(data); Clipboard.Flush();
+        token.ThrowIfCancellationRequested();
+        Clipboard.SetContent(data);
+        token.ThrowIfCancellationRequested();
+        Clipboard.Flush();
     }
     private const string ClipboardFormat = "GhProjectsBoards.PlanCells.v1";
     private sealed record SheetCopy(ScopedId Project, PlanField[] Fields, string[] Identities, string[][] Values);
-    private string clipboardWork = "none";
-    private async Task<T> WithClipboard<T>(Func<Task<T>> action)
+    // One process-owned worker keeps synchronous delayed-rendering calls away from
+    // the window. A blocked owner cannot cause an unbounded number of worker threads.
+    private static readonly Lazy<DispatcherQueueController> clipboardQueue = new(DispatcherQueueController.CreateOnDedicatedThread);
+    private static async Task<T> InvokeClipboard<T>(Func<CancellationToken, Task<T>> action, CancellationToken token)
     {
-        var token = lifetime.Token;
+        var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = token.Register(() => completion.TrySetCanceled(token));
+        if (!token.IsCancellationRequested && !clipboardQueue.Value.DispatcherQueue.TryEnqueue(async () => {
+            if (token.IsCancellationRequested) return;
+            SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()));
+            try { completion.TrySetResult(await action(token).WaitAsync(token)); }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { completion.TrySetCanceled(token); }
+            catch (Exception error) { completion.TrySetException(error); }
+        })) throw new InvalidOperationException("Clipboard worker is unavailable.");
+        return await completion.Task;
+    }
+    private const string ClipboardError = "クリップボードを使用できません。もう一度お試しください。";
+    private string clipboardWork = "none";
+    private async Task<T> WithClipboard<T>(Func<CancellationToken, Task<T>> action)
+    {
+        var unloaded = lifetime.Token;
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(unloaded);
+        deadline.CancelAfter(TimeSpan.FromSeconds(2));
+        var token = deadline.Token;
         try
         {
             for (var attempt = 0; ; attempt++)
@@ -183,17 +210,18 @@ internal sealed partial class PlanSheetView
                 clipboardWork = $"access attempt {attempt + 1}";
                 try
                 {
-                    var result = await action().WaitAsync(token);
+                    var result = await InvokeClipboard(action, token);
                     token.ThrowIfCancellationRequested();
                     return result;
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
                 catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x800401D0) && attempt < 4)
                 { clipboardWork = "retry delay"; await Task.Delay(100, token); }
-                catch (Exception ex)
-                { throw new InvalidOperationException("クリップボードを使用できません。もう一度お試しください。", ex); }
+                catch (Exception ex) { throw new InvalidOperationException(ClipboardError, ex); }
             }
         }
+        catch (OperationCanceledException error) when (!unloaded.IsCancellationRequested)
+        { throw new InvalidOperationException(ClipboardError, error); }
         finally { clipboardWork = "none"; }
     }
     private async Task Copy()
@@ -203,7 +231,8 @@ internal sealed partial class PlanSheetView
         var text = string.Join("\n", rows.Select(id => string.Join("	", fields.Select(f => Display(id, f)))));
         var typed = rows.Select(id => fields.Select(field => JsonSerializer.Serialize(CopyValue(id, field), PlanJson.Options)).ToArray()).ToArray();
         var content = new PlanClipboardContent(text, JsonSerializer.Serialize(new SheetCopy(Session.Document.Project, fields, rows, typed), PlanJson.Options));
-        await WithClipboard(() => { writeClipboard(content); return Task.FromResult(true); });
+        var write = writeClipboard;
+        await WithClipboard(token => { write(content, token); return Task.FromResult(true); });
     }
     private async Task Paste()
     {
@@ -269,6 +298,10 @@ internal sealed partial class PlanSheetView
             throw new ArgumentException("設定で既定リポジトリを選んでください。");
         var row = PlanRow.New("", repository);
         Check(await Session.Execute(new InsertPlanRows([row], selected.Length == 0 ? null : selected), Today));
+        acceptedFilter = "";
+        rendering = true;
+        try { filter.Text = ""; }
+        finally { rendering = false; }
         selected = anchor = row.Identity; selectedField = anchorField = PlanField.Title; Refresh(); FocusSelected();
     }
     private async Task Indent(bool outdent)

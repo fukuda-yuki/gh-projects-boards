@@ -21,6 +21,8 @@ internal sealed class PlanSheetHostedTests
     private PlanSession session = null!;
     private PlanSheetView sheet = null!;
     private PlanClipboardContent clipboard = new("", null);
+    private Func<Task<PlanClipboardContent>>? clipboardReader;
+    private Action<PlanClipboardContent>? clipboardWriter;
     private string? previousMetrics;
     private string? metricsPath;
     private static readonly DateOnly Today = new(2026, 10, 5);
@@ -28,6 +30,7 @@ internal sealed class PlanSheetHostedTests
     public async Task Setup()
     {
         await Ui.BeginTest();
+        clipboardReader = null; clipboardWriter = null;
         root = Path.Combine(Path.GetTempPath(), "ghpb-sheet-" + Guid.NewGuid().ToString("N"));
         var performance = TestContext.CurrentContext.Test.Properties["Category"].Contains("PlanSheetPerformance");
         if (performance)
@@ -44,7 +47,7 @@ internal sealed class PlanSheetHostedTests
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null, [])).ToImmutableArray() : [new("U1", "alice", 100, null, [])],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE")] })), Today);
-        await Ui.Run(() => sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value));
+        await Ui.Run(() => sheet = new(session, () => clipboardReader is { } read ? read() : Task.FromResult(clipboard), value => { if (clipboardWriter is { } write) write(value); else clipboard = value; }));
         await Ui.Mount(sheet);
     }
     [TearDown]
@@ -64,6 +67,88 @@ internal sealed class PlanSheetHostedTests
         }
             }
         finally { Ui.EndTest(); }
+    }
+    [TestCase(false), TestCase(true), Category("PlanSheetReview4")]
+    public async Task BlockingClipboardTimesOutWithoutBlockingUiOrChangingThePlan(bool paste)
+    {
+        using var release = new ManualResetEventSlim();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ended = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Block()
+        {
+            started.TrySetResult();
+            try { release.Wait(); }
+            finally { ended.TrySetResult(); }
+        }
+        clipboardReader = () => { Block(); return Task.FromResult(new PlanClipboardContent("16", null)); };
+        clipboardWriter = _ => Block();
+        await Select(1, PlanField.Remaining);
+        var before = session.Document.State; var undo = session.UndoCount;
+        try
+        {
+            await Ui.Run(() => Ui.Click(paste ? "PlanSheetPaste" : "PlanSheetCopy"));
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            // The external owner is still blocked. The UI must be able to respond.
+            await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").IsEnabled, Is.True)).WaitAsync(TimeSpan.FromSeconds(3));
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text == "クリップボードを使用できません。もう一度お試しください。");
+            await Ui.Run(() => Assert.That(SelectProvider("PlanCell1_Remaining").IsSelected, Is.True));
+        }
+        finally { release.Set(); await ended.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
+        await Ui.Idle();
+        Assert.That(session.Document.State, Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+    [Test, Category("PlanSheetReview4")]
+    public async Task InsertWithAFilterKeepsTheNewTitleFocusedAndExistingTasksUnchanged()
+    {
+        var before = session.Document.State.Rows;
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 2");
+        await Ui.Until(() => !Ui.Find<ListView>("PlanTasks").Items.Contains("I1"));
+        await Select(2, PlanField.Title); await Ui.ClickCommand("PlanSheetInsert");
+        await Ui.Until(() => session.Document.State.Rows.Length == before.Length + 1);
+        var added = session.Document.State.Rows.Single(r => !before.Any(old => old.Identity == r.Identity));
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Contains(added.Identity));
+        await Ui.Until(() => FocusManager.GetFocusedElement(Ui.Root.XamlRoot) is TextBox text && text.Text.Length == 0);
+        await Ui.Run(() => ((TextBox)FocusManager.GetFocusedElement(Ui.Root.XamlRoot)).Text = "New planned task");
+        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == added.Identity).Title, Is.EqualTo("New planned task"));
+        Assert.That(session.Document.State.Rows.Where(r => r.Identity != added.Identity), Is.EqualTo(before));
+    }
+    [TestCase(1), TestCase(2), Category("PlanSheetReview4")]
+    public async Task RejectedZoomKeepsSelectionScaleAndLabelsTogether(int proposed)
+    {
+        await Edit(1, PlanField.Remaining, "invalid");
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = proposed);
+        await Ui.Run(() => sheet.Run(() => Task.CompletedTask)); await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex, Is.Zero);
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(24));
+            Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
+        });
+        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset > 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex, Is.Zero);
+            Assert.That(Ui.Find<TextBlock>("PlanTimelineMonths").Text, Does.Contain("2026"));
+            var labels = Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineLabel", StringComparison.Ordinal)).ToArray();
+            Assert.That(labels, Is.Not.Empty);
+            Assert.That(labels.All(t => t.Text.Length == 2 && t.Text.All(char.IsDigit)), Is.True);
+        });
+    }
+    [Test, Category("PlanSheetReview4")]
+    public async Task ReturningToExternalPredecessorDisplayClearsPendingWithoutParsingOrHistory()
+    {
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Predecessors, ImmutableArray.Create("outside"))]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Select(1, PlanField.Predecessors);
+        var before = session.Document.State; var undo = session.UndoCount;
+        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Predecessors").Focus(FocusState.Programmatic));
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Predecessors").FocusState != FocusState.Unfocused);
+        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Predecessors").Text = "2");
+        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Predecessors").Text = "計画外");
+        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        Assert.That(session.Document.State, Is.EqualTo(before)); Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
     }
     [TestCase(PlanField.Start), TestCase(PlanField.End), Category("PlanSheetReview3")]
     public async Task ReturningToTheDisplayedCalculatedDateKeepsAutomaticSchedulingAndHistory(PlanField field)
@@ -127,11 +212,10 @@ internal sealed class PlanSheetHostedTests
     [Test, Category("PlanSheetReview3")]
     public async Task UnloadingDuringClipboardReadCancelsPasteAndAllowsRemount()
     {
-        await Ui.Unmount(sheet);
         var content = new TaskCompletionSource<PlanClipboardContent>(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        await Ui.Run(() => sheet = new(session, () => { started.TrySetResult(); return content.Task; }));
-        await Ui.Mount(sheet); await Select(1, PlanField.Remaining);
+        clipboardReader = () => { started.TrySetResult(); return content.Task; };
+        await Select(1, PlanField.Remaining);
         var before = session.Document.State;
         await Ui.Run(() => Ui.Click("PlanSheetPaste"));
         await started.Task.WaitAsync(TimeSpan.FromSeconds(10));

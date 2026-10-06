@@ -56,6 +56,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
+    private int acceptedZoom;
     private readonly TextBlock selection = Id(new TextBlock(), "PlanSheetSelection");
     private readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
     private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月" }, SelectedIndex = 0, MinWidth = 65 }, "PlanGanttZoom");
@@ -73,8 +74,8 @@ internal sealed partial class PlanSheetView : Grid
     internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null)
     {
         Session = session;
-        this.readClipboard = readClipboard ?? ReadClipboard;
-        this.writeClipboard = writeClipboard ?? WriteClipboard;
+        this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
+        this.writeClipboard = writeClipboard is null ? WriteClipboard : (content, _) => writeClipboard(content);
         for (var r = 0; r < 4; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -154,11 +155,22 @@ internal sealed partial class PlanSheetView : Grid
             await Run(async () => { await CommitPending(); Check(await Session.Execute(new ReplacePlanSettings(Session.Document.State.Settings with { StatusDate = value }), Today)); Refresh(); }, "Status date");
         };
         zoom.SelectionChanged += async (_, _) => {
-            if (rendering) return;
-            await Run(async () => { await CommitPending(); DayWidth = zoom.SelectedIndex switch { 1 => 8, 2 => 2, _ => 24 }; RefreshLayout(); }, "Zoom");
+            if (rendering || zoom.SelectedIndex == acceptedZoom) return;
+            var proposed = zoom.SelectedIndex;
+            await Run(async () => {
+                try { await CommitPending(); }
+                catch {
+                    rendering = true;
+                    try { zoom.SelectedIndex = acceptedZoom; }
+                    finally { rendering = false; }
+                    throw;
+                }
+                acceptedZoom = proposed;
+                DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => 24 }; RefreshLayout();
+            }, "Zoom");
         };
         filter.TextChanged += async (_, _) => {
-            if (rendering) return;
+            if (rendering || filter.Text == acceptedFilter) return;
             var proposed = filter.Text;
             await Run(async () => {
                 try { await CommitPending(); }
@@ -253,14 +265,14 @@ internal sealed partial class PlanSheetView : Grid
         pendingFrame = metrics.Begin(Session.Document.State.Rows.Length);
         try
         {
-            var value = PlanSheetEditing.Parse(Session.Document, field, text);
-            // Displayed schedule dates can be calculated. Returning to that display
-            // must not turn the date into a manual scheduling constraint.
+            // Display-only predecessors and calculated dates are not new inputs.
+            // Returning to that display must preserve identities and scheduling.
             if (text == originalText)
             {
                 if (Generation(identity, field) == generation) { Pending.Remove((identity, field)); Problems.Remove((identity, field)); }
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
+            var value = PlanSheetEditing.Parse(Session.Document, field, text);
             PlanCommand command;
             if (identity.Length == 0)
             {
@@ -387,7 +399,7 @@ internal sealed partial class PlanSheetView : Grid
         chartHead.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, 40) };
         var left = Math.Max(0, (int)(ChartOffset / DayWidth));
         var right = Math.Min(DayCount, (int)((ChartOffset + ChartViewport) / DayWidth) + 32);
-        if (zoom.SelectedIndex == 0)
+        if (acceptedZoom == 0)
         {
             var first = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + left));
             var lastVisible = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport - 1) / DayWidth))));
@@ -402,10 +414,10 @@ internal sealed partial class PlanSheetView : Grid
         for (var day = left; day < right && FirstDay.DayNumber + day <= DateOnly.MaxValue.DayNumber; day++)
         {
             var date = FirstDay.AddDays(day);
-            var label = zoom.SelectedIndex switch { 1 => DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - ((int)date.DayOfWeek + 6) % 7)).ToString("M/d"), 2 => date.ToString("yyyy/M"), _ => date.ToString("dd") };
+            var label = acceptedZoom switch { 1 => DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - ((int)date.DayOfWeek + 6) % 7)).ToString("M/d"), 2 => date.ToString("yyyy/M"), _ => date.ToString("dd") };
             if (label == last) continue; last = label;
             var text = new TextBlock { Text = label, FontSize = 11, Margin = new(2, 5, 0, 0), Foreground = Brush("TextFillColorSecondaryBrush") };
-            var groupEnd = zoom.SelectedIndex switch {
+            var groupEnd = acceptedZoom switch {
                 1 => day + 7 - ((int)date.DayOfWeek + 6) % 7,
                 2 => day + DateTime.DaysInMonth(date.Year, date.Month) - date.Day + 1,
                 _ => day + 1 };
@@ -414,7 +426,7 @@ internal sealed partial class PlanSheetView : Grid
             text.Measure(new Size(double.PositiveInfinity, 28));
             if (text.DesiredSize.Width + 4 > available) continue;
             AutomationProperties.SetAutomationId(text, "PlanTimelineLabel" + day);
-            Canvas.SetLeft(text, Math.Max(0, x)); Canvas.SetTop(text, zoom.SelectedIndex == 0 ? 16 : 5); chartHead.Children.Add(text);
+            Canvas.SetLeft(text, Math.Max(0, x)); Canvas.SetTop(text, acceptedZoom == 0 ? 16 : 5); chartHead.Children.Add(text);
         }
     }
     internal double X(DateOnly day) => (day.DayNumber - FirstDay.DayNumber) * DayWidth - ChartOffset;
