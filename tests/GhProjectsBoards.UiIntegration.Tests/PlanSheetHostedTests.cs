@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using GhProjectsBoards.Tests;
 using GhProjectsBoards.App;
@@ -68,6 +68,68 @@ internal sealed class PlanSheetHostedTests
             }
         finally { Ui.EndTest(); }
     }
+    [TestCase(false), TestCase(true), Category("PlanSheetReview4")]
+    public async Task SheetPendingInputSurvivesLeavingTheAcceptedFilter(bool redo)
+    {
+        await PrepareSheetPendingExit();
+        await Ui.Run(() => Assert.That(Ui.Find<ListView>("PlanTasks").Items.Contains("I1"), Is.True,
+            "The accepted title filter must retain a row containing invalid input."));
+        await Ui.ClickCommand(redo ? "PlanSheetRedo" : "PlanSheetUndo"); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("invalid"));
+            var problem = Ui.Popup<Border>("SheetInputProblem");
+            Assert.That(problem, Is.Not.Null);
+            Assert.That(((TextBlock)problem!.Child).Text, Is.Not.Empty);
+            Assert.That(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(cell.XamlRoot).Single(p => p.Child == problem).PlacementTarget, Is.SameAs(cell));
+        });
+        if (!redo) await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Popup<Border>("SheetInputProblem")!, "sheet-validation"));
+        await Edit(1, PlanField.Remaining, "8");
+        await Ui.Until(() => !Ui.Find<ListView>("PlanTasks").Items.Contains("I1"));
+    }
+
+    private async Task PrepareSheetPendingExit()
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 1");
+        await Ui.Until(() => !Ui.Find<ListView>("PlanTasks").Items.Contains("I2"));
+        await Edit(1, PlanField.Remaining, "invalid");
+        await Ui.Run(() => {
+            var title = Ui.Find<TextBox>("PlanCell1_Title"); title.Focus(FocusState.Programmatic); title.Text = "Outside filter";
+            Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic);
+        });
+        await Ui.Until(() => session.Document.State.Rows[0].Title == "Outside filter"); await Ui.Idle();
+    }
+
+    [Test]
+    public async Task SheetRefusedColumnToggleRestoresAcceptedVisibility()
+    {
+        await Edit(1, PlanField.Remaining, "invalid");
+        await Ui.Run(() => Ui.Click("PlanSheetColumns"));
+        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is not null);
+        CheckBox toggle = null!;
+        await Ui.Run(() => { toggle = Ui.Popup<CheckBox>("PlanColumnRemaining")!; Ui.Toggle(toggle); });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(toggle.IsChecked, Is.True);
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Visibility, Is.EqualTo(Visibility.Visible));
+            Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide();
+        });
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
+    }
+
+    [Test, Category("PlanSheetNative")]
+    public async Task SheetEscapeDiscardsRetainedInput()
+    {
+        await PrepareSheetPendingExit(); var undo = session.UndoCount;
+        await SheetNativeInput.Click("PlanCell1_Remaining");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
+        await Ui.Until(() => !Ui.Find<ListView>("PlanTasks").Items.Contains("I1"));
+        Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(8));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => Assert.That(Ui.Popup<Border>("SheetInputProblem") is not null, Is.False));
+    }
+
     [TestCase(false), TestCase(true), Category("PlanSheetReview4")]
     public async Task BlockingClipboardTimesOutWithoutBlockingUiOrChangingThePlan(bool paste)
     {

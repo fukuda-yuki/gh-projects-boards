@@ -20,17 +20,21 @@ internal sealed class PlanPeopleView : UserControl
     private readonly ListView rows = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PeopleRows");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PeopleError");
     private readonly TextBlock range = new() { VerticalAlignment = VerticalAlignment.Center };
+    private readonly PlanInputProblem inputProblem = new("PeopleInputProblem");
     private readonly HashSet<string> expanded = [];
     // Edits outlive the controls rebuilt after an asynchronous save.
     private sealed class InputState(string text)
     {
         internal string Accepted = text;
         internal bool Composing;
+        internal string Group = "";
+        internal string? TaskIdentity, Problem;
         internal bool Dirty => Box is not null && Box.Text != Accepted;
         internal TextBox Box = null!;
         internal Func<Task> Commit = null!;
     }
     private readonly Dictionary<string, InputState> inputs = [];
+    private InputState? requestedFocus;
     private DateOnly anchor;
     private PlanPeriodScale scale;
     private int periodIndex, generation;
@@ -69,6 +73,8 @@ internal sealed class PlanPeopleView : UserControl
         var scroll = new ScrollViewer { Content = table, HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollMode = ScrollMode.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
         root.Children.Add(scroll); Grid.SetRow(scroll, 2);
+        rows.LayoutUpdated += (_, _) => TryFocusInput();
+        Unloaded += (_, _) => { requestedFocus = null; inputProblem.Close(); };
         Content = root; Refresh();
     }
     private static T Id<T>(T item, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(item, id); return item; }
@@ -90,7 +96,28 @@ internal sealed class PlanPeopleView : UserControl
             catch (Exception ex) when (ex is not OutOfMemoryException) { error.Text = ex.Message; error.Visibility = Visibility.Visible; }
         }
     }
-    private async Task CommitInput() { foreach (var input in inputs.Values.ToArray()) await input.Commit(); }
+    private async Task CommitInput() {
+        foreach (var input in inputs.Values.ToArray()) {
+            try { await input.Commit(); }
+            catch {
+                requestedFocus = input;
+                var group = rows.Items.OfType<StackPanel>().FirstOrDefault(p => p.Children.OfType<Grid>()
+                    .Any(g => AutomationProperties.GetAutomationId(g) == "PeopleRow_" + input.Group));
+                if (group is not null) rows.ScrollIntoView(group);
+                TryFocusInput(); throw;
+            }
+        }
+    }
+    private void TryFocusInput() {
+        if (requestedFocus is not { } input || !input.Box.IsLoaded) return;
+        if (input.Box.Focus(FocusState.Programmatic)) { input.Box.StartBringIntoView(); requestedFocus = null; UpdateInputProblem(); }
+    }
+    private void UpdateInputProblem() {
+        var input = inputs.Values.Where(i => i.Problem is not null && i.Box.IsLoaded)
+            .OrderByDescending(i => i.Box.FocusState != FocusState.Unfocused).FirstOrDefault();
+        if (input is null) { inputProblem.Close(); return; }
+        inputProblem.Show(input.Box, input.Problem!);
+    }
     internal async Task FlushInput() { await operation; await CommitInput(); }
     private async Task Apply(PlanCommand command)
     {
@@ -98,22 +125,30 @@ internal sealed class PlanPeopleView : UserControl
         Changed?.Invoke();
         if (!result.Succeeded) throw new IOException(result.Error);
     }
-    private TextBox Input(string text, string id, string name, Func<string, PlanCommand> command)
+    private TextBox Input(Func<string> committed, string id, string name, Func<string, PlanCommand> command, string group, string? taskIdentity = null)
     {
+        var text = committed();
         if (!inputs.TryGetValue(id, out var input)) inputs[id] = input = new(text);
+        input.Group = group; input.TaskIdentity = taskIdentity;
         if (input.Dirty) text = input.Box.Text;
         else input.Accepted = text;
         var box = Id(new TextBox { Text = text, MinHeight = 0, Height = 24, Padding = new(3, 0, 3, 0), VerticalContentAlignment = VerticalAlignment.Center }, id);
         AutomationProperties.SetName(box, name);
         input.Box = box; var current = generation;
+        box.Loaded += (_, _) => UpdateInputProblem();
+        box.GotFocus += (_, _) => UpdateInputProblem();
         var composing = false; var justComposed = false;
         box.TextCompositionStarted += (_, _) => input.Composing = composing = true;
         box.TextCompositionEnded += (_, _) => { input.Composing = composing = false; justComposed = true;
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => justComposed = false); };
         async Task Commit() {
-            if (input.Composing) throw new InvalidOperationException("文字の変換を確定してください。");
-            if (!input.Dirty) return;
-            var changed = input.Box.Text; await Apply(command(changed)); input.Accepted = changed;
+            try {
+                if (input.Composing) throw new InvalidOperationException("文字の変換を確定してください。");
+                if (input.Dirty) { var changed = input.Box.Text; await Apply(command(changed)); input.Accepted = changed; }
+                input.Problem = null; UpdateInputProblem();
+            } catch (Exception ex) when (ex is not OutOfMemoryException) {
+                input.Problem = ex.Message; UpdateInputProblem(); throw;
+            }
         }
         input.Commit = Commit;
         box.LostFocus += async (_, _) => {
@@ -123,7 +158,11 @@ internal sealed class PlanPeopleView : UserControl
         box.KeyDown += async (_, e) => {
             if (composing || justComposed) return;
             if (e.Key == VirtualKey.Enter) { e.Handled = true; await Run(() => { Refresh(); return Task.CompletedTask; }); }
-            else if (e.Key == VirtualKey.Escape) { box.Text = input.Accepted; e.Handled = true; }
+            else if (e.Key == VirtualKey.Escape) {
+                box.Text = input.Accepted = committed(); input.Problem = null;
+                if (!inputs.Values.Any(i => i.Problem is not null)) { error.Text = ""; error.Visibility = Visibility.Collapsed; }
+                e.Handled = true; Refresh();
+            }
         };
         return box;
     }
@@ -145,6 +184,7 @@ internal sealed class PlanPeopleView : UserControl
         var selection = focused?.SelectionStart ?? 0; var selectionLength = focused?.SelectionLength ?? 0;
         var offset = Descendants(rows).OfType<ScrollViewer>().FirstOrDefault()?.VerticalOffset ?? 0;
         generation++; rows.Items.Clear(); header.Children.Clear();
+        foreach (var input in inputs.Values.Where(i => i.TaskIdentity is not null && (i.Dirty || i.Composing))) expanded.Add(input.Group);
         report = PlanPeople.Calculate(Session.Document, Today, anchor, scale, scale == PlanPeriodScale.Day ? 7 : 6);
         table.Width = Widths.Sum() + 104 * report.Periods.Count;
         range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}  人時";
@@ -166,8 +206,8 @@ internal sealed class PlanPeopleView : UserControl
             AutomationProperties.SetName(expand, person.Name + "のタスクを展開 " + string.Join("、", person.Missing));
             Add(line, expand, 0);
             if (person.Rate is not null) {
-                Add(line, Input(Number(person.Rate), "PeopleRate_" + person.Identity, person.Name + " 稼働率", text => ResourceCommand(person, text, true)), 1);
-                Add(line, Input(person.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", "PeopleAllowance_" + person.Identity, person.Name + " 許容量 人時", text => ResourceCommand(person, text, false)), 2);
+                Add(line, Input(() => Number(Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Rate ?? person.Rate), "PeopleRate_" + person.Identity, person.Name + " 稼働率", text => ResourceCommand(person, text, true), person.Identity), 1);
+                Add(line, Input(() => Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", "PeopleAllowance_" + person.Identity, person.Name + " 許容量 人時", text => ResourceCommand(person, text, false), person.Identity), 2);
             } else { Add(line, Text("—"), 1); Add(line, Text("—"), 2); }
             var totals = new[] { person.Estimate, person.Actual, person.Remaining, person.Forecast, person.Difference };
             for (var i = 0; i < totals.Length; i++) {
@@ -233,23 +273,27 @@ internal sealed class PlanPeopleView : UserControl
             var text = Text(name); text.Width = width - 8; headings.Children.Add(text);
         }
         panel.Children.Add(headings);
-        var ids = person.Periods[periodIndex].Tasks.Concat(person.Unallocated).Distinct().ToHashSet();
+        var retained = inputs.Values.Where(i => i.Group == person.Identity && i.TaskIdentity is not null && (i.Dirty || i.Composing)).Select(i => i.TaskIdentity!);
+        var ids = person.Periods[periodIndex].Tasks.Concat(person.Unallocated).Concat(retained).ToHashSet();
         foreach (var row in Session.Document.State.Rows.Where(r => ids.Contains(r.Identity))) {
             var line = new StackPanel { Orientation = Orientation.Horizontal };
             var title = Text($"{Session.Document.State.Rows.IndexOf(row) + 1} {row.Title}" + (person.Unallocated.Contains(row.Identity) ? "（未配分）" : ""));
             title.Width = 242; ToolTipService.SetToolTip(title, title.Text); line.Children.Add(title);
             line.Children.Add(AssigneeChoice(row));
             foreach (var field in new[] { PlanField.Remaining, PlanField.Actual }) {
-                var text = (field == PlanField.Remaining ? row.Remaining : row.Actual)?.ToString(CultureInfo.CurrentCulture) ?? "";
-                var input = Input(text, $"PeopleTask_{row.Identity}_{field}", row.Title + " " + (field == PlanField.Remaining ? "残" : "実績"),
-                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value))]));
+                string Committed() {
+                    var current = Session.Document.State.Rows.Single(r => r.Identity == row.Identity);
+                    return (field == PlanField.Remaining ? current.Remaining : current.Actual)?.ToString(CultureInfo.CurrentCulture) ?? "";
+                }
+                var input = Input(Committed, $"PeopleTask_{row.Identity}_{field}", row.Title + " " + (field == PlanField.Remaining ? "残" : "実績"),
+                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value))]), person.Identity, row.Identity);
                 input.Width = 90; line.Children.Add(input);
             }
             var fixedBox = Id(new CheckBox { Content = "固定", IsChecked = row.Fixed, MinHeight = 24 }, "PeopleTask_" + row.Identity + "_Fixed");
             AutomationProperties.SetName(fixedBox, row.Title + " 日程固定");
             fixedBox.Click += async (_, _) => { var value = fixedBox.IsChecked == true; await Run(async () => {
                 await Apply(new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, PlanField.Fixed, value)])); Refresh();
-            }); };
+            }); fixedBox.IsChecked = Session.Document.State.Rows.Single(r => r.Identity == row.Identity).Fixed; };
             line.Children.Add(fixedBox); panel.Children.Add(line);
         }
         if (ids.Count == 0) panel.Children.Add(Text("この期間のタスクはありません"));
@@ -270,14 +314,18 @@ internal sealed class PlanPeopleView : UserControl
             var multiple = new ComboBoxItem { Content = "担当者が複数", IsEnabled = false };
             choice.Items.Add(multiple); choice.SelectedItem = multiple;
         } else choice.SelectedItem = row.Assignees.Length == 0 ? none : choice.Items.OfType<ComboBoxItem>().Single(i => (string?)i.Tag == row.Assignees[0]);
-        var original = choice.SelectedItem;
+        var synchronizing = false;
         choice.SelectionChanged += async (_, _) => {
-            if (ReferenceEquals(choice.SelectedItem, original) || choice.SelectedItem is not ComboBoxItem { Tag: string identity }) return;
+            if (synchronizing || choice.SelectedItem is not ComboBoxItem { Tag: string identity }) return;
             await Run(async () => {
                 ImmutableArray<string> assignees = identity.Length == 0 ? [] : [identity];
                 await Apply(new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, PlanField.Assignees, assignees)])); Refresh();
             });
-            if (choice.IsLoaded) choice.SelectedItem = original;
+            var current = Session.Document.State.Rows.Single(r => r.Identity == row.Identity).Assignees;
+            synchronizing = true;
+            try { choice.SelectedItem = current.Length > 1 ? choice.Items.OfType<ComboBoxItem>().Single(i => i.Tag is null)
+                : choice.Items.OfType<ComboBoxItem>().Single(i => (string?)i.Tag == (current.Length == 0 ? "" : current[0])); }
+            finally { synchronizing = false; }
         };
         return choice;
     }

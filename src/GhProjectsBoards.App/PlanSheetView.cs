@@ -27,6 +27,7 @@ internal sealed partial class PlanSheetView : Grid
     internal sealed record Input(string Text, long Generation, string OriginalText);
     private long inputGeneration;
     internal readonly Dictionary<(string Identity, PlanField Field), Input> Pending = [];
+    private readonly PlanInputProblem inputProblem = new("SheetInputProblem");
     internal void SetInput(string identity, PlanField field, string text, string originalText) => Pending[(identity, field)] = new(text, ++inputGeneration, originalText);
     internal long Generation(string identity, PlanField field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
     internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
@@ -117,12 +118,21 @@ internal sealed partial class PlanSheetView : Grid
         foreach (var column in Columns)
         {
             var toggle = Id(new CheckBox { Content = column.Label, IsChecked = !Hidden.Contains(column.Field) }, "PlanColumn" + (column.Field?.ToString() ?? "Id"));
-            async void VisibilityChanged(object sender, RoutedEventArgs args) => await Run(async () => {
+            var synchronizing = false;
+            async void VisibilityChanged(object sender, RoutedEventArgs args) {
+                if (synchronizing) return;
+                var proposed = toggle.IsChecked == true;
+                await Run(async () => {
                 await CommitPending();
-                if (toggle.IsChecked == true) Hidden.Remove(column.Field); else Hidden.Add(column.Field);
+                if (proposed) Hidden.Remove(column.Field); else Hidden.Add(column.Field);
                 VisibleColumns = Columns.Where(c => !Hidden.Contains(c.Field)).ToArray();
-                if (VisibleColumns.Length == 0) { Hidden.Remove(column.Field); toggle.IsChecked = true; VisibleColumns = Columns.Where(c => !Hidden.Contains(c.Field)).ToArray(); }
+                if (VisibleColumns.Length == 0) { Hidden.Remove(column.Field); VisibleColumns = Columns.Where(c => !Hidden.Contains(c.Field)).ToArray(); }
                 RefreshLayout(); ReconcileSelection(); }, "Column visibility");
+                synchronizing = true;
+                try { toggle.IsChecked = !Hidden.Contains(column.Field); }
+                finally { synchronizing = false; }
+                if (Problems.Count > 0) { columns.Flyout?.Hide(); FocusSelected(); }
+            }
             toggle.Checked += VisibilityChanged; toggle.Unchecked += VisibilityChanged;
             choices.Children.Add(toggle);
         }
@@ -193,9 +203,10 @@ internal sealed partial class PlanSheetView : Grid
             }, "Filter");
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+        Unloaded += (_, _) => { disposed = true; inputProblem.Close(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout(); };
         ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RefreshRealized(); };
+
         Refresh();
     }
     private static ScrollViewer Horizontal(string id) => Id(new ScrollViewer {
@@ -254,7 +265,13 @@ internal sealed partial class PlanSheetView : Grid
     }
     private async Task CommitPending()
     {
-        if (Realized.SelectMany(r => r.Cells).Any(c => c.Composing)) throw new InvalidOperationException("IME変換を確定または取消してください。");
+        var composing = Realized.SelectMany(r => r.Cells).FirstOrDefault(c => c.Composing);
+        if (composing is not null) {
+            var identity = Realized.First(r => r.Cells.Contains(composing)).Identity;
+            Problems[(identity, composing.Field)] = "IME変換を確定または取消してください。";
+            Select(identity, composing.Field, false); FocusSelected(); UpdateInputProblem();
+            throw new InvalidOperationException(Problems[(identity, composing.Field)]);
+        }
         foreach (var input in Pending.ToArray())
         {
             try { await Commit(input.Key.Identity, input.Key.Field, input.Value.Text, input.Value.Generation, input.Value.OriginalText); }
@@ -319,7 +336,7 @@ internal sealed partial class PlanSheetView : Grid
     internal void CancelEdit(string identity, PlanField field)
     {
         Pending.Remove((identity, field)); Problems.Remove((identity, field)); error.Text = "";
-        RefreshRealized(); UpdateReason();
+        Refresh();
     }
     internal void Refresh()
     {
@@ -329,7 +346,9 @@ internal sealed partial class PlanSheetView : Grid
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
         Schedule = Session.Schedule(Today).ToDictionary(r => r.Input.Identity);
         Unpublished = Session.Changes(Today);
-        var next = document.State.Rows.Where(r => r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase)).Select(r => r.Identity).Append("").ToArray();
+        var pendingRows = Pending.Keys.Select(k => k.Identity)
+            .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
+        var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) || r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase)).Select(r => r.Identity).Append("").ToArray();
         if (!RowIds.SequenceEqual(next)) { RowIds = next; List.ItemsSource = next; }
         var dates = Schedule.Values.SelectMany(r => new[] { r.Start.Value, r.End.Value }).Where(d => d is not null).Select(d => d!.Value).Append(StatusDate).ToArray();
         FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - 5));
@@ -368,7 +387,15 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);
-    internal void RefreshRealized() { foreach (var row in Realized.ToArray()) row.Refresh(); }
+    internal void RefreshRealized() { foreach (var row in Realized.ToArray()) row.Refresh(); UpdateInputProblem(); }
+    internal void UpdateInputProblem()
+    {
+        var cells = Realized.SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)))
+            .Select(c => (Cell: c, Problem: Problems[(r.Identity, c.Field)]))).ToArray();
+        var target = cells.OrderByDescending(c => c.Cell.FocusState != FocusState.Unfocused).FirstOrDefault();
+        if (target.Cell is null) { inputProblem.Close(); return; }
+        inputProblem.Show(target.Cell, target.Problem);
+    }
     private void RefreshLayout()
     {
         if (disposed) return;

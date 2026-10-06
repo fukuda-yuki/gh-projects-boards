@@ -1,4 +1,4 @@
-﻿using GhProjectsBoards.Core.PlanEditor;
+using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -180,7 +180,7 @@ internal sealed class PlanSheetCell : TextBox
     {
         this.row = row; Field = field;
         MinHeight = 26; Height = 26; Padding = new(4, 2, 4, 2); FontSize = 12; BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        GotFocus += (_, _) => { if (row.Owner is { } owner && !owner.IsSelected(row.Identity, Field)) owner.Select(row.Identity, Field, false); if (!Editing) SelectAll(); };
+        GotFocus += (_, _) => { if (row.Owner is { } owner) { if (!owner.IsSelected(row.Identity, Field)) owner.Select(row.Identity, Field, false); owner.UpdateInputProblem(); } if (!Editing) SelectAll(); };
         TextChanging += (_, _) => {
             if (refreshing || row.Owner is not { } owner || IsReadOnly) return;
             if (!Editing) editingFrom = shownText;

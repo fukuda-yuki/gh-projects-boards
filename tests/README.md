@@ -202,3 +202,18 @@ dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
 C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
 C:\w\g76\scripts\Test-E2E.ps1 -Filter 'FullyQualifiedName~PlanningPublishJourneyTests'
 ```
+
+## Pending-input invariant: hosted checks
+
+The shared contract is [pending-input invariant](../docs/spec.md#pending-input-invariant-all-editing-views). Tests use real controls, focus, events and isolated persistence; they do not substitute the editing collaboration.
+
+| View | Hosted cases | Observable contract |
+| --- | --- | --- |
+| Sheet | `SheetPendingInputSurvivesLeavingTheAcceptedFilter`, existing `RejectedFilterKeepsInvalidCellVisibleAndCanBeAppliedAfterCorrection` | Invalid input remains reachable after a title edit leaves the filter; rejected filter/history commands focus the problem cell. |
+| Sheet | `SheetRefusedColumnToggleRestoresAcceptedVisibility`, existing `RejectedZoomKeepsSelectionScaleAndLabelsTogether` | Refused visibility and zoom selectors show the accepted setting. |
+| Sheet | `SheetEscapeDiscardsRetainedInput` (`PlanSheetNative`) | Real Escape discards the pinned cell, clears its error and permits leaving the filter without a new Undo entry. |
+| People | `PeoplePendingInputSurvivesLeavingTheDrillDown` | Remaining zero removes work from the period but not an invalid Actual editor; refused navigation focuses that editor. |
+| People | `PeopleRefusedControlsReflectTheDocument`, `PeopleFailedSaveControlsReflectTheAcceptedDocument` | Fixed, assignee and zoom controls return to current values, including accepted in-memory changes after save failure; the invalid cell remains focused and correctable. |
+| People | `PeopleEscapeDiscardsRetainedInput`, `PeopleEscapeRestoresTheCurrentDocumentAfterFailedSave` (`PlanSheetNative`) | Real Escape releases a retained task, clears its error and restores the current committed display even after a save failure, without another edit. |
+
+Native Escape cases are excluded from the default selection and require the PMO desktop. Do not replace their physical-key path with direct handler invocation or claim them from non-key control tests.
