@@ -66,6 +66,29 @@ internal sealed class PlanLivePreflightTests
         Task Run() => PlanPublisherLive.VerifySeedAdd(failed, () => Task.FromResult(new ProjectReadResult(complete ? ProjectReadOutcome.Complete : ProjectReadOutcome.Partial, model, [])), "S");
         if (present && complete) await Run(); else Assert.ThrowsAsync<InvalidOperationException>(Run);
     }
+    [Test]
+    public async Task CleanupSpacesTheNextIssueFromTheSuccessfulRetryStart()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-delete-spacing-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var time = TimeSpan.Zero;
+        var starts = new List<(string Issue, TimeSpan At)>();
+        try
+        {
+            await PlanPublisherLive.DeleteOwnedIssues(new[] { "first", "next" }, issue =>
+            {
+                starts.Add((issue, time));
+                time += TimeSpan.FromMilliseconds(100);
+                return Task.FromResult(starts.Count == 1
+                    ? new ApiResult(ApiOutcome.Failed, FailureKind.Network, httpStatus: 500)
+                    : new ApiResult(ApiOutcome.Success));
+            }, root, pause => { time += pause; return Task.CompletedTask; }, () => time);
+            Assert.That(starts.Select(s => s.Issue), Is.EqualTo(new[] { "first", "first", "next" }));
+            Assert.That(starts.Zip(starts.Skip(1), (a, b) => b.At - a.At),
+                Is.All.GreaterThanOrEqualTo(TimeSpan.FromSeconds(2)));
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [TestCase("recover")]
     [TestCase("missing")]
     [TestCase("exhaust")]

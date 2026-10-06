@@ -133,17 +133,14 @@ internal static class PlanPublisherLive
             (issue.Body == manifest.Marker || issue.Body.StartsWith("<!-- ghpb-plan:", StringComparison.Ordinal));
         async Task Delete(IEnumerable<RemoteIssue> issues)
         {
-            var previous = Stopwatch.StartNew();
-            foreach (var issue in issues)
+            await DeleteOwnedIssues(issues, async issue =>
             {
-                var pause = TimeSpan.FromSeconds(2) - previous.Elapsed;
-                if (pause > TimeSpan.Zero) await Task.Delay(pause);
-                previous.Restart();
                 if (!Owned(issue)) throw new InvalidOperationException("Refusing non-owned cleanup.");
                 runner.OwnedIssues.Add(issue.Id);
-                await DeleteOwnedIssue(() => transport.SendAsync("github.com", ApiRequest.GraphQl("mutation($input:DeleteIssueInput!){deleteIssue(input:$input){clientMutationId}}", new { input = new { issueId = issue.Id } })), root);
-            }
+                return await transport.SendAsync("github.com", ApiRequest.GraphQl("mutation($input:DeleteIssueInput!){deleteIssue(input:$input){clientMutationId}}", new { input = new { issueId = issue.Id } }));
+            }, root);
         }
+
         async Task Cleanup()
         {
             var owned = (await Issues()).Where(Owned).ToArray();
@@ -280,6 +277,24 @@ internal static class PlanPublisherLive
                 continue;
             }
             await delay(TimeSpan.FromSeconds(Math.Max(0, Math.Min(3, (deadline - elapsed()).TotalSeconds))));
+        }
+    }
+    internal static async Task DeleteOwnedIssues<T>(IEnumerable<T> issues, Func<T, Task<ApiResult>> send, string root,
+        Func<TimeSpan, Task>? delay = null, Func<TimeSpan>? elapsed = null)
+    {
+        delay ??= pause => Task.Delay(pause);
+        var watch = Stopwatch.StartNew();
+        elapsed ??= () => watch.Elapsed;
+        var previous = elapsed();
+        foreach (var issue in issues)
+        {
+            await DeleteOwnedIssue(async () =>
+            {
+                var pause = TimeSpan.FromSeconds(2) - (elapsed() - previous);
+                if (pause > TimeSpan.Zero) await delay(pause);
+                previous = elapsed();
+                return await send(issue);
+            }, root, delay);
         }
     }
     internal static async Task DeleteOwnedIssue(Func<Task<ApiResult>> send, string root, Func<TimeSpan, Task>? delay = null)
