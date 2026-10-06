@@ -28,6 +28,17 @@
                     <SolidColorBrush x:Key="SheetSelectionStrokeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <DataTemplate x:Key="PlanProjectChoiceTemplate">
+                <StackPanel Spacing="2" HorizontalAlignment="Stretch" ToolTipService.ToolTip="{Binding Url}">
+                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                        <Run Text="{Binding OwnerLogin}"/><Run Text=" #"/><Run Text="{Binding Number}"/>
+                    </TextBlock>
+                </StackPanel>
+            </DataTemplate>
+            <Style x:Key="PlanWorkspaceSurfaceStyle" TargetType="Grid">
+                <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
+            </Style>
             <ItemsPanelTemplate x:Key="SheetRowsPanel">
                 <ItemsStackPanel CacheLength="0"/>
             </ItemsPanelTemplate>

@@ -137,6 +137,13 @@ internal static class FakeGhProgram
         {
             operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId
         }) + "\n");
+        if (settings.TryGetProperty("holdOperation", out var heldOperation) && args[0] == heldOperation.GetString() ||
+            settings.TryGetProperty("holdQuery", out var heldQuery) && query?.Contains(heldQuery.GetString()!) == true)
+        {
+            File.WriteAllText(Path.Combine(directory, "held-gh.pid"), Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (!File.Exists(Path.Combine(directory, "release-gh")) && DateTime.UtcNow < deadline) await Task.Delay(20);
+        }
         var id = settings.TryGetProperty("id", out var idValue) ? idValue.GetInt64() : 42;
         var state = settings.TryGetProperty("state", out var stateValue) ? stateValue.GetString() : "success";
         if (args.FirstOrDefault() == "auth")

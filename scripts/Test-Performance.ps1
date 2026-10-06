@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Synthetic','Desktop','Live','AdapterStage')][string]$Mode = 'Synthetic',
+    [ValidateSet('Synthetic','AdapterStage')][string]$Mode = 'Synthetic',
     [string]$RunId = ('run-' + (Get-Date -Format 'yyyyMMdd-HHmmss')),
     [string]$Executable,
     [ValidatePattern('^[a-fA-F0-9]{40}$')][string]$SourceRevision,
@@ -30,22 +30,6 @@ if ($Mode -eq 'AdapterStage') {
     $stageExit = $LASTEXITCODE
     if ($stageExit -eq 3) { Write-Output "Budget deferred; retained checkpoint and continuation: $root"; return }
     if ($stageExit) { throw "Stage failed; retain $root and inspect before any continuation. No automatic setup or mutation retry." }
-    Write-Output $root
-    return
-}
-if ($Mode -ne 'Synthetic') {
-    @{ source = (git -C $repo rev-parse HEAD); mode = $Mode; started = [DateTimeOffset]::Now.ToString('o') } | ConvertTo-Json | Set-Content (Join-Path $root 'manifest.json')
-    if ($Mode -eq 'Live') {
-        # Existing runners retain exact-resource, interrupted-run and complete-baseline guards.
-        & (Join-Path $PSScriptRoot 'Test-ApplyLive.ps1') *> (Join-Path $root 'apply-live.log')
-        & (Join-Path $PSScriptRoot 'Test-CreationLive.ps1') *> (Join-Path $root 'creation-live.log')
-    } else {
-        $previous = $env:GHPB_PERFORMANCE_UI_ROOT
-        try {
-            $env:GHPB_PERFORMANCE_UI_ROOT = $root
-            & (Join-Path $PSScriptRoot 'Test-E2E.ps1') -Filter 'FullyQualifiedName~MeasureOrdinaryHundredItemInteraction' *> (Join-Path $root 'desktop.log')
-        } finally { $env:GHPB_PERFORMANCE_UI_ROOT = $previous }
-    }
     Write-Output $root
     return
 }

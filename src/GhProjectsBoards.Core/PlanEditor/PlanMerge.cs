@@ -14,6 +14,7 @@ internal sealed record PlanSync
     public ImmutableArray<PlanCreationStart> CreationStarts { get; init; } = [];
     public DateTimeOffset? NotBefore { get; init; }
     public PlanPublishProgress? Publish { get; init; }
+    public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
     public int DraftCount { get; init; }
     public int PullRequestCount { get; init; }
     public ImmutableArray<PlanConflict> Conflicts { get; init; } = [];

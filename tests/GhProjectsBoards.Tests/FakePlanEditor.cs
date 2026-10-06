@@ -7,7 +7,7 @@ using GhProjectsBoards.Core.PlanEditor;
 namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } }
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -29,24 +29,42 @@ internal static class FakePlanEditor
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
         if (fault == "read-once" && state.ReadAttempts == 1 && query.Contains("ProjectItems"))
         { Console.Write("HTTP/2 500 Failed\n\n{}"); return 1; }
+        var workspace = scenario.TryGetProperty("workspace", out var ws) && ws.GetBoolean();
+        if (workspace && query.Contains("Registration"))
+        {
+            object Choice(string projectId, string owner) => new { id = projectId, number = projectId == "P1" ? 3 : 4,
+                url = "https://github.com/" + (owner == "fixture-user" ? "users/" : "orgs/") + owner + "/projects/" + (projectId == "P1" ? "3" : "4"),
+                title = projectId == "P1" ? "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
+            if (query.Contains("RegistrationOwners")) Write(new { data = new { viewer = new { organizations = Page([new { login = "acme" }], 1) } } });
+            else if (query.Contains("RegistrationProjects"))
+            {
+                var owner = variables.GetProperty("owner").GetString()!;
+                Write(new { data = new { repositoryOwner = new { projectsV2 = Page([Choice(owner == "fixture-user" ? "P1" : "P2", owner)], 1) } } });
+            }
+            else if (query.Contains("RegistrationResolve"))
+                Write(new { data = new { user = new { projectV2 = Choice("P1", "fixture-user") } } });
+            else Write(new { data = new { node = new { repositories = Page([new { id = "R1", nameWithOwner = "acme/repo", owner = new { id = "O1" } }], 1) } } });
+            return 0;
+        }
+        var projectId = workspace && variables.TryGetProperty("id", out var projectNode) && projectNode.GetString() == "P2" ? "P2" : "P1";
         var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status };
         string Type(PlanField role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Fixed or PlanField.Status ? "SINGLE_SELECT" : "DATE";
-        object Field(PlanField role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = "P1" }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" } } : new[] { new { id = "fixed", name = "固定" } } };
+        object Field(PlanField role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" } } : new[] { new { id = "fixed", name = "固定" } } };
         object Value(PlanRow row, PlanField role)
         {
             var scalar = JsonNode.Parse(PlanValues.Get(row, role));
             var value = new JsonObject { ["__typename"] = role is PlanField.Fixed or PlanField.Status ? "ProjectV2ItemFieldSingleSelectValue" : Type(role) == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue",
-                ["id"] = row.Identity + "-" + role, ["field"] = JsonSerializer.SerializeToNode(new { id = "F-" + role, project = new { id = "P1" } }) };
+                ["id"] = row.Identity + "-" + role, ["field"] = JsonSerializer.SerializeToNode(new { id = "F-" + role, project = new { id = projectId } }) };
             value[role is PlanField.Fixed or PlanField.Status ? "optionId" : Type(role) == "NUMBER" ? "number" : "date"] = role == PlanField.Fixed ? JsonValue.Create("fixed") : role == PlanField.Status ? JsonValue.Create(row.Status == "Done" ? "done" : "progress") : scalar;
             return value;
         }
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
-            return new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = "P1" },
+            return new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/acme/repo/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN", viewerCanUpdate = true, repository = new { id = "R1", nameWithOwner = "acme/repo", owner = new { id = "O1" } },
-                    assignees = Page(row.Assignees.Select(id => (object)new { id, login = id }), row.Assignees.Length),
+                    assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = Page(state.SubOrders.GetValueOrDefault(row.Identity, state.Issues.Where(i => i.Row.Parent == row.Identity).Select(i => i.Row.Identity).ToImmutableArray()).Select(id => (object)new { id }), state.Issues.Count(i => i.Row.Parent == row.Identity)),
                     parent = row.Parent is null ? null : new { id = row.Parent } },
@@ -77,18 +95,22 @@ internal static class FakePlanEditor
         else if (query.Contains("PlanExistingItem"))
         {
             var id = variables.GetProperty("id").GetString(); var issue = state.Issues.Single(i => i.Row.Identity == id);
-            node = new { projectItems = Page(issue.Added ? [new { id = "T-" + id, project = new { id = "P1" } }] : [], issue.Added ? 1 : 0) };
+            node = new { projectItems = Page(issue.Added ? [new { id = "T-" + id, project = new { id = projectId } }] : [], issue.Added ? 1 : 0) };
         }
         else if (query.Contains("ProjectFields"))
-            node = new { __typename = "ProjectV2", id = "P1", number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
+            node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
                 owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field), fieldRoles.Length) };
         else if (query.Contains("ProjectItems"))
         {
             var all = state.Issues.Where(i => i.Added).ToArray();
             var offset = variables.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!) : 0;
-            node = new { __typename = "ProjectV2", id = "P1", items = Page(all.Skip(offset).Take(100).Select(Item), all.Length + (offset == 0 &&
+            object Excluded(string id, string kind, string type) => new { __typename = "ProjectV2Item", id, type, isArchived = false,
+                project = new { id = projectId }, content = new { __typename = kind, id = "content-" + id }, fieldValues = Page([], 0) };
+            var nodes = all.Select(Item).Concat(Enumerable.Range(0, state.Drafts).Select(i => Excluded("D" + i, "DraftIssue", "DRAFT_ISSUE")))
+                .Concat(Enumerable.Range(0, state.PullRequests).Select(i => Excluded("PR" + i, "PullRequest", "PULL_REQUEST"))).ToArray();
+            node = new { __typename = "ProjectV2", id = projectId, items = Page(nodes.Skip(offset).Take(100), nodes.Length + (offset == 0 &&
                 (fault == "churn" && state.ReadAttempts <= faultBatch || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3) ? 1 : 0),
-                offset + 100 < all.Length, offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+                offset + 100 < nodes.Length, offset + 100 < nodes.Length ? (offset + 100).ToString() : null) };
         }
         else if (query.StartsWith("mutation PlanPublish", StringComparison.Ordinal))
         {

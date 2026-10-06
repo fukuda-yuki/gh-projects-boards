@@ -15,6 +15,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $BulkPerformance) { throw 'The old shell diagnostic was retired. Only the retained BulkPerformance campaign is available for Phase 6 adaptation.' }
 if ($BulkPerformance -and $SelectFieldCount -ne 12) { throw 'Bulk performance requires twelve single-select fields.' }
 if ($BulkPerformance -and $ItemCount -lt 100) { throw 'Bulk performance requires at least 100 rows.' }
 if ($BulkPerformance -and $BulkCorrectness) { throw 'BulkCorrectness is an optional local-sheet phase, separate from the fixed pixel-performance campaign.' }

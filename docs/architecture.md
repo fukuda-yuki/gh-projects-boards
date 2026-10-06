@@ -1,103 +1,35 @@
 # Architecture
 
-> **Being replaced.** This document describes the current implementation. The product is being redesigned under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76); [requirements](requirements.md) and [decisions](decisions.md) define the target and prevail where they conflict. Each child Issue rewrites the sections it changes.
+## Production boundaries
 
-## Planning contract boundary
+One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard and UI Automation. No UI framework enters Core.
 
-`PlanningContract` defines UI-independent, versioned Project/task/calendar/attribution metadata and exact hour/time rules. Checkpoint v11 includes this metadata, typed scalar operations and coherent planning history in `EditingWorkspace.Snapshot`/`Restore` and the existing `DraftStore` validation/atomic commit. `PlanningEngine` returns revision-labelled effective dates and separate suggestions; `PlanningWorkspace` connects committed fields, metadata and derived publication drafts. `PlanningCellInput` and `PlanningAssignment` route contextual Actual/date input and explicit native-assignment adoption through that same history. `DraftSnapshot` detaches nested mutable collections before a background save; `DraftSession` retains newer save requests and only acknowledges the current durable revision. Buffer-content presentation invalidation is distinct from durable revision changes. `DraftStore.ExportBackupAsync`/`RestoreBackupAsync`, exposed by the thin offline `Backup-Workspace.ps1`, use the same validation and preserve the complete checkpoint in a second empty root. There is no second serializer, database, queue or synchronization authority. See [planning](planning.md) for representation and downstream consumers.
+## Workspace and settings (#81)
 
-## Workspace presentation boundary
+MainWindow hosts PlanWorkspaceView, sizes the ordinary window and cancels UI-owned remote operations, waits for their owned processes and local saves on close. Failed saves keep the window open. PlanWorkspaceView contains connection, Project discovery, the registered-Project list, the mapped read-only task list and one settings page. Native control events invoke Core operations. Save recovery bypasses pending-input application until the retained save has been retried. Company/personal day-off editors use native calendar selection and explicit date-list changes. Pending text is committed before navigation or normal close; obsolete settings controls cannot apply late events after replacement.
 
-`MainWindow` owns workspace/connection navigation, display-aware initial window bounds, local restoration and normal-close settlement. The workspace uses `RegistrationPanel`'s identity strip and connection-request event; the connection page owns the return navigation. `RegistrationPanel` owns native pane layout, account/Project context, membership-based tree reconciliation, contextual settings and full status presentation. It retains tree nodes for unchanged navigation membership, clears discovery state on profile/binding transitions and dismisses contextual surfaces on detach. These controls delegate to the existing `RegistrationWorkspace`; they introduce no additional authentication, transaction or persistence authority.
+PlanWorkspace reuses GhConnectionService, ProjectDiscovery, ProjectReader, PlanSession, PlanStore and PlanPublisher. It retains one session per scoped Project and writes an atomic workspace catalog beneath PlanningEditor/v1 before adopting a changed Project selection. Opening a new Project reads its complete snapshot and matches typed columns. Opening an existing Project restores its local document; refreshing is explicit. Authentication is always rechecked; a saved Project does not imply a connected identity. The catalog does not read old registrations or checkpoints.
 
-`EditingGrid` composes the Core row projection and column layout into recycled native row presentations. Selection creates a native editor in an independently owned viewport layer; active, pending or composing editors retain their item/field keys, parents and caret through scrolling and projection changes. Clean inactive editors can be released; an offscreen stored buffer alone does not create one. Rebinding clears presentation values, state markers and automation identity, and stale automation providers reject access. `GHPB_RECYCLED_PRESENTATION=0` selects the earlier presentation path for explicit comparisons; ordinary startup uses recycling. Selection repaints its changed cells; unchanged save acknowledgements update status without reassigning editor values. Workspace identity, revision and projection generation invalidate the data presentation. A separate header follows the data viewport's horizontal offset and width. The row number and title countertranslate within that same viewport, keeping Issue identity beside later fields without a second vertical scroller. Native command overflow keeps editing actions reachable, while compact markers and optional selected-cell details read the same workspace state. Header menus, resize boundaries and inline title filtering use the existing scoped column/row candidates and durable commit gate. Settings restore the intended workspace focus. Pending asynchronous commands retain their captured identities and generation guards; active native composition defers operations that would replace editors.
+Column mappings, calendar, people rates and days off, Project start and repository are ProjectPlanSettings. Each accepted setting operation goes through ReplacePlanSettings, the same scheduler and bounded Undo history. Settings export/import use the existing Core JSON contract. Refreshed assignee display names are remote metadata in PlanSync, separate from locally chosen rates. File pickers remain in the view; the test substitution replaces only picking a path.
 
-Checkpoint v8 persists scoped row/column definitions together with the existing coherent work and history. Pane visibility, tree focus, active cell selection and viewport position remain transient UI state. The presentation has no second view-state store, conflict engine or Apply planner.
+## Planning editor Core
 
-## Existing-field execution boundary
+PlanRow and PlanBaseline retain typed day-level input and GitHub values. PlanScheduler produces derived dates, roll-ups, reasons and warnings from Remaining, rates, calendars, predecessors and hierarchy. Its exact internal work endpoints never become persisted minute dates.
 
-`RegistrationWorkspace` owns preparation and lifecycle of Apply. `EditingWorkspace` produces revision-bound immutable field plans and keeps the journal separate from Undo. Preparation uses a complete `ProjectReader` result. `ApplyRemote` uses the existing `GhConnectionService`, guarded transport and the reader's operation-scoped field observation for dispatch validation and independent verification. It traverses field definitions and the exact target item's values, returning no complete Project snapshot. It does not own credentials or launch processes directly. See the [predicate and completeness mapping](performance.md#scoped-observation-safety-mapping).
+PlanSession applies immutable operation patches, guards atomic rejection and owns the 200-step Undo history. PlanStore checks identity and data, serializes durable saves with optimistic fingerprint checks, writes and verifies temporary files, and atomically replaces the prior checkpoint. Failed saves retain the in-memory document for retry.
 
-`ApplyExecutor` holds a per-profile filesystem execution lease throughout reads, waits, dispatch and acknowledgement, and checks the durable revision before proceeding. The writer lock remains a separate short critical section. Version 9 of the authoritative `DraftRecord` contains execution history, local rows and scoped row/column preferences; v1–8 remain readable. Each journal transition passes through the same validated, flushed, atomic checkpoint boundary as local work. Failed acknowledgement stops further dispatch and leaves durable Running as recovery evidence. `.execution.lock` contains no authoritative queue data; OS ownership is released on process termination.
+PlanSnapshot translates complete Project reads. PlanMerge reconciles baseline/local/remote values. PlanPublishPlan and PlanPublisher provide ordered, batched serial writes, duplicate-guarded Issue creation, verification and durable recovery. Their ordinary UI is separate from the current workspace/settings delivery. See the [publish contract](spec.md#current-planning-editor-refresh-and-publishing-contract-79).
 
-The ordinary registration panel uses native row-selection and review dialogs plus a history/resume dialog. The grid retains pending native text separately. Stable Apply control IDs support UI automation at both scoped UI integration and whole-application boundaries. Test rules in Core and presentation collaboration at the UI integration boundary; use whole-app journeys and authorized live checks for their distinct remaining risks.
+## GitHub boundary
 
-## Production projects
+GhConnectionService binds host, stable viewer and executable, serializes operations, rechecks identity and guards writes by authentication storage/scopes. GhApiTransport uses shell-free arguments and UTF-8 JSON stdin. GhProcessRunner owns process cancellation/timeouts and token-environment isolation. No token is retrieved, stored or displayed.
 
-`CreationOperation` is a separate typed member of `ApplyBatch`; it never fabricates remote IDs for `ApplyOperation`. `CreationRemote` extends the guarded adapter with stable Repository resolution, Issue-by-ID/URL observation and Project addition. `CreationExecutor` runs under the same profile execution lease and `DraftSession.CommitAsync` path as existing-field Apply. Received IDs, verified identity, membership, field baselines, attempts and later setup approvals are persisted separately. The journal itself is the durable local-to-remote lineage mapping across batches.
+ProjectDiscovery pages user/organization Projects and resolves explicit same-host URLs. ProjectReader / ProjectQueries read fields, all items, assignees, blocked-by edges and parents with complete pagination and scoped identities. Incomplete observations are never accepted as complete snapshots.
 
-`RegistrationCreation` owns public URL preview/confirmation, duplicate-risk retry and known-Issue setup review. `RegistrationApplyDialogs` exposes per-batch resume and per-creation recovery through native dialogs. Composition-aware deferred rendering prevents asynchronous promotion from replacing an active native editor. Promotion reads the latest local row inside the coherent checkpoint commit and transfers remaining work only against complete observations.
+## Retained rendering components
 
-| Project | Responsibility |
-| --- | --- |
-| `GhProjectsBoards.Core` (`net10.0`) | Connection orchestration, identity, authorization checks, Project read models/retrieval, structured API results and gh process ownership |
-| `GhProjectsBoards.App` (WinUI 3, .NET 10, Windows x64) | Presentation, native controls, window lifetime, dialogs, clipboard and public UI Automation |
+The native #77 prototype remains the base for #78. EditingGrid and its range/clipboard/fill collaborators and direct hosted tests remain for the Phase 6 adaptation; their legacy view collaborators are not reachable from the ordinary shell. The old registration/connection panels and their Apply navigation are removed. Core legacy editing collaborators remain until the editing machinery is replaced; they are not a second store for the new workspace.
 
-The app references Core. Core does not reference a UI framework or the app. Keep the internal logic surface limited to its app and test consumers. Do not add empty Domain/Application/Infrastructure projects or general-purpose frameworks.
+## Validation boundaries
 
-## Connection boundary
-
-| Component | Responsibility |
-| --- | --- |
-| `MainWindow` | Navigate workspace/connection surfaces, render connection state, collect user input, invoke operations, handle native dialogs/clipboard and keep the UI alive until owned work stops |
-| `ConnectionViewModel` | Observable connection state, explicit checking/rebinding, cancellation and safe user-facing diagnostics |
-| `GhConnectionService` / `ConnectionContext` | Stable viewer identity, serialized preflight/dispatch and credential-store write guards |
-| `TargetDiagnostics` / `GitHubAddress` | Same-host URL validation and independent Issue/Project permission and scope reports |
-| `GhApiTransport` / `ApiRequest` / `ApiResult` | REST/GraphQL construction and structured outcome/error classification |
-| `GhProcessRunner` | Shell-free execution, child environment isolation, JSON stdin, stream drains, timeout and process cleanup |
-
-UI code uses connection orchestration rather than duplicating authentication or dispatch rules. Feature code must use the guarded service with its bound context. Service serialization cannot lock external changes to gh authentication. There is no automatic write retry.
-
-Presentation notifications are handled on the WinUI dispatcher. The UI owns any window-bound API; Core receives no Window, DispatcherQueue, visual tree or clipboard object.
-
-Text controls own in-progress input. Diagnostic rendering does not write model snapshots back into editable fields: deferred native text notifications must not erase newer input in another control. The check action reads all current inputs before starting the Core operation. Native executable selection updates the path control through the same input boundary.
-
-## Project retrieval boundary
-
-`Projects/ProjectReader` reads one explicitly selected, connection-scoped Project through `GhConnectionService.SendAsync`. Per-read state holds field definitions, an Issue dictionary and independent Project items; it is discarded after producing the result. `ProjectQueries` contains fixed query documents with ID/cursor variables. Nested value pagination uses item IDs and verifies their owning Project.
-
-`ProjectReadModel` separates scoped node identity, Issue title/state, Project field definitions/options, item values, availability and traversal results. Display names never select fields. The reader has no UI, persistence, draft, mutation or second authentication collaborator. Ordinary startup and `--input-check` are independent entry points; the registered workspace already connects retrieval to the editing surface.
-
-Raw API data stays transient. Safe read diagnostics contain outcome, stage, problem/failure classification and HTTP status, not response messages or content. See the [bounded read contract](spec.md#bounded-project-read-contract) for completeness and unsupported-type semantics.
-
-## Registration boundary
-
-`ProjectDiscovery` performs guarded, query-only owner/repository/Project discovery and stable URL resolution. It pages GitHub repository associations independently from ProjectReader's item traversal. It has no mutation path or second authentication mechanism.
-
-`RegistrationWorkspace` owns the selected saved profile, registrations, current attempt and cancellable work. It reuses `ProjectReader`, publishes success after durable save, and settles work on context/profile changes and local removal. Connection context is live-only; saved profile identity is never promoted into authentication.
-
-`RegistrationStore` owns version 1 JSON per scoped Project. Explicit snapshot storage records flatten Issue dictionaries into lists; restoration validates schema, identities and availability. Hash-derived filenames avoid remote-name paths. A root lock serializes processes; write-through temporary files are flushed, read back and validated before same-directory move/replacement. Backup/interrupted files are preserved for diagnosis rather than silently accepted as current data.
-
-`MainWindow` owns connection transitions and normal-close settlement. `RegistrationPanel` contains only WinUI presentation, navigation/dialog coordination and event wiring. It clears discovery controls when profile/binding changes and uses EditingGrid for complete registered data and immutable preview strings for partial results. EditingGrid uses native input-ready TextBoxes, choice Buttons with on-demand MenuFlyouts, and a ListView with stable per-row containers. Offscreen columns retain their layout slots while inactive presentation is collapsed. One data viewport owns both axes; a separate native vertical ScrollBar controls that viewport without taking editor focus. Wheel input respects Windows' configured line/page amount and changes the viewport without animation so row realization and the visible move stay together. The input-check window remains independent. Before migration caches are separate records; after migration the profile checkpoint owns both caches and drafts.
-
-## Native input boundary
-
-`LocalRow` records live in `EditingWorkspace`, outside the reader's Issues/Items and remote `DraftField` collection. `LocalTitle`, `LocalRepository` and `LocalSelect` keys route only to local records. `Open` composes the presentation and retains missing local field definitions for diagnostics. Local validation derives from current cached definitions without constructing remote observations. Creation revision and ordinal preserve row placement across unrelated removals and recovered Undo.
-
-`EditTransaction` holds remote field changes and optional local-row before/after records. Addition, removal, duplication, append and mixed cell edits share its ordering and state guards. Remote reconciliation/acknowledgement separates a mixed operation's still-valid local Undo remainder before invalidating remote baseline restoration. `Snapshot`/`Restore` carry these records through every `DraftSession.CommitAsync`, including Apply journal commits. Before first local addition, `RegistrationWorkspace` migrates all profile registrations under the existing legacy-state guard. No separate local-row file or save authority exists.
-
-`EditingWorkspace` owns UI-independent scoped cell identities, pinned baselines, buffers, field differences, TSV validation, atomic transactions and guarded Project Undo. Its reconciliation partial compares typed observations per stable key, preserves original conflict provenance, validates revision-bound resolution and identifies structural changes. It has no network collaborator. `DraftStore` writes one whole profile revision through a checked temporary file and atomic replacement; `DraftSession` serializes saves, prepares isolated candidates and publishes them only after durable commit. The version 5 checkpoint embeds the whole profile registration set when local rows, refresh or Apply are prepared; once present, this is the sole authoritative cache/draft checkpoint. `RegistrationStore` overlays valid checkpoints over retained legacy files and diagnoses damaged profiles independently. `RegistrationWorkspace` restores from the same validated checkpoint records, protects lifecycle transitions and checks local revision/connection generation at the commit boundary. First migration compares legacy records under the common root lock; legacy writers reject a migrated profile.
-
-`EditingGrid` owns native text/choice controls, rectangular selection, focus, clipboard and presentation. Each row container keeps its captured keys for its lifetime, with horizontal/vertical scrolling. Native text/composition events feed recoverable buffers synchronously, while local saves run asynchronously. Pending clipboard operations are invalidated on transitions. The close path cancels pending UI work, releases text focus and disables editing before draining durable saves; failure keeps the window open.
-
-`InputCheckWindow` hosts a bounded three-row/two-column input surface within the app. The explicit `--input-check` launch option opens it; ordinary startup opens `MainWindow`. The input surface has no connection or storage collaborator and uses discard-on-exit synthetic values.
-
-Each native TextBox keeps its committed value separate from the editor text. Cell selection prepares native focus and replacement selection before typing. Actual composition/text changes or F2 begin application editing. The window owns cell/range navigation; IME confirmation and cell commit remain separate transactions. Normal close releases text focus through the public window-closing event before native teardown. This is the executable input boundary, not a complete grid model or a general input framework.
-
-## Test boundary
-
-The design priority is **logic-layer unit tests > UI-layer integration tests > E2E tests**. Keep rules and orchestration independently testable so the ordinary application's UI is not the primary way to exercise them. Preserve real adapter/process/storage integration alongside logic unit coverage.
-
-`GhProjectsBoards.Tests` references only Core and supplies the synthetic gh executable. Its real collaborators verify logic and process behavior without a UI runtime. Its unit and integration cases are classified by the exercised boundary, not merely the assembly name.
-
-UI integration owns bounded collaboration among views/controls, events/commands, presentation state and rendered results. Tests claiming binding/control behavior exercise the actual relevant view/control and its wiring with the necessary WinUI runtime, UI thread and dispatcher/lifetime handling. ViewModel-only checks do not establish that wiring. An existing app/test runtime or a dedicated host can provide execution, driven directly or through UI Automation. A separate host or project is not part of the definition.
-
-Inspect actual cases, fixtures and dependencies before identifying UI coverage gaps. Reuse suitable existing mechanisms; add a minimal test seam/host only for a concrete uncovered behavior. Do not infer that UI integration exists or is absent from project names, and do not make Core depend on WinUI or add speculative production layers.
-
-`GhProjectsBoards.E2E.Tests` uses NUnit and FlaUI UIA3 with build-only app/fake-gh references. Its runner drives the ordinary executable and verifies the WinUI module. Classify cases by their actual scope, not that mechanism or assembly name: bounded UI collaboration can be UI integration; workflows through the app's principal layers to the declared endpoint are app-level E2E. Fake gh is a disclosed external substitution, not proof of either classification; live access is a separate environment dimension. Preserve real native focus, physical IME, picker/clipboard and restart/close observations wherever the asserted contract needs them. Audit, selection and coverage migration follow the [test policy](../tests/README.md).
-
-## Feature responsibilities
-
-Existing registration, grid, storage and Apply foundations are extended by #61 under the [planning contract](planning.md). #1 owns execution routing, #65 integrated acceptance. Keep Issue identity, Project-item identity and local work state distinct.
-
-The editable-grid input gate does not block independent shell, tooling or test-infrastructure work. A rejected component is not a reason to duplicate core logic. Accepted behavior belongs in [specification](spec.md); unresolved work and evidence belong in Issues.
+The [test policy](../tests/README.md) prioritizes logic, then UI integration, then representative E2E. Workspace adapter tests use real fake-gh subprocesses and isolated storage. Hosted UI tests exercise actual views, events and rendered values with the same Core. E2E drives the ordinary executable through public UI Automation, including restart. Fake endpoints do not establish live GitHub, physical IME, performance or human acceptance.
