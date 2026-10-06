@@ -1,4 +1,4 @@
-using Microsoft.UI.Dispatching;
+﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -11,39 +11,101 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal static class Ui
 {
+    // NUnit buffers case output. Lifecycle diagnostics must survive a process
+    // deadline while the current case is still running.
+    private static readonly TextWriter diagnostics = TextWriter.Synchronized(new StreamWriter(
+        Console.OpenStandardError(), new System.Text.UTF8Encoding(false)) { AutoFlush = true });
     public static DispatcherQueue Queue = null!;
     public static Window Window = null!;
     public static Grid Root = null!;
     public static Exception? Fatal;
-    public static void RecordFailure(Exception error)
+    public static int FailureCount;
+    internal static void Trace(string message) => diagnostics.WriteLine($"{DateTime.UtcNow:O} {caseName} {message}");
+    public static void RecordFailure(Exception error, TrackedContext? owner = null)
     {
-        if (Interlocked.CompareExchange(ref Fatal, error, null) is null) Console.Error.WriteLine(error);
+        Interlocked.Increment(ref FailureCount);
+        diagnostics.WriteLine(error);
+        if (owner is null || owner.IsCurrent) Interlocked.CompareExchange(ref Fatal, error, null);
     }
-    public static async Task Run(Action action) => await Run(() => { action(); return Task.CompletedTask; });
-    public static async Task Run(Func<Task> action, bool check = true)
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, string> dispatches = new();
+    private static long dispatchSequence;
+    private static string caseName = "startup";
+    private static readonly System.Diagnostics.Stopwatch caseTimer = new();
+    public static Task BeginTest()
+    {
+        caseName = TestContext.CurrentContext.Test.FullName; caseTimer.Restart();
+        diagnostics.WriteLine($"[START] {DateTime.UtcNow:O} {caseName}");
+        return Run(() => {
+            // A prior failure remains in NUnit and the host exit code.
+            Fatal = null; TrackedContext.Start(Queue); return Task.CompletedTask;
+        }, check: false);
+    }
+    public static void EndTest() => diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts}");
+    public static async Task Run(Action action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
+        => await Run(() => { action(); return Task.CompletedTask; }, operation: operation);
+    public static async Task Run(Func<Task> action, bool check = true, [System.Runtime.CompilerServices.CallerMemberName] string operation = "", TimeSpan? timeout = null)
     {
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!Queue.TryEnqueue(async () =>
+        var id = Interlocked.Increment(ref dispatchSequence);
+        dispatches[id] = $"{caseName}/{operation}/{action.Method.Name}";
+        if (!Queue.TryEnqueue(() => { TrackedContext.Install(); Execute(); }))
+        {
+            dispatches.TryRemove(id, out _); throw new InvalidOperationException("UI dispatch rejected");
+        }
+        async void Execute()
         {
             try { await action(); completion.TrySetResult(); }
             catch (Exception e) { completion.TrySetException(e); }
-        })) throw new InvalidOperationException("UI dispatch rejected");
-        try { await completion.Task.WaitAsync(TimeSpan.FromSeconds(30)); }
-        catch (TimeoutException error) { RecordFailure(error); throw; }
+            finally { dispatches.TryRemove(id, out _); }
+        }
+        try { await completion.Task.WaitAsync(timeout ?? TimeSpan.FromSeconds(30)); }
+        catch (TimeoutException error) {
+            // A native operation may finish only after the dispatcher deadline. Its
+            // exception still belongs to this failed operation, never a later case.
+            var origin = dispatches.GetValueOrDefault(id) ?? caseName + "/" + operation;
+            _ = completion.Task.ContinueWith(t => diagnostics.WriteLine($"[LATE DISPATCH FAILURE] {origin}: {t.Exception}"),
+                CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            RecordFailure(error); await Diagnose("dispatch " + operation); throw;
+        }
         if (check) Check();
+    }
+    private static string Describe(FrameworkElement view)
+    {
+        var work = view switch {
+            App.PlanSheetView sheet => sheet.WorkDescription,
+            App.PlanWorkspaceView workspace => workspace.WorkDescription, _ => "" };
+        var root = Root.XamlRoot;
+        var focus = root is null ? null : Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(root) as DependencyObject;
+        var popups = root is null ? [] : VisualTreeHelper.GetOpenPopupsForXamlRoot(root)
+            .Select(p => $"{p.Child?.GetType().Name}/{(p.Child is null ? "" : AutomationProperties.GetAutomationId(p.Child))}:open={p.IsOpen}").ToArray();
+        return $"view={view.GetType().Name}, loaded={view.IsLoaded}, attached={Root.Children.Contains(view)}, parent={VisualTreeHelper.GetParent(view)?.GetType().Name ?? "none"}, rootLoaded={Root.IsLoaded}, focus={focus?.GetType().Name}/{(focus is null ? "" : AutomationProperties.GetAutomationId(focus))}, popups=[{string.Join(", ", popups)}], {work}";
+    }
+    internal static async Task Diagnose(string phase, FrameworkElement? view = null)
+    {
+        diagnostics.WriteLine($"[DIAGNOSTIC] {caseName} phase={phase} elapsed={caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts} dispatches=[{string.Join("; ", dispatches.Values)}] {TrackedContext.DescribePosts()}");
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!Queue.TryEnqueue(() => {
+            try { diagnostics.WriteLine("[UI STATE] " + Describe(view ?? Root)); }
+            catch (Exception error) { diagnostics.WriteLine("[UI STATE unavailable] " + error); }
+            finally { completion.TrySetResult(); }
+        })) { diagnostics.WriteLine("[UI STATE] dispatcher rejected diagnostics"); return; }
+        try { await completion.Task.WaitAsync(TimeSpan.FromSeconds(2)); }
+        catch (TimeoutException) { diagnostics.WriteLine("[UI STATE] dispatcher did not respond within 2s"); }
     }
     public static void Check() { if (Fatal is { } error) throw new AssertionException("Unhandled asynchronous UI failure: " + error, error); }
     public static async Task Idle()
     {
         var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (Volatile.Read(ref TrackedContext.Operations) != 0 || Volatile.Read(ref TrackedContext.Posts) != 0)
+        while (TrackedContext.Operations != 0 || TrackedContext.Posts != 0)
         {
             if (DateTime.UtcNow >= deadline)
             {
-                var error = new TimeoutException($"Incomplete asynchronous event teardown (operations={Volatile.Read(ref TrackedContext.Operations)}, posts={Volatile.Read(ref TrackedContext.Posts)})");
-                RecordFailure(error); throw error;
+                var error = new TimeoutException($"Incomplete asynchronous event teardown (operations={TrackedContext.Operations}, posts={TrackedContext.Posts})");
+                RecordFailure(error); await Diagnose("idle"); throw error;
             }
-            await Task.Yield();
+            // Yielding immediately spins a worker while persistence and native
+            // dispatch still need it; leave a bounded idle interval instead.
+            await Task.Delay(10);
         }
         await Run(() => Task.CompletedTask, check: false);
         Check();
@@ -76,10 +138,16 @@ internal static class Ui
     public static async Task Unmount(FrameworkElement view, bool check = true)
     {
         var unloaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        RoutedEventHandler handler = (_, _) => unloaded.TrySetResult();
-        await Run(() => { view.Unloaded += handler; if (!Root.Children.Remove(view)) unloaded.TrySetResult(); return Task.CompletedTask; }, check);
+        RoutedEventHandler handler = (_, _) => { diagnostics.WriteLine($"[UNLOADED] {view.GetType().Name}"); unloaded.TrySetResult(); };
+        await Run(() => {
+            diagnostics.WriteLine("[UNMOUNT before remove] " + Describe(view));
+            view.Unloaded += handler;
+            if (!Root.Children.Remove(view)) unloaded.TrySetResult();
+            diagnostics.WriteLine("[UNMOUNT after remove] " + Describe(view));
+            return Task.CompletedTask;
+        }, check);
         try { await unloaded.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
-        catch (TimeoutException error) { RecordFailure(error); throw; }
+        catch (TimeoutException error) { RecordFailure(error); await Diagnose("unloaded event", view); throw; }
         finally { await Run(() => { view.Unloaded -= handler; return Task.CompletedTask; }, check); }
     }
     public static IEnumerable<DependencyObject> Tree(DependencyObject root)
@@ -130,35 +198,6 @@ internal static class Ui
     {
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);
         ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(checkbox).GetPattern(PatternInterface.Toggle)).Toggle();
-    }
-    public static Button ProjectCommand(string id)
-    {
-        var commands = Find<CommandBar>("ProjectCommandBar");
-        var command = commands.PrimaryCommands.Concat(commands.SecondaryCommands).OfType<Button>()
-            .SingleOrDefault(button => AutomationProperties.GetAutomationId(button) == id);
-        if (command is not null) return command;
-        var settings = (AppBarButton)commands.PrimaryCommands.Single(button => AutomationProperties.GetAutomationId((DependencyObject)button) == "ProjectSettingsButton");
-        return ((StackPanel)((ScrollViewer)((Flyout)settings.Flyout).Content).Content).Children.OfType<Button>()
-            .Single(button => AutomationProperties.GetAutomationId(button) == id);
-    }
-    public static async Task OpenHistory()
-    {
-        await ClickCommand("ApplyHistoryButton");
-    }
-    public static async Task ChooseCell(string id, string optionId)
-    {
-        await Ready<Button>(id);
-        // Use the public focus provider so a presentation cell can activate its
-        // native editor, then operate that editor's real arrow.
-        await Run(() => FrameworkElementAutomationPeer.CreatePeerForElement(Find<Button>(id)).SetFocus());
-        var arrowId = id.Replace("GridCell", "GridChoiceArrow");
-        await Ready<Button>(arrowId);
-        await Run(() => Click(arrowId));
-        MenuFlyoutItem? item = null;
-        await Until(() => (item = VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child)).OfType<MenuFlyoutItem>()
-            .SingleOrDefault(i => AutomationProperties.GetAutomationId(i) == "ChoiceOption-" + optionId)) is { IsLoaded: true });
-        await Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(item!).GetPattern(PatternInterface.Invoke)).Invoke());
-        await Until(() => !item!.IsLoaded);
     }
     public static void Click(Button button)
     {

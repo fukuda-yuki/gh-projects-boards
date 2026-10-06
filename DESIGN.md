@@ -28,7 +28,7 @@ The empty workspace offers one next action appropriate to its state. Put setup p
 - **Good / bad:** Connection settings configure connection; Project registration adds an existing Project to the local workspace; editing prepares work; review supports a send decision; results explain its outcome. A connection screen that also owns registration and Apply obscures these roles.
 - **Check:** Can users predict where an action belongs and what it changes from its name and context? Can they distinguish local preparation, GitHub actions and settings without explanatory narration?
 
-Use the [workspace](docs/spec.md#workspace-presentation), [connection](docs/spec.md#connection-and-api-access), [registration](docs/spec.md#project-registration-and-cache), [editing](docs/spec.md#editing-and-drafts), [Apply](docs/spec.md#existing-field-apply) and [creation](docs/spec.md#new-issue-creation) contracts for actual routes and behavior. These links define responsibilities, not a requirement for one screen per role or a forced wizard.
+Use the [workspace and settings](docs/spec.md#current-workspace-and-project-settings-81), [connection](docs/spec.md#connection-and-api-access), [local document](docs/spec.md#current-local-plan-document-operations-and-storage-78--79--81) and [publishing](docs/spec.md#current-planning-editor-refresh-and-publishing-contract-79) contracts for routes and behavior. These responsibilities do not require one screen per role or a forced wizard.
 
 ## Information display policy
 
@@ -63,7 +63,7 @@ Use the [workspace](docs/spec.md#workspace-presentation), [connection](docs/spec
 - **Applies when:** Designing review tables, conflict resolution, details, settings roundtrips or asynchronous presentation updates.
 - **Exceptions / do not apply:** Preserving context does not mean retaining an invalid target or approval after identity or data changes. If the prior item is no longer visible, provide an understandable return location and explain any required reselection. In-session continuity does not imply new persisted viewport settings.
 - **Good / bad:** Show a conflict and its resolution beside the affected field; provide a discoverable route to an offscreen problem. Keep short differences readable and let long text open in full without losing the row. Requiring users to memorize one list and find matching entries in another, or resetting scroll after every check, breaks continuity.
-- **Check:** Review several rows, open full text, resolve a problem, repeat a check and return from settings. Can users locate the same work and understand any necessary context change? Selection, focus and pending input must follow the [input contract](docs/spec.md#selection-input-and-rectangular-operations).
+- **Check:** Review several rows, open full text, resolve a problem, repeat a check and return from settings. Can users locate the same work and understand any necessary context change? Selection, focus and pending input must follow the [input contract](docs/spec.md#current-local-plan-document-operations-and-storage-78--79--81).
 
 ### Keep essential operations reachable
 
@@ -81,7 +81,7 @@ Use the [workspace](docs/spec.md#workspace-presentation), [connection](docs/spec
 - **Applies when:** Showing progress, connection state, save status, validation, execution outcomes or disabled actions.
 - **Exceptions / do not apply:** Suppressing redundant visual success feedback must not remove status communication for assistive technology. A global problem can need a shared summary, with access to affected work. Required outcome history remains available even when an additional notification is unnecessary.
 - **Good / bad:** Distinguish local saving from GitHub completion, and identify failed or uncertain fields with a recovery path. Keep necessary progress visible while checking. Repeating “ready” across the workspace, announcing every internal step, or calling a partly failed row successful misdirects attention.
-- **Check:** Can the user tell whether work was sent, which result is verified, and what to do next? Can a screen-reader user receive relevant state changes without relying on a visual toast? Check behavior against the [Apply contract](docs/spec.md#existing-field-apply), not a simplified success/failure model.
+- **Check:** Can the user tell whether work was sent, which result is verified, and what to do next? Can a screen-reader user receive relevant state changes without relying on a visual toast? Check behavior against the [publishing contract](docs/spec.md#current-planning-editor-refresh-and-publishing-contract-79), not a simplified success/failure model.
 
 ### Name the user's action
 
@@ -101,7 +101,7 @@ Use the [workspace](docs/spec.md#workspace-presentation), [connection](docs/spec
 - **Good / bad:** Align related fields, distinguish focus from selection and editing, and pair a problem's color with a readable label or marker. Provide full text through a keyboard-accessible surface. A color-only conflict, placeholder-only label, or tooltip-only route to necessary content excludes users.
 - **Check:** Inspect real rendered content with keyboard navigation, text/display scaling, Light, Dark and High Contrast as relevant to the change. Check accessible names and status, visible focus, full-value access and return focus. Follow the [test policy](tests/README.md#test-policy) for execution scope; passing automation alone does not establish readability or human acceptance.
 
-Use the semantic resources and styles in [App.xaml](src/GhProjectsBoards.App/App.xaml) as the implementation reference for current visual values. Do not copy their numeric values into this document or treat their existence as proof of visual approval. Concrete input behavior remains in the [specification](docs/spec.md#selection-input-and-rectangular-operations).
+Use the semantic resources and styles in [App.xaml](src/GhProjectsBoards.App/App.xaml) as the implementation reference for current visual values. Do not copy their numeric values into this document or treat their existence as proof of visual approval. Concrete input behavior remains in the [specification](docs/spec.md#current-local-plan-document-operations-and-storage-78--79--81).
 
 ## Review criteria and references
 

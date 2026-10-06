@@ -1,71 +1,30 @@
 using System.Runtime.InteropServices;
-using GhProjectsBoards.Core.Projects;
+using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Windows.Graphics;
-
 namespace GhProjectsBoards.App;
-
 public sealed partial class MainWindow : Window
 {
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr window);
-    private RegistrationWorkspace? workspace;
-    private Task? operation;
-    private bool closingRequested, closeReady, closed;
-    private Control? returnFocus;
+    private PlanWorkspaceView? workspace;
+    private bool closing, ready;
     public MainWindow()
     {
         InitializeComponent();
-        ProjectsPage.ConnectionRequested += (_, _) => ShowConnection();
-        ConnectionPage.ReturnRequested += (_, _) => ShowProjects();
-        ConnectionPage.ConfirmWorkspaceChangeAsync = scope => ProjectsPage.ConfirmPlanningNavigationAsync(scope);
-        ConnectionPage.WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         try
         {
-            workspace = new RegistrationWorkspace(RegistrationStore.ForUser());
-            ProjectsPage.Initialize(workspace);
-            ConnectionPage.Initialize(workspace);
-            operation = RestoreAsync();
+            workspace = new(PlanWorkspace.ForUser()) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this) };
+            WorkspaceRoot.Children.Add(workspace);
         }
         catch (Exception)
         {
-            ConnectionPage.ShowProblem("保存先を利用できません。GHPB_DATA_ROOTは絶対パスを指定してください。実データへの代替保存はしません。");
-            ShowConnection();
+            WorkspaceRoot.Children.Add(new TextBlock { Text = "保存先を利用できません。GHPB_DATA_ROOT は絶対パスを指定してください。", TextWrapping = TextWrapping.Wrap, Margin = new(24) });
         }
         SizeWorkspaceWindow();
         AppWindow.Closing += Closing;
-        Closed += (_, _) => { closed = true; closingRequested = true; };
-    }
-    private async Task RestoreAsync()
-    {
-        try
-        {
-            await workspace!.RestoreAsync();
-            if (!closingRequested) ProjectsPage.OfferGettingStarted();
-        }
-        catch (Exception)
-        {
-            ConnectionPage.ShowProblem("保存データを読み込めません。保存先を確認してください。自動削除はしていません。");
-            ShowConnection();
-        }
-    }
-    private void ShowConnection()
-    {
-        if (!ProjectsPage.CanLeaveForConnection()) return;
-        returnFocus = ProjectsPage.XamlRoot is { } root ? FocusManager.GetFocusedElement(root) as Control : null;
-        ProjectsPage.Visibility = Visibility.Collapsed;
-        ConnectionPage.Visibility = Visibility.Visible;
-    }
-    private void ShowProjects()
-    {
-        ConnectionPage.Visibility = Visibility.Collapsed;
-        ProjectsPage.Visibility = Visibility.Visible;
-        ProjectsPage.Update();
-        ProjectsPage.ReturnFromConnection();
-        if (returnFocus is { IsLoaded: true, IsEnabled: true }) returnFocus.Focus(FocusState.Programmatic);
     }
     private void SizeWorkspaceWindow()
     {
@@ -87,44 +46,16 @@ public sealed partial class MainWindow : Window
 
     private async void Closing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (closeReady)
-        {
-            closingRequested = true;
-            return;
-        }
+        if (ready) return;
         args.Cancel = true;
-        if (closingRequested) return;
-        closingRequested = true;
-        try
+        if (closing) return;
+        closing = true;
+        if (workspace is null || await workspace.StopAsync())
         {
-            if (!await ProjectsPage.ConfirmPlanningNavigationAsync()) { closingRequested = false; return; }
-            workspace?.CancelPendingEdits();
-            if (ProjectsPage.Visibility == Visibility.Visible) ProjectsPage.FocusHeader();
-            ProjectsPage.IsEnabled = false;
-
-            await ConnectionPage.StopAsync();
-            if (workspace is not null) await workspace.StopAsync();
-            // Keep the UI dispatcher alive until the owned gh operation has stopped.
-            if (operation is not null) await operation;
-            if (workspace is not null && !await workspace.FlushDraftsAsync())
-            {
-                ResumeAfterFailedClose();
-                return;
-            }
-            await SheetDiagnostics.CompleteAsync();
+            // StopAsync may complete synchronously. Finish the native Closing
+            // callback before allowing the final XAML/input-context teardown.
+            if (!DispatcherQueue.TryEnqueue(() => { ready = true; Close(); })) closing = false;
         }
-        catch (Exception)
-        {
-            ResumeAfterFailedClose();
-            const string problem = "終了できませんでした。入力は保持しています。もう一度閉じてください。";
-            ProjectsPage.ShowCloseProblem(problem); ConnectionPage.ShowProblem(problem);
-            return;
-        }
-        closeReady = true;
-        DispatcherQueue.TryEnqueue(() => { if (!closed) Close(); });
-    }
-    private void ResumeAfterFailedClose()
-    {
-        closingRequested = false; ProjectsPage.IsEnabled = true; ConnectionPage.ResumeAfterFailedClose();
+        else closing = false;
     }
 }

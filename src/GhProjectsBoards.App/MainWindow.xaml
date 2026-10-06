@@ -2,10 +2,6 @@
     x:Class="GhProjectsBoards.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:GhProjectsBoards.App"
-    Title="GitHub Projects Boards">
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <local:RegistrationPanel x:Name="ProjectsPage"/>
-        <local:ConnectionPanel x:Name="ConnectionPage" Visibility="Collapsed"/>
-    </Grid>
+    Title="GitHub Projects">
+    <Grid x:Name="WorkspaceRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
 </Window>

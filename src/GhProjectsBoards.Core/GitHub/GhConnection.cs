@@ -32,7 +32,43 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 {
     private readonly IGhProcessRunner runner = new GhProjectsBoards.Core.Projects.PerformanceTrace.Runner(processRunner ?? new GhProcessRunner());
     private readonly SemaphoreSlim gate = new(1, 1);
+    private DateTimeOffset operationNotBefore;
+    private async Task WaitForOperationBudget(CancellationToken token)
+    {
+        var delay = operationNotBefore - DateTimeOffset.UtcNow;
+        if (delay > TimeSpan.Zero) await Task.Delay(delay, token).ConfigureAwait(false);
+    }
 
+    internal async Task<OperationLease> BeginOperationAsync(ConnectionContext context, CancellationToken token, bool mutation = true)
+    {
+        await gate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            await WaitForOperationBudget(token).ConfigureAwait(false);
+            var check = await RecheckCoreAsync(context, token).ConfigureAwait(false);
+            if (!check.IsConnected || mutation && (check.Authentication?.Store != CredentialStore.Keyring ||
+                check.Authentication.HasScope("project") != true || check.Authentication.HasScope("repo") != true))
+                throw new InvalidOperationException("発行に必要な認証またはアクセス権を確認できません。");
+            return new OperationLease(this, context, mutation);
+        }
+        catch { gate.Release(); throw; }
+    }
+    internal sealed class OperationLease(GhConnectionService owner, ConnectionContext context, bool mutation) : IDisposable
+    {
+        private bool disposed;
+        internal async Task<ApiResult> SendAsync(ApiRequest request, CancellationToken token)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (request.IsMutation && !mutation) return new(ApiOutcome.Failed, FailureKind.PermissionDenied);
+            if (context.IsInvalidated) return new(ApiOutcome.Failed, FailureKind.IdentityChanged);
+            await owner.WaitForOperationBudget(token).ConfigureAwait(false);
+            var result = await owner.Transport().SendAsync(context.Host, request, token).ConfigureAwait(false);
+            if (result.RetryAfter is { } delay && delay > TimeSpan.Zero) owner.operationNotBefore = DateTimeOffset.UtcNow + delay;
+            return result;
+        }
+        public void Dispose() { if (!disposed) { disposed = true; owner.gate.Release(); } }
+    }
+    private GhApiTransport Transport() => new(runner, executable, timeout);
     public async Task<ConnectionReport> ConnectAsync(CancellationToken cancellationToken = default)
     {
         try { using var measured = GhProjectsBoards.Core.Projects.PerformanceTrace.Span("connection-gate-wait"); await gate.WaitAsync(cancellationToken); }

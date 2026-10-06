@@ -2,16 +2,11 @@ namespace GhProjectsBoards.Core.Projects;
 
 internal static class ProjectQueries
 {
-    // Both aliases reuse the selections used by full reads and their existing validators.
-    public static string ApplyObservation => "query ApplyObservation($id: ID!, $item: ID!, $after: String) {"
-        + Body(Fields).Replace("node(id: $id)", "project: node(id: $id)")
-        + Body(ApplyItem).Replace("node(id: $id)", "item: node(id: $item)") + "}";
-    private static string Body(string query) => query[(query.IndexOf('{') + 1)..query.LastIndexOf('}')];
-
     private const string PageInfo = "totalCount pageInfo { hasNextPage endCursor }";
     private const string Native = "assignees(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id login } } blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id } } parent { id }";
     public static readonly string Assignees = "query PlanningAssignees($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id assignees(first:100, after:$after) { " + PageInfo + " nodes { id login } } } } }";
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
+    public static readonly string SubIssues = "query PlanSubIssues($id:ID!,$after:String){node(id:$id){__typename ... on Issue{id subIssues(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
     private const string FieldReference = "field { ... on ProjectV2FieldCommon { id project { id } } }";
     private const string Values = """
         nodes {
@@ -83,23 +78,4 @@ internal static class ProjectQueries
           }
         }
         """.Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
-    public static readonly string ApplyItem = """
-        query ApplyItem($id: ID!) {
-          node(id: $id) {
-            __typename
-            ... on ProjectV2Item {
-              id type isArchived project { id }
-              content {
-                __typename
-                ... on Node { id }
-                ... on Issue {
-                  number url title state viewerCanUpdate NATIVE
-                  repository { id nameWithOwner owner { id } }
-                }
-              }
-              fieldValues(first: 100) { PAGE_INFO VALUES }
-            }
-          }
-        }
-        """.Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
 }

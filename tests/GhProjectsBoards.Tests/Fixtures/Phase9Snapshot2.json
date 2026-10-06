@@ -1,0 +1,2256 @@
+{
+  "project": {
+    "scope": {
+      "host": "github.com",
+      "viewerId": 42
+    },
+    "nodeId": "P1"
+  },
+  "baseline": {
+    "rows": [
+      {
+        "identity": "I1",
+        "title": "[Verified] Sandbox scope and GitHub CLI validation",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Done",
+        "closed": true,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I2",
+        "title": "週次比較: API実装の残作業",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I4"
+        ],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 3,
+        "actual": 7,
+        "start": "2026-10-13",
+        "end": "2026-10-13",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I3",
+        "title": "週次比較: 後続の結合確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I2"
+        ],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 2,
+        "actual": 4,
+        "start": "2026-10-14",
+        "end": "2026-10-14",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I4",
+        "title": "週次比較: 完了済みの前提作業",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Done",
+        "closed": true,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 0,
+        "actual": 5,
+        "start": "2026-10-05",
+        "end": "2026-10-06",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I5",
+        "title": "週次比較: 合意済みレビュー枠",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 3,
+        "actual": null,
+        "start": "2026-10-07",
+        "end": "2026-10-07",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I8",
+        "title": "課題一覧の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": "2026-10-15",
+        "end": "2026-10-15",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I7",
+        "title": "対象業務の確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 16,
+        "actual": null,
+        "start": "2026-10-13",
+        "end": "2026-10-14",
+        "startNoEarlierThan": "2026-10-13",
+        "fixed": false
+      },
+      {
+        "identity": "I6",
+        "title": "要件整理",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": "2026-10-13",
+        "end": "2026-10-16",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I12",
+        "title": "設計と準備",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I13",
+        "title": "計画案の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I9",
+        "title": "優先度の合意",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": "2026-10-15",
+        "end": "2026-10-15",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I11",
+        "title": "要件承認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I14",
+        "title": "レビュー準備",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I10",
+        "title": "受入条件の確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": "2026-10-16",
+        "end": "2026-10-16",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I15",
+        "title": "設計レビュー",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I16",
+        "title": "指摘の反映",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I18",
+        "title": "実装と検証",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I20",
+        "title": "検証データの準備",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I17",
+        "title": "設計承認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I19",
+        "title": "実装作業",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I21",
+        "title": "結合確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I22",
+        "title": "修正と再確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I24",
+        "title": "運用引き継ぎ",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I23",
+        "title": "実装完了",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I25",
+        "title": "手順書の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I28",
+        "title": "引き継ぎ確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I27",
+        "title": "運用リハーサル",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I29",
+        "title": "運用開始",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I26",
+        "title": "担当者への説明",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      }
+    ],
+    "columns": [
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y",
+        "name": "Title",
+        "dataType": "TITLE"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g",
+        "name": "Assignees",
+        "dataType": "ASSIGNEES"
+      },
+      {
+        "id": "F-Status",
+        "name": "Status",
+        "dataType": "SINGLE_SELECT"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C30",
+        "name": "Labels",
+        "dataType": "LABELS"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C38",
+        "name": "Linked pull requests",
+        "dataType": "LINKED_PULL_REQUESTS"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4I",
+        "name": "Milestone",
+        "dataType": "MILESTONE"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M",
+        "name": "Repository",
+        "dataType": "REPOSITORY"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4c",
+        "name": "Reviewers",
+        "dataType": "REVIEWERS"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4g",
+        "name": "Parent issue",
+        "dataType": "PARENT_ISSUE"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4o",
+        "name": "Sub-issues progress",
+        "dataType": "SUB_ISSUES_PROGRESS"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C4s",
+        "name": "Created",
+        "dataType": "CREATED"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C40",
+        "name": "Updated",
+        "dataType": "UPDATED"
+      },
+      {
+        "id": "PVTF_lAHOBGPKL84BjFYczhh7C48",
+        "name": "Closed",
+        "dataType": "CLOSED"
+      },
+      {
+        "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_0",
+        "name": "Priority",
+        "dataType": "SINGLE_SELECT"
+      },
+      {
+        "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_4",
+        "name": "Size",
+        "dataType": "SINGLE_SELECT"
+      },
+      {
+        "id": "F-Estimate",
+        "name": "Estimate",
+        "dataType": "NUMBER"
+      },
+      {
+        "id": "F-Start",
+        "name": "Start date",
+        "dataType": "DATE"
+      },
+      {
+        "id": "F-End",
+        "name": "Target date",
+        "dataType": "DATE"
+      },
+      {
+        "id": "F-Remaining",
+        "name": "Remaining",
+        "dataType": "NUMBER"
+      },
+      {
+        "id": "F-Actual",
+        "name": "Actual",
+        "dataType": "NUMBER"
+      },
+      {
+        "id": "F-StartNoEarlierThan",
+        "name": "開始日指定",
+        "dataType": "DATE"
+      },
+      {
+        "id": "F-Fixed",
+        "name": "日程固定",
+        "dataType": "SINGLE_SELECT"
+      }
+    ]
+  },
+  "state": {
+    "rows": [
+      {
+        "identity": "I1",
+        "title": "[Verified] Sandbox scope and GitHub CLI validation",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Done",
+        "closed": true,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I2",
+        "title": "週次比較: API実装の残作業",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I4"
+        ],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 3,
+        "actual": 7,
+        "start": "2026-10-13",
+        "end": "2026-10-13",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I3",
+        "title": "週次比較: 後続の結合確認",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I2"
+        ],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 2,
+        "actual": 4,
+        "start": "2026-10-14",
+        "end": "2026-10-14",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I4",
+        "title": "週次比較: 完了済みの前提作業",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Done",
+        "closed": true,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 0,
+        "actual": 5,
+        "start": "2026-10-05",
+        "end": "2026-10-06",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I5",
+        "title": "週次比較: 合意済みレビュー枠",
+        "repository": "acme/repo",
+        "csvSourceHash": null,
+        "status": "Backlog",
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": null,
+        "estimate": 16,
+        "remaining": 3,
+        "actual": null,
+        "start": "2026-10-06",
+        "end": "2026-10-06",
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I6",
+        "title": "要件整理",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I7",
+        "title": "対象業務の確認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [],
+        "parent": "I6",
+        "estimate": 16,
+        "remaining": 16,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": "2026-10-13",
+        "fixed": false
+      },
+      {
+        "identity": "I8",
+        "title": "課題一覧の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [
+          "I7"
+        ],
+        "parent": "I6",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I9",
+        "title": "優先度の合意",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I7"
+        ],
+        "parent": "I6",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I10",
+        "title": "受入条件の確認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I9"
+        ],
+        "parent": "I6",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I11",
+        "title": "要件承認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I10"
+        ],
+        "parent": "I6",
+        "estimate": 0,
+        "remaining": 0,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I12",
+        "title": "設計と準備",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I13",
+        "title": "計画案の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I11"
+        ],
+        "parent": "I12",
+        "estimate": 16,
+        "remaining": 16,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": "2026-10-19",
+        "fixed": false
+      },
+      {
+        "identity": "I14",
+        "title": "レビュー準備",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [
+          "I13"
+        ],
+        "parent": "I12",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I15",
+        "title": "設計レビュー",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I13"
+        ],
+        "parent": "I12",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I16",
+        "title": "指摘の反映",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I15"
+        ],
+        "parent": "I12",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I17",
+        "title": "設計承認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I16"
+        ],
+        "parent": "I12",
+        "estimate": 0,
+        "remaining": 0,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I18",
+        "title": "実装と検証",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I19",
+        "title": "実装作業",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I17"
+        ],
+        "parent": "I18",
+        "estimate": 16,
+        "remaining": 16,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": "2026-10-26",
+        "fixed": false
+      },
+      {
+        "identity": "I20",
+        "title": "検証データの準備",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [
+          "I19"
+        ],
+        "parent": "I18",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I21",
+        "title": "結合確認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I19"
+        ],
+        "parent": "I18",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I22",
+        "title": "修正と再確認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I21"
+        ],
+        "parent": "I18",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I23",
+        "title": "実装完了",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I22"
+        ],
+        "parent": "I18",
+        "estimate": 0,
+        "remaining": 0,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I24",
+        "title": "運用引き継ぎ",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [],
+        "parent": null,
+        "estimate": null,
+        "remaining": null,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I25",
+        "title": "手順書の作成",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I23"
+        ],
+        "parent": "I24",
+        "estimate": 16,
+        "remaining": 16,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": "2026-11-02",
+        "fixed": false
+      },
+      {
+        "identity": "I26",
+        "title": "担当者への説明",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [],
+        "predecessors": [
+          "I25"
+        ],
+        "parent": "I24",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I27",
+        "title": "運用リハーサル",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I25"
+        ],
+        "parent": "I24",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I28",
+        "title": "引き継ぎ確認",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I27"
+        ],
+        "parent": "I24",
+        "estimate": 8,
+        "remaining": 8,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      },
+      {
+        "identity": "I29",
+        "title": "運用開始",
+        "repository": "acme/repo",
+        "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
+        "status": null,
+        "closed": false,
+        "assignees": [
+          "U1"
+        ],
+        "predecessors": [
+          "I28"
+        ],
+        "parent": "I24",
+        "estimate": 0,
+        "remaining": 0,
+        "actual": null,
+        "start": null,
+        "end": null,
+        "startNoEarlierThan": null,
+        "fixed": false
+      }
+    ],
+    "settings": {
+      "columns": [
+        {
+          "role": "Estimate",
+          "fieldId": "F-Estimate",
+          "name": "Estimate",
+          "dataType": "NUMBER"
+        },
+        {
+          "role": "Remaining",
+          "fieldId": "F-Remaining",
+          "name": "Remaining",
+          "dataType": "NUMBER"
+        },
+        {
+          "role": "Actual",
+          "fieldId": "F-Actual",
+          "name": "Actual",
+          "dataType": "NUMBER"
+        },
+        {
+          "role": "Start",
+          "fieldId": "F-Start",
+          "name": "Start date",
+          "dataType": "DATE"
+        },
+        {
+          "role": "End",
+          "fieldId": "F-End",
+          "name": "Target date",
+          "dataType": "DATE"
+        },
+        {
+          "role": "StartNoEarlierThan",
+          "fieldId": "F-StartNoEarlierThan",
+          "name": "開始日指定",
+          "dataType": "DATE"
+        },
+        {
+          "role": "Fixed",
+          "fieldId": "F-Fixed",
+          "name": "日程固定",
+          "dataType": "SINGLE_SELECT"
+        }
+      ],
+      "companyDaysOff": [],
+      "importedHolidays": null,
+      "people": [
+        {
+          "identity": "U1",
+          "name": "fukuda-yuki",
+          "rate": 100,
+          "allowance": null,
+          "daysOff": []
+        }
+      ],
+      "projectStart": null,
+      "defaultRepository": "acme/repo",
+      "statusDate": null
+    }
+  },
+  "sync": {
+    "unverified": [],
+    "failures": [
+      {
+        "identity": "I11",
+        "field": "Estimate",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I11",
+        "field": "Remaining",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I11",
+        "field": "Start",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I11",
+        "field": "End",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I12",
+        "field": "Status",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I12",
+        "field": "Start",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I12",
+        "field": "End",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "Status",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "Assignees",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "Estimate",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "Remaining",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "Start",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "End",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I13",
+        "field": "StartNoEarlierThan",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I14",
+        "field": "Status",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I14",
+        "field": "Estimate",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I14",
+        "field": "Remaining",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I14",
+        "field": "Start",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I14",
+        "field": "End",
+        "reason": "RESOURCE_LIMITS_EXCEEDED: Resource limits for this query exceeded."
+      },
+      {
+        "identity": "I15",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I18",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I18",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I18",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "StartNoEarlierThan",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I24",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I24",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I24",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "StartNoEarlierThan",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Status",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Assignees",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Estimate",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Remaining",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Start",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "End",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I7",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I8",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I9",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I10",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I11",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I13",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I14",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Parent",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I7",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I8",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I9",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I10",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I11",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I13",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I14",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "SubIssueOrder",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I8",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I9",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I10",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I11",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I13",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I14",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I15",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I16",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I20",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I21",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I22",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I25",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I28",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I29",
+        "field": "Predecessors",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I6",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I7",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I9",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I10",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I11",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I17",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I19",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I23",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I26",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      },
+      {
+        "identity": "I27",
+        "field": "Order",
+        "reason": "VerificationMismatch"
+      }
+    ],
+    "nativeOrders": {
+      "I9": [],
+      "I18": [],
+      "I16": [],
+      "I21": [],
+      "I19": [],
+      "I6": [],
+      "I20": [],
+      "I1": [],
+      "I15": [],
+      "I26": [],
+      "I10": [],
+      "I8": [],
+      "I11": [],
+      "I24": [],
+      "I3": [],
+      "I2": [],
+      "I14": [],
+      "I17": [],
+      "I28": [],
+      "I5": [],
+      "I13": [],
+      "I7": [],
+      "I12": [],
+      "I27": [],
+      "I25": [],
+      "I29": [],
+      "I4": [],
+      "I23": [],
+      "I22": []
+    },
+    "creationStarts": [
+      {
+        "started": "2026-10-06T15:29:10.3946669+00:00",
+        "issues": 10
+      },
+      {
+        "started": "2026-10-06T15:29:20.4158286+00:00",
+        "issues": 10
+      },
+      {
+        "started": "2026-10-06T15:29:30.4161313+00:00",
+        "issues": 4
+      }
+    ],
+    "notBefore": null,
+    "publish": null,
+    "peopleNames": {
+      "U1": "U1"
+    },
+    "issueLinks": {},
+    "draftCount": 0,
+    "pullRequestCount": 0,
+    "inaccessibleCount": 0,
+    "conflicts": [],
+    "unavailable": []
+  }
+}

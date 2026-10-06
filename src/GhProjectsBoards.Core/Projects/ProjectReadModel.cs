@@ -12,7 +12,7 @@ internal enum FieldOwner { Issue, ProjectItem, Unknown }
 internal enum IssueState { Open, Closed }
 internal enum ProjectItemKind { Issue, PullRequest, Draft, Unavailable, Unsupported }
 internal enum ProjectReadOutcome { Complete, Partial, Failed, Cancelled, TimedOut }
-internal enum ReadProblemKind { Api, InvalidResponse, DuplicateIdentity, RepeatedCursor, IncompleteTraversal, ScopeMismatch }
+internal enum ReadProblemKind { Api, InvalidResponse, DuplicateIdentity, RepeatedCursor, IncompleteTraversal, ConcurrentChange, ScopeMismatch }
 internal sealed record ProjectReadProgress(string Stage, int Fields, int Items, int Issues);
 
 internal sealed record ReadValue<T>(ValueAvailability Availability, T? Value = default);
@@ -22,7 +22,7 @@ internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repositor
     IssuePlanningObservation? Native = null);
 internal sealed record NativePerson(ScopedId Id, string Login);
 internal sealed record IssuePlanningObservation(NativePerson[] Assignees, ScopedId[] Predecessors,
-    ReadValue<ScopedId> Parent, bool Complete);
+    ReadValue<ScopedId> Parent, bool Complete) { public ScopedId[] SubIssues { get; init; } = []; }
 internal sealed record CapabilityObservation(bool? CanUpdate, DateTimeOffset ObservedAt);
 internal sealed record SelectOption(string Id, string Name);
 internal sealed record ProjectFieldDefinition(ScopedId Id, ScopedId ProjectId, string Name,
@@ -35,7 +35,8 @@ internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, s
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
-    bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
+    bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null)
+{ public int UndeliveredItemCount { get; init; } }
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
     ApiOutcome? ApiOutcome = null, int? HttpStatus = null, TimeSpan? RetryAfter = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,

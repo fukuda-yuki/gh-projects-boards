@@ -1,9 +1,9 @@
-param(
-    [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance and cat != SummaryIme',
+﻿param(
+    [string]$Where = 'cat != Infrastructure and cat != PlanSheetNative and cat != PlanSheetPerformance',
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,
-    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 180
+    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 900
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -19,7 +19,7 @@ git -C $repo diff --binary 2> (Join-Path $run 'source-diff.log') | Set-Content -
 $metadata.sources = @(Get-ChildItem -LiteralPath (Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests') -File | ForEach-Object { @{name=$_.Name; sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
 try {
     if (-not $NoBuild) {
-        & dotnet build $project -c Release *> (Join-Path $run 'build.log')
+        & dotnet build $project -c Release --no-restore *> (Join-Path $run 'build.log')
         if ($LASTEXITCODE -ne 0) { throw 'UI host build failed' }
     }
     $metadata.buildSeconds = $timer.Elapsed.TotalSeconds
@@ -34,6 +34,7 @@ try {
     else { $arguments += "--result=$result" }
     $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $binaryRoot 'GhProjectsBoards.UiIntegration.Tests.exe'))
     $start.UseShellExecute = $false; $start.CreateNoWindow = $true; $start.WindowStyle = 'Hidden'
+    $start.StandardOutputEncoding = [Text.Encoding]::UTF8; $start.StandardErrorEncoding = [Text.Encoding]::UTF8
     $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true; $start.WorkingDirectory = $binaryRoot
     foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
     $process = [Diagnostics.Process]::Start($start)

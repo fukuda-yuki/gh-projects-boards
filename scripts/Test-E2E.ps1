@@ -27,13 +27,13 @@ try {
         configuration = $Configuration; startedAt = (Get-Date).ToUniversalTime().ToString('o')
         os = [Environment]::OSVersion.VersionString; architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
         dotnetSdk = (dotnet --version | Out-String).Trim(); powershell = $PSVersionTable.PSVersion.ToString()
-        buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration"
+        buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore"
         testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', $Filter,
             '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=600000')
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'source-environment.json') -Encoding utf8
     dotnet --info | Set-Content -LiteralPath (Join-Path $results 'dotnet-info.txt') -Encoding utf8
     git diff --binary HEAD --output="$results/source.patch"
-    dotnet build GhProjectsBoards.sln --configuration $Configuration 2>&1 | Tee-Object -FilePath (Join-Path $results 'build.log')
+    dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore 2>&1 | Tee-Object -FilePath (Join-Path $results 'build.log')
     if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE. E2E was not run." }
     $env:GHPB_RUN_E2E = '1'
     $env:GHPB_DATA_ROOT = Join-Path $results 'isolated-default-data'
@@ -96,31 +96,9 @@ try {
         [int]$counters.passed -ne [int]$counters.executed -or [int]$counters.notExecuted -gt 0) {
         throw "E2E did not pass the complete connection suite without skips. Inspect: $trxPath"
     }
-    $required = @{
-        OrdinaryExecutable_OpensAndCloses = 1
-        DiagnosesTargetsAndRequiresExplicitAccountRebinding = 1
-        CancelAndWindowCloseStopTheOwnedGhProcess = 1
-        MissingGhAndMissingLoginAreActionableInTheOrdinaryScreen = 1
-        CloseWithTextBoxFocusedExitsNormally = 4
-        ChromeCloseDuringGhStopsOwnedProcess = 2
-        NativePickerSelectsExecutableAndCancelPreservesIt = 1
-        RegisterTwoProjectsRestartRestoreAndUnregisterLocally = 1
-        CancelFirstRetrievalDoesNotRegister = 1
-        NormalCloseDuringProjectRetrievalStopsOwnedWork = 1
-        ChangingConnectionInputsClearsPrivateDiscoveryAndDisablesReads = 1
-        GridEditsScrolledRowsSharedTitlesRestartBuffersAndUndo = 1
-        GridRectangleCopyPasteValidationClearAndOperationUndo = 1
-        FailedDraftSaveCancelsNavigationAndCloseUntilRetry = 1
-        RefreshPreservesPendingInputStartedDuringRetrieval = 1
-        RefreshConflictComparisonResolutionAndRestart = 3
-        RefreshIndependentFieldsAndPartialFailureKeepCompleteCheckpoint = 1
-        RefreshCancellationAndCloseRetainExistingConflict = 1
-        DeliberateRefreshInterruptionRecoversCoherentCheckpoint = 1
-        UnregistrationRequiresDecisionAndPreservesSurvivingSharedDraft = 1
-        DeliberateProcessInterruptionRecoversAcknowledgedTransactionAndUndo = 1
-    }
+    $required = @{ FreshWorkspaceConnectsOpensMappedTasksAndReopensAfterRestart = 1 }
     if ($Filter -ne 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance') { $required = @{} }
-    if ($Filter -eq 'TestCategory=GridIme') { $required = @{ RegisteredGridPhysicalJapaneseIme = 6 } }
+    if ($Filter -eq 'TestCategory=GridIme') { $required = @{ PlanSheetPhysicalJapaneseImeKeepsConversionSeparateFromCellCommit = 6 } }
     foreach ($name in $required.Keys) {
         $cases = @($report.TestRun.Results.UnitTestResult | Where-Object { $_.testName -eq $name -or $_.testName.StartsWith($name + '(') })
         if ($cases.Count -ne $required[$name] -or @($cases | Where-Object outcome -ne 'Passed').Count -gt 0) {

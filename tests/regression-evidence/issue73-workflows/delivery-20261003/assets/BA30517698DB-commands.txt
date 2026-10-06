@@ -1,5 +1,0 @@
-# Transcribed after execution from the actual root tool invocation. Equivalent quoting is shown; argument values are unchanged.
-# Working directory: C:/Users/mwam0/.copilot/repos/gh-projects-boards
-# stdout/stderr were redirected to the matching red.log or green.log; outcomes are established by retained TRX counters, not the wrapper exit code.
-dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter FullyQualifiedName~UncertainCreationTargetsTheEditableLocalTitleInItsProject --logger "trx;LogFileName=red.trx" --results-directory TestResults/issue73/blind-review/checks/local-creation-target
-dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --filter FullyQualifiedName~ApplyResultsPresentationTests --logger "trx;LogFileName=green.trx" --results-directory TestResults/issue73/blind-review/checks/local-creation-target
