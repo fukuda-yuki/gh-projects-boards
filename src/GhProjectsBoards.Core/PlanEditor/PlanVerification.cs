@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 namespace GhProjectsBoards.Core.PlanEditor;
 internal static class PlanVerification
 {
-    internal static PlanField Field(PlanWrite write, ProjectPlanSettings settings) => write.Mutation switch
+    internal static PlanField Field(PlanWrite write, ProjectPlanSettings settings) => write.Field ?? (write.Mutation switch
     {
         "createIssue" or "addProjectV2ItemById" => PlanField.NewTask,
         "updateIssue" => PlanField.Title,
@@ -12,7 +12,7 @@ internal static class PlanVerification
         "updateProjectV2ItemPosition" => PlanField.Order,
         "reprioritizeSubIssue" => PlanField.SubIssueOrder,
         _ => settings.Columns.Single(c => c.FieldId == JsonNode.Parse(write.Input)!["fieldId"]!.GetValue<string>()).Role
-    };
+    });
     internal static bool Verify(PlanWrite write, PlanPublishProgress progress, PlanRemoteSnapshot remote, ProjectPlanSettings settings)
     {
         var bindings = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).ToDictionary(w => w.Identity, w => w.ResultId!);
@@ -44,10 +44,16 @@ internal static class PlanVerification
                 if (Text("beforeId") is { } next) return position >= 0 && position + 1 < siblings.Length && siblings[position + 1] == Id(next);
                 return false;
             case "clearProjectV2ItemFieldValue": case "updateProjectV2ItemFieldValue":
-                var role = settings.Columns.Single(c => c.FieldId == Text("fieldId")).Role;
+                var role = Field(write, settings);
                 if (write.Mutation.StartsWith("clear", StringComparison.Ordinal)) return PlanValues.Get(row, role) == (role == PlanField.Fixed ? "false" : "null");
                 var value = input["value"]!.AsObject().Single();
                 if (role == PlanField.Fixed) return row.Fixed;
+                if (role == PlanField.Status)
+                {
+                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && f.Name == "Status" && f.DataType == "SINGLE_SELECT");
+                    var option = definition?.Options.SingleOrDefault(o => o.Id == value.Value?.GetValue<string>());
+                    return option is not null && row.Status == option.Name;
+                }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, role)), value.Value);
             default: return false;
         }

@@ -1,19 +1,18 @@
-# Hosted WinUI integration
+﻿# Hosted WinUI integration
 
-The host references the production App assembly and mounts real WinUI views with the production resources. It runs NUnitLite serially on an interactive Windows desktop. It is not a headless substitute or an ordinary-app E2E runner. Dependencies remain pinned in the project; no new driver, service or machine configuration is required.
+The host inherits the ordinary application's compiled resources and XAML metadata. It mounts real product controls on the UI dispatcher and records asynchronous event failures. Tests use public native control state, UI Automation selection/invoke patterns, focus and rendered geometry. Ui.Idle drains tracked continuations; native focus/layout observations additionally wait for the resulting visible or saved state.
 
-```powershell
-Set-Location C:\w\g76
-dotnet build C:\w\g76\tests\GhProjectsBoards.UiIntegration.Tests\GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
-C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanWorkspace'
-```
+- PlanWorkspaceHostedTests: connection/discovery/open/switch, settings/mappings/calendar files, serialization during pending saves, safe catalog failure, refresh presentation and process cancellation. Only the external gh executable and file picker are substituted.
+- PlanSheetHostedTests: the actual plan sheet, range commands and row-aligned chart using real PlanSession, scheduler and isolated durable storage. Routine clipboard cases substitute only the OS clipboard. The PlanSheetNative category adds physical keys/pointer and must run on the PMO desktop.
+- PlanSheetPerformance: 1,000 tasks, 20 people, ten-task chains and 20 commit-to-Rendered samples, with every outcome retained. It is an explicit performance run, not a routine timing assertion.
+- InfrastructureTests: deliberate runner failures, excluded from normal execution.
 
-`PlanWorkspaceHostedTests` mounts `PlanWorkspaceView` with real document/session/store, scheduler, reader and publisher collaborators. A separate fake-gh process supplies external responses and isolated files hold real persisted work. Public control events/automation peers drive connection, Project selection, settings and explicit field setup. The file-picker seam substitutes only the native picker; CSV/JSON parsing and persistence remain real.
+Use the commands and evidence boundaries in [test policy](../README.md). Build Release with --no-restore, then invoke scripts/Test-UiIntegration.ps1 -NoBuild. The default excludes infrastructure, native-input and performance categories. The ordinary app never references the host.
 
-The cases cover mapped task presentation, per-Project switching and restart restoration, explicit missing fields, rate/company/personal-day recalculation with one Undo, holiday and settings-file roundtrip, draft/PR counts, invalid settings and failed reconnection. Real file-lock cases verify save recovery and failed Project-switch isolation. Controlled fake-gh responses verify that close cancels and waits for the owned subprocess during connection, opening and refresh. A forty-Project fixture verifies scrolling and command reachability; native calendar date lists cover selection without an edit, addition, duplicate no-op, removal and Undo. Native TextBox assignment establishes event wiring, not physical IME behavior. Ordinary process restart, native picker, real GitHub and human usability require separate checks.
+Native physical IME is exercised by PlanSheetImeTests through the ordinary app and fake gh, selected with TestCategory=GridIme. Neither TextBox assignment nor toolbar invocation proves physical keyboard/composition behavior. Live sandbox and human review are separate from both suites.
 
-`EditingGrid`, `BulkEditingHostedTests` and other directly hosted grid collaborators remain for Phase 6 adaptation. Their existing native-input and clipboard cases require the relevant desktop facilities. They are not current workspace acceptance. RegistrationPanel/ConnectionPanel/Apply navigation tests were retired with those views.
+RenderedEvidence captures native XAML after layout for design review. It is not a desktop/compositor latency measurement. Tests assert state/geometry separately from capture timing.
 
-The runner writes unique `TestResults/ui-integration/run-*` directories with source/diff, hashes, OS/SDK, elapsed time, process identity, logs and NUnit XML. `-NoBuild` requires matching binaries. Empty, skipped, failed or incomplete selections fail. Discovery never counts as execution. Mount/unmount waits for actual lifecycle events; asynchronous errors remain failures, and teardown flushes owned work. The watchdog only terminates its owned host.
+Unmount failures report the test and lifecycle phase, root attachment, loaded state, focused control, open popups, sheet command queue, drag timer, frame subscription and tracked dispatcher work. A missing Unloaded signal is distinct from a process deadline or an unresponsive dispatcher. Case start/end and lifecycle diagnostics are written immediately to the UTF-8 stderr stream, outside NUnit case buffering, and remain available when an external deadline prevents results.xml.
 
-Infrastructure fault probes remain opt-in: `AssertionFailure`, `AsyncFailureAfterAssertion`, `IncompleteTeardown`, and `HungHost`. Run each separately; an expected failure requires a nonzero runner exit. Keep these apart from product counts. See [test policy](../README.md) for boundary selection and evidence rules.
+The default host deadline is 900 seconds for the combined routine suite; the per-view Unloaded deadline remains 10 seconds. Increase the process deadline explicitly for performance selections. Process deadlines do not establish a view lifecycle failure.

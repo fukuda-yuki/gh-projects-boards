@@ -8,7 +8,7 @@ using Windows.Storage.Streams;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 
-internal static class ApplyInformationEvidence
+internal static class RenderedEvidence
 {
     internal static async Task Capture(FrameworkElement view, string name)
     {

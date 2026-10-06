@@ -1,4 +1,31 @@
-# Measured performance
+# Performance measurement
+
+## Current plan sheet (#78)
+
+Run the prepared Release build serially, without another build/test workload. Use a new evidence directory per run.
+
+~~~powershell
+Set-Location C:\w\g76
+dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
+$env:GHPB_PLAN_EVIDENCE = 'C:\w\g76\TestResults\phase6\measurement-05'
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetPerformance' -TimeoutSeconds 300
+Remove-Item Env:\GHPB_PLAN_EVIDENCE
+~~~
+
+The fixture has 1,000 tasks, 20 people and ten-task finish-to-start chains. Twenty edits alternate row 1 Remaining between 8 and 16 hours. Each sample starts at the cell commit and ends at the next CompositionTarget.Rendered callback after local-operation acceptance/scheduling and refreshed visible dates/bars. Autosave runs concurrently and is still awaited before the next command or normal close. The test verifies the displayed date/bar for every sample. plan-frames.jsonl retains individual outcomes; plan-measurement.json reports median/max and whether all samples meet 200 ms. Superseded, rejected, unloaded and missing frames are not successful samples. This is hosted-control frame timing, not physical display latency or scrolling FPS.
+
+The run also creates synthetic-1000, containing fake-gh remote data and a current PlanStore document. For ordinary-app screenshot and physical interaction review, replace the evidence directory below with the actual run directory:
+
+~~~powershell
+$env:GH_CONFIG_DIR = 'C:\w\g76\TestResults\phase6\measurement-05\synthetic-1000'
+$env:GHPB_DATA_ROOT = "$env:GH_CONFIG_DIR\data"
+$env:GHPB_PLAN_METRICS = 'C:\w\g76\TestResults\phase6\ordinary-plan-frames.jsonl'
+& C:\w\g76\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
+~~~
+
+In the ordinary connection page, set gh.exe to C:\w\g76\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.exe, connect, and open 開発計画. Use the sheet and each day/week/month zoom, scroll to rows 500/1,000 and back, and inspect focus, cell values, arrows, row alignment and column access. Change row 1 Remaining to 16; dates and bars update through the real plan scheduler. Restore the shell environment variables after closing. These endpoints are synthetic; use a separate data root and real gh for authorized Project 3 review.
+
+## Retained Core/adapter measurements
 
 Issue #12 owns actual results, failures and acceptance; #65 owns the sheet workload and current next-roadmap evidence is recorded in #73. These runners do not establish human UX, enterprise or large-Project support. Synthetic fixtures are controlled scalability probes.
 
@@ -32,34 +59,6 @@ All trace spans use monotonic Stopwatch ticks and record frequency. Span kinds a
 Spans are **inclusive and nested**: process requests occur within observations, which occur within prepare/execute. Report each as a breakdown, never add inclusive observation and process spans to derive end-to-end. Mandatory wait spans are separate from observation and checkpoint spans. The summary labels inclusive spans explicitly. Counts distinguish version/auth/identity preflight, data queries, mutation calls, full Project traversals, returned item/value nodes, UTF-8 response bytes, checkpoint bytes/commits and waits. Returned response bytes include protocol metadata; checkpoint bytes describe serialized work rather than total physical disk traffic.
 
 Publish each sample plus median/min/max. Do not infer tail percentiles from these sample sizes. Retain an optimization only for a repeatable reduction in work counts or elapsed time beyond sample variation and passing correctness gates. Pacing remains enabled. Where mandatory waits dominate, report the work reduction without inventing an end-to-end speedup. CI runs deterministic safety and structural count assertions, not machine-specific timing thresholds. Benchmark repetition does not change the ordinary correctness timeout policy.
-
-## Cached local-sheet diagnosis
-
-`Test-SheetDiagnostic.ps1` selects one opt-in `LocalSheetDiagnostic` case, outside the default E2E suite. It exercises an ordinary application's cached local session through public input/UI, real workspace orchestration and isolated checkpoint storage: this is end-to-end collaboration to a local-store endpoint. The seed is synthetic; connection, refresh, Apply and live GitHub are outside this diagnostic.
-
-```powershell
-# Each invocation creates a new isolated seed and evidence directory.
-./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-101 -Trace
-./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-1000 -ItemCount 1000 -Trace
-./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-columns -SelectFieldCount 12 -Trace
-# Optional physical Japanese composition probe at the selected row count:
-./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-ime -Ime -Trace
-# Use a previously copied complete app output; retain its source evidence separately.
-./scripts/Test-SheetDiagnostic.ps1 -RunId sheet-baseline -NoBuild `
-    -Executable 'C:\evidence\baseline\GhProjectsBoards.App.exe' -SourceRevision '<40-character-source-SHA>'
-```
-
-Rows accept 50–5,000 and single-select fields 1–12, with two additional ordinary columns. Start at 50 or 101 rows, then vary row count or column count independently; run 1,000×12 or a 2,000-row comparison only for a relevant scaling question. Twelve single-select fields therefore means fourteen total columns, not twelve. The diagnostic range is not a supported-performance claim. Compare unchanged source and candidate with the same row/column fixture, viewport, DPI, tracing, input sequence and repeated samples. Preserve visible row identity, pending input, final-row reachability, Undo, checkpoint readback and normal close alongside timing and presented-frame evidence. The optional `-BulkCorrectness` phase verifies a native paste and Undo against the saved task/field identities, after the timing phases; its execution is not included in scroll/input timing. `-Frames` also observes horizontal departure and return without treating nonempty images alone as content correctness. These examples are selectable workloads, not a required Cartesian suite. Run serially on an unlocked desktop. The optional IME phase requires the existing Microsoft Japanese IME; it sends physical keys, keeps composition active across native wheel input, and checks IME confirmation separately from cell commit. It does not replace the broader IME suite or human typing acceptance.
-
-The runner builds Release unless `-NoBuild` is supplied, then uses `Start-EditingCheck.ps1 -PrepareOnly` for a fresh, reread-validated seed. `-NoBuild` requires existing app, seed and driver outputs. An absolute `-Executable` selects an immutable copied app, independently of the current seed/driver binaries. `-SourceRevision` is optional caller-declared provenance, not verification that a binary matches current HEAD. Preserve the copied output's original build record. The runner records current HEAD, dirty patch, untracked source copies/hashes, binary hashes and before/after source hashes; builds do not silently establish provenance for older outputs.
-
-Evidence lives in `TestResults/sheet-diagnostic/<RunId>/`: source/seed/binary manifests, commands and process state, TRX/logs, screenshots with UIA observations, checkpoints and app lifetime. `-Trace` requests a new `app-trace.jsonl` through `GHPB_SHEET_DIAGNOSTICS`; an older immutable app may not implement that probe. Missing, dropped or incomplete trace records are unavailable evidence, never zero work. The runner restores its process environment and working directory and refuses an existing run directory.
-
-Only visible-title selection and the up/down arrow pair have one warmup plus five measured samples. Cached Project readiness, commit, Undo and Project roundtrip are single observations; wheel/drag phases have their own raw observations. Driver timings include input, UIA calls, readiness polling and recorded waits. They are not product input or rendering milliseconds. Different driver pacing, workload, binaries or tracing configurations must not be compared as equivalent samples.
-
-App `ui-span` records measure synchronous method work with nested inclusive spans and per-thread managed allocation deltas. These include managed probe overhead and exclude native XAML allocations. Core checkpoint records distinguish synchronous work from asynchronous wall spans; they are not isolated disk time or per-span thread attribution. Rendering callbacks occur before presentation: callback gaps and post-span callbacks do not prove displayed pixels or the duration of a blank screen. Correlate raw timestamps with screenshots, stable row/field identities, actual typed text and durable Buffer/Change state. Do not add nested spans together.
-
-A successful driver result means the selected diagnostic completed. Inspect `run.json` omissions and raw observations, including unavailable scrollbar thumbs and `wheel-endpoint-not-reached`; a screenshot then shows the attained viewport, not the requested endpoint. Review the typed target IDs, durable conditions and normal process exit before drawing conclusions. Geometry, UIA focus and nonempty PNGs alone do not establish readable, stable content. Keep failures and omitted phases visible; do not infer a speedup, supported maximum size or human acceptance from completion.
 
 ## Local candidate projection
 

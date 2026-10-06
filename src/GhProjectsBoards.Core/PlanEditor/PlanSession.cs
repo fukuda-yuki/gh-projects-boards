@@ -320,8 +320,7 @@ internal sealed class PlanSession
             {
                 var observed = promoted.ContainsKey(row.Identity) ? remote.Baseline.Rows.Single(r => r.Identity == Id(row.Identity)) : null;
                 return row with { Identity = Id(row.Identity), Parent = row.Parent is null ? null : Id(row.Parent),
-                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed,
-                    Status = observed is null ? row.Status : observed.Status };
+                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed };
             }
             PlanState State(PlanState state) => state with { Rows = state.Rows.Select(Row).ToImmutableArray() };
             var state = State(document.State);

@@ -24,8 +24,10 @@ public sealed class PlanningWorkspaceJourneyTests
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true }));
         File.WriteAllText(Path.Combine(root, "plan-state.json"), JsonSerializer.Serialize(new {
-            issues = new[] { new { row = new { identity = "I1", title = "設計", repository = "acme/repo",
-                estimate = 8, remaining = 8, assignees = new[] { "U1" } }, body = "", added = true } }, nextId = 2
+            issues = Enumerable.Range(1, 1000).Select(i => new { row = new { identity = "I" + i,
+                title = i == 1 ? "設計" : "計画レビュー " + i, repository = "acme/repo",
+                estimate = 8, remaining = 8, assignees = new[] { "U" + ((i - 1) % 20 + 1) },
+                predecessors = i % 10 == 1 ? Array.Empty<string>() : new[] { "I" + (i - 1) } }, body = "", added = true }), nextId = 1001
         }));
         using var dpi = new DesktopDpiScope();
         using var automation = new UIA3Automation();
@@ -42,6 +44,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 window = app.GetMainWindow(automation, TimeSpan.FromSeconds(20));
                 Assert.That(window, Is.Not.Null);
                 WinUiProcess.AssertRuntime(process);
+                window!.Patterns.Transform.Pattern.Resize(1600, 960);
                 Find(window!, "PlanGhPath").AsTextBox().Text = fake;
                 Find(window!, "PlanHost").AsTextBox().Text = "github.com";
                 Find(window!, "PlanConnect").AsButton().Invoke();
@@ -51,16 +54,36 @@ public sealed class PlanningWorkspaceJourneyTests
                     Find(window!, "AvailableProjects").AsListBox().Select(0);
                 }
                 Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "開発計画");
-                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "設計" && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
+                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "設計" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
                 Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "Start date"), Is.True);
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&
                     Find(window!, "RegisteredProjects").FindAllDescendants().Any(e =>
                         (e.Properties.Name.ValueOrDefault ?? "").Contains("開発計画") && !e.Properties.IsOffscreen.ValueOrDefault));
                 Assert.That(window.FindFirstDescendant(c => c.ByAutomationId("RegistrationUrl")), Is.Null);
+                Wait(() => Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right <= Find(window, "PlanGanttHorizontal").BoundingRectangle.Left);
+                var chartBounds = Find(window, "PlanGanttHorizontal").BoundingRectangle;
+                Assert.That(chartBounds.Width, Is.GreaterThanOrEqualTo(280));
+                var firstRow = Find(window, "PlanCell1_Title").BoundingRectangle;
+                var secondRow = Find(window, "PlanCell2_Title").BoundingRectangle;
+                Assert.That(secondRow.Top - firstRow.Top, Is.InRange(24, 28.1));
+                File.WriteAllText(Path.Combine(root, $"layout-{launch}.json"), JsonSerializer.Serialize(new {
+                    window = window.BoundingRectangle, chart = chartBounds, rowPitch = secondRow.Top - firstRow.Top,
+                    predecessorRight = Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right,
+                    title = firstRow, start = Find(window, "PlanCell1_Start").BoundingRectangle,
+                    end = Find(window, "PlanCell1_End").BoundingRectangle,
+                    calendar = Find(window, "PlanTimelineMonths").Properties.Name.ValueOrDefault }));
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"workspace-{launch}.png"));
                 Find(window, "PlanShowSettings").AsButton().Invoke();
                 Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanMapEstimate")) is not null);
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"settings-{launch}.png"));
+                Find(window, "PlanShowTasks").AsButton().Invoke();
+                Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanCell1_Title")) is not null);
+                var editor = Find(window, "PlanCell1_Title").AsTextBox();
+                editor.Focus();
+                Wait(() => editor.Properties.HasKeyboardFocus.ValueOrDefault);
+                if (launch == 0) editor.Text = "日本語の計画";
+                // Public UIA Unicode input exercises focused-editor/normal-close
+                // lifetime and durable reopen, not Microsoft IME composition.
                 window.Close();
                 Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
                 Assert.That(process.ExitCode, Is.Zero);

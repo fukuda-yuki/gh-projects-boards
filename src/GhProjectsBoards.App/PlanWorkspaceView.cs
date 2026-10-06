@@ -25,10 +25,9 @@ internal sealed class PlanWorkspaceView : UserControl
     private readonly ScrollViewer settingsScroll;
     private readonly ListView registered = Id(new ListView { SelectionMode = ListViewSelectionMode.Single }, "RegisteredProjects");
     private readonly ListView available = Id(new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 450 }, "AvailableProjects");
-    private readonly ListView tasks = Id(new ListView { SelectionMode = ListViewSelectionMode.None }, "PlanTasks");
-    private readonly StackPanel taskHeaders = new() { Orientation = Orientation.Horizontal };
+    private readonly Dictionary<ScopedId, PlanSheetView> sheets = [];
+    private PlanSheetView? sheet;
     private readonly Grid taskArea = new();
-    private readonly ScrollViewer taskScroll;
     private readonly Button retrySave;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 22 }, "OpenProjectName");
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
@@ -99,16 +98,8 @@ internal sealed class PlanWorkspaceView : UserControl
 
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
-        taskArea.RowDefinitions.Add(new() { Height = GridLength.Auto }); taskArea.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        tasks.Padding = new(0);
-        tasks.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
-            new Setter(Control.PaddingProperty, new Thickness(0)),
-            new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch),
-            new Setter(FrameworkElement.MinHeightProperty, 32d) } };
-        taskArea.Children.Add(taskHeaders); taskArea.Children.Add(tasks); Grid.SetRow(tasks, 1);
-        taskScroll = new() { Content = taskArea, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollMode = ScrollMode.Enabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskScroll, settingsScroll }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, settingsScroll }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
         Unloaded += (_, _) => { closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
         Content = root;
         Show("connection");
@@ -140,13 +131,14 @@ internal sealed class PlanWorkspaceView : UserControl
             {
                 if (cancellation.IsCancellationRequested) return;
                 RefreshLists();
-                if (workspace.Session is null) { tasks.Items.Clear(); taskHeaders.Children.Clear(); unpublished.Text = ""; Show("connection"); }
+                if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
                 retrySave.Visibility = ex is IOException or UnauthorizedAccessException ? Visibility.Visible : Visibility.Collapsed;
                 error.Text = ex is DiscoveryException ? "Projectを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
             }
             finally { operationCancellation = null; progress.Visibility = Visibility.Collapsed; }
         }
     }
+    internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
         closing = true; operationCancellation?.Cancel(); await operation;
@@ -157,7 +149,7 @@ internal sealed class PlanWorkspaceView : UserControl
     {
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
-        taskScroll.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
+        taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
         toolbar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
         sidebar.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
@@ -175,31 +167,19 @@ internal sealed class PlanWorkspaceView : UserControl
     {
         if (workspace.Session is not { } session) return;
         title.Text = workspace.Selected!.Title;
-        unpublished.Text = $"未発行 {session.Changes(Today).TaskCount} タスク";
-        var columns = session.Document.State.Settings.Columns;
-        taskHeaders.Children.Clear();
-        taskHeaders.Children.Add(Cell("タスク", 250));
-        foreach (var column in columns) taskHeaders.Children.Add(Cell(column.Name, 110));
-        tasks.Items.Clear();
-        var calculated = session.Schedule(Today).ToDictionary(t => t.Input.Identity);
-        foreach (var row in session.Document.State.Rows)
+        if (sheet?.Session != session)
         {
-            var line = new StackPanel { Orientation = Orientation.Horizontal };
-            line.Children.Add(Cell(row.Title, 250));
-            foreach (var column in columns)
+            if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                var text = column.Role switch {
-                    PlanField.Start => calculated[row.Identity].Start.Value?.ToString("yyyy-MM-dd") ?? "",
-                    PlanField.End => calculated[row.Identity].End.Value?.ToString("yyyy-MM-dd") ?? "",
-                    PlanField.Fixed => row.Fixed ? "固定" : "",
-                    _ => PlanValues.Get(row, column.Role).Trim('"') is var value && value != "null" ? value : ""
-                };
-                line.Children.Add(Cell(text, 110));
+                next = new(session);
+                next.Changed += () => { if (ReferenceEquals(sheet, next)) unpublished.Text = $"未発行 {next.Unpublished.TaskCount} タスク"; };
+                sheets.Add(session.Document.Project, next);
             }
-            tasks.Items.Add(line);
+            taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
         }
+        sheet.Refresh();
+        unpublished.Text = $"未発行 {sheet.Unpublished.TaskCount} タスク";
     }
-    private static TextBlock Cell(string text, double width) => new() { Text = text, Width = width, Margin = new(4), TextTrimming = TextTrimming.CharacterEllipsis };
     private async Task ChangeSettings(Func<ProjectPlanSettings, ProjectPlanSettings> change)
     {
         if (workspace.Session is not { } session) return;
@@ -325,6 +305,7 @@ internal sealed class PlanWorkspaceView : UserControl
     }
     private async Task CommitPending()
     {
+        if (sheet is not null) await sheet.FlushInput();
         foreach (var commit in pendingSettings.ToArray()) await commit();
     }
     private FrameworkElement DateListSetting(string label, string id, Func<ImmutableArray<DateOnly>> current, Func<ImmutableArray<DateOnly>, Task> apply)

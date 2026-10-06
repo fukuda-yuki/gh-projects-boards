@@ -50,7 +50,12 @@ public sealed partial class MainWindow : Window
         args.Cancel = true;
         if (closing) return;
         closing = true;
-        if (workspace is null || await workspace.StopAsync()) { ready = true; Close(); }
+        if (workspace is null || await workspace.StopAsync())
+        {
+            // StopAsync may complete synchronously. Finish the native Closing
+            // callback before allowing the final XAML/input-context teardown.
+            if (!DispatcherQueue.TryEnqueue(() => { ready = true; Close(); })) closing = false;
+        }
         else closing = false;
     }
 }

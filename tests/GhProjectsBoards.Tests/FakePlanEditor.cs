@@ -155,6 +155,9 @@ internal static class FakePlanEditor
                     {
                         var role = Enum.Parse<PlanField>(input.GetProperty("fieldId").GetString()![2..]);
                         var json = mutation.StartsWith("clear") ? role == PlanField.Fixed ? "false" : "null" : role == PlanField.Fixed ? "true" : input.GetProperty("value").EnumerateObject().Single().Value.GetRawText();
+                        if (role == PlanField.Status && !mutation.StartsWith("clear"))
+                            json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString() switch {
+                                "done" => "Done", "progress" => "In progress", _ => throw new InvalidOperationException("Unknown Status option ID") });
                         if (fault != "mismatch") row = PlanValues.Set(row, role, json);
                         selection = "projectV2Item";
                     }

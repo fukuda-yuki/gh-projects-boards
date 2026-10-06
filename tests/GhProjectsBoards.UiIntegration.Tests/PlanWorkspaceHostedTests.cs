@@ -32,6 +32,7 @@ internal sealed class PlanWorkspaceHostedTests
     [SetUp]
     public async Task Setup()
     {
+        await Ui.BeginTest();
         root = Path.Combine(Path.GetTempPath(), "ghpb-workspace-ui-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
@@ -44,6 +45,8 @@ internal sealed class PlanWorkspaceHostedTests
     [TearDown]
     public async Task Cleanup()
     {
+        try
+        {
         var stopped = false; var problem = "";
         try
         {
@@ -51,12 +54,13 @@ internal sealed class PlanWorkspaceHostedTests
         }
         finally
         {
-            await Ui.Unmount(view); await Ui.Idle();
-            await workspace.Flush();
-            Directory.Delete(root, true);
+            try { await Ui.Unmount(view, check: false); await Ui.Idle(); }
+            finally { await workspace.Flush(); Directory.Delete(root, true); }
         }
         if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Passed) Assert.That(stopped, Is.True, problem);
         else TestContext.Out.WriteLine("Close after failed test: " + problem);
+            }
+        finally { Ui.EndTest(); }
     }
 
     [TestCase(true)]
@@ -123,19 +127,19 @@ internal sealed class PlanWorkspaceHostedTests
             Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
         });
         await Ui.Until(() => workspace.Session is not null);
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "設計"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "設計"));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo("開発計画"));
-            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(1));
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>().Count(id => id.Length > 0), Is.EqualTo(1));
             Assert.That(workspace.Session!.Document.State.Settings.Columns.Length, Is.EqualTo(5));
-            Assert.That(string.Join(" ", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("Start date").And.Contain("設計"));
+            Assert.That(string.Join(" ", Ui.Tree(view).Select(t => t is TextBlock label ? label.Text : t is TextBox input ? input.Text : "")), Does.Contain("Start date").And.Contain("設計"));
         });
-        await Ui.Run(async () => await ApplyInformationEvidence.Capture(view, "workspace"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "workspace"));
         await Settings();
-        await Ui.Run(async () => await ApplyInformationEvidence.Capture(view, "settings"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "settings"));
         await Ui.Run(() => { var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll"); scroll.ChangeView(null, scroll.ScrollableHeight, null, true); });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset > 0);
-        await Ui.Run(async () => await ApplyInformationEvidence.Capture(view, "settings-calendar-people"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "settings-calendar-people"));
     }
     private async Task Open()
     {
@@ -146,7 +150,7 @@ internal sealed class PlanWorkspaceHostedTests
             Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
         });
         await Ui.Until(() => workspace.Session is not null);
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "設計"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "設計"));
         await Ui.Idle();
     }
     private async Task Settings()
@@ -217,7 +221,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(workspace.Session.Schedule(new(2026, 10, 5)).Single().End.Value!.Value.ToString("yyyy-MM-dd"), Is.EqualTo(expected));
             Ui.Click("PlanShowTasks");
         });
-        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanTasks")).OfType<TextBlock>().Any(t => t.Text == expected));
+        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanTasks")).OfType<TextBox>().Any(t => t.Text == expected));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session.UndoCount == history);
         Assert.That(workspace.Session.Schedule(new(2026, 10, 5)).Single().End.Value, Is.EqualTo(new DateOnly(2026, 10, 5)));
@@ -302,7 +306,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo("GitHub Projects"));
-            Assert.That(Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "設計"), Is.False);
+            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "設計"), Is.False);
             Assert.That(Ui.Find<ListView>("RegisteredProjects").Items, Is.Empty);
             Assert.That(Ui.Find<Button>("PlanConnect").IsEnabled, Is.True);
         });
@@ -484,7 +488,7 @@ internal sealed class PlanWorkspaceHostedTests
             var list = Ui.Find<ListView>("RegisteredProjects"); var last = (ListViewItem)list.ContainerFromIndex(39);
             var bounds = last.TransformToVisual(list).TransformBounds(new Rect(0, 0, last.ActualWidth, last.ActualHeight));
             Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(list.ActualHeight + 1));
-            await ApplyInformationEvidence.Capture(view, "many-projects");
+            await RenderedEvidence.Capture(view, "many-projects");
         });
     }
 

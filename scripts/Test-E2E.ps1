@@ -98,7 +98,7 @@ try {
     }
     $required = @{ FreshWorkspaceConnectsOpensMappedTasksAndReopensAfterRestart = 1 }
     if ($Filter -ne 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance') { $required = @{} }
-    if ($Filter -eq 'TestCategory=GridIme') { $required = @{ RegisteredGridPhysicalJapaneseIme = 6 } }
+    if ($Filter -eq 'TestCategory=GridIme') { $required = @{ PlanSheetPhysicalJapaneseImeKeepsConversionSeparateFromCellCommit = 6 } }
     foreach ($name in $required.Keys) {
         $cases = @($report.TestRun.Results.UnitTestResult | Where-Object { $_.testName -eq $name -or $_.testName.StartsWith($name + '(') })
         if ($cases.Count -ne $required[$name] -or @($cases | Where-Object outcome -ne 'Passed').Count -gt 0) {

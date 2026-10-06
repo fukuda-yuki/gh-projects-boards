@@ -50,6 +50,45 @@ internal sealed class PlanPublisherTests
         var loaded = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(loaded.Status, Is.EqualTo(PlanLoadStatus.Loaded), loaded.Error); session = loaded.Session!;
     }
+    [TestCase("Done"), TestCase(null)]
+    public async Task StatusPublishesThroughProjectAdapterAndUndoRemainsLocal(string? status)
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with { Row = i.Row with { Status = "In progress" } }).ToImmutableArray() });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Status, status)]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Status, Is.EqualTo(status));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent, Does.Contain(status is null ? "clearProjectV2ItemFieldValue" : "singleSelectOptionId"));
+        await session.Undo(Today);
+        Assert.That(session.Document.State.Rows[0].Status, Is.EqualTo("In progress"));
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Status, Is.EqualTo(status));
+        await Reopen();
+        Assert.That(session.Document.State.Rows[0].Status, Is.EqualTo("In progress"));
+    }
+    [Test]
+    public async Task StatusOnNewTaskSurvivesCreationAndIsPublished()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("New", "acme/repo") with { Status = "Done" }]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.Status, Is.EqualTo("Done"));
+        Assert.That(session.Document.State.Rows.Single().Status, Is.EqualTo("Done"));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+    [Test]
+    public async Task UnknownStatusStopsBeforeAnyMutation()
+    {
+        await Start(1);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Status, "Unknown")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(result.Error, Does.Contain("Status"));
+        Assert.That(File.Exists(Path.Combine(root, "plan-mutations.jsonl")), Is.False);
+        Assert.That(session.Document.State.Rows[0].Status, Is.EqualTo("Unknown"));
+    }
     private static IEnumerable<int> SequenceSeeds => Enumerable.Range(51000, 20);
     private static IEnumerable<int> FullSequenceSeeds => Enumerable.Range(51000, 200);
     [TestCaseSource(nameof(FullSequenceSeeds)), Category("HistorySequence"), Explicit("Full 200-sequence experiment")]

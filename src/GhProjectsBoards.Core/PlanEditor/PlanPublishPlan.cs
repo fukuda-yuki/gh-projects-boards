@@ -6,6 +6,7 @@ internal enum PlanWriteState { Pending, Dispatched, Succeeded, Failed }
 internal sealed record PlanReviewChange(string Identity, PlanField Field, string? Before, string? After);
 internal sealed record PlanWrite(string Key, string Identity, PlanPublishStage Stage, string Mutation, string InputType, string Input, string Selection)
 {
+    public PlanField? Field { get; init; }
     public PlanWriteState State { get; init; }
     public string? Error { get; init; }
     public string? ResultId { get; init; }
@@ -37,6 +38,7 @@ internal static class PlanPublishPlan
             PlanOperations.Require(Enum.IsDefined(write.State) && !(write.Stage == PlanPublishStage.Create && write.ResultId is not null && write.State != PlanWriteState.Succeeded) && write.Stage == contract.Item1 && write.Selection == contract.Item2 &&
                 write.InputType == char.ToUpperInvariant(write.Mutation[0]) + write.Mutation[1..] + "Input" &&
                 document.State.Rows.Any(r => r.Identity == write.Identity), "発行操作の対象または形式が不正です。");
+            PlanOperations.Require(write.Field is null || write.Field == PlanField.Status && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue", "発行列の指定が不正です。");
             using var input = System.Text.Json.JsonDocument.Parse(write.Input);
             PlanOperations.Require(input.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object, "発行入力が不正です。");
             var target = write.Mutation switch
@@ -86,8 +88,22 @@ internal static class PlanPublishPlan
                 changes.Add(new(row.Identity, field, isNew ? null : bv, av));
                 switch (field)
                 {
-                    case PlanField.Repository: case PlanField.Status: case PlanField.Closed:
+                    case PlanField.Repository: case PlanField.Closed:
                         throw new InvalidOperationException("この変更は発行できません: " + field);
+                    case PlanField.Status:
+                        var statusField = remote.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == Projects.FieldOwner.ProjectItem && f.Availability == Projects.ValueAvailability.Present)
+                            ?? throw new InvalidOperationException("Status の列を確認してください。");
+                        var statusInput = new Dictionary<string, object?> { ["projectId"] = document.Project.NodeId, ["itemId"] = "item:" + row.Identity, ["fieldId"] = statusField.Id.NodeId };
+                        if (row.Status is not null)
+                        {
+                            var option = statusField.Options.SingleOrDefault(o => o.Name == row.Status)
+                                ?? throw new InvalidOperationException("Status の選択肢を確認してください。");
+                            statusInput["value"] = new { singleSelectOptionId = option.Id };
+                        }
+                        Add(row.Identity, PlanPublishStage.Fields, row.Status is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
+                            row.Status is null ? "ClearProjectV2ItemFieldValueInput" : "UpdateProjectV2ItemFieldValueInput", statusInput, "projectV2Item { id }");
+                        writes[^1] = writes[^1] with { Field = PlanField.Status };
+                        break;
                     case PlanField.Title:
                         if (string.IsNullOrWhiteSpace(row.Title)) throw new InvalidOperationException("タイトルを入力してください。");
                         Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, title = row.Title }, "issue { id }"); break;

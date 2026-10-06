@@ -65,37 +65,35 @@ C:\w\g76\scripts\Test-E2E.ps1 -Filter 'FullyQualifiedName~PlanningWorkspaceJourn
 
 `PlanWorkspaceTests` exercises scoped storage, restore, matching and refreshed assignee names through real readers and isolated fake gh. `PlanWorkspaceHostedTests` mounts real views and drives native controls for discovery/open/switch, mappings, explicit field addition, settings recalculation/Undo, CSV and settings files, excluded counts, invalid input and close. Review regressions use real file locks for save retry and catalog failure, hold real fake-gh subprocesses until cancellation, and inspect bounded Project-list geometry. Calendar controls exercise explicit date addition/removal, duplicate rejection and Undo. Only the external gh executable and OS file picker are substituted. See the [host guide](GhProjectsBoards.UiIntegration.Tests/README.md).
 
-`PlanningWorkspaceJourneyTests` uses the ordinary Release executable and public UI Automation, from fresh data through connection, one-click Project open, mapped task presentation, normal close and restart. Its endpoint is isolated fake gh, not GitHub. The runner records source/environment, hashes, logs and TRX under `TestResults/e2e` and rejects zero execution and skipped selections. Physical IME, live sandbox and human acceptance remain separate evidence.
+`PlanningWorkspaceJourneyTests` uses the ordinary Release executable and public UI Automation with 1,000 synthetic tasks, from fresh data through connection, one-click Project open, mapped task presentation, a focused Unicode text edit, normal close and durable restart. At 1600 × 960 it records the initial date/predecessor visibility, Gantt width and physical row pitch. This input is not an IME composition sequence. Its endpoint is isolated fake gh, not GitHub. The runner records source/environment, hashes, logs and TRX under `TestResults/e2e` and rejects zero execution and skipped selections. Physical IME, live sandbox and human acceptance remain separate evidence.
 
-## Retained editing machinery
+## Plan sheet and Gantt (#78)
 
-`EditingGrid`, its directly hosted tests and `BulkEditing*` remain for the editable-sheet phase. They cover range/clipboard/fill, Undo, focus, layout and related grid collaborations; they do not establish acceptance of the current read-only workspace. Legacy Gantt/Summary collaborations still coupled to this grid remain unreachable from the ordinary shell until that phase replaces them. Core logic/adapter regressions remain intact.
+PlanSheetEditingTests verifies displayed predecessor IDs, filtered-row identities and rectangular paste rules. Phase 3 PlanDocumentTests remains the authority for atomic operations, scheduling rejection, Undo/Redo and storage. The real-control PlanSheetHostedTests mounts the product renderer and checks pending/committed input, rectangular copy/paste, fill, clear, Undo/Redo, insertion, hierarchy, hidden columns, status date/reasons, cycle errors, recycling and sheet/bar alignment at day/week/month scales. Only the OS clipboard is substituted in routine copy/paste cases. UI Automation selection/invoke patterns, native focus, TextBox input and control events remain real.
 
-The retained `RegistrationTests` fixture contains old grid routes (including `BulkEditingJourney`) and is explicitly disabled pending Phase 6 adaptation. `BulkPerformanceTests` remains opt-in and needs a matching renderer fixture. Do not run those old-shell routes as current-app acceptance. `ReadyInputTests` retains the separate native input diagnostic. Removed registration/Apply navigation has no ordinary-app journey.
+~~~powershell
+Set-Location C:\w\g76
+dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
+dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter '(FullyQualifiedName~PlanSheetEditingTests|FullyQualifiedName~PlanDocumentTests|FullyQualifiedName~PlanWorkspaceTests)&FullyQualifiedName!~ThousandTasks'
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where '(cat == PlanSheet or cat == PlanWorkspace) and cat != PlanSheetNative and cat != PlanSheetPerformance'
+~~~
+
+Physical keyboard/pointer UI integration remains a separate desktop selection. It exercises Enter/Tab, Ctrl+D, Delete, Undo/Redo including invalid-input refusal, divider pointer drag and arrow-key adjustment, and fill-handle capture/release through actual native input, plus real OS clipboard copy/paste with preservation of the original clipboard. Do not report those cases passed from toolbar/automation invocation.
+
+~~~powershell
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetNative'
+C:\w\g76\scripts\Test-E2E.ps1 -Filter 'TestCategory=GridIme'
+~~~
+
+PlanSheetImeTests replaces the old registered Boards route. Six ordinary-app cases use physical Microsoft Japanese IME keys for direct/F2 entry, conversion confirmation versus the following commit Enter, cancellation and reconversion. They inspect native focus, unpublished count and durable title, require normal process exit after each scenario and assert zero fake-gh mutations. Failure diagnostics preserve the original exit assertion when the window is already gone. They require the PMO desktop; compilation/discovery is not execution evidence. ReadyInputTests and --input-check remain an independent native-input diagnostic, not an alternative product renderer.
+
+For 1,000-task, 20-person, ten-task FS-chain commit-to-frame measurement, use the opt-in PlanSheetPerformance case with no concurrent build/test workload. It records every frame outcome, exactly 20 valid edits, median/max and the 200 ms target comparison, plus a synthetic ordinary-app fixture. See [performance](../docs/performance.md). The next Rendered callback does not establish physical display latency or scrolling FPS.
+
+The prototype folder and launch switch and the old Boards/Gantt/Summary UI tests are removed with their screens. The UI-independent legacy Core regression suite remains intact except the discarded prototype fixture; it is not used as the new sheet's model or acceptance evidence.
 
 ## Execution evidence
 
-Run focused selections by the boundary changed. Record command, source, environment, executed/passed/failed/skipped counts and artifacts; build or discovery alone is not a behavior pass. Keep failed runs and aborted baselines. Never infer physical-key IME from TextBox assignment or Unicode insertion. Use the authorized sandbox only for explicitly selected live checks; never infer its target from the checkout.
-
-## Native plan rendering base
-
-The native renderer is selected under [#77](../docs/decisions.md#plan-sheet-and-gantt-rendering-77). `PrototypeHostedTests` mounts its real controls: the Remaining focus-loss path changes visible dates and bar geometry, and invalid text/error survives another cell's commit until corrected (including correction to the original value). `PrototypePlanTests` covers only the isolated rendering fixture's 8-hour/calendar-day calculation and invalid inputs; it is not #78 scheduler coverage. Keep this fixture executable while replacing its model in #78. No WebView2 test/runtime is needed.
-
-```powershell
-Set-Location C:\w\g76
-dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
-dotnet build C:\w\g76\tests\GhProjectsBoards.UiIntegration.Tests\GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
-dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --filter FullyQualifiedName~PrototypePlanTests
-& C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'class == GhProjectsBoards.UiIntegration.Tests.PrototypeHostedTests'
-$env:GHPB_PROTOTYPE_METRICS='C:\w\g76\TestResults\native-plan-frames.jsonl'
-& C:\w\g76\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe --prototype winui
-```
-
-The native-only ordinary-app preview never reads workspace data or contacts GitHub. It has 1,000 synthetic rows, 20 people, ten-task FS chains and editable title/Remaining/Start date; the fixture uses calendar days, eight hours per day rounded up, and an exclusive finish boundary. It is not the production plan. Change row 1 Remaining from 8 to 16: its end and row 2 start become 2026-10-07, the first bar spans 48 logical pixels, and the next chain stays unchanged. Row `i`, column `c` has AutomationId `PrototypeCell{i}_{c}`; columns 0/1/2 are title/Remaining/Start. Invalid input stays visible across focus loss and another commit; correct it to clear its error. The fixed 50-day horizon beginning 2026-10-05 is a fixture limitation, not a scheduling rule.
-
-`GHPB_PROTOTYPE_METRICS` selects JSONL samples from the native commit callback through recalculation, visible-control refresh and the next CompositionTarget.Rendered callback. Initial frames are not edits; superseded/invalid/unloaded records are not successful frames. Report missing samples. This boundary does not prove compositor completion, physical display latency or scrolling FPS. `GHPB_PROTOTYPE_CAPTURE` optionally captures the hosted native XAML render; it is not a desktop screenshot.
-
-On the ordinary preview, verify Enter advances after commit. With physical Microsoft Japanese IME input, conversion confirmation Enter must leave the cell focused and create no successful sample; the next Enter commits and advances once. Also check direct/F2 input, cancellation and reconversion, recording physical versus injected keys. Scroll slowly, by fast wheel steps and scrollbar drag to rows 500/1,000 and back, including an active editor; inspect timestamped desktop captures for blanks, clipping and sheet/bar/arrow alignment. Native focus/IME, density and long-session acceptance are separate from the mounted tests. Range selection, inter-cell clipboard, fill and Ctrl+D are #78 work; existing BulkEditingTests / BulkEditingHostedTests inform the implementation, not a claim that the preview already supports them.
+Record command, source, environment, executed/passed/failed/skipped counts and artifacts. Keep failed and zero-execution attempts. The UI runner records binaries, source diff and test-source hashes; E2E records the ordinary executable and endpoint substitutions. Native clipboard, physical IME, live sandbox and human acceptance are separate evidence. No selected skip-only or discovery-only run is a pass.
 
 ## Sandbox throughput measurement
 
@@ -175,3 +173,5 @@ Seed membership waits for exactly the baseline item identities plus every create
 # Full history sequence experiment, explicitly selected; excluded from routine runs:
 dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-build --filter 'TestCategory=HistorySequence' --logger 'trx;LogFileName=history-sequences.trx' --results-directory C:\w\g76\TestResults\history-sequences
 ```
+
+For planning-editor UI phases, report the complete default hosted suite in addition to focused checks. Hosted asynchronous failures remain in the run outcome; each following case starts a fresh tracking context so an earlier failure does not become its failure. Teardown must remove the visual root even when idle/failure checks throw.

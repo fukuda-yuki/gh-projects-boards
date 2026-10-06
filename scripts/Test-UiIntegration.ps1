@@ -1,9 +1,9 @@
-param(
-    [string]$Where = 'cat != Infrastructure and cat != PlanningPerformance and cat != SummaryIme',
+﻿param(
+    [string]$Where = 'cat != Infrastructure and cat != PlanSheetNative and cat != PlanSheetPerformance',
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,
-    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 180
+    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 900
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -34,6 +34,7 @@ try {
     else { $arguments += "--result=$result" }
     $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $binaryRoot 'GhProjectsBoards.UiIntegration.Tests.exe'))
     $start.UseShellExecute = $false; $start.CreateNoWindow = $true; $start.WindowStyle = 'Hidden'
+    $start.StandardOutputEncoding = [Text.Encoding]::UTF8; $start.StandardErrorEncoding = [Text.Encoding]::UTF8
     $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true; $start.WorkingDirectory = $binaryRoot
     foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
     $process = [Diagnostics.Process]::Start($start)

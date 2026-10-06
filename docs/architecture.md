@@ -6,7 +6,7 @@ One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App Wi
 
 ## Workspace and settings (#81)
 
-MainWindow hosts PlanWorkspaceView, sizes the ordinary window and cancels UI-owned remote operations, waits for their owned processes and local saves on close. Failed saves keep the window open. PlanWorkspaceView contains connection, Project discovery, the registered-Project list, the mapped read-only task list and one settings page. Native control events invoke Core operations. Save recovery bypasses pending-input application until the retained save has been retried. Company/personal day-off editors use native calendar selection and explicit date-list changes. Pending text is committed before navigation or normal close; obsolete settings controls cannot apply late events after replacement.
+MainWindow hosts PlanWorkspaceView, sizes the ordinary window and cancels UI-owned remote operations, waits for their owned processes and local saves on close. Failed saves keep the window open. PlanWorkspaceView contains connection, Project discovery, the registered-Project list, the editable plan sheet and row-aligned Gantt and one settings page. Native control events invoke Core operations. Save recovery bypasses pending-input application until the retained save has been retried. Company/personal day-off editors use native calendar selection and explicit date-list changes. Pending text is committed before navigation or normal close; obsolete settings controls cannot apply late events after replacement.
 
 PlanWorkspace reuses GhConnectionService, ProjectDiscovery, ProjectReader, PlanSession, PlanStore and PlanPublisher. It retains one session per scoped Project and writes an atomic workspace catalog beneath PlanningEditor/v1 before adopting a changed Project selection. Opening a new Project reads its complete snapshot and matches typed columns. Opening an existing Project restores its local document; refreshing is explicit. Authentication is always rechecked; a saved Project does not imply a connected identity. The catalog does not read old registrations or checkpoints.
 
@@ -26,9 +26,13 @@ GhConnectionService binds host, stable viewer and executable, serializes operati
 
 ProjectDiscovery pages user/organization Projects and resolves explicit same-host URLs. ProjectReader / ProjectQueries read fields, all items, assignees, blocked-by edges and parents with complete pagination and scoped identities. Incomplete observations are never accepted as complete snapshots.
 
-## Retained rendering components
+## Native plan surface (#78)
 
-The native #77 prototype remains the base for #78. EditingGrid and its range/clipboard/fill collaborators and direct hosted tests remain for the Phase 6 adaptation; their legacy view collaborators are not reachable from the ordinary shell. The old registration/connection panels and their Apply navigation are removed. Core legacy editing collaborators remain until the editing machinery is replaced; they are not a second store for the new workspace.
+PlanSheetView owns the selected cell/range, pending native TextBox input, clipboard, column visibility, title filter, zoom and independent horizontal offsets. PlanSheetRow realizes only the virtualized visible rows; cells, bars and dependency segments share DPI-aware compact row geometry. One ListView owns vertical scrolling. Native composition events guard IME confirmation separately from cell commit. Native key overrides return synchronously; asynchronous commits use captured managed values without retaining routed event arguments. Inactive row presentation is released after the native unload callback returns; focused or composing editors are retained. Final window close is queued after the cancellable native closing callback returns.
+
+PlanSheetEditing translates visible rows/columns and text/clipboard into typed Phase 3 commands using stable PlanRow identities. It has no legacy EditingWorkspace, DraftSession or Apply journal. PlanSession remains the single state/history/save owner. The native rendering and frame callback approach replaces the isolated prototype model; no prototype executable route remains.
+
+Legacy Core editing and adapter regression contracts remain independently testable. Phase 7 publishing and Phase 8 people-view delivery use PlanPublisher, PlanSession and the current scheduling model; they do not require retaining old Boards/Gantt/Summary UI.
 
 ## Validation boundaries
 

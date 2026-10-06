@@ -6,6 +6,26 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [TestCase("Done"), TestCase(null)]
+    public void StatusReviewUsesOptionIdentityAndVerifiesObservedName(string? status)
+    {
+        var scope = new ConnectionScope("github.com", 42); var project = new ScopedId(scope, "P1");
+        var field = new ProjectFieldDefinition(new(scope, "F-status"), project, "Status", "ProjectV2SingleSelectField", "SINGLE_SELECT", FieldOwner.ProjectItem,
+            [new("option-done", "Done")], ValueAvailability.Present);
+        var before = new PlanRow("I1", "Task", "acme/repo") { Status = "Todo" };
+        var row = before with { Status = status }; var baseline = new PlanBaseline([before], []);
+        var settings = new ProjectPlanSettings();
+        var remote = new PlanRemoteSnapshot(baseline, ImmutableDictionary<string,string>.Empty, [field], 0, 0);
+        var review = PlanPublishPlan.Build(new(project, baseline, new([row], settings)), remote, new(2026,10,5), Guid.NewGuid().ToString("N"));
+        var write = review.Writes.Single();
+        Assert.That(review.Changes.Single().Field, Is.EqualTo(PlanField.Status));
+        Assert.That(write.Stage, Is.EqualTo(PlanPublishStage.Fields));
+        Assert.That(write.Mutation, Is.EqualTo(status is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue"));
+        if (status is not null) Assert.That(write.Input, Does.Contain("option-done"));
+        var progress = new PlanPublishProgress(Guid.NewGuid().ToString("N"), review.Writes);
+        Assert.That(PlanVerification.Verify(write, progress, remote with { Baseline = new([row], []) }, settings), Is.True);
+        Assert.That(PlanVerification.Verify(write, progress, remote, settings), Is.False);
+    }
     [Test, SetCulture("th-TH")]
     public void GitHubDatesAndNumbersRemainGregorianAndInvariant()
     {
