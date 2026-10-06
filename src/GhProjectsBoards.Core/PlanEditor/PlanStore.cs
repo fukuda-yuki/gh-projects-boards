@@ -7,7 +7,8 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal sealed class PlanStore(string dataRoot)
 {
     public string Root => Path.Combine(dataRoot, "PlanningEditor", "v1");
-    public static PlanStore ForUser() => new(RegistrationStore.ForUser().Root);
+    public static PlanStore ForUser() => new(Environment.GetEnvironmentVariable("GHPB_DATA_ROOT") ??
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GhProjectsBoards", "Registrations"));
     public string FileFor(ScopedId project) => Path.Combine(Root, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
         $"{project.Scope.Host}\n{project.Scope.ViewerId.ToString(System.Globalization.CultureInfo.InvariantCulture)}\n{project.NodeId}"))) + ".json");
     private static string Fingerprint(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));

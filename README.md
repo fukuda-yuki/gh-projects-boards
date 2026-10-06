@@ -2,7 +2,7 @@
 
 A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 3. [Requirements](docs/requirements.md), [specification](docs/spec.md) and [decisions](docs/decisions.md) define the product under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76).
 
-The ordinary app opens the new Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. Publish review and the people view are delivered separately. Core scheduling, local operations and publishing are independently implemented.
+The ordinary app opens the new Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry. The people view is delivered separately.
 
 ## Build and run
 
@@ -30,11 +30,11 @@ For the authorized sandbox, connect to github.com with C:\Program Files\GitHub C
 ~~~powershell
 dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlanWorkspaceTests|FullyQualifiedName~PlanLivePreflightTests'
 dotnet build C:\w\g76\tests\GhProjectsBoards.UiIntegration.Tests\GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
-C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanWorkspace'
-C:\w\g76\scripts\Test-E2E.ps1 -Configuration Release -Filter 'FullyQualifiedName~PlanningWorkspaceJourneyTests'
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
+C:\w\g76\scripts\Test-E2E.ps1 -Configuration Release -Filter 'FullyQualifiedName~PlanningWorkspaceJourneyTests|FullyQualifiedName~PlanningPublishJourneyTests'
 ~~~
 
-The hosted UI tests use real controls, Core, storage and a fake-gh subprocess; only file picking is substituted. The ordinary-executable journey uses an isolated fake endpoint and reopens the selected Project after restart. Neither establishes real GitHub, GHEC + EMU, physical IME or human PMO acceptance. See [test policy](tests/README.md) for boundaries.
+The hosted UI tests use real controls, Core and storage, with fake gh at the remote boundary and substituted clipboard or file picking in the relevant cases. The ordinary-executable journey uses an isolated fake endpoint and reopens the selected Project after restart and verifies publish recovery without duplicate Issues or resending verified writes. Neither establishes real GitHub, GHEC + EMU, physical IME or human PMO acceptance. See [test policy](tests/README.md) for boundaries.
 
 ## Structure
 

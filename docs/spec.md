@@ -1,12 +1,20 @@
-﻿# Specification
+# Specification
 
-The [requirements](requirements.md) and [decisions](decisions.md) define the planning editor. The ordinary window exposes the workspace, Project settings and editable native plan sheet with a row-aligned Gantt. Publication is a Core contract awaiting its UI phase.
+The [requirements](requirements.md) and [decisions](decisions.md) define the planning editor. The ordinary window exposes the workspace, Project settings, an editable native plan sheet with a row-aligned Gantt, and explicit refresh and publish review.
+
+## Current publish workspace (#79)
+
+The PMO reviews the changes in the open Project before explicitly confirming publication. **発行** opens a review in the workspace with one line per field: task title and plan ID, GitHub field name, before → after. New Issues are labelled 新規 Issue. Empty values are 未入力; assignees and relationships use readable names or plan IDs. Conflict lines show local and GitHub values with explicit choices. Resolving a conflict saves a local operation; it does not send writes. Unavailable rows offer discard or copy to a new Issue. Confirmation is disabled while unresolved conflicts or unavailable rows remain.
+
+Opening or closing the review never writes. Confirmation invokes the existing publisher, including its identity and conflict read. A conflict discovered by that read returns to review without sending mutations. Changes arriving after review therefore require another explicit confirmation. The review can close during publication and reopen on the same operation; progress remains visible in the workspace. Stages are 新規 Issue, フィールド・担当者, 親子関係, 先行タスク, 表示順 and 検証. There are no invented percentages. During remote work the current plan is read-only; scrolling and closing the review remain available. Project switching and settings changes wait until the operation finishes. Closing the window cancels the owned operation and waits for its durable interruption result. Restart never publishes automatically; 最新の情報に更新 reconciles known outcomes, and explicit 発行 resumes remaining work.
+
+The sheet marks conflicted cells 競合. Failed or unverified rows carry a text marker and expose their reason in the selected-row feedback and accessibility text. Successful refresh/publish refreshes markers and the distinct unpublished task count. A failed complete-read attempt retains the plan and shows a retry action. Failed saves expose 保存を再試行 only on failure. Undo remains a local operation after publication and can produce new unpublished changes.
 
 ## Current workspace and Project settings (#81)
 
 The ordinary window opens the planning workspace. The left list holds registered Projects for the authenticated host/viewer; selecting a Project opens it in one action. The Project title remains visible above its work. Registered Project titles occupy their own wrapped line; owner and number are secondary metadata. The left list owns a bounded scrolling viewport, while Project-open and connection commands remain outside it and reachable. Connecting through gh lists the viewer's and organizations' Projects together. A Project URL is an alternative in the Project chooser. First open reads the whole Project and automatically matches the seven planning fields by exact name (case insensitive) and required type; ambiguous matches remain unassigned. Start date and Target date are the default date names. No remote field is created implicitly. The explicit scheduling-fields button uses the guarded Core operation to create missing 開始日指定 (DATE) and 日程固定 (SINGLE_SELECT, 固定) and map them.
 
-The workspace task area is the editable plan sheet and row-aligned Gantt defined below. Drafts and pull requests are excluded and counted in settings. The previous Boards/Gantt/Summary/Apply registration navigation is not an ordinary entry point.
+The workspace task area is the editable plan sheet and row-aligned Gantt defined below. Drafts and pull requests are excluded and counted in settings.
 
 One Project settings page contains column mappings, weekdays 09:00–13:00 / 14:00–18:00, the bundled Japanese holidays (2025–2027), holiday CSV import, company days off, assignee rates and personal days off, optional Project start, default repository, and settings export/import. Rates default to 100%; allowances remain owned by #80. If all fetched Issues belong to one repository, it is selected by default; otherwise the repository remains unset. Refreshed assignee display names are retained separately from local rates, so a newly assigned person appears with a readable identity and a default 100% rate. Each accepted control change or file import is one settings operation and one Undo step; invalid input leaves the accepted settings unchanged. Rejected selection/rate controls return to the accepted value; invalid date text stays editable and blocks navigation until corrected. The optional Project start uses yyyy-MM-dd. Company and personal days off use native calendar selection with explicit Add and per-date Remove actions. Dates are unique and sorted; adding an existing date changes nothing. Selecting a date alone does not change settings. Each addition or removal recalculates and is one Undo step. Recalculation uses the real scheduler immediately. Mapping changes apply to the next whole-Project refresh; they never silently discard unpublished values.
 
@@ -48,11 +56,11 @@ Every dated task has a bar; a zero-duration milestone has a diamond, summaries h
 
 Edit-to-screen timing starts at a cell commit and ends at the next CompositionTarget.Rendered callback after updated dates and bars are installed. It includes synchronous local-operation acceptance/scheduling, visible-control refresh and frame scheduling. Autosave runs concurrently; its completion still gates subsequent commands and normal close, and failures retain the local operation with a visible error. Report at least 20 valid samples for 1,000 tasks, median/max and rejected/superseded/missing samples. Target: 200 ms. This is not physical display latency or scrolling FPS.
 
-The ordinary shell uses this product renderer. The old Boards/Gantt/Summary UI and prototype launch path are retired. Core scheduling, identity, GitHub, storage and publication contracts remain; Phase 7/8 consume those Core contracts rather than legacy UI.
+The ordinary shell uses this product renderer. The old Boards/Gantt/Summary UI and prototype launch path are retired. Core scheduling, identity, GitHub, storage and publication contracts remain; The workspace consumes those Core contracts directly.
 
 ## Current planning editor scheduling contract (#78)
 
-This section is the current contract for the new UI-independent `PlanEditor` model. The legacy sections below remain **Being replaced**; they do not override this section. Storage, refresh/publish orchestration and UI integration are separate phases.
+This section is the current contract for the new UI-independent `PlanEditor` model.
 
 ### Inputs, identity and calendar
 
@@ -90,7 +98,7 @@ Each date cell exposes its day value, `Calculated` or `Kept` origin and a boolea
 
 ## Current local plan document, operations and storage (#78 / #79 / #81)
 
-This section defines UI-independent local commands. Refresh, verified Issue creation, conflict resolution and publishing extend it under the current #79 contract below; ordinary local commands never contact GitHub. The legacy sections below remain **Being replaced**.
+This section defines UI-independent local commands. Refresh, verified Issue creation, conflict resolution and publishing extend it under the current #79 contract below; ordinary local commands never contact GitHub.
 
 ### Document and atomic operations
 
@@ -113,7 +121,7 @@ Export writes a versioned, indented UTF-8 JSON settings file, containing no docu
 
 ### Autosave, isolation and recovery
 
-Use `<resolved data root>/PlanningEditor/v1/`; resolve `GHPB_DATA_ROOT` and the default root exactly as RegistrationStore does. Use a SHA-256 filename of host/viewer/Project and repeat that scope inside each versioned checkpoint. Never enumerate, read or migrate legacy files outside this new subfolder. Persist baseline, current inputs/settings and Undo/Redo patches together in one atomic checkpoint. No tokens, credentials, scheduler output or UI state are part of the schema. Immutable collections prevent later caller mutation of queued saves or history.
+Use `<resolved data root>/PlanningEditor/v1/`; resolve `GHPB_DATA_ROOT` as an absolute root when set, otherwise use `%LOCALAPPDATA%/GhProjectsBoards/Registrations`. Use a SHA-256 filename of host/viewer/Project and repeat that scope inside each versioned checkpoint. Never enumerate, read or migrate legacy files outside this new subfolder. Persist baseline, current inputs/settings and Undo/Redo patches together in one atomic checkpoint. No tokens, credentials, scheduler output or UI state are part of the schema. Immutable collections prevent later caller mutation of queued saves or history.
 
 A committed command updates memory synchronously, then schedules autosave on a **single background writer**. Consecutive pending revisions can coalesce into the latest checkpoint, which still includes every retained Undo step. Serialization, file I/O and durable flush never run on the caller's edit path. The returned save task reports durability or failure; `FlushAsync` awaits the latest state before a normal close. An abrupt process exit before successful flush can lose the unsaved tail; never report that tail as durable. This is separate from the 0.2-second edit-to-screen target.
 
@@ -174,13 +182,13 @@ Each returned Project has a stable owner ID, node ID, number and URL. Repository
 | Redacted/null content | Unavailable content with the Project item identity retained |
 | Unknown item/value types | Explicitly unsupported, retaining encountered type and available IDs |
 
-Field names and option names are display metadata, never identity or destination selectors. Native Issue properties use their Issue identity and typed title/state properties; a same-named Project field has its own field ID. The bounded editor additionally reads dated Issue and Project viewerCanUpdate observations. Missing/denied observations do not enable editing; creation and remote application require the separate explicit Apply contracts.
+Field names and option names are display metadata, never identity or destination selectors. Native Issue properties use their Issue identity and typed title/state properties; a same-named Project field has its own field ID. The bounded editor additionally reads dated Issue and Project viewerCanUpdate observations. Missing/denied observations do not enable editing; creation and remote updates require the explicit publish contract.
 
 The reader traverses Project field definitions, items and every implemented item-value connection to the terminal page, including more than 100 entries. It checks node/ownership identities, duplicate fields/options/items/Issues/value IDs, duplicate field assignments, repeated cursors, missing paging metadata and inconsistent total counts. On API or structural failure it stops further requests, retains already observed data and reports a classified problem. No automatic retry occurs.
 
 Result outcomes are Complete, Partial, Failed, Cancelled and TimedOut. Cancellation/timeout can retain a partial Project. Per-connection completion flags describe traversal, not universal support or readability. A Complete result means the requested traversal completed without detected problems; it can contain explicitly unsupported fields and known unavailable items. It does not establish a transactionally consistent snapshot: GitHub does not pin successive queries to one revision, and equal-count concurrent replacements can escape count/cursor checks.
 
-Values distinguish Present, Empty, Unsupported, Unavailable and NotLoaded. An explicit null option, or an absent supported field after a complete, error-free traversal, is Empty. On a partial read, nulls become Unavailable and absent supported fields stay NotLoaded; redacted content never implies an empty Issue or field. Unknown option IDs retain the observed ID as Unavailable. Partial GraphQL data is retained but never treated as complete. Missing or unsupported data cannot authorize clearing or deletion. The reader is query-only; publication belongs to the explicit Apply boundary.
+Values distinguish Present, Empty, Unsupported, Unavailable and NotLoaded. An explicit null option, or an absent supported field after a complete, error-free traversal, is Empty. On a partial read, nulls become Unavailable and absent supported fields stay NotLoaded; redacted content never implies an empty Issue or field. Unknown option IDs retain the observed ID as Unavailable. Partial GraphQL data is retained but never treated as complete. Missing or unsupported data cannot authorize clearing or deletion. The reader is query-only; publication belongs to the explicit publisher boundary.
 
 The [planning contract](planning.md) defines the supported work/date/relationship model. Unsupported and unavailable observations remain distinct from empty values.
 
@@ -201,6 +209,5 @@ Before dispatch, durable progress records the immutable desired operation and a 
 The explicit settings operation creates missing DATE `開始日指定` and SINGLE_SELECT `日程固定` (option `固定`) and maps their returned identities. Refresh and publish never create fields implicitly. Live validation is opt-in, confined to the approved sandbox, and records three complete samples for each #79 workload with independent owned-resource cleanup and baseline verification. Core timings do not establish UI ceilings.
 
 During an active remote operation, editing is blocked. Between attempts, local cell edits and their Undo/Redo may proceed without changing recorded outcomes; settings or history operations that would remove an identity involved in unresolved publication remain blocked until reconciliation. Resume reconciles outcomes first. A complete verification releases ordinary failed field changes back to editing, retaining their reasons separately; their differences are rebuilt on the next publish. Choosing GitHub for a conflict cancels only that pending field write. Refresh reconciles an unfinished publish without dispatching its remaining writes. Field-setup requests are explicit settings operations; reusing an existing correctly typed named field avoids duplicates on retry.
-
 
 Refresh preserves inserted-row anchors, rebases reachable Undo operations against external changes and clears Redo. Known rejected creations may have their titles corrected while successful sibling identities remain frozen. Once those Issues are published, insertion and pre-creation title correction cannot be undone. New tasks receive explicit Project positions after creation/add so auto-add timing does not change the reviewed order.

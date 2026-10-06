@@ -79,9 +79,19 @@ internal sealed partial class PlanSheetView
             left += column.Width;
         }
     }
+    internal string RemoteProblem(string identity)
+    {
+        var sync = Session.Document.Sync;
+        if (sync.Unverified.Contains(identity)) return "未検証 — 最新の情報に更新で確認";
+        var failures = sync.Failures.Where(f => f.Identity == identity).Select(f => f.Reason).Distinct().ToArray();
+        if (failures.Length > 0) return "発行失敗: " + string.Join(" / ", failures);
+        return sync.Unavailable.Contains(identity) ? "GitHubで取得できません — 発行で確認" : "";
+    }
     private void UpdateReason()
     {
         reason.Text = Schedule.TryGetValue(selected, out var task) ? $"#{task.Input.RowId}  {task.StartReason}" + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
+        var remoteProblem = RemoteProblem(selected);
+        if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
         AutomationProperties.SetName(reason, reason.Text);
         if (Problems.TryGetValue((selected, selectedField), out var problem)) error.Text = problem;
         ToolTipService.SetToolTip(reason, reason.Text);

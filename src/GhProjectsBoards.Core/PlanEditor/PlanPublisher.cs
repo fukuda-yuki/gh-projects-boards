@@ -214,7 +214,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             sync.Conflicts.IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
         return new(complete, complete ? null : "未完了の変更があります。確認後に再発行してください。", review);
     }
-    public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default)
+    public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<string>? progressReporter = null)
     {
         await gate.WaitAsync(token).ConfigureAwait(false);
         PlanPublishReview? review = null;
@@ -226,6 +226,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(1, (deadline - DateTimeOffset.UtcNow).TotalMilliseconds)), token).ConfigureAwait(false);
             using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null;
+            progressReporter?.Report("最新情報の確認");
             var remote = await Reconcile(session, lease, today, token).ConfigureAwait(false);
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
@@ -262,6 +263,12 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 foreach (var group in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
                 {
                     token.ThrowIfCancellationRequested();
+                    progressReporter?.Report(group[0].Stage switch {
+                        PlanPublishStage.Create or PlanPublishStage.Add => "新規 Issue",
+                        PlanPublishStage.Fields => "フィールド・担当者",
+                        PlanPublishStage.Hierarchy => "親子関係",
+                        PlanPublishStage.Dependencies => "先行タスク",
+                        _ => "表示順" });
                     var variables = new Dictionary<string, JsonNode>();
                     var declarations = new List<string>(); var selections = new List<string>();
                     for (var i = 0; i < group.Length; i++)
@@ -300,6 +307,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (progress.Writes.Any(w => group.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
                 }
 
+                progressReporter?.Report("検証");
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
                 remote = await Read(session, lease, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));

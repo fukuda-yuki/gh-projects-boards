@@ -13,6 +13,15 @@ namespace GhProjectsBoards.App;
 internal sealed partial class PlanSheetView : Grid
 {
     internal readonly PlanSession Session;
+    private bool remoteBusy;
+    private CommandBar commandBar = null!;
+    internal void SetRemoteBusy(bool value)
+    {
+        remoteBusy = value;
+        commandBar.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        RefreshRealized();
+    }
+
     internal readonly HashSet<PlanSheetRow> Realized = [];
     internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanTasks");
     internal sealed record Input(string Text, long Generation, string OriginalText);
@@ -91,7 +100,7 @@ internal sealed partial class PlanSheetView : Grid
         filter.HorizontalAlignment = HorizontalAlignment.Right; controls.Children.Add(filter); SetColumn(filter, 2);
         AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
-        var commands = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch }, "PlanSheetCommands");
+        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch }, "PlanSheetCommands");
         AddCommand(commands, "コピー", "PlanSheetCopy", Symbol.Copy, Copy);
         AddCommand(commands, "貼り付け", "PlanSheetPaste", Symbol.Paste, Paste);
         AddCommand(commands, "下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD));
@@ -207,6 +216,7 @@ internal sealed partial class PlanSheetView : Grid
     }
     internal Task Run(Func<Task> action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
     {
+        if (remoteBusy) return Task.CompletedTask;
         var previous = tail;
         var token = lifetime.Token;
         var number = ++commandSequence; commands[number] = operation;
@@ -353,7 +363,7 @@ internal sealed partial class PlanSheetView : Grid
         (field == PlanField.Start && result.Start.Origin == DateOrigin.Calculated
         || field == PlanField.End && result.End.Origin == DateOrigin.Calculated
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
-    internal bool ReadOnly(string identity, PlanField field) => Schedule.TryGetValue(identity, out var result) && result.IsSummary &&
+    internal bool ReadOnly(string identity, PlanField field) => remoteBusy || Schedule.TryGetValue(identity, out var result) && result.IsSummary &&
         field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed;
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&

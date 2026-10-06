@@ -12,7 +12,7 @@ using Windows.Storage.Pickers;
 
 namespace GhProjectsBoards.App;
 
-internal sealed class PlanWorkspaceView : UserControl
+internal sealed partial class PlanWorkspaceView : UserControl
 {
     private readonly PlanWorkspace workspace;
     private readonly Func<string, string, GhConnectionService> factory;
@@ -71,11 +71,13 @@ internal sealed class PlanWorkspaceView : UserControl
         body.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.Children.Add(Button("計画", "PlanShowTasks", () => { Show("tasks"); return Task.CompletedTask; }));
         toolbar.Children.Add(Button("設定", "PlanShowSettings", () => { RenderSettings(); Show("settings"); return Task.CompletedTask; }));
-        toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings(); }));
+        toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { try { await workspace.Refresh(OperationToken); } finally { RenderTasks(); RenderSettings(); } }));
         toolbar.Children.Add(Button("元に戻す", "PlanUndo", async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
+        InitializePublishing();
         toolbar.Children.Add(unpublished);
         var problem = new StackPanel { Spacing = 4 };
         problem.Children.Add(error);
+        problem.Children.Add(publishStage);
         retrySave = Button("保存を再試行", "PlanRetrySave", async () => {
             await workspace.RetrySave(); await CommitPending(); RenderTasks(); RenderSettings();
         }, commitPending: false);
@@ -99,7 +101,7 @@ internal sealed class PlanWorkspaceView : UserControl
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, settingsScroll }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, settingsScroll, publishReview }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
         Unloaded += (_, _) => { closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
         Content = root;
         Show("connection");
@@ -143,10 +145,19 @@ internal sealed class PlanWorkspaceView : UserControl
     {
         closing = true; operationCancellation?.Cancel(); await operation;
         try { await CommitPending(); await workspace.Flush(); return true; }
-        catch (Exception ex) { error.Text = ex.Message; retrySave.Visibility = ex is IOException or UnauthorizedAccessException ? Visibility.Visible : Visibility.Collapsed; closing = false; return false; }
+        catch (Exception ex)
+        {
+            closing = false;
+            publishStage.Text = ""; publishStage.Visibility = Visibility.Collapsed;
+            SetPublishBusy(false); RenderTasks(); RenderReview();
+            error.Text = ex.Message;
+            retrySave.Visibility = ex is IOException or UnauthorizedAccessException ? Visibility.Visible : Visibility.Collapsed;
+            return false;
+        }
     }
     private void Show(string page)
     {
+        publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
         taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
@@ -179,6 +190,7 @@ internal sealed class PlanWorkspaceView : UserControl
         }
         sheet.Refresh();
         unpublished.Text = $"未発行 {sheet.Unpublished.TaskCount} タスク";
+        if (!publishing && publishReview.Visibility == Visibility.Visible) RenderReview();
     }
     private async Task ChangeSettings(Func<ProjectPlanSettings, ProjectPlanSettings> change)
     {

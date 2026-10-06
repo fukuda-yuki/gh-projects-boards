@@ -18,7 +18,7 @@ PlanRow and PlanBaseline retain typed day-level input and GitHub values. PlanSch
 
 PlanSession applies immutable operation patches, guards atomic rejection and owns the 200-step Undo history. PlanStore checks identity and data, serializes durable saves with optimistic fingerprint checks, writes and verifies temporary files, and atomically replaces the prior checkpoint. Failed saves retain the in-memory document for retry.
 
-PlanSnapshot translates complete Project reads. PlanMerge reconciles baseline/local/remote values. PlanPublishPlan and PlanPublisher provide ordered, batched serial writes, duplicate-guarded Issue creation, verification and durable recovery. Their ordinary UI is separate from the current workspace/settings delivery. See the [publish contract](spec.md#current-planning-editor-refresh-and-publishing-contract-79).
+PlanSnapshot translates complete Project reads. PlanMerge reconciles baseline/local/remote values. PlanPublishPlan and PlanPublisher provide ordered, batched serial writes, duplicate-guarded Issue creation, verification and durable recovery. PlanWorkspacePublish presents field differences and conflict choices and starts writes only on explicit confirmation. It reports publisher stages without a second outcome store. Closing the review leaves the workspace-owned operation running; window close cancels and awaits it. Failed and unverified rows come directly from PlanSync. See the [publish contract](spec.md#current-planning-editor-refresh-and-publishing-contract-79).
 
 ## GitHub boundary
 
@@ -32,7 +32,7 @@ PlanSheetView owns the selected cell/range, pending native TextBox input, clipbo
 
 PlanSheetEditing translates visible rows/columns and text/clipboard into typed Phase 3 commands using stable PlanRow identities. It has no legacy EditingWorkspace, DraftSession or Apply journal. PlanSession remains the single state/history/save owner. The native rendering and frame callback approach replaces the isolated prototype model; no prototype executable route remains.
 
-Legacy Core editing and adapter regression contracts remain independently testable. Phase 7 publishing and Phase 8 people-view delivery use PlanPublisher, PlanSession and the current scheduling model; they do not require retaining old Boards/Gantt/Summary UI.
+The planning editor uses PlanPublisher, PlanSession and the current scheduling model exclusively. Only the new scoped checkpoint format is loaded. Calendar resources and Project retrieval remain independent of editing and publication.
 
 ## Validation boundaries
 

@@ -3,6 +3,11 @@ using System.Globalization;
 using GhProjectsBoards.Core.Projects;
 namespace GhProjectsBoards.Core.PlanEditor;
 
+internal sealed record CellRange(int Row, int Column, int RowCount = 1, int ColumnCount = 1)
+{
+    public bool Single => RowCount == 1 && ColumnCount == 1;
+}
+
 // Text/range adaptation only; PlanSession validates and applies the complete operation.
 internal static class PlanSheetEditing
 {

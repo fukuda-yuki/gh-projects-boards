@@ -10,14 +10,6 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         CancellationToken cancellationToken = default, Action<ProjectReadProgress>? progress = null)
         => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
 
-    public Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ConnectionContext context,
-        ApplyBatch batch, ApplyOperation operation, CancellationToken token)
-        => new ReadSession(service, context, batch.Project, token, null).ObserveFieldAsync(operation);
-
-    public Task<(HistoricalFieldObservation? Observation, ApiResult Result)> ObserveHistoricalFieldAsync(ConnectionContext context,
-        ApplyBatch batch, ApplyOperation operation, CancellationToken token)
-        => new ReadSession(service, context, batch.Project, token, null).ObserveFieldCoreAsync(operation, historical: true);
-
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
         ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress, GhConnectionService.OperationLease? lease = null)
     {
@@ -29,8 +21,6 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
         private ApiOutcome? interruption;
-        private string? observationScope;
-        private bool firstObservationRead;
 
         private async Task<ApiResult> SendAsync(string query, object variables)
         {
@@ -48,117 +38,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 }
                 return response;
             }
-            if (observationScope is null)
-                return await service.SendAsync(context, ApiRequest.GraphQl(query, variables), cancellationToken);
-            // Each contributing response identifies its own authenticated principal.
-            // Preflight alone cannot bind a later subprocess to the same gh account.
-            var request = ApiRequest.GraphQl(query.Insert(query.LastIndexOf('}'), " viewer { databaseId } "), variables);
-            var first = firstObservationRead; firstObservationRead = false;
-            var result = first
-                ? await service.RecheckAndReadAsync(context, request, observationScope, cancellationToken)
-                : await service.SendAsync(context, request, cancellationToken);
-            if (!result.IsSuccess) return result;
-            if (result.Data is not { ValueKind: JsonValueKind.Object } body
-                || !body.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object
-                || !data.TryGetProperty("viewer", out var viewer) || viewer.ValueKind != JsonValueKind.Object
-                || !viewer.TryGetProperty("databaseId", out var id) || id.ValueKind != JsonValueKind.Number
-                || !id.TryGetInt64(out var viewerId) || viewerId <= 0)
-                return new(ApiOutcome.Failed, FailureKind.InvalidResponse);
-            if (viewerId != context.ViewerId || context.IsInvalidated)
-            {
-                context.Invalidate();
-                return new(ApiOutcome.Failed, FailureKind.IdentityChanged);
-            }
-            return result;
-        }
-
-        public async Task<(FieldObservation? Observation, ApiResult Result)> ObserveFieldAsync(ApplyOperation operation)
-        {
-            var result = await ObserveFieldCoreAsync(operation, historical: false);
-            return (result.Observation?.Current, result.Result);
-        }
-
-        public async Task<(HistoricalFieldObservation? Observation, ApiResult Result)> ObserveFieldCoreAsync(ApplyOperation operation, bool historical)
-        {
-            using var measured = PerformanceTrace.Span("scoped-item-observation");
-            var key = operation.Key;
-            if (projectId.Scope != ConnectionScope.From(context)
-                || (key.Kind == "Title" ? key.NodeId != operation.IssueId || key.ProjectId is not null || key.FieldId is not null
-                    : key.Kind is not ("Select" or "Number" or "Date" or "Dependency") || key.NodeId != (key.Kind == "Dependency" ? operation.IssueId : operation.ItemId) || key.ProjectId != projectId.NodeId || string.IsNullOrWhiteSpace(key.FieldId)))
-                return (null, new(ApiOutcome.Failed, FailureKind.IdentityChanged));
-            try
-            {
-                observationScope = key.Kind is "Title" or "Dependency" ? "repo" : "project";
-                firstObservationRead = true;
-                // Complete definitions retain the reader's field ownership and unknown-value guards.
-                // Their cost depends on fields/options, never unrelated Project item count.
-                var result = await SendAsync(ProjectQueries.ApplyObservation,
-                    new { id = projectId.NodeId, item = operation.ItemId, after = (string?)null });
-                if (!result.IsSuccess) return (null, result);
-                var data = Property(result.Data ?? default, "data");
-                var initialFields = ReadProjectFields(Property(data, "project"));
-                var node = Property(data, "item");
-                fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
-                    ReadProjectFields, value => { AddField(value); return Task.CompletedTask; }, initialFields);
-                if (!fieldsComplete || project is null) return Failure();
-                MatchNode(node, operation.ItemId, "ProjectV2Item");
-                await AddItemAsync(node);
-                if (problems.Count != 0 || !items.TryGetValue(new(projectId.Scope, operation.ItemId), out var builder) || !builder.Complete)
-                    return Failure();
-                var item = BuildItem(builder, true);
-                if (item.Kind != ProjectItemKind.Issue || item.ContentId?.NodeId != operation.IssueId || item.IsArchived)
-                    return (null, new(ApiOutcome.Failed, FailureKind.NotFoundOrInaccessible));
-                string? value;
-                ValueAvailability availability;
-                IReadOnlyList<SelectOption> options = [];
-                var fieldName = operation.FieldName;
-                string? dataType = null;
-                if (key.Kind is "Title" or "Dependency")
-                {
-                    var issue = issues[item.ContentId];
-                    if (issue.Capability?.CanUpdate != true) return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    if (key.Kind == "Title") { value = issue.Title.Value; availability = issue.Title.Availability; }
-                    else
-                    {
-                        if (issue.Native?.Complete != true) return Failure();
-                        value = issue.Native.Predecessors.Any(i => i.NodeId == key.FieldId) ? "present" : null;
-                        availability = value is null ? ValueAvailability.Empty : ValueAvailability.Present;
-                    }
-                }
-                else
-                {
-                    if (project.Capability?.CanUpdate != true)
-                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    if (!fields.TryGetValue(new(projectId.Scope, key.FieldId!), out var field))
-                        return historical
-                            ? (Evidence(HistoricalFieldEvidenceKind.ProjectFieldAbsent, null, null), new(ApiOutcome.Success))
-                            : (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    if (field.ValueOwner != FieldOwner.ProjectItem || field.Availability != ValueAvailability.Present)
-                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    fieldName = field.Name; dataType = field.DataType;
-                    options = field.Options;
-                    if (field.DataType != PlanningScalars.DataType(key.Kind)
-                        || !historical && (key.Kind == "Select" && !operation.Intended.Clear && !options.Any(o => o.Id == operation.Intended.Value)
-                        || !PlanningScalars.Publishable(key.Kind, operation.Intended)))
-                        return (null, new(ApiOutcome.Failed, FailureKind.PermissionDenied));
-                    var observed = item.Values.Single(v => v.FieldId == field.Id);
-                    value = key.Kind == "Select" ? observed.OptionId : observed.Scalar; availability = observed.Availability;
-                }
-                if (availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return Failure();
-                // This is evidence for one field only. No complete Project snapshot is published.
-                var observation = new FieldObservation(Guid.NewGuid().ToString("N"), projectId, DateTimeOffset.UtcNow,
-                    value, availability, null, options.ToArray());
-                return (Evidence(HistoricalFieldEvidenceKind.CurrentValue, observation, dataType), new(ApiOutcome.Success));
-
-                HistoricalFieldObservation Evidence(HistoricalFieldEvidenceKind kind, FieldObservation? current, string? type) =>
-                    new(current?.Id ?? Guid.NewGuid().ToString("N"), projectId, operation.ItemId, operation.IssueId, key,
-                        current?.At ?? DateTimeOffset.UtcNow, kind, fieldName, type, current, fields.Keys.Select(id => id.NodeId).ToArray());
-            }
-            catch (ReadException) { return Failure(); }
-            catch (OperationCanceledException) { return (null, new(ApiOutcome.Failed, FailureKind.Cancelled)); }
-
-            (HistoricalFieldObservation?, ApiResult) Failure() => (null, new(ApiOutcome.Failed,
-                problems.FirstOrDefault()?.Failure ?? FailureKind.InvalidResponse, retryAfter: problems.FirstOrDefault()?.RetryAfter));
+            return await service.SendAsync(context, ApiRequest.GraphQl(query, variables), cancellationToken);
         }
 
         public async Task<ProjectReadResult> RunAsync()
@@ -348,7 +228,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     if (type == expected && (definition.DataType == "NUMBER" ? raw.ValueKind == JsonValueKind.Number : raw.ValueKind == JsonValueKind.String))
                     {
                         scalar = definition.DataType == "NUMBER" ? PlanningScalars.RemoteNumber(raw)
-                            : PlanningScalars.Normalize("Date", raw.GetString()!);
+                            : PlanningScalars.RemoteDate(raw.GetString()!);
                         known = true;
                     }
                 }

@@ -32,7 +32,7 @@ Test design stays with the user. Propose a short behavior list for the change, s
 
 ## Boundaries
 
-The opt-in [performance runner](../docs/performance.md) separates synthetic Core timing, ordinary-app interaction and bounded live schema validation. Use `scripts/Test-Performance.ps1`; routine CI checks structural work counts and safety, never machine timing thresholds. Results and remaining acceptance belong to #12.
+The opt-in [performance measurements](../docs/performance.md) separate scheduler/storage timing, hosted frame callbacks, ordinary-app interaction and sandbox throughput. Machine timing targets are measurement evidence, not routine unit-test thresholds.
 
 | Level | Scope | Execution |
 | --- | --- | --- |
@@ -89,7 +89,7 @@ PlanSheetImeTests replaces the old registered Boards route. Six ordinary-app cas
 
 For 1,000-task, 20-person, ten-task FS-chain commit-to-frame measurement, use the opt-in PlanSheetPerformance case with no concurrent build/test workload. It records every frame outcome, exactly 20 valid edits, median/max and the 200 ms target comparison, plus a synthetic ordinary-app fixture. See [performance](../docs/performance.md). The next Rendered callback does not establish physical display latency or scrolling FPS.
 
-The prototype folder and launch switch and the old Boards/Gantt/Summary UI tests are removed with their screens. The UI-independent legacy Core regression suite remains intact except the discarded prototype fixture; it is not used as the new sheet's model or acceptance evidence.
+The planning-editor tests exercise the shipped model and controls. Removed Apply, registration-checkpoint and legacy planning behaviors have no retained regression suite. Project retrieval, scoped connection and process tests, holiday CSV tests and the planning-editor invariants remain independent contracts.
 
 ## Execution evidence
 
@@ -119,7 +119,7 @@ The offline tests run real document guards, response policy, orchestration and f
 
 ## Planning editor Core scheduler (#78)
 
-`PlanEditorSchedulingTests` exercises the real new model, calendar, pure input transformations and scheduler with fixed dates. It covers work/rate/calendar boundaries, ordinary zero-effort milestone entry versus completed work, row isolation for invalid refreshed values versus rejected typed edits, caller-supplied today versus an explicit status date, retained versus calculated dates, nullable baseline differences, dependency/hierarchy rejection, inherited predecessor constraints, summary missingness and no leveling. Fractional-rate chains at 30/70/90 percent, rate changes and work immediately above/below a day boundary verify exact internal endpoints. Automatic start edits may pass old calculated ends; inverted kept pairs are rejected. The existing holiday CSV parser and bundle reader are real collaborators. No storage, gh, controls or network are involved; this is logic evidence, not UI or publish acceptance. Legacy scheduler cases stay until the legacy screens are replaced.
+`PlanEditorSchedulingTests` exercises the real new model, calendar, pure input transformations and scheduler with fixed dates. It covers work/rate/calendar boundaries, ordinary zero-effort milestone entry versus completed work, row isolation for invalid refreshed values versus rejected typed edits, caller-supplied today versus an explicit status date, retained versus calculated dates, nullable baseline differences, dependency/hierarchy rejection, inherited predecessor constraints, summary missingness and no leveling. Fractional-rate chains at 30/70/90 percent, rate changes and work immediately above/below a day boundary verify exact internal endpoints. Automatic start edits may pass old calculated ends; inverted kept pairs are rejected. The existing holiday CSV parser and bundle reader are real collaborators. No storage, gh, controls or network are involved; this is logic evidence, not UI or publish acceptance.
 
 ```powershell
 Set-Location C:\w\g76;
@@ -175,3 +175,16 @@ dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj 
 ```
 
 For planning-editor UI phases, report the complete default hosted suite in addition to focused checks. Hosted asynchronous failures remain in the run outcome; each following case starts a fresh tracking context so an earlier failure does not become its failure. Teardown must remove the visual root even when idle/failure checks throw.
+
+## Publish workspace (#79)
+
+`PlanWorkspaceHostedTests` invokes real controls for before/after review, explicit confirm/close, conflict choices, refresh adoption and read failure, stage presentation, new Issue creation, row failures/unverified state, retry and local Undo after publish. It uses the real publisher, isolated checkpoint files and fake-gh subprocesses. `PlanSheetHostedTests.SaveFailureKeepsTheEditAndRetryPersistsItWithoutAnotherUndo` covers edit autosave failure at the sheet boundary. Run the entire default hosted suite, not only new cases.
+
+`PlanningPublishJourneyTests` drives the ordinary executable through public UI Automation: edit, review, confirm, close/restart and confirm no resend, with a second case losing a creation response and failing subsequent reads before restart. The substituted endpoint is fake gh; these journeys establish neither live GitHub nor physical IME. Desktop captures must be inspected: an all-black capture is unavailable visual evidence even when UI Automation passes.
+
+```powershell
+Set-Location C:\w\g76;
+dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
+C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
+C:\w\g76\scripts\Test-E2E.ps1 -Filter 'FullyQualifiedName~PlanningPublishJourneyTests'
+```

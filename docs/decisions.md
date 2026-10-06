@@ -58,7 +58,7 @@ Choose **native WinUI** for the PMO's weekly task editing and schedule compariso
 | --- | --- |
 | Edit to dates/bars within 0.2 s; scrolling | PMO's 1,000-row native samples were 23.4–45.6 ms to Rendered versus web 10.8–69.0 ms to the second animation frame including the bridge. Both fit the prototype budget; their boundaries differ and neither proves physical presentation or the real scheduler's speed. Both showed no blanks in six fast-wheel captures. Long sessions and broader scroll workloads remain unverified. |
 | Japanese IME | Both prototypes separate composition confirmation from cell commit in code; physical-key confirmation, cancellation and reconversion remain mandatory #78 checks. Native TextBox keeps composition in the existing native input path. No physical IME pass is claimed. |
-| Range selection, rectangular copy/paste, fill, Ctrl+D | Neither prototype supplies these. Adapt the existing WinUI selection/editor and transaction behavior evidenced by BulkEditingTests / BulkEditingHostedTests to the new plan identities; do not import the legacy workspace or Apply journal. Web would need new JS selection/drag/clipboard behavior plus a C# bridge. |
+| Range selection, rectangular copy/paste, fill, Ctrl+D | Neither prototype supplies these. Adapt the existing WinUI selection/editor and transaction behavior verified through PlanSheetEditingTests / PlanSheetHostedTests to the new plan identities; do not import the legacy workspace or Apply journal. Web would need new JS selection/drag/clipboard behavior plus a C# bridge. |
 | Arrows, row alignment and presentation | Both prototypes draw FS arrows and align sheet/chart rows through one scroll surface. Native still needs a fixed header, unclipped ID and compact readable rows; web had a sticky header and denser rows. #78 also owns day/week/month scales. Gantt drag editing is excluded. |
 | UI test approach | Native cells expose AutomationIds and work in the mounted WinUI host and PMO ordinary executable. Web exposed zero external UIA Edit controls and relied on ExecuteScriptAsync; renderer/GPU failures also prevented local web UI execution. Select native event/control tests plus public UIA for ordinary-app journeys. |
 | Effort for #78 | Native reuses one C# input/test stack and the existing range-operation contracts. Both still require model binding, columns, selected/editing state, operation Undo and zoom. Native must repair layout and validate recycling/focus; web would additionally require bridge ordering, accessible cells and a second input implementation. This is an integration-effort judgment, not a delivery-time promise. |
@@ -104,17 +104,9 @@ These rules avoid a second credential owner and keep issue content as data. See 
 
 Preflight cannot atomically prevent another process from switching gh authentication. Connection state is in memory. Persistent workspaces and company-environment verification have their own acceptance criteria.
 
-## Issue #4 registration storage
-
-Use existing .NET `System.Text.Json` and filesystem APIs, without a new dependency, for a versioned per-user registration/settings and currently supported read-cache format. One atomic record per normalized host/viewer/Project contains settings and snapshot together. A root writer lock, flushed and verified temporary write, and same-directory replacement protect the last good record. Backups are explicit recovery material, never authenticated sessions or automatically selected snapshots.
-
-This is the retained legacy registration format. Migrated profiles use the authoritative checkpoint for registrations, drafts, Undo, shared Issue work, planning and Apply history. The unencrypted location, sensitive-data implications and local deletion/recovery rules are documented in [README](../README.md#local-registration-storage).
-
-Discovery uses the current official [Repository.projectsV2](https://docs.github.com/en/graphql/reference/repos#repository) linked-Project relationship, [ProjectV2.repositories and owner connections](https://docs.github.com/en/graphql/reference/projects) and [Project API guidance](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects). Repository association does not change Project ownership or item scope.
-
 ## Decision ownership
 
-Use one versioned JSON draft/checkpoint record per host/stable viewer with existing .NET libraries. Reuse checked temporary writes, write-through flush, same-directory replacement and locking, with session save serialization and optimistic durable-revision checks. This is a local store, not multi-device synchronization. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
+Use one versioned JSON planning checkpoint per host/stable viewer/Project with existing .NET libraries. Reuse checked temporary writes, write-through flush, same-directory replacement and locking, with session save serialization and optimistic durable-revision checks. This is a local store, not multi-device synchronization. Its contents are unencrypted private local work; preserve last-good files and diagnose corruption instead of resetting them.
 
 | Topic | Owner |
 | --- | --- |
@@ -132,7 +124,7 @@ The parent Windows App SDK and its DWrite/Widgets packages have different redist
 
 ### Core scheduling representation (#78)
 
-Use the independent `PlanEditor` namespace alongside legacy planning until its screens are replaced. Keep nullable day inputs and baseline dates separate from derived date cells; working-hour endpoints exist only inside recalculation. Reuse the bundled holiday reader and validated holiday CSV parser without extending legacy planning metadata. Their neutral holiday contracts can move when legacy planning is removed.
+Use the UI-independent `PlanEditor` namespace. Keep nullable day inputs and baseline dates separate from derived date cells; working-hour endpoints exist only inside recalculation. Reuse the bundled holiday reader and validated holiday CSV parser without extending legacy planning metadata.
 
 The [current scheduling contract](spec.md#current-planning-editor-scheduling-contract-78) keeps ordinary zero-effort entry reachable as a milestone: an open task with no planned/performed positive work and at least one zero effort value is a milestone, including Estimate entry that fills Remaining with zero. Closed work, or zero Remaining after positive planned/performed work, is complete. Fixed dates still take precedence over calculating a milestone.
 
@@ -146,7 +138,7 @@ Preserve missing effort in summaries instead of inventing zero totals. Summary p
 
 Use an immutable baseline/current document and bounded before/after operation patches (200 steps) in a fresh `PlanningEditor/v1` folder. Reuse existing host/viewer/Project identity and root resolution, but never read the old checkpoint format. Patch history keeps ordinary 1,000-task edits from multiplying the entire plan by the history depth. The [local document contract](spec.md#current-local-plan-document-operations-and-storage-78--79--81) defines commands, markers and settings import/export.
 
-Autosave runs in one background loop and coalesces pending revisions while retaining their operation history. Memory becomes current before disk completion; the save task and explicit flush own durability. Atomic replacement follows the existing stores' mechanics, with a per-Project lock and expected file fingerprint to refuse competing or corrupt source replacement. Keep failed state in memory and surface only actionable save failures to the future UI.
+Autosave runs in one background loop and coalesces pending revisions while retaining their operation history. Memory becomes current before disk completion; the save task and explicit flush own durability. Atomic replacement follows the existing stores' mechanics, with a per-Project lock and expected file fingerprint to refuse competing or corrupt source replacement. Keep failed state in memory and surface only actionable save failures to the UI.
 
 Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout in this phase. Row order and hierarchy are independent: moving selected rows preserves parent identities; indent/outdent changes parent identities without an implicit reorder. These bounded Core commands do not implement CSV parsing, network refresh/publish or UI behavior.
 
@@ -158,3 +150,7 @@ Settings exports are portable and account-independent. Retain unfamiliar people/
 - Share one authenticated connection lease across the serial publish operation; retain host/viewer checks on contributing reads. The old callers retain their existing preflight behavior.
 
 Project item order remains the displayed row order. Native sub-issue sibling order is separately retained for B/L/R comparison and review. A remote-only sibling reorder reorders those sibling slots locally; concurrent divergent sibling orders require resolution. Publishing aligns sibling order with the reviewed planning order without introducing an independent editable hierarchy-order column.
+
+## Publish review lifetime (#79)
+
+Use an in-workspace review instead of a modal confirmation wizard. A PMO can close it during a long publish and inspect the read-only sheet; the workspace owns the operation and keeps stage text visible. Switching Project or changing inputs waits until publication finishes. Window close cancels and awaits the operation, letting the existing Core checkpoint retain uncertainty. Restart requires an explicit refresh or publish; it never silently resumes network writes. This gives a single confirmation point and preserves the existing creation guard without introducing a second UI journal.

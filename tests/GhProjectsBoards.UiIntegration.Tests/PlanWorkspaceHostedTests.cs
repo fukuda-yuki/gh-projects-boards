@@ -55,12 +55,200 @@ internal sealed class PlanWorkspaceHostedTests
         finally
         {
             try { await Ui.Unmount(view, check: false); await Ui.Idle(); }
-            finally { await workspace.Flush(); Directory.Delete(root, true); }
+            finally
+            {
+                try { await workspace.Flush(); }
+                catch when (TestContext.CurrentContext.Result.Outcome.Status != NUnit.Framework.Interfaces.TestStatus.Passed)
+                { await workspace.RetrySave(); }
+                finally { Directory.Delete(root, true); }
+            }
         }
         if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Passed) Assert.That(stopped, Is.True, problem);
         else TestContext.Out.WriteLine("Close after failed test: " + problem);
             }
         finally { Ui.EndTest(); }
+    }
+
+    [Test]
+    public async Task PublishReviewRequiresExplicitConfirmationAndUndoStaysLocal()
+    {
+        await Open();
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "設計の変更"; Ui.Click("PlanPublish"); });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 設計の変更")));
+        await Ui.Run(() => {
+            Assert.That(string.Join(" ", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("設計 → 設計の変更"));
+            Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計"));
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => FakePlanEditor.Load(root).Issues[0].Row.Title == "設計の変更");
+        await Ui.Until(() => workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount == 0);
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 1 タスク");
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク")));
+    }
+
+    [Test]
+    public async Task FailedSaveWhileClosingPublicationKeepsRetryAndEditingReachable()
+    {
+        await Open();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "mutation PlanPublish(" }));
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("未入力 →")));
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+        bool stopped = true;
+        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Ui.Run(async () => stopped = await view.StopAsync());
+            Assert.That(stopped, Is.False);
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<Button>("PlanRefresh").IsEnabled, Is.True);
+            });
+        }
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+        await Ui.Run(() => Ui.Click("PlanRetrySave"));
+        await Ui.Until(() => Ui.Find<Button>("PlanRetrySave").Visibility == Visibility.Collapsed);
+    }
+
+    [Test]
+    public async Task PublishSaveFailureOffersRetryBeforeAnyWrite()
+    {
+        await Open();
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("Start date")));
+        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0 && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+            await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible)));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        await Ui.Run(() => Ui.Click("PlanRetrySave"));
+        await Ui.Until(() => Ui.Find<Button>("PlanRetrySave").Visibility == Visibility.Collapsed && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
+    }
+
+    [Test]
+    public async Task PublishShowsHierarchyPredecessorAndOrderStagesAndRemoteResults()
+    {
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = state.Issues.Add(new(new("I2", "前提作業", "acme/repo"), "", true)), NextId = 3 });
+        await Open();
+        var newRow = PlanRow.New("子タスク", "acme/repo") with { Parent = "I1", Predecessors = ["I2"] };
+        await workspace.Session!.Execute(new InsertPlanRows([newRow]), DateOnly.FromDateTime(DateTime.Today));
+        await workspace.Session.Execute(new MovePlanRows(["I2"], "I1"), DateOnly.FromDateTime(DateTime.Today));
+        var stages = new List<string>(); long callback = 0;
+        await Ui.Run(() => {
+            var progress = Ui.Find<TextBlock>("PlanPublishStage");
+            callback = progress.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => stages.Add(progress.Text));
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-review"));
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Find<TextBlock>("PlanPublishStage").UnregisterPropertyChangedCallback(TextBlock.TextProperty, callback));
+        var remote = FakePlanEditor.Load(root);
+        Assert.That(remote.Issues.Single(i => i.Row.Title == "子タスク").Row.Parent, Is.EqualTo("I1"));
+        Assert.That(remote.Issues.Single(i => i.Row.Title == "子タスク").Row.Predecessors, Is.EqualTo(new[] { "I2" }));
+        Assert.That(remote.Issues[0].Row.Identity, Is.EqualTo("I2"));
+        Assert.That(stages, Does.Contain("発行中: 親子関係").And.Contain("発行中: 先行タスク").And.Contain("発行中: 表示順"));
+    }
+
+    [TestCase("partial")]
+    [TestCase("verificationfailure")]
+    public async Task PublishFailureOrUnverifiedRowsRemainVisibleAndRetryReconciles(string fault)
+    {
+        await Open();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, planFault = fault }));
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "発行予定"; Ui.Click("PlanPublish"); });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0 && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => {
+            Assert.That(string.Join(" ", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text)), Does.Contain(fault == "partial" ? "発行失敗" : "未検証"));
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Run(() => {
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Title")), Does.Contain(fault == "partial" ? "Synthetic failure" : "未検証"));
+        });
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        Assert.That(workspace.Session!.Document.Sync.Failures, Is.Empty);
+        Assert.That(workspace.Session.Document.Sync.Unverified, Is.Empty);
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("発行予定"));
+    }
+
+    [Test]
+    public async Task IncompleteRefreshKeepsLocalValuesAndCanBeRetried()
+    {
+        await Open();
+        var before = workspace.Session!.Document;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"readfailure\"}");
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        Assert.That(workspace.Session.Document, Is.EqualTo(before));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Title = "更新済み" } }] });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Title").Text == "更新済み");
+    }
+
+    [Test]
+    public async Task NewIssueReviewCanCloseDuringPublicationWithVisibleStages()
+    {
+        await Open();
+        var stages = new List<string>(); long callback = 0;
+        await Ui.Run(() => {
+            var progress = Ui.Find<TextBlock>("PlanPublishStage");
+            callback = progress.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => stages.Add(progress.Text));
+            var input = Ui.Find<TextBox>("PlanCell0_Title"); input.Focus(FocusState.Programmatic); input.Text = "新しい計画";
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
+        Assert.That(FakePlanEditor.Load(root).Issues.Length, Is.EqualTo(1));
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStage").Text.StartsWith("発行中:"));
+        await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanPublish"); });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Find<TextBlock>("PlanPublishStage").UnregisterPropertyChangedCallback(TextBlock.TextProperty, callback));
+        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Title == "新しい計画" && i.Added), Is.EqualTo(1));
+        Assert.That(stages, Does.Contain("発行中: 新規 Issue").And.Contain("発行中: フィールド・担当者").And.Contain("発行中: 検証"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RefreshMarksConflictsAndReviewResolvesWithoutWriting(bool useGitHub)
+    {
+        await Open();
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "ローカル"; Ui.Click("PlanShowSettings"); });
+        await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "ローカル");
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Title = "GitHub変更", Actual = 1 } }] });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Length == 1);
+        await Ui.Run(() => Ui.Click("PlanShowTasks"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "競合"));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.Document.State.Rows[0].Actual, Is.EqualTo(1));
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Tree(view).OfType<Button>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == $"PlanResolveI1_Title_{useGitHub}"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-conflict-" + useGitHub));
+        await Ui.Run(() => { Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False); Ui.Click($"PlanResolveI1_Title_{useGitHub}"); });
+        await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.IsEmpty);
+        Assert.That(workspace.Session!.Document.State.Rows[0].Title, Is.EqualTo(useGitHub ? "GitHub変更" : "ローカル"));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [TestCase(true)]
