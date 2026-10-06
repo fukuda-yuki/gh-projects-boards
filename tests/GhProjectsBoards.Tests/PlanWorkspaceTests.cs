@@ -6,6 +6,31 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanWorkspaceTests
 {
     [Test]
+    public async Task CsvPreviewResolvesAssignableUsersAcrossPagesWithoutWritingOrEditing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-csv-catalog-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
+            var workspace = new PlanWorkspace(new(root));
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var good = await workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,alice;late-user,,,,"));
+            Assert.That(good.Errors, Is.Empty);
+            Assert.That(good.Command!.Rows.Single().Assignees, Is.EqualTo(new[] { "U1", "U101" }));
+            var bad = await workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,nobody,,,,\nb,B,8,,,,,unknown/repo"));
+            Assert.That(bad.Command, Is.Null);
+            Assert.That(bad.Errors.Select(e => e.Line), Is.EquivalentTo(new[] { 2, 3 }));
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"csv-network\"}");
+            Assert.ThrowsAsync<InvalidOperationException>(() => workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,,,,,")));
+            Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Test]
     public async Task TwoInstancesPreserveBothRegistrationsWhenOpeningDifferentProjects()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-catalog-" + Guid.NewGuid().ToString("N"));

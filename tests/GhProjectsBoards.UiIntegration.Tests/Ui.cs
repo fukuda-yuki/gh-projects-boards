@@ -20,6 +20,7 @@ internal static class Ui
     public static Grid Root = null!;
     public static Exception? Fatal;
     public static int FailureCount;
+    internal static void Trace(string message) => diagnostics.WriteLine($"{DateTime.UtcNow:O} {caseName} {message}");
     public static void RecordFailure(Exception error, TrackedContext? owner = null)
     {
         Interlocked.Increment(ref FailureCount);
@@ -42,7 +43,7 @@ internal static class Ui
     public static void EndTest() => diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts}");
     public static async Task Run(Action action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
         => await Run(() => { action(); return Task.CompletedTask; }, operation: operation);
-    public static async Task Run(Func<Task> action, bool check = true, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
+    public static async Task Run(Func<Task> action, bool check = true, [System.Runtime.CompilerServices.CallerMemberName] string operation = "", TimeSpan? timeout = null)
     {
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var id = Interlocked.Increment(ref dispatchSequence);
@@ -57,8 +58,15 @@ internal static class Ui
             catch (Exception e) { completion.TrySetException(e); }
             finally { dispatches.TryRemove(id, out _); }
         }
-        try { await completion.Task.WaitAsync(TimeSpan.FromSeconds(30)); }
-        catch (TimeoutException error) { RecordFailure(error); await Diagnose("dispatch " + operation); throw; }
+        try { await completion.Task.WaitAsync(timeout ?? TimeSpan.FromSeconds(30)); }
+        catch (TimeoutException error) {
+            // A native operation may finish only after the dispatcher deadline. Its
+            // exception still belongs to this failed operation, never a later case.
+            var origin = dispatches.GetValueOrDefault(id) ?? caseName + "/" + operation;
+            _ = completion.Task.ContinueWith(t => diagnostics.WriteLine($"[LATE DISPATCH FAILURE] {origin}: {t.Exception}"),
+                CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            RecordFailure(error); await Diagnose("dispatch " + operation); throw;
+        }
         if (check) Check();
     }
     private static string Describe(FrameworkElement view)

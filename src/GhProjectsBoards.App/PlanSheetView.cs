@@ -81,7 +81,7 @@ internal sealed partial class PlanSheetView : Grid
     private bool frameSubscribed;
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null)
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -110,6 +110,7 @@ internal sealed partial class PlanSheetView : Grid
         AddCommand(commands, "元に戻す", "PlanSheetUndo", Symbol.Undo, () => ChangeHistory(false));
         AddCommand(commands, "やり直す", "PlanSheetRedo", Symbol.Redo, () => ChangeHistory(true));
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
+        if (importCsv is not null) AddCommand(commands, "CSVから追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queueInSheet: false);
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false));
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true));
         var columns = Id(new AppBarButton { Label = "列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
@@ -215,14 +216,19 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
-    private void AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action)
+    private void AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
     {
         var button = Id(new AppBarButton { Label = label, Icon = new SymbolIcon(icon) }, id);
         AutomationProperties.SetName(button, label); ToolTipService.SetToolTip(button, label);
-        button.Click += async (_, _) => await Run(async () => {
-            if (id is "PlanSheetInsert" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
-            await action();
-        }, id);
+        button.Click += async (_, _) => {
+            // Workspace commands own cancellation and flush this sheet's queue.
+            // Nesting them inside that same queue would wait on themselves.
+            if (!queueInSheet) { await action(); return; }
+            await Run(async () => {
+                if (id is "PlanSheetInsert" or "PlanSheetIndent" or "PlanSheetOutdent") await CommitPending();
+                await action();
+            }, id);
+        };
         bar.PrimaryCommands.Add(button);
     }
     internal Task Run(Func<Task> action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
@@ -390,7 +396,9 @@ internal sealed partial class PlanSheetView : Grid
     internal void RefreshRealized() { foreach (var row in Realized.ToArray()) row.Refresh(); UpdateInputProblem(); }
     internal void UpdateInputProblem()
     {
-        var cells = Realized.SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)))
+        if (disposed || !IsLoaded || Problems.Count == 0) { inputProblem.Close(); return; }
+        var cells = Realized.Where(r => r.IsLoaded && ReferenceEquals(r.Owner, this))
+            .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)))
             .Select(c => (Cell: c, Problem: Problems[(r.Identity, c.Field)]))).ToArray();
         var target = cells.OrderByDescending(c => c.Cell.FocusState != FocusState.Unfocused).FirstOrDefault();
         if (target.Cell is null) { inputProblem.Close(); return; }

@@ -47,12 +47,12 @@ public sealed class PlanSheetRow : Grid
         Loaded += (_, _) => {
             for (DependencyObject? parent = this; parent is not null; parent = VisualTreeHelper.GetParent(parent))
                 if (parent is PlanSheetView owner) { Owner = owner; owner.Realized.Add(this); break; }
-            Refresh();
+            Refresh(); Owner?.UpdateInputProblem();
         };
         // Detached rows are outside the automation tree. Clear presentation only
         // on rebinding, never during native input teardown or a later callback.
-        Unloaded += (_, _) => { Owner?.Realized.Remove(this); Owner = null; };
-        DataContextChanged += (_, _) => { ClearIds(); Refresh(); };
+        Unloaded += (_, _) => { var owner = Owner; owner?.Realized.Remove(this); Owner = null; owner?.UpdateInputProblem(); };
+        DataContextChanged += (_, _) => { ClearIds(); Refresh(); Owner?.UpdateInputProblem(); };
     }
     private void ClearIds()
     {

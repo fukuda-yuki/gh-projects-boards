@@ -20,6 +20,8 @@ PlanRow and PlanBaseline retain typed day-level input and GitHub values. PlanSch
 
 PlanSession applies immutable operation patches, guards atomic rejection and owns the 200-step Undo history. PlanStore checks identity and data, serializes durable saves with optimistic fingerprint checks, writes and verifies temporary files, and atomically replaces the prior checkpoint. Failed saves retain the in-memory document for retry.
 
+PlanCsvImport decodes and validates whole files, resolves file keys and loaded Issue references, and prepares one InsertPlanRows command. Repository and assignable-user catalog reads use the active Core connection lease; the view owns only native file selection, error presentation and repeat-import confirmation. A row's original-file SHA-256 is local provenance, follows normal row history/identity promotion and is never a GitHub field. New resource identities are added in the same command, preserving existing rates. Publication resolves repository placeholders by their destination rather than by one global default.
+
 PlanSnapshot translates complete Project reads. PlanMerge reconciles baseline/local/remote values. PlanPublishPlan and PlanPublisher provide ordered, batched serial writes, duplicate-guarded Issue creation, verification and durable recovery. PlanWorkspacePublish presents field differences and conflict choices and starts writes only on explicit confirmation. It reports publisher stages without a second outcome store. Closing the review leaves the workspace-owned operation running; window close cancels and awaits it. Failed and unverified rows come directly from PlanSync. See the [publish contract](spec.md#current-planning-editor-refresh-and-publishing-contract-79).
 
 ## GitHub boundary

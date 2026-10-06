@@ -83,8 +83,8 @@ internal sealed partial class PlanSheetView
     {
         var sync = Session.Document.Sync;
         if (sync.Unverified.Contains(identity)) return "未検証 — 最新の情報に更新で確認";
-        var failures = sync.Failures.Where(f => f.Identity == identity).Select(f => f.Reason).Distinct().ToArray();
-        if (failures.Length > 0) return "発行失敗: " + string.Join(" / ", failures);
+        var failures = sync.Failures.Where(f => f.Identity == identity).Select(PlanPublishText.Failure).Distinct().ToArray();
+        if (failures.Length > 0) return (sync.Failures.Where(f => f.Identity == identity).All(f => f.Reason == "NotDispatched") ? "未送信: " : "発行失敗: ") + string.Join(" / ", failures);
         return sync.Unavailable.Contains(identity) ? "GitHubで取得できません — 発行で確認" : "";
     }
     private void UpdateReason()
@@ -308,11 +308,15 @@ internal sealed partial class PlanSheetView
             throw new ArgumentException("設定で既定リポジトリを選んでください。");
         var row = PlanRow.New("", repository);
         Check(await Session.Execute(new InsertPlanRows([row], selected.Length == 0 ? null : selected), Today));
+        RevealAddedRow(row.Identity);
+    }
+    internal void RevealAddedRow(string identity)
+    {
         acceptedFilter = "";
         rendering = true;
         try { filter.Text = ""; }
         finally { rendering = false; }
-        selected = anchor = row.Identity; selectedField = anchorField = PlanField.Title; Refresh(); FocusSelected();
+        selected = anchor = identity; selectedField = anchorField = PlanField.Title; Refresh(); FocusSelected();
     }
     private async Task Indent(bool outdent)
     {

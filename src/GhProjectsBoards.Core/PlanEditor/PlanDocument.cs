@@ -29,6 +29,7 @@ internal sealed record ProjectPlanSettings
 }
 internal sealed record PlanRow(string Identity, string Title, string Repository)
 {
+    public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public bool Closed { get; init; }
     public ImmutableArray<string> Assignees { get; init; } = [];
@@ -51,7 +52,11 @@ internal abstract record PlanCommand;
 internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand;
 internal sealed record FillPlanCells(PlanOperationKind Kind, string Source, ImmutableArray<string> Targets, ImmutableArray<PlanField> Fields) : PlanCommand;
 internal sealed record ClearPlanCells(ImmutableArray<string> Targets, ImmutableArray<PlanField> Fields) : PlanCommand;
-internal sealed record InsertPlanRows(ImmutableArray<PlanRow> Rows, string? Before = null, PlanOperationKind Kind = PlanOperationKind.Insert) : PlanCommand;
+internal sealed record InsertPlanRows(ImmutableArray<PlanRow> Rows, string? Before = null, PlanOperationKind Kind = PlanOperationKind.Insert) : PlanCommand
+{
+    public ImmutableArray<PlanResource> CsvPeople { get; init; } = [];
+    public bool AllowDuplicateCsv { get; init; }
+}
 internal sealed record IndentPlanRows(ImmutableArray<string> Targets, bool Outdent = false) : PlanCommand;
 internal sealed record MovePlanRows(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
 internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanCommand;

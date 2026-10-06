@@ -93,6 +93,10 @@ The planning-editor tests exercise the shipped model and controls. Removed Apply
 
 ## Execution evidence
 
+Publisher feedback regressions cover mixed resource-limit splitting with retained successes, independent relationship phases after field rejection, unsent dependent positions, already-existing link reconciliation and adoption of workflow defaults. The normalized snapshot2 fixture preserves the observed baseline/local values and 172 failure records; only endpoint identities and metadata are adapted to fake gh. Its recovery test explicitly restores Backlog for imported rows before publishing: the original CSV omitted Status, but the old promoted checkpoint no longer records that provenance and cannot safely infer it. Fresh 24-Issue and recovery measurements report real fake-gh subprocess counts, serial wall time and effective batch sizes; they are not live GitHub latency acceptance.
+
+Publisher recovery regressions use the real adapter and synthetic gh process to exercise mixed Auto-add collisions, unsent additions after creation-response loss, delayed membership, bounded confirmation and reopening a checkpoint with 24 created Issues (17 members and seven missing) before any fields or relationships were written. They assert explicit add requests, final membership, field values, assignees, dates, parent/predecessor identities, zero unpublished tasks and no duplicate creation. Workspace CSV cases distinguish repository-level GraphQL NOT_FOUND from transport failure; hosted cases verify line-level errors/reselection, new-Issue review wording, readable sheet/review failures and the scheduling-field command's visibility.
+
 Record command, source, environment, executed/passed/failed/skipped counts and artifacts. Keep failed and zero-execution attempts. The UI runner records binaries, source diff and test-source hashes; E2E records the ordinary executable and endpoint substitutions. Native clipboard, physical IME, live sandbox and human acceptance are separate evidence. No selected skip-only or discovery-only run is a pass.
 
 ## Sandbox throughput measurement
@@ -203,6 +207,16 @@ C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
 C:\w\g76\scripts\Test-E2E.ps1 -Filter 'FullyQualifiedName~PlanningPublishJourneyTests'
 ```
 
+## CSV new tasks (#82)
+
+`PlanCsvImportTests` covers UTF-8/BOM/Shift-JIS, quoted records with physical line numbers, table-driven validation, file keys and existing Issue references, inherited cycles, 100-row scheduling and a single persisted Undo including new people. Duplicate confirmation is enforced by the operation; Undo and reopening preserve the exact-file contract. Repository template and sandbox CSV tests verify BOM, accepted content and sandbox-only identities.
+
+`PlanWorkspaceTests.CsvPreviewResolvesAssignableUsersAcrossPagesWithoutWritingOrEditing` uses real scoped readers and isolated fake gh to resolve paged assignable-user identities and reject unknown repositories/logins without local edits or mutations. `PlanPublisherTests` imports and publishes 100 tasks through real fake-gh processes, checking the resulting 90 parent links, 80 blocked-by links, child/Project order and publication stage ordering. Separate destination cases cover preflight-all-before-dispatch and lost-response reconciliation in multiple repositories.
+
+`PlanWorkspaceHostedTests.CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation` drives the actual toolbar, error and duplicate dialogs, native controls and event paths. Only the OS picker result and GitHub endpoint are substituted. It checks whole-file rejection, retry, visible imported rows after a title filter, unpublished count, cancellation and one Undo. Closing cases hold the real fake-gh repository query or an error dialog; close must cancel/dismiss them without adding rows. This bounded UI collaboration does not establish native-picker or real-GitHub acceptance.
+
+For ordinary-app acceptance, import `docs/evaluation/sandbox-plan.csv` in Project 3 with default repository `fukuda-yuki/codex-sandbox`, inspect parent roll-ups, predecessor references, unassigned work and start constraints, then explicitly publish. Verify the resulting Issues/relationships and take screenshots of the imported sheet and completed publication. Native picker and live sandbox evidence belong to that execution, not the hosted cases.
+
 ## Pending-input invariant: hosted checks
 
 The shared contract is [pending-input invariant](../docs/spec.md#pending-input-invariant-all-editing-views). Tests use real controls, focus, events and isolated persistence; they do not substitute the editing collaboration.
@@ -217,3 +231,7 @@ The shared contract is [pending-input invariant](../docs/spec.md#pending-input-i
 | People | `PeopleEscapeDiscardsRetainedInput`, `PeopleEscapeRestoresTheCurrentDocumentAfterFailedSave` (`PlanSheetNative`) | Real Escape releases a retained task, clears its error and restores the current committed display even after a save failure, without another edit. |
 
 Native Escape cases are excluded from the default selection and require the PMO desktop. Do not replace their physical-key path with direct handler invocation or claim them from non-key control tests.
+
+`ValidationCalloutFollowsTheProblemAcrossRowRecycling` moves focus to the toolbar, scrolls the invalid row out of view and back, and verifies that the callout never follows a recycled cell to another task. The optional `PlanSheetPerformance` horizon comparison measures identical 1,000-row day-zoom/scroll workloads with and without bitmap capture. Record phase timings and realized visual counts to distinguish product layout work from evidence acquisition. A failed or timed-out capture is a failed observation, belongs to its originating case and must not leave an unobserved late exception.
+
+Capture uses a ten-second cancellation deadline for its asynchronous stages; the outer dispatcher watchdog remains thirty seconds because cancellation cannot forcibly interrupt a blocked native UI call. Phase markers distinguish layout completion, the render request and its return. `InfrastructureTests.UnloadedCaptureFailsAtItsCaller` verifies failure propagation. Selecting `LateFaultAfterDispatchDeadline` with `FollowingCaseHasIndependentFailureTracking` deliberately produces one failed timeout case, one passing following case and runner exit 1; its late fault must appear under `[LATE DISPATCH FAILURE]` with the original case name, not as an unobserved exception in the following case.

@@ -9,6 +9,318 @@ namespace GhProjectsBoards.Tests;
 [TestFixture, Category("Integration")]
 internal sealed class PlanPublisherTests
 {
+    [Test]
+    public async Task ResourceLimitedUncertainCreationUsesGuardBeforeSplitting()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows(Enumerable.Range(0, 4).Select(i => PlanRow.New("Created " + i, "acme/repo")).ToImmutableArray()), Today);
+        Scenario("creation-resource-uncertain");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var issues = FakePlanEditor.Load(root).Issues;
+        Assert.That(issues.Length, Is.EqualTo(4));
+        Assert.That(issues.Select(i => i.Row.Title).Distinct().Count(), Is.EqualTo(4));
+        Assert.That(issues.All(i => i.Added), Is.True);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+    [Test]
+    public async Task MixedResourceBatchSplitsAndFinishesWithoutResendingSuccesses()
+    {
+        await Start(8);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows.SelectMany(r => new[] {
+            new PlanCellChange(r.Identity, PlanField.Actual, 3m), new PlanCellChange(r.Identity, PlanField.Status, "Done") }).ToImmutableArray()), Today);
+        Scenario("mixed-resource");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 3 && i.Row.Status == "Done"), Is.True);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var inputs = File.ReadLines(Path.Combine(root, "plan-mutations.jsonl")).Select(line => JsonDocument.Parse(line).RootElement.GetProperty("variables").EnumerateObject().Select(v => v.Value.GetRawText()).ToArray()).ToArray();
+        Assert.That(inputs.Skip(1).SelectMany(x => x), Does.Not.Contain(inputs[0][0]), "The successful alias from the rejected mixed batch must not be resent.");
+    }
+    [TestCase("field-denied")]
+    [TestCase("resource-always")]
+    public async Task FieldFailureDoesNotPreventIndependentRelationshipsAndOrder(string fault)
+    {
+        await Start(3);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("I2", PlanField.Actual, 3m), new("I2", PlanField.Parent, "I1"), new("I3", PlanField.Predecessors, new[] { "I2" })]), Today);
+        Scenario(fault);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False);
+        var rows = FakePlanEditor.Load(root).Issues.Select(i => i.Row).ToArray();
+        Assert.That(rows.Single(r => r.Identity == "I2").Parent, Is.EqualTo("I1"));
+        Assert.That(rows.Single(r => r.Identity == "I3").Predecessors, Is.EqualTo(new[] { "I2" }));
+        Assert.That(session.Document.Sync.Failures.All(f => f.Field is not (PlanField.Parent or PlanField.Predecessors or PlanField.SubIssueOrder)), Is.True);
+    }
+    [TestCase("parent-denied")]
+    [TestCase("link-already-exists")]
+    public async Task RelationshipOutcomesReconcileAndOnlyDependentPositionsWait(string fault)
+    {
+        await Start(4);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("I2", PlanField.Parent, "I1"), new("I3", PlanField.Parent, "I1"),
+            new("I4", PlanField.Predecessors, new[] { "I3" })]), Today);
+        Scenario(fault);
+        var result = await publisher.PublishAsync(session, Today);
+        var rows = FakePlanEditor.Load(root).Issues.Select(i => i.Row).ToArray();
+        Assert.That(rows.Single(r => r.Identity == "I3").Parent, Is.EqualTo("I1"));
+        Assert.That(rows.Single(r => r.Identity == "I4").Predecessors, Is.EqualTo(new[] { "I3" }));
+        if (fault == "parent-denied")
+        {
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(rows.Single(r => r.Identity == "I2").Parent, Is.Null);
+            Assert.That(session.Document.Sync.Failures.Where(f => f.Field == PlanField.SubIssueOrder).All(f => f.Reason == "NotDispatched"), Is.True);
+            Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("reprioritizeSubIssue"));
+            Scenario();
+            Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        }
+        else
+        {
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        }
+    }
+    [Test]
+    public async Task NewItemAdoptsWorkflowStatusWithoutClearingIt()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("Workflow default", "acme/repo") with { Estimate = 8 }]), Today);
+        Scenario("workflow-status");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Document.State.Rows.Single().Status, Is.EqualTo("In progress"));
+        Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.Status, Is.EqualTo("In progress"));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("clearProjectV2ItemFieldValue"));
+    }
+    [TestCase("workflow-backlog")]
+    [TestCase("mixed-resource")]
+    public async Task FreshTwentyFourIssuePlanRecordsSerialThroughputAndKeepsWorkflowDefaults(string fault)
+    {
+        using var stream = typeof(PlanPublisherTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.Phase9Snapshot2.json")!;
+        var document = (await JsonSerializer.DeserializeAsync<PlanDocument>(stream, PlanJson.Options))!;
+        var imported = document.State.Rows.Where(r => r.CsvSourceHash is not null).ToArray();
+        var ids = imported.ToDictionary(r => r.Identity, r => PlanRow.New(r.Title).Identity);
+        var rows = imported.Select(r => r with { Identity = ids[r.Identity], Parent = r.Parent is null ? null : ids[r.Parent],
+            Predecessors = r.Predecessors.Select(id => ids[id]).ToImmutableArray() }).ToImmutableArray();
+        await Start(0, settings: document.State.Settings);
+        await session.Execute(new InsertPlanRows(rows), Today);
+        Scenario(fault);
+        var before = runner.Count;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await publisher.PublishAsync(session, Today);
+        watch.Stop();
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var remote = FakePlanEditor.Load(root).Issues;
+        Assert.That(remote.Length, Is.EqualTo(24));
+        Assert.That(remote.Count(i => i.Row.Parent is not null), Is.EqualTo(20));
+        Assert.That(remote.Sum(i => i.Row.Predecessors.Length), Is.EqualTo(19));
+        Assert.That(remote.All(i => i.Added && i.Row.Status == "Backlog"), Is.True);
+        Assert.That(runner.MaximumConcurrent, Is.EqualTo(1));
+        TestContext.Out.WriteLine($"Fresh24 {fault}: requests={runner.Count - before}; serial elapsed={watch.Elapsed.TotalSeconds:F3}s; creation wait={publisher.CreationWait.TotalSeconds:F3}s; max concurrent={runner.MaximumConcurrent}; batches={string.Join(',', publisher.EffectiveBatchSizes)}");
+    }
+    [Test]
+    public async Task Snapshot2RecoveryRestoresRelationshipsAndFinishesWithoutCreation()
+    {
+        using var stream = typeof(PlanPublisherTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.Phase9Snapshot2.json")!;
+        var document = (await JsonSerializer.DeserializeAsync<PlanDocument>(stream, PlanJson.Options))!;
+        Scenario("mixed-resource");
+        FakePlanEditor.Save(root, new(document.Baseline.Rows.Select(r => new PlanFakeIssue(r, "", true)).ToImmutableArray(), 30));
+        runner = new(new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+        publisher = new(new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner), new("github.com", 42, "fixture-user", GhProcessTests.FakeExecutable));
+        var today = new DateOnly(2026, 10, 7);
+        session = await PlanSession.CreateAsync(new(root), document, today);
+        // The old checkpoint has no creation provenance. This is the explicit PMO recovery correction,
+        // justified by the original CSV hash, whose schema has no Status column.
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, document.State.Rows.Where(r => r.CsvSourceHash is not null)
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Status, "Backlog")).ToImmutableArray()), today);
+        var scheduled = session.Schedule(today).ToDictionary(r => r.Input.Identity);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await publisher.PublishAsync(session, today);
+        watch.Stop();
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Changes(today).TaskCount, Is.Zero);
+        var remote = FakePlanEditor.Load(root).Issues;
+        Assert.That(remote.Length, Is.EqualTo(29));
+        foreach (var expected in document.State.Rows.Where(r => r.CsvSourceHash is not null))
+        {
+            var actual = remote.Single(i => i.Row.Identity == expected.Identity).Row;
+            Assert.That(actual.Parent, Is.EqualTo(expected.Parent));
+            Assert.That(actual.Predecessors, Is.EquivalentTo(expected.Predecessors));
+            Assert.That(actual.Assignees, Is.EquivalentTo(expected.Assignees));
+            Assert.That(actual.Status, Is.EqualTo("Backlog"));
+            Assert.That((actual.Start, actual.End), Is.EqualTo((scheduled[expected.Identity].Start.Value, scheduled[expected.Identity].End.Value)));
+            Assert.That((actual.StartNoEarlierThan, actual.Fixed), Is.EqualTo((expected.StartNoEarlierThan, expected.Fixed)));
+            if (!scheduled[expected.Identity].IsSummary)
+                Assert.That((actual.Estimate, actual.Remaining, actual.Actual), Is.EqualTo((expected.Estimate, expected.Remaining, expected.Actual)));
+        }
+        Assert.That(remote.Select(i => i.Row.Identity), Is.EqualTo(document.State.Rows.Select(r => r.Identity)));
+        foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).Distinct())
+            Assert.That(FakePlanEditor.Load(root).SubOrders[parent], Is.EqualTo(document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity)));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("createIssue").And.Not.Contain("clearProjectV2ItemFieldValue"));
+        TestContext.Out.WriteLine($"Snapshot2 recovery: requests={runner.Count}; elapsed={watch.Elapsed.TotalSeconds:F3}s; batch sizes={string.Join(',', publisher.EffectiveBatchSizes)}");
+    }
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task CreatedIssuesWithPartialMembershipFinishWithoutDuplicates(bool reopen)
+    {
+        await Start(reopen ? 5 : 0);
+        var parent = PlanRow.New("Parent", "acme/repo");
+        var child = PlanRow.New("Child", "acme/repo") with { Parent = parent.Identity, Estimate = 16, Assignees = ["U1"] };
+        var next = PlanRow.New("Next", "acme/repo") with { Estimate = 8, Predecessors = [child.Identity] };
+        var rows = new List<PlanRow> { parent, child, next };
+        for (var i = 3; i < (reopen ? 24 : 12); i++)
+                rows.Add(PlanRow.New("Task " + (i + 100), "acme/repo") with { Parent = parent.Identity, Predecessors = [rows[^1].Identity],
+                    Estimate = 16, Remaining = 8, Actual = 2, Assignees = ["U1"], StartNoEarlierThan = Today.AddDays(2) });
+        await session.Execute(new InsertPlanRows(rows.ToImmutableArray()), Today);
+        var dates = session.Schedule(Today).ToDictionary(r => r.Input.Identity, r => (r.Start.Value, r.End.Value));
+        if (reopen)
+        {
+            var remote = await publisher.RefreshAsync(session, Today);
+            Assert.That(remote.Succeeded, Is.True);
+            var service = new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner);
+            var context = new ConnectionContext("github.com", 42, "fixture-user", GhProcessTests.FakeExecutable);
+            using var lease = await service.BeginOperationAsync(context, default, mutation: false);
+            var snapshot = PlanSnapshot.From(await PlanSnapshot.ReadConsistentAsync(service, lease, context, Project, default), session.Document.State.Settings);
+            var run = Guid.NewGuid().ToString("N");
+            var writes = PlanPublishPlan.Build(session.Document, snapshot, Today, run).Writes.Where(w => w.Stage is PlanPublishStage.Create or PlanPublishStage.Add).ToImmutableArray();
+            var ids = rows.Select((r, i) => (r.Identity, Id: "I" + (i + 6))).ToDictionary(p => p.Identity, p => p.Id);
+            var created = rows.Select((r, i) => new PlanFakeIssue(new(ids[r.Identity], r.Title, r.Repository),
+                JsonSerializer.Deserialize<Dictionary<string, string>>(writes.Single(w => w.Identity == r.Identity && w.Stage == PlanPublishStage.Create).Input)!["body"], i < 17)).ToImmutableArray();
+            FakePlanEditor.Save(root, new(FakePlanEditor.Load(root).Issues.AddRange(created), 30));
+            Assert.That(created.Count(i => i.Added), Is.EqualTo(17));
+            Assert.That(created.Count(i => !i.Added), Is.EqualTo(7));
+            await session.SaveSync(session.Document.Sync with {
+                Failures = rows.Select(r => new PlanPublishFailure(r.Identity, PlanField.NewTask, "VerificationMismatch")).ToImmutableArray(),
+                Publish = new(run, writes.Select(w => w.Stage == PlanPublishStage.Create
+                    ? w with { State = PlanWriteState.Succeeded, ResultId = ids[w.Identity] }
+                    : w with { State = PlanWriteState.Failed, Error = "VerificationMismatch", ResultId = "T-" + ids[w.Identity] }).ToImmutableArray()) });
+            session = (await PlanSession.OpenAsync(new(root), Project, Today)).Session!;
+        }
+        else Scenario("membership-delay");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var issues = FakePlanEditor.Load(root).Issues;
+        Assert.That(issues, Has.Length.EqualTo(reopen ? 29 : 12));
+        Assert.That(issues.All(i => i.Added), Is.True);
+        Assert.That(issues.Single(i => i.Row.Title == "Child").Row.Estimate, Is.EqualTo(16));
+        Assert.That(issues.Single(i => i.Row.Title == "Child").Row.Assignees, Is.EqualTo(new[] { "U1" }));
+        string RemoteId(string local) => issues.Single(i => i.Row.Title == rows.Single(r => r.Identity == local).Title).Row.Identity;
+        foreach (var row in rows)
+        {
+            var observed = issues.Single(i => i.Row.Title == row.Title).Row;
+            Assert.That(observed.Assignees, Is.EqualTo(row.Assignees));
+            Assert.That(observed.Parent, Is.EqualTo(row.Parent is null ? null : RemoteId(row.Parent)));
+            Assert.That(observed.Predecessors, Is.EquivalentTo(row.Predecessors.Select(RemoteId)));
+            Assert.That((observed.Start, observed.End), Is.EqualTo(dates[row.Identity]));
+            if (row == parent) continue;
+            Assert.That((observed.Estimate, observed.Remaining, observed.Actual, observed.StartNoEarlierThan),
+                Is.EqualTo((row.Estimate, row.Remaining, row.Actual, row.StartNoEarlierThan)));
+        }
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        if (reopen) Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("createIssue"));
+        else
+        {
+            var explicitlyAdded = File.ReadLines(Path.Combine(root, "plan-mutations.jsonl")).SelectMany(line => {
+                using var payload = JsonDocument.Parse(line);
+                return payload.RootElement.GetProperty("variables").EnumerateObject()
+                    .Where(v => v.Value.TryGetProperty("contentId", out _)).Select(v => v.Value.GetProperty("contentId").GetString()).ToArray();
+            }).Distinct().ToArray();
+            Assert.That(explicitlyAdded, Is.EquivalentTo(issues.Select(i => i.Row.Identity)), "Auto-added Issues also receive an explicit Project-add request.");
+        }
+    }
+    [Test]
+    public async Task UnconfirmedMembershipKeepsCreatedIdentityAndNextPublishFinishesAllAdds()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows(Enumerable.Range(1, 12).Select(i => PlanRow.New("New " + i, "acme/repo") with { Estimate = 8 }).ToImmutableArray()), Today);
+        Scenario("membership-pending");
+        var first = await publisher.PublishAsync(session, Today);
+        Assert.That(first.Succeeded, Is.False);
+        var observed = FakePlanEditor.Load(root);
+        Assert.That(observed.Issues, Has.Length.EqualTo(12));
+        Assert.That(observed.Issues.Count(i => i.Added), Is.EqualTo(11));
+        Assert.That(session.Document.Sync.Publish!.Writes.Single(w => w.Stage == PlanPublishStage.Create && w.ResultId == "I2").State, Is.EqualTo(PlanWriteState.Succeeded));
+        Assert.That(session.Document.Sync.Failures.Single().Reason, Is.EqualTo("VerificationMismatch"));
+        Scenario();
+        await Reopen();
+        var resumed = await publisher.PublishAsync(session, Today);
+        Assert.That(resumed.Succeeded, Is.True, resumed.Error);
+        var finished = FakePlanEditor.Load(root).Issues;
+        Assert.That(finished, Has.Length.EqualTo(12));
+        Assert.That(finished.All(i => i.Added && i.Row.Estimate == 8), Is.True);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+    [Test]
+    public async Task ImportedHundredRowsPublishRelationshipsInStageOrderAndRetainDuplicateIdentity()
+    {
+        await Start(0);
+        var file = PlanCsvImportTests.Read(PlanCsvImportTests.HundredRows());
+        var preview = PlanCsvImport.Prepare(session.Document, file, PlanCsvImportTests.Catalog, Today);
+        Assert.That(preview.Errors, Is.Empty);
+        await session.Execute(preview.Command!, Today);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        var remote = FakePlanEditor.Load(root).Issues;
+        Assert.That(remote.Length, Is.EqualTo(100));
+        Assert.That(remote.Count(i => i.Row.Parent is not null), Is.EqualTo(90));
+        Assert.That(remote.Sum(i => i.Row.Predecessors.Length), Is.EqualTo(80));
+        foreach (var group in Enumerable.Range(0, 10))
+        {
+            var parent = remote.Single(i => i.Row.Title == $"Group {group}").Row.Identity;
+            Assert.That(FakePlanEditor.Load(root).SubOrders[parent], Is.EqualTo(Enumerable.Range(1, 9).Select(i => remote.Single(r => r.Row.Title == $"Task {group}-{i}").Row.Identity)));
+            for (var child = 1; child <= 9; child++)
+            {
+                var row = remote.Single(i => i.Row.Title == $"Task {group}-{child}").Row;
+                Assert.That(row.Parent, Is.EqualTo(parent));
+                Assert.That(row.Predecessors, Is.EqualTo(child == 1 ? Array.Empty<string>() : new[] { remote.Single(i => i.Row.Title == $"Task {group}-{child - 1}").Row.Identity }));
+            }
+        }
+        var sent = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(sent.IndexOf("addSubIssue", StringComparison.Ordinal), Is.LessThan(sent.IndexOf("addBlockedBy", StringComparison.Ordinal)));
+        Assert.That(remote.Select(i => i.Row.Title), Is.EqualTo(preview.Command!.Rows.Select(r => r.Title)), "Project order is already correct after ordered creation.");
+        Assert.That(sent.LastIndexOf("reprioritizeSubIssue", StringComparison.Ordinal), Is.LessThan(sent.IndexOf("addBlockedBy", StringComparison.Ordinal)));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        await Reopen();
+        Assert.That(PlanCsvImport.Prepare(session.Document, file, PlanCsvImportTests.Catalog, Today).IsDuplicate, Is.True);
+    }
+
+    [Test]
+    public async Task NewTasksPublishToEachRowsRepository()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("Default", "acme/repo"), PlanRow.New("Other", "acme/other")]), Today);
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Repository), Is.EqualTo(new[] { "acme/repo", "acme/other" }));
+    }
+
+    [Test]
+    public async Task LostMultiRepositoryCreationResponsesReconcileAtTheirFrozenDestinations()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("Default", "acme/repo"), PlanRow.New("Other", "acme/other")]), Today);
+        Scenario("uncertain-verification");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(FakePlanEditor.Load(root).Issues.Length, Is.EqualTo(2));
+        await Reopen(); Scenario();
+        var resumed = await publisher.PublishAsync(session, Today);
+        Assert.That(resumed.Succeeded, Is.True, resumed.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => (i.Row.Title, i.Row.Repository)), Is.EquivalentTo(new[] { ("Default", "acme/repo"), ("Other", "acme/other") }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task InaccessibleSecondDestinationRejectsAllCreationBeforeDispatch()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("Default", "acme/repo"), PlanRow.New("Other", "acme/other")]), Today);
+        Scenario("other-repository-denied");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(FakePlanEditor.Load(root).Issues, Is.Empty);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        Assert.That(session.Document.Sync.Publish, Is.Null);
+    }
     private static readonly DateOnly Today = new(2026, 10, 5);
     private static readonly ScopedId Project = new(new("github.com", 42), "P1");
     private string root = null!;
@@ -399,7 +711,9 @@ internal sealed class PlanPublisherTests
         if (pairs > 1)
         {
             Scenario("partial"); Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
-            Assert.That(FakePlanEditor.Load(root).Issues.Where((_, i) => i % 2 == 0).All(i => i.Row.Parent is null && i.Row.Predecessors.IsEmpty), Is.True);
+            var partialRows = FakePlanEditor.Load(root).Issues.Select(i => i.Row).ToArray();
+            Assert.That(partialRows.Where((_, i) => i % 2 == 0).Count(r => relationship == PlanField.Parent ? r.Parent is not null : !r.Predecessors.IsEmpty), Is.EqualTo(pairs - 1), "Independent pairs continue after one removal fails.");
+            Assert.That(session.Document.Sync.Failures.Any(f => f.Identity == "I3" && f.Reason == "NotDispatched"), Is.True, "The reversal dependent on the failed removal is not sent.");
             Scenario();
         }
         var result = await publisher.PublishAsync(session, Today); Assert.That(result.Succeeded, Is.True, result.Error);
@@ -645,6 +959,7 @@ internal sealed class PlanPublisherTests
         Assert.That(FakePlanEditor.Load(root).Issues, Has.Length.EqualTo(1));
         Assert.That(session.Document.State.Rows.Single().Identity, Is.EqualTo("I1"));
         Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Contain("addProjectV2ItemById"), "Auto-add cannot complete an addition that was never sent.");
     }
     [TestCase("partial")]
     [TestCase("resource")]
@@ -655,8 +970,8 @@ internal sealed class PlanPublisherTests
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows.Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
         Scenario(fault);
         var first = await publisher.PublishAsync(session, Today);
-        Assert.That(first.Succeeded, Is.False);
-        if (fault == "resource") Assert.That(session.Document.Sync.Failures.Any(w => w.Reason.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal)), Is.True);
+        Assert.That(first.Succeeded, Is.EqualTo(fault != "partial"));
+        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(fault == "partial" ? 1 : 0));
         Scenario();
         var opened = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
@@ -665,8 +980,12 @@ internal sealed class PlanPublisherTests
         Assert.That(result.Succeeded, Is.True, result.Error);
         Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 3), Is.True);
         var lines = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"));
-        using var last = JsonDocument.Parse(lines[^1]);
-        Assert.That(last.RootElement.GetProperty("variables").EnumerateObject().Count(), Is.EqualTo(fault == "after" ? 1 : 2));
+        var sent = lines.SelectMany(line => {
+            using var payload = JsonDocument.Parse(line);
+            return payload.RootElement.GetProperty("variables").EnumerateObject().Select(v => v.Value.GetProperty("itemId").GetString()).ToArray();
+        }).ToArray();
+        Assert.That(sent.Count(id => id == "T-I1"), Is.EqualTo(1), "Successful siblings must not be resent.");
+        Assert.That(sent.Count(id => id == "T-I2"), Is.EqualTo(fault == "after" ? 1 : 2));
     }
     [Test]
     public async Task VerificationMismatchStaysPendingAndIsResent()
@@ -859,15 +1178,22 @@ internal sealed class PlanPublisherTests
     }
     private sealed class CountingRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
+        private int active;
+        public int MaximumConcurrent { get; private set; }
         public int Count { get; private set; }
         public List<DateTimeOffset> Started { get; } = [];
         public Action? RateLimitObserved { get; set; }
         public async Task<GhProcessResult> RunAsync(GhCommand command, CancellationToken cancellationToken = default)
         {
             Count++; Started.Add(DateTimeOffset.UtcNow);
-            var result = await inner.RunAsync(command, cancellationToken);
-            if (result.StandardOutput.StartsWith("HTTP/2 429", StringComparison.Ordinal)) RateLimitObserved?.Invoke();
-            return result;
+            MaximumConcurrent = Math.Max(MaximumConcurrent, Interlocked.Increment(ref active));
+            try
+            {
+                var result = await inner.RunAsync(command, cancellationToken);
+                if (result.StandardOutput.StartsWith("HTTP/2 429", StringComparison.Ordinal)) RateLimitObserved?.Invoke();
+                return result;
+            }
+            finally { Interlocked.Decrement(ref active); }
         }
     }
 }

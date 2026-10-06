@@ -44,6 +44,48 @@ internal sealed class PlanWorkspace(PlanStore store)
         }
     }
     public static PlanWorkspace ForUser() => new(PlanStore.ForUser());
+    public async Task<PlanCsvPreview> PreviewCsv(PlanCsvFile file, CancellationToken token = default)
+    {
+        var session = Session ?? throw new InvalidOperationException("Projectを開いてください。");
+        if (Service is null || Context is null || session.Document.Project.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
+        if (!file.Errors.IsEmpty) return new(file.Errors, null, false);
+        using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
+        var repositories = new List<PlanCsvRepository>();
+        foreach (var name in file.Rows.Select(r => r.Repository.Length == 0 ? session.Document.State.Settings.DefaultRepository ?? "" : r.Repository).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!PlanOperations.Repository(name)) continue;
+            var parts = name.Split('/');
+            var people = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            string? after = null; var cursors = new HashSet<string>();
+            do
+            {
+                var response = await lease.SendAsync(GhProjectsBoards.App.GitHub.ApiRequest.GraphQl(
+                    "query PlanCsvRepository($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){nameWithOwner hasIssuesEnabled isArchived viewerCanCreateIssues assignableUsers(first:100,after:$after){nodes{id login} pageInfo{hasNextPage endCursor}}}}",
+                    new { owner = parts[0], name = parts[1], after }), token);
+                if (response.Failure == GhProjectsBoards.App.GitHub.FailureKind.NotFoundOrInaccessible ||
+                    response.Failure == GhProjectsBoards.App.GitHub.FailureKind.GraphQl &&
+                    response.Data is { } unavailable && unavailable.TryGetProperty("data", out var unavailableData) &&
+                    unavailableData.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                    unavailableData.TryGetProperty("repository", out var unavailableRepository) && unavailableRepository.ValueKind == System.Text.Json.JsonValueKind.Null &&
+                    response.GraphQlErrors.Count > 0 && response.GraphQlErrors.All(code => code is "NOT_FOUND" or "FORBIDDEN")) break;
+                if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("CSVのリポジトリと担当者を確認できません。");
+                var repository = body.GetProperty("data").GetProperty("repository");
+                if (repository.ValueKind == System.Text.Json.JsonValueKind.Null) break;
+                if (!repository.GetProperty("hasIssuesEnabled").GetBoolean() || repository.GetProperty("isArchived").GetBoolean() || !repository.GetProperty("viewerCanCreateIssues").GetBoolean()) break;
+                var canonical = repository.GetProperty("nameWithOwner").GetString()!;
+                if (!canonical.Equals(name, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("リポジトリが一致しません。");
+                var connection = repository.GetProperty("assignableUsers");
+                foreach (var person in connection.GetProperty("nodes").EnumerateArray()) people[person.GetProperty("login").GetString()!] = person.GetProperty("id").GetString()!;
+                var page = connection.GetProperty("pageInfo");
+                if (!page.GetProperty("hasNextPage").GetBoolean()) { repositories.Add(new(canonical, people)); break; }
+                after = page.GetProperty("endCursor").GetString();
+                if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after)) throw new InvalidOperationException("担当者の一覧を最後まで取得できません。");
+            } while (true);
+        }
+        token.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("Projectが変更されました。CSVを選び直してください。");
+        return PlanCsvImport.Prepare(session.Document, file, repositories, DateOnly.FromDateTime(DateTime.Today));
+    }
     public async Task Connect(GhProjectsBoards.App.GitHub.GhConnectionService service, CancellationToken token = default)
     {
         await Flush();

@@ -2,6 +2,11 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
+internal sealed class PlanCycleException(string message, IReadOnlyList<string> identities) : ArgumentException(message)
+{
+    public IReadOnlyList<string> Identities { get; } = identities;
+}
+
 internal sealed record PlanTask(string Identity, int RowId)
 {
     public string? Parent { get; init; }

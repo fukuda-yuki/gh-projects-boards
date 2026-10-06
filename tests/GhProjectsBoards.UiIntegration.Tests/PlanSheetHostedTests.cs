@@ -32,7 +32,8 @@ internal sealed class PlanSheetHostedTests
         await Ui.BeginTest();
         clipboardReader = null; clipboardWriter = null;
         root = Path.Combine(Path.GetTempPath(), "ghpb-sheet-" + Guid.NewGuid().ToString("N"));
-        var performance = TestContext.CurrentContext.Test.Properties["Category"].Contains("PlanSheetPerformance");
+        var performance = TestContext.CurrentContext.Test.Properties["Category"].Contains("PlanSheetPerformance")
+            || TestContext.CurrentContext.Test.MethodName == nameof(LongHorizonDayZoomAndScrollSeparatesLayoutFromCapture);
         if (performance)
         {
             previousMetrics = Environment.GetEnvironmentVariable("GHPB_PLAN_METRICS");
@@ -68,6 +69,66 @@ internal sealed class PlanSheetHostedTests
             }
         finally { Ui.EndTest(); }
     }
+    [Test]
+    public async Task ValidationCalloutFollowsTheProblemAcrossRowRecycling()
+    {
+        await Edit(1, PlanField.Remaining, "invalid");
+        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is not null);
+        PlanSheetRow originalRow = null!;
+        await Ui.Run(() => {
+            originalRow = Ui.Tree(sheet).OfType<PlanSheetRow>().Single(r => r.Identity == "I1");
+            var list = Ui.Find<ListView>("PlanTasks"); list.ScrollIntoView(list.Items[90]);
+        });
+        await Ui.Ready<TextBox>("PlanCell91_Title"); await Ui.Idle();
+        await Ui.Run(() => {
+            // Native recycling may keep a popup anchor cached offscreen. Exercise the
+            // actual DataContextChanged event as well, without calling its handler.
+            originalRow.DataContext = "I91";
+        });
+        await Ui.Run(() => {
+            Assert.That(Ui.Popup<Border>("SheetInputProblem"), Is.Null,
+                "An offscreen problem must not label the task now occupying its recycled editor.");
+            originalRow.ClearValue(FrameworkElement.DataContextProperty);
+            Ui.Click("PlanSheetUndo");
+        });
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("invalid"));
+            var problem = Ui.Popup<Border>("SheetInputProblem"); Assert.That(problem, Is.Not.Null);
+            Assert.That(VisualTreeHelper.GetOpenPopupsForXamlRoot(cell.XamlRoot).Single(p => p.Child == problem).PlacementTarget, Is.SameAs(cell));
+        });
+        await Edit(1, PlanField.Remaining, "8");
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanSheetPerformance")]
+    public async Task LongHorizonDayZoomAndScrollSeparatesLayoutFromCapture(bool capture)
+    {
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1000", PlanField.StartNoEarlierThan, Today.AddYears(20))]), Today);
+        await Ui.Run(() => { sheet.Refresh(); Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "週"; });
+        await Ui.Idle();
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("PlanTasks"); list.ScrollIntoView(list.Items[974]);
+        });
+        await Ui.Ready<TextBox>("PlanCell975_Title");
+        await Ui.Run(() => {
+            var labels = Ui.Tree(sheet).OfType<TextBlock>().Count(t =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineLabel", StringComparison.Ordinal));
+            var bars = Ui.Tree(sheet).OfType<Rectangle>().Count(t =>
+                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanBar", StringComparison.Ordinal));
+            Ui.Trace($"[HORIZON layout] capture={capture} milliseconds={timer.Elapsed.TotalMilliseconds:F1} days={sheet.DayCount} realizedRows={sheet.Realized.Count} labels={labels} bars={bars} viewport={sheet.ChartViewport:F1}");
+            Assert.That(sheet.DayCount, Is.GreaterThan(7000));
+            Assert.That(labels, Is.InRange(2, (int)Math.Ceiling(sheet.ChartViewport / sheet.DayWidth) + 1));
+            Assert.That(bars, Is.InRange(1, 100));
+        });
+        if (capture) await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "long-horizon-day"));
+        Ui.Trace($"[HORIZON complete] capture={capture} milliseconds={timer.Elapsed.TotalMilliseconds:F1}");
+    }
+
     [TestCase(false), TestCase(true), Category("PlanSheetReview4")]
     public async Task SheetPendingInputSurvivesLeavingTheAcceptedFilter(bool redo)
     {

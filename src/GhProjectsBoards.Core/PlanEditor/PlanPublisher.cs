@@ -9,6 +9,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPublishReview? Review);
 internal sealed class PlanPublisher(GhConnectionService service, ConnectionContext context)
 {
+    public List<int> EffectiveBatchSizes { get; } = [];
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -74,6 +75,16 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         return PlanSnapshot.From(await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token).ConfigureAwait(false), document.State.Settings);
     }
     private static bool Expected(Exception ex) => ex is InvalidOperationException or ArgumentException or IOException or OperationCanceledException or JsonException or KeyNotFoundException or FormatException or OverflowException;
+    private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token)
+    {
+        var created = session.Document.Sync.Publish?.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).Select(w => w.ResultId!).ToArray() ?? [];
+        for (var attempt = 0; ; attempt++)
+        {
+            var remote = await Read(session, lease, token).ConfigureAwait(false);
+            if (attempt == 3 || created.All(remote.Items.ContainsKey)) return remote;
+            await Task.Delay(TimeSpan.FromSeconds(1), token).ConfigureAwait(false);
+        }
+    }
     private static void RequireSave(PlanSaveResult save) { if (!save.Succeeded) throw new IOException(save.Error); }
     private static string Failure(ApiResult response, string alias)
     {
@@ -108,7 +119,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             return write with { State = rejected ? PlanWriteState.Failed : PlanWriteState.Dispatched, Error = Failure(response, alias) };
         }).ToImmutableArray();
     }
-    private static JsonNode ResolveInput(PlanWrite write, PlanPublishProgress progress, PlanRemoteSnapshot remote, string? repositoryId)
+    private static JsonNode ResolveInput(PlanWrite write, PlanPublishProgress progress, PlanRemoteSnapshot remote, IReadOnlyDictionary<string, string> repositories)
     {
         var ids = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).ToDictionary(w => w.Identity, w => w.ResultId!);
         var items = remote.Items.ToDictionary();
@@ -119,7 +130,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             if (node is JsonArray array) return new JsonArray(array.Select(n => Resolve(n?.DeepClone(), identifier)).ToArray());
             if (identifier && node is JsonValue value && value.TryGetValue<string>(out var text))
             {
-                if (text.StartsWith("repository:", StringComparison.Ordinal)) return JsonValue.Create(repositoryId ?? throw new InvalidOperationException("リポジトリを確認できません。"));
+                if (text.StartsWith("repository:", StringComparison.Ordinal)) return JsonValue.Create(repositories.GetValueOrDefault(text[11..]) ?? throw new InvalidOperationException("リポジトリを確認できません。"));
                 if (text.StartsWith("item:", StringComparison.Ordinal)) return JsonValue.Create(items.GetValueOrDefault(text[5..]) ?? throw new InvalidOperationException("Project への追加が完了していません。"));
                 if (text.StartsWith("local:", StringComparison.Ordinal)) return JsonValue.Create(ids.GetValueOrDefault(text) ?? throw new InvalidOperationException("Issue の作成が完了していません。"));
             }
@@ -127,17 +138,28 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         }
         return Resolve(JsonNode.Parse(write.Input))!;
     }
-    private async Task<string?> Repository(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token)
+    private static string CreationRepository(PlanWrite write)
     {
-        var repository = session.Document.State.Settings.DefaultRepository;
-        if (repository is null) return null;
+        var value = JsonNode.Parse(write.Input)!["repositoryId"]!.GetValue<string>();
+        if (!value.StartsWith("repository:", StringComparison.Ordinal) || !PlanOperations.Repository(value[11..])) throw new InvalidOperationException("発行先リポジトリが不正です。");
+        return value[11..];
+    }
+    private async Task<Dictionary<string, string>> Repositories(IEnumerable<PlanWrite> writes, GhConnectionService.OperationLease lease, CancellationToken token)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in writes.Where(w => w.Stage == PlanPublishStage.Create).Select(CreationRepository).Distinct(StringComparer.OrdinalIgnoreCase))
+            result.Add(name, await Repository(name, lease, token).ConfigureAwait(false));
+        return result;
+    }
+    private async Task<string> Repository(string repository, GhConnectionService.OperationLease lease, CancellationToken token)
+    {
         var parts = repository.Split('/');
         var response = await lease.SendAsync(ApiRequest.GraphQl("query PlanPublishRepository($owner:String!,$name:String!){repository(owner:$owner,name:$name){id nameWithOwner hasIssuesEnabled isArchived viewerCanCreateIssues}}", new { owner = parts[0], name = parts[1] }), token);
         if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("リポジトリを取得できません。");
         var repo = body.GetProperty("data").GetProperty("repository");
         if (repo.ValueKind != JsonValueKind.Object || !repo.GetProperty("hasIssuesEnabled").GetBoolean() || repo.GetProperty("isArchived").GetBoolean() || !repo.GetProperty("viewerCanCreateIssues").GetBoolean() ||
             !string.Equals(repo.GetProperty("nameWithOwner").GetString(), repository, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Issue を作成できません。");
-        return repo.GetProperty("id").GetString();
+        return repo.GetProperty("id").GetString() ?? throw new InvalidOperationException("リポジトリの識別子がありません。");
     }
     private static async Task<string?> FindCreation(PlanWrite write, string repositoryId, GhConnectionService.OperationLease lease, CancellationToken token)
     {
@@ -179,10 +201,10 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         PlanPublishPlan.Validate(progress, session.Document);
         var uncertain = progress.Writes.Where(w => w.Stage == PlanPublishStage.Create && w.State == PlanWriteState.Dispatched).ToArray();
         if (uncertain.Length == 0) return;
-        var repositoryId = await Repository(session, lease, token).ConfigureAwait(false);
+        var repositories = await Repositories(uncertain, lease, token).ConfigureAwait(false);
         foreach (var write in uncertain)
         {
-            var id = await FindCreation(write, repositoryId!, lease, token).ConfigureAwait(false);
+            var id = await FindCreation(write, repositories[CreationRepository(write)], lease, token).ConfigureAwait(false);
             progress = progress with { Writes = progress.Writes.Select(w => w.Key == write.Key ? w with
                 { State = id is null ? PlanWriteState.Pending : PlanWriteState.Succeeded, ResultId = id, Error = null } : w).ToImmutableArray() };
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
@@ -225,7 +247,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             while (session.Document.Sync.NotBefore is { } deadline && deadline > DateTimeOffset.UtcNow)
                 await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(1, (deadline - DateTimeOffset.UtcNow).TotalMilliseconds)), token).ConfigureAwait(false);
             using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
-            CreationWait = TimeSpan.Zero; CreationPhaseStarted = null;
+            CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
             progressReporter?.Report("最新情報の確認");
             var remote = await Reconcile(session, lease, today, token).ConfigureAwait(false);
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
@@ -234,14 +256,14 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 if (!session.Document.Sync.Conflicts.IsEmpty || !session.Document.Sync.Unavailable.IsEmpty)
                     return new(false, "競合を解決してください。", review);
                 var progress = session.Document.Sync.Publish;
-                string? repositoryId = null;
+                IReadOnlyDictionary<string, string> repositories = new Dictionary<string, string>();
                 if (progress is null)
                 {
                     var run = Guid.NewGuid().ToString("N");
                     var planned = PlanPublishPlan.Build(session.Document, remote, today, run);
                     review ??= planned;
                     var creates = planned.Writes.Any(w => w.Stage == PlanPublishStage.Create);
-                    if (creates) repositoryId = await Repository(session, lease, token).ConfigureAwait(false);
+                    if (creates) repositories = await Repositories(planned.Writes, lease, token).ConfigureAwait(false);
                     var writes = creates ? planned.Writes.Where(w => w.Stage is PlanPublishStage.Create or PlanPublishStage.Add).ToImmutableArray() : planned.Writes;
                     if (writes.IsEmpty)
                     {
@@ -252,7 +274,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
                 }
                 else if (progress.Writes.Any(w => w.Stage == PlanPublishStage.Create && w.ResultId is null))
-                    repositoryId = await Repository(session, lease, token).ConfigureAwait(false);
+                    repositories = await Repositories(progress.Writes, lease, token).ConfigureAwait(false);
                 var creating = progress.Writes.Any(w => w.Stage == PlanPublishStage.Create);
                 async Task Save(IEnumerable<PlanWrite> updates)
                 {
@@ -260,7 +282,8 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     progress = progress with { Writes = progress.Writes.Select(w => byKey.GetValueOrDefault(w.Key) ?? w).ToImmutableArray() };
                     RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
                 }
-                foreach (var group in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
+                var reducedLimits = new Dictionary<PlanPublishStage, int>();
+                async Task SendBatch(ImmutableArray<PlanWrite> group)
                 {
                     token.ThrowIfCancellationRequested();
                     progressReporter?.Report(group[0].Stage switch {
@@ -273,7 +296,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     var declarations = new List<string>(); var selections = new List<string>();
                     for (var i = 0; i < group.Length; i++)
                     {
-                        variables["v" + i] = ResolveInput(group[i], progress, remote, repositoryId);
+                        variables["v" + i] = ResolveInput(group[i], progress, remote, repositories);
                         declarations.Add("$v" + i + ":" + group[i].InputType + "!");
                         selections.Add("w" + i + ":" + group[i].Mutation + "(input:$v" + i + "){" + group[i].Selection + "}");
                     }
@@ -290,26 +313,82 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     }
                     await Save(group.Select(w => w with { State = PlanWriteState.Dispatched, Error = null }));
                     var request = ApiRequest.GraphQl("mutation PlanPublish(" + string.Join(',', declarations) + "){" + string.Join(' ', selections) + "}", variables);
+                    EffectiveBatchSizes.Add(group.Length);
                     var response = await lease.SendAsync(request, token).ConfigureAwait(false);
                     var results = ReadBatch(group, response);
                     await Save(results);
+                    if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
+                    {
+                        RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = DateTimeOffset.UtcNow + delay }).ConfigureAwait(false));
+                        await Task.Delay(delay, token).ConfigureAwait(false);
+                    }
                     foreach (var already in results.Where(w => w.Stage == PlanPublishStage.Add && w.Error == "AlreadyPresent: Content already exists in this project"))
                     {
                         var issue = progress.Writes.Single(w => w.Identity == already.Identity && w.Stage == PlanPublishStage.Create).ResultId!;
                         var item = await FindProjectItem(issue, session.Document.Project.NodeId, lease, token).ConfigureAwait(false);
                         if (item is not null) await Save([already with { State = PlanWriteState.Succeeded, ResultId = item, Error = null }]);
                     }
-                    if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
+                    var uncertainLinks = results.Where(w => w.State != PlanWriteState.Succeeded &&
+                        w.Mutation is "addSubIssue" or "removeSubIssue" or "addBlockedBy" or "removeBlockedBy" &&
+                        w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) != true).ToArray();
+                    if (uncertainLinks.Length > 0)
                     {
-                        RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = DateTimeOffset.UtcNow + delay }).ConfigureAwait(false));
-                        await Task.Delay(delay, token).ConfigureAwait(false);
+                        var observed = await Read(session, lease, token).ConfigureAwait(false);
+                        await Save(uncertainLinks.Where(w => PlanVerification.Verify(w, progress, observed, session.Document.State.Settings))
+                            .Select(w => w with { State = PlanWriteState.Succeeded, Error = null }));
                     }
-                    if (progress.Writes.Any(w => group.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
+                    var limited = results.Where(w => w.State != PlanWriteState.Succeeded &&
+                        w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true).ToArray();
+                    if (group.Length > 1 && limited.Length > 0)
+                    {
+                        var reduced = Math.Max(1, group.Length / 2);
+                        reducedLimits[group[0].Stage] = Math.Min(reducedLimits.GetValueOrDefault(group[0].Stage, int.MaxValue), reduced);
+                        // Resolve uncertain creation by its marker before retrying even a resource-limit response.
+                        if (group[0].Stage == PlanPublishStage.Create)
+                        {
+                            await ReconcileCreations(session, lease, token).ConfigureAwait(false);
+                            progress = session.Document.Sync.Publish!;
+                            limited = limited.Select(w => progress.Writes.Single(p => p.Key == w.Key))
+                                .Where(w => w.State is PlanWriteState.Pending or PlanWriteState.Failed).ToArray();
+                        }
+                        foreach (var part in limited.Chunk(Math.Max(1, group.Length / 2)))
+                            await SendBatch(part.ToImmutableArray()).ConfigureAwait(false);
+                    }
+                }
+                foreach (var batch in PlanPublishPlan.Batches(progress.Writes.Where(w => w.State != PlanWriteState.Succeeded)))
+                {
+                    var ready = ImmutableArray.CreateBuilder<PlanWrite>();
+                    foreach (var write in batch)
+                    {
+                        var earlier = progress.Writes.TakeWhile(w => w.Key != write.Key);
+                        var input = JsonNode.Parse(write.Input)!;
+                        var blocked = write.Stage >= PlanPublishStage.Fields && !remote.Items.ContainsKey(write.Identity);
+                        blocked |= earlier.Any(w => w.State != PlanWriteState.Succeeded &&
+                            (write.Stage == PlanPublishStage.Add && w.Identity == write.Identity && w.Stage == PlanPublishStage.Create ||
+                             write.Mutation == "addSubIssue" && w.Mutation == "removeSubIssue" && (w.Identity == write.Identity || w.Identity == input["issueId"]?.GetValue<string>()) ||
+                             write.Mutation == "addBlockedBy" && w.Mutation == "removeBlockedBy" && (w.Identity == write.Identity || w.Identity == input["blockingIssueId"]?.GetValue<string>()) ||
+                             write.Mutation == "reprioritizeSubIssue" && w.Mutation == "addSubIssue" &&
+                                (w.Identity == write.Identity || w.Identity == input["afterId"]?.GetValue<string>() || w.Identity == input["beforeId"]?.GetValue<string>()) ||
+                             write.Stage == PlanPublishStage.Order && w.Stage == PlanPublishStage.Order && input["afterId"]?.GetValue<string>() == "item:" + w.Identity));
+                        if (!blocked)
+                            try { ResolveInput(write, progress, remote, repositories); }
+                            catch (InvalidOperationException) { blocked = true; }
+                        if (blocked) await Save([write with { State = PlanWriteState.Pending, Error = "NotDispatched" }]);
+                        else ready.Add(write);
+                    }
+                    var remainingReady = ready.ToImmutable();
+                    while (!remainingReady.IsEmpty)
+                    {
+                        var size = Math.Min(remainingReady.Length, reducedLimits.GetValueOrDefault(batch[0].Stage, remainingReady.Length));
+                        await SendBatch(remainingReady.Take(size).ToImmutableArray()).ConfigureAwait(false);
+                        remainingReady = remainingReady.RemoveRange(0, size);
+                    }
+                    if (batch[0].Stage == PlanPublishStage.Create && progress.Writes.Any(w => batch.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
                 }
 
                 progressReporter?.Report("検証");
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
-                remote = await Read(session, lease, token).ConfigureAwait(false);
+                remote = await ReadMemberships(session, lease, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
                 if (!creating || session.Document.Sync.Publish is not null || !session.Document.Sync.Failures.IsEmpty)
                     return Result(session, today, review);

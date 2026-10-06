@@ -20,7 +20,8 @@ internal static class PlanVerification
         var identity = Id(write.Identity)!;
         var row = remote.Baseline.Rows.SingleOrDefault(r => r.Identity == identity);
         if (write.Stage == PlanPublishStage.Create) return write.ResultId is not null;
-        if (write.Stage == PlanPublishStage.Add) return remote.Items.ContainsKey(identity);
+        // An Auto-add membership still leaves this publisher's unsent addition pending.
+        if (write.Stage == PlanPublishStage.Add) return write.State != PlanWriteState.Pending && remote.Items.ContainsKey(identity);
         if (row is null) return false;
         var input = JsonNode.Parse(write.Input)!;
         string? Text(string key) => input[key]?.GetValue<string>();

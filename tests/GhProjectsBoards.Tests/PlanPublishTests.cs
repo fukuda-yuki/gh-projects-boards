@@ -179,16 +179,21 @@ internal sealed class PlanPublishTests
         Assert.That(plan.Writes, Has.Length.EqualTo(4));
         Assert.That(plan.Changes.All(c => c.After == "\"2026-10-05\""), Is.True);
     }
-    [TestCase(PlanPublishStage.Fields, 49, 1)]
-    [TestCase(PlanPublishStage.Fields, 50, 1)]
-    [TestCase(PlanPublishStage.Fields, 51, 2)]
-    [TestCase(PlanPublishStage.Create, 9, 1)]
-    [TestCase(PlanPublishStage.Create, 10, 1)]
-    [TestCase(PlanPublishStage.Create, 11, 2)]
-    [TestCase(PlanPublishStage.Add, 11, 2)]
-    public void BatchesRespectThePublishedLimits(PlanPublishStage stage, int count, int batches)
+    [TestCase(PlanPublishStage.Fields, 49, 1, "number")]
+    [TestCase(PlanPublishStage.Fields, 50, 1, "number")]
+    [TestCase(PlanPublishStage.Fields, 51, 2, "number")]
+    [TestCase(PlanPublishStage.Fields, 51, 2, "date")]
+    [TestCase(PlanPublishStage.Fields, 11, 2, "mixed")]
+    [TestCase(PlanPublishStage.Create, 9, 1, "")]
+    [TestCase(PlanPublishStage.Create, 10, 1, "")]
+    [TestCase(PlanPublishStage.Create, 11, 2, "")]
+    [TestCase(PlanPublishStage.Add, 11, 2, "")]
+    public void BatchesRespectThePublishedLimits(PlanPublishStage stage, int count, int batches, string values)
     {
-        var writes = Enumerable.Range(0, count).Select(i => new PlanWrite(i.ToString(), "I"+i, stage, "mutation", "Input", "{}", "id")).ToArray();
+        var writes = Enumerable.Range(0, count).Select(i => new PlanWrite(i.ToString(), "I" + i, stage,
+            stage == PlanPublishStage.Fields ? "updateProjectV2ItemFieldValue" : stage == PlanPublishStage.Create ? "createIssue" : "addProjectV2ItemById", "Input",
+            stage != PlanPublishStage.Fields ? "{}" : values == "date" ? "{\"value\":{\"date\":\"2026-10-07\"}}" :
+            values == "mixed" && i % 2 == 1 ? "{\"value\":{\"singleSelectOptionId\":\"done\"}}" : "{\"value\":{\"number\":8}}", "id")).ToArray();
         var actual = PlanPublishPlan.Batches(writes).ToArray();
         Assert.That(actual.Length, Is.EqualTo(batches));
         Assert.That(actual.SelectMany(b => b), Is.EqualTo(writes));

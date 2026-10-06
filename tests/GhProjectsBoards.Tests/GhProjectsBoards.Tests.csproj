@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Fixtures/JapanHolidays.csv" />
+    <EmbeddedResource Include="Fixtures/Phase9Snapshot2.json" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" PrivateAssets="all" />
     <PackageReference Include="NUnit" Version="4.6.1" PrivateAssets="all" />

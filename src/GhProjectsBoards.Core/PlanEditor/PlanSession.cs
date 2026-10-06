@@ -319,6 +319,12 @@ internal sealed class PlanSession
             PlanRow Row(PlanRow row)
             {
                 var observed = promoted.ContainsKey(row.Identity) ? remote.Baseline.Rows.Single(r => r.Identity == Id(row.Identity)) : null;
+                if (observed is not null)
+                {
+                    foreach (var field in PlanValues.RowFields.Where(f => f is not (PlanField.Repository or PlanField.Title or PlanField.Parent or PlanField.Predecessors or PlanField.Closed)))
+                        if (PlanValues.Get(row, field) is "null" or "[]" or "false")
+                            row = PlanValues.Set(row, field, PlanValues.Get(observed, field));
+                }
                 return row with { Identity = Id(row.Identity), Parent = row.Parent is null ? null : Id(row.Parent),
                     Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed };
             }
@@ -336,12 +342,17 @@ internal sealed class PlanSession
             };
             var undo = histories.Skip(barrier + 1).Select(Promote).ToImmutableArray();
             var redo = checkpoint.Redo.Select(Promote).ToImmutableArray();
-            var writes = progress.Writes.Select(w => PlanVerification.Verify(w, progress, remote, document.State.Settings)
+            var writes = progress.Writes.Select(w => w.State == PlanWriteState.Pending
+                ? w with { Error = "NotDispatched" }
+                : PlanVerification.Verify(w, progress, remote, document.State.Settings)
                 ? w with { State = PlanWriteState.Succeeded, Error = null }
-                : w with { State = w.Stage == PlanPublishStage.Create && w.State == PlanWriteState.Dispatched ? w.State : PlanWriteState.Failed, Error = w.Error ?? "VerificationMismatch" }).ToImmutableArray();
+                : w with { State = w.Stage == PlanPublishStage.Create && w.State == PlanWriteState.Dispatched ? w.State : PlanWriteState.Failed,
+                    Error = w.Error ?? "VerificationMismatch" }).ToImmutableArray();
             // Keep the immutable progress only while an operation is unresolved; its local identities remain lookup keys.
+            var created = writes.Where(w => w.Stage == PlanPublishStage.Create && w.ResultId is not null).Select(w => w.Identity).ToHashSet(StringComparer.Ordinal);
             var unresolvedCreation = writes.Any(w => w.Stage == PlanPublishStage.Create &&
-                (w.State == PlanWriteState.Dispatched || w.ResultId is not null && !remote.Items.ContainsKey(w.ResultId)));
+                (w.State == PlanWriteState.Dispatched || w.ResultId is not null && !remote.Items.ContainsKey(w.ResultId))) ||
+                writes.Any(w => w.Stage == PlanPublishStage.Add && w.State != PlanWriteState.Succeeded && created.Contains(w.Identity));
             var remaining = unresolvedCreation ? progress with { Writes = writes } : null;
             var failures = writes.Where(w => w.State != PlanWriteState.Succeeded).Select(w => new PlanPublishFailure(Id(w.Identity),
                 PlanVerification.Field(w, document.State.Settings), w.Error ?? "NotDispatched")).DistinctBy(f => (f.Identity, f.Field)).ToImmutableArray();

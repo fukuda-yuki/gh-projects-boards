@@ -70,11 +70,10 @@ internal static class PlanPublishPlan
             if (isNew)
             {
                 if (string.IsNullOrWhiteSpace(row.Title)) throw new InvalidOperationException("タイトルを入力してください。");
-                if (!string.Equals(row.Repository, document.State.Settings.DefaultRepository, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("新規タスクのリポジトリを既定のリポジトリに合わせてください。");
-                if (!PlanOperations.Repository(document.State.Settings.DefaultRepository)) throw new InvalidOperationException("既定のリポジトリを設定してください。");
+                if (!PlanOperations.Repository(row.Repository)) throw new InvalidOperationException("リポジトリを設定してください。");
                 changes.Add(new(row.Identity, PlanField.NewTask, null, row.Title));
                 Add(row.Identity, PlanPublishStage.Create, "createIssue", "CreateIssueInput", new
-                { repositoryId = "repository:" + document.State.Settings.DefaultRepository, title = row.Title,
+                { repositoryId = "repository:" + row.Repository, title = row.Title,
                     body = "<!-- ghpb-plan:" + runId + ":" + row.Identity + " -->" }, "issue { id }");
                 Add(row.Identity, PlanPublishStage.Add, "addProjectV2ItemById", "AddProjectV2ItemByIdInput",
                     new { projectId = document.Project.NodeId, contentId = row.Identity }, "item { id }");
@@ -177,7 +176,10 @@ internal static class PlanPublishPlan
     {
         foreach (var group in writes.GroupBy(w => (w.Stage, Phase: RelationshipPhase(w))).OrderBy(g => g.Key.Stage).ThenBy(g => g.Key.Phase))
         {
-            var size = group.Key.Stage == PlanPublishStage.Order ? 1 : group.Key.Stage is PlanPublishStage.Create or PlanPublishStage.Add ? 10 : 50;
+            var numericDatesOnly = group.Key.Stage == PlanPublishStage.Fields && group.All(w =>
+                w.Mutation == "updateProjectV2ItemFieldValue" && System.Text.Json.Nodes.JsonNode.Parse(w.Input)?["value"] is System.Text.Json.Nodes.JsonObject value &&
+                value.Any(p => p.Key is "number" or "date"));
+            var size = group.Key.Stage == PlanPublishStage.Order ? 1 : numericDatesOnly ? 50 : 10;
             foreach (var batch in group.Chunk(size)) yield return batch.ToImmutableArray();
         }
     }

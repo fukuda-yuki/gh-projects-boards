@@ -12,6 +12,35 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanDocumentTests
 {
+    [TestCase(null, "Backlog")]
+    [TestCase("Done", "Done")]
+    public async Task CreationAdoptionKeepsExplicitStatusAndAdoptsUnsetWorkflowValue(string? local, string expected)
+    {
+        var row = PlanRow.New("New", "acme/work") with { Status = local };
+        var session = await Create(new(Project, new([], []), new([row], new())));
+        var writes = ImmutableArray.Create(
+            new PlanWrite("0", row.Identity, PlanPublishStage.Create, "createIssue", "CreateIssueInput", "{\"repositoryId\":\"repository:acme/work\",\"title\":\"New\",\"body\":\"marker\"}", "issue { id }") { State = PlanWriteState.Succeeded, ResultId = "I1" },
+            new PlanWrite("1", row.Identity, PlanPublishStage.Add, "addProjectV2ItemById", "AddProjectV2ItemByIdInput", PlanJson.Text(new { projectId = "P1", contentId = row.Identity }), "item { id }") { State = PlanWriteState.Succeeded, ResultId = "T1" });
+        await session.SaveSync(session.Document.Sync with { Publish = new(Guid.NewGuid().ToString("N"), writes) });
+        var observed = new PlanRow("I1", "New", "acme/work") { Status = "Backlog" };
+        await session.AcceptPublished(new(new([observed], []), ImmutableDictionary<string, string>.Empty.Add("I1", "T1"), [], 0, 0), Today);
+        Assert.That(session.Document.State.Rows.Single().Status, Is.EqualTo(expected));
+        Assert.That(session.Document.Baseline.Rows.Single().Status, Is.EqualTo("Backlog"));
+    }
+    [Test]
+    public async Task NeverDispatchedWriteRetainsNotSentReasonAfterReadbackAndReopen()
+    {
+        var session = await Create();
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("issue:1", PlanField.Estimate, 16m)]), Today);
+        var write = new PlanWrite("0", "issue:1", PlanPublishStage.Fields, "updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
+            "{\"projectId\":\"P1\",\"itemId\":\"item:issue:1\",\"fieldId\":\"estimate\",\"value\":{\"number\":16}}", "projectV2Item { id }");
+        await session.SaveSync(session.Document.Sync with { Publish = new(Guid.NewGuid().ToString("N"), [write]) });
+        await session.AcceptPublished(new(session.Document.Baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today);
+        session = await Reopen();
+        Assert.That(session.Document.Sync.Failures.Single().Reason, Is.EqualTo("NotDispatched"));
+        Assert.That(session.Document.State.Rows[0].Estimate, Is.EqualTo(16));
+        Assert.That(session.Document.Baseline.Rows[0].Estimate, Is.EqualTo(8));
+    }
     private static readonly DateOnly Today = new(2026, 10, 5);
     private static readonly ScopedId Project = new(new("github.com", 42), "P1");
     private static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true,
@@ -139,7 +168,7 @@ internal sealed class PlanDocumentTests
             "cycle" => new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.Predecessors, new[] { "issue:2" }), new("issue:2", PlanField.Predecessors, new[] { "issue:1" })]),
             _ => new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 0, null, [])] })
         };
-        Assert.Throws<ArgumentException>(() => session.Execute(command, Today));
+        Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
         Assert.That(Text(session.Document), Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.Zero);
         Assert.That(await File.ReadAllBytesAsync(store.FileFor(Project)), Is.EqualTo(bytes));
@@ -391,7 +420,7 @@ internal sealed class PlanDocumentTests
             "duplicate identity" => new InsertPlanRows([local, local]),
             _ => new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.End, Today.AddDays(-1)), new("issue:2", PlanField.Title, "Do not retain")])
         };
-        Assert.Throws<ArgumentException>(() => session.Execute(command, Today));
+        Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
         Assert.That(Text(session.Document), Is.EqualTo(before)); Assert.That(session.UndoCount, Is.Zero);
     }
 

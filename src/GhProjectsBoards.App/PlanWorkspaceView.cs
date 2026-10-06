@@ -187,7 +187,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session);
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)));
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) unpublished.Text = $"未発行 {next.Unpublished.TaskCount} タスク"; };
                 sheets.Add(session.Document.Project, next);
             }
@@ -238,7 +238,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 };
                 settings.Children.Add(combo);
             }
-            settings.Children.Add(Button("不足する日程列を追加", "PlanAddFields", async () => {
+            if (!session.Document.Baseline.Columns.Any(c => c.Name == "開始日指定" && c.DataType == "DATE") ||
+                !session.Document.Baseline.Columns.Any(c => c.Name == "日程固定" && c.DataType == "SINGLE_SELECT"))
+                settings.Children.Add(Button("不足する日程列を追加", "PlanAddFields", async () => {
                 var result = await new PlanPublisher(workspace.Service!, workspace.Context!).AddSchedulingFieldsAsync(session, Today, OperationToken);
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
@@ -382,8 +384,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             var picker = new FileOpenPicker();
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
-            picker.FileTypeFilter.Add(purpose == "holiday" ? ".csv" : ".json");
-            return (await picker.PickSingleFileAsync())?.Path;
+            picker.FileTypeFilter.Add(purpose is "holiday" or "csv" ? ".csv" : ".json");
+            return (await picker.PickSingleFileAsync().AsTask(purpose == "csv" ? OperationToken : CancellationToken.None))?.Path;
         }
     }
 }

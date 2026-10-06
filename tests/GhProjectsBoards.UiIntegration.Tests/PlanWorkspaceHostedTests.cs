@@ -15,6 +15,35 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase("VerificationMismatch", "Project への追加を確認できません")]
+    [TestCase("NotDispatched", "まだGitHubへ送信されていません")]
+    public async Task NewIssueReviewUsesProposedValuesAndReadableMembershipFailure(string reason, string text)
+    {
+        await Open();
+        var parent = PlanRow.New("CSV group", "acme/repo");
+        var row = PlanRow.New("CSV task", "acme/repo") with { Estimate = 16, Parent = parent.Identity };
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new InsertPlanRows([parent, row]), DateOnly.FromDateTime(DateTime.Today));
+            await workspace.Session.SaveSync(workspace.Session.Document.Sync with { Failures = [new(row.Identity, PlanField.NewTask, reason)] });
+            Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("CSV task")));
+        await Ui.Run(async () => {
+            var lines = Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text).Where(t => t.Contains("CSV ")).ToArray();
+            Assert.That(string.Join(" ", lines), Does.Not.Contain("未入力 →").And.Not.Contain(reason).And.Contain(text));
+            Assert.That(lines.Any(t => t.Contains("Estimate") && t.Contains("16")), Is.True);
+            if (reason == "NotDispatched") Assert.That(string.Join(" ", lines), Does.Contain("未送信").And.Not.Contain("発行失敗"));
+            if (reason == "NotDispatched") await RenderedEvidence.Capture(view, "publish-pending-reason");
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Ready<PlanSheetCell>("PlanCell3_Title");
+        await Ui.Run(() => {
+            var help = Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<PlanSheetCell>("PlanCell3_Title"));
+            Assert.That(help, Does.Contain(text).And.Not.Contain(reason));
+            if (reason == "NotDispatched") Assert.That(help, Does.Contain("未送信").And.Not.Contain("発行失敗"));
+        });
+    }
     private static string FakeExecutable
     {
         get
@@ -67,6 +96,71 @@ internal sealed class PlanWorkspaceHostedTests
         else TestContext.Out.WriteLine("Close after failed test: " + problem);
             }
         finally { Ui.EndTest(); }
+    }
+
+    [Test]
+    public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
+    {
+        await Open();
+        var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;
+        var path = Path.Combine(root, "tasks.csv");
+        await File.WriteAllTextAsync(path, "キー,タイトル,見積,担当者,先行タスク,親\na,,8,,,\nb,確認,4,,missing,\n");
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "設計");
+        await Ui.Run(() => { view.PickFile = purpose => { Assert.That(purpose, Is.EqualTo("csv")); return Task.FromResult<string?>(path); }; Ui.Click("PlanSheetCsv"); });
+        await Ui.DialogReady("PlanCsvErrors");
+        await Ui.Run(() => {
+            Assert.That(Ui.DialogText("PlanCsvErrors"), Does.Contain("2行: タイトル").And.Contain("3行: 参照"));
+            Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+        });
+        await File.WriteAllTextAsync(path, "キー,タイトル,見積,リポジトリ\na,準備,8,unknown/repo\nb,確認,4,unknown/repo\n");
+        await Ui.Run(() => Ui.DialogButton("PlanCsvErrors", "PrimaryButton"));
+        await Ui.Until(() => Ui.Dialog("PlanCsvErrors") is not null && Ui.DialogText("PlanCsvErrors").Contains("リポジトリ"));
+        await Ui.Run(() => {
+            Assert.That(Ui.DialogText("PlanCsvErrors"), Does.Contain("2行:").And.Contain("3行:"));
+            Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+        });
+        await File.WriteAllTextAsync(path, "キー,タイトル,見積,担当者,先行タスク,親\np,準備,,,,\na,設計の追加,8,alice,,p\nb,確認,4,alice,a,p\n");
+        await Ui.Run(() => Ui.DialogButton("PlanCsvErrors", "PrimaryButton"));
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Length == 4);
+        await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
+        await Ui.Ready<PlanSheetCell>("PlanCell3_Title");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {unpublishedBeforeCsv + 3} タスク"));
+            Assert.That(Ui.Find<PlanSheetCell>("PlanCell3_Title").Text, Is.EqualTo("設計の追加"));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+            Ui.Click("PlanSheetCsv");
+        });
+        await Ui.DialogReady("PlanCsvDuplicate");
+        await Ui.Run(() => Ui.DialogButton("PlanCsvDuplicate", "CloseButton"));
+        await Ui.Until(() => Ui.Dialog("PlanCsvDuplicate") is null);
+        await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Tree(view).OfType<PlanSheetView>().Single(), "csv-imported-plan"));
+        await Ui.Run(() => Ui.Click("PlanSheetUndo"));
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Length == 1);
+        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); Ui.Click("PlanSheetCsv"); });
+        await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
+        Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ClosingDismissesCsvErrorsWithoutImporting()
+    {
+        await Open();
+        var path = Path.Combine(root, "invalid.csv");
+        File.WriteAllText(path, "キー,タイトル,見積\na,,8\n");
+        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(path); Ui.Click("PlanSheetCsv"); });
+        await Ui.DialogReady("PlanCsvErrors");
+        Task<bool> stop = null!;
+        await Ui.Run(() => { stop = view.StopAsync(); });
+        var completed = await Task.WhenAny(stop, Task.Delay(3000)) == stop;
+        try { Assert.That(completed, Is.True, "Close must dismiss the CSV dialog without requiring another click."); }
+        finally
+        {
+            await Ui.Run(() => Ui.Dialog("PlanCsvErrors")?.Hide());
+            await stop.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        Assert.That(await stop, Is.True);
+        Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test]
@@ -705,6 +799,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
             Assert.That(((GhProjectsBoards.Core.PlanEditor.PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapFixed").SelectedItem).Name, Is.EqualTo("日程固定"));
+            Assert.That(Ui.Tree(view).OfType<Button>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "PlanAddFields"), Is.False);
         });
         Assert.That(FakePlanEditor.Load(root).AddedFields.Length, Is.EqualTo(2));
     }
@@ -928,22 +1023,28 @@ internal sealed class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.Zero);
     }
 
-    [TestCase("connect"), TestCase("open"), TestCase("refresh"), Category("PlanWorkspaceReview")]
+    [TestCase("connect"), TestCase("open"), TestCase("refresh"), TestCase("csv"), Category("PlanWorkspaceReview")]
     public async Task ClosingCancelsTheOwnedGhProcessBeforeItResponds(string stage)
     {
         if (stage == "open") {
             await Ui.Run(() => Ui.Click("PlanConnect"));
             await Ui.Until(() => workspace.Available.Count == 2); await Ui.Idle();
         }
-        else if (stage == "refresh") await Open();
+        else if (stage is "refresh" or "csv") await Open();
+        if (stage == "csv")
+        {
+            var csvPath = Path.Combine(root, "tasks.csv");
+            File.WriteAllText(csvPath, "キー,タイトル,見積\na,A,8\n");
+            await Ui.Run(() => view.PickFile = _ => Task.FromResult<string?>(csvPath));
+        }
         var before = workspace.Session is { } session ? PlanJson.Text(session.Document) : null;
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
             planEditor = true, workspace = true, holdOperation = stage == "connect" ? "auth" : "none",
-            holdQuery = stage == "connect" ? "none" : "ProjectFields"
+            holdQuery = stage == "connect" ? "none" : stage == "csv" ? "PlanCsvRepository" : "ProjectFields"
         }));
         await Ui.Run(() => {
             if (stage == "open") Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
-            else Ui.Click(stage == "connect" ? "PlanConnect" : "PlanRefresh");
+            else Ui.Click(stage == "connect" ? "PlanConnect" : stage == "csv" ? "PlanSheetCsv" : "PlanRefresh");
         });
         var marker = Path.Combine(root, "held-gh.pid");
         int pid = 0;

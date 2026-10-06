@@ -50,6 +50,27 @@ public sealed class InfrastructureTests
     }
     [Test]
     public async Task HungHost() => await Ui.Run(() => new TaskCompletionSource().Task);
+    [Test, Order(0)]
+    public async Task LateFaultAfterDispatchDeadline()
+    {
+        Assert.ThrowsAsync<TimeoutException>(() => Ui.Run(async () => {
+            await release.Task;
+            throw new ArgumentException("Intentional late capture-like failure");
+        }, timeout: TimeSpan.FromMilliseconds(100)));
+        var failures = Ui.FailureCount;
+        release.TrySetResult();
+        await Ui.Run(() => Task.CompletedTask, check: false);
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        await Task.Delay(100);
+        Assert.That(Ui.FailureCount, Is.EqualTo(failures), "A late fault must not be counted again as an unrelated unobserved failure.");
+        // Teardown deliberately reports the originating dispatcher timeout.
+    }
+    [Test]
+    public async Task UnloadedCaptureFailsAtItsCaller()
+    {
+        await Ui.Unmount(button);
+        Assert.ThrowsAsync<InvalidOperationException>(() => Ui.Run(() => RenderedEvidence.Capture(button, "unloaded")));
+    }
     [Test]
     public async Task IncompleteTeardown()
     {

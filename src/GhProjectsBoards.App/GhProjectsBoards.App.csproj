@@ -14,6 +14,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="../../templates/new-tasks.csv" Link="templates/new-tasks.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[1.8.260804001]" />
     <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />

@@ -76,6 +76,7 @@ internal static class PlanOperations
         {
             Require(!string.IsNullOrWhiteSpace(r.Identity) && r.Title is not null && Repository(r.Repository), "行の識別子、タイトルまたはリポジトリが不正です。");
             Unique(r.Assignees); Unique(r.Predecessors);
+            Require(r.CsvSourceHash is null || System.Text.RegularExpressions.Regex.IsMatch(r.CsvSourceHash, "^[a-f0-9]{64}$"), "CSVの識別情報が不正です。");
             Require(r.Assignees.Concat(r.Predecessors).All(x => !string.IsNullOrWhiteSpace(x)) && (r.Parent is null || !string.IsNullOrWhiteSpace(r.Parent)), "関係の識別子が不正です。");
         }
     }
@@ -117,6 +118,11 @@ internal static class PlanOperations
             case InsertPlanRows insert:
                 kind = insert.Kind;
                 Require(kind is PlanOperationKind.Insert or PlanOperationKind.CsvImport, "挿入操作の種類が不正です。");
+                if (kind == PlanOperationKind.CsvImport)
+                {
+                    Require(insert.AllowDuplicateCsv || !insert.Rows.Any(r => r.CsvSourceHash is not null && rows.Any(old => old.CsvSourceHash == r.CsvSourceHash)), "同じCSVは追加済みです。重複して追加するか確認してください。");
+                    state = state with { Settings = state.Settings with { People = state.Settings.People.AddRange(insert.CsvPeople.Where(p => !state.Settings.People.Any(old => old.Identity == p.Identity))) } };
+                }
                 var index = insert.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == insert.Before);
                 Require(index >= 0, "挿入先がありません。");
                 var additions = insert.Rows.Select(r => r with { Repository = r.Repository.Length == 0 ? state.Settings.DefaultRepository ?? "" : r.Repository }).ToArray();

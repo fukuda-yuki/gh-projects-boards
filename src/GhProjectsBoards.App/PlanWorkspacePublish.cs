@@ -60,7 +60,7 @@ internal sealed partial class PlanWorkspaceView
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
-                AddReviewLine(document, caption, field, oldValue, newValue, conflict);
+                AddReviewLine(document, caption, field, oldValue, newValue, conflict, isNew);
             }
         }
         foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!)
@@ -71,7 +71,7 @@ internal sealed partial class PlanWorkspaceView
             var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
             var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
             if (!previous.SequenceEqual(children) || conflict is not null)
-                AddReviewLine(document, Caption(document, parent), PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict);
+                AddReviewLine(document, Caption(document, parent), PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent));
         }
         foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field == PlanField.Order))
             AddReviewLine(document, Caption(document, conflict.Identity), conflict.Field, conflict.Baseline, conflict.Local, conflict);
@@ -88,20 +88,20 @@ internal sealed partial class PlanWorkspaceView
             reviewLines.Items.Add(line);
         }
         foreach (var failure in document.Sync.Failures)
-            reviewLines.Items.Add(Label(Caption(document, failure.Identity) + "  発行失敗: " + failure.Reason));
+            reviewLines.Items.Add(Label(Caption(document, failure.Identity) + (failure.Reason == "NotDispatched" ? "  未送信: " : "  発行失敗: ") + PlanPublishText.Failure(failure)));
         foreach (var identity in document.Sync.Unverified)
             reviewLines.Items.Add(Label(Caption(document, identity) + "  未検証 — 最新の情報に更新で確認"));
         if (reviewLines.Items.Count == 0) reviewLines.Items.Add(Label("未発行の変更はありません"));
         confirmPublish.IsEnabled = !publishing && document.Sync.Conflicts.IsEmpty && document.Sync.Unavailable.IsEmpty;
     }
-    private void AddReviewLine(PlanDocument document, string caption, PlanField field, string? before, string? after, PlanConflict? conflict)
+    private void AddReviewLine(PlanDocument document, string caption, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
         var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var label = document.State.Settings.Columns.FirstOrDefault(c => c.Role == field)?.Name ?? field switch {
             PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
-        line.Children.Add(Label($"{caption}  {label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}"));
+        line.Children.Add(Label(isNew ? $"{caption}  {label}  {ReviewValue(document, field, after)}" : $"{caption}  {label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}"));
         if (field is PlanField.Parent or PlanField.Predecessors &&
             new[] { before, after, conflict?.Remote }.Any(json => ReviewValue(document, field, json).Contains("未取得")))
         {
@@ -151,7 +151,20 @@ internal sealed partial class PlanWorkspaceView
         try
         {
             var reporter = new Progress<string>(stage => { if (IsLoaded && !closing && publishing) { publishStage.Text = "発行中: " + stage; publishStage.Visibility = Visibility.Visible; } });
-            var result = await new PlanPublisher(workspace.Service!, workspace.Context!).PublishAsync(session, Today, OperationToken, reporter);
+            var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var result = await publisher.PublishAsync(session, Today, OperationToken, reporter);
+            if (Environment.GetEnvironmentVariable("GHPB_PUBLISH_METRICS") is { Length: > 0 } metricsPath)
+            {
+                try
+                {
+                    System.IO.File.AppendAllText(metricsPath, JsonSerializer.Serialize(new { utc = DateTimeOffset.UtcNow,
+                        elapsedSeconds = watch.Elapsed.TotalSeconds, result.Succeeded, result.Error,
+                        mutationBatchSizes = publisher.EffectiveBatchSizes, creationWaitSeconds = publisher.CreationWait.TotalSeconds }) + Environment.NewLine);
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException)
+                { System.Diagnostics.Debug.WriteLine("Publish metrics could not be saved: " + ex.Message); }
+            }
             var save = await session.FlushAsync();
             if (!closing)
             {
@@ -176,4 +189,17 @@ internal sealed partial class PlanWorkspaceView
         confirmPublish.IsEnabled = !busy;
         foreach (var button in reviewLines.Items.OfType<StackPanel>().SelectMany(p => p.Children.OfType<Button>())) button.IsEnabled = !busy;
     }
+}
+
+internal static class PlanPublishText
+{
+    internal static string Failure(PlanPublishFailure failure) => failure.Reason switch
+    {
+        "VerificationMismatch" when failure.Field == PlanField.NewTask => "Project への追加を確認できません",
+        "VerificationMismatch" => "GitHubへの反映を確認できません",
+        "NotDispatched" => "まだGitHubへ送信されていません",
+        _ when failure.Reason.IndexOf(": ", StringComparison.Ordinal) is var separator && separator >= 0 => failure.Reason[(separator + 2)..],
+        _ when failure.Reason.Any(c => c > 127 || char.IsWhiteSpace(c)) => failure.Reason,
+        _ => "GitHubへの発行に失敗しました。再発行してください。"
+    };
 }
