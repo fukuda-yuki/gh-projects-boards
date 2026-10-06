@@ -246,6 +246,10 @@ internal static class PlanOperations
     internal static bool IsSummaryEffort(bool summary, PlanField field) => summary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual;
     internal static bool IsLocalConstraint(PlanField field, ProjectPlanSettings settings)
         => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
+    internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent)
+        => document.Sync.NativeOrders.GetValueOrDefault(parent,
+            document.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToImmutableArray())
+            .Where(id => document.State.Rows.Any(r => r.Identity == id)).ToImmutableArray();
     internal static PlanUnpublished Changes(PlanDocument d, DateOnly today)
     {
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
@@ -266,7 +270,8 @@ internal static class PlanOperations
             if (calculated.Start.Value != old.Start) fields.Add(PlanField.Start);
             if (calculated.End.Value != old.End) fields.Add(PlanField.End);
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
-            if (d.Sync.NativeOrders.TryGetValue(r.Identity, out var siblings) && !siblings.Where(id => baseline.ContainsKey(id)).SequenceEqual(d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity))) fields.Add(PlanField.SubIssueOrder);
+            var children = d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity).ToArray();
+            if (children.Length > 1 && !PreviousSiblingOrder(d, r.Identity).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
         return new(result.ToImmutable());

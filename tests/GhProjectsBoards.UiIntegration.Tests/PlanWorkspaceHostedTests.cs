@@ -15,6 +15,29 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task SiblingReviewAndUnpublishedCountAgreeWhenNativeOrderIsAbsent(bool reverse)
+    {
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [
+            state.Issues[0] with { Row = state.Issues[0].Row with { Remaining = null, Estimate = null, Assignees = [] } },
+            new(new("I2", "子A", "acme/repo") { Parent = "I1" }, "", true),
+            new(new("I3", "子B", "acme/repo") { Parent = "I1" }, "", true)] });
+        await Open();
+        await workspace.Session!.SaveSync(workspace.Session.Document.Sync with {
+            NativeOrders = reverse ? ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]) : ImmutableDictionary<string, ImmutableArray<string>>.Empty });
+        await Ui.Ready<TextBox>("PlanCell2_Title");
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell2_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "子Aの変更"; Ui.Click("PlanPublish"); });
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("子A → 子Aの変更")));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(reverse ? 2 : 1));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {(reverse ? 2 : 1)} タスク"));
+            var lines = Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text).ToArray();
+            Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.EqualTo(reverse ? 1 : 0));
+        });
+    }
+
     [TestCase("VerificationMismatch", "Project への追加を確認できません")]
     [TestCase("NotDispatched", "まだGitHubへ送信されていません")]
     public async Task NewIssueReviewUsesProposedValuesAndReadableMembershipFailure(string reason, string text)
@@ -65,7 +88,7 @@ internal sealed class PlanWorkspaceHostedTests
         root = Path.Combine(Path.GetTempPath(), "ghpb-workspace-ui-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-        FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2) { Drafts = 2, PullRequests = 1 });
+        FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2) { Drafts = 2, PullRequests = 1, Redacted = 1, HiddenItems = 1 });
         workspace = new(new(root));
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
@@ -891,7 +914,7 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task SettingsCountsDraftsAndPullRequestsWhileThePlanOnlyShowsIssues()
     {
         await Open(); await Settings();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外  Draft 2 / Pull request 1")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外  Draft 2 / Pull request 1 / 参照できない項目 2")));
         Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
     }
 

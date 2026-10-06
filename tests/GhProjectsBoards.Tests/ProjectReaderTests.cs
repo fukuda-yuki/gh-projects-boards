@@ -12,6 +12,66 @@ internal sealed class ProjectReaderTests
     private static readonly ConnectionScope Scope = new("github.com", 42);
 
     [Test]
+    public async Task CursorCompleteProjectPagesCountUndeliveredAndRedactedItemsAsInaccessible()
+    {
+        // Sandbox reproduction: first:100 delivers 99 then 72 nodes for totalCount 172.
+        // The REDACTED item is node 31 on page one; one additional item is never delivered.
+        var redacted = new { __typename = "ProjectV2Item", id = "PVTI_lAHOBGPKL84BjFYczg-99oA", type = "REDACTED", isArchived = false,
+            project = new { id = "P1" }, content = (object?)null, fieldValues = Page([], 0) };
+        var first = Enumerable.Range(1, 99).Select(n => n == 31 ? (object)redacted : Item("P1", "T" + n, Page([], 0), Issue("I" + n, n))).ToArray();
+        var second = Enumerable.Range(100, 72).Select(n => Item("P1", "T" + n, Page([], 0), Issue("I" + n, n))).ToArray();
+        var boundary = new ProjectBoundary { Override = (query, variables) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", variables.GetProperty("after").ValueKind == JsonValueKind.Null
+                ? Page(first, 172, true, "page-2") : Page(second, 172))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), result.ToString());
+        Assert.That(result.Project!.Items, Has.Count.EqualTo(171));
+        Assert.That(result.Project.Issues, Has.Count.EqualTo(170));
+        var snapshot = GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new());
+        Assert.That(snapshot.InaccessibleCount, Is.EqualTo(2));
+        Assert.That(snapshot.Baseline.Rows, Has.Length.EqualTo(170));
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-redacted-settle-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            var settled = await PlanPublisherLive.ReadSettled(() => Read(boundary), root, _ => Task.CompletedTask);
+            Assert.That(settled.Items.Count, Is.EqualTo(171));
+            using var evidence = JsonDocument.Parse(File.ReadLines(Path.Combine(root, "settling.jsonl")).Last());
+            Assert.That(evidence.RootElement.GetProperty("inaccessible").GetInt32(), Is.EqualTo(2));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task HiddenOnlyProjectPagesFinishAtTheCursorEndWithoutInventingTasks()
+    {
+        var boundary = new ProjectBoundary { Override = (query, variables) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", variables.GetProperty("after").ValueKind == JsonValueKind.Null
+                ? Page([], 1, true, "page-2") : Page([], 1))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(result.Project!.UndeliveredItemCount, Is.EqualTo(1));
+        Assert.That(result.Project.Items, Is.Empty);
+        Assert.That(result.Project.Issues, Is.Empty);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task RedactedItemCompletesTraversalWithoutPlanningOrReadingItsHiddenValues(bool hiddenValues)
+    {
+        var redacted = new { __typename = "ProjectV2Item", id = "redacted", type = "REDACTED", isArchived = false,
+            project = new { id = "P1" }, content = (object?)null,
+            fieldValues = hiddenValues ? null : Page([], 0) };
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([Item("P1"), redacted], 2))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), result.ToString());
+        Assert.That(result.Project!.Items, Has.Count.EqualTo(2));
+        Assert.That(result.Project.Issues, Has.Count.EqualTo(1));
+        Assert.That(result.Project.Items[1].Kind, Is.EqualTo(ProjectItemKind.Unavailable));
+        Assert.That(result.Project.Items[1].Values.All(v => v.Availability == ValueAvailability.Unavailable), Is.True);
+    }
+
+    [Test]
     public async Task SameIssueAcrossProjectsKeepsOneIdentityAndIndependentStatus()
     {
         var boundary = new ProjectBoundary();
@@ -219,7 +279,6 @@ internal sealed class ProjectReaderTests
 
     [TestCase("missing-cursor")]
     [TestCase("null-node")]
-    [TestCase("short-total")]
     [TestCase("changed-total")]
     [TestCase("missing-page-info")]
     public async Task IncompleteTraversalNeverBecomesCompleteOrEmpty(string defect)
@@ -233,7 +292,6 @@ internal sealed class ProjectReaderTests
             {
                 "missing-cursor" => Page([Item("P1")], 2, true),
                 "null-node" => Page([null], 1),
-                "short-total" => Page([Item("P1")], 2),
                 "changed-total" when pageNumber == 1 => Page([Item("P1")], 2, true, "next"),
                 "changed-total" => Page([Item("P1", "T2", Page([], 0), Issue("I2", 2))], 3),
                 _ => new { nodes = new[] { Item("P1") }, totalCount = 1 }

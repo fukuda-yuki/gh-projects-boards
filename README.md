@@ -19,6 +19,8 @@ GHPB_DATA_ROOT must be absolute. Omit it to use the normal per-user root. The ne
 
 ## Offline evaluation
 
+The evaluation launcher defaults to Release. Use `-Configuration Debug` to build or run Debug app and fixture binaries together; keep the same configuration when resuming.
+
 ```powershell
 Set-Location C:\w\g76
 C:\w\g76\scripts\Start-Evaluation.ps1 -NoBuild
@@ -26,7 +28,7 @@ C:\w\g76\scripts\Start-Evaluation.ps1 -NoBuild
 C:\w\g76\scripts\Start-Evaluation.ps1 -NoBuild -Resume -DataRoot '<absolute printed path>'
 ```
 
-Omit `-NoBuild` to build Release with `--no-restore` first. The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then **開発計画**. No network or real account is used. The ordinary app starts with **未発行 0 タスク**, 1,000 tasks, 20 people, hierarchy, predecessors and varied effort. The fixed 状況日 is 2026-10-05; person-U1 has two independent four-hour tasks against four available hours that day while remaining within the Project allowance. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
+Omit `-NoBuild` to build the selected configuration with `--no-restore` first. The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then **開発計画**. No network or real account is used. The ordinary app starts with **未発行 0 タスク**, 1,000 tasks, 20 people, hierarchy, predecessors and varied effort. The fixed 状況日 is 2026-10-05; person-U1 has two independent four-hour tasks against four available hours that day while remaining within the Project allowance. Work is spread across several months; person-U4 has another daily overload and person-U2 exceeds their total allowance. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
 
 For live evaluation, start the ordinary executable using the Build and run command with a **different** data root and real gh. Project 3 already contains the 24-task evaluation plan, Issues #864–#887. Keep those tasks; do not import the CSV again. Refresh it, inspect the plan, and publish only deliberate evaluation changes. Offline and live roots are independent.
 

@@ -7,7 +7,8 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictionary<string, string> Items,
     ImmutableArray<ProjectFieldDefinition> Fields, int DraftCount, int PullRequestCount)
-{ public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
+{ public int InaccessibleCount { get; init; }
+  public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
   public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
   public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class PlanSnapshot
@@ -79,7 +80,8 @@ internal static class PlanSnapshot
         }
         return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)).ToImmutableArray()),
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))
-        { IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
+        { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
+          IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
           PeopleNames = p.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(a => a.Id).ToImmutableDictionary(a => a.Id.NodeId, a => a.Login),
           SubIssueOrders = p.Issues.Values.Where(i => items.ContainsKey(i.Id.NodeId)).ToImmutableDictionary(i => i.Id.NodeId, i => i.Native!.SubIssues.Select(c => c.NodeId).ToImmutableArray()) };
     }

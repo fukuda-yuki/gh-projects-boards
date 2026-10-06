@@ -67,10 +67,10 @@ internal sealed partial class PlanWorkspaceView
             .Concat(document.Sync.Conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
         {
             if (!document.State.Rows.Any(r => r.Identity == parent)) continue;
-            var previous = document.Sync.NativeOrders.GetValueOrDefault(parent, []).Where(id => document.State.Rows.Any(r => r.Identity == id)).ToArray();
+            var previous = PlanOperations.PreviousSiblingOrder(document, parent);
             var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
             var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
-            if (!previous.SequenceEqual(children) || conflict is not null)
+            if (children.Length > 1 && !previous.SequenceEqual(children) || conflict is not null)
                 AddReviewLine(document, Caption(document, parent), PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent));
         }
         foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field == PlanField.Order))

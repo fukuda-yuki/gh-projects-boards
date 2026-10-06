@@ -150,7 +150,7 @@ internal static class PlanPublishPlan
             if (!rows.Any(r => r.Identity == parent)) continue;
             var children = rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
             var previous = remote.SubIssueOrders.GetValueOrDefault(parent, []).Where(id => rows.Any(r => r.Identity == id)).ToImmutableArray();
-            if (previous.SequenceEqual(children)) continue;
+            if (children.Length < 2 || previous.SequenceEqual(children)) continue;
             changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children)));
             for (var i = 0; i < children.Length; i++)
             {

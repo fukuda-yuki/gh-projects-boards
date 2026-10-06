@@ -1,6 +1,6 @@
 #requires -Version 7.0
 [CmdletBinding()]
-param([string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
+param([ValidateSet("Debug", "Release")][string]$Configuration = "Release", [string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not $DataRoot) {
@@ -9,13 +9,13 @@ if (-not $DataRoot) {
 }
 if (-not [IO.Path]::IsPathFullyQualified($DataRoot)) { throw 'DataRoot must be absolute.' }
 $DataRoot = [IO.Path]::GetFullPath($DataRoot)
-$app = Join-Path $repo 'src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe'
-$fixture = Join-Path $repo 'tests/GhProjectsBoards.Tests/bin/Release/net10.0-windows/GhProjectsBoards.Tests.exe'
+$app = Join-Path $repo "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe"
+$fixture = Join-Path $repo "tests/GhProjectsBoards.Tests/bin/$Configuration/net10.0-windows/GhProjectsBoards.Tests.exe"
 if (-not $NoBuild) {
-    & dotnet build (Join-Path $repo 'GhProjectsBoards.sln') -c Release --no-restore
-    if ($LASTEXITCODE -ne 0) { throw 'Release build failed. Restore dependencies separately before retrying.' }
+    & dotnet build (Join-Path $repo 'GhProjectsBoards.sln') -c $Configuration --no-restore
+    if ($LASTEXITCODE -ne 0) { throw 'Build failed. Restore dependencies separately before retrying.' }
 }
-foreach ($file in @($app, $fixture)) { if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing Release executable: $file" } }
+foreach ($file in @($app, $fixture)) { if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing executable: $file" } }
 function IsolatedStart([string]$Executable) {
     $start = [Diagnostics.ProcessStartInfo]::new($Executable)
     $start.UseShellExecute = $false
@@ -41,7 +41,7 @@ if ($Resume) {
 Write-Host "Data root: $DataRoot"
 Write-Host "Offline fake gh: $fake"
 Write-Host '接続 → 開発計画。初期状態は 未発行 0 タスク。状況日は 2026-10-05。'
-Write-Host "Resume: & '$PSCommandPath' -NoBuild -Resume -DataRoot '$DataRoot'"
+Write-Host "Resume: & '$PSCommandPath' -NoBuild -Configuration $Configuration -Resume -DataRoot '$DataRoot'"
 if ($PrepareOnly) { return }
 $start = IsolatedStart $app
 $start.Environment['GHPB_DATA_ROOT'] = $DataRoot

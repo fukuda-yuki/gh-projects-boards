@@ -254,7 +254,7 @@ internal sealed class PlanSession
         {
             var original = checkpoint.Document;
             var merged = PlanMerge.NativeOrder(original, PlanMerge.Merge(original, remote.Baseline), remote.SubIssueOrders);
-            merged = merged with { Sync = merged.Sync with { DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames) } };
+            merged = merged with { Sync = merged.Sync with { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames) } };
             PlanOperations.ValidateDocument(merged, today);
             // Remote changes made by this publish are baseline adoption, not external edits to historical inputs.
             var historyBaseline = remote.Baseline; var historyOrders = remote.SubIssueOrders;
@@ -389,7 +389,7 @@ internal sealed class PlanSession
             undo = RebaseHistory(original, undo, external, orders);
             redo = RebaseHistory(original, redo, external, orders, forward: true);
             var updated = merged with { Baseline = baseline, Sync = merged.Sync with
-                { Publish = remaining, Failures = failures, Unverified = [], NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
+                { Publish = remaining, Failures = failures, Unverified = [], NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
                     Unavailable = missing.Select(r => r.Identity).ToImmutableArray() } };
             PlanOperations.ValidateDocument(updated, today);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated, Undo = undo, Redo = redo };

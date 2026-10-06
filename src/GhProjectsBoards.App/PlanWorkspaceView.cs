@@ -305,7 +305,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Warnings.IsEmpty) error.Text = string.Join("\n", result.Warnings);
             }));
             settings.Children.Add(files);
-            settings.Children.Add(Id(Label($"計画対象外  Draft {session.Document.Sync.DraftCount} / Pull request {session.Document.Sync.PullRequestCount}"), "PlanExcludedCounts"));
+            settings.Children.Add(Id(Label($"計画対象外  Draft {session.Document.Sync.DraftCount} / Pull request {session.Document.Sync.PullRequestCount} / 参照できない項目 {session.Document.Sync.InaccessibleCount}"), "PlanExcludedCounts"));
         }
         finally { rendering = false; }
     }

@@ -17,6 +17,7 @@ internal sealed record PlanSync
     public PlanPublishProgress? Publish { get; init; }
     public ImmutableDictionary<string, string> PeopleNames { get; init; } = ImmutableDictionary<string, string>.Empty;
     public ImmutableDictionary<string, PlanIssueLink> IssueLinks { get; init; } = ImmutableDictionary<string, PlanIssueLink>.Empty;
+    public int InaccessibleCount { get; init; }
     public int DraftCount { get; init; }
     public int PullRequestCount { get; init; }
     public ImmutableArray<PlanConflict> Conflicts { get; init; } = [];

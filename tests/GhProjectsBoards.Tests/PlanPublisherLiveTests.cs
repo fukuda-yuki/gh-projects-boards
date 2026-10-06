@@ -325,12 +325,12 @@ internal static class PlanPublisherLive
             var complete = last.Outcome == ProjectReadOutcome.Complete && last.Project is not null;
             if (!complete) await File.AppendAllTextAsync(Path.Combine(root, "failure.txt"),
                 $"Independent read {observation}, attempt {attempt}: {PlanSnapshot.ReadDiagnostic(last)}" + Environment.NewLine);
-            var membership = complete ? JsonSerializer.Serialize(last.Project!.Items.Select(i => new { i.Id, i.ContentId, i.IsArchived })) : null;
+            var membership = complete ? JsonSerializer.Serialize(new { last.Project!.UndeliveredItemCount, items = last.Project.Items.Select(i => new { i.Id, i.Kind, i.ContentId, i.IsArchived }) }) : null;
             var settled = complete && membership == previous;
             await File.AppendAllTextAsync(Path.Combine(root, "settling.jsonl"), JsonSerializer.Serialize(new
             {
                 observation, attempt, outcome = last.Outcome.ToString(), diagnostic = PlanSnapshot.ReadDiagnostic(last),
-                items = complete ? last.Project!.Items.Count : (int?)null, settled, elapsedSeconds = watch.Elapsed.TotalSeconds
+                items = complete ? last.Project!.Items.Count : (int?)null, inaccessible = complete ? last.Project!.UndeliveredItemCount + last.Project.Items.Count(i => i.Kind == ProjectItemKind.Unavailable) : (int?)null, settled, elapsedSeconds = watch.Elapsed.TotalSeconds
             }) + Environment.NewLine);
             if (settled) return last.Project!;
             previous = membership;

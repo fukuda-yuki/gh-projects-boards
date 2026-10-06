@@ -172,3 +172,11 @@ Use an in-workspace review instead of a modal confirmation wizard. A PMO can clo
 Generate synthetic remote dates with the same Core scheduler and settings used by the app, then seed both the fake endpoint and isolated local document. This avoids presenting automatic date corrections as evaluator edits. Fix the sample status date to 2026-10-05 for repeatable restarts; Resume preserves the local document and fake remote state. The existing test executable supplies fake gh through the child-only PATH, so the product needs no evaluation mode or alternate renderer.
 
 Sub-issue reprioritization uses one move per request, like Project item positioning. Its moves are order-dependent; batching with partial-alias retries can produce a different final order.
+
+## Offline evaluation workload (#76)
+
+The synthetic plan spans several months with spaced work per person, two deliberate daily overloads and one total-allowance overrun. Active working person-days above capacity must remain below 5%, so overloads remain exceptions an evaluator can identify. The status date stays fixed for reproducibility. Native sibling order and calculated dates are seeded on both sides of the offline boundary; initial publication differences are zero. Debug evaluation uses Debug binaries for both the app and fake gh.
+
+## Inaccessible Project membership (#79 / #81)
+
+Project item totalCount can include items that are not returned to the viewer. A valid cursor chain ending at hasNextPage false completes item traversal; the nonnegative difference from delivered unique items counts as inaccessible, together with returned REDACTED items. Do not create placeholder tasks or infer clears from these observations. Other connection completeness checks and item identity/cursor/error validation remain strict. Settings and live-proof read evidence expose the inaccessible count.

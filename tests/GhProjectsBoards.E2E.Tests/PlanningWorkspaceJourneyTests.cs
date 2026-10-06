@@ -23,13 +23,15 @@ public sealed class PlanningWorkspaceJourneyTests
         var root = Path.Combine(artifacts, "planning-workspace-" + Guid.NewGuid().ToString("N"));
         var repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fake)!, "..", "..", "..", "..", ".."));
         var prepare = new ProcessStartInfo("pwsh") { UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
-        foreach (var argument in new[] { "-NoProfile", "-File", Path.Combine(repo, "scripts", "Start-Evaluation.ps1"), "-NoBuild", "-PrepareOnly", "-DataRoot", root }) prepare.ArgumentList.Add(argument);
+        foreach (var argument in new[] { "-NoProfile", "-File", Path.Combine(repo, "scripts", "Start-Evaluation.ps1"), "-NoBuild", "-Configuration", new DirectoryInfo(Path.GetDirectoryName(fake)!).Parent!.Name, "-PrepareOnly", "-DataRoot", root }) prepare.ArgumentList.Add(argument);
         foreach (var name in new[] { "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN" }) prepare.Environment.Remove(name);
         using (var fixture = Process.Start(prepare)!) {
             Assert.That(fixture.WaitForExit(30000), Is.True, "Evaluation preparation must finish.");
             Assert.That(fixture.ExitCode, Is.Zero);
         }
         var isolatedGh = Path.Combine(root, "fake-gh", "bin", "gh.exe");
+        Assert.That(File.ReadAllBytes(Path.Combine(root, "fake-gh", "bin", "GhProjectsBoards.Tests.dll")),
+            Is.EqualTo(File.ReadAllBytes(Path.ChangeExtension(fake, ".dll"))), "Prepared data must use the selected fixture binary.");
         using var dpi = new DesktopDpiScope();
         using var automation = new UIA3Automation();
         for (var launch = 0; launch < 2; launch++)

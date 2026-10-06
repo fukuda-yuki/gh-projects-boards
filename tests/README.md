@@ -121,7 +121,7 @@ PlanCsvImportTests verifies encoding, whole-file validation, line errors, keys/r
 
 ## Offline evaluation fixture
 
-EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 1,000 tasks, 20 people, zero unpublished tasks before/after refresh, daily overload within a Project allowance and refusal to replace an occupied root. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
+EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 1,000 tasks, 20 people, zero unpublished tasks before/after refresh, mostly capacity-respecting work across several months, isolated daily overload within allowance, one total-allowance overrun, native sibling order, and refusal to replace an occupied root. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
 
 ## Execution evidence
 

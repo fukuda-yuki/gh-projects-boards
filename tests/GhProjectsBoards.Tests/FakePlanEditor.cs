@@ -7,7 +7,7 @@ using GhProjectsBoards.Core.PlanEditor;
 namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } }
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -58,6 +58,12 @@ internal static class FakePlanEditor
             value[role is PlanField.Fixed or PlanField.Status ? "optionId" : Type(role) == "NUMBER" ? "number" : "date"] = role == PlanField.Fixed ? JsonValue.Create("fixed") : role == PlanField.Status ? JsonValue.Create(row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : scalar;
             return value;
         }
+        object Children(string identity, int offset = 0)
+        {
+            var children = state.SubOrders.GetValueOrDefault(identity, state.Issues.Where(i => i.Row.Parent == identity).Select(i => i.Row.Identity).ToImmutableArray());
+            return Page(children.Skip(offset).Take(100).Select(id => (object)new { id }), children.Length,
+                offset + 100 < children.Length, offset + 100 < children.Length ? (offset + 100).ToString() : null);
+        }
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
@@ -66,7 +72,7 @@ internal static class FakePlanEditor
                     state = row.Closed ? "CLOSED" : "OPEN", viewerCanUpdate = true, repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
                     assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
-                    subIssues = Page(state.SubOrders.GetValueOrDefault(row.Identity, state.Issues.Where(i => i.Row.Parent == row.Identity).Select(i => i.Row.Identity).ToImmutableArray()).Select(id => (object)new { id }), state.Issues.Count(i => i.Row.Parent == row.Identity)),
+                    subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
                     parent = row.Parent is null ? null : new { id = row.Parent } },
                 fieldValues = Page(fieldRoles.Where(f => PlanValues.Get(row, f) is not ("null" or "false")).Select(f => Value(row, f)), fieldRoles.Count(f => PlanValues.Get(row, f) is not ("null" or "false"))) };
         }
@@ -108,6 +114,12 @@ internal static class FakePlanEditor
             var visible = issue.Added && !(fault == "membership-delay" && state.ReadAttempts < 2);
             node = new { projectItems = Page(visible ? [new { id = "T-" + id, project = new { id = projectId } }] : [], visible ? 1 : 0) };
         }
+        else if (query.Contains("PlanSubIssues"))
+        {
+            var id = variables.GetProperty("id").GetString()!;
+            var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!) : 0;
+            node = new { __typename = "Issue", id, subIssues = Children(id, offset) };
+        }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
                 owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field), fieldRoles.Length) };
@@ -118,8 +130,9 @@ internal static class FakePlanEditor
             object Excluded(string id, string kind, string type) => new { __typename = "ProjectV2Item", id, type, isArchived = false,
                 project = new { id = projectId }, content = new { __typename = kind, id = "content-" + id }, fieldValues = Page([], 0) };
             var nodes = all.Select(Item).Concat(Enumerable.Range(0, state.Drafts).Select(i => Excluded("D" + i, "DraftIssue", "DRAFT_ISSUE")))
-                .Concat(Enumerable.Range(0, state.PullRequests).Select(i => Excluded("PR" + i, "PullRequest", "PULL_REQUEST"))).ToArray();
-            node = new { __typename = "ProjectV2", id = projectId, items = Page(nodes.Skip(offset).Take(100), nodes.Length + (offset == 0 &&
+                .Concat(Enumerable.Range(0, state.PullRequests).Select(i => Excluded("PR" + i, "PullRequest", "PULL_REQUEST")))
+                .Concat(Enumerable.Range(0, state.Redacted).Select(i => (object)new { __typename = "ProjectV2Item", id = "REDACTED" + i, type = "REDACTED", isArchived = false, project = new { id = projectId }, content = (object?)null, fieldValues = Page([], 0) })).ToArray();
+            node = new { __typename = "ProjectV2", id = projectId, items = Page(nodes.Skip(offset).Take(100), nodes.Length + state.HiddenItems + (offset == 0 &&
                 (fault == "churn" && state.ReadAttempts <= faultBatch || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3) ? 1 : 0),
                 offset + 100 < nodes.Length, offset + 100 < nodes.Length ? (offset + 100).ToString() : null) };
         }

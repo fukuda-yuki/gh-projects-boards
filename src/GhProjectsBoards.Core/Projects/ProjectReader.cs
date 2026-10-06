@@ -20,6 +20,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private readonly HashSet<string> valueIds = new(StringComparer.Ordinal);
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
+        private int undeliveredItems;
         private ApiOutcome? interruption;
 
         private async Task<ApiResult> SendAsync(string query, object variables)
@@ -74,7 +75,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     Fields = fields.Values.ToArray(),
                     Issues = new ReadOnlyDictionary<ScopedId, IssueReadModel>(issues),
                     Items = items.Values.Select(item => BuildItem(item, complete)).ToArray(),
-                    FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete
+                    FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems
                 };
             return new(outcome, project, problems.ToArray());
         }
@@ -158,6 +159,13 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             }
             else if (content.ValueKind == JsonValueKind.Undefined)
                 problems.Add(new(ReadProblemKind.InvalidResponse, "content"));
+            // An inaccessible item is still a member of the Project connection. Its
+            // hidden field connection cannot establish empty values or block other items.
+            if (item.Kind == ProjectItemKind.Unavailable && content.ValueKind == JsonValueKind.Null)
+            {
+                item.Complete = true;
+                return;
+            }
             item.Complete = await WalkAsync("values", ProjectQueries.ItemValues, id.NodeId,
                 value => { MatchNode(value, id.NodeId, "ProjectV2Item"); MatchProject(value); return Property(value, "fieldValues"); },
                 value => { AddValue(item, value); return Task.CompletedTask; }, Optional(node, "fieldValues"));
@@ -326,12 +334,17 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var info = Property(page, "pageInfo");
                     var next = Boolean(info, "hasNextPage");
                     var cursor = OptionalText(info, "endCursor");
-                    if (count > total || (!next && count != total) || (next && (nodes.GetArrayLength() == 0 || count >= total)))
+                    // Project totals include items omitted for this viewer. Cursor exhaustion
+                    // establishes traversal; omitted members remain unavailable, never empty tasks.
+                    if (count > total || stage != "items" && ((!next && count != total) || (next && (nodes.GetArrayLength() == 0 || count >= total))))
                         throw new ReadException(ReadProblemKind.IncompleteTraversal);
                     if (next && cursor is null) throw new ReadException(ReadProblemKind.IncompleteTraversal);
                     if (cursor is not null && !cursors.Add(cursor)) throw new ReadException(ReadProblemKind.RepeatedCursor);
                     if (!trusted || stopped) return false;
-                    if (!next) return true;
+                    if (!next) {
+                        if (stage == "items") undeliveredItems = expected - count;
+                        return true;
+                    }
                     after = cursor;
                     page = default;
                 }

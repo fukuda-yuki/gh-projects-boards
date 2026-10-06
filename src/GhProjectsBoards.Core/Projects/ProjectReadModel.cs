@@ -35,7 +35,8 @@ internal sealed record ProjectItemReadModel(ScopedId Id, ProjectItemKind Kind, s
 internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string OwnerType, int Number,
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
-    bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null);
+    bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null)
+{ public int UndeliveredItemCount { get; init; } }
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
     ApiOutcome? ApiOutcome = null, int? HttpStatus = null, TimeSpan? RetryAfter = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,

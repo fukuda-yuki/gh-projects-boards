@@ -2249,6 +2249,7 @@
     "issueLinks": {},
     "draftCount": 0,
     "pullRequestCount": 0,
+    "inaccessibleCount": 0,
     "conflicts": [],
     "unavailable": []
   }

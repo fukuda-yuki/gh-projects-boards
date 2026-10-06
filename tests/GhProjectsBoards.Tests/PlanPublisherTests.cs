@@ -10,6 +10,34 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPublisherTests
 {
     [Test]
+    public async Task RedactedProjectMembershipDoesNotBlockRefreshOrPublishVerification()
+    {
+        await Start(2, state => state with { Redacted = 1, HiddenItems = 1 });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Actual, 3m)]), Today);
+        var refreshed = await publisher.RefreshAsync(session, Today);
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        Assert.That(session.Document.Sync.InaccessibleCount, Is.EqualTo(2));
+        Assert.That(session.Document.State.Rows, Has.Length.EqualTo(2));
+        var published = await publisher.PublishAsync(session, Today);
+        Assert.That(published.Succeeded, Is.True, published.Error);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That(session.Document.Sync.InaccessibleCount, Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task RefreshReadsPagedNativeSiblingOrderAndCountsTheParentDifference()
+    {
+        await Start(103, state => state with {
+            Issues = state.Issues.Select((i, n) => n == 0 ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", Enumerable.Range(2, 102).Reverse().Select(n => "I" + n).ToImmutableArray()) });
+        Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(Enumerable.Range(2, 102).Reverse().Select(n => "I" + n)));
+        Assert.That(session.Changes(Today).Fields["I1"], Does.Contain(PlanField.SubIssueOrder));
+        var result = await publisher.RefreshAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(session.Document.Sync.NativeOrders["I1"], Has.Length.EqualTo(102));
+    }
+
+    [Test]
     public async Task ReversingSiblingOrderPreservesRequestedOrderUnderPartialResourceLimits()
     {
         await Start(5, state => state with

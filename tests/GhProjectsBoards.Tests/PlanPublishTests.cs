@@ -6,6 +6,42 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [TestCase(0)]
+    [TestCase(1)]
+    public void RemovingChildrenDoesNotInventAnOrderWriteForTheRemainingSingletonOrEmptyParent(int remaining)
+    {
+        var project = new ScopedId(new("github.com", 42), "P1");
+        ImmutableArray<PlanRow> rows = [new("I1", "Parent", "acme/repo"), new("I2", "A", "acme/repo") { Parent = "I1" }, new("I3", "B", "acme/repo") { Parent = "I1" }];
+        var baseline = new PlanBaseline(rows, []);
+        var orders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]);
+        var local = rows.Select((r, i) => i > remaining ? r with { Parent = null } : r).ToImmutableArray();
+        var document = new PlanDocument(project, baseline, new(local, new())) { Sync = new() { NativeOrders = orders } };
+        var remote = new PlanRemoteSnapshot(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0) { SubIssueOrders = orders };
+        var changes = PlanOperations.Changes(document, new(2026, 10, 5));
+        var review = PlanPublishPlan.Build(document, remote, new(2026, 10, 5), Guid.NewGuid().ToString("N"));
+        Assert.That(changes.Fields.ContainsKey("I1"), Is.False);
+        Assert.That(review.Changes.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
+        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void SiblingOrderDifferenceCountsTheSameParentThatWillBePublished(bool reverse)
+    {
+        var project = new ScopedId(new("github.com", 42), "P1");
+        ImmutableArray<PlanRow> rows = [new("I1", "Parent", "acme/repo"), new("I2", "A", "acme/repo") { Parent = "I1" }, new("I3", "B", "acme/repo") { Parent = "I1" }];
+        var baseline = new PlanBaseline(rows, []);
+        var orders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", reverse ? ["I3", "I2"] : ["I2", "I3"]);
+        var document = new PlanDocument(project, baseline, new(rows, new())) { Sync = new() { NativeOrders = orders } };
+        var remote = new PlanRemoteSnapshot(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0) { SubIssueOrders = orders };
+        var changes = PlanOperations.Changes(document, new(2026, 10, 5));
+        var review = PlanPublishPlan.Build(document, remote, new(2026, 10, 5), Guid.NewGuid().ToString("N"));
+        Assert.That(changes.TaskCount, Is.EqualTo(reverse ? 1 : 0));
+        Assert.That(review.Changes.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity),
+            Is.EqualTo(reverse ? new[] { "I1" } : Array.Empty<string>()));
+        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(reverse));
+    }
+
     [TestCase("Done"), TestCase(null)]
     public void StatusReviewUsesOptionIdentityAndVerifiesObservedName(string? status)
     {
