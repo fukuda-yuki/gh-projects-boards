@@ -6,6 +6,24 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [Test, SetCulture("th-TH")]
+    public void GitHubDatesAndNumbersRemainGregorianAndInvariant()
+    {
+        var day = new DateOnly(2026, 10, 6); var scope = new ConnectionScope("github.com", 42); var project = new ScopedId(scope, "P1");
+        var roles = new[] { PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Actual };
+        var fields = roles.Select(f => new ProjectFieldDefinition(new(scope, "F-" + f), project, f.ToString(), "ProjectV2Field",
+            f == PlanField.Actual ? "NUMBER" : "DATE", FieldOwner.ProjectItem, [], ValueAvailability.Present)).ToImmutableArray();
+        var settings = new ProjectPlanSettings { Columns = fields.Select((f, i) => new PlanColumnMapping(roles[i], f.Id.NodeId, f.Name, f.DataType)).ToImmutableArray() };
+        var before = new PlanRow("I1", "Task", "acme/repo");
+        var row = before with { Start = day, End = day, StartNoEarlierThan = day, Fixed = true, Actual = 12.5m };
+        var baseline = new PlanBaseline([before], []);
+        var review = PlanPublishPlan.Build(new(project, baseline, new([row], settings)), new(baseline, ImmutableDictionary<string, string>.Empty, fields, 0, 0), day, Guid.NewGuid().ToString("N"));
+        var verified = new PlanRemoteSnapshot(new([row], []), ImmutableDictionary<string, string>.Empty, fields, 0, 0);
+        Assert.That(review.Writes.All(w => PlanVerification.Verify(w, new(Guid.NewGuid().ToString("N"), review.Writes), verified, settings)), Is.True);
+        var values = review.Writes.Select(w => System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(w.Input)).ToArray();
+        Assert.That(values.Where(v => v.GetProperty("value").TryGetProperty("date", out _)).Select(v => v.GetProperty("value").GetProperty("date").GetString()), Is.EqualTo(new[] { "2026-10-06", "2026-10-06", "2026-10-06" }));
+        Assert.That(values.Single(v => v.GetProperty("value").TryGetProperty("number", out _)).GetProperty("value").GetProperty("number").GetRawText(), Is.EqualTo("12.5"));
+    }
     [Test]
     public void CreationPacingOverlapsRequestTimeAndBoundsEveryRollingMinuteAcrossMixedBatches()
     {

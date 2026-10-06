@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -95,11 +96,12 @@ internal static class PlanPublisherLive
         {
             await CheckSchema(Send, root);
         }
-        Task<ProjectReadModel> Read() => ReadSettled(async () =>
+        async Task<ProjectReadResult> ReadOnce()
         {
             using var lease = await service.BeginOperationAsync(context, default, mutation: false);
             return await new ProjectReader(service, lease).ReadAsync(context, project);
-        }, root);
+        }
+        Task<ProjectReadModel> Read() => ReadSettled(ReadOnce, root);
         async Task<List<RemoteIssue>> Issues()
         {
             var result = new List<RemoteIssue>(); string? after = null; var cursors = new HashSet<string>();
@@ -139,7 +141,7 @@ internal static class PlanPublisherLive
                 previous.Restart();
                 if (!Owned(issue)) throw new InvalidOperationException("Refusing non-owned cleanup.");
                 runner.OwnedIssues.Add(issue.Id);
-                await Send(ApiRequest.GraphQl("mutation($input:DeleteIssueInput!){deleteIssue(input:$input){clientMutationId}}", new { input = new { issueId = issue.Id } }));
+                await DeleteOwnedIssue(() => transport.SendAsync("github.com", ApiRequest.GraphQl("mutation($input:DeleteIssueInput!){deleteIssue(input:$input){clientMutationId}}", new { input = new { issueId = issue.Id } })), root);
             }
         }
         async Task Cleanup()
@@ -174,26 +176,21 @@ internal static class PlanPublisherLive
                 wait.Stop();
                 creationStarts = PlanCreationPacing.Reserve(creationStarts, count, DateTimeOffset.UtcNow);
                 await File.AppendAllTextAsync(Path.Combine(root, "setup-waits.jsonl"), JsonSerializer.Serialize(new { issues = count, seconds = wait.Elapsed.TotalSeconds }) + "\n");
-                var variables = Enumerable.Range(0, count).ToDictionary(i => "v" + i, i => (object)new { repositoryId = RepositoryId, title = manifest.Marker + "-seed-" + (offset + i), body = manifest.Marker });
-                var declaration = string.Join(',', Enumerable.Range(0, count).Select(i => "$v" + i + ":CreateIssueInput!"));
-                var selections = string.Join(' ', Enumerable.Range(0, count).Select(i => "w" + i + ":createIssue(input:$v" + i + "){issue{id}}"));
+                var variables = Enumerable.Range(0, count).ToDictionary(i => "v" + i.ToString(CultureInfo.InvariantCulture), i => (object)new { repositoryId = RepositoryId, title = manifest.Marker + "-seed-" + (offset + i).ToString(CultureInfo.InvariantCulture), body = manifest.Marker });
+                var declaration = string.Join(',', Enumerable.Range(0, count).Select(i => "$v" + i.ToString(CultureInfo.InvariantCulture) + ":CreateIssueInput!"));
+                var selections = string.Join(' ', Enumerable.Range(0, count).Select(i => "w" + i.ToString(CultureInfo.InvariantCulture) + ":createIssue(input:$v" + i.ToString(CultureInfo.InvariantCulture) + "){issue{id}}"));
                 await Send(ApiRequest.GraphQl("mutation(" + declaration + "){" + selections + "}", variables));
             }
             var seeded = (await Issues()).Where(Owned).ToArray();
-            var membership = await Read();
-            foreach (var batch in seeded.Where(i => !membership.Issues.Keys.Any(k => k.NodeId == i.Id)).Chunk(10))
+            if (seeded.Length != budget.SeedIssues) throw new InvalidOperationException("Seed Issue count is incomplete.");
+            await WaitForSeeds(ReadOnce, root, initial.Items, seeded.Select(i => i.Id).ToHashSet(), async missing =>
             {
-                var variables = batch.Select((issue, i) => (issue, i)).ToDictionary(x => "v" + x.i, x => (object)new { projectId = ProjectId, contentId = x.issue.Id });
-                var declarations = string.Join(',', Enumerable.Range(0, batch.Length).Select(i => "$v" + i + ":AddProjectV2ItemByIdInput!"));
-                var selections = string.Join(' ', Enumerable.Range(0, batch.Length).Select(i => "w" + i + ":addProjectV2ItemById(input:$v" + i + "){item{id}}"));
-                var response = await transport.SendAsync("github.com", ApiRequest.GraphQl("mutation(" + declarations + "){" + selections + "}", variables));
-                // Workflow auto-add races are reconciled by identity, including successful sibling aliases.
-                if (!response.IsSuccess)
+                foreach (var id in missing)
                 {
-                    var reconciled = await Read();
-                    if (batch.Any(i => !reconciled.Issues.Keys.Any(k => k.NodeId == i.Id))) throw new InvalidOperationException("Fixture membership is incomplete.");
+                    var response = await transport.SendAsync("github.com", ApiRequest.GraphQl("mutation($input:AddProjectV2ItemByIdInput!){addProjectV2ItemById(input:$input){item{id}}}", new { input = new { projectId = ProjectId, contentId = id } }));
+                    await VerifySeedAdd(response, ReadOnce, id);
                 }
-            }
+            });
             for (var run = 1; run <= budget.Runs; run++)
             {
                 var read = await Read();
@@ -202,7 +199,7 @@ internal static class PlanPublisherLive
                 var session = await PlanSession.CreateAsync(new(Path.Combine(root, "run-" + run)), new(project, remote.Baseline, new(PreserveBaselineDates(remote.Baseline.Rows, baselineIds), settings)), settings.StatusDate!.Value);
                 await session.SaveSync(session.Document.Sync with { CreationStarts = creationStarts });
                 var publisher = new PlanPublisher(service, context);
-                await session.Execute(new InsertPlanRows(Enumerable.Range(0, budget.IssuesPerRun).Select(i => PlanRow.New(manifest.Marker + "-run-" + run + "-" + i, RepositoryName)).ToImmutableArray()), settings.StatusDate.Value);
+                await session.Execute(new InsertPlanRows(Enumerable.Range(0, budget.IssuesPerRun).Select(i => PlanRow.New(manifest.Marker + "-run-" + run.ToString(CultureInfo.InvariantCulture) + "-" + i.ToString(CultureInfo.InvariantCulture), RepositoryName)).ToImmutableArray()), settings.StatusDate.Value);
                 async Task Measure(string workload, double totalLimit, double writeLimit, Func<Task<PlanPublishResult>> action)
                 {
                     var start = runner.Records.Count; var watch = Stopwatch.StartNew(); var result = await action(); watch.Stop();
@@ -248,12 +245,66 @@ internal static class PlanPublisherLive
         finally { await Cleanup(); }
         return succeeded ? 0 : 1;
     }
-    internal static async Task<ProjectReadModel> ReadSettled(Func<Task<ProjectReadResult>> read, string root, Func<TimeSpan, Task>? delay = null)
+    internal static async Task VerifySeedAdd(ApiResult response, Func<Task<ProjectReadResult>> read, string id)
+    {
+        if (response.IsSuccess) return;
+        // Auto-add can win the race; only complete identity readback establishes membership.
+        var reconciled = await read();
+        if (reconciled.Outcome != ProjectReadOutcome.Complete || reconciled.Project is null ||
+            !reconciled.Project.Items.Any(i => i.ContentId?.NodeId == id && !i.IsArchived && i.Kind == ProjectItemKind.Issue))
+            throw new InvalidOperationException("Fixture membership add failed: " + response.FailureReason());
+    }
+    internal static async Task<ProjectReadModel> WaitForSeeds(Func<Task<ProjectReadResult>> read, string root, IReadOnlyList<ProjectItemReadModel> baseline, IReadOnlySet<string> seeds,
+        Func<string[], Task> addMissing, Func<TimeSpan, Task>? delay = null, Func<TimeSpan>? elapsed = null)
     {
         delay ??= pause => Task.Delay(pause);
-        var watch = Stopwatch.StartNew(); string? previous = null; ProjectReadResult? last = null;
+        var watch = Stopwatch.StartNew(); elapsed ??= () => watch.Elapsed;
+        var deadline = TimeSpan.FromSeconds(120); var reconciled = false;
+        var baselineIds = baseline.Select(i => i.Id).ToHashSet();
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = await read(); var complete = result.Outcome == ProjectReadOutcome.Complete && result.Project is not null;
+            var items = result.Project?.Items ?? [];
+            var missing = seeds.Where(id => !items.Any(i => i.ContentId?.NodeId == id)).ToArray();
+            var baselineIntact = baseline.All(b => items.Any(i => i.Id == b.Id && i.ContentId == b.ContentId && i.IsArchived == b.IsArchived));
+            var unexpected = items.Any(i => !baselineIds.Contains(i.Id) && (i.Kind != ProjectItemKind.Issue || i.IsArchived || !seeds.Contains(i.ContentId?.NodeId ?? "")));
+            var exact = complete && baselineIntact && !unexpected && missing.Length == 0 && items.Count == baseline.Count + seeds.Count;
+            await File.AppendAllTextAsync(Path.Combine(root, "settling.jsonl"), JsonSerializer.Serialize(new
+            { phase = "seed-membership", attempt, complete, items = items.Count, missing = missing.Length, exact, elapsedSeconds = elapsed().TotalSeconds, reconciled }) + "\n");
+            if (exact) return result.Project!;
+            if (complete && (!baselineIntact || unexpected)) throw new InvalidOperationException("Unexpected fixture membership; baseline or unrelated items changed.");
+            if (elapsed() >= deadline)
+            {
+                if (reconciled || !complete) throw new InvalidOperationException("Fixture membership did not become complete before the deadline.");
+                await addMissing(missing); reconciled = true; deadline = elapsed() + TimeSpan.FromSeconds(30);
+                continue;
+            }
+            await delay(TimeSpan.FromSeconds(Math.Max(0, Math.Min(3, (deadline - elapsed()).TotalSeconds))));
+        }
+    }
+    internal static async Task DeleteOwnedIssue(Func<Task<ApiResult>> send, string root, Func<TimeSpan, Task>? delay = null)
+    {
+        delay ??= pause => Task.Delay(pause);
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = await send();
+            if (result.IsSuccess || result.HttpStatus is 404 or 410 || result.GraphQlErrors.Count > 0 && result.GraphQlErrors.All(e => e == "NOT_FOUND")) return;
+            var transient = result.HttpStatus is >= 500 and <= 599 || result.Failure == FailureKind.GraphQl &&
+                result.GraphQlErrors.Count > 0 && result.GraphQlErrors.All(e => e == "UNCLASSIFIED");
+            var pause = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+            if (result.RetryAfter is { } server && server > pause) pause = server;
+            await File.AppendAllTextAsync(Path.Combine(root, "cleanup-retries.jsonl"), JsonSerializer.Serialize(new
+            { attempt, result.HttpStatus, reason = result.FailureReason(), retry = transient && attempt < 4, delaySeconds = transient && attempt < 4 ? pause.TotalSeconds : 0 }) + "\n");
+            if (!transient || attempt >= 4) throw new InvalidOperationException(result.FailureReason());
+            await delay(pause);
+        }
+    }
+    internal static async Task<ProjectReadModel> ReadSettled(Func<Task<ProjectReadResult>> read, string root, Func<TimeSpan, Task>? delay = null, Func<TimeSpan>? elapsed = null)
+    {
+        delay ??= pause => Task.Delay(pause);
+        var watch = Stopwatch.StartNew(); elapsed ??= () => watch.Elapsed; string? previous = null; ProjectReadResult? last = null;
         var observation = Guid.NewGuid().ToString("N");
-        for (var attempt = 1; attempt <= 6; attempt++)
+        for (var attempt = 1; ; attempt++)
         {
             last = await read();
             var complete = last.Outcome == ProjectReadOutcome.Complete && last.Project is not null;
@@ -268,9 +319,10 @@ internal static class PlanPublisherLive
             }) + Environment.NewLine);
             if (settled) return last.Project!;
             previous = membership;
-            if (attempt < 6) await delay(TimeSpan.FromSeconds(3));
+            if (elapsed() >= TimeSpan.FromSeconds(120)) break;
+            await delay(TimeSpan.FromSeconds(3));
         }
-        var reason = "Independent Project read did not settle within six attempts: " + PlanSnapshot.ReadDiagnostic(last!);
+        var reason = "Independent Project read did not settle within 120 seconds: " + PlanSnapshot.ReadDiagnostic(last!);
         await File.AppendAllTextAsync(Path.Combine(root, "failure.txt"), reason + Environment.NewLine);
         throw new InvalidOperationException(reason);
     }
@@ -303,7 +355,7 @@ internal static class PlanPublisherLive
         var batchNumber = 0;
         foreach (var inputNames in requiredInputs.Keys.Chunk(2))
         {
-            var schema = await send(ApiRequest.GraphQl("query PlanPublishSchema{" + string.Join(' ', inputNames.Select((name, i) => "t" + i + ":__type(name:\"" + name + "\"){inputFields{name}}")) + "}"));
+            var schema = await send(ApiRequest.GraphQl("query PlanPublishSchema{" + string.Join(' ', inputNames.Select((name, i) => "t" + i.ToString(CultureInfo.InvariantCulture) + ":__type(name:\"" + name + "\"){inputFields{name}}")) + "}"));
             await File.WriteAllTextAsync(Path.Combine(root, $"schema-{++batchNumber:D2}.json"), schema.GetRawText());
             for (var i = 0; i < inputNames.Length; i++)
             {
@@ -375,7 +427,7 @@ internal static class PlanPublisherLive
                 for (var i = 0; i < values.Length; i++)
                 {
                     var input = values[i].Value;
-                    if (!data.TryGetProperty("w" + i, out var alias) || alias.ValueKind != JsonValueKind.Object) continue;
+                    if (!data.TryGetProperty("w" + i.ToString(CultureInfo.InvariantCulture), out var alias) || alias.ValueKind != JsonValueKind.Object) continue;
                     if (input.TryGetProperty("repositoryId", out _) && alias.TryGetProperty("issue", out var issue) && issue.ValueKind == JsonValueKind.Object)
                         OwnedIssues.Add(issue.GetProperty("id").GetString()!);
                     if (input.TryGetProperty("contentId", out var content) && OwnedIssues.Contains(content.GetString()!) && alias.TryGetProperty("item", out var item) && item.ValueKind == JsonValueKind.Object)

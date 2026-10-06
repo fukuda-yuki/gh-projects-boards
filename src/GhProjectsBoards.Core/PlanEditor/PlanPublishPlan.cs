@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
 internal enum PlanPublishStage { Create, Add, Fields, Hierarchy, Dependencies, Order }
@@ -116,8 +117,8 @@ internal static class PlanPublishPlan
                         if (!clear) input["value"] = field switch
                         {
                             PlanField.Estimate => new { number = row.Estimate }, PlanField.Remaining => new { number = row.Remaining }, PlanField.Actual => new { number = row.Actual },
-                            PlanField.Start => new { date = row.Start!.Value.ToString("yyyy-MM-dd") }, PlanField.End => new { date = row.End!.Value.ToString("yyyy-MM-dd") },
-                            PlanField.StartNoEarlierThan => new { date = row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd") },
+                            PlanField.Start => new { date = row.Start!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) }, PlanField.End => new { date = row.End!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
+                            PlanField.StartNoEarlierThan => new { date = row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
                             PlanField.Fixed => (object)new { singleSelectOptionId = definition.Options.Single(o => o.Name == "固定").Id },
                             _ => throw new InvalidOperationException("未対応の列です。")
                         };
@@ -148,7 +149,7 @@ internal static class PlanPublishPlan
         {
             var id = rows[i].Identity;
             if (currentOrder[i] == id && baseline.ContainsKey(id)) continue;
-            changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? currentOrder.IndexOf(id).ToString() : null, i.ToString()));
+            changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? currentOrder.IndexOf(id).ToString(CultureInfo.InvariantCulture) : null, i.ToString(CultureInfo.InvariantCulture)));
             currentOrder.Remove(id); currentOrder.Insert(i, id);
             Add(id, PlanPublishStage.Order, "updateProjectV2ItemPosition", "UpdateProjectV2ItemPositionInput",
                 new { projectId = document.Project.NodeId, itemId = "item:" + id, afterId = i == 0 ? null : "item:" + rows[i - 1].Identity }, "items { totalCount }");

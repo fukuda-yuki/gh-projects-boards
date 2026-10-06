@@ -50,7 +50,10 @@ internal sealed class PlanPublisherTests
         var loaded = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(loaded.Status, Is.EqualTo(PlanLoadStatus.Loaded), loaded.Error); session = loaded.Session!;
     }
-    private static IEnumerable<int> SequenceSeeds => Enumerable.Range(51000, 200);
+    private static IEnumerable<int> SequenceSeeds => Enumerable.Range(51000, 20);
+    private static IEnumerable<int> FullSequenceSeeds => Enumerable.Range(51000, 200);
+    [TestCaseSource(nameof(FullSequenceSeeds)), Category("HistorySequence"), Explicit("Full 200-sequence experiment")]
+    public Task FullHistorySequences(int seed) => RandomizedOperationsKeepEverySavedHistoryReplayable(seed);
     [TestCaseSource(nameof(SequenceSeeds))]
     public async Task RandomizedOperationsKeepEverySavedHistoryReplayable(int seed)
     {

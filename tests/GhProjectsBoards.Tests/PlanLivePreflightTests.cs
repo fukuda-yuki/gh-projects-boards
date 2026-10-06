@@ -9,6 +9,95 @@ namespace GhProjectsBoards.Tests;
 [TestFixture, Category("Unit")]
 internal sealed class PlanLivePreflightTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task SeedsWaitForExactMembershipThenAddOnlyMissingAtDeadline(bool needsAdd)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-seeds-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var scope = new ConnectionScope("github.com", 42); var time = TimeSpan.Zero; var added = false;
+        ProjectItemReadModel Item(string id) => new(new(scope, "T" + id), ProjectItemKind.Issue, "Issue", new(scope, id), false, [], true);
+        var baseline = Item("B");
+        Task<ProjectReadResult> Read() => Task.FromResult(new ProjectReadResult(ProjectReadOutcome.Complete,
+            new(new(scope, "P1"), new(scope, "O1"), "User", 3, "url", "title",
+                [], ImmutableDictionary<ScopedId, IssueReadModel>.Empty,
+                added || !needsAdd && time.TotalSeconds >= 45 ? [baseline, Item("S")] : [baseline], true, true), []));
+        try
+        {
+            var result = await PlanPublisherLive.WaitForSeeds(Read, root, [baseline], new HashSet<string> { "S" }, missing =>
+            {
+                Assert.That(time.TotalSeconds, Is.GreaterThanOrEqualTo(120));
+                Assert.That(missing, Is.EqualTo(new[] { "S" })); added = true; return Task.CompletedTask;
+            }, pause => { time += pause; return Task.CompletedTask; }, () => time);
+            Assert.That(result.Items.Select(i => i.ContentId!.NodeId), Is.EquivalentTo(new[] { "B", "S" }));
+            Assert.That(added, Is.EqualTo(needsAdd));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [TestCase("unexpected")]
+    [TestCase("missing-baseline")]
+    [TestCase("never-added")]
+    [TestCase("partial")]
+    public void SeedMembershipRejectsUnrelatedChangesAndBoundedIncompleteReads(string scenario)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-seed-stop-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var scope = new ConnectionScope("github.com", 42); var time = TimeSpan.Zero;
+        ProjectItemReadModel Item(string id) => new(new(scope, "T" + id), ProjectItemKind.Issue, "Issue", new(scope, id), false, [], true);
+        var baseline = Item("B");
+        Task<ProjectReadResult> Read() => Task.FromResult(new ProjectReadResult(scenario == "partial" ? ProjectReadOutcome.Partial : ProjectReadOutcome.Complete,
+            new(new(scope, "P1"), new(scope, "O1"), "User", 3, "url", "title", [], ImmutableDictionary<ScopedId, IssueReadModel>.Empty,
+                scenario == "unexpected" ? [baseline, Item("X")] : scenario == "missing-baseline" ? [Item("S")] : [baseline], true, true), []));
+        try
+        {
+            Assert.ThrowsAsync<InvalidOperationException>(() => PlanPublisherLive.WaitForSeeds(Read, root, [baseline], new HashSet<string> { "S" },
+                _ => Task.CompletedTask, pause => { time += pause; return Task.CompletedTask; }, () => time));
+            Assert.That(time.TotalSeconds, Is.EqualTo(scenario == "never-added" ? 150 : scenario == "partial" ? 120 : 0));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [TestCase(true, true)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    public async Task SeedAddRaceRequiresCompleteIdentityReadback(bool present, bool complete)
+    {
+        var scope = new ConnectionScope("github.com", 42);
+        var model = new ProjectReadModel(new(scope, "P1"), new(scope, "O1"), "User", 3, "url", "title", [], ImmutableDictionary<ScopedId, IssueReadModel>.Empty,
+            present ? [new(new(scope, "T1"), ProjectItemKind.Issue, "Issue", new(scope, "S"), false, [], true)] : [], true, true);
+        var failed = new ApiResult(ApiOutcome.Failed, FailureKind.GraphQl, graphQlErrors: ["ALREADY_EXISTS"]);
+        Task Run() => PlanPublisherLive.VerifySeedAdd(failed, () => Task.FromResult(new ProjectReadResult(complete ? ProjectReadOutcome.Complete : ProjectReadOutcome.Partial, model, [])), "S");
+        if (present && complete) await Run(); else Assert.ThrowsAsync<InvalidOperationException>(Run);
+    }
+    [TestCase("recover")]
+    [TestCase("missing")]
+    [TestCase("exhaust")]
+    [TestCase("denied")]
+    [TestCase("http500")]
+    [TestCase("http410")]
+    [TestCase("mixed")]
+    public async Task CleanupRetriesOnlyTransientServerErrorsAndAcceptsMissing(string scenario)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-delete-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
+        var attempts = 0; var waits = new List<double>();
+        Task<ApiResult> Send()
+        {
+            attempts++;
+            return Task.FromResult(scenario == "http410" ? new ApiResult(ApiOutcome.Failed, FailureKind.NotFoundOrInaccessible, httpStatus: 410) :
+                scenario == "mixed" ? new ApiResult(ApiOutcome.Failed, FailureKind.GraphQl, graphQlErrors: ["UNCLASSIFIED", "FORBIDDEN"]) :
+                scenario == "http500" ? new ApiResult(ApiOutcome.Failed, FailureKind.Network, httpStatus: 500) :
+                scenario == "missing" ? new ApiResult(ApiOutcome.Unknown, FailureKind.GraphQl, httpStatus: 200, graphQlErrors: ["NOT_FOUND"]) :
+                scenario == "denied" ? new ApiResult(ApiOutcome.Failed, FailureKind.PermissionDenied) :
+                scenario == "recover" && attempts == 3 ? new ApiResult(ApiOutcome.Success) :
+                new ApiResult(ApiOutcome.Failed, FailureKind.GraphQl, httpStatus: 200, graphQlErrors: ["UNCLASSIFIED"]));
+        }
+        Task Run() => PlanPublisherLive.DeleteOwnedIssue(Send, root, pause => { waits.Add(pause.TotalSeconds); return Task.CompletedTask; });
+        try
+        {
+            if (scenario is "exhaust" or "denied" or "http500" or "mixed") Assert.ThrowsAsync<InvalidOperationException>(Run);
+            else await Run();
+            Assert.That(attempts, Is.EqualTo(scenario is "exhaust" or "http500" ? 4 : scenario == "recover" ? 3 : 1));
+            Assert.That(waits, Is.EqualTo(scenario is "exhaust" or "http500" ? new[] { 2d, 4d, 8d } : scenario == "recover" ? new[] { 2d, 4d } : Array.Empty<double>()));
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [TestCase("refresh-complete-project")]
     [TestCase("create-50")]
     public void RefreshRatesExcludeOtherRequestsAndPublishTime(string workload)
@@ -36,7 +125,7 @@ internal sealed class PlanLivePreflightTests
             [], ImmutableDictionary<ScopedId, IssueReadModel>.Empty, [], true, true);
         ProjectReadResult Complete(int count) => new(ProjectReadOutcome.Complete, model with { Items = Enumerable.Range(1, count).Select(i =>
             new ProjectItemReadModel(new(scope, "T" + i), ProjectItemKind.Issue, "Issue", new(scope, "I" + i), false, [], true)).ToArray() }, []);
-        var calls = 0;
+        var calls = 0; var elapsed = TimeSpan.Zero;
         Task<ProjectReadResult> Read()
         {
             calls++;
@@ -47,13 +136,13 @@ internal sealed class PlanLivePreflightTests
         {
             if (neverSettles)
             {
-                var error = Assert.ThrowsAsync<InvalidOperationException>(async () => await PlanPublisherLive.ReadSettled(Read, root, _ => Task.CompletedTask));
+                var error = Assert.ThrowsAsync<InvalidOperationException>(async () => await PlanPublisherLive.ReadSettled(Read, root, pause => { elapsed += pause; return Task.CompletedTask; }, () => elapsed));
                 Assert.That(error!.Message, Does.Contain("Partial").And.Contain("IncompleteTraversal").And.Contain("items"));
                 Assert.That(await File.ReadAllTextAsync(Path.Combine(root, "failure.txt")), Does.Contain("Partial").And.Not.Contain("private-title"));
             }
             else
             {
-                var result = await PlanPublisherLive.ReadSettled(Read, root, _ => Task.CompletedTask);
+                var result = await PlanPublisherLive.ReadSettled(Read, root, pause => { elapsed += pause; return Task.CompletedTask; }, () => elapsed);
                 Assert.That(result.Items.Select(i => i.Id.NodeId), Is.EqualTo(new[] { "T1", "T2" }));
                 var evidence = await File.ReadAllTextAsync(Path.Combine(root, "settling.jsonl"));
                 Assert.That(evidence, Does.Contain("Partial").And.Contain("Complete").And.Not.Contain("private-title"));
