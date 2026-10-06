@@ -109,8 +109,7 @@ internal sealed class PlanWorkspace(PlanStore store)
         }
         token.ThrowIfCancellationRequested();
         var candidate = catalog with { Projects = catalog.Projects.Where(p => p.Id != choice.Id).Append(choice).ToImmutableArray(), Selected = choice.Id };
-        await SaveCatalog(candidate);
-        catalog = candidate;
+        catalog = await SaveCatalog(candidate);
         Selected = choice; Session = session;
     }
     public async Task Refresh(CancellationToken token = default)
@@ -127,18 +126,29 @@ internal sealed class PlanWorkspace(PlanStore store)
     public async Task RetrySave()
     {
         foreach (var session in sessions.Values) RequireSave(await session.RetrySaveAsync());
-        await SaveCatalog(catalog);
+        catalog = await SaveCatalog(catalog);
     }
     private static void RequireSave(PlanSaveResult result) { if (!result.Succeeded) throw new IOException(result.Error); }
-    private async Task SaveCatalog(PlanWorkspaceCatalog candidate)
+    private async Task<PlanWorkspaceCatalog> SaveCatalog(PlanWorkspaceCatalog candidate)
     {
         Directory.CreateDirectory(store.Root);
         var path = Path.Combine(store.Root, "workspace.json");
+        using var writer = new FileStream(path + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        if (File.Exists(path))
+        {
+            var latest = PlanJson.Read<PlanWorkspaceCatalog>(await File.ReadAllBytesAsync(path));
+            if (latest.Version != 1 || latest.Projects.IsDefault || latest.Projects.Any(p => p.Id.Scope.ViewerId <= 0)
+                || latest.Projects.Select(p => p.Id).Distinct().Count() != latest.Projects.Length)
+                throw new IOException("Project一覧を読み込めません。");
+            candidate = candidate with { Projects = latest.Projects.Where(p => candidate.Projects.All(c => c.Id != p.Id))
+                .Concat(candidate.Projects).ToImmutableArray() };
+        }
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             await PlanStore.WriteCandidate(temporary, System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(candidate, PlanJson.Options));
             if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
+            return candidate;
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }

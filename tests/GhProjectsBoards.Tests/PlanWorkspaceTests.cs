@@ -6,6 +6,29 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanWorkspaceTests
 {
     [Test]
+    public async Task TwoInstancesPreserveBothRegistrationsWhenOpeningDifferentProjects()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-catalog-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo"), "", true)], 2));
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
+                new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+            var first = new PlanWorkspace(new(root));
+            var second = new PlanWorkspace(new(root));
+            await first.Connect(Service()); await second.Connect(Service());
+            await first.Open(first.Available[0]);
+            await second.Open(second.Available[1]);
+            var reopened = new PlanWorkspace(new(root));
+            await reopened.Connect(Service());
+            Assert.That(reopened.Registered.Select(p => p.Id.NodeId), Is.EquivalentTo(new[] { "P1", "P2" }));
+            Assert.That(reopened.Selected!.Id.NodeId, Is.EqualTo("P2"));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Test]
     public async Task WorkspaceRestoresScopedUnpublishedDocumentsWithoutRefreshingOnReopen()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-workspace-" + Guid.NewGuid().ToString("N"));

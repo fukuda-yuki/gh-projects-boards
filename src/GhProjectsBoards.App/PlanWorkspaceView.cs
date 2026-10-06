@@ -43,7 +43,7 @@ internal sealed class PlanWorkspaceView : UserControl
     private CancellationToken OperationToken => operationCancellation?.Token ?? CancellationToken.None;
     private readonly List<Func<Task>> pendingSettings = [];
     private int settingsGeneration;
-    private bool rendering, busy, closing;
+    private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
     internal Func<string, Task<string?>>? PickFile { get; set; }
     private DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
@@ -72,7 +72,7 @@ internal sealed class PlanWorkspaceView : UserControl
         body.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.Children.Add(Button("計画", "PlanShowTasks", () => { Show("tasks"); return Task.CompletedTask; }));
         toolbar.Children.Add(Button("設定", "PlanShowSettings", () => { RenderSettings(); Show("settings"); return Task.CompletedTask; }));
-        toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { await workspace.Refresh(OperationToken); RenderTasks(); }));
+        toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings(); }));
         toolbar.Children.Add(Button("元に戻す", "PlanUndo", async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
         toolbar.Children.Add(unpublished);
         var problem = new StackPanel { Spacing = 4 };
@@ -120,18 +120,22 @@ internal sealed class PlanWorkspaceView : UserControl
         var button = Id(new Button { Content = text }, id);
         button.Click += async (_, _) => { if (button.IsLoaded) await Run(action, commitPending); }; return button;
     }
-    private async Task Run(Func<Task> action, bool commitPending = true)
+    private Task Run(Func<Task> action, bool commitPending = true)
     {
-        if (busy || closing) return;
-        busy = true; error.Text = ""; retrySave.Visibility = Visibility.Collapsed; progress.Visibility = Visibility.Visible;
-        using var cancellation = new CancellationTokenSource();
-        operationCancellation = cancellation;
+        if (closing) return Task.CompletedTask;
+        var previous = operation;
+        // Publish the tail before executing, including synchronous focus events raised by the command.
         operation = Execute();
-        try { await operation; }
-        finally { operationCancellation = null; busy = false; IsEnabled = true; progress.Visibility = Visibility.Collapsed; }
+        return operation;
         async Task Execute()
         {
-            try { if (commitPending) await CommitPending(); IsEnabled = false; await action(); }
+            await Task.Yield();
+            await previous;
+            if (closing) return;
+            error.Text = ""; retrySave.Visibility = Visibility.Collapsed; progress.Visibility = Visibility.Visible;
+            using var cancellation = new CancellationTokenSource();
+            operationCancellation = cancellation;
+            try { if (commitPending) await CommitPending(); await action(); }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
                 if (cancellation.IsCancellationRequested) return;
@@ -140,6 +144,7 @@ internal sealed class PlanWorkspaceView : UserControl
                 retrySave.Visibility = ex is IOException or UnauthorizedAccessException ? Visibility.Visible : Visibility.Collapsed;
                 error.Text = ex is DiscoveryException ? "Projectを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
             }
+            finally { operationCancellation = null; progress.Visibility = Visibility.Collapsed; }
         }
     }
     internal async Task<bool> StopAsync()

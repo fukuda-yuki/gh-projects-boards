@@ -59,6 +59,57 @@ internal sealed class PlanWorkspaceHostedTests
         else TestContext.Out.WriteLine("Close after failed test: " + problem);
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task PendingSettingsSaveDoesNotDropTheNextCommand(bool switchProject)
+    {
+        await Open();
+        await Ui.Run(() => Ui.Click("PlanChooseProject"));
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+        await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2");
+        await Ui.Idle();
+        await Settings();
+        var previous = workspace.Session!;
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("PlanProjectStart");
+            input.Focus(FocusState.Programmatic);
+            input.Text = "2026-10-20";
+            input.LostFocus += (_, _) => {
+                if (switchProject) Ui.Find<ListView>("RegisteredProjects").SelectedIndex = 0;
+                else Ui.Click("PlanShowTasks");
+            };
+            Ui.Find<Button>("PlanShowTasks").Focus(FocusState.Programmatic);
+        });
+        await Ui.Until(() => previous.Document.State.Settings.ProjectStart is not null);
+        await Ui.Until(() => view.IsEnabled);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(previous.Document.State.Settings.ProjectStart, Is.EqualTo(new DateOnly(2026, 10, 20)));
+            if (switchProject)
+            {
+                Assert.That(workspace.Selected!.Id.NodeId, Is.EqualTo("P1"));
+                Assert.That(((ProjectChoice)Ui.Find<ListView>("RegisteredProjects").SelectedItem).Id, Is.EqualTo(workspace.Selected.Id));
+            }
+            Assert.That(Ui.Find<ScrollViewer>("PlanSettingsScroll").Visibility, Is.EqualTo(Visibility.Collapsed));
+        });
+    }
+    [Test]
+    public async Task RefreshWhileOnSettingsShowsNewPeopleAndColumnChoices()
+    {
+        await Open(); await Settings();
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with {
+            Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Assignees = ["U2"] } }],
+            AddedFields = ["StartNoEarlierThan"] });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => workspace.People.Any(p => p.Identity == "U2"));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<NumberBox>().Any(n => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(n) == "PlanRateU2"), Is.True);
+            Assert.That(Ui.Find<ComboBox>("PlanMapStartNoEarlierThan").Items.Cast<PlanColumnDefinition>().Any(c => c.Name == "開始日指定"), Is.True);
+            Assert.That(Ui.Find<ScrollViewer>("PlanSettingsScroll").Visibility, Is.EqualTo(Visibility.Visible));
+        });
+    }
     [Test]
     public async Task ConnectListsPersonalAndOrganizationProjectsAndOneClickOpensMappedTasks()
     {
