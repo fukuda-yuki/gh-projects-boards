@@ -141,6 +141,8 @@ internal static class FakePlanEditor
             {
                 if (interruptedPositions && data.Count >= 2 || fault == "creation-resource-uncertain" && query.Contains("createIssue") && matches.Count > 1 && data.Count >= 1) break;
                 var alias = match.Groups[1].Value; var mutation = match.Groups[2].Value; var input = variables.GetProperty(match.Groups[3].Value);
+                if (fault == "sibling-resource" && mutation == "reprioritizeSubIssue" && matches.Count > 1 && input.GetProperty("subIssueId").GetString() == "I4")
+                { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic sibling move limit" })); data[alias] = null; continue; }
                 if (fault == "resource-always" && mutation.Contains("ItemFieldValue") || fault == "parent-denied" && mutation == "addSubIssue" && input.GetProperty("subIssueId").GetString() == "I2" || fault == "mixed-resource" && query.Contains("ItemFieldValue") && matches.Count > 3 && alias != "w0" || fault == "field-denied" && mutation.Contains("ItemFieldValue") || fault == "forbid-mutation" || fault is "partial" or "resource" && state.MutationBatches == faultBatch && alias == "w1")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = fault is "resource" or "mixed-resource" or "resource-always" ? "RESOURCE_LIMITS_EXCEEDED" : "FORBIDDEN", message = "Synthetic failure" })); data[alias] = null; continue; }
                 string? id = null; var selection = "issue";

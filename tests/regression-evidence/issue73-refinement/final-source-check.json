@@ -1,9 +1,0 @@
-{
-  "checkedAt": "2026-10-04T15:01:45.5992551+00:00",
-  "receipt": "launch-46e2cbfb2ae5491cbd1cc856a9e1d286.json",
-  "productionInputsChecked": 111,
-  "mismatches": 0,
-  "appDllSha256": "9322ECD1FE6A6C6BFC796B1FF466C8C24EA1164A622E425A0602B906D6BCC3D0",
-  "coreDllSha256": "6C30AF10F47127AA12E15B568FFA9BD4484DDC541CE4AFBC003FCD56170F7F5A",
-  "nativeObservation": "Isolated final-empty and final-summary roots; PIDs45752,3432,38260 closed through Alt+F4 and absent afterward. No exit code is claimed for these Computer Use launches."
-}

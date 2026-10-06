@@ -21,21 +21,24 @@ public sealed class PlanningWorkspaceJourneyTests
         Assert.That(File.Exists(executable) && File.Exists(fake), Is.True);
         var artifacts = Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!;
         var root = Path.Combine(artifacts, "planning-workspace-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true }));
-        File.WriteAllText(Path.Combine(root, "plan-state.json"), JsonSerializer.Serialize(new {
-            issues = Enumerable.Range(1, 1000).Select(i => new { row = new { identity = "I" + i,
-                title = i == 1 ? "設計" : "計画レビュー " + i, repository = "acme/repo",
-                estimate = 8, remaining = 8, assignees = new[] { "U" + ((i - 1) % 20 + 1) },
-                predecessors = i % 10 == 1 ? Array.Empty<string>() : new[] { "I" + (i - 1) } }, body = "", added = true }), nextId = 1001
-        }));
+        var repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fake)!, "..", "..", "..", "..", ".."));
+        var prepare = new ProcessStartInfo("pwsh") { UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
+        foreach (var argument in new[] { "-NoProfile", "-File", Path.Combine(repo, "scripts", "Start-Evaluation.ps1"), "-NoBuild", "-PrepareOnly", "-DataRoot", root }) prepare.ArgumentList.Add(argument);
+        foreach (var name in new[] { "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN" }) prepare.Environment.Remove(name);
+        using (var fixture = Process.Start(prepare)!) {
+            Assert.That(fixture.WaitForExit(30000), Is.True, "Evaluation preparation must finish.");
+            Assert.That(fixture.ExitCode, Is.Zero);
+        }
+        var isolatedGh = Path.Combine(root, "fake-gh", "bin", "gh.exe");
         using var dpi = new DesktopDpiScope();
         using var automation = new UIA3Automation();
         for (var launch = 0; launch < 2; launch++)
         {
             var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!, WindowStyle = ProcessWindowStyle.Hidden };
-            start.Environment["GHPB_DATA_ROOT"] = Path.Combine(root, "data");
-            start.Environment["GH_CONFIG_DIR"] = root;
+            start.Environment["GHPB_DATA_ROOT"] = root;
+            start.Environment["GH_CONFIG_DIR"] = Path.Combine(root, "fake-gh");
+            start.Environment["PATH"] = Path.GetDirectoryName(isolatedGh) + Path.PathSeparator + start.Environment["PATH"];
+            foreach (var name in new[] { "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN" }) start.Environment.Remove(name);
             using var process = Process.Start(start)!;
             using var app = Application.Attach(process.Id);
             Window? window = null;
@@ -45,7 +48,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 Assert.That(window, Is.Not.Null);
                 WinUiProcess.AssertRuntime(process);
                 window!.Patterns.Transform.Pattern.Resize(1600, 960);
-                Find(window!, "PlanGhPath").AsTextBox().Text = fake;
+                Assert.That(Find(window!, "PlanGhPath").AsTextBox().Text, Is.EqualTo(isolatedGh));
                 Find(window!, "PlanHost").AsTextBox().Text = "github.com";
                 Find(window!, "PlanConnect").AsButton().Invoke();
                 if (launch == 0)
@@ -54,7 +57,8 @@ public sealed class PlanningWorkspaceJourneyTests
                     Find(window!, "AvailableProjects").AsListBox().Select(0);
                 }
                 Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "開発計画");
-                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "設計" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
+                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "工程 1" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
+                Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == $"未発行 {launch} タスク");
                 Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "Start date"), Is.True);
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&
                     Find(window!, "RegisteredProjects").FindAllDescendants().Any(e =>
@@ -101,8 +105,8 @@ public sealed class PlanningWorkspaceJourneyTests
                 catch (InvalidOperationException) { /* Automation may already have released the process. */ }
             }
         }
-        Assert.That(File.Exists(Path.Combine(root, "data", "PlanningEditor", "v1", "workspace.json")), Is.True);
-        Assert.That(File.ReadAllLines(Path.Combine(root, "calls.jsonl"))
+        Assert.That(File.Exists(Path.Combine(root, "PlanningEditor", "v1", "workspace.json")), Is.True);
+        Assert.That(File.ReadAllLines(Path.Combine(root, "fake-gh", "calls.jsonl"))
             .Select(line => JsonDocument.Parse(line).RootElement.Clone()).Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
     }
     private static AutomationElement Find(Window window, string id)

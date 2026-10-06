@@ -1,6 +1,0 @@
-{
-  "beforeMethods": 4635,
-  "afterMethods": 4635,
-  "differentBodies": [],
-  "boundary": "Method signature/name and IL byte comparison only; not binary identity or equality of all metadata."
-}

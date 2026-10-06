@@ -1,8 +1,0 @@
-- **AGENTS instructions:** Present as a user-supplied block; no repository file was read.
-- **Workspace/product memory summary:** Absent. Workspace environment metadata is present.
-- **Prior task history:** Absent.
-- **Product names:** Present in tool/skill metadata; no target product supplied.
-- **Product-specific navigation knowledge:** No target-product navigation context; general tool/skill workflow descriptions are present.
-- **Exposed Computer Use tools:** `mcp__cua_repl.js`, `mcp__cua_repl.js_reset`. No standalone `node_repl` tool is exposed.
-
-No tools were called.

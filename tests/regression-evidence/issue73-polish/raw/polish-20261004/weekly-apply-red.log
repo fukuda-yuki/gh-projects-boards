@@ -1,3 +1,0 @@
-  復元対象のプロジェクトを決定しています...
-  復元対象のすべてのプロジェクトは最新です。
-C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\Projects\WeeklyBulkEditing.cs(43,91): error CS0117: 'PlanningContract' に 'SameTask' の定義がありません [C:\Users\mwam0\.copilot\repos\gh-projects-boards\src\GhProjectsBoards.Core\GhProjectsBoards.Core.csproj]

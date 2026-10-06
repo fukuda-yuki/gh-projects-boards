@@ -10,6 +10,22 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPublisherTests
 {
     [Test]
+    public async Task ReversingSiblingOrderPreservesRequestedOrderUnderPartialResourceLimits()
+    {
+        await Start(5, state => state with
+        {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I5", "I4", "I3", "I2"])
+        });
+        await session.Execute(new MovePlanRows(["I2", "I3", "I4", "I5"], null), Today);
+        Scenario("sibling-resource");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I2", "I3", "I4", "I5" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
     public async Task ResourceLimitedUncertainCreationUsesGuardBeforeSplitting()
     {
         await Start(0);

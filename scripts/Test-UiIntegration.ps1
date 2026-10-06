@@ -19,7 +19,7 @@ git -C $repo diff --binary 2> (Join-Path $run 'source-diff.log') | Set-Content -
 $metadata.sources = @(Get-ChildItem -LiteralPath (Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests') -File | ForEach-Object { @{name=$_.Name; sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
 try {
     if (-not $NoBuild) {
-        & dotnet build $project -c Release *> (Join-Path $run 'build.log')
+        & dotnet build $project -c Release --no-restore *> (Join-Path $run 'build.log')
         if ($LASTEXITCODE -ne 0) { throw 'UI host build failed' }
     }
     $metadata.buildSeconds = $timer.Elapsed.TotalSeconds

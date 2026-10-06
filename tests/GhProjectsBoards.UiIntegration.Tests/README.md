@@ -5,6 +5,8 @@ The host inherits the ordinary application's compiled resources and XAML metadat
 - PlanWorkspaceHostedTests: connection/discovery/open/switch, settings/mappings/calendar files, serialization during pending saves, safe catalog failure, refresh presentation and process cancellation. Only the external gh executable and file picker are substituted.
 - PlanSheetHostedTests: the actual plan sheet, range commands and row-aligned chart using real PlanSession, scheduler and isolated durable storage. Routine clipboard cases substitute only the OS clipboard. The PlanSheetNative category adds physical keys/pointer and must run on the PMO desktop.
 - PlanSheetPerformance: 1,000 tasks, 20 people, ten-task chains and 20 commit-to-Rendered samples, with every outcome retained. It is an explicit performance run, not a routine timing assertion.
+- People cases in PlanWorkspaceHostedTests: daily/week/month load, allowance editing, contributing tasks, overload markers and retained pending input.
+- Publish cases in PlanWorkspaceHostedTests: review, conflicts, failures, retry and operation lifetime through actual workspace controls.
 - InfrastructureTests: deliberate runner failures, excluded from normal execution.
 
 Use the commands and evidence boundaries in [test policy](../README.md). Build Release with --no-restore, then invoke scripts/Test-UiIntegration.ps1 -NoBuild. The default excludes infrastructure, native-input and performance categories. The ordinary app never references the host.

@@ -6,8 +6,7 @@ public partial class App : Application
     public App() => InitializeComponent();
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        var arguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
-        window = arguments.SequenceEqual(["--input-check"]) ? new InputCheckWindow() : new MainWindow();
+        window = new MainWindow();
         window.Activate();
     }
 }

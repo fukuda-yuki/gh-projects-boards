@@ -34,10 +34,14 @@ ProjectDiscovery pages user/organization Projects and resolves explicit same-hos
 
 PlanSheetView owns the selected cell/range, pending native TextBox input, clipboard, column visibility, title filter, zoom and independent horizontal offsets. PlanSheetRow realizes only the virtualized visible rows; cells, bars and dependency segments share DPI-aware compact row geometry. One ListView owns vertical scrolling. Native composition events guard IME confirmation separately from cell commit. Native key overrides return synchronously; asynchronous commits use captured managed values without retaining routed event arguments. Inactive row presentation is released after the native unload callback returns; focused or composing editors are retained. Final window close is queued after the cancellable native closing callback returns.
 
-PlanSheetEditing translates visible rows/columns and text/clipboard into typed Phase 3 commands using stable PlanRow identities. It has no legacy EditingWorkspace, DraftSession or Apply journal. PlanSession remains the single state/history/save owner. The native rendering and frame callback approach replaces the isolated prototype model; no prototype executable route remains.
+PlanSheetEditing translates visible rows/columns and text/clipboard into typed local operations using stable PlanRow identities. PlanSession remains the single state/history/save owner. Rendering and frame instrumentation use the same native controls as ordinary editing.
 
 The planning editor uses PlanPublisher, PlanSession and the current scheduling model exclusively. Only the new scoped checkpoint format is loaded. Calendar resources and Project retrieval remain independent of editing and publication.
 
 ## Validation boundaries
 
 The [test policy](../tests/README.md) prioritizes logic, then UI integration, then representative E2E. Workspace adapter tests use real fake-gh subprocesses and isolated storage. Hosted UI tests exercise actual views, events and rendered values with the same Core. E2E drives the ordinary executable through public UI Automation, including restart. Fake endpoints do not establish live GitHub, physical IME, performance or human acceptance.
+
+## Evaluation boundary
+
+The test executable generates the offline evaluation data using PlanOperations.Schedule, persists an ordinary PlanStore document and serves the matching remote rows through FakePlanEditor. Start-Evaluation.ps1 launches the ordinary app with an isolated data root and child-only PATH pointing to that fake executable. There is no product evaluation branch, network fallback or additional dependency. Resume retains both local edits and the fake remote state.

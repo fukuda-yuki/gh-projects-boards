@@ -9,6 +9,7 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.FirstOrDefault() == "--prepare-evaluation" && args.Length == 2) { await EvaluationFixture.Create(args[1]); return 0; }
         if (args.FirstOrDefault() == "--plan-publish-live" && args.Length == 3) return await PlanPublisherLive.Run(args[1], args[2]);
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);

@@ -1,5 +1,0 @@
-*.jsonl -text whitespace=cr-at-eol
-*.xml -text -whitespace
-*.log -text whitespace=cr-at-eol
-*.diff -text -whitespace
-*.patch -text -whitespace

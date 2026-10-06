@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Text.Json;
-using GhProjectsBoards.Tests;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -787,14 +786,7 @@ internal sealed class PlanSheetHostedTests
             boundary = "Cell commit through real Core acceptance and visible dates/bars to CompositionTarget.Rendered; autosave concurrent, hosted UI" });
         File.WriteAllText(Path.Combine(evidence, "plan-measurement.json"), summary);
         TestContext.Out.WriteLine(summary);
-        var synthetic = Path.Combine(evidence, "synthetic-1000"); Directory.CreateDirectory(synthetic);
-        File.WriteAllText(Path.Combine(synthetic, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-        FakePlanEditor.Save(synthetic, new(session.Document.State.Rows.Select(r => new PlanFakeIssue(r, "", true)).ToImmutableArray(), 1001));
-        // The same ordinary app opens this isolated Project through fake gh. Preserve the explicit status date.
-        var store = new PlanStore(Path.Combine(synthetic, "data"));
-        await PlanSession.CreateAsync(store, session.Document with { Baseline = new(session.Document.State.Rows, session.Document.Baseline.Columns) }, Today);
         await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "sheet-1000"));
-        TestContext.Out.WriteLine("Synthetic ordinary-app GH_CONFIG_DIR: " + synthetic);
     }
     [Test]
     public async Task PendingTextStaysLocalUntilFocusCommitThenDatesBarsAndUndoChangeTogether()

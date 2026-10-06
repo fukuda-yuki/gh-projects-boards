@@ -179,7 +179,8 @@ internal static class PlanPublishPlan
             var numericDatesOnly = group.Key.Stage == PlanPublishStage.Fields && group.All(w =>
                 w.Mutation == "updateProjectV2ItemFieldValue" && System.Text.Json.Nodes.JsonNode.Parse(w.Input)?["value"] is System.Text.Json.Nodes.JsonObject value &&
                 value.Any(p => p.Key is "number" or "date"));
-            var size = group.Key.Stage == PlanPublishStage.Order ? 1 : numericDatesOnly ? 50 : 10;
+            // Position changes depend on preceding moves; partial-alias retries would reorder siblings.
+            var size = group.Key.Stage == PlanPublishStage.Order || group.Key is (PlanPublishStage.Hierarchy, 2) ? 1 : numericDatesOnly ? 50 : 10;
             foreach (var batch in group.Chunk(size)) yield return batch.ToImmutableArray();
         }
     }

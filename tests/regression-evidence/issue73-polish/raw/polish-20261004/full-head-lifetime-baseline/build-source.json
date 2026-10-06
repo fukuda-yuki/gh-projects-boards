@@ -1,9 +1,0 @@
-{
-  "source": "654930a3f7a8810695a806a13a86f3c9d28f9ed4",
-  "sourceStatus": [],
-  "testSource": "4440FC665F09A31C292FAB48ED78E82D628F096DA14B42E82CD3382116B69AB6",
-  "command": "dotnet build tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj -c Release -o TestResults/lifetime-clean-head/host",
-  "os": "Microsoft Windows NT 10.0.26200.0",
-  "sdk": "10.0.401",
-  "started": "2026-10-04T09:22:47.7386203Z"
-}
