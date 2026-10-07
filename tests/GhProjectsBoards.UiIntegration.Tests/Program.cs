@@ -1,6 +1,7 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using NUnitLite;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
@@ -35,6 +36,11 @@ internal static class Program
             Ui.Root = new Grid();
             Ui.Window = new Window { Content = Ui.Root, Title = "GHPB hosted UI integration" };
             Ui.Window.AppWindow.Resize(new Windows.Graphics.SizeInt32(1400, 1000));
+            // Routine cases drive focus only through XAML and UI Automation. Activation changes and
+            // physical input from the desktop session would invalidate focus and input observations.
+            Ui.Window.Activated += (_, e) => Ui.Trace("[WINDOW] " + e.WindowActivationState);
+            Ui.Root.AddHandler(UIElement.PreviewKeyDownEvent, new KeyEventHandler((_, e) => Ui.Trace("[INPUT] key " + e.OriginalKey)), true);
+            Ui.Root.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) => Ui.Trace("[INPUT] pointer " + e.Pointer.PointerDeviceType)), true);
             Ui.Window.Activate();
             _ = Task.Run(() =>
             {

@@ -40,7 +40,17 @@ internal static class Ui
             Fatal = null; TrackedContext.Start(Queue); return Task.CompletedTask;
         }, check: false);
     }
-    public static void EndTest() => diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts}");
+    public static void EndTest()
+    {
+        // A detached view's WinRT references release its native XAML tree, and the memory
+        // pressure CsWinRT adds per reference, only once they are collected and finalized.
+        // Left to later cases, sheets pile up and that pressure forces ever longer blocking
+        // gen2 collections on the UI thread. Finalizers can need the UI thread, so the wait
+        // is bounded.
+        var released = Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }).Wait(TimeSpan.FromSeconds(10));
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts} released={released} gcPauseMs={GC.GetTotalPauseDuration().TotalMilliseconds:F0} privateMB={process.PrivateMemorySize64 >> 20}");
+    }
     public static async Task Run(Action action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
         => await Run(() => { action(); return Task.CompletedTask; }, operation: operation);
     public static async Task Run(Func<Task> action, bool check = true, [System.Runtime.CompilerServices.CallerMemberName] string operation = "", TimeSpan? timeout = null)

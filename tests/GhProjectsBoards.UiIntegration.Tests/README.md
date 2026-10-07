@@ -17,4 +17,8 @@ RenderedEvidence captures native XAML after layout for design review. It is not 
 
 Unmount failures report the test and lifecycle phase, root attachment, loaded state, focused control, open popups, sheet command queue, drag timer, frame subscription and tracked dispatcher work. A missing Unloaded signal is distinct from a process deadline or an unresponsive dispatcher. Case start/end and lifecycle diagnostics are written immediately to the UTF-8 stderr stream, outside NUnit case buffering, and remain available when an external deadline prevents results.xml.
 
+Each case ends with a bounded full collection and finalizer pass. A detached view's WinRT references release its native XAML tree, and the memory pressure CsWinRT adds for each reference, only once they are collected and finalized. Without that case boundary, the sheets mounted by successive cases accumulate, and the pressure forces increasingly long blocking gen2 collections on the UI thread. Those pauses stall dispatch, layout and rendering in later cases. The [END] line records whether the pass completed, the cumulative GC pause and private memory.
+
+The host window shares the interactive desktop. [WINDOW] lines record activation changes and [INPUT] lines record physical keys or pointer presses reaching the host. Routine cases inject no native input, so an [INPUT] line in a routine run marks desktop interference that can invalidate focus and input observations.
+
 The default host deadline is 900 seconds for the combined routine suite; the per-view Unloaded deadline remains 10 seconds. Increase the process deadline explicitly for performance selections. Process deadlines do not establish a view lifecycle failure.
