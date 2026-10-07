@@ -1,0 +1,4 @@
+interface:
+  display_name: "GHPB Product Review"
+  short_description: "Review PMO product value and roadmap priorities"
+  default_prompt: "Use $ghpb-product-review to assess whether the requested gh-projects-boards roadmap or build serves the owner's PMO planning job."
