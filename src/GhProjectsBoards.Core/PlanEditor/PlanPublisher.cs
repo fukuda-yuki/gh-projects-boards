@@ -320,8 +320,18 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (response.RetryAfter is { } delay && delay > TimeSpan.Zero)
                     {
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = DateTimeOffset.UtcNow + delay }).ConfigureAwait(false));
-                        await Task.Delay(delay, token).ConfigureAwait(false);
                     }
+                    // A missing outcome is not an alias rejection; later writes would widen the uncertainty.
+                    // Explicit resource failures retain the bounded split/creation-guard recovery below.
+                    var resourceRecovery = group.Length > 1 && response.Data is { ValueKind: JsonValueKind.Object } responseBody &&
+                        responseBody.TryGetProperty("errors", out var responseErrors) && responseErrors.ValueKind == JsonValueKind.Array &&
+                        responseErrors.GetArrayLength() > 0 && responseErrors.EnumerateArray().All(e => e.ValueKind == JsonValueKind.Object &&
+                            e.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "RESOURCE_LIMITS_EXCEEDED");
+                    if (results.Any(w => w.State == PlanWriteState.Dispatched &&
+                        !(resourceRecovery && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
+                        throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
+                    if (response.RetryAfter is { } wait && wait > TimeSpan.Zero)
+                        await Task.Delay(wait, token).ConfigureAwait(false);
                     foreach (var already in results.Where(w => w.Stage == PlanPublishStage.Add && w.Error == "AlreadyPresent: Content already exists in this project"))
                     {
                         var issue = progress.Writes.Single(w => w.Identity == already.Identity && w.Stage == PlanPublishStage.Create).ResultId!;

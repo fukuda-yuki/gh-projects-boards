@@ -1,36 +1,38 @@
 # gh-projects-boards
 
-A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 3. [Requirements](docs/requirements.md), [specification](docs/spec.md) and [decisions](docs/decisions.md) define the product under [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76).
+A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 3. [Requirements](docs/requirements.md), [specification](docs/spec.md) and [decisions](docs/decisions.md) define the product under [Epic #88](https://github.com/fukuda-yuki/gh-projects-boards/issues/88).
 
 The ordinary app opens the Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. **担当者** compares daily, weekly and monthly load, whole-Project allowances and forecasts; expanding a person allows task corrections with the same Undo history. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry.
 
 ## Build and run
 
-Use Windows x64, PowerShell 7, .NET 10 SDK and Windows SDK 10.0.26100.0. Restore dependencies once in a network-enabled development environment. In the prepared worktree, use the short junction path:
+Use Windows x64, PowerShell 7, .NET 10 SDK and Windows SDK 10.0.26100.0. Restore dependencies once in a network-enabled development environment. Run these commands from the selected checkout:
 
 ~~~powershell
-Set-Location C:\w\g76
-dotnet build C:\w\g76\GhProjectsBoards.sln -c Release --no-restore
-$env:GHPB_DATA_ROOT = 'C:\w\g76\TestResults\workspace-evaluation'
-& C:\w\g76\src\GhProjectsBoards.App\bin\Release\net10.0-windows10.0.26100.0\win-x64\GhProjectsBoards.App.exe
+dotnet build ./GhProjectsBoards.sln -c Release --no-restore
+$env:GHPB_DATA_ROOT = Join-Path (Get-Location) 'TestResults/workspace-evaluation'
+& ./src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe
 ~~~
 
-GHPB_DATA_ROOT must be absolute. Omit it to use the normal per-user root. The new app writes only under PlanningEditor/v1 and leaves old files untouched. A long checkout can cause MSB3030 during app-local packaging; use a short path before building. The development executable includes app-local .NET and Windows App SDK runtimes. Distribution requirements remain separate; see [dependency terms](docs/dependencies.md).
+GHPB_DATA_ROOT must be absolute. Omit it to use the normal per-user root. The app writes under PlanningEditor/v1. A long checkout can cause MSB3030 during app-local packaging; if a short junction is needed, verify that it points to the selected checkout before using it. The development executable includes app-local .NET and Windows App SDK runtimes.
+
+## Internal distribution
+
+Run `./scripts/Publish-Internal.ps1 -ArtifactsRoot C:\w\ghpb-distribution` to build a self-contained Windows x64 ZIP in a new isolated output directory. The command audits the exact dependencies, notices and payload hashes; see [dependency terms](docs/dependencies.md). The ZIP includes the [Japanese distribution guide](docs/internal-distribution-ja.md). Recipients need GitHub CLI and Project access; they do not need the checkout or development SDKs. Package creation and ordinary-app smoke checks remain separate from clean-PC and human acceptance under [#92](https://github.com/fukuda-yuki/gh-projects-boards/issues/92).
 
 ## Offline evaluation
 
 The evaluation launcher defaults to Release. Use `-Configuration Debug` to build or run Debug app and fixture binaries together; keep the same configuration when resuming.
 
 ```powershell
-Set-Location C:\w\g76
-C:\w\g76\scripts\Start-Evaluation.ps1 -NoBuild
+./scripts/Start-Evaluation.ps1 -NoBuild
 # Continue the same evaluation; use the data root printed above:
-C:\w\g76\scripts\Start-Evaluation.ps1 -NoBuild -Resume -DataRoot '<absolute printed path>'
+./scripts/Start-Evaluation.ps1 -NoBuild -Resume -DataRoot '<absolute printed path>'
 ```
 
-Omit `-NoBuild` to build the selected configuration with `--no-restore` first. The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then **開発計画**. No network or real account is used. The ordinary app starts with **未発行 0 タスク**, 1,000 tasks, 20 people, hierarchy, predecessors and varied effort. The fixed 状況日 is 2026-10-05; person-U1 has two independent four-hour tasks against four available hours that day while remaining within the Project allowance. Work is spread across several months; person-U4 has another daily overload and person-U2 exceeds their total allowance. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
+Omit `-NoBuild` to build the selected configuration with `--no-restore` first. The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then **第2027.04版**. No network or real account is used. The ordinary app starts at **未発行 0 タスク**, with 40 requirements, 1,000 executable tasks and 20 people. The fixed 状況日 is 2026-10-05. One daily overload is hidden by the weekly average; another person exceeds their total allowance. The two-wave schedule keeps active weeks near capacity; `evaluation.json` reports every week, including the low-demand tail. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
 
-For live evaluation, start the ordinary executable using the Build and run command with a **different** data root and real gh. Project 3 already contains the 24-task evaluation plan, Issues #864–#887. Keep those tasks; do not import the CSV again. Refresh it, inspect the plan, and publish only deliberate evaluation changes. Offline and live roots are independent.
+The shared WBS and reproducible sandbox commands are described in [version evaluation](evaluation/README.md). Live evaluation uses a **different**, fresh data root and real gh against Project 3. Reuse the existing R01–R39 Issues, complete the initial planning pass in the sheet, then simulate four weekly updates, adding R40 in week three. Live assignment evidence uses actual sandbox users; 20-person workload evaluation uses the offline fixture.
 
 ## Open a Project
 
@@ -45,10 +47,10 @@ For the authorized sandbox, connect to github.com with C:\Program Files\GitHub C
 ## Validation
 
 ~~~powershell
-dotnet test C:\w\g76\tests\GhProjectsBoards.Tests\GhProjectsBoards.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlanWorkspaceTests|FullyQualifiedName~PlanLivePreflightTests'
-dotnet build C:\w\g76\tests\GhProjectsBoards.UiIntegration.Tests\GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
-C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild
-C:\w\g76\scripts\Test-E2E.ps1 -Configuration Release -Filter 'FullyQualifiedName~PlanningWorkspaceJourneyTests|FullyQualifiedName~PlanningPublishJourneyTests'
+dotnet test ./tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-restore --filter 'FullyQualifiedName~PlanWorkspaceTests|FullyQualifiedName~PlanLivePreflightTests'
+dotnet build ./tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj -c Release --no-restore
+./scripts/Test-UiIntegration.ps1 -NoBuild
+./scripts/Test-E2E.ps1 -Configuration Release -Filter 'FullyQualifiedName~PlanningWorkspaceJourneyTests|FullyQualifiedName~PlanningPublishJourneyTests'
 ~~~
 
 The hosted UI tests use real controls, Core and storage, with fake gh at the remote boundary and substituted clipboard or file picking in the relevant cases. The ordinary-executable journey uses an isolated fake endpoint and reopens the selected Project after restart and verifies publish recovery without duplicate Issues or resending verified writes. Neither establishes real GitHub, GHEC + EMU, physical IME or human PMO acceptance. See [test policy](tests/README.md) for boundaries.

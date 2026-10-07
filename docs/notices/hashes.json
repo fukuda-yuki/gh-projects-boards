@@ -86,5 +86,11 @@
   {
     "file": "System.Numerics.Tensors-9.0.0-THIRD-PARTY-NOTICES.TXT",
     "sha256": "40686C6447A7D5B5D3693068E4571B5F483D7ED335AEEE773EF662440DE4C5D5"
+  },
+  {
+    "file": "Windows-SDK-redist-20261008.html",
+    "sha256": "5BD32B369549741FFFCD199C9750967A988934243FA3D13CB67F33B13161431B",
+    "source": "https://learn.microsoft.com/en-us/legal/windows-sdk/redist",
+    "retrievedDate": "2026-10-08"
   }
 ]

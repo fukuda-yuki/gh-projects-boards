@@ -234,4 +234,16 @@ internal sealed class PlanPublishTests
         Assert.That(actual.Length, Is.EqualTo(batches));
         Assert.That(actual.SelectMany(b => b), Is.EqualTo(writes));
     }
+    [Test]
+    public void SparseAssigneeChangesDoNotReduceLongNumericDateRunsToTenAliases()
+    {
+        var writes = Enumerable.Range(0, 135).Select(i => new PlanWrite(i.ToString(), "I" + i, PlanPublishStage.Fields,
+            i is 0 or 121 ? "updateIssue" : "updateProjectV2ItemFieldValue", "Input",
+            i is 0 or 121 ? "{\"id\":\"I1\",\"assigneeIds\":[\"U1\"]}" : "{\"value\":{\"number\":8}}", "id")).ToArray();
+        var batches = PlanPublishPlan.Batches(writes).ToArray();
+        Assert.That(batches.SelectMany(b => b), Is.EqualTo(writes), "Writes retain their planned order and occur exactly once.");
+        Assert.That(batches.Any(b => b.Length == 50), Is.True, "A sparse assignee edit must not impose the mixed limit on the entire phase.");
+        foreach (var batch in batches) Assert.That(batch.Length,
+            Is.LessThanOrEqualTo(batch.All(w => w.Mutation == "updateProjectV2ItemFieldValue") ? 50 : 10));
+    }
 }

@@ -24,6 +24,8 @@ public sealed class PlanSheetRow : Grid
     private readonly List<Border> frames = [];
     private readonly List<TextBlock> markers = [];
     private readonly List<Button> handles = [];
+    private readonly Button fold = new() { Width = 20, MinWidth = 0, MinHeight = 0, Padding = new(0),
+        HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
     private string boundIdentity = "";
     public PlanSheetRow()
     {
@@ -41,9 +43,15 @@ public sealed class PlanSheetRow : Grid
             AutomationProperties.SetName(handle, "選択範囲へコピー"); ToolTipService.SetToolTip(handle, "上下にドラッグしてコピー");
             handle.Click += async (_, _) => { if (Owner is { } owner) await owner.Run(() => owner.Fill(PlanOperationKind.Fill)); };
             var grid = new Grid(); grid.Children.Add(cell); grid.Children.Add(marker); grid.Children.Add(handle);
+            if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 1, 1) };
             line.Children.Add(frame); frames.Add(frame); markers.Add(marker); handles.Add(handle);
         }
+        fold.Click += async (_, _) => {
+            if (Owner is not { } owner) return;
+            var identity = Identity;
+            await owner.Run(() => owner.SetFold(identity, !owner.IsFolded(identity)), "Fold requirement");
+        };
         Loaded += (_, _) => {
             for (DependencyObject? parent = this; parent is not null; parent = VisualTreeHelper.GetParent(parent))
                 if (parent is PlanSheetView owner) { Owner = owner; owner.Realized.Add(this); break; }
@@ -59,6 +67,7 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(id, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
         foreach (var handle in handles) AutomationProperties.SetAutomationId(handle, "");
+        AutomationProperties.SetAutomationId(fold, "");
         chart.Children.Clear();
     }
     internal void Refresh()
@@ -82,6 +91,18 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(id, "PlanRowId" + number);
         var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
         while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
+        var summary = owner.SummaryIds.Contains(Identity);
+        fold.Visibility = summary ? Visibility.Visible : Visibility.Collapsed;
+        fold.IsEnabled = owner.FoldingEnabled;
+        fold.Height = owner.RowHeight - 2;
+        fold.Margin = new(depth * 12, 0, 0, 0);
+        var collapsed = owner.IsFolded(Identity);
+        var glyph = collapsed ? "\uE76C" : "\uE70D";
+        if (fold.Content is not FontIcon icon || icon.Glyph != glyph) fold.Content = new FontIcon { Glyph = glyph, FontSize = 10 };
+        var foldName = (collapsed ? "展開: " : "折りたたむ: ") + owner.Rows.GetValueOrDefault(Identity)?.Title;
+        AutomationProperties.SetAutomationId(fold, "PlanFold" + number);
+        AutomationProperties.SetName(fold, foldName);
+        ToolTipService.SetToolTip(fold, foldName);
         for (var i = 0; i < Cells.Length; i++)
         {
             var cell = Cells[i]; var column = PlanSheetView.Columns[i + 1]; var field = cell.Field;
@@ -105,7 +126,7 @@ public sealed class PlanSheetRow : Grid
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.IsReadOnly = owner.ReadOnly(Identity, field);
             cell.MinHeight = cell.Height = owner.RowHeight - 2;
-            cell.Padding = field == PlanField.Title ? new(4 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
+            cell.Padding = field == PlanField.Title ? new(4 + depth * 12 + (summary ? 20 : 0), 1, 4, 1) : new(4, 1, 4, 1);
             var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (remoteProblem.Length > 0 ? remoteProblem : null);
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? owner.Display(Identity, field);
             cell.Refresh(text);
@@ -227,6 +248,12 @@ internal sealed class PlanSheetCell : TextBox
         {
             args.Handled = true;
             CommitAndNavigate(owner, row.Identity, Text, args.Key == VirtualKey.Tab, shift);
+        }
+        else if (!Editing && control && Field == PlanField.Title && owner.SummaryIds.Contains(row.Identity) && args.Key is VirtualKey.Left or VirtualKey.Right)
+        {
+            args.Handled = true;
+            var identity = row.Identity; var collapse = args.Key == VirtualKey.Left;
+            _ = owner.Run(() => owner.SetFold(identity, collapse), "Fold requirement");
         }
         else if (args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
         else if (!Editing && control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y)

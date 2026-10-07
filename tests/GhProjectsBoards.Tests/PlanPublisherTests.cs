@@ -621,6 +621,46 @@ internal sealed class PlanPublisherTests
         Scenario("forbid-mutation");
         Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
     }
+    [TestCase("global-unknown")]
+    [TestCase("global-resource-unknown")]
+    [TestCase("missing-alias")]
+    [TestCase("unknown-and-resource")]
+    public async Task UnresolvedResponseStopsLaterFieldsAndRelationshipsAndSurvivesReopen(string fault)
+    {
+        await Start(51);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m))
+            .Append(new("I51", PlanField.Predecessors, new[] { "I1" })).ToImmutableArray()), Today);
+        Scenario(fault);
+
+        var result = await publisher.PublishAsync(session, Today);
+
+        Assert.That(result.Succeeded, Is.False);
+        var remote = FakePlanEditor.Load(root);
+        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I51").Row.Actual, Is.Null);
+        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I51").Row.Predecessors, Is.Empty);
+        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I2").Row.Actual, Is.Null,
+            "A resource rejection must not be retried while another alias is unresolved.");
+        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I1").Row.Actual,
+            Is.EqualTo(fault.StartsWith("global-", StringComparison.Ordinal) ? (decimal?)null : 3m));
+        Assert.That(result.Error, Does.Contain("GitHubの応答を確認できないため発行を中断しました。"));
+        var progress = session.Document.Sync.Publish!;
+        Assert.That(progress.Writes.Any(w => w.State == PlanWriteState.Dispatched), Is.True);
+        Assert.That(progress.Writes.Where(w => w.Identity == "I51").All(w => w.State == PlanWriteState.Pending), Is.True);
+        var saved = PlanJson.Text(progress);
+        await Reopen();
+        Assert.That(PlanJson.Text(session.Document.Sync.Publish), Is.EqualTo(saved));
+        Assert.That(session.Document.State.Rows.All(r => r.Actual == 3), Is.True);
+        Assert.That(session.Document.Sync.Unverified, Is.Not.Empty);
+
+        Scenario();
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(PlanJson.Text(FakePlanEditor.Load(root).Issues), Is.EqualTo(PlanJson.Text(remote.Issues)),
+            "Reconciliation must not dispatch pending writes.");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 3), Is.True);
+        Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I51").Row.Predecessors, Is.EqualTo(new[] { "I1" }));
+    }
     [TestCase("partial")]
     [TestCase("before")]
     [TestCase("after-and-read")]
@@ -1014,8 +1054,8 @@ internal sealed class PlanPublisherTests
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows.Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
         Scenario(fault);
         var first = await publisher.PublishAsync(session, Today);
-        Assert.That(first.Succeeded, Is.EqualTo(fault != "partial"));
-        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(fault == "partial" ? 1 : 0));
+        Assert.That(first.Succeeded, Is.EqualTo(fault == "resource"));
+        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(fault == "resource" ? 0 : 1));
         Scenario();
         var opened = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);

@@ -6,6 +6,54 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanWorkspaceTests
 {
     [Test]
+    public async Task FreshUnassignedProjectResolvesLatePageAssigneeWithoutCreationPermissionOrEdits()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-people-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"repository-denied\"}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
+            var workspace = new PlanWorkspace(new(root));
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var session = workspace.Session!;
+            Assert.That(PlanSheetEditing.Parse(session.Document, PlanField.Assignees, "late-user"), Is.EqualTo(new[] { "U101" }));
+            Assert.That(workspace.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
+            Assert.That(session.Document.State.Rows.Single().Assignees, Is.Empty);
+            Assert.That(session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.Zero);
+            Assert.That(session.UndoCount, Is.Zero);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [TestCase("catalog-network")]
+    [TestCase("catalog-incomplete")]
+    [TestCase("catalog-identity")]
+    public async Task FailedAssignableCatalogDoesNotAdoptOrSaveAPartialProject(string fault)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-intake-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
+            var store = new PlanStore(root);
+            var workspace = new PlanWorkspace(store);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var original = workspace.Session;
+            var choice = workspace.Available[1];
+            File.WriteAllText(Path.Combine(root, "scenario.json"), $"{{\"planEditor\":true,\"workspace\":true,\"planFault\":\"{fault}\"}}");
+            Assert.ThrowsAsync<InvalidOperationException>(() => workspace.Open(choice));
+            Assert.That(workspace.Session, Is.SameAs(original));
+            Assert.That(workspace.Registered.Select(p => p.Id), Does.Not.Contain(choice.Id));
+            Assert.That(File.Exists(store.FileFor(choice.Id)), Is.False);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Test]
     public async Task CsvPreviewResolvesAssignableUsersAcrossPagesWithoutWritingOrEditing()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-csv-catalog-" + Guid.NewGuid().ToString("N"));

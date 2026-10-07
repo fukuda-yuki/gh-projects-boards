@@ -36,7 +36,8 @@ internal sealed partial class PlanSheetView
     }
     private void ReconcileSelection()
     {
-        if (!RowIds.Contains(selected)) selected = RowIds.FirstOrDefault() ?? "";
+        var previous = selected;
+        if (!RowIds.Contains(selected)) selected = VisibleAncestor(selected) ?? RowIds.FirstOrDefault() ?? "";
         if (!RowIds.Contains(anchor)) anchor = selected;
         if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault();
         if (!Fields.Contains(anchorField)) anchorField = selectedField;
@@ -44,6 +45,8 @@ internal sealed partial class PlanSheetView
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
+        var range = Range; selection.Text = range.Single ? "" : $"{range.RowCount}行・{range.RowCount * range.ColumnCount}セル";
+        if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
     }
     internal bool IsSelected(string identity, PlanField field)
     {
@@ -62,7 +65,7 @@ internal sealed partial class PlanSheetView
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             if (!disposed && IsLoaded && selectedField == field) EnsureColumnVisible(field);
         });
-        UpdateReason(); RefreshRealized();
+        UpdateReason(); RefreshOverviewCommands(); RefreshRealized();
     }
     private void EnsureColumnVisible(PlanField field)
     {

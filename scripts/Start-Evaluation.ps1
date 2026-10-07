@@ -40,7 +40,7 @@ if ($Resume) {
 }
 Write-Host "Data root: $DataRoot"
 Write-Host "Offline fake gh: $fake"
-Write-Host '接続 → 開発計画。初期状態は 未発行 0 タスク。状況日は 2026-10-05。'
+Write-Host '接続 → 第2027.04版。40要求事項・1,000タスク・20名。初期状態は 未発行 0 タスク。状況日は 2026-10-05。'
 Write-Host "Resume: & '$PSCommandPath' -NoBuild -Configuration $Configuration -Resume -DataRoot '$DataRoot'"
 if ($PrepareOnly) { return }
 $start = IsolatedStart $app

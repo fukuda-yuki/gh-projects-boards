@@ -78,7 +78,7 @@ PlanWorkspaceTests exercises real connection/discovery, Project selection and ca
 
 ## Plan sheet and Gantt (#78)
 
-PlanSheetHostedTests exercises real cells, events, selection, input, rectangular operations, Undo, visible dates/bars, alignment and pending-input retention with a real PlanSession. Routine clipboard cases substitute the OS transport. Native clipboard/keys/pointer and frame performance are opt-in:
+PlanSheetHostedTests exercises real cells, events, selection, input, rectangular operations, Undo, visible dates/bars, alignment and pending-input retention with a real PlanSession. PlanOverviewHostedTests adds requirement folding with stable identities, filter/input focus, full-period and rapid selected-date navigation, and searchable predecessor selection with visible popup bounds. Routine clipboard cases substitute the OS transport. Native clipboard/keys/pointer and frame performance are opt-in:
 
 ```powershell
 C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetNative'
@@ -109,11 +109,11 @@ Require nine passing samples and CleanupComplete in plan-publish-live.json. Keep
 
 ## Publish workspace (#79)
 
-Publish cases in PlanWorkspaceHostedTests cover changed markers/count, review, conflicts, failures/retry, pending inputs and workspace-owned operation lifetime. PlanningPublishJourneyTests drives two ordinary-app workflows including interrupted publication/restart through fake gh. Neither establishes live service acceptance.
+Publish cases in PlanWorkspaceHostedTests cover changed markers/count, review, conflicts, failures/retry, pending inputs and workspace-owned operation lifetime. PlanPublishReviewHostedTests covers grouped full-value review, 1,040-Issue virtualization and last-item access, and recycled conflict actions without sending mutations. PlanningPublishJourneyTests drives two ordinary-app workflows including interrupted publication/restart through fake gh. Neither establishes live service acceptance.
 
 ## People view (#80)
 
-PlanPeopleTests covers both Issue examples, weighted day/week/month aggregation, partial-day scheduler allocation, current assignees, missing inputs and fixed/complete/summary work. People cases in PlanWorkspaceHostedTests cover real edits, contributing tasks, overload text/color, retained pending input and 20 people plus assignment groups at 1280×720. PlanningPeopleJourneyTests covers the ordinary app's period change, allowance edit and restart at that client size.
+PlanPeopleTests covers both Issue examples, weighted day/week/month aggregation, partial-day scheduler allocation, current assignees, missing inputs and fixed/complete/summary work. It also retains known daily overload dates and causes when period averages hide them or other work is unallocated. PlanPeopleOverloadHostedTests exercises week/month warnings, accessible untrimmed text, date-specific contributing tasks, reassignment and Undo through the real People view. People cases in PlanWorkspaceHostedTests cover real edits, contributing tasks, overload text/color, retained pending input and 20 people plus assignment groups at 1280×720. PlanningPeopleJourneyTests covers the ordinary app's period change, allowance edit and restart at that client size.
 
 ## CSV new tasks (#82)
 
@@ -121,7 +121,7 @@ PlanCsvImportTests verifies encoding, whole-file validation, line errors, keys/r
 
 ## Offline evaluation fixture
 
-EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 1,000 tasks, 20 people, zero unpublished tasks before/after refresh, mostly capacity-respecting work across several months, isolated daily overload within allowance, one total-allowance overrun, native sibling order, and refusal to replace an occupied root. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
+EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 40 requirements with 25 tasks each (1,040 Issues), 20 people, zero unpublished tasks before/after refresh, complete load allocation, near-capacity weekly demand across the two-wave plan, a daily overload hidden by its weekly average, one total-allowance overrun, native sibling order, and refusal to replace an occupied root. Every displayed week is reported, including the low-demand tail. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
 
 ## Execution evidence
 
