@@ -68,8 +68,7 @@ try {
     $binaries = @(
         $env:GHPB_E2E_APP_PATH, "$appDirectory/GhProjectsBoards.App.dll", "$appDirectory/GhProjectsBoards.Core.dll",
         "$appDirectory/Microsoft.UI.Xaml.dll", "$appDirectory/Microsoft.UI.Xaml.Controls.dll",
-        "$appDirectory/DWriteCore.dll", "$appDirectory/Microsoft.Windows.Widgets.dll",
-        "$appDirectory/Microsoft.Windows.Widgets.Projection.dll", "$appDirectory/Microsoft.Windows.Widgets.winmd",
+        "$appDirectory/DWriteCore.dll", "$appDirectory/Microsoft.Windows.Widgets.dll", "$appDirectory/Microsoft.Windows.Widgets.winmd",
         "$appDirectory/coreclr.dll", "$appDirectory/GhProjectsBoards.App.runtimeconfig.json",
         $env:GHPB_E2E_FAKE_GH_PATH, "$fakeDirectory/GhProjectsBoards.Tests.dll", "$fakeDirectory/GhProjectsBoards.Core.dll",
         "$testDirectory/GhProjectsBoards.E2E.Tests.dll", "$testDirectory/FlaUI.Core.dll", "$testDirectory/FlaUI.UIA3.dll"
