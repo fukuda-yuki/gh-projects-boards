@@ -414,18 +414,54 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Idle();
     }
 
-    [Test, Category("PlanSheetNative")]
-    public async Task PeopleEscapeRestoresTheCurrentDocumentAfterFailedSave()
+    [Test, Category("PeopleRefresh")]
+    public async Task PeopleRefreshAfterRetriedSaveKeepsTheAcceptedInputAndFocus()
+    {
+        await PreparePeopleRetriedSave();
+        var undo = workspace.Session!.UndoCount;
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("PeopleAllowance_U1").Focus(FocusState.Programmatic);
+            Ui.Tree(view).OfType<PlanPeopleView>().Single().Refresh();
+        });
+        await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PeopleAllowance_U1");
+            Assert.That(cell.Text, Is.EqualTo("80"));
+            Assert.That(cell.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
+            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.True);
+        });
+        Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+    }
+
+    private async Task PreparePeopleRetriedSave()
     {
         await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
             await Ui.Run(() => { var cell = Ui.Find<TextBox>("PeopleAllowance_U1"); cell.Focus(FocusState.Programmatic); cell.Text = "80"; Ui.Click("PeopleNext"); });
             await Ui.Until(() => Ui.Find<TextBlock>("PeopleError").Text.Length > 0);
         }
-        await workspace.RetrySave(); var undo = workspace.Session!.UndoCount;
+        await workspace.RetrySave();
+    }
+
+    [Test, Category("PlanSheetNative")]
+    public async Task PeopleEscapeRestoresTheCurrentDocumentAfterFailedSave()
+    {
+        await PreparePeopleRetriedSave(); var undo = workspace.Session!.UndoCount;
         await SheetNativeInput.Click("PeopleAllowance_U1");
+        await Ui.Run(() => Ui.Find<TextBox>("PeopleAllowance_U1").Text = "90");
         await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.EqualTo("80")));
+        // KeyUp proves key delivery, but refreshed ListView containers load during layout.
+        await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PeopleAllowance_U1");
+            Assert.That(cell.Text, Is.EqualTo("80"));
+            Assert.That(cell.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
+            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.True);
+            Assert.That(Ui.Find<TextBlock>("PeopleError").Text, Is.Empty);
+            Assert.That(Ui.Popup<Border>("PeopleInputProblem"), Is.Null);
+        });
+        Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
     }
 

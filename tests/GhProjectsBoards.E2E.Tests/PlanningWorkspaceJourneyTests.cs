@@ -83,7 +83,9 @@ public sealed class PlanningWorkspaceJourneyTests
                     predecessorRight = Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right,
                     title = firstRow, start = Find(window, "PlanCell1_Start").BoundingRectangle,
                     end = Find(window, "PlanCell1_End").BoundingRectangle,
-                    calendar = Find(window, "PlanTimelineMonths").Properties.Name.ValueOrDefault }));
+                    calendar = string.Join(" ", window.FindAllDescendants().Where(e =>
+                        (e.Properties.AutomationId.ValueOrDefault ?? "").StartsWith("PlanTimelineUpper", StringComparison.Ordinal))
+                        .Select(e => e.Properties.Name.ValueOrDefault)) }));
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"workspace-{launch}.png"));
                 Find(window, "PlanShowSettings").AsButton().Invoke();
                 Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanMapEstimate")) is not null);

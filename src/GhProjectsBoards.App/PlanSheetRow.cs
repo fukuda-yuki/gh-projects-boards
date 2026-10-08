@@ -172,9 +172,6 @@ public sealed class PlanSheetRow : Grid
         if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) return;
         var number = owner.PlanIds[Identity];
         chart.Width = owner.ChartViewport;
-        var status = new Line { X1 = owner.X(owner.StatusDate), X2 = owner.X(owner.StatusDate), Y1 = 0, Y2 = owner.RowHeight,
-            Stroke = PlanSheetView.Brush("SystemFillColorCriticalBrush"), StrokeThickness = 1 };
-        AutomationProperties.SetAutomationId(status, "PlanStatusLine" + number); chart.Children.Add(status);
         var rowIndex = owner.RowIds.IndexOf(Identity);
         foreach (var edge in owner.Edges)
         {
@@ -182,9 +179,14 @@ public sealed class PlanSheetRow : Grid
             var x1 = owner.X(edge.End) + owner.DayWidth; var x2 = owner.X(edge.Start);
             var y1 = (edge.From - rowIndex) * owner.RowHeight + owner.RowHeight / 2; var y2 = (edge.To - rowIndex) * owner.RowHeight + owner.RowHeight / 2;
             var elbow = Math.Max(x1 + 5, x2 - 5);
-            var arrow = new Polyline { Stroke = PlanSheetView.Brush("TextFillColorSecondaryBrush"), StrokeThickness = 1,
-                Points = [new(x1, y1), new(elbow, y1), new(elbow, y2), new(x2, y2), new(x2 - 4, y2 - 3), new(x2, y2), new(x2 - 4, y2 + 3)] };
+            var arrow = new Polyline { Stroke = PlanSheetView.Brush("GanttArrowBrush"), StrokeThickness = 1,
+                Points = [new(x1, y1), new(elbow, y1), new(elbow, y2), new(x2, y2)] };
             AutomationProperties.SetAutomationId(arrow, $"PlanArrow{edge.From + 1}_{edge.To + 1}_{number}"); chart.Children.Add(arrow);
+            if (rowIndex == edge.To) {
+                var head = PlanSheetView.Id(new Polygon { Width = 6, Height = 6, Points = [new(0, 0), new(6, 3), new(0, 6)],
+                    Fill = PlanSheetView.Brush("GanttArrowBrush") }, $"PlanArrowHead{edge.From + 1}_{edge.To + 1}_{number}");
+                Canvas.SetLeft(head, x2 - 6); Canvas.SetTop(head, y2 - 3); chart.Children.Add(head);
+            }
         }
         if (task.Start.Value is not { } start || task.End.Value is not { } end)
         {
@@ -202,18 +204,50 @@ public sealed class PlanSheetRow : Grid
         }
         if (end < start) return;
         var x = owner.X(start); var width = Math.Max(2, (end.DayNumber - start.DayNumber + 1) * owner.DayWidth);
+        var milestone = !task.IsSummary && task.Remaining == 0 && (task.Estimate ?? 0) == 0 && start == end;
+        decimal? share = null;
+        if (!task.IsSummary && task.Input.IsComplete) share = 1m;
+        else if (task.Actual is { } actual && task.Remaining is { } remaining && (actual > 0 || remaining > 0)) {
+            // Normalize before addition: two accepted decimal efforts can exceed decimal.MaxValue together.
+            var scale = Math.Max(actual, remaining);
+            var scaledActual = actual / scale;
+            share = scaledActual / (scaledActual + remaining / scale);
+        }
         Shape bar;
         if (task.IsSummary)
-            bar = new Polygon { Points = [new(0, 0), new(width, 0), new(width, 10), new(width - 4, 5), new(4, 5), new(0, 10)],
-                Fill = PlanSheetView.Brush("TextFillColorPrimaryBrush"), Width = width, Height = 10 };
-        else if (task.Remaining == 0 && (task.Estimate ?? 0) == 0 && start == end)
+            bar = new Polygon { Points = [new(0, 0), new(width, 0), new(width, 10), new(Math.Max(0, width - 4), 6), new(Math.Min(4, width), 6), new(0, 10)],
+                Fill = PlanSheetView.Brush("GanttSummaryBrush"), Width = width, Height = 10 };
+        else if (milestone)
             bar = new Polygon { Points = [new(5, 0), new(10, 5), new(5, 10), new(0, 5)], Width = 10, Height = 10,
-                Fill = PlanSheetView.Brush("SystemControlHighlightAccentBrush") };
-        else bar = new Rectangle { Width = width, Height = 12, RadiusX = 2, RadiusY = 2, Fill = PlanSheetView.Brush("SystemControlHighlightAccentBrush") };
-        Canvas.SetLeft(bar, x); Canvas.SetTop(bar, (owner.RowHeight - bar.Height) / 2);
+                Fill = PlanSheetView.Brush("GanttTaskBrush") };
+        else bar = new Rectangle { Width = width, Height = 14, RadiusX = 3, RadiusY = 3,
+            Fill = PlanSheetView.Brush("GanttTaskTintBrush"), Stroke = PlanSheetView.Brush("GanttTaskBrush"), StrokeThickness = 1 };
+        Canvas.SetLeft(bar, x); Canvas.SetTop(bar, (owner.RowHeight - (task.IsSummary ? 6 : bar.Height)) / 2);
+        var late = owner.Lateness(Identity);
         AutomationProperties.SetAutomationId(bar, "PlanBar" + number);
-        AutomationProperties.SetName(bar, $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : task.Remaining == 0 && (task.Estimate ?? 0) == 0 ? " マイルストーン" : ""));
+        AutomationProperties.SetName(bar, $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
+            + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" 発行済みより {days} 日遅れ" : ""));
         chart.Children.Add(bar);
+        if (!task.IsSummary && !milestone && share is > 0) {
+            var progress = PlanSheetView.Id(new Rectangle { Width = width * (double)share.Value, Height = 14, RadiusX = 3, RadiusY = 3,
+                Fill = PlanSheetView.Brush("GanttTaskBrush") }, "PlanProgress" + number);
+            Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); chart.Children.Add(progress);
+        }
+        if (!milestone && late is { } count && owner.PublishedEnd(Identity) is { } published) {
+            var lateX = Math.Max(x, owner.X(published) + owner.DayWidth);
+            var lateWidth = x + width - lateX;
+            if (lateWidth <= 0) return;
+            Shape segment = task.IsSummary
+                ? new Polygon { Width = lateWidth, Height = 10, Points = [new(0, 0), new(lateWidth, 0), new(lateWidth, 10), new(Math.Max(0, lateWidth - 4), 6), new(0, 6)] }
+                : new Rectangle { Width = lateWidth, Height = 14, RadiusX = 3, RadiusY = 3 };
+            segment.Fill = PlanSheetView.Brush("GanttLateTintBrush"); segment.Stroke = PlanSheetView.Brush("GanttLateBrush");
+            segment.StrokeThickness = 1; segment.StrokeDashArray = [3, 2];
+            AutomationProperties.SetAutomationId(segment, "PlanLate" + number);
+            Canvas.SetLeft(segment, lateX); Canvas.SetTop(segment, task.IsSummary ? Canvas.GetTop(bar) : (owner.RowHeight - 14) / 2); chart.Children.Add(segment);
+            var label = PlanSheetView.Id(new TextBlock { Text = $"+{count}日", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = PlanSheetView.Brush("GanttLateBrush") }, "PlanLateLabel" + number);
+            Canvas.SetLeft(label, x + width + 6); Canvas.SetTop(label, (owner.RowHeight - 16) / 2); chart.Children.Add(label);
+        }
     }
 }
 
@@ -240,12 +274,11 @@ internal sealed class PlanSheetCell : TextBox
             shownText = Text;
         };
         LostFocus += async (_, _) => {
-            if (Composing || committing) return;
-            Editing = false;
-            if (!IsLoaded || row.Owner is not { } owner) return;
-            if (!owner.Pending.ContainsKey((row.Identity, Field))) { Refresh(owner.Display(row.Identity, Field)); return; }
+            if (Composing) return;
+            EndEditing();
+            if (committing || !IsLoaded || row.Owner is not { } owner || !owner.Pending.ContainsKey((row.Identity, Field))) return;
             var identity = row.Identity; var text = Text;
-            Editing = false; await owner.CommitCell(identity, Field, text);
+            await owner.CommitCell(identity, Field, text);
         };
         TextCompositionStarted += (_, _) => { if (!Editing) editingFrom = EditOriginal(); Composing = true; Editing = true; };
         TextCompositionEnded += (_, _) => {
@@ -271,8 +304,19 @@ internal sealed class PlanSheetCell : TextBox
     private string EditOriginal() => row.Owner is { } owner && Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
         && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
     internal void BeginEditing() {
-        if (!Editing) { editingFrom = EditOriginal(); Refresh(editingFrom); }
-        Editing = true; SelectAll();
+        if (!Editing) {
+            editingFrom = EditOriginal();
+            // TextChanging can synchronously reenter presentation while Text is assigned.
+            Editing = true; Refresh(editingFrom);
+        }
+        SelectAll();
+    }
+    internal void EndEditing()
+    {
+        if (Composing) return;
+        Editing = false;
+        if (row.Owner is { } owner)
+            Refresh(owner.Pending.GetValueOrDefault((row.Identity, Field))?.Text ?? owner.Display(row.Identity, Field));
     }
     internal void Rebind() { Editing = false; Composing = false; endedThisTurn = false; }
     internal void Refresh(string text)
@@ -290,7 +334,7 @@ internal sealed class PlanSheetCell : TextBox
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
         if (args.Key == VirtualKey.Escape)
         {
-            args.Handled = true; Editing = false; owner.CancelDrag(); owner.CancelEdit(row.Identity, Field);
+            args.Handled = true; owner.CancelDrag(); owner.CancelEdit(row.Identity, Field); EndEditing();
         }
         else if (args.Key is VirtualKey.Enter or VirtualKey.Tab)
         {
@@ -317,7 +361,13 @@ internal sealed class PlanSheetCell : TextBox
         // arguments or call the native base handler after a persistence await.
         committing = true;
         var input = owner.Pending.GetValueOrDefault((identity, Field));
-        try { await owner.Run(async () => { await owner.CommitCellAndNavigate(identity, Field, text, input?.Generation ?? 0, input?.OriginalText ?? "", across, reverse); Editing = false; Refresh(owner.Display(identity, Field)); }); }
+        // An untouched F2 edit has no pending generation to finish in Commit.
+        // Other edits end only when accepted; rejection must retain text-edit behavior.
+        if (input is null) EndEditing();
+        try { await owner.Run(async () => {
+            await owner.CommitCellAndNavigate(identity, Field, text, input?.Generation ?? 0, input?.OriginalText ?? "", across, reverse);
+            if (row.Owner == owner && row.Identity == identity && !owner.Pending.ContainsKey((identity, Field))) EndEditing();
+        }); }
         finally { committing = false; }
     }
     protected override AutomationPeer OnCreateAutomationPeer() => new CellPeer(this);

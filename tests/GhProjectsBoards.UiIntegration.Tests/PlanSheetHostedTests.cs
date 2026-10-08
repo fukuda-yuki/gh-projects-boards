@@ -216,6 +216,117 @@ internal sealed class PlanSheetHostedTests
         await SheetNativeInput.Press(Windows.System.VirtualKey.C, Windows.System.VirtualKey.Control); await Ui.Idle();
         Assert.That(clipboard.Text, Is.EqualTo("2026-10-05")); Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
+    [Test, Category("EditNotification")]
+    public async Task F2EditFormSurvivesRefreshDuringItsRealTextChangingEvent()
+    {
+        await Select(1, PlanField.Start);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            cell.Focus(FocusState.Programmatic);
+            var refreshed = false;
+            void RefreshDuringChange(TextBox sender, TextBoxTextChangingEventArgs args)
+            {
+                if (refreshed || sender.Text != "2026-10-05") return;
+                refreshed = true; sheet.Refresh();
+            }
+            cell.TextChanging += RefreshDuringChange;
+            try { cell.BeginEditing(); }
+            finally { cell.TextChanging -= RefreshDuringChange; }
+            Assert.That(refreshed, Is.True, "The fixture must exercise the actual text notification.");
+            Assert.That(cell.Text, Is.EqualTo("2026-10-05"));
+            Assert.That(cell.SelectedText, Is.EqualTo("2026-10-05"));
+            Assert.That(sheet.Pending, Is.Empty);
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [Test, Category("EditNotification")]
+    public async Task EditFormTextNotificationAfterF2CreatesNoPendingInput()
+    {
+        await Select(1, PlanField.Start);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+        });
+        var notified = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            void OnLateChange(TextBox sender, TextBoxTextChangingEventArgs args) => notified.TrySetResult();
+            cell.TextChanging += OnLateChange;
+            try { cell.SelectAll(); cell.SelectedText = "2026-10-05"; }
+            finally { cell.TextChanging -= OnLateChange; }
+        });
+        await notified.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            Assert.That(cell.Text, Is.EqualTo("2026-10-05"));
+            Assert.That(sheet.Pending, Is.Empty);
+            typeof(PlanSheetCell).GetMethod("CommitAndNavigate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(cell, [sheet, "I1", cell.Text, false, false]);
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)")));
+        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(session.Schedule(Today).First().Start.Origin, Is.EqualTo(DateOrigin.Calculated));
+    }
+
+    [TestCase(false, "unchanged"), TestCase(true, "unchanged")]
+    [TestCase(false, "returned"), TestCase(true, "returned")]
+    [TestCase(false, "changed"), TestCase(true, "changed")]
+    [Category("EditExit")]
+    public async Task DateKeyCommitRestoresDisplayAfterQueuedNavigation(bool tab, string variant)
+    {
+        var changed = variant == "changed";
+        await Select(1, PlanField.Start);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+            if (variant != "unchanged") cell.Text = "2026-10-14";
+            if (variant == "returned") cell.Text = "2026-10-05";
+            // Exercise the asynchronous cell lifecycle used by native key routing;
+            // this does not establish physical-key or IME event delivery.
+            typeof(PlanSheetCell).GetMethod("CommitAndNavigate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(cell, [sheet, "I1", cell.Text, tab, false]);
+        });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo(changed ? "10/14 (水)" : "10/5 (月)"));
+            Assert.That(Ui.Find<TextBox>(tab ? "PlanCell1_End" : "PlanCell2_Start").FocusState, Is.Not.EqualTo(FocusState.Unfocused));
+        });
+        Assert.That(session.UndoCount, Is.EqualTo(changed ? 1 : 0));
+        if (!changed) Assert.That(session.Schedule(Today).First().Start.Origin, Is.EqualTo(DateOrigin.Calculated));
+    }
+
+    [Test, Category("EditExit")]
+    public async Task NewerDateInputSurvivesAnEarlierQueuedKeyCommit()
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await Select(1, PlanField.Start);
+        try {
+            await Ui.Run(() => {
+                _ = sheet.Run(() => release.Task);
+                var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+                cell.Focus(FocusState.Programmatic); cell.BeginEditing(); cell.Text = "2026-10-14";
+                typeof(PlanSheetCell).GetMethod("CommitAndNavigate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                    .Invoke(cell, [sheet, "I1", cell.Text, false, false]);
+                cell.Text = "2026-10-15";
+            });
+        } finally { release.TrySetResult(); }
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("2026-10-15"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").FocusState, Is.Not.EqualTo(FocusState.Unfocused));
+        });
+        Assert.That(session.Document.State.Rows[0].Start, Is.EqualTo(new DateOnly(2026, 10, 14)));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start");
+            Assert.That(cell.Text, Is.EqualTo("10/15 (木)"));
+        });
+        Assert.That(session.Document.State.Rows[0].Start, Is.EqualTo(new DateOnly(2026, 10, 15)));
+    }
+
     [Test, Category("PlanSheetPhase2")]
     public async Task LabelledCommandsStayReachableInNarrowNativeOverflowIncludingColumnChoices()
     {
@@ -272,9 +383,11 @@ internal sealed class PlanSheetHostedTests
         });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Start").Text == "10/5 (月)");
         await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Start"); cell.Focus(FocusState.Programmatic); cell.Text = "2026-10-05"; });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Start").Text == "10/5 (月)");
         Assert.That(session.UndoCount, Is.EqualTo(undo)); Assert.That(session.Changes(Today).Fields.Count, Is.EqualTo(unpublished));
         Assert.That(session.Document.State.Rows[0].Start, Is.Null); Assert.That(session.Document.State.Rows[0].Fixed, Is.False);
         await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
@@ -455,6 +568,7 @@ internal sealed class PlanSheetHostedTests
     [TestCase(1), TestCase(2), Category("PlanSheetReview4")]
     public async Task RejectedZoomKeepsSelectionScaleAndLabelsTogether(int proposed)
     {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Edit(1, PlanField.Remaining, "invalid");
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = proposed);
         await Ui.Run(() => sheet.Run(() => Task.CompletedTask)); await Ui.Idle();
@@ -466,10 +580,10 @@ internal sealed class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset > 0);
         await Ui.Run(() => {
             Assert.That(Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex, Is.Zero);
-            Assert.That(Ui.Find<TextBlock>("PlanTimelineMonths").Text, Does.Contain("2026"));
+            Assert.That(string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)), Does.Contain("2026"));
             var labels = Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineLabel", StringComparison.Ordinal)).ToArray();
             Assert.That(labels, Is.Not.Empty);
-            Assert.That(labels.All(t => t.Text.Length == 2 && t.Text.All(char.IsDigit)), Is.True);
+            Assert.That(labels.All(t => t.Text.Length is 1 or 2 && t.Text.All(char.IsDigit)), Is.True);
         });
     }
     [Test, Category("PlanSheetReview4")]
@@ -713,7 +827,9 @@ internal sealed class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(before));
         Assert.That(session.Document.State, Is.EqualTo(accepted));
         await Ui.Ready<TextBox>($"PlanCell{number}_Remaining");
-        await Ui.Until(() => Ui.Find<TextBox>($"PlanCell{number}_Remaining").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<TextBox>().Any(cell =>
+            Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell) == $"PlanCell{number}_Remaining"
+            && cell.FocusState != FocusState.Unfocused));
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>($"PlanCell{number}_Remaining");
             Assert.That(cell.Text, Is.EqualTo("invalid"));
@@ -755,7 +871,7 @@ internal sealed class PlanSheetHostedTests
             var first = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
             var second = Ui.Find<TextBox>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
             Assert.That(second - first, Is.EqualTo(28).Within(1));
-            Assert.That(Ui.Find<TextBlock>("PlanTimelineMonths").Text, Is.EqualTo("2026/9 – 10"));
+            Assert.That(string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)), Does.Contain("2026年").And.Contain("10月"));
         });
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Keyboard), Is.True));
         await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "compact-default-planning-columns"));
@@ -763,6 +879,7 @@ internal sealed class PlanSheetHostedTests
     [Test, Category("PlanSheetReview")]
     public async Task DividerResizesBothViewportsAndDayHeaderKeepsYearContextAfterScrolling()
     {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Ui.Ready<TextBox>("PlanCell1_Title");
         double before = 0;
         await Ui.Run(() => {
@@ -775,10 +892,10 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => {
             var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
             Assert.That(chart.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(before - 100).Within(1));
-            chart.ChangeView(90 * 24, null, null, true);
+            chart.ChangeView((new DateOnly(2026, 12, 28).DayNumber - sheet.FirstDay.DayNumber) * sheet.DayWidth, null, null, true);
         });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanTimelineMonths").Text.Contains("2027/1"));
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanTimelineMonths").Text, Does.StartWith("2026/12")));
+        await Ui.Until(() => string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)).Contains("2027年1月"));
+        await Ui.Run(() => Assert.That(string.Join(" ", Ui.Tree(sheet).OfType<TextBlock>().Where(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)).Select(t => t.Text)), Does.StartWith("2026年12月")));
         await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "compact-divider-year-boundary"));
     }
     [Test, Category("PlanSheetNative")]
@@ -809,9 +926,11 @@ internal sealed class PlanSheetHostedTests
         }
         var accepted = session.Document.State;
         await Edit(number, PlanField.Remaining, "invalid");
-        await SheetNativeInput.Click("PlanCell3_Title");
+        await SheetNativeInput.Click($"PlanCell{number}_Title");
         await SheetNativeInput.Press(redo ? Windows.System.VirtualKey.Y : Windows.System.VirtualKey.Z, Windows.System.VirtualKey.Control);
-        await Ui.Until(() => Ui.Find<TextBox>($"PlanCell{number}_Remaining").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<TextBox>().Any(cell =>
+            Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell) == $"PlanCell{number}_Remaining"
+            && cell.FocusState != FocusState.Unfocused));
         Assert.That(session.Document.State, Is.EqualTo(accepted));
     }
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]
@@ -968,6 +1087,8 @@ internal sealed class PlanSheetHostedTests
             provider.SetValue(560);
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
+        double chartOffset = 0;
+        await Ui.Run(() => chartOffset = sheet.ChartOffset);
         await Select(1, PlanField.Status);
         await Ui.Until(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Status");
@@ -982,19 +1103,20 @@ internal sealed class PlanSheetHostedTests
             Assert.That(viewport.HorizontalOffset, Is.GreaterThan(0));
             Assert.That(left, Is.GreaterThanOrEqualTo(0));
             Assert.That(left + cell.ActualWidth, Is.LessThanOrEqualTo(viewport.ActualWidth + 1));
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset, Is.Zero);
+            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset, Is.EqualTo(chartOffset));
         });
     }
     [Test]
     public async Task HorizontalGanttScrollDoesNotMoveSheetCellsOrItsHeader()
     {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Ui.Ready<TextBox>("PlanCell1_Title");
         double cellX = 0, headerX = 0;
         await Ui.Run(() => {
             cellX = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).X;
             headerX = Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).X;
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.GreaterThan(3));
-            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanStatusLine1").X1, Is.EqualTo(120));
+            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)));
             Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset == 120);
@@ -1007,13 +1129,14 @@ internal sealed class PlanSheetHostedTests
     [Test, Category("PlanSheetPerformance")]
     public async Task ThousandTasksCommitToRenderedDatesAndBarsRecordsTwentySamples()
     {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Ui.Ready<TextBox>("PlanCell1_Remaining");
         for (var i = 0; i < 20; i++)
         {
             await Edit(1, PlanField.Remaining, i % 2 == 0 ? "16" : "8");
             await Ui.Until(() => File.Exists(metricsPath) && File.ReadAllLines(metricsPath!).Count(line => line.Contains("\"boundary\":\"rendered\"")) == i + 1);
             await Ui.Run(() => {
-                Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo(i % 2 == 0 ? "2026-10-06" : "2026-10-05"));
+                Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo(i % 2 == 0 ? "10/6 (火)" : "10/5 (月)"));
                 Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(i % 2 == 0 ? 48 : 24));
             });
         }
@@ -1035,6 +1158,7 @@ internal sealed class PlanSheetHostedTests
     [Test]
     public async Task PendingTextStaysLocalUntilFocusCommitThenDatesBarsAndUndoChangeTogether()
     {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Ui.Ready<TextBox>("PlanCell1_Remaining");
         var undo = session.UndoCount;
         await Ui.Run(() => {
@@ -1140,8 +1264,9 @@ internal sealed class PlanSheetHostedTests
                 Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(label).StartsWith("PlanTimelineLabel", StringComparison.Ordinal)).ToArray();
             return labels.Length > 1 && labels.All(label => label.ActualWidth > 0);
         });
-        double headerY = 0;
+        double headerY = 0, calendarTop = 0;
         await Ui.Run(() => {
+            if (zoom != "月") calendarTop = Ui.Find<Rectangle>("PlanNonWorking20261003").TransformToVisual(sheet).TransformPoint(new()).Y;
             headerY = Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).Y;
             var labels = Ui.Tree(sheet).OfType<TextBlock>().Where(label =>
                 Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(label).StartsWith("PlanTimelineLabel", StringComparison.Ordinal))
@@ -1160,8 +1285,12 @@ internal sealed class PlanSheetHostedTests
             Assert.That(barY, Is.EqualTo(y).Within(1));
             Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth, Is.GreaterThan(0));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(headerY));
+            if (zoom != "月") {
+                var shade = Ui.Find<Rectangle>("PlanNonWorking20261003");
+                Assert.That(shade.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(calendarTop));
+                Assert.That(Canvas.GetLeft(shade), Is.EqualTo(sheet.X(new(2026, 10, 3))));
+            }
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(sheet, "sheet-gantt-" + zoom));
     }
 }
-

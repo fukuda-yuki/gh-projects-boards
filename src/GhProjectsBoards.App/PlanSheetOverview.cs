@@ -79,7 +79,9 @@ internal sealed partial class PlanSheetView
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
         if (acceptedZoom != 3 || dates.Length == 0) dates = dates.Append(StatusDate).ToArray();
-        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - 5));
+        var first = dates.Min().DayNumber - 5;
+        if (acceptedZoom != 3) first = Math.Min(first, StatusDate.DayNumber - statusLeadDays);
+        FirstDay = DateOnly.FromDayNumber(Math.Max(0, first));
         var span = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + 5) - FirstDay.DayNumber + 1;
         DayCount = acceptedZoom == 3 ? span : Math.Max(365, span + 9);
     }

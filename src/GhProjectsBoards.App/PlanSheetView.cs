@@ -54,27 +54,34 @@ internal sealed partial class PlanSheetView : Grid
     internal double ChartViewport { get; private set; }
     internal double SheetOffset => sheetHorizontal.HorizontalOffset;
     internal double ChartOffset => chartHorizontal.HorizontalOffset;
-    internal double DayWidth { get; private set; } = 24;
+    internal double DayWidth { get; private set; } = 8;
     internal DateOnly FirstDay { get; private set; }
     internal int DayCount { get; private set; } = 365;
     internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
     internal static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
-    private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 40 };
+    private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
     private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
-    private readonly Canvas chartHead = new() { Height = 40 };
+    private readonly Canvas chartHead = new() { Height = 48 };
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
-    private int acceptedZoom;
+    private int acceptedZoom = 1;
+    private bool initialChartPositioned;
+    private int statusLeadDays = 5;
+    private readonly Canvas chartBackground = Id(new Canvas { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left }, "PlanChartBackground");
+    private readonly Canvas chartStatus = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left };
+    private HashSet<DateOnly> nonWorkingDates = [];
+    private Dictionary<string, DateOnly?> publishedEnds = [];
+    internal DateOnly? PublishedEnd(string identity) => publishedEnds.GetValueOrDefault(identity);
     private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
     internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
-    private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 0, MinWidth = 80 }, "PlanGanttZoom");
+    private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 1, MinWidth = 80 }, "PlanGanttZoom");
     private readonly TextBox filter = Id(new TextBox { PlaceholderText = "タイトルで絞り込み", Width = 170 }, "PlanSheetFilter");
     private readonly PlanFrameMetrics metrics = new();
     private int pendingFrame;
@@ -170,7 +177,10 @@ internal sealed partial class PlanSheetView : Grid
             new Setter(FrameworkElement.MinHeightProperty, 0d),
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         ScrollViewer.SetHorizontalScrollMode(List, ScrollMode.Disabled); ScrollViewer.SetHorizontalScrollBarVisibility(List, ScrollBarVisibility.Disabled);
+        Children.Add(chartBackground); SetRow(chartBackground, 4);
         Children.Add(List); SetRow(List, 4);
+        Children.Add(chartStatus); SetRow(chartStatus, 4);
+        List.SizeChanged += (_, _) => RenderTimelineHeader();
         sheetHorizontal.Content = new Border { Height = 1 }; chartHorizontal.Content = new Border { Height = 1 };
         scrollbars.Children.Add(sheetHorizontal); scrollbars.Children.Add(chartHorizontal); SetColumn(chartHorizontal, 1);
         Children.Add(scrollbars); SetRow(scrollbars, 5);
@@ -222,8 +232,14 @@ internal sealed partial class PlanSheetView : Grid
         };
         InitializeInteraction();
         Unloaded += (_, _) => { disposed = true; inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
-        Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout(); };
-        ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RefreshRealized(); };
+        Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
+            if (!initialChartPositioned) {
+                chartHorizontal.UpdateLayout();
+                chartHorizontal.ChangeView(Math.Max(0, (StatusDate.DayNumber - FirstDay.DayNumber) * DayWidth - ChartViewport / 4), null, null, true);
+                initialChartPositioned = true;
+            }
+        };
+        ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RenderTimelineHeader(); RefreshRealized(); };
 
         Refresh();
     }
@@ -315,13 +331,20 @@ internal sealed partial class PlanSheetView : Grid
     private async Task Commit(string identity, PlanField field, string text, long generation, string originalText)
     {
         if (generation == 0 || !Pending.ContainsKey((identity, field))) return;
+        void FinishInput()
+        {
+            if (Generation(identity, field) != generation) return;
+            Pending.Remove((identity, field)); Problems.Remove((identity, field));
+            foreach (var cell in Realized.Where(r => r.Identity == identity).SelectMany(r => r.Cells).Where(c => c.Field == field))
+                cell.EndEditing();
+        }
         pendingFrame = metrics.Begin(Session.Document.State.Rows.Length);
         try
         {
             // Returning to the original edit form must preserve predecessor identities and automatic dates.
             if (text == originalText)
             {
-                if (Generation(identity, field) == generation) { Pending.Remove((identity, field)); Problems.Remove((identity, field)); }
+                FinishInput();
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
             var value = PlanSheetEditing.Parse(Session.Document, field, text);
@@ -342,7 +365,7 @@ internal sealed partial class PlanSheetView : Grid
             // durable persistence still gates the next command and normal window close.
             var save = Session.Execute(command, Today);
             metrics.Mark("accepted");
-            if (Generation(identity, field) == generation) { Pending.Remove((identity, field)); Problems.Remove((identity, field)); }
+            FinishInput();
             Refresh();
             metrics.Mark("presented");
             CompositionTarget.Rendered -= FrameRendered; CompositionTarget.Rendered += FrameRendered; frameSubscribed = true;
@@ -370,8 +393,10 @@ internal sealed partial class PlanSheetView : Grid
         Rows = document.State.Rows.ToDictionary(r => r.Identity);
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
         Schedule = Session.Schedule(Today).ToDictionary(r => r.Input.Identity);
-        var publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
+        publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
+        nonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
+        timelineKey = null;
         lateness = Schedule.ToDictionary(pair => pair.Key, pair => PlanScheduler.PublishedEndLateness(publishedEnds.GetValueOrDefault(pair.Key), pair.Value.End.Value, calendar));
         Unpublished = Session.Changes(Today);
         var pendingRows = Pending.Keys.Select(k => k.Identity)
@@ -453,11 +478,15 @@ internal sealed partial class PlanSheetView : Grid
         var width = Math.Max(320, ActualWidth - 20);
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - 230));
         ChartViewport = width - SheetViewport;
+        if (!initialChartPositioned) {
+            statusLeadDays = Math.Max(5, (int)Math.Ceiling(ChartViewport / (4 * DayWidth)));
+            UpdateTimelineRange();
+        }
         if (acceptedZoom == 3) DayWidth = ChartViewport / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
         sheetClip.Width = SheetViewport;
-        sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, SheetViewport, 40) };
+        sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, SheetViewport, 48) };
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions[0].Width = new(SheetViewport); grid.ColumnDefinitions[1].Width = new(ChartViewport); }
         ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
@@ -483,42 +512,95 @@ internal sealed partial class PlanSheetView : Grid
     }
     private void RenderTimelineHeader()
     {
-        var key = $"{FirstDay}:{DayCount}:{DayWidth}:{ChartViewport}:{ChartOffset}";
+        var height = List.ActualHeight;
+        var key = $"{FirstDay}:{DayCount}:{DayWidth}:{ChartViewport}:{ChartOffset}:{StatusDate}:{height}:{acceptedZoom}";
         if (timelineKey == key) return;
         timelineKey = key;
         chartHead.Children.Clear(); chartHead.Width = ChartViewport;
-        chartHead.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, 40) };
-        var left = Math.Max(0, (int)(ChartOffset / DayWidth));
-        var right = Math.Min(DayCount, (int)((ChartOffset + ChartViewport) / DayWidth) + 32);
-        if (acceptedZoom == 0)
-        {
-            var first = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + left));
-            var lastVisible = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport - 1) / DayWidth))));
-            var label = first.ToString("yyyy/M");
-            if (first.Year != lastVisible.Year) label += " – " + lastVisible.ToString("yyyy/M");
-            else if (first.Month != lastVisible.Month) label += " – " + lastVisible.Month.ToString(CultureInfo.InvariantCulture);
-            var context = Id(new TextBlock { Text = label, FontSize = 11, MaxWidth = ChartViewport - 4,
-                TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanTimelineMonths");
-            Canvas.SetLeft(context, 2); chartHead.Children.Add(context);
+        chartHead.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, 48) };
+        foreach (var layer in new[] { chartBackground, chartStatus }) {
+            layer.Children.Clear(); layer.Width = ChartViewport;
+            layer.Margin = new(SheetViewport, 0, 0, 0);
+            layer.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, height) };
         }
-        var last = "";
-        for (var day = left; day < right && FirstDay.DayNumber + day <= DateOnly.MaxValue.DayNumber; day++)
-        {
-            var date = FirstDay.AddDays(day);
-            var label = acceptedZoom switch { 1 => DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - ((int)date.DayOfWeek + 6) % 7)).ToString("M/d"), 2 or 3 => date.ToString("yyyy/M"), _ => date.ToString("dd") };
-            if (label == last) continue; last = label;
-            var text = new TextBlock { Text = label, FontSize = 11, Margin = new(2, 5, 0, 0), Foreground = Brush("TextFillColorSecondaryBrush") };
-            var groupEnd = acceptedZoom switch {
-                1 => day + 7 - ((int)date.DayOfWeek + 6) % 7,
-                2 or 3 => day + DateTime.DaysInMonth(date.Year, date.Month) - date.Day + 1,
-                _ => day + 1 };
-            var x = day * DayWidth - ChartOffset;
-            var available = Math.Min(ChartViewport, groupEnd * DayWidth - ChartOffset) - Math.Max(0, x);
-            text.Measure(new Size(double.PositiveInfinity, 28));
-            if (text.DesiredSize.Width + 4 > available) continue;
-            AutomationProperties.SetAutomationId(text, "PlanTimelineLabel" + day);
-            Canvas.SetLeft(text, Math.Max(0, x)); Canvas.SetTop(text, acceptedZoom == 0 ? 16 : 5); chartHead.Children.Add(text);
+        var first = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + (int)(ChartOffset / DayWidth)));
+        var last = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber,
+            FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport) / DayWidth))));
+        var upperBounds = new List<(double Left, double Right)>();
+        bool AddLabel(string label, double x, double end, bool upper, string id) {
+            var text = Id(new TextBlock { Text = label, FontSize = 11,
+                FontWeight = upper ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
+                Foreground = Brush("TextFillColorSecondaryBrush") }, id);
+            chartHead.Children.Add(text);
+            text.Measure(new Size(double.PositiveInfinity, 24));
+            var left = Math.Max(0, x) + 3;
+            var availableEnd = Math.Min(ChartViewport, end);
+            if (upper && upperBounds.Count == 0) availableEnd = ChartViewport;
+            if (upper && upperBounds.Count > 0) left = Math.Max(left, upperBounds[^1].Right + 6);
+            if (left + text.DesiredSize.Width + 3 > availableEnd) { chartHead.Children.Remove(text); return false; }
+            Canvas.SetLeft(text, left); Canvas.SetTop(text, upper ? 3 : 27);
+            if (upper) upperBounds.Add((left, left + text.DesiredSize.Width));
+            return true;
         }
+        var monthScale = acceptedZoom >= 2;
+        var period = new DateOnly(first.Year, monthScale ? 1 : first.Month, 1);
+        var firstUpper = true;
+        while (period <= last) {
+            var endDay = monthScale ? Math.Min(DateOnly.MaxValue.DayNumber + 1, period.DayNumber + (DateTime.IsLeapYear(period.Year) ? 366 : 365))
+                : period.DayNumber + DateTime.DaysInMonth(period.Year, period.Month);
+            var label = monthScale ? $"{period.Year}年" : firstUpper || period.Month == 1 ? $"{period.Year}年{period.Month}月" : $"{period.Month}月";
+            if (AddLabel(label, X(period), (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, true, "PlanTimelineUpper" + period.DayNumber)) firstUpper = false;
+            if (endDay > DateOnly.MaxValue.DayNumber) break;
+            period = DateOnly.FromDayNumber(endDay);
+        }
+        var month = new DateOnly(first.Year, first.Month, 1);
+        while (month <= last) {
+            var x = X(month);
+            if (x >= 0) chartHead.Children.Add(new Microsoft.UI.Xaml.Shapes.Line {
+                X1 = x, X2 = x, Y1 = upperBounds.Any(b => x > b.Left && x < b.Right) ? 24 : 0, Y2 = 48, StrokeThickness = 1, Stroke = Brush("WorkspaceCardStrokeBrush") });
+            if (month.Year == 9999 && month.Month == 12) break;
+            month = month.AddMonths(1);
+        }
+        var day = monthScale ? new DateOnly(first.Year, first.Month, 1) : acceptedZoom == 1
+            ? DateOnly.FromDayNumber(Math.Max(0, first.DayNumber - ((int)first.DayOfWeek + 6) % 7)) : first;
+        while (day <= last) {
+            var endDay = day.DayNumber + (monthScale ? DateTime.DaysInMonth(day.Year, day.Month) : acceptedZoom == 1 ? 7 : 1);
+            AddLabel(monthScale ? $"{day.Month}月" : acceptedZoom == 1 ? day.ToString("M/d") : day.Day.ToString(CultureInfo.InvariantCulture),
+                X(day), (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, false, "PlanTimelineLabel" + day.DayNumber);
+            if (endDay > DateOnly.MaxValue.DayNumber) break;
+            day = DateOnly.FromDayNumber(endDay);
+        }
+        if (!monthScale) {
+            for (var date = first; date <= last;) {
+                if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || nonWorkingDates.Contains(date)) {
+                    var shade = Id(new Microsoft.UI.Xaml.Shapes.Rectangle { Width = DayWidth, Height = height,
+                        Fill = Brush("GanttNonWorkingBrush") }, "PlanNonWorking" + date.ToString("yyyyMMdd"));
+                    Canvas.SetLeft(shade, X(date)); chartBackground.Children.Add(shade);
+                }
+                if (date == DateOnly.MaxValue) break;
+                date = date.AddDays(1);
+            }
+        }
+        var statusX = X(StatusDate);
+        chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = statusX, X2 = statusX, Y1 = 0, Y2 = height,
+            Stroke = Brush("SystemControlHighlightAccentBrush"), StrokeThickness = 2 }, "PlanStatusLine"));
+        if (statusX < 0 || statusX > ChartViewport) return;
+        var pill = Id(new Border { CornerRadius = new(9), Padding = new(7, 1, 7, 1), Background = Brush("SystemControlHighlightAccentBrush"),
+            Child = new TextBlock { Text = $"状況日 {StatusDate:M/d}", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = Brush("TextOnAccentFillColorPrimaryBrush") } }, "PlanStatusDateLabel");
+        AutomationProperties.SetName(pill, $"状況日 {StatusDate:M/d}");
+        chartHead.Children.Add(pill);
+        pill.Measure(new Size(double.PositiveInfinity, 24));
+        var pillWidth = pill.DesiredSize.Width;
+        // Prefer the date coordinate; otherwise use the nearest gap without hiding month/year context.
+        var gaps = new List<(double Left, double Right)>();
+        var gapStart = 0d;
+        foreach (var bound in upperBounds) { gaps.Add((gapStart, bound.Left - 4)); gapStart = bound.Right + 4; }
+        gaps.Add((gapStart, ChartViewport));
+        var candidates = gaps.Where(g => g.Right - g.Left >= pillWidth)
+            .Select(g => Math.Clamp(statusX - pillWidth / 2, g.Left, g.Right - pillWidth)).OrderBy(x => Math.Abs(x + pillWidth / 2 - statusX)).ToArray();
+        if (candidates.Length == 0) { chartHead.Children.Remove(pill); return; }
+        Canvas.SetLeft(pill, candidates[0]); Canvas.SetTop(pill, 2);
     }
     internal double X(DateOnly day) => (day.DayNumber - FirstDay.DayNumber) * DayWidth - ChartOffset;
 }
