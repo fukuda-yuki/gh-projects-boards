@@ -35,15 +35,17 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
+    private Dictionary<string, int?> lateness = [];
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
-    internal sealed record Column(PlanField? Field, string Label, double Width);
+    internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
-        new(null, "ID", 32), new(PlanField.Title, "タイトル", 128), new(PlanField.Assignees, "担当者", 80),
-        new(PlanField.Estimate, "Estimate", 60), new(PlanField.Remaining, "Remaining", 70), new(PlanField.Actual, "Actual", 52),
-        new(PlanField.Start, "start", 80), new(PlanField.End, "end", 80), new(PlanField.Predecessors, "先行タスク", 72),
-        new(PlanField.StartNoEarlierThan, "開始日指定", 116), new(PlanField.Fixed, "日程固定", 88), new(PlanField.Status, "Status", 110)];
+        new(null, "ID", 52), new(null, "インジケーター", 28, true), new(PlanField.Title, "タスク名", 272), new(PlanField.Assignees, "担当者", 80),
+        new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
+        new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
+        new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
+    internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<PlanField?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(9).ToArray();
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(10).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -62,13 +64,16 @@ internal sealed partial class PlanSheetView : Grid
     private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
     private readonly Canvas chartHead = new() { Height = 40 };
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
-    private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanSheetError");
+    private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
     private int acceptedZoom;
-    private readonly TextBlock selection = Id(new TextBlock(), "PlanSheetSelection");
-    private readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
+    private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetSelection");
+    private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
+    private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
+    internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
     private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 0, MinWidth = 80 }, "PlanGanttZoom");
     private readonly TextBox filter = Id(new TextBox { PlaceholderText = "タイトルで絞り込み", Width = 170 }, "PlanSheetFilter");
     private readonly PlanFrameMetrics metrics = new();
@@ -81,7 +86,7 @@ internal sealed partial class PlanSheetView : Grid
     private bool frameSubscribed;
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null)
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -90,61 +95,71 @@ internal sealed partial class PlanSheetView : Grid
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
         var controls = new Grid { ColumnSpacing = 8 };
-        controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        var dates = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        dates.Children.Add(new TextBlock { Text = "状況日", VerticalAlignment = VerticalAlignment.Center }); dates.Children.Add(statusDate);
-        var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        scales.Children.Add(new TextBlock { Text = "ガント", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
-        controls.Children.Add(dates); controls.Children.Add(scales); SetColumn(scales, 1);
-        filter.HorizontalAlignment = HorizontalAlignment.Right; controls.Children.Add(filter); SetColumn(filter, 2);
+        controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+        scales.Children.Add(new TextBlock { Text = "尺度", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom); scales.Children.Add(filter);
+        controls.Children.Add(scales); SetColumn(scales, 1);
         AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
-        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch }, "PlanSheetCommands");
-        AddCommand(commands, "コピー", "PlanSheetCopy", Symbol.Copy, Copy);
-        AddCommand(commands, "貼り付け", "PlanSheetPaste", Symbol.Paste, Paste);
-        AddCommand(commands, "下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD));
-        AddCommand(commands, "クリア", "PlanSheetClear", Symbol.Clear, Clear);
-        commands.PrimaryCommands.Add(new AppBarSeparator());
+        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, HorizontalContentAlignment = HorizontalAlignment.Stretch }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
-        if (importCsv is not null) AddCommand(commands, "CSVから追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queueInSheet: false);
-        AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false));
-        AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true));
+        AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
+        AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
         InitializeOverview(commands);
-        var columns = Id(new AppBarButton { Label = "列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
+        AppBarButton Overflow(string label, string id, Symbol icon, Func<Task> action, string shortcut = "", bool queued = true) {
+            var button = AddCommand(commands, label, id, icon, action, queued);
+            button.KeyboardAcceleratorTextOverride = shortcut;
+            commands.PrimaryCommands.Remove(button); commands.SecondaryCommands.Add(button); return button;
+        }
+        Overflow("コピー", "PlanSheetCopy", Symbol.Copy, Copy, "Ctrl+C");
+        Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, Paste, "Ctrl+V");
+        Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
+        Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
+        commands.SecondaryCommands.Add(new AppBarSeparator());
+        if (importCsv is not null) Overflow("CSV から追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
+        var columns = Id(new AppBarButton { Label = "表示列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
         AutomationProperties.SetName(columns, "表示列"); ToolTipService.SetToolTip(columns, "表示列");
         var choices = new StackPanel { Spacing = 4 };
         foreach (var column in Columns)
         {
-            var toggle = Id(new CheckBox { Content = column.Label, IsChecked = !Hidden.Contains(column.Field) }, "PlanColumn" + (column.Field?.ToString() ?? "Id"));
+            var toggle = Id(new CheckBox { Content = column.Label, IsChecked = column.Indicator ? IndicatorVisible : !Hidden.Contains(column.Field) }, "PlanColumn" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
             var synchronizing = false;
             async void VisibilityChanged(object sender, RoutedEventArgs args) {
                 if (synchronizing) return;
                 var proposed = toggle.IsChecked == true;
                 await Run(async () => {
                 await CommitPending();
-                if (proposed) Hidden.Remove(column.Field); else Hidden.Add(column.Field);
-                VisibleColumns = Columns.Where(c => !Hidden.Contains(c.Field)).ToArray();
-                if (VisibleColumns.Length == 0) { Hidden.Remove(column.Field); VisibleColumns = Columns.Where(c => !Hidden.Contains(c.Field)).ToArray(); }
+                if (column.Indicator) IndicatorVisible = proposed;
+                else if (proposed) Hidden.Remove(column.Field); else Hidden.Add(column.Field);
+                VisibleColumns = Columns.Where(c => c.Indicator ? IndicatorVisible : !Hidden.Contains(c.Field)).ToArray();
+                if (VisibleColumns.Length == 0) { if (column.Indicator) IndicatorVisible = true; else Hidden.Remove(column.Field); VisibleColumns = Columns.Where(c => c.Indicator ? IndicatorVisible : !Hidden.Contains(c.Field)).ToArray(); }
                 RefreshLayout(); ReconcileSelection(); }, "Column visibility");
                 synchronizing = true;
-                try { toggle.IsChecked = !Hidden.Contains(column.Field); }
+                try { toggle.IsChecked = column.Indicator ? IndicatorVisible : !Hidden.Contains(column.Field); }
                 finally { synchronizing = false; }
                 if (Problems.Count > 0) { columns.Flyout?.Hide(); FocusSelected(); }
             }
             toggle.Checked += VisibilityChanged; toggle.Unchecked += VisibilityChanged;
             choices.Children.Add(toggle);
         }
-        columns.Flyout = new Flyout { Content = choices }; commands.PrimaryCommands.Add(columns);
-        commands.Content = selection;
-        Children.Add(commands); SetRow(commands, 1);
-        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(reason); feedback.Children.Add(error); feedback.Children.Add(retrySave);
+        columns.Flyout = new Flyout { Content = choices }; commands.SecondaryCommands.Add(columns);
+        controls.Children.Add(commands);
+        var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0) };
+        for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
+        selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
+        selectedLine.Children.Add(reason); SetColumn(reason, 2); selectedLine.Children.Add(slip); SetColumn(slip, 3);
+        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
+        foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
+        Children.Add(selectedLine); SetRow(selectedLine, 2);
+        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error); feedback.Children.Add(retrySave);
         retrySave.Click += async (_, _) => await Run(async () => { Check(await Session.RetrySaveAsync()); }, "Retry save");
-        Children.Add(feedback); SetRow(feedback, 2);
+        error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
+        Children.Add(feedback); SetRow(feedback, 1);
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new()); }
         sheetClip.Children.Add(sheetHead);
+        sheetClip.Children.Add(new Border { BorderThickness = new(0, 0, 0, 1), BorderBrush = Brush("WorkspaceCardStrokeBrush"), IsHitTestVisible = false });
         headers.Children.Add(sheetClip); headers.Children.Add(chartHead); SetColumn(chartHead, 1);
         chartHead.Clip = new RectangleGeometry();
         Children.Add(headers); SetRow(headers, 3);
@@ -171,7 +186,8 @@ internal sealed partial class PlanSheetView : Grid
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
             var value = statusDate.Date is { } date ? DateOnly.FromDateTime(date.Date) : (DateOnly?)null;
-            await Run(async () => { await CommitPending(); Check(await Session.Execute(new ReplacePlanSettings(Session.Document.State.Settings with { StatusDate = value }), Today)); Refresh(); }, "Status date");
+            if (changeStatusDate is not null) { await changeStatusDate(value); Refresh(); }
+            else await Run(async () => { await CommitPending(); Check(await Session.Execute(new ReplacePlanSettings(Session.Document.State.Settings with { StatusDate = value }), Today)); Refresh(); }, "Status date");
         };
         zoom.SelectionChanged += async (_, _) => {
             if (rendering || zoom.SelectedIndex == acceptedZoom) return;
@@ -217,6 +233,8 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
+    private static PathIcon CommandIcon(string data) => (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+        $"<PathIcon xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='{data}'/>");
     private AppBarButton AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
     {
         var button = Id(new AppBarButton { Label = label, Icon = new SymbolIcon(icon) }, id);
@@ -300,8 +318,7 @@ internal sealed partial class PlanSheetView : Grid
         pendingFrame = metrics.Begin(Session.Document.State.Rows.Length);
         try
         {
-            // Display-only predecessors and calculated dates are not new inputs.
-            // Returning to that display must preserve identities and scheduling.
+            // Returning to the original edit form must preserve predecessor identities and automatic dates.
             if (text == originalText)
             {
                 if (Generation(identity, field) == generation) { Pending.Remove((identity, field)); Problems.Remove((identity, field)); }
@@ -353,6 +370,9 @@ internal sealed partial class PlanSheetView : Grid
         Rows = document.State.Rows.ToDictionary(r => r.Identity);
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
         Schedule = Session.Schedule(Today).ToDictionary(r => r.Input.Identity);
+        var publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
+        var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
+        lateness = Schedule.ToDictionary(pair => pair.Key, pair => PlanScheduler.PublishedEndLateness(publishedEnds.GetValueOrDefault(pair.Key), pair.Value.End.Value, calendar));
         Unpublished = Session.Changes(Today);
         var pendingRows = Pending.Keys.Select(k => k.Identity)
             .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
@@ -375,13 +395,25 @@ internal sealed partial class PlanSheetView : Grid
         finally { rendering = false; }
         ReconcileSelection(); RefreshLayout(); UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
     }
-    internal string Header(Column column) => column.Field is { } field
-        ? Session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)?.Name ?? column.Label : column.Label;
+    internal string Header(Column column) => column.Label;
+    private string HeaderHelp(Column column) => column.Field is { } field
+        ? Session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)?.Name is { } name ? "GitHub: " + name
+            : field == PlanField.Title ? "GitHub: Title" : field == PlanField.Assignees ? "GitHub: Assignees" : "未設定"
+        : column.Label;
+    internal static string DateText(DateOnly? day, bool full = false) => day is { } value
+        ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
+    internal DateOnly? CellDate(string identity, PlanField field) => field switch {
+        PlanField.Start => Schedule.GetValueOrDefault(identity)?.Start.Value,
+        PlanField.End => Schedule.GetValueOrDefault(identity)?.End.Value,
+        PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
+    internal string EditForm(string identity, PlanField field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
+        ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "" : Display(identity, field);
+    internal int? Lateness(string identity) => lateness.GetValueOrDefault(identity);
     internal string Display(string identity, PlanField field)
     {
         if (!Rows.TryGetValue(identity, out var row)) return "";
         var computed = Schedule[identity];
-        string Date(DateOnly? day) => day?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "";
+        string Date(DateOnly? day) => DateText(day);
         return field switch {
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
             PlanField.Estimate => computed.Estimate?.ToString(CultureInfo.CurrentCulture) ?? "",
@@ -423,7 +455,7 @@ internal sealed partial class PlanSheetView : Grid
         ChartViewport = width - SheetViewport;
         if (acceptedZoom == 3) DayWidth = ChartViewport / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
-        RowHeight = Math.Max(22, 28 / (XamlRoot?.RasterizationScale ?? 1));
+        RowHeight = 28;
         sheetClip.Width = SheetViewport;
         sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, SheetViewport, 40) };
         foreach (var grid in new[] { headers, scrollbars })
@@ -435,15 +467,17 @@ internal sealed partial class PlanSheetView : Grid
     }
     private void RefreshHeaders()
     {
-        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{Header(c)}"));
+        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{HeaderHelp(c)}"));
         if (headerKey == key) return;
         headerKey = key;
         sheetHead.Children.Clear();
         foreach (var column in VisibleColumns)
         {
-            var text = Id(new TextBlock { Text = Header(column), Width = column.Width, Padding = new(4, 4, 0, 0), FontSize = 12 },
-                "PlanHeader" + (column.Field?.ToString() ?? "Id"));
-            ToolTipService.SetToolTip(text, text.Text); sheetHead.Children.Add(text);
+            var text = Id(new TextBlock { Text = column.Indicator ? "\uE946" : Header(column), Width = column.Width, Padding = new(8, 0, 4, 6), FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
+                "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
+            if (column.Indicator) text.FontFamily = new FontFamily("Segoe Fluent Icons");
+            AutomationProperties.SetName(text, column.Label); AutomationProperties.SetHelpText(text, HeaderHelp(column));
+            ToolTipService.SetToolTip(text, HeaderHelp(column)); sheetHead.Children.Add(text);
         }
         sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
     }

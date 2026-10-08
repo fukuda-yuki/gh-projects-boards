@@ -50,6 +50,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com" }, "PlanHost");
     private readonly TextBox url = Id(new TextBox { Header = "Project URL" }, "PlanProjectUrl");
     private readonly Grid toolbar = new() { Height = 36, Margin = new(12, 0, 12, 0) };
+    private readonly Border statusDateHost = new();
     private readonly StackPanel commandButtons = new() { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
     private readonly ProgressBar progress = new() { IsIndeterminate = true, Visibility = Visibility.Collapsed };
     private Task operation = Task.CompletedTask;
@@ -121,6 +122,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await Run(() => { if (selected == peopleTab) RenderPeople(); Show(selected == peopleTab ? "people" : "tasks"); return Task.CompletedTask; }); }
             finally { if (--pendingViewSelections == 0) SyncTabs(); }
         };
+        commandButtons.Children.Add(new TextBlock { Text = "状況日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
+        commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
         unpublished.VerticalAlignment = VerticalAlignment.Center;
@@ -280,12 +283,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)));
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })));
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 sheets.Add(session.Document.Project, next);
             }
             taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
         }
+        statusDateHost.Child = sheet.statusDate;
         sheet.Refresh();
         UpdateStatus();
         if (!publishing && publishReview.Visibility == Visibility.Visible) RenderReview();

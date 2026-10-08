@@ -19,6 +19,7 @@ internal sealed class PlanSheetHostedTests
     private string root = null!;
     private PlanSession session = null!;
     private PlanSheetView sheet = null!;
+    private Grid sheetHost = null!;
     private PlanClipboardContent clipboard = new("", null);
     private Func<Task<PlanClipboardContent>>? clipboardReader;
     private Action<PlanClipboardContent>? clipboardWriter;
@@ -48,7 +49,11 @@ internal sealed class PlanSheetHostedTests
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null, [])).ToImmutableArray() : [new("U1", "alice", 100, null, [])],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE")] })), Today);
         await Ui.Run(() => sheet = new(session, () => clipboardReader is { } read ? read() : Task.FromResult(clipboard), value => { if (clipboardWriter is { } write) write(value); else clipboard = value; }));
-        await Ui.Mount(sheet);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
     }
     [TearDown]
     public async Task Cleanup()
@@ -58,7 +63,7 @@ internal sealed class PlanSheetHostedTests
         try { await Ui.Idle(); }
         finally
         {
-            try { await Ui.Unmount(sheet, check: false); await Ui.Idle(); }
+            try { await Ui.Unmount(sheetHost, check: false); await Ui.Idle(); await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000))); }
             finally
             {
                 await session.FlushAsync(); Directory.Delete(root, true);
@@ -68,11 +73,221 @@ internal sealed class PlanSheetHostedTests
             }
         finally { Ui.EndTest(); }
     }
+    [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
+    [Category("PlanSheetFollowup")]
+    public async Task PointerRangeEndsAtEstimateAndClearChangesOnlyItsCells(bool hideId, bool hideIndicator)
+    {
+        if (hideId || hideIndicator) {
+            await Ui.ClickCommand("PlanSheetColumns");
+            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnId") is not null);
+            if (hideId) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnId")!.IsChecked = false); await Ui.Idle(); }
+            if (hideIndicator) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnIndicator")!.IsChecked = false); await Ui.Idle(); }
+            await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide());
+        }
+        var before = session.Document.State.Rows;
+        await Select(1, PlanField.Estimate);
+        await Ui.Until(() => {
+            var left = Ui.Find<PlanSheetCell>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).X + sheet.SheetOffset;
+            return Math.Abs(left - (hideId ? 0 : 52) - (hideIndicator ? 0 : 28)) <= 1;
+        });
+        await Ui.Run(async () => {
+            sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
+            await RenderedEvidence.Capture(sheetHost, $"followup-range-{hideId}-{hideIndicator}");
+        });
+        await Ui.Run(() => {
+            var target = Ui.Find<PlanSheetCell>("PlanCell2_Estimate");
+            var centre = target.TransformToVisual(sheet).TransformPoint(new(target.ActualWidth / 2, target.ActualHeight / 2));
+            Ui.Trace($"Range position: x={centre.X}, offset={sheet.SheetOffset}, columns={string.Join(",", sheet.VisibleColumns.Select(c => c.Label + ":" + c.Width))}, titleX={Ui.Find<PlanSheetCell>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).X}");
+            sheet.ExtendRangeTo("I2", centre);
+            Assert.That(sheet.IsRangeEnd("I2", PlanField.Estimate), Is.True);
+        });
+        await Ui.ClickCommand("PlanSheetClear"); await Ui.Idle();
+        Assert.That(session.Document.State.Rows, Is.EqualTo(before.Select((row, i) => i < 2 ? row with { Estimate = null } : row)));
+    }
+    [Test, Category("PlanSheetFollowup")]
+    public async Task DateEditTextFitsTheContentViewportWithoutWideningItsColumn()
+    {
+        await Select(1, PlanField.End);
+        await Ui.Run(() => {
+            sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_End"); cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+        });
+        await Ui.Idle();
+        await Ui.Run(async () => {
+            await RenderedEvidence.Capture(sheetHost, "followup-date-edit");
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_End");
+            Assert.That(cell.Text, Is.EqualTo("2026-10-05"));
+            Assert.That(cell.SelectedText, Is.EqualTo(cell.Text));
+            var content = Ui.Tree(cell).OfType<ScrollViewer>().Single(v => v.Name == "ContentElement");
+            var text = new TextBlock { Text = cell.Text, FontFamily = cell.FontFamily, FontSize = cell.FontSize, FontWeight = cell.FontWeight, CharacterSpacing = cell.CharacterSpacing };
+            text.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
+            Assert.That(((FrameworkElement)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell))).ActualWidth, Is.EqualTo(92).Within(1));
+            Assert.That(text.DesiredSize.Width, Is.GreaterThan(60));
+            Ui.Trace($"Date edit: text={text.DesiredSize.Width}, content={content.ActualWidth}, viewport={content.ViewportWidth}, padding={content.Padding}");
+            Assert.That(content.ActualWidth - content.Padding.Left - content.Padding.Right, Is.GreaterThanOrEqualTo(text.DesiredSize.Width + 1), "The complete ISO edit text plus caret must fit.");
+            Assert.That(content.HorizontalOffset, Is.Zero);
+        });
+    }
+    [Test, Category("PlanSheetFollowup")]
+    public async Task SelectionBandKeepsOneHeightAndDirectlyPrecedesTheHeader()
+    {
+        double headerBefore = 0;
+        await Ui.Run(async () => {
+            sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
+            var band = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSelection"));
+            var commands = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<CommandBar>("PlanSheetCommands"));
+            var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
+            headerBefore = header.TransformToVisual(sheet).TransformPoint(new()).Y;
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.Empty);
+            Assert.That(band.ActualHeight, Is.EqualTo(36).Within(1));
+            Assert.That(band.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(commands.ActualHeight).Within(1));
+            Assert.That(headerBefore, Is.EqualTo(commands.ActualHeight + 36).Within(1));
+            await RenderedEvidence.Capture(sheetHost, "followup-unselected-band");
+        });
+        await Select(1, PlanField.Title); await Ui.Idle();
+        await Ui.Run(async () => {
+            var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
+            Assert.That(header.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(headerBefore).Within(1));
+            await RenderedEvidence.Capture(sheetHost, "followup-selected-band");
+        });
+    }
+    [TestCase("completed", "完了", "\uE73E")]
+    [TestCase("late", "発行済みより 1 日遅れ", "\uE7BA")]
+    [TestCase("typed", "開始日を指定", "\uE718")]
+    [TestCase("fixed", "日程固定", "\uE718")]
+    [TestCase("changed", "未発行の変更あり", "\u2022")]
+    [TestCase("failed", "発行失敗", "\uEA39")]
+    [TestCase("unverified", "未検証", "\uEA39")]
+    [TestCase("summary", "発行済みより 2 日遅れ", "\uE7BA")]
+    [Category("PlanSheetPhase2")]
+    public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
+    {
+        await Ui.Unmount(sheetHost); await session.FlushAsync();
+        var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        if (state is "completed" or "failed" or "unverified") row = row with { Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
+        if (state is "typed" or "late") row = row with { StartNoEarlierThan = Today };
+        if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
+        var baseline = row with { End = state is "late" or "failed" or "unverified" ? new(2026, 10, 2) : state == "summary" ? new(2026, 10, 1) : row.End };
+        var rows = ImmutableArray.Create(row);
+        var baselines = ImmutableArray.Create(baseline);
+        if (state == "summary") {
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+            baselines = baselines.Add(row with { Identity = "I2", Parent = "I1", End = new(2026, 10, 2) });
+        }
+        var document = new PlanDocument(session.Document.Project, new(baselines, []), new(rows, session.Document.State.Settings)) {
+            Sync = new() { Failures = state == "failed" ? [new("I1", PlanField.End, "Rejected")] : [], Unverified = state == "unverified" ? ["I1"] : [],
+                IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
+        session = await PlanSession.CreateAsync(new(Path.Combine(root, "indicator")), document, Today);
+        await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet.statusDate); sheetHost.Children.Add(sheet); Grid.SetRow(sheet, 1); });
+        await Ui.Mount(sheetHost); await Select(1, PlanField.Title);
+        await Ui.Run(() => {
+            var indicator = Ui.Find<FontIcon>("PlanIndicator1");
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain(expected));
+            Assert.That(indicator.Glyph, Is.EqualTo(glyph));
+            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
+            Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
+            var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
+            if (state is "late" or "failed" or "unverified") Assert.That(slip, Is.EqualTo("発行済み 10/2 から +1 日"));
+            else if (state == "summary") Assert.That(slip, Is.EqualTo("発行済み 10/1 から +2 日"));
+            else Assert.That(slip, Is.Empty);
+            if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
+        });
+    }
+    [Test, Category("PlanSheetNative"), Category("PlanSheetPhase2Keys")]
+    public async Task NativeF2EnterEscapeAndCopyUseDateEditFormWithoutFixingCalculatedDates()
+    {
+        await Select(1, PlanField.Start); await SheetNativeInput.Click("PlanCell1_Start");
+        var undo = session.UndoCount; var changes = session.Changes(Today).TaskCount;
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Start").Text == "2026-10-05");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").SelectedText, Is.EqualTo("2026-10-05")));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Enter); await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)")));
+        Assert.That(session.UndoCount, Is.EqualTo(undo)); Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(changes));
+        Assert.That(session.Schedule(Today).First().Start.Origin, Is.EqualTo(DateOrigin.Calculated));
+        await SheetNativeInput.Click("PlanCell1_Start"); await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Start").Text = "2026-10-14");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Escape); await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)")));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.C, Windows.System.VirtualKey.Control); await Ui.Idle();
+        Assert.That(clipboard.Text, Is.EqualTo("2026-10-05")); Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+    [Test, Category("PlanSheetPhase2")]
+    public async Task LabelledCommandsStayReachableInNarrowNativeOverflowIncludingColumnChoices()
+    {
+        await Ui.Run(() => { sheetHost.Width = 760; sheetHost.Height = 600; }); await Ui.Idle();
+        await Ui.Run(() => {
+            var bar = Ui.Find<CommandBar>("PlanSheetCommands");
+            Assert.That(bar.DefaultLabelPosition, Is.EqualTo(CommandBarDefaultLabelPosition.Right));
+            var buttons = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>().ToArray();
+            Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
+            Assert.That(bar.PrimaryCommands.OfType<AppBarButton>().Any(b => b.IsInOverflow), Is.True);
+            Assert.That(bar.SecondaryCommands.OfType<AppBarButton>().Where(b => b.Label == "コピー").Single().KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+C"));
+            bar.IsOpen = true;
+        });
+        await Ui.Ready<AppBarButton>("PlanSheetCopy");
+        await Ui.Run(() => {
+            var bar = Ui.Find<CommandBar>("PlanSheetCommands");
+            foreach (var button in bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>()) {
+                Assert.That(button.IsLoaded && button.ActualWidth > 0 && button.ActualHeight > 0, Is.True, button.Label);
+                Assert.That(Ui.Tree(button).OfType<TextBlock>().Any(t => t.Text == button.Label && t.ActualWidth > 0), Is.True, button.Label);
+            }
+        });
+        await Ui.ClickCommand("PlanSheetColumns");
+        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is not null);
+        await Ui.Run(() => {
+            Assert.That(Ui.Popup<CheckBox>("PlanColumnStart")!.Content, Is.EqualTo("開始日"));
+            Assert.That(Ui.Popup<CheckBox>("PlanColumnIndicator")!.Content, Is.EqualTo("インジケーター"));
+        });
+    }
+    [Test, Category("PlanSheetPhase2")]
+    public async Task StandardHeadersAndShortDatesExposeMappedFieldsAndFullDates()
+    {
+        await Ui.Run(() => {
+            var start = Ui.Find<TextBlock>("PlanHeaderStart");
+            Assert.That(start.Text, Is.EqualTo("開始日"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(start), Is.EqualTo("GitHub: Start date"));
+            Assert.That(ToolTipService.GetToolTip(start), Is.EqualTo("GitHub: Start date"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderRemaining")), Is.EqualTo("未設定"));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text, Is.EqualTo("タスク名"));
+            var cell = Ui.Find<TextBox>("PlanCell1_Start");
+            Assert.That(cell.Text, Is.EqualTo("10/5 (月)"));
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo("2026-10-05 (月)"));
+            Assert.That(cell.FontStyle, Is.EqualTo(Windows.UI.Text.FontStyle.Normal));
+            Assert.That(sheet.RowHeight, Is.EqualTo(28));
+        });
+    }
+    [Test, Category("PlanSheetPhase2")]
+    public async Task DateEditFormAndCopyPreserveCalculatedOriginUntilTheDateChanges()
+    {
+        await Select(1, PlanField.Start);
+        var undo = session.UndoCount; var unpublished = session.Changes(Today).Fields.Count;
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Start"); cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+            Assert.That(cell.Text, Is.EqualTo("2026-10-05")); Assert.That(cell.SelectedText, Is.EqualTo(cell.Text));
+        });
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Start"); cell.Focus(FocusState.Programmatic); cell.Text = "2026-10-05"; });
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
+        Assert.That(session.UndoCount, Is.EqualTo(undo)); Assert.That(session.Changes(Today).Fields.Count, Is.EqualTo(unpublished));
+        Assert.That(session.Document.State.Rows[0].Start, Is.Null); Assert.That(session.Document.State.Rows[0].Fixed, Is.False);
+        await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
+        Assert.That(clipboard.Text, Is.EqualTo("2026-10-05"));
+        await Edit(1, PlanField.Start, "2026-10-14");
+        Assert.That(session.Document.State.Rows[0].Start, Is.EqualTo(new DateOnly(2026, 10, 14)));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/14 (水)")));
+    }
     [Test]
     public async Task ValidationCalloutFollowsTheProblemAcrossRowRecycling()
     {
         await Edit(1, PlanField.Remaining, "invalid");
-        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is not null);
         PlanSheetRow originalRow = null!;
         await Ui.Run(() => {
@@ -156,7 +371,7 @@ internal sealed class PlanSheetHostedTests
         await Edit(1, PlanField.Remaining, "invalid");
         await Ui.Run(() => {
             var title = Ui.Find<TextBox>("PlanCell1_Title"); title.Focus(FocusState.Programmatic); title.Text = "Outside filter";
-            Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic);
+            Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic);
         });
         await Ui.Until(() => session.Document.State.Rows[0].Title == "Outside filter"); await Ui.Idle();
     }
@@ -165,7 +380,7 @@ internal sealed class PlanSheetHostedTests
     public async Task SheetRefusedColumnToggleRestoresAcceptedVisibility()
     {
         await Edit(1, PlanField.Remaining, "invalid");
-        await Ui.Run(() => Ui.Click("PlanSheetColumns"));
+        await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is not null);
         CheckBox toggle = null!;
         await Ui.Run(() => { toggle = Ui.Popup<CheckBox>("PlanColumnRemaining")!; Ui.Toggle(toggle); });
@@ -208,7 +423,7 @@ internal sealed class PlanSheetHostedTests
         var before = session.Document.State; var undo = session.UndoCount;
         try
         {
-            await Ui.Run(() => Ui.Click(paste ? "PlanSheetPaste" : "PlanSheetCopy"));
+            await Ui.ClickCommand(paste ? "PlanSheetPaste" : "PlanSheetCopy");
             await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
             // The external owner is still blocked. The UI must be able to respond.
             await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").IsEnabled, Is.True)).WaitAsync(TimeSpan.FromSeconds(3));
@@ -232,7 +447,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Contains(added.Identity));
         await Ui.Until(() => FocusManager.GetFocusedElement(Ui.Root.XamlRoot) is TextBox text && text.Text.Length == 0);
         await Ui.Run(() => ((TextBox)FocusManager.GetFocusedElement(Ui.Root.XamlRoot)).Text = "New planned task");
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == added.Identity).Title, Is.EqualTo("New planned task"));
         Assert.That(session.Document.State.Rows.Where(r => r.Identity != added.Identity), Is.EqualTo(before));
@@ -267,7 +482,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Predecessors").FocusState != FocusState.Unfocused);
         await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Predecessors").Text = "2");
         await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Predecessors").Text = "計画外");
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
         Assert.That(session.Document.State, Is.EqualTo(before)); Assert.That(session.UndoCount, Is.EqualTo(undo));
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
@@ -279,13 +494,13 @@ internal sealed class PlanSheetHostedTests
         var before = session.Document.State; var undo = session.UndoCount;
         string original = "";
         await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PlanCell1_" + field); original = cell.Text;
+            var cell = Ui.Find<TextBox>("PlanCell1_" + field); original = sheet.EditForm("I1", field);
             Assert.That(cell.Focus(FocusState.Programmatic), Is.True);
         });
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_" + field).FocusState != FocusState.Unfocused);
         await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_" + field).Text = original + "x");
         await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_" + field).Text = original);
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
         Assert.That(session.Document.State, Is.EqualTo(before));
         Assert.That(session.Document.State.Rows[0].Fixed, Is.False);
@@ -321,7 +536,7 @@ internal sealed class PlanSheetHostedTests
             // Establish the edit mode shared by F2/double-click; focus events are native.
             cell.BeginEditing(); cell.Select(1, 0);
         });
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Title").FocusState == FocusState.Unfocused);
         await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic));
         await Ui.Until(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); return cell.FocusState != FocusState.Unfocused && cell.SelectionLength == cell.Text.Length; });
@@ -339,10 +554,14 @@ internal sealed class PlanSheetHostedTests
         clipboardReader = () => { started.TrySetResult(); return content.Task; };
         await Select(1, PlanField.Remaining);
         var before = session.Document.State;
-        await Ui.Run(() => Ui.Click("PlanSheetPaste"));
+        await Ui.ClickCommand("PlanSheetPaste");
         await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await Ui.Unmount(sheet); await Ui.Idle();
-        await Ui.Mount(sheet);
+        await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear()); await Ui.Idle();
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
         // Completing an OS read after detachment must not apply an old paste.
         content.SetResult(new("16", null)); await Ui.Idle();
         Assert.That(session.Document.State, Is.EqualTo(before));
@@ -357,25 +576,33 @@ internal sealed class PlanSheetHostedTests
             else Ui.Find<ComboBox>("PlanGanttZoom").IsDropDownOpen = true;
         });
         await Ui.Until(() => calendar ? Ui.Find<CalendarDatePicker>("PlanStatusDate").IsCalendarOpen : Ui.Find<ComboBox>("PlanGanttZoom").IsDropDownOpen);
-        await Ui.Unmount(sheet); await Ui.Idle();
+        await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear()); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(sheet.IsLoaded, Is.False);
             Assert.That(VisualTreeHelper.GetOpenPopupsForXamlRoot(Ui.Root.XamlRoot).Any(p => p.IsOpen), Is.False);
         });
-        await Ui.Mount(sheet);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
         await Edit(1, PlanField.Title, "Remounted");
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Remounted"));
     }
     [TestCase(false, false), TestCase(false, true), TestCase(true, false), TestCase(true, true), Category("PlanSheetReview2")]
     public async Task ClipboardContentionIsRetriedOrReportedWithoutChangingSelection(bool paste, bool persistent)
     {
-        await Ui.Unmount(sheet);
+        await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear());
         var attempts = 0;
         void Contention() { if (++attempts <= (persistent ? 100 : 1)) throw new System.Runtime.InteropServices.COMException("busy", unchecked((int)0x800401D0)); }
         await Ui.Run(() => sheet = new(session, () => { Contention(); return Task.FromResult(new PlanClipboardContent("16", null)); }, value => { Contention(); clipboard = value; }));
-        await Ui.Mount(sheet); await Select(1, PlanField.Remaining);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost); await Select(1, PlanField.Remaining);
         var before = session.Document.State;
-        await Ui.Run(() => Ui.Click(paste ? "PlanSheetPaste" : "PlanSheetCopy")); await Ui.Idle();
+        await Ui.ClickCommand(paste ? "PlanSheetPaste" : "PlanSheetCopy"); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(SelectProvider("PlanCell1_Remaining").IsSelected, Is.True);
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo(persistent ? "クリップボードを使用できません。もう一度お試しください。" : ""));
@@ -391,13 +618,13 @@ internal sealed class PlanSheetHostedTests
         clipboard = new("16", missingValues ? PlanJson.Text(new { project = session.Document.Project, fields = new[] { PlanField.Remaining }, identities = new[] { "I1" } }) : "invalid json");
         await Select(1, PlanField.Remaining);
         var before = session.Document.State;
-        await Ui.Run(() => Ui.Click("PlanSheetPaste")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetPaste"); await Ui.Idle();
         Assert.That(session.Document.State, Is.EqualTo(before));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("コピー元を確認できません。"));
             Assert.That(SelectProvider("PlanCell1_Remaining").IsSelected, Is.True);
         });
-        await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
         Assert.That(clipboard.Text, Is.EqualTo("8"));
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
     }
@@ -414,13 +641,13 @@ internal sealed class PlanSheetHostedTests
             await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.LostFocus += (_, _) => left.TrySetResult(); Assert.That(cell.Focus(FocusState.Programmatic), Is.True); });
             await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Title").FocusState != FocusState.Unfocused);
             await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Title").Text = "Earlier");
-            await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+            await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
             await left.Task.WaitAsync(TimeSpan.FromSeconds(10));
             left = new(TaskCreationOptions.RunContinuationsAsynchronously);
             await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.True));
             await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Title").FocusState != FocusState.Unfocused);
             await Ui.Run(() => Ui.Find<TextBox>("PlanCell1_Title").Text = latest);
-            await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+            await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
             await left.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
         finally { release.TrySetResult(); }
@@ -442,7 +669,7 @@ internal sealed class PlanSheetHostedTests
         await Select(row, field);
         var before = session.UndoCount;
         await Ui.Run(() => { var cell = Ui.Find<TextBox>($"PlanCell{row}_{field}"); Assert.That(cell.Focus(FocusState.Programmatic), Is.True); cell.Text = text; });
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic), Is.True));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic), Is.True));
         await Ui.Until(() => session.UndoCount != before || Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Idle();
     }
@@ -457,7 +684,7 @@ internal sealed class PlanSheetHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset > 0);
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("Task 1")));
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
         Assert.That(session.UndoCount, Is.Zero);
@@ -465,7 +692,7 @@ internal sealed class PlanSheetHostedTests
     [TestCase(false), TestCase(true), Category("PlanSheetReview")]
     public async Task HistoryCommandKeepsInvalidNewRowAvailableForCorrection(bool redo)
     {
-        await Ui.Run(() => Ui.Click("PlanSheetInsert")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetInsert"); await Ui.Idle();
         var index = Array.FindIndex(session.Document.State.Rows.ToArray(), r => r.Title == "");
         var number = index + 1;
         await Ui.Ready<TextBox>($"PlanCell{number}_Remaining");
@@ -500,22 +727,26 @@ internal sealed class PlanSheetHostedTests
     public async Task InternalPredecessorCopyPreservesAnIdentityOutsideTheProject()
     {
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Predecessors, ImmutableArray.Create("outside"))]), Today);
-        await Ui.Unmount(sheet);
+        await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear());
         await Ui.Run(() => sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value));
-        await Ui.Mount(sheet);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
         await Select(1, PlanField.Predecessors);
-        await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
         Assert.That(clipboard.Text, Is.EqualTo("計画外"));
         await Select(3, PlanField.Predecessors);
-        await Ui.Run(() => Ui.Click("PlanSheetPaste")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetPaste"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Predecessors, Is.EqualTo(new[] { "outside" }));
     }
     [Test, Category("PlanSheetReview")]
     public async Task DefaultPlanningColumnsFitBesideGanttWithCompactRowsAndCalendarContext()
     {
-        await Ui.Run(() => { sheet.Width = 1032; sheet.HorizontalAlignment = HorizontalAlignment.Left; });
+        await Ui.Run(() => { sheet.Width = 1248; Ui.Window.AppWindow.Resize(new(1600, 960)); sheet.HorizontalAlignment = HorizontalAlignment.Left; });
         await Ui.Ready<TextBox>("PlanCell1_Predecessors");
-        await Ui.Until(() => sheet.ActualWidth == 1032);
+        await Ui.Until(() => sheet.ActualWidth == 1248);
         await Ui.Run(() => {
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
@@ -523,7 +754,7 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ActualWidth, Is.GreaterThanOrEqualTo(230));
             var first = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
             var second = Ui.Find<TextBox>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
-            Assert.That((second - first) * sheet.XamlRoot.RasterizationScale, Is.InRange(24, 28.1));
+            Assert.That(second - first, Is.EqualTo(28).Within(1));
             Assert.That(Ui.Find<TextBlock>("PlanTimelineMonths").Text, Is.EqualTo("2026/9 – 10"));
         });
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Keyboard), Is.True));
@@ -540,7 +771,7 @@ internal sealed class PlanSheetHostedTests
             before = provider.Value;
             provider.SetValue(before - 100);
         });
-        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ActualWidth == before - 100);
+        await Ui.Until(() => Math.Abs(Ui.Find<ScrollViewer>("PlanSheetHorizontal").ActualWidth - (before - 100)) <= 1);
         await Ui.Run(() => {
             var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
             Assert.That(chart.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(before - 100).Within(1));
@@ -569,7 +800,7 @@ internal sealed class PlanSheetHostedTests
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]
     public async Task NativeHistoryShortcutRefusesInvalidInputAndReturnsToItsCell(bool redo)
     {
-        await Ui.Run(() => Ui.Click("PlanSheetInsert")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetInsert"); await Ui.Idle();
         var number = Array.FindIndex(session.Document.State.Rows.ToArray(), r => r.Title == "") + 1;
         if (redo)
         {
@@ -601,13 +832,17 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => preserved = new NativeClipboardScope());
         try
         {
-            await Ui.Unmount(sheet);
+            await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear());
             await Ui.Run(() => sheet = new(session));
-            await Ui.Mount(sheet);
+            await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
             await Select(1, PlanField.Title);
-            await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
+            await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
             await Select(3, PlanField.Title);
-            await Ui.Run(() => Ui.Click("PlanSheetPaste")); await Ui.Idle();
+            await Ui.ClickCommand("PlanSheetPaste"); await Ui.Idle();
             Assert.That(session.Document.State.Rows[2].Title, Is.EqualTo("Task 1"));
             Assert.That(session.UndoCount, Is.EqualTo(1));
         }
@@ -649,7 +884,7 @@ internal sealed class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[^1].Title, Is.EqualTo("New task"));
         Assert.That(session.Document.State.Rows[^1].Repository, Is.EqualTo("acme/repo"));
         Assert.That(session.UndoCount, Is.EqualTo(1));
-        await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
         Assert.That(clipboard.Text, Is.EqualTo("New task"), "The created task stays selected without the empty placeholder.");
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(100));
@@ -667,7 +902,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining"); cell.Focus(FocusState.Programmatic); cell.Text = "8";
         });
-        await Ui.Run(() => Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length == 0);
         await Ui.Idle();
         Assert.That(session.UndoCount, Is.Zero);
@@ -678,7 +913,7 @@ internal sealed class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[0].Start, Is.Null);
         await Select(1, PlanField.Start);
         await Select(3, PlanField.Start, true);
-        await Ui.Run(() => Ui.Click("PlanSheetFillDown")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetFillDown"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].StartNoEarlierThan, Is.EqualTo(Today));
         Assert.That(session.UndoCount, Is.EqualTo(1));
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
@@ -707,9 +942,13 @@ internal sealed class PlanSheetHostedTests
     {
         await session.Execute(new InsertPlanRows([PlanRow.New("Partial", "acme/repo") with {
             Start = start ? Today : null, End = start ? null : Today }], "I1"), Today);
-        await Ui.Unmount(sheet);
+        await Ui.Unmount(sheetHost); await Ui.Run(() => sheetHost.Children.Clear());
         await Ui.Run(() => sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value));
-        await Ui.Mount(sheet);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
         await Ui.Ready<TextBox>("PlanCell1_Title");
         await Ui.Run(() => {
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polygon>("PlanEndpoint1").Width, Is.EqualTo(8));
@@ -719,7 +958,7 @@ internal sealed class PlanSheetHostedTests
     [Test]
     public async Task SelectingAnOffscreenColumnMakesTheWholeCellReachableWithoutMovingTheChart()
     {
-        await Ui.Run(() => Ui.Click("PlanSheetColumns"));
+        await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is not null);
         await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide(); });
         await Ui.Idle();
@@ -730,7 +969,12 @@ internal sealed class PlanSheetHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
         await Select(1, PlanField.Status);
-        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").HorizontalOffset > 0);
+        await Ui.Until(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Status");
+            var left = cell.TransformToVisual(sheet).TransformPoint(new()).X;
+            var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
+            return viewport.HorizontalOffset > 0 && left >= 0 && left + cell.ActualWidth <= viewport.ActualWidth + 1;
+        });
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Status");
             var left = cell.TransformToVisual(sheet).TransformPoint(new()).X;
@@ -798,12 +1042,12 @@ internal sealed class PlanSheetHostedTests
             Assert.That(cell.Focus(FocusState.Programmatic), Is.True); cell.Text = "16";
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(8));
         });
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanSheetCopy").Focus(FocusState.Programmatic), Is.True));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic), Is.True));
         await Ui.Idle();
         await Ui.Until(() => session.Document.State.Rows[0].Remaining == 16 || Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(16));
-            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("2026-10-06"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/6 (火)"));
             Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(48));
             Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
         });
@@ -819,12 +1063,12 @@ internal sealed class PlanSheetHostedTests
         {
             await Edit(1, PlanField.Remaining, "16");
             await Select(1, PlanField.Remaining);
-            await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
+            await Ui.ClickCommand("PlanSheetCopy"); await Ui.Idle();
             await Select(2, PlanField.Remaining);
             await Select(3, PlanField.Remaining, true);
             if (command == "fill") { await Select(1, PlanField.Remaining); await Select(3, PlanField.Remaining, true); }
             var before = session.UndoCount;
-            await Ui.Run(() => Ui.Click(command == "paste" ? "PlanSheetPaste" : command == "fill" ? "PlanSheetFillDown" : "PlanSheetClear"));
+            await Ui.ClickCommand(command == "paste" ? "PlanSheetPaste" : command == "fill" ? "PlanSheetFillDown" : "PlanSheetClear");
             await Ui.Idle();
             Assert.That(session.Document.State.Rows.Skip(1).Take(2).Select(r => r.Remaining), Is.All.EqualTo(command == "clear" ? null : (decimal?)16));
             Assert.That(session.UndoCount, Is.EqualTo(before + 1));
@@ -837,18 +1081,18 @@ internal sealed class PlanSheetHostedTests
     public async Task InsertAndIndentRollUpTheParentAndOutdentRestoresLeafEditing()
     {
         await Select(3, PlanField.Title);
-        await Ui.Run(() => Ui.Click("PlanSheetInsert")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetInsert"); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[2].Repository, Is.EqualTo("acme/repo"));
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         await Select(3, PlanField.Title);
-        await Ui.Run(() => Ui.Click("PlanSheetIndent")); await Ui.Idle();
+        await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.EqualTo("I2"));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.True);
-            Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").FontStyle, Is.EqualTo(Windows.UI.Text.FontStyle.Italic));
-            Ui.Click("PlanSheetOutdent");
+            Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").FontStyle, Is.EqualTo(Windows.UI.Text.FontStyle.Normal));
         });
+        await Ui.ClickCommand("PlanSheetOutdent");
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
     }
@@ -862,8 +1106,8 @@ internal sealed class PlanSheetHostedTests
         await Ui.Ready<TextBox>("PlanCell3_Title");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanRowId3").Text, Is.EqualTo("3"));
-            Ui.Click("PlanSheetColumns");
         });
+        await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is not null);
         await Ui.Run(() => Ui.Toggle(Ui.Popup<CheckBox>("PlanColumnStart")!)); await Ui.Idle();
         await Ui.Run(() => {
@@ -873,7 +1117,7 @@ internal sealed class PlanSheetHostedTests
         });
         await Ui.Idle();
         await Ui.Ready<TextBlock>("PlanHeaderStart");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderStart").Text, Is.EqualTo("Start date")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderStart").Text, Is.EqualTo("開始日")));
     }
     [Test]
     public async Task StatusDateAndSelectionShowTheSchedulerReasonAndCycleRejectionNamesIds()

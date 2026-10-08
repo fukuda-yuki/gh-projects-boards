@@ -12,6 +12,24 @@ internal sealed class PlanSheetEditingTests
             new("I2", "second", "acme/repo"),
             new("I3", "third", "acme/repo")],
             new() { People = [new("U1", "alice", 100, null, [])] }));
+    [TestCase("2026-10-14", "2026-10-05", "2026-10-14")]
+    [TestCase("2026/10/14", "2026-10-05", "2026-10-14")]
+    [TestCase("10/14", "2026-10-05", "2026-10-14")]
+    [TestCase("1/2", "2026-12-30", "2027-01-02")]
+    [TestCase("12/30", "2027-01-02", "2026-12-30")]
+    [TestCase("1/1", "2024-07-02", "2025-01-01")]
+    public void DateInputUsesExplicitFormsAndNearestStatusYear(string input, string status, string expected)
+    {
+        var document = Document with { State = Document.State with { Settings = Document.State.Settings with { StatusDate = DateOnly.Parse(status) } } };
+        foreach (var field in new[] { PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan })
+            Assert.That(PlanSheetEditing.Parse(document, field, input), Is.EqualTo(DateOnly.Parse(expected)));
+    }
+    [TestCase("2/30"), TestCase("garbage"), TestCase("10-14"), TestCase("2026/2/30")]
+    public void InvalidDateExplainsAllAcceptedForms(string input)
+    {
+        Assert.That(() => PlanSheetEditing.Parse(Document, PlanField.Start, input), Throws.ArgumentException
+            .With.Message.EqualTo("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。"));
+    }
     [Test]
     public void DisplayedPredecessorNumbersResolveAgainstTheWholePlan()
     {

@@ -11,6 +11,8 @@ namespace GhProjectsBoards.E2E.Tests;
 [TestFixture, Category("E2E"), NonParallelizable, Apartment(ApartmentState.STA)]
 public sealed class PlanningWorkspaceJourneyTests
 {
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(nint window);
     [Test]
     public void FreshWorkspaceConnectsOpensMappedTasksAndReopensAfterRestart()
     {
@@ -61,7 +63,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");
                 Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "R01 受注データの外部連携" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
                 Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == $"未発行 {launch} タスク");
-                Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "Start date"), Is.True);
+                Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "開始日"), Is.True);
                 Find(window!, "PlanProjectPicker").AsButton().Invoke();
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&
                     Find(window!, "RegisteredProjects").FindAllDescendants().Any(e =>
@@ -73,10 +75,11 @@ public sealed class PlanningWorkspaceJourneyTests
                 var chartBounds = Find(window, "PlanGanttHorizontal").BoundingRectangle;
                 Assert.That(chartBounds.Width, Is.GreaterThanOrEqualTo(280));
                 var firstRow = Find(window, "PlanCell1_Title").BoundingRectangle;
-                var secondRow = Find(window, "PlanCell2_Title").BoundingRectangle;
-                Assert.That(secondRow.Top - firstRow.Top, Is.InRange(24, 28.1));
+                var rowPitch = Find(window, "PlanRowId2").BoundingRectangle.Top - Find(window, "PlanRowId1").BoundingRectangle.Top;
+                var scale = GetDpiForWindow(window.Properties.NativeWindowHandle.Value) / 96d;
+                Assert.That(rowPitch / scale, Is.EqualTo(28).Within(1));
                 File.WriteAllText(Path.Combine(root, $"layout-{launch}.json"), JsonSerializer.Serialize(new {
-                    window = window.BoundingRectangle, chart = chartBounds, rowPitch = secondRow.Top - firstRow.Top,
+                    window = window.BoundingRectangle, chart = chartBounds, rowPitch, scale,
                     predecessorRight = Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right,
                     title = firstRow, start = Find(window, "PlanCell1_Start").BoundingRectangle,
                     end = Find(window, "PlanCell1_End").BoundingRectangle,

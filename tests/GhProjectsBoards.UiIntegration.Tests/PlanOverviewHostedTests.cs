@@ -19,6 +19,7 @@ internal sealed class PlanOverviewHostedTests
     private string root = null!;
     private PlanSession session = null!;
     private PlanSheetView sheet = null!;
+    private Grid sheetHost = null!;
     private PlanClipboardContent clipboard = new("", null);
 
     [SetUp]
@@ -41,7 +42,11 @@ internal sealed class PlanOverviewHostedTests
         session = await PlanSession.CreateAsync(new(root), document, Today);
         clipboard = new("", null);
         await Ui.Run(() => sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value));
-        await Ui.Mount(sheet);
+        await Ui.Run(() => {
+            var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
+            host.Children.Add(sheet.statusDate); host.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
         await Ui.Ready<TextBox>("PlanCell2_Title");
     }
 
@@ -57,7 +62,7 @@ internal sealed class PlanOverviewHostedTests
             try { await Ui.Idle(); }
             finally
             {
-                try { if (sheet is not null) await Ui.Unmount(sheet, check: false); await Ui.Idle(); }
+                try { if (sheet is not null) await Ui.Unmount(sheetHost, check: false); await Ui.Idle(); }
                 finally
                 {
                     if (session is not null) await session.FlushAsync();
@@ -168,8 +173,8 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Run(() => {
             before = Ui.Find<ScrollViewer>("PlanSheetHorizontal").HorizontalOffset;
             Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日";
-            Ui.Click("PlanSheetGoToDate");
         });
+        await Ui.ClickCommand("PlanSheetGoToDate");
         await Ui.Idle();
         await Ui.Run(() => {
             var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");

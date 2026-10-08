@@ -15,6 +15,45 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(false), TestCase(true), Category("PlanSheetPhase2")]
+    public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
+    {
+        await Open();
+        if (people) { await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1"); }
+        var before = workspace.Session!.Document.State.Settings.StatusDate;
+        var undo = workspace.Session.UndoCount;
+        var inputId = people ? "PeopleAllowance_U1" : "PlanCell1_Remaining";
+        await Ui.Run(() => {
+            var picker = Ui.Find<CalendarDatePicker>("PlanStatusDate");
+            Assert.That(Ui.Tree(Ui.Tree(view).OfType<PlanSheetView>().Single()).Contains(picker), Is.False);
+            var input = Ui.Find<TextBox>(inputId); input.Focus(FocusState.Programmatic); input.Text = "invalid";
+            picker.Date = new DateTimeOffset(2026, 10, 20, 0, 0, 0, TimeSpan.Zero);
+        });
+        await Ui.Idle();
+        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>(inputId).Text, Is.EqualTo("invalid"));
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date,
+                Is.EqualTo((before ?? DateOnly.FromDateTime(DateTime.Today)).ToDateTime(TimeOnly.MinValue)));
+            Ui.Find<TextBox>(inputId).Text = people ? "80" : "8";
+            Ui.Find<CalendarDatePicker>("PlanStatusDate").Focus(FocusState.Programmatic);
+        });
+        await Ui.Idle();
+        if (people) { await Ui.Run(() => Ui.Click("PlanShowTasks")); await Ui.Idle(); }
+        undo = workspace.Session.UndoCount;
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(2026, 10, 20, 0, 0, 0, TimeSpan.Zero));
+        await Ui.Idle();
+        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
+        await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
+        Assert.That(workspace.Session.Document.State.Settings.StatusDate, Is.EqualTo(before));
+        await Ui.Run(() => {
+            var localSheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            Assert.That(localSheet.Pending, Is.Empty, string.Join(";", localSheet.Pending.Select(p => $"{p.Key}: {p.Value.Text} original={p.Value.OriginalText}")));
+        });
+    }
+
     [Test, Category("WorkspaceShell")]
     public async Task QueuedViewSelectionsRetainTheLastRequestAfterPendingRefresh()
     {
@@ -176,7 +215,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(async () => {
             var lines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroup" + row.Identity)).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(string.Join(" ", lines), Does.Not.Contain("未入力 →").And.Not.Contain(reason).And.Contain(text));
-            Assert.That(lines.Any(t => t.Contains("Estimate") && t.Contains("16")), Is.True);
+            Assert.That(lines.Any(t => t.Contains("見積 h") && t.Contains("16")), Is.True);
             if (reason == "NotDispatched") Assert.That(string.Join(" ", lines), Does.Contain("未送信").And.Not.Contain("発行失敗"));
             if (reason == "NotDispatched") await RenderedEvidence.Capture(view, "publish-pending-reason");
             Ui.Click("PlanPublishClose");
@@ -256,7 +295,8 @@ internal sealed class PlanWorkspaceHostedTests
         var path = Path.Combine(root, "tasks.csv");
         await File.WriteAllTextAsync(path, "キー,タイトル,見積,担当者,先行タスク,親\na,,8,,,\nb,確認,4,,missing,\n");
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "設計");
-        await Ui.Run(() => { view.PickFile = purpose => { Assert.That(purpose, Is.EqualTo("csv")); return Task.FromResult<string?>(path); }; Ui.Click("PlanSheetCsv"); });
+        await Ui.Run(() => { view.PickFile = purpose => { Assert.That(purpose, Is.EqualTo("csv")); return Task.FromResult<string?>(path); }; });
+        await Ui.ClickCommand("PlanSheetCsv");
         await Ui.DialogReady("PlanCsvErrors");
         await Ui.Run(() => {
             Assert.That(Ui.DialogText("PlanCsvErrors"), Does.Contain("2行: タイトル").And.Contain("3行: 参照"));
@@ -278,15 +318,16 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {unpublishedBeforeCsv + 3} タスク"));
             Assert.That(Ui.Find<PlanSheetCell>("PlanCell3_Title").Text, Is.EqualTo("設計の追加"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-            Ui.Click("PlanSheetCsv");
         });
+        await Ui.ClickCommand("PlanSheetCsv");
         await Ui.DialogReady("PlanCsvDuplicate");
         await Ui.Run(() => Ui.DialogButton("PlanCsvDuplicate", "CloseButton"));
         await Ui.Until(() => Ui.Dialog("PlanCsvDuplicate") is null);
         await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Tree(view).OfType<PlanSheetView>().Single(), "csv-imported-plan"));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Length == 1);
-        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); Ui.Click("PlanSheetCsv"); });
+        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); });
+        await Ui.ClickCommand("PlanSheetCsv");
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
         Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
     }
@@ -297,7 +338,8 @@ internal sealed class PlanWorkspaceHostedTests
         await Open();
         var path = Path.Combine(root, "invalid.csv");
         File.WriteAllText(path, "キー,タイトル,見積\na,,8\n");
-        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(path); Ui.Click("PlanSheetCsv"); });
+        await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(path); });
+        await Ui.ClickCommand("PlanSheetCsv");
         await Ui.DialogReady("PlanCsvErrors");
         Task<bool> stop = null!;
         await Ui.Run(() => { stop = view.StopAsync(); });
@@ -679,7 +721,7 @@ internal sealed class PlanWorkspaceHostedTests
             var text = string.Join("\n", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("子タスクの順序  3 子B、2 子A → 2 子A、3 子B"));
             Assert.That(text, Does.Contain("親タスク  計画外Issue（未取得） → 未入力"));
-            Assert.That(text, Does.Contain("先行タスク  計画外Issue（未取得） → 未入力"));
+            Assert.That(text, Does.Contain("先行  計画外Issue（未取得） → 未入力"));
             Assert.That(Ui.Tree(view).OfType<HyperlinkButton>().Any(b => b.NavigateUri?.AbsoluteUri == "https://github.com/acme/repo/issues/1"), Is.True);
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         });
@@ -737,7 +779,7 @@ internal sealed class PlanWorkspaceHostedTests
     {
         await Open();
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("Start date")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("開始日")));
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
@@ -943,7 +985,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo("開発計画"));
             Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>().Count(id => id.Length > 0), Is.EqualTo(1));
             Assert.That(workspace.Session!.Document.State.Settings.Columns.Length, Is.EqualTo(5));
-            Assert.That(string.Join(" ", Ui.Tree(view).Select(t => t is TextBlock label ? label.Text : t is TextBox input ? input.Text : "")), Does.Contain("Start date").And.Contain("設計"));
+            Assert.That(string.Join(" ", Ui.Tree(view).Select(t => t is TextBlock label ? label.Text : t is TextBox input ? input.Text : "")), Does.Contain("開始日").And.Contain("設計"));
         });
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "workspace"));
         await Settings();
@@ -1063,7 +1105,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(workspace.Session.Schedule(new(2026, 10, 5)).Single().End.Value!.Value.ToString("yyyy-MM-dd"), Is.EqualTo(expected));
             Ui.Click("PlanShowTasks");
         });
-        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanTasks")).OfType<TextBox>().Any(t => t.Text == expected));
+        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanTasks")).OfType<TextBox>().Any(t => t.Text == PlanSheetView.DateText(DateOnly.Parse(expected))));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session.UndoCount == history);
         Assert.That(workspace.Session.Schedule(new(2026, 10, 5)).Single().End.Value, Is.EqualTo(new DateOnly(2026, 10, 5)));
@@ -1290,8 +1332,9 @@ internal sealed class PlanWorkspaceHostedTests
         }));
         await Ui.Run(() => {
             if (stage == "open") Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
-            else Ui.Click(stage == "connect" ? "PlanConnect" : stage == "csv" ? "PlanSheetCsv" : "PlanRefresh");
+            else if (stage != "csv") Ui.Click(stage == "connect" ? "PlanConnect" : "PlanRefresh");
         });
+        if (stage == "csv") await Ui.ClickCommand("PlanSheetCsv");
         var marker = Path.Combine(root, "held-gh.pid");
         int pid = 0;
         await Ui.Until(() => File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid));
@@ -1335,12 +1378,25 @@ internal sealed class PlanWorkspaceHostedTests
                 "The title must have its own presentation, without an appended owner consuming the title line.");
             list.ScrollIntoView(list.Items[^1]);
         });
-        await Ui.Until(() => Ui.Find<ListView>("RegisteredProjects").ContainerFromIndex(39) is ListViewItem { IsLoaded: true });
-        await Ui.Run(async () => {
-            var list = Ui.Find<ListView>("RegisteredProjects"); var last = (ListViewItem)list.ContainerFromIndex(39);
+        await Ui.Until(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            if (list.ContainerFromIndex(39) is not ListViewItem { IsLoaded: true } last) return false;
             var bounds = last.TransformToVisual(list).TransformBounds(new Rect(0, 0, last.ActualWidth, last.ActualHeight));
-            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(list.ActualHeight + 1));
-            await RenderedEvidence.Capture((FrameworkElement)((Flyout)Ui.Find<Button>("PlanProjectPicker").Flyout).Content, "many-projects");
+            return bounds.Top >= 0 && bounds.Bottom <= list.ActualHeight + 1;
+        });
+        await Ui.Run(async () => {
+            var flyout = (Flyout)Ui.Find<Button>("PlanProjectPicker").Flyout;
+            var content = (FrameworkElement)flyout.Content;
+            var popup = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot).Single(p => Ui.Tree(p.Child).Contains(content));
+            // Evidence awaits rendering; unrelated desktop focus must not dismiss its target mid-capture.
+            var dismiss = popup.IsLightDismissEnabled; popup.IsLightDismissEnabled = false;
+            try {
+                Assert.That(flyout.IsOpen && content.IsLoaded, Is.True);
+                var list = Ui.Find<ListView>("RegisteredProjects"); var last = (ListViewItem)list.ContainerFromIndex(39);
+                var bounds = last.TransformToVisual(list).TransformBounds(new Rect(0, 0, last.ActualWidth, last.ActualHeight));
+                Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(list.ActualHeight + 1));
+                await RenderedEvidence.Capture(content, "many-projects");
+            } finally { popup.IsLightDismissEnabled = dismiss; }
         });
     }
 

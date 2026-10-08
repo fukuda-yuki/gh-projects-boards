@@ -8,6 +8,20 @@ internal static class PlanScheduler
     public static IReadOnlyList<ScheduledTask> Calculate(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today)
         => new Calculation(tasks, settings, today).Run();
 
+    internal static int? PublishedEndLateness(DateOnly? publishedEnd, DateOnly? calculatedEnd, PlanCalendar calendar)
+    {
+        if (publishedEnd is not { } published || calculatedEnd is not { } calculated || calculated <= published) return null;
+        var holidays = calendar.Holidays.Dates.Select(h => h.Date).ToHashSet();
+        if (calendar.ImportedHolidays is { } imported) holidays.UnionWith(imported.Dates.Select(h => h.Date));
+        var days = 0;
+        for (var number = published.DayNumber + 1; number <= calculated.DayNumber; number++)
+        {
+            var day = DateOnly.FromDayNumber(number);
+            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !holidays.Contains(day) && !calendar.CompanyDaysOff.Contains(day)) days++;
+        }
+        return days;
+    }
+
     // A decimal quotient cannot retain repeating work/rate fractions across FS links.
     // Keep exact hours until the day-only result is projected; never round each task.
     private readonly struct Hours : IComparable<Hours>

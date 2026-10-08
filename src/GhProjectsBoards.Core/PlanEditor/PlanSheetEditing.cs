@@ -20,8 +20,14 @@ internal static class PlanSheetEditing
                 if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number) && number >= 0) return number;
                 throw new ArgumentException("工数は0以上の数値で入力してください。");
             case PlanField.Start: case PlanField.End: case PlanField.StartNoEarlierThan:
-                if (DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) return day;
-                throw new ArgumentException("日付は yyyy-MM-dd で入力してください。");
+                if (DateOnly.TryParseExact(text, ["yyyy-MM-dd", "yyyy/M/d"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) return day;
+                var status = document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
+                var candidates = Enumerable.Range(Math.Max(1, status.Year - 4), Math.Min(9999, status.Year + 4) - Math.Max(1, status.Year - 4) + 1)
+                    .Select(year => DateOnly.TryParseExact($"{year:D4}/{text}", "yyyy/M/d", CultureInfo.InvariantCulture, DateTimeStyles.None, out var candidate) ? candidate : (DateOnly?)null)
+                    .Where(candidate => candidate.HasValue).Select(candidate => candidate!.Value)
+                    .OrderBy(candidate => Math.Abs(candidate.DayNumber - status.DayNumber)).ThenByDescending(candidate => candidate).ToArray();
+                if (candidates.Length > 0) return candidates[0];
+                throw new ArgumentException("日付は 2026-10-14、2026/10/14 または 10/14 の形で入力してください。");
             case PlanField.Fixed:
                 return text.Trim() switch { "固定" or "true" or "1" => true, "解除" or "false" or "0" => false,
                     _ => throw new ArgumentException("日程固定は「固定」または空欄にしてください。") };
