@@ -62,10 +62,13 @@ public sealed class PlanningWorkspaceJourneyTests
                 Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "R01 受注データの外部連携" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
                 Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == $"未発行 {launch} タスク");
                 Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "Start date"), Is.True);
+                Find(window!, "PlanProjectPicker").AsButton().Invoke();
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&
                     Find(window!, "RegisteredProjects").FindAllDescendants().Any(e =>
                         (e.Properties.Name.ValueOrDefault ?? "").Contains("第2027.04版") && !e.Properties.IsOffscreen.ValueOrDefault));
                 Assert.That(window.FindFirstDescendant(c => c.ByAutomationId("RegistrationUrl")), Is.Null);
+                Find(window!, "RegisteredProjects").Focus();
+                FlaUI.Core.Input.Keyboard.Type(FlaUI.Core.WindowsAPI.VirtualKeyShort.ESCAPE);
                 Wait(() => Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right <= Find(window, "PlanGanttHorizontal").BoundingRectangle.Left);
                 var chartBounds = Find(window, "PlanGanttHorizontal").BoundingRectangle;
                 Assert.That(chartBounds.Width, Is.GreaterThanOrEqualTo(280));
@@ -82,7 +85,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 Find(window, "PlanShowSettings").AsButton().Invoke();
                 Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanMapEstimate")) is not null);
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"settings-{launch}.png"));
-                Find(window, "PlanShowTasks").AsButton().Invoke();
+                Find(window, "PlanShowTasks").Patterns.SelectionItem.Pattern.Select();
                 Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanCell1_Title")) is not null);
                 var editor = Find(window, "PlanCell1_Title").AsTextBox();
                 editor.Focus();

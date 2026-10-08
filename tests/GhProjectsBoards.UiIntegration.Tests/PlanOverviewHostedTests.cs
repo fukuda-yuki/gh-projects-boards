@@ -109,7 +109,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.ClickCommand("PlanSheetExpandAll");
         await Ui.Idle();
         await Ui.Run(() => Assert.That(VisibleRows(), Is.EqualTo(new[] { "I1", "I2", "I3", "I4", "I5", "I6", "" })));
-        await Ui.ClickCommand("PlanSheetUndo");
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Idle();
         Assert.That(Row("I2").Assignees, Is.EqualTo(new[] { "U1" }));
         Assert.That(Row("I5").Assignees, Is.EqualTo(new[] { "U1" }));
@@ -255,7 +255,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Idle();
         Assert.That(Row("I2").Predecessors, Is.EquivalentTo(new[] { "outside", "I5", "I6" }));
         Assert.That(session.UndoCount, Is.EqualTo(1));
-        await Ui.ClickCommand("PlanSheetUndo");
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Idle();
         Assert.That(Row("I2").Predecessors, Is.EquivalentTo(new[] { "outside", "I5" }));
         Assert.That(session.UndoCount, Is.Zero);

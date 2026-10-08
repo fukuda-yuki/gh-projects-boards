@@ -159,10 +159,30 @@ internal sealed class PlanPublishReviewHostedTests
             Ui.Click("PlanResolveI60_Actual_True");
         });
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.IsEmpty && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(59) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        try { await Ui.Until(() => {
+            var group = Ui.Tree(view).OfType<PlanPublishGroupView>().FirstOrDefault(g =>
+                AutomationProperties.GetAutomationId(g) == "PlanPublishGroupI60" && g.IsLoaded && g.ActualHeight > 0);
+            if (group is null) return false;
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
+            return bounds.Bottom > 0 && bounds.Top < list.ActualHeight;
+        }); }
+        catch {
+            await Ui.Run(async () => {
+                var list = Ui.Find<ListView>("PlanPublishLines");
+                TestContext.Out.WriteLine("Review realized groups: " + string.Join(", ", Ui.Tree(list).OfType<PlanPublishGroupView>().Select(g =>
+                    $"{AutomationProperties.GetAutomationId(g)}:{g.TransformToVisual(list).TransformBounds(new(0, 0, g.ActualWidth, g.ActualHeight))}")));
+                await RenderedEvidence.Capture(view, "publish-position-failure");
+            });
+            throw;
+        }
         await Ui.Run(async () => {
             Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I60").Actual, Is.EqualTo(2));
             var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
+            Assert.That(bounds.Bottom, Is.GreaterThan(0));
+            Assert.That(bounds.Top, Is.LessThan(list.ActualHeight), "The resolved Issue must remain in the review viewport.");
             Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("Remaining  8 → 5").And.Not.Contain("競合"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "publish-recycled-conflict-resolved");

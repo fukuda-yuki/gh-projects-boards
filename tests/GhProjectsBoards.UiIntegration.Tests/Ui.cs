@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -167,9 +167,9 @@ internal static class Ui
             foreach (var child in Tree(VisualTreeHelper.GetChild(root, i))) yield return child;
     }
     public static T Find<T>(string id, DependencyObject? root = null) where T : DependencyObject =>
-        Tree(root ?? Root).OfType<T>().Single(c => AutomationProperties.GetAutomationId(c) == id);
+        (root is null ? Tree(Root).Concat(VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child))) : Tree(root)).OfType<T>().Distinct().Single(c => AutomationProperties.GetAutomationId(c) == id);
     public static Task Ready<T>(string id) where T : FrameworkElement => Until(() =>
-        Tree(Root).OfType<T>().Any(c => AutomationProperties.GetAutomationId(c) == id && c.IsLoaded));
+        Tree(Root).Concat(VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot).SelectMany(p => Tree(p.Child))).OfType<T>().Any(c => AutomationProperties.GetAutomationId(c) == id && c.IsLoaded));
     public static ContentDialog? Dialog(string id) => VisualTreeHelper.GetOpenPopupsForXamlRoot(Root.XamlRoot)
         .SelectMany(p => Tree(p.Child)).OfType<ContentDialog>().SingleOrDefault(d => AutomationProperties.GetAutomationId(d) == id);
     public static Task DialogReady(string id) => Until(() => Dialog(id)?.IsLoaded == true);
@@ -203,7 +203,14 @@ internal static class Ui
         await Until(() => button.IsLoaded && button.IsEnabled);
         await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
     }
-    public static void Click(string id) => Click(Find<Button>(id));
+    public static void Click(string id)
+    {
+        var control = Find<Control>(id);
+        if (control is SelectorBarItem item) {
+            Assert.That(item.IsLoaded && item.IsEnabled, Is.True);
+            ((ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(item).GetPattern(PatternInterface.SelectionItem)).Select();
+        } else Click((Button)control);
+    }
     public static void Toggle(CheckBox checkbox)
     {
         Assert.That(checkbox.IsLoaded && checkbox.IsEnabled, Is.True);

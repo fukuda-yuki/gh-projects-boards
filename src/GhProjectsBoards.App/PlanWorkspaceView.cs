@@ -16,9 +16,21 @@ internal sealed partial class PlanWorkspaceView : UserControl
 {
     private readonly PlanWorkspace workspace;
     private readonly Func<string, string, GhConnectionService> factory;
-    private readonly Grid root = new() { ColumnSpacing = 12, Padding = new(12) };
-    private readonly Grid sidebar = new() { RowSpacing = 8 };
-    private readonly Grid body = new() { RowSpacing = 8 };
+    private readonly Grid root = new();
+    internal TitleBar WorkspaceTitleBar { get; } = new();
+    private readonly Grid surfaces = new();
+    private readonly Flyout projectFlyout = new();
+    private readonly Button projectPicker = Id(new Button(), "PlanProjectPicker");
+    private readonly TextBlock projectMetadata = new();
+    private readonly Border statusBar = new() { Height = 28 };
+    private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
+    private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
+    private readonly SelectorBarItem peopleTab = Id(new SelectorBarItem { Text = "担当者" }, "PlanShowPeople");
+    private readonly SelectorBar tabs = new();
+    private bool syncingTabs;
+    private int pendingViewSelections;
+    private readonly Button settingsButton;
+    private string currentPage = "connection", settingsReturnPage = "tasks";
     private readonly StackPanel connection = new() { Spacing = 8, MaxWidth = 540, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly StackPanel chooser = new() { Spacing = 8 };
     private readonly StackPanel settings = new() { Spacing = 12, MaxWidth = 850, HorizontalAlignment = HorizontalAlignment.Left };
@@ -31,13 +43,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid peopleArea = new();
     private PlanPeopleView? peopleView;
     private readonly Button retrySave;
-    private readonly TextBlock title = Id(new TextBlock { FontSize = 22 }, "OpenProjectName");
+    private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
     private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com" }, "PlanHost");
     private readonly TextBox url = Id(new TextBox { Header = "Project URL" }, "PlanProjectUrl");
-    private readonly StackPanel toolbar = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
+    private readonly Grid toolbar = new() { Height = 36, Margin = new(12, 0, 12, 0) };
+    private readonly StackPanel commandButtons = new() { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
     private readonly ProgressBar progress = new() { IsIndeterminate = true, Visibility = Visibility.Collapsed };
     private Task operation = Task.CompletedTask;
     private CancellationTokenSource? operationCancellation;
@@ -51,34 +64,72 @@ internal sealed partial class PlanWorkspaceView : UserControl
 
     internal PlanWorkspaceView(PlanWorkspace workspace, Func<string, string, GhConnectionService>? factory = null)
     {
+        RequestedTheme = ElementTheme.Light;
+        FontSize = 14;
+        // Keep the existing 22-row people overview within a 720-DIP client area.
+        WorkspaceTitleBar.Resources["TitleBarExpandedHeight"] = 32d;
+        WorkspaceTitleBar.Resources["TitleBarCompactHeight"] = 32d;
+        tabs.Padding = new(0);
+        tasksTab.Padding = peopleTab.Padding = new Thickness(12, 5, 12, 3);
+        projectPicker.MinHeight = 0; projectPicker.Height = 32;
+        projectPicker.Padding = new(8, 0, 8, 0);
         root.Style = (Style)Application.Current.Resources["PlanWorkspaceSurfaceStyle"];
         this.workspace = workspace; this.factory = factory ?? ((path, server) => new(path, server));
-        root.ColumnDefinitions.Add(new() { Width = new(205) }); root.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        root.Children.Add(sidebar); root.Children.Add(body); Grid.SetColumn(body, 1);
-        for (var i = 0; i < 4; i++) body.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        body.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        sidebar.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        sidebar.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        sidebar.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        sidebar.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        for (var i = 0; i < 4; i++) root.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         registered.ItemTemplate = available.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanProjectChoiceTemplate"];
+        registered.MaxHeight = 320;
         registered.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
-        sidebar.Children.Add(Label("Projects"));
-        sidebar.Children.Add(registered);
-        sidebar.Children.Add(Button("Projectを開く", "PlanChooseProject", () => { Show("chooser"); return Task.CompletedTask; }));
-        sidebar.Children.Add(Button("接続", "PlanConnection", () => { Show("connection"); return Task.CompletedTask; }));
-        for (var row = 0; row < sidebar.Children.Count; row++) Grid.SetRow((FrameworkElement)sidebar.Children[row], row);
-        body.Children.Add(title);
-        body.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
-        toolbar.Children.Add(Button("計画", "PlanShowTasks", () => { Show("tasks"); return Task.CompletedTask; }));
-        toolbar.Children.Add(Button("担当者", "PlanShowPeople", () => { RenderPeople(); Show("people"); return Task.CompletedTask; }));
-        toolbar.Children.Add(Button("設定", "PlanShowSettings", () => { RenderSettings(); Show("settings"); return Task.CompletedTask; }));
-        toolbar.Children.Add(Button("最新の情報に更新", "PlanRefresh", async () => { try { await workspace.Refresh(OperationToken); } finally { RenderTasks(); RenderSettings(); } }));
-        toolbar.Children.Add(Button("元に戻す", "PlanUndo", async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
+        var projects = new StackPanel { Spacing = 8, Width = 340 };
+        projects.Children.Add(registered);
+        projects.Children.Add(Button("Project を開く…", "PlanChooseProject", () => { Show("chooser"); return Task.CompletedTask; }));
+        projects.Children.Add(Button("接続…", "PlanConnection", () => { Show("connection"); return Task.CompletedTask; }));
+        projectFlyout.Content = projects;
+        projectPicker.Flyout = projectFlyout;
+        var projectCaption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        projectMetadata.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
+        projectCaption.Children.Add(title); projectCaption.Children.Add(projectMetadata);
+        projectCaption.Children.Add(new FontIcon { Glyph = "\uE70D", FontSize = 12 });
+        projectPicker.Content = projectCaption;
+        AutomationProperties.SetName(projectPicker, "Project を選択");
+        WorkspaceTitleBar.Subtitle = "計画エディタ";
+        WorkspaceTitleBar.IconSource = new SymbolIconSource { Symbol = Symbol.Calendar };
+        WorkspaceTitleBar.Content = projectPicker;
+        WorkspaceTitleBar.Resources["TitleBarContentHorizontalAlignment"] = HorizontalAlignment.Left;
+        settingsButton = Button("設定", "PlanShowSettings", () => {
+            if (currentPage != "settings") settingsReturnPage = currentPage;
+            RenderSettings(); Show("settings"); return Task.CompletedTask;
+        });
+        settingsButton.Content = new SymbolIcon(Symbol.Setting);
+        settingsButton.MinHeight = 0; settingsButton.Height = 32; settingsButton.Padding = new(8, 0, 8, 0);
+        AutomationProperties.SetName(settingsButton, "設定");
+        ToolTipService.SetToolTip(settingsButton, "設定");
+        WorkspaceTitleBar.RightHeader = settingsButton;
+        root.Children.Add(WorkspaceTitleBar);
+        root.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
+        toolbar.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        toolbar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        tabs.Items.Add(tasksTab); tabs.Items.Add(peopleTab); toolbar.Children.Add(tabs);
+        toolbar.Children.Add(commandButtons); Grid.SetColumn(commandButtons, 1);
+        tabs.SelectionChanged += async (_, _) => {
+            if (syncingTabs) return;
+            var selected = tabs.SelectedItem;
+            if (selected is null) return;
+            pendingViewSelections++;
+            try { await Run(() => { if (selected == peopleTab) RenderPeople(); Show(selected == peopleTab ? "people" : "tasks"); return Task.CompletedTask; }); }
+            finally { if (--pendingViewSelections == 0) SyncTabs(); }
+        };
+        commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
+        unpublished.VerticalAlignment = VerticalAlignment.Center;
+        unpublished.Margin = new(8, 0, 8, 0);
+        commandButtons.Children.Add(unpublished);
+        commandButtons.Children.Add(Command("最新の情報に更新", "PlanRefresh", Symbol.Refresh, async () => { try { await workspace.Refresh(OperationToken); } finally { RenderTasks(); RenderSettings(); } }));
         InitializePublishing();
-        toolbar.Children.Add(unpublished);
-        var problem = new StackPanel { Spacing = 4 };
+        var problem = new StackPanel { Spacing = 4, Margin = new(12, 0, 12, 0) };
+        error.Style = (Style)Application.Current.Resources["WorkspaceErrorStyle"];
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = error.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible);
         problem.Children.Add(error);
         problem.Children.Add(publishStage);
@@ -86,8 +137,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             await workspace.RetrySave(); await CommitPending(); RenderTasks(); RenderSettings();
         }, commitPending: false);
         retrySave.Visibility = Visibility.Collapsed; problem.Children.Add(retrySave);
-        body.Children.Add(problem); Grid.SetRow(problem, 2);
-        body.Children.Add(progress); Grid.SetRow(progress, 3);
+        root.Children.Add(problem); Grid.SetRow(problem, 2);
+        root.Children.Add(progress); Grid.SetRow(progress, 3);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
             await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
@@ -102,20 +153,59 @@ internal sealed partial class PlanWorkspaceView : UserControl
         addressPanel.Children.Add(Button("開く", "PlanOpenUrl", async () => { await workspace.OpenUrl(url.Text, OperationToken); Opened(); }));
         address.Content = addressPanel; chooser.Children.Add(address);
 
-        registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
+        registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); } };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { body.Children.Add(surface); Grid.SetRow(surface, 4); }
-        Unloaded += (_, _) => { closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
+        var card = new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Child = surfaces };
+        root.Children.Add(card); Grid.SetRow(card, 4);
+        statusBar.Child = statusCounts;
+        statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
+        root.Children.Add(statusBar); Grid.SetRow(statusBar, 5);
+        Unloaded += (_, _) => { if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
         Content = root;
         Show("connection");
+    }
+    private void SyncTabs()
+    {
+        // Keep the requested selection until queued switches finish, so another selection still raises an event.
+        if (pendingViewSelections != 0) return;
+        syncingTabs = true;
+        try { tabs.SelectedItem = currentPage == "tasks" ? tasksTab : currentPage == "people" ? peopleTab : null; }
+        finally { syncingTabs = false; }
+    }
+    private void UpdateStatus()
+    {
+        if (workspace.Session is not { } session) return;
+        var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
+        unpublished.Text = $"未発行 {count} タスク";
+        unpublished.Style = (Style)Application.Current.Resources[count > 0 ? "WorkspaceUnpublishedStyle" : "WorkspaceMetadataStyle"];
+        var rows = session.Document.State.Rows;
+        var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
+        var requirements = rows.Count(r => parents.Contains(r.Identity));
+        statusCounts.Text = $"要求事項 {requirements} · タスク {rows.Length - requirements}";
+    }
+    private static Button CommandButton(string text, string id, Symbol icon)
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(new FontIcon { Glyph = char.ConvertFromUtf32((int)icon), FontSize = 16, VerticalAlignment = VerticalAlignment.Center });
+        content.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        var button = Id(new Button { Content = content, Height = 32, CornerRadius = new(4), Padding = new(12, 4, 12, 4) }, id);
+        AutomationProperties.SetName(button, text);
+        return button;
+    }
+    private Button Command(string text, string id, Symbol icon, Func<Task> action)
+    {
+        var button = CommandButton(text, id, icon);
+        button.Click += async (_, _) => { if (button.IsLoaded) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(action); } };
+        return button;
     }
     private static T Id<T>(T control, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(control, id); return control; }
     private static TextBlock Label(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap };
     private Button Button(string text, string id, Func<Task> action, bool commitPending = true)
     {
         var button = Id(new Button { Content = text }, id);
-        button.Click += async (_, _) => { if (button.IsLoaded) await Run(action, commitPending); }; return button;
+        button.Click += async (_, _) => { if (button.IsLoaded) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(action, commitPending); } }; return button;
     }
     private Task Run(Func<Task> action, bool commitPending = true)
     {
@@ -147,7 +237,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
-        closing = true; operationCancellation?.Cancel(); await operation;
+        closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide(); operationCancellation?.Cancel(); await operation;
         try { await CommitPending(); await workspace.Flush(); return true; }
         catch (Exception ex)
         {
@@ -161,6 +251,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void Show(string page)
     {
+        currentPage = page; SyncTabs();
         peopleArea.Visibility = page == "people" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
@@ -168,8 +259,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
         toolbar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
-        sidebar.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
-        root.ColumnDefinitions[0].Width = workspace.Context is null ? new(0) : new(205);
+        projectPicker.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
+        settingsButton.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
+        statusBar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
+        projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · Project {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
     }
     private void Opened() { settingsGeneration++; pendingSettings.Clear(); RefreshLists(); RenderTasks(); Show("tasks"); }
@@ -188,13 +281,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)));
-                next.Changed += () => { if (ReferenceEquals(sheet, next)) unpublished.Text = $"未発行 {next.Unpublished.TaskCount} タスク"; };
+                next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 sheets.Add(session.Document.Project, next);
             }
             taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
         }
         sheet.Refresh();
-        unpublished.Text = $"未発行 {sheet.Unpublished.TaskCount} タスク";
+        UpdateStatus();
         if (!publishing && publishReview.Visibility == Visibility.Visible) RenderReview();
         if (peopleArea.Visibility == Visibility.Visible) RenderPeople();
     }
@@ -203,7 +296,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (workspace.Session is not { } session) return;
         if (peopleView?.Session != session) {
             peopleView = new(session);
-            peopleView.Changed += () => { sheet?.Refresh(); unpublished.Text = $"未発行 {session.Changes(Today).TaskCount} タスク"; };
+            peopleView.Changed += () => { sheet?.Refresh(); UpdateStatus(); };
             peopleArea.Children.Clear(); peopleArea.Children.Add(peopleView);
         } else peopleView.Refresh();
     }
@@ -221,6 +314,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         try
         {
             var generation = ++settingsGeneration; pendingSettings.Clear(); settings.Children.Clear();
+            settings.Children.Add(Button("戻る", "PlanSettingsBack", () => {
+                if (settingsReturnPage == "people") RenderPeople();
+                if (settingsReturnPage == "publish") RenderReview();
+                Show(settingsReturnPage); return Task.CompletedTask;
+            }));
             var value = session.Document.State.Settings;
             settings.Children.Add(Label("GitHub列"));
             foreach (var role in PlanColumnMatching.Roles)

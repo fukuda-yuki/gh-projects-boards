@@ -18,6 +18,8 @@ public sealed partial class MainWindow : Window
         {
             workspace = new(PlanWorkspace.ForUser()) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this) };
             WorkspaceRoot.Children.Add(workspace);
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(workspace.WorkspaceTitleBar);
         }
         catch (Exception)
         {

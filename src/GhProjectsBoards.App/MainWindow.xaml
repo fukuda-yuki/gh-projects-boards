@@ -3,5 +3,5 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="GitHub Projects">
-    <Grid x:Name="WorkspaceRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
+    <Grid x:Name="WorkspaceRoot" RequestedTheme="Light" Background="{ThemeResource WorkspaceBackgroundBrush}"/>
 </Window>

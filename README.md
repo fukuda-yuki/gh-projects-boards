@@ -36,7 +36,7 @@ The shared WBS and reproducible sandbox commands are described in [version evalu
 
 ## Open a Project
 
-Enter the gh executable and hostname, then select **接続**. The app uses gh's stored authentication and lists personal and organization Projects. Select one to add and open it; **URLで開く** is an alternative. Registered Projects appear on the left. **最新の情報に更新** reads current GitHub values; opening an existing local Project preserves its unpublished work.
+Enter the gh executable and hostname, then select **接続**. The app uses gh's stored authentication and lists personal and organization Projects. Select one to add and open it; **URLで開く** is an alternative. Registered Projects appear in the title-bar Project picker. **最新の情報に更新** reads current GitHub values; opening an existing local Project preserves its unpublished work.
 
 For the authorized sandbox, connect to github.com with C:\Program Files\GitHub CLI\gh.exe, then select user Project 3. Its fallback URL is https://github.com/users/fukuda-yuki/projects/3. Use an isolated data root for evaluation. The explicit **不足する日程列を追加** button is the only remote schema operation on this settings page; connecting and ordinary settings changes do not write to GitHub.
 

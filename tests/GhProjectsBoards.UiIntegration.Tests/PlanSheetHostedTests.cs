@@ -89,8 +89,8 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Popup<Border>("SheetInputProblem"), Is.Null,
                 "An offscreen problem must not label the task now occupying its recycled editor.");
             originalRow.ClearValue(FrameworkElement.DataContextProperty);
-            Ui.Click("PlanSheetUndo");
         });
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
@@ -134,7 +134,7 @@ internal sealed class PlanSheetHostedTests
         await PrepareSheetPendingExit();
         await Ui.Run(() => Assert.That(Ui.Find<ListView>("PlanTasks").Items.Contains("I1"), Is.True,
             "The accepted title filter must retain a row containing invalid input."));
-        await Ui.ClickCommand(redo ? "PlanSheetRedo" : "PlanSheetUndo"); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(redo ? Windows.System.VirtualKey.Y : Windows.System.VirtualKey.Z)); await Ui.Idle();
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
@@ -427,7 +427,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => sheet.FlushInput());
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo(latest));
-        await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Earlier"));
     }
     private static ISelectionItemProvider SelectProvider(string id)
@@ -473,7 +473,7 @@ internal sealed class PlanSheetHostedTests
         if (redo)
         {
             await Edit(number, PlanField.Title, "Temporary");
-            await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+            await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
             Assert.That(session.RedoCount, Is.EqualTo(1));
         }
         var accepted = session.Document.State;
@@ -481,7 +481,7 @@ internal sealed class PlanSheetHostedTests
         await Edit(number, PlanField.Remaining, "invalid");
         await Ui.Run(() => Ui.Find<ListView>("PlanTasks").ScrollIntoView("I75"));
         await Ui.Ready<TextBox>("PlanCell76_Title");
-        await Ui.Run(() => Ui.Click(redo ? "PlanSheetRedo" : "PlanSheetUndo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(redo ? Windows.System.VirtualKey.Y : Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Any(r => r.Identity == identity), Is.True);
         Assert.That(session.UndoCount, Is.EqualTo(before));
         Assert.That(session.Document.State, Is.EqualTo(accepted));
@@ -574,7 +574,7 @@ internal sealed class PlanSheetHostedTests
         if (redo)
         {
             await Edit(number, PlanField.Title, "Temporary");
-            await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+            await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         }
         var accepted = session.Document.State;
         await Edit(number, PlanField.Remaining, "invalid");
@@ -651,7 +651,7 @@ internal sealed class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(1));
         await Ui.Run(() => Ui.Click("PlanSheetCopy")); await Ui.Idle();
         Assert.That(clipboard.Text, Is.EqualTo("New task"), "The created task stays selected without the empty placeholder.");
-        await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(100));
     }
     [Test]
@@ -681,7 +681,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => Ui.Click("PlanSheetFillDown")); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].StartNoEarlierThan, Is.EqualTo(Today));
         Assert.That(session.UndoCount, Is.EqualTo(1));
-        await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].StartNoEarlierThan, Is.Null);
     }
     [Test]
@@ -806,11 +806,11 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("2026-10-06"));
             Assert.That(Ui.Find<Rectangle>("PlanBar1").Width, Is.EqualTo(48));
             Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
-            Ui.Click("PlanSheetUndo");
         });
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(8));
-        await Ui.Run(() => Ui.Click("PlanSheetRedo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Y)); await Ui.Idle();
         Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(16));
     }
     [TestCase("paste"), TestCase("fill"), TestCase("clear")]
@@ -828,7 +828,7 @@ internal sealed class PlanSheetHostedTests
             await Ui.Idle();
             Assert.That(session.Document.State.Rows.Skip(1).Take(2).Select(r => r.Remaining), Is.All.EqualTo(command == "clear" ? null : (decimal?)16));
             Assert.That(session.UndoCount, Is.EqualTo(before + 1));
-            await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+            await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
             Assert.That(session.Document.State.Rows.Skip(1).Take(2).Select(r => r.Remaining), Is.All.EqualTo(8));
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(16));
         }
@@ -840,7 +840,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => Ui.Click("PlanSheetInsert")); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[2].Repository, Is.EqualTo("acme/repo"));
-        await Ui.Run(() => Ui.Click("PlanSheetUndo")); await Ui.Idle();
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         await Select(3, PlanField.Title);
         await Ui.Run(() => Ui.Click("PlanSheetIndent")); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.EqualTo("I2"));

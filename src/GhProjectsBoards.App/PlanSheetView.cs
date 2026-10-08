@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -107,8 +107,6 @@ internal sealed partial class PlanSheetView : Grid
         AddCommand(commands, "下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD));
         AddCommand(commands, "クリア", "PlanSheetClear", Symbol.Clear, Clear);
         commands.PrimaryCommands.Add(new AppBarSeparator());
-        AddCommand(commands, "元に戻す", "PlanSheetUndo", Symbol.Undo, () => ChangeHistory(false));
-        AddCommand(commands, "やり直す", "PlanSheetRedo", Symbol.Redo, () => ChangeHistory(true));
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
         if (importCsv is not null) AddCommand(commands, "CSVから追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queueInSheet: false);
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false));

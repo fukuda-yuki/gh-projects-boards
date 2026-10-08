@@ -16,12 +16,13 @@ internal sealed partial class PlanWorkspaceView
 
     private void InitializePublishing()
     {
-        var open = Id(new Button { Content = "発行" }, "PlanPublish");
+        var open = CommandButton("発行…", "PlanPublish", Symbol.Upload);
+        open.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         open.Click += async (_, _) => {
             if (publishing) { Show("publish"); return; }
             await Run(() => { RenderReview(); Show("publish"); return Task.CompletedTask; });
         };
-        toolbar.Children.Add(open);
+        commandButtons.Children.Add(open);
         AutomationProperties.SetLiveSetting(publishStage, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.RowDefinitions.Add(new() { Height = GridLength.Auto });
         publishReview.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -109,8 +110,10 @@ internal sealed partial class PlanWorkspaceView
         if (reviewLines.Items.Count == 0) return;
         var item = reviewLines.Items.Cast<PlanPublishReviewGroup>().FirstOrDefault(g => g.Identity == identity) ??
             reviewLines.Items[Math.Clamp(position, 0, reviewLines.Items.Count - 1)];
-        reviewLines.ScrollIntoView(item);
+        // ItemsSource was replaced; focus/layout must settle before requesting the target group's position.
+        reviewLines.UpdateLayout();
         reviewLines.Focus(FocusState.Programmatic);
+        reviewLines.ScrollIntoView(item, ScrollIntoViewAlignment.Leading);
     }
     private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
@@ -196,8 +199,9 @@ internal sealed partial class PlanWorkspaceView
     }
     private void SetPublishBusy(bool busy)
     {
-        foreach (var control in sidebar.Children.OfType<Control>()) control.IsEnabled = !busy;
-        foreach (var button in toolbar.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
+        projectPicker.IsEnabled = !busy; settingsButton.IsEnabled = !busy;
+        tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
+        foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
         if (sheet is not null) sheet.SetRemoteBusy(busy);
         settingsScroll.IsEnabled = !busy;
         if (peopleView is not null) peopleView.IsEnabled = !busy;
