@@ -134,7 +134,11 @@ internal sealed class PlanSheetHostedTests
         double headerBefore = 0;
         await Ui.Run(async () => {
             sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
-            var band = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSelection"));
+            var band = (Grid)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSelection"));
+            Assert.That(((SolidColorBrush)band.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SheetSelectionLineBrush")).Color));
+            Assert.That(band.BorderThickness.Bottom, Is.EqualTo(1));
+            var insert = Ui.Find<AppBarButton>("PlanSheetInsert");
+            Assert.That(insert.TransformToVisual(sheet).TransformPoint(new()).X, Is.LessThan(12), "Commands start at the card left edge.");
             var commands = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<CommandBar>("PlanSheetCommands"));
             var header = (FrameworkElement)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanHeaderId"));
             headerBefore = header.TransformToVisual(sheet).TransformPoint(new()).Y;
@@ -181,6 +185,8 @@ internal sealed class PlanSheetHostedTests
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "indicator")), document, Today);
         await Ui.Run(() => { sheetHost.Children.Clear(); sheet = new(session); sheetHost.Children.Add(sheet.statusDate); sheetHost.Children.Add(sheet); Grid.SetRow(sheet, 1); });
         await Ui.Mount(sheetHost); await Select(1, PlanField.Title);
+        if (state is "late" or "failed" or "unverified")
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetSlip").ActualWidth > 0 && Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0);
         await Ui.Run(() => {
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain(expected));
@@ -189,9 +195,17 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
+            if (state is "typed" or "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
-            if (state is "late" or "failed" or "unverified") Assert.That(slip, Is.EqualTo("発行済み 10/2 から +1 日"));
+            if (state is "late" or "failed" or "unverified") {
+                Assert.That(slip, Is.EqualTo("発行済み 10/2 から +1 日"));
+                var text = Ui.Find<TextBlock>("PlanStartReason");
+                var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
+                var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
+                Assert.That(gap, Is.InRange(8d, 12d), "The late pill follows the reason immediately.");
+                Assert.That(pill.CornerRadius.TopLeft, Is.GreaterThan(0));
+            }
             else if (state == "summary") Assert.That(slip, Is.EqualTo("発行済み 10/1 から +2 日"));
             else Assert.That(slip, Is.Empty);
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));

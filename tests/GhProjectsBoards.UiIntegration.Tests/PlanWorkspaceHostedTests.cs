@@ -192,7 +192,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("子A → 子Aの変更")));
         await Ui.Run(() => {
             Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(reverse ? 2 : 1));
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {(reverse ? 2 : 1)} タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo((reverse ? "2" : "1")));
             var lines = Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.EqualTo(reverse ? 1 : 0));
         });
@@ -315,7 +315,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
         await Ui.Ready<PlanSheetCell>("PlanCell3_Title");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo($"未発行 {unpublishedBeforeCsv + 3} タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo((unpublishedBeforeCsv + 3).ToString()));
             Assert.That(Ui.Find<PlanSheetCell>("PlanCell3_Title").Text, Is.EqualTo("設計の追加"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         });
@@ -781,9 +781,9 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
         await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 1 タスク");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "1");
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1")));
     }
 
     [Test]
@@ -1101,7 +1101,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1");
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 1 タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
         });
         var restarted = new PlanWorkspace(new(root));
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));

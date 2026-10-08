@@ -62,7 +62,7 @@ public sealed class PlanningWorkspaceJourneyTests
                 }
                 Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");
                 Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "R01 受注データの外部連携" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
-                Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == $"未発行 {launch} タスク");
+                Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == (launch == 0 ? "未発行 0 タスク" : $"{launch} 未発行のタスク"));
                 Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "開始日"), Is.True);
                 Find(window!, "PlanProjectPicker").AsButton().Invoke();
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&

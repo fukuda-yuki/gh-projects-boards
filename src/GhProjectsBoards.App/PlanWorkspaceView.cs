@@ -44,6 +44,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private PlanPeopleView? peopleView;
     private readonly Button retrySave;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
+    private readonly Border unpublishedBadge = new() { CornerRadius = new(10), MinWidth = 20, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
+    private readonly TextBlock unpublishedLabel = new() { Text = "未発行のタスク", VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock unpublished = Id(new TextBlock(), "PlanUnpublished");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
@@ -74,6 +76,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         tasksTab.Padding = peopleTab.Padding = new Thickness(12, 5, 12, 3);
         projectPicker.MinHeight = 0; projectPicker.Height = 32;
         projectPicker.Padding = new(8, 0, 8, 0);
+        projectPicker.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
         root.Style = (Style)Application.Current.Resources["PlanWorkspaceSurfaceStyle"];
         this.workspace = workspace; this.factory = factory ?? ((path, server) => new(path, server));
         for (var i = 0; i < 4; i++) root.RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -103,6 +106,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (currentPage != "settings") settingsReturnPage = currentPage;
             RenderSettings(); Show("settings"); return Task.CompletedTask;
         });
+        settingsButton.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
         settingsButton.Content = new SymbolIcon(Symbol.Setting);
         settingsButton.MinHeight = 0; settingsButton.Height = 32; settingsButton.Padding = new(8, 0, 8, 0);
         AutomationProperties.SetName(settingsButton, "設定");
@@ -127,8 +131,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
         commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
         unpublished.VerticalAlignment = VerticalAlignment.Center;
-        unpublished.Margin = new(8, 0, 8, 0);
-        commandButtons.Children.Add(unpublished);
+        unpublished.TextAlignment = TextAlignment.Center;
+        unpublished.FontSize = 12;
+        unpublishedBadge.Child = unpublished;
+        var unpublishedGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        unpublishedGroup.Children.Add(unpublishedBadge); unpublishedGroup.Children.Add(unpublishedLabel);
+        commandButtons.Children.Add(unpublishedGroup);
         commandButtons.Children.Add(Command("最新の情報に更新", "PlanRefresh", Symbol.Refresh, async () => { try { await workspace.Refresh(OperationToken); } finally { RenderTasks(); RenderSettings(); } }));
         InitializePublishing();
         var problem = new StackPanel { Spacing = 4, Margin = new(12, 0, 12, 0) };
@@ -162,7 +170,26 @@ internal sealed partial class PlanWorkspaceView : UserControl
         foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
         var card = new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Child = surfaces };
         root.Children.Add(card); Grid.SetRow(card, 4);
-        statusBar.Child = statusCounts;
+        var statusContent = new Grid();
+        statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        statusContent.Children.Add(statusCounts);
+        var legend = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center };
+        foreach (var (caption, fill, stroke, dashed) in new[] {
+            ("実績", "GanttTaskBrush", "GanttTaskBrush", false),
+            ("残り", "GanttTaskTintBrush", "GanttTaskBrush", false),
+            ("発行済みからの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
+            ("非稼働日", "GanttNonWorkingBrush", "WorkspaceCardStrokeBrush", false) }) {
+            var item = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            var swatch = new Microsoft.UI.Xaml.Shapes.Rectangle { Width = 16, Height = 10, RadiusX = 2, RadiusY = 2, VerticalAlignment = VerticalAlignment.Center,
+                Fill = PlanSheetView.Brush(fill), Stroke = PlanSheetView.Brush(stroke), StrokeThickness = 1 };
+            if (dashed) swatch.StrokeDashArray = new DoubleCollection { 3, 2 };
+            item.Children.Add(swatch);
+            item.Children.Add(new TextBlock { Text = caption, Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"] });
+            legend.Children.Add(item);
+        }
+        statusContent.Children.Add(legend); Grid.SetColumn(legend, 1);
+        statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 5);
         Unloaded += (_, _) => { if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
@@ -181,12 +208,15 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         if (workspace.Session is not { } session) return;
         var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
-        unpublished.Text = $"未発行 {count} タスク";
-        unpublished.Style = (Style)Application.Current.Resources[count > 0 ? "WorkspaceUnpublishedStyle" : "WorkspaceMetadataStyle"];
+        unpublished.Text = count > 0 ? count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP")) : "未発行 0 タスク";
+        AutomationProperties.SetName(unpublished, count > 0 ? $"{unpublished.Text} 未発行のタスク" : unpublished.Text);
+        unpublished.Foreground = PlanSheetView.Brush(count > 0 ? "UnpublishedBadgeTextBrush" : "TextFillColorSecondaryBrush");
+        unpublishedBadge.Background = PlanSheetView.Brush(count > 0 ? "SheetChangedMarkBrush" : "ControlFillColorTransparentBrush");
+        unpublishedLabel.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var rows = session.Document.State.Rows;
         var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
         var requirements = rows.Count(r => parents.Contains(r.Identity));
-        statusCounts.Text = $"要求事項 {requirements} · タスク {rows.Length - requirements}";
+        statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
     }
     private static Button CommandButton(string text, string id, Symbol icon)
     {

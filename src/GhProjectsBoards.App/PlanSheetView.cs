@@ -79,8 +79,9 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
+    private readonly Border slipPill = new() { Background = Brush("GanttLateTintBrush"), CornerRadius = new(11), Padding = new(8, 2, 8, 2), Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
-    internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
+    internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 170, Language = "ja-JP", DateFormat = "{year.full}/{month.integer(2)}/{day.integer(2)} ({dayofweek.abbreviated})" }, "PlanStatusDate");
     private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 1, MinWidth = 80 }, "PlanGanttZoom");
     private readonly TextBox filter = Id(new TextBox { PlaceholderText = "タイトルで絞り込み", Width = 170 }, "PlanSheetFilter");
     private readonly PlanFrameMetrics metrics = new();
@@ -101,7 +102,7 @@ internal sealed partial class PlanSheetView : Grid
         for (var r = 0; r < 4; r++) RowDefinitions.Add(new() { Height = GridLength.Auto });
         RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = GridLength.Auto });
-        var controls = new Grid { ColumnSpacing = 8 };
+        var controls = new Grid { ColumnSpacing = 8, BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
@@ -109,7 +110,7 @@ internal sealed partial class PlanSheetView : Grid
         controls.Children.Add(scales); SetColumn(scales, 1);
         AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
-        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, HorizontalContentAlignment = HorizontalAlignment.Stretch }, "PlanSheetCommands");
+        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
@@ -152,11 +153,20 @@ internal sealed partial class PlanSheetView : Grid
         }
         columns.Flyout = new Flyout { Content = choices }; commands.SecondaryCommands.Add(columns);
         controls.Children.Add(commands);
-        var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0) };
-        for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
+        var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
+            Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
+        for (var i = 0; i < 4; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
         selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
-        selectedLine.Children.Add(reason); SetColumn(reason, 2); selectedLine.Children.Add(slip); SetColumn(slip, 3);
-        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
+        var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
+        explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        reason.VerticalAlignment = VerticalAlignment.Center;
+        reason.Foreground = Brush("TextFillColorSecondaryBrush");
+        slip.FontSize = 12; slip.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        slipPill.Child = slip;
+        explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
+        selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
+        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 3);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error); feedback.Children.Add(retrySave);

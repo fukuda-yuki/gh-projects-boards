@@ -96,10 +96,11 @@ internal sealed partial class PlanSheetView
         ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
         AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
         slip.Text = Lateness(selected) is { } days ? $"発行済み {Session.Document.Baseline.Rows.First(r => r.Identity == selected).End!.Value.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture)} から +{days} 日" : "";
+        slipPill.Visibility = slip.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (Session.Document.Sync.IssueLinks.TryGetValue(selected, out var link) && Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == Session.Document.Project.Scope.Host) {
             issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
-        reason.Text = Schedule.TryGetValue(selected, out var task) ? task.StartReason + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
+        reason.Text = Schedule.TryGetValue(selected, out var task) ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
         AutomationProperties.SetName(reason, reason.Text);

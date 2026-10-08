@@ -254,7 +254,7 @@ internal static class PlanScheduler
                 Consider(Point.Morning(specified), "開始日指定 " + specified.ToString("M/d", CultureInfo.InvariantCulture));
             // Reverse row order lets the smallest row ID win equal predecessor endpoints.
             foreach (var (before, result) in dependencies.AsEnumerable().Reverse())
-                if (result.End is { } finish) Consider(finish, $"#{before.RowId} の終了後");
+                if (result.End is { } finish) Consider(finish, $"{before.RowId} の終了後");
             Point? start = task.Start is { } s ? Point.Morning(s) : null;
             Point? end = task.End is { } e ? new Point(e.DayNumber, 18) : null;
             var complete = task.IsComplete;
