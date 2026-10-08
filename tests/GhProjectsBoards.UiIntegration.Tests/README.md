@@ -1,9 +1,9 @@
-﻿# Hosted WinUI integration
+# Hosted WinUI integration
 
 The host inherits the ordinary application's compiled resources and XAML metadata. It mounts real product controls on the UI dispatcher and records asynchronous event failures. Tests use public native control state, UI Automation selection/invoke patterns, focus and rendered geometry. Ui.Idle drains tracked continuations; native focus/layout observations additionally wait for the resulting visible or saved state.
 
-- PlanWorkspaceHostedTests: connection/discovery/open/switch, settings/mappings/calendar files, serialization during pending saves, safe catalog failure, refresh presentation and process cancellation. Only the external gh executable and file picker are substituted.
-- PlanSheetHostedTests: the actual plan sheet, range commands and row-aligned chart using real PlanSession, scheduler and isolated durable storage. Routine clipboard cases substitute only the OS clipboard. The PlanSheetNative category adds physical keys/pointer and must run on the PMO desktop.
+- PlanWorkspaceHostedTests: connection/discovery/open/switch through the title-bar picker, settings return navigation, selected view tabs, workspace Undo/Redo controls, light theme and status counts, settings/mappings/calendar files, serialization during pending saves, safe catalog failure, refresh presentation and process cancellation. Only the external gh executable and file picker are substituted.
+- PlanSheetHostedTests: the actual plan sheet, range commands and row-aligned chart using real PlanSession, scheduler and isolated durable storage. Routine clipboard cases substitute only the OS clipboard. Standalone sheet history checks use its command boundary for pending-input and rendered-state assertions; workspace cases establish the actual Undo/Redo button wiring. The PlanSheetNative category adds physical keys/pointer and must run on the PMO desktop.
 - PlanSheetPerformance: 1,000 tasks, 20 people, ten-task chains and 20 commit-to-Rendered samples, with every outcome retained. It is an explicit performance run, not a routine timing assertion.
 - People cases in PlanWorkspaceHostedTests: daily/week/month load, allowance editing, contributing tasks, overload markers and retained pending input.
 - Publish cases in PlanWorkspaceHostedTests: review, conflicts, failures, retry and operation lifetime through actual workspace controls.

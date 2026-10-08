@@ -64,6 +64,35 @@ internal sealed class PlanPublishReviewHostedTests
         }
         finally { Ui.EndTest(); }
     }
+    [Test, Category("PlanSheetFollowup")]
+    public async Task ReviewDatesKeepTheYearInBeforeAfterAndGitHubValues()
+    {
+        await Open(1);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i with { Row = i.Row with { Start = new(2027, 10, 5), End = new(2027, 10, 5), Remaining = 0, Actual = 8 } }).ToImmutableArray() });
+        await Ui.Run(() => Ui.Click("PlanRefresh")); await Ui.Idle();
+        await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste, [
+            new("I1", PlanField.End, new DateOnly(2032, 10, 5))]), Today));
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        await Ui.Run(() => {
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("終了日  2027/10/5 (火) → 2032/10/5 (火)"));
+            Ui.Click("PlanPublishClose");
+        });
+        remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i with { Row = i.Row with { End = new(2038, 10, 5) } }).ToImmutableArray() });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Any(c => c.Field == PlanField.End));
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Ready<Button>("PlanResolveI1_End_True");
+        await Ui.Run(async () => {
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("終了日  2038/10/5 (火) → 2032/10/5 (火)").And.Contain("GitHub: 2038/10/5 (火)"));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+            await RenderedEvidence.Capture(view, "followup-review-years");
+        });
+    }
     [Test]
     public async Task SeveralFieldDifferencesShareTheirIssueAndFullLongValuesRemainReadable()
     {
@@ -82,9 +111,9 @@ internal sealed class PlanPublishReviewHostedTests
             var first = (ListViewItem)list.ContainerFromIndex(0);
             var text = string.Join("\n", Ui.Tree(first).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("acme/repo#1").And.Contain("要求タスク 1 → " + longTitle)
-                .And.Contain("Actual  0 → 3").And.Contain("Remaining  8 → 5"));
-            var comparison = Ui.Tree(first).OfType<TextBlock>().Single(t => t.Text.Contains("Actual  0 → 3"));
-            Assert.That(comparison.Text, Does.Contain("Remaining  8 → 5"));
+                .And.Contain("実績 h  0 → 3").And.Contain("残 h  8 → 5"));
+            var comparison = Ui.Tree(first).OfType<TextBlock>().Single(t => t.Text.Contains("実績 h  0 → 3"));
+            Assert.That(comparison.Text, Does.Contain("残 h  8 → 5"));
             Assert.That(comparison.TextWrapping, Is.EqualTo(TextWrapping.Wrap));
             Assert.That(comparison.TextTrimming, Is.EqualTo(TextTrimming.None));
             Assert.That(first.ActualWidth, Is.LessThanOrEqualTo(list.ActualWidth));
@@ -120,8 +149,8 @@ internal sealed class PlanPublishReviewHostedTests
             var list = Ui.Find<ListView>("PlanPublishLines");
             var last = (ListViewItem)list.ContainerFromIndex(1039);
             var text = string.Join("\n", Ui.Tree(last).OfType<TextBlock>().Select(t => t.Text));
-            Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("Estimate  8 → 16")
-                .And.Contain("Actual  0 → 3").And.Contain("Remaining  8 → 13"));
+            Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積 h  8 → 16")
+                .And.Contain("実績 h  0 → 3").And.Contain("残 h  8 → 13"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "publish-grouped-version-end");
@@ -159,11 +188,31 @@ internal sealed class PlanPublishReviewHostedTests
             Ui.Click("PlanResolveI60_Actual_True");
         });
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.IsEmpty && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(59) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        try { await Ui.Until(() => {
+            var group = Ui.Tree(view).OfType<PlanPublishGroupView>().FirstOrDefault(g =>
+                AutomationProperties.GetAutomationId(g) == "PlanPublishGroupI60" && g.IsLoaded && g.ActualHeight > 0);
+            if (group is null) return false;
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
+            return bounds.Bottom > 0 && bounds.Top < list.ActualHeight;
+        }); }
+        catch {
+            await Ui.Run(async () => {
+                var list = Ui.Find<ListView>("PlanPublishLines");
+                TestContext.Out.WriteLine("Review realized groups: " + string.Join(", ", Ui.Tree(list).OfType<PlanPublishGroupView>().Select(g =>
+                    $"{AutomationProperties.GetAutomationId(g)}:{g.TransformToVisual(list).TransformBounds(new(0, 0, g.ActualWidth, g.ActualHeight))}")));
+                await RenderedEvidence.Capture(view, "publish-position-failure");
+            });
+            throw;
+        }
         await Ui.Run(async () => {
             Assert.That(workspace.Session!.Document.State.Rows.Single(r => r.Identity == "I60").Actual, Is.EqualTo(2));
             var group = Ui.Find<PlanPublishGroupView>("PlanPublishGroupI60");
-            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("Remaining  8 → 5").And.Not.Contain("競合"));
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
+            Assert.That(bounds.Bottom, Is.GreaterThan(0));
+            Assert.That(bounds.Top, Is.LessThan(list.ActualHeight), "The resolved Issue must remain in the review viewport.");
+            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("残 h  8 → 5").And.Not.Contain("競合"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "publish-recycled-conflict-resolved");
         });

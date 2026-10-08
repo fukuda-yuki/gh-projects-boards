@@ -16,12 +16,13 @@ internal sealed partial class PlanWorkspaceView
 
     private void InitializePublishing()
     {
-        var open = Id(new Button { Content = "発行" }, "PlanPublish");
+        var open = CommandButton("発行…", "PlanPublish", Symbol.Upload);
+        open.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         open.Click += async (_, _) => {
             if (publishing) { Show("publish"); return; }
             await Run(() => { RenderReview(); Show("publish"); return Task.CompletedTask; });
         };
-        toolbar.Children.Add(open);
+        commandButtons.Children.Add(open);
         AutomationProperties.SetLiveSetting(publishStage, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.RowDefinitions.Add(new() { Height = GridLength.Auto });
         publishReview.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -109,12 +110,14 @@ internal sealed partial class PlanWorkspaceView
         if (reviewLines.Items.Count == 0) return;
         var item = reviewLines.Items.Cast<PlanPublishReviewGroup>().FirstOrDefault(g => g.Identity == identity) ??
             reviewLines.Items[Math.Clamp(position, 0, reviewLines.Items.Count - 1)];
-        reviewLines.ScrollIntoView(item);
+        // ItemsSource was replaced; focus/layout must settle before requesting the target group's position.
+        reviewLines.UpdateLayout();
         reviewLines.Focus(FocusState.Programmatic);
+        reviewLines.ScrollIntoView(item, ScrollIntoViewAlignment.Leading);
     }
     private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
-        var label = document.State.Settings.Columns.FirstOrDefault(c => c.Role == field)?.Name ?? field switch {
+        var label = PlanSheetView.Columns.FirstOrDefault(c => c.Field == field)?.Label ?? field switch {
             PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
@@ -152,6 +155,7 @@ internal sealed partial class PlanWorkspaceView
         var element = value.RootElement;
         string Identity(string id) => field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
             document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）") : Caption(document, id);
+        if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day)) return day.ToString("yyyy/M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
         return element.ValueKind switch {
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),
             JsonValueKind.String => field == PlanField.Parent ? Identity(element.GetString()!) : element.GetString() is { Length: > 0 } text ? text : "未入力",
@@ -196,8 +200,9 @@ internal sealed partial class PlanWorkspaceView
     }
     private void SetPublishBusy(bool busy)
     {
-        foreach (var control in sidebar.Children.OfType<Control>()) control.IsEnabled = !busy;
-        foreach (var button in toolbar.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
+        projectPicker.IsEnabled = !busy; settingsButton.IsEnabled = !busy;
+        tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
+        foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
         if (sheet is not null) sheet.SetRemoteBusy(busy);
         settingsScroll.IsEnabled = !busy;
         if (peopleView is not null) peopleView.IsEnabled = !busy;

@@ -62,7 +62,7 @@ internal sealed class PlanEditorSchedulingTests
     {
         var result = Calculate([Task(work: first), Task(2, second) with { Predecessors = ["issue:1"] }], Settings);
         Dates(result[1], start, end);
-        Assert.That(result[1].StartReason, Is.EqualTo("#1 の終了後"));
+        Assert.That(result[1].StartReason, Is.EqualTo("1 の終了後"));
     }
 
     [TestCase("2026-10-01", null, "2026-10-05", "状況日")]
@@ -76,7 +76,7 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result.StartReason, Is.EqualTo(reason));
     }
 
-    [TestCase("2026-10-05", "2026-10-06", "#1 の終了後")]
+    [TestCase("2026-10-05", "2026-10-06", "1 の終了後")]
     [TestCase("2026-10-07", "2026-10-07", "開始日指定 10/7")]
     public void SpecifiedStartCompetesWithPredecessor(string specified, string expected, string reason)
     {
@@ -212,7 +212,7 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result[0].StartReason, Is.EqualTo("子タスクの集計"));
         Assert.That(result[0].IsSummary, Is.True);
         Assert.That(result[0].Input.Estimate, Is.EqualTo(999));
-        Assert.That(result[4].StartReason, Is.EqualTo("#100 の終了後"));
+        Assert.That(result[4].StartReason, Is.EqualTo("100 の終了後"));
     }
 
     [Test]
@@ -221,7 +221,7 @@ internal sealed class PlanEditorSchedulingTests
         var rows = new[] { Task(), Task(2) with { Predecessors = ["issue:1"] }, Task(3) with { Parent = "issue:2" }, Task(4, 4) with { Parent = "issue:3" }, Task(5, 4) with { Parent = "issue:2" } };
         var result = Calculate(rows, Settings);
         foreach (var row in result.Skip(1)) Dates(row, "2026-10-06", "2026-10-06");
-        Assert.That(result[3].StartReason, Is.EqualTo("#1 の終了後"));
+        Assert.That(result[3].StartReason, Is.EqualTo("1 の終了後"));
     }
 
     [Test]
@@ -322,7 +322,7 @@ internal sealed class PlanEditorSchedulingTests
     {
         var rows = new[] { Task(20, 0), Task(10, 0), Task(30) with { Predecessors = ["issue:20", "issue:10", "issue:10"], StartNoEarlierThan = Monday } };
         var result = Calculate(rows, Settings with { ProjectStart = Monday })[2];
-        Assert.That(result.StartReason, Is.EqualTo("#10 の終了後"));
+        Assert.That(result.StartReason, Is.EqualTo("10 の終了後"));
         Dates(result, "2026-10-05", "2026-10-05");
     }
 
@@ -376,7 +376,7 @@ internal sealed class PlanEditorSchedulingTests
         var result = Calculate([Task(work: 16), input], Settings)[1];
         Assert.That(input.Remaining, Is.Zero);
         Dates(result, "2026-10-06", "2026-10-06");
-        Assert.That(result.StartReason, Is.EqualTo("#1 の終了後"));
+        Assert.That(result.StartReason, Is.EqualTo("1 の終了後"));
         Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Calculated));
     }
 

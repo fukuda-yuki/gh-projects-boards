@@ -7,7 +7,7 @@ Record accepted choices and their rationale. Keep task progress and experimental
 Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). The product replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. GitHub Projects has no way to build a schedule from effort, assignees and predecessors, so the app provides that job and leaves general Issue work to GitHub.
 
 - **Local editing with explicit publish.** The PMO edits a local copy and publishes adopted changes, as with MS Project and the TFS Office integration. This avoids a request per edit during weekly adjustment. Ordinary screens show changed-cell markers and the unpublished count; conflicts are resolved before publishing.
-- **One central screen.** A plan sheet with a row-aligned Gantt, modeled on the MS Project Gantt Chart view, plus a people view modeled on Resource Usage and a single settings page. Project commands are **最新の情報に更新** and **発行**, the names used by the TFS Office integration. Columns backed by a GitHub field show the GitHub field name as the header, because the PMO recognizes fields by those names.
+- **One central screen.** A plan sheet with a row-aligned Gantt, modeled on the MS Project Gantt Chart view, plus a people view modeled on Resource Usage and a single settings page. Project commands are **最新の情報に更新** and **発行**, the names used by the TFS Office integration. Column headers use standard Japanese labels and name the mapped GitHub field in their tooltip; the owner accepted this in [#109](https://github.com/fukuda-yuki/gh-projects-boards/issues/109), replacing raw GitHub field names, which mixed English and Japanese in one header row.
 - **Person-hours and TFS work fields.** Effort is entered and shown in person-hours (人時); one working day is eight hours. Estimate is the original estimate, Remaining is what is left and drives scheduling, Actual is cumulative and counts for the task's current assignee.
 - **A bounded subset of MS Project auto-scheduling.** Effort, the assignee's Project rate, the calendar and finish-to-start predecessors determine dates. A typed start date is kept as **開始日指定** (start no earlier than); **日程固定** keeps typed start and end. No per-task mode selection, lag, other link or constraint types, critical path, leveling or cost. Parity with MS Project is not a goal.
 - **Inputs are persisted, dates are derived.** Open tasks with work that are not 日程固定 are calculated from their inputs; completed tasks, 日程固定 tasks and tasks without effort keep their GitHub dates. A calculated date that differs from GitHub is an unpublished change. The schedule is shown by day, so minute endpoints are not stored. Exact rules: [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78).
@@ -49,6 +49,16 @@ Use **C# + .NET 10** with a **WinUI 3 / Windows App SDK** window as the shell. A
 Windows App SDK is pinned to `1.8.260804001` in the app project. The development target is `net10.0-windows10.0.26100.0`, x64, with minimum platform 19041. The development executable is unpackaged and self-contained to make ordinary-executable checks explicit. These are build settings, not a final supported-device or distribution promise.
 
 Select dependencies only for demonstrated requirements and acceptable unconditional commercial terms.
+
+## Visual direction (#109)
+
+Accepted 2026-10-08. The owner would not use the app because of its design, chose the plan sheet/Gantt and the overall look as the causes, rejected a dark direction, and left the choice between an Office-style light look (A) and a Windows 11 / Fluent light look (B) to Claude. **B, with A's density, is the product's visual direction**; [DESIGN.md](../DESIGN.md#visual-language) holds its rules and the canvas mockup.
+
+- **B over A.** B's structure maps to standard WinUI parts (title-bar content, view tabs, labelled CommandBar, CalendarDatePicker, ComboBox, AutoSuggestBox, InfoBadge) and to the WinUI design guidance used to build and review it. A's ribbon has no WinUI control and would be custom code to maintain.
+- **Light only.** The app was forced to dark; the owner rejected the dark direction. One light look is designed and verified; High Contrast remains supported through system colors.
+- **One task hue, not phase colors.** The V-model phase is not GitHub data; deriving it from title prefixes would make color depend on naming. Bars encode state instead: completed share, remaining work and lateness against the published end.
+- **The Project picker replaces the left pane.** A version is one Project and the PMO works in one at a time, so a permanent list is not worth its width.
+- **Short date display, ISO edit form.** Dates display as `M/d (曜)` and are edited and copied as `yyyy-MM-dd`, so the published format is unchanged. Input also accepts `yyyy/M/d` and `M/d` because the PMO types what the sheet shows.
 
 ## Plan sheet and Gantt rendering (#77)
 

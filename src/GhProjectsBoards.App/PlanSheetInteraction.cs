@@ -45,7 +45,6 @@ internal sealed partial class PlanSheetView
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
-        var range = Range; selection.Text = range.Single ? "" : $"{range.RowCount}行・{range.RowCount * range.ColumnCount}セル";
         if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
     }
     internal bool IsSelected(string identity, PlanField field)
@@ -53,13 +52,13 @@ internal sealed partial class PlanSheetView
         var range = Range; var row = RowIds.IndexOf(identity); var column = Array.IndexOf(Fields, field);
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
+    internal bool IsSelectedRow(string identity) => identity == selected;
     internal bool IsRangeEnd(string identity, PlanField field) => identity == selected && field == selectedField;
     internal void Select(string identity, PlanField field, bool extend)
     {
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
-        var range = Range; selection.Text = range.Single ? "" : $"{range.RowCount}行・{range.RowCount * range.ColumnCount}セル";
         EnsureColumnVisible(field);
         // First selection can precede the horizontal viewport's initial layout.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
@@ -92,7 +91,16 @@ internal sealed partial class PlanSheetView
     }
     private void UpdateReason()
     {
-        reason.Text = Schedule.TryGetValue(selected, out var task) ? $"#{task.Input.RowId}  {task.StartReason}" + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
+        selection.Text = PlanIds.TryGetValue(selected, out var number) ? $"ID {number}" : "";
+        selectedTitle.Text = Rows.GetValueOrDefault(selected)?.Title ?? "";
+        ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
+        AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
+        slip.Text = Lateness(selected) is { } days ? $"発行済み {Session.Document.Baseline.Rows.First(r => r.Identity == selected).End!.Value.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture)} から +{days} 日" : "";
+        slipPill.Visibility = slip.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (Session.Document.Sync.IssueLinks.TryGetValue(selected, out var link) && Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == Session.Document.Project.Scope.Host) {
+            issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
+        } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
+        reason.Text = Schedule.TryGetValue(selected, out var task) ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
         AutomationProperties.SetName(reason, reason.Text);
@@ -244,7 +252,7 @@ internal sealed partial class PlanSheetView
     {
         var range = Range; var rows = RangeRows(range); var fields = Fields.Skip(range.Column).Take(range.ColumnCount).ToArray();
         RequireNoPending(rows, fields);
-        var text = string.Join("\n", rows.Select(id => string.Join("	", fields.Select(f => Display(id, f)))));
+        var text = string.Join("\n", rows.Select(id => string.Join("	", fields.Select(f => EditForm(id, f)))));
         var typed = rows.Select(id => fields.Select(field => JsonSerializer.Serialize(CopyValue(id, field), PlanJson.Options)).ToArray()).ToArray();
         var content = new PlanClipboardContent(text, JsonSerializer.Serialize(new SheetCopy(Session.Document.Project, fields, rows, typed), PlanJson.Options));
         var write = writeClipboard;
@@ -291,7 +299,7 @@ internal sealed partial class PlanSheetView
         Check(await Session.Execute(command, Today)); Refresh();
     }
     private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
-        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, Display(identity, field));
+        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field));
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
     internal async Task Fill(PlanOperationKind kind)
@@ -403,11 +411,15 @@ internal sealed partial class PlanSheetView
         }
         else
         {
-            var x = point.X + SheetOffset - (Hidden.Contains(null) ? 0 : Columns[0].Width);
-            var column = 0; var widths = VisibleColumns.Where(c => c.Field is not null).ToArray();
-            while (column < widths.Length - 1 && x >= widths[column].Width) { x -= widths[column].Width; column++; }
-            if (widths.Length > 0) Select(operation.End, widths[column].Field!.Value, true);
+            ExtendRangeTo(operation.End, point);
         }
+    }
+    internal void ExtendRangeTo(string identity, Point point)
+    {
+        var x = point.X + SheetOffset - VisibleColumns.TakeWhile(c => c.Field is null).Sum(c => c.Width);
+        var column = 0; var widths = VisibleColumns.Where(c => c.Field is not null).ToArray();
+        while (column < widths.Length - 1 && x >= widths[column].Width) { x -= widths[column].Width; column++; }
+        if (widths.Length > 0) Select(identity, widths[column].Field!.Value, true);
     }
     internal async void EndDrag(object sender, PointerRoutedEventArgs args)
     {

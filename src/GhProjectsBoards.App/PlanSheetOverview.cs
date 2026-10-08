@@ -18,10 +18,14 @@ internal sealed partial class PlanSheetView
 
     private void InitializeOverview(CommandBar commands)
     {
+        predecessorAdd = AddCommand(commands, "先行タスクを追加…", "PlanSheetPredecessorAdd", Symbol.Link, OpenPredecessorSearch);
+        commands.PrimaryCommands.Add(new AppBarSeparator());
         collapseAll = AddCommand(commands, "すべて折りたたむ", "PlanSheetCollapseAll", Symbol.Remove, () => FoldAll(true));
         expandAll = AddCommand(commands, "すべて展開", "PlanSheetExpandAll", Symbol.Add, () => FoldAll(false));
         goToDate = AddCommand(commands, "選択タスクの日程へ移動", "PlanSheetGoToDate", Symbol.Calendar, GoToSelectedDate);
-        predecessorAdd = AddCommand(commands, "先行タスクを追加…", "PlanSheetPredecessorAdd", Symbol.Find, OpenPredecessorSearch);
+        collapseAll.Icon = CommandIcon("M3,2 L4,1 L8,5 L12,1 L13,2 L8,7 Z M3,14 L8,9 L13,14 L12,15 L8,11 L4,15 Z");
+        expandAll.Icon = CommandIcon("M3,6 L8,1 L13,6 L12,7 L8,3 L4,7 Z M3,10 L4,9 L8,13 L12,9 L13,10 L8,15 Z");
+        goToDate.Icon = CommandIcon("F0 M8,2 A6,6 0 1 1 8,14 A6,6 0 1 1 8,2 Z M8,3 A5,5 0 1 1 8,13 A5,5 0 1 1 8,3 Z M7.5,0 H8.5 V5 H7.5 Z M7.5,11 H8.5 V16 H7.5 Z M0,7.5 H5 V8.5 H0 Z M11,7.5 H16 V8.5 H11 Z");
     }
 
     private void RefreshOverviewCommands()
@@ -75,7 +79,9 @@ internal sealed partial class PlanSheetView
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
         if (acceptedZoom != 3 || dates.Length == 0) dates = dates.Append(StatusDate).ToArray();
-        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - 5));
+        var first = dates.Min().DayNumber - 5;
+        if (acceptedZoom != 3) first = Math.Min(first, StatusDate.DayNumber - statusLeadDays);
+        FirstDay = DateOnly.FromDayNumber(Math.Max(0, first));
         var span = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + 5) - FirstDay.DayNumber + 1;
         DayCount = acceptedZoom == 3 ? span : Math.Max(365, span + 9);
     }

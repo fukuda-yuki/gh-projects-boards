@@ -18,6 +18,28 @@ Follow the conventions PMO users already know from MS Project and the TFS Office
 
 The empty workspace offers one next action appropriate to its state. Put setup procedures, keyboard reference and extended explanations in the [user manual](docs/user-manual.md), reached from the app. A manual complements recognizable controls; it must not compensate for an unclear ordinary task. Settings live on one page and never add rows of commands to the planning surface.
 
+## Visual language
+
+### A light Windows 11 planning tool the PMO wants to open
+
+- **Principle:** The app looks like a finished Windows 11 business tool, not a stack of default controls. Use the Fluent structure of WinUI (title-bar content, view tabs, labelled command bars, cards and native pickers) with the density of a task sheet. The look is light; the agreed mockup is the 最終案 artboard of the [#109 design canvas](https://claude.ai/artifact/HnHTkkX8RPA4qtRaV347Ca): direction B's structure with A's density. A dark look and an Office-style ribbon are not this product's direction.
+- **Applies when:** Changing any screen's layout, typography, color, iconography, spacing or command presentation.
+- **Exceptions / do not apply:** High Contrast replaces product colors with system colors. A screen not yet redesigned keeps its behavior until its owning Issue (#110) changes it; new work on it still follows this section.
+- **Good / bad:** A Project picker in the title bar, view tabs with a visible current view, Project-wide GitHub commands on the right, and a status bar frame the work. A left pane spent on one Project, rows of identical buttons mixing navigation with actions, icon-only command rows, and raw field names as headers make the app feel unfinished.
+- **Check:** Look at the rendered screen with realistic data beside the agreed mockup. Does it read as one deliberate design? Would the PMO choose to work in it for a weekly update? Passing tests or complete features do not answer this question.
+
+Apply these rules across the app:
+
+| Element | Rule |
+| --- | --- |
+| Theme | Light regardless of the Windows app mode; High Contrast honored. Semantic resources in App.xaml carry every product color. |
+| Shell | Title bar: app name, Project picker (registered Projects, Project を開く…, 接続…), settings gear. Below it: view tabs (計画, 担当者) on the left; 状況日, Undo/Redo, 未発行 count, **最新の情報に更新** and **発行…** on the right; the work surface on a card; a status bar with requirement and task counts. |
+| Commands | Every primary command shows an icon and a label. Group by purpose with separators; infrequent commands and commands normally used through standard shortcuts (clipboard) go to the overflow with their shortcuts. One location per command. |
+| Typography | Segoe UI Variable / Yu Gothic UI. One page title size, one body size for cells and labels, a smaller secondary size for metadata. Hierarchy comes from weight and color, not from many sizes. Tabular figures for numbers and dates. |
+| Color | Accent marks selection, the current view, the status date and the one primary action. Amber marks unpublished work; critical red marks lateness, conflicts and failures; green marks completion. Every color state also has a marker, text or accessible name. |
+| Sheet | Japanese column headers; a wide task name; quiet separators; requirement rows bold; calculated values in secondary text and typed values in primary text; an indicator column for row state; a selection line explaining the selected task. |
+| Gantt | Two-tier timescale; shaded non-working days; one task hue with the completed share solid and the rest tinted; bracket bars for summaries; neutral dependency arrows; an accent status-date line; lateness against the published end drawn as a dashed critical segment with its working-day count. |
+
 ## Information architecture and surface roles
 
 ### Organize work before arranging navigation

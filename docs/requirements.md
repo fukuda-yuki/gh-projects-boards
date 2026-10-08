@@ -14,7 +14,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 - Register Projects explicitly and switch between them. Each scoped Project is one workspace. Only Issues are planned; draft items and pull requests are not.
 - Edit locally and publish explicitly, as with MS Project and the TFS Office integration. No request is sent per edit.
 - The published plan is reproducible from GitHub plus the exported settings file: Issue title and assignees, blocked-by predecessors, sub-issue hierarchy, Estimate/Remaining/Actual number fields, Start/Target date fields, and two added Project fields, **開始日指定** (date) and **日程固定** (single select). Calendar, rates and allowances are local settings.
-- Columns backed by a GitHub field show the GitHub field name as the header.
+- Columns use standard Japanese headers and name the mapped GitHub field in their tooltip (#109 replaced showing the raw GitHub field name).
 - Delegate authentication and API access to GitHub CLI (`gh api`); do not require manually issued PATs or a custom GitHub App.
 - Start with local development and the designated sandbox. Company GHEC + EMU behavior remains unverified until tested there.
 

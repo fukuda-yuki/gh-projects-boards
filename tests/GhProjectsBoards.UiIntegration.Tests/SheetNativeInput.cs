@@ -61,10 +61,18 @@ internal static class SheetNativeInput
     {
         await Ui.Run(() => Assert.That(GetForegroundWindow(), Is.EqualTo(Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id)),
             "The UI host must own foreground before physical keys are sent."));
-        foreach (var modifier in modifiers) Key(modifier, true);
-        try { Key(key, true); Key(key, false); }
-        finally { foreach (var modifier in modifiers.Reverse()) Key(modifier, false); }
-        await Ui.Run(() => { });
+        var delivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        KeyEventHandler observed = (_, args) => { if (args.OriginalKey == key) delivered.TrySetResult(); };
+        await Ui.Run(() => Ui.Root.AddHandler(UIElement.KeyUpEvent, observed, true));
+        try {
+            foreach (var modifier in modifiers) Key(modifier, true);
+            try { Key(key, true); Key(key, false); }
+            finally { foreach (var modifier in modifiers.Reverse()) Key(modifier, false); }
+            // Dispatcher work can run before injected native keys. Key-up establishes
+            // that the preceding key-down has finished traversing the actual UI route.
+            await delivered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { await Ui.Run(() => Ui.Root.RemoveHandler(UIElement.KeyUpEvent, observed)); }
     }
     internal static async Task Click(string id, params VirtualKey[] modifiers)
     {

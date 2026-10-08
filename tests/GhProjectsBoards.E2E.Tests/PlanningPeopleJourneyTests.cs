@@ -39,7 +39,7 @@ public sealed class PlanningPeopleJourneyTests
                 Find("PlanGhPath").AsTextBox().Text = fake; Find("PlanConnect").AsButton().Invoke();
                 if (launch == 0) { Wait(() => Find("AvailableProjects").AsListBox().Items.Length == 2); Find("AvailableProjects").AsListBox().Select(0); }
                 Wait(() => Find("PlanCell1_Title").AsTextBox().Text == "計画レビュー 1");
-                Find("PlanShowPeople").AsButton().Invoke();
+                Find("PlanShowPeople").Patterns.SelectionItem.Pattern.Select();
                 Wait(() => !Find("PeopleAllowance_U20").Properties.IsOffscreen.ValueOrDefault);
                 GetClientRect(handle, out client);
                 Assert.That(client.Right / factor, Is.EqualTo(1280).Within(1)); Assert.That(client.Bottom / factor, Is.EqualTo(720).Within(1));
