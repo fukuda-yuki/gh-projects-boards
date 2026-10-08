@@ -34,7 +34,7 @@ internal static class FakePlanEditor
         {
             object Choice(string projectId, string owner) => new { id = projectId, number = projectId == "P1" ? 3 : 4,
                 url = "https://github.com/" + (owner == "fixture-user" ? "users/" : "orgs/") + owner + "/projects/" + (projectId == "P1" ? "3" : "4"),
-                title = projectId == "P1" ? "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
+                    title = projectId == "P1" ? scenario.TryGetProperty("versionEvaluation", out var version) && version.GetBoolean() ? "第2027.04版" : "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
             if (query.Contains("RegistrationOwners")) Write(new { data = new { viewer = new { organizations = Page([new { login = "acme" }], 1) } } });
             else if (query.Contains("RegistrationProjects"))
             {
@@ -84,6 +84,16 @@ internal static class FakePlanEditor
             if (name == "日程固定" && (input.GetProperty("dataType").GetString() != "SINGLE_SELECT" || input.GetProperty("singleSelectOptions")[0].GetProperty("name").GetString() != "固定")) throw new InvalidOperationException("Invalid field options.");
             Save(root, state with { AddedFields = state.AddedFields.Add(role.ToString()), MutationBatches = state.MutationBatches + 1 });
             Write(new { data = new { createProjectV2Field = new { projectV2Field = new { id = "F-" + role, name, dataType = Type(role) } } } }); return 0;
+        }
+        if (query.Contains("PlanAssignableUsers"))
+        {
+            var second = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String;
+            if (second && fault == "catalog-network") { Console.Write("HTTP/2 502 Failed\n\n{}"); return 1; }
+            var name = variables.GetProperty("owner").GetString() + "/" + variables.GetProperty("name").GetString();
+            var nodes = second ? new object[] { new { id = "U101", login = "late-user" } } : [new { id = "U1", login = "alice" }, new { id = "U2", login = "person-U2" }];
+            Write(new { data = new { viewer = new { databaseId = fault == "catalog-identity" ? 99 : 42 }, repository = new {
+                nameWithOwner = name, viewerCanCreateIssues = fault != "repository-denied",
+                assignableUsers = Page(nodes, fault == "catalog-incomplete" ? 4 : 3, !second, second ? null : "next") } } }); return 0;
         }
         if (query.Contains("PlanCsvRepository"))
         {
@@ -149,11 +159,30 @@ internal static class FakePlanEditor
             File.AppendAllText(Path.Combine(root, "plan-mutations.jsonl"), JsonSerializer.Serialize(new { query, variables, started = DateTimeOffset.UtcNow }) + "\n");
             var matches = Regex.Matches(query, @"(w\d+):(\w+)\(input:\$(v\d+)\)");
             if (fault is "before" or "before-and-read" && state.MutationBatches == faultBatch) { Save(root, state); return 1; }
+            if (fault is "global-unknown" or "global-resource-unknown" && state.MutationBatches == faultBatch)
+            {
+                Save(root, state);
+                if (fault == "global-resource-unknown")
+                {
+                    Write(new { data = (object?)null, errors = new object[] {
+                        new { type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure" },
+                        new { message = "Something went wrong while executing your query." } } });
+                    return 0;
+                }
+                Write(new { data = (object?)null, errors = new[] { new { message = "Something went wrong while executing your query." } } });
+                return 0;
+            }
             var interruptedPositions = fault == "position-batch-interrupted" && query.Contains("updateProjectV2ItemPosition") && matches.Count > 1;
             foreach (Match match in matches)
             {
                 if (interruptedPositions && data.Count >= 2 || fault == "creation-resource-uncertain" && query.Contains("createIssue") && matches.Count > 1 && data.Count >= 1) break;
                 var alias = match.Groups[1].Value; var mutation = match.Groups[2].Value; var input = variables.GetProperty(match.Groups[3].Value);
+                if (fault is "missing-alias" or "unknown-and-resource" && state.MutationBatches == faultBatch && alias != "w0")
+                {
+                    if (fault == "unknown-and-resource" && alias == "w1")
+                    { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure" })); data[alias] = null; }
+                    continue;
+                }
                 if (fault == "sibling-resource" && mutation == "reprioritizeSubIssue" && matches.Count > 1 && input.GetProperty("subIssueId").GetString() == "I4")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic sibling move limit" })); data[alias] = null; continue; }
                 if (fault == "resource-always" && mutation.Contains("ItemFieldValue") || fault == "parent-denied" && mutation == "addSubIssue" && input.GetProperty("subIssueId").GetString() == "I2" || fault == "mixed-resource" && query.Contains("ItemFieldValue") && matches.Count > 3 && alias != "w0" || fault == "field-denied" && mutation.Contains("ItemFieldValue") || fault == "forbid-mutation" || fault is "partial" or "resource" && state.MutationBatches == faultBatch && alias == "w1")

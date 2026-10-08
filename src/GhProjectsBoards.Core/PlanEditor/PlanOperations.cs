@@ -11,6 +11,15 @@ internal static class PlanOperations
         Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed,
         Start = r.Start, End = r.End, StartNoEarlierThan = r.StartNoEarlierThan, Fixed = r.Fixed
     };
+    internal static bool NeedsProgressDate(PlanRow before, PlanRow current, PlanField field)
+    {
+        if (field is not (PlanField.Start or PlanField.End) || TaskInput(before).KeepsDates) return false;
+        var complete = TaskInput(current).IsComplete;
+        // Automatic null inputs were not clear commands. Once work starts, its start becomes history.
+        return field == PlanField.Start
+            ? before.Start is null && current.Start is null && !(before.Actual > 0) && (complete || current.Actual > 0)
+            : before.End is null && current.End is null && complete;
+    }
     internal static IReadOnlyList<ScheduledTask> Schedule(PlanDocument document, DateOnly today)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
@@ -106,14 +115,22 @@ internal static class PlanOperations
                     Require(!summaries.Contains(c.Identity) || c.Field is not (PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed), "集計行の工数と日付は子タスクから計算します。");
                     byId[c.Identity] = Edit(byId[c.Identity], c.Field, c.Value);
                 }
-                rows = rows.Select(r => byId[r.Identity]).ToList();
                 foreach (var group in edit.Cells.GroupBy(c => c.Identity))
                 {
+                    var priorRow = state.Rows.First(r => r.Identity == group.Key);
+                    var edited = byId[group.Key];
+                    var observed = d.Baseline.Rows.FirstOrDefault(r => r.Identity == group.Key);
+                    foreach (var field in new[] { PlanField.Start, PlanField.End })
+                        if (observed is not null && !group.Any(c => c.Field == field) &&
+                            !d.Sync.Conflicts.Any(c => c.Identity == group.Key && c.Field == field) && NeedsProgressDate(priorRow, edited, field))
+                            edited = PlanValues.Set(edited, field, PlanValues.Get(observed, field));
+                    byId[group.Key] = edited;
                     var task = TaskInput(byId[group.Key]);
-                    var previous = TaskInput(state.Rows.First(r => r.Identity == group.Key));
+                    var previous = TaskInput(priorRow);
                     var validatePair = group.Any(c => c.Field is PlanField.Start or PlanField.End or PlanField.Fixed) || !previous.KeepsDates && task.KeepsDates;
                     Require(!validatePair || !task.KeepsDates || !(task.Start > task.End), "終了日は開始日以降にしてください。");
                 }
+                rows = rows.Select(r => byId[r.Identity]).ToList();
                 break;
             case InsertPlanRows insert:
                 kind = insert.Kind;

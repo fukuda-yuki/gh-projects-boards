@@ -135,4 +135,22 @@ internal sealed class PlanPeopleTests
         Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 6m, 6m }));
         Assert.That(p.Periods[0].Tasks, Is.EqualTo(new[] { "I1" }));
     }
+    [TestCase(PlanPeriodScale.Week, false)]
+    [TestCase(PlanPeriodScale.Month, false)]
+    [TestCase(PlanPeriodScale.Week, true)]
+    public void PeriodRetainsKnownOverloadDateAndCausesEvenWhenAverageOrOtherWorkIsUnknown(PlanPeriodScale scale, bool missing)
+    {
+        var d = Document(missing ? [Row("I1"), Row("I2"), Row("I3", null)] : [Row("I1"), Row("I2")]);
+        var before = PlanJson.Text(d);
+        var load = PlanPeople.Calculate(d, Day, Day, scale, 1).People.Single(p => p.Identity == "U1").Periods[0];
+        Assert.That(load.Overloaded, Is.False);
+        Assert.That(load.DailyOverloads, Has.Count.EqualTo(1));
+        var overloaded = load.DailyOverloads.Single();
+        Assert.That((overloaded.Date, overloaded.Planned, overloaded.Capacity, overloaded.Percent), Is.EqualTo((Day, 8m, 4m, 200m)));
+        Assert.That(overloaded.Tasks, Is.EqualTo(new[] { "I1", "I2" }));
+        if (missing) Assert.That(load.Planned, Is.Null);
+        Assert.That(PlanJson.Text(d), Is.EqualTo(before));
+        var reassigned = d with { State = d.State with { Rows = d.State.Rows.Select(r => r.Identity == "I2" ? r with { Assignees = ["U2"] } : r).ToImmutableArray() } };
+        Assert.That(PlanPeople.Calculate(reassigned, Day, Day, scale, 1).People.Single(p => p.Identity == "U1").Periods[0].DailyOverloads, Is.Empty);
+    }
 }

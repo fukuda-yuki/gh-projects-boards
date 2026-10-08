@@ -52,7 +52,7 @@ Select dependencies only for demonstrated requirements and acceptable unconditio
 
 ## Plan sheet and Gantt rendering (#77)
 
-Choose **native WinUI** for the PMO's weekly task editing and schedule comparison. Keep one virtualized vertical viewport for sheet cells, bars and predecessor arrows. Native cell automation and a usable local UI-test runtime outweigh the web candidate's better initial density; repair density in the selected implementation rather than maintaining two renderers.
+Choose **native WinUI** for the PMO's initial planning and weekly task maintenance with the whole schedule in view. Keep one virtualized vertical viewport for sheet cells, bars and predecessor arrows. Native cell automation and a usable local UI-test runtime outweigh the web candidate's better initial density; repair density in the selected implementation rather than maintaining two renderers. Comparison against an agreed plan is a separate, optional backlog feature under #93.
 
 | #77 criterion | Decision basis and remaining contract |
 | --- | --- |
@@ -173,9 +173,11 @@ Generate synthetic remote dates with the same Core scheduler and settings used b
 
 Sub-issue reprioritization uses one move per request, like Project item positioning. Its moves are order-dependent; batching with partial-alias retries can produce a different final order.
 
-## Offline evaluation workload (#76)
+## Version-shaped evaluation workload (#89)
 
-The synthetic plan spans several months with spaced work per person, two deliberate daily overloads and one total-allowance overrun. Active working person-days above capacity must remain below 5%, so overloads remain exceptions an evaluator can identify. The status date stays fixed for reproducibility. Native sibling order and calculated dates are seeded on both sides of the offline boundary; initial publication differences are zero. Debug evaluation uses Debug binaries for both the app and fake gh.
+One shared WBS defines 40 requirements with 25 executable V-model tasks each; the 40 summary Issues are additional rows, not part of the 1,000-task count. The live registered state begins with R01–R39 (1,014 Issues). R40's 26 Issues arrive in week three, giving 1,040 Issues. Reuse existing sandbox Issues and create only confirmed missing WBS identities. Registration establishes titles, hierarchy and order, leaving effort, assignees, predecessors and phase-start inputs for the PMO in the ordinary app. A fresh intake starts with zero unpublished tasks. Never publish the abandoned local creation checkpoint.
+
+The offline planned state uses the same WBS, 20 synthetic people and demand near available capacity across the working plan, with specific overloads and an allowance overrun that the PMO can identify and correct. Capacity and load are measured from the generated schedule rather than inferred from fixture size. The fixed status date makes restarts reproducible. Native sibling order and calculated dates are seeded on both sides of the offline boundary; initial publication differences are zero. Debug evaluation uses Debug binaries for both the app and fake gh. Real-GitHub write evidence uses only assignable sandbox users; it does not establish 20-person live assignment behavior.
 
 ## Inaccessible Project membership (#79 / #81)
 

@@ -69,7 +69,7 @@ internal sealed partial class PlanSheetView : Grid
     private int acceptedZoom;
     private readonly TextBlock selection = Id(new TextBlock(), "PlanSheetSelection");
     private readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 135 }, "PlanStatusDate");
-    private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月" }, SelectedIndex = 0, MinWidth = 65 }, "PlanGanttZoom");
+    private readonly ComboBox zoom = Id(new ComboBox { ItemsSource = new[] { "日", "週", "月", "全期間" }, SelectedIndex = 0, MinWidth = 80 }, "PlanGanttZoom");
     private readonly TextBox filter = Id(new TextBox { PlaceholderText = "タイトルで絞り込み", Width = 170 }, "PlanSheetFilter");
     private readonly PlanFrameMetrics metrics = new();
     private int pendingFrame;
@@ -113,6 +113,7 @@ internal sealed partial class PlanSheetView : Grid
         if (importCsv is not null) AddCommand(commands, "CSVから追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queueInSheet: false);
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false));
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true));
+        InitializeOverview(commands);
         var columns = Id(new AppBarButton { Label = "列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
         AutomationProperties.SetName(columns, "表示列"); ToolTipService.SetToolTip(columns, "表示列");
         var choices = new StackPanel { Spacing = 4 };
@@ -186,7 +187,9 @@ internal sealed partial class PlanSheetView : Grid
                     throw;
                 }
                 acceptedZoom = proposed;
-                DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => 24 }; RefreshLayout();
+                DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => 24 };
+                UpdateTimelineRange(); RefreshLayout();
+                if (acceptedZoom == 3) chartHorizontal.ChangeView(0, null, null, true);
             }, "Zoom");
         };
         filter.TextChanged += async (_, _) => {
@@ -204,7 +207,7 @@ internal sealed partial class PlanSheetView : Grid
             }, "Filter");
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; inputProblem.Close(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+        Unloaded += (_, _) => { disposed = true; inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout(); };
         ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RefreshRealized(); };
 
@@ -216,7 +219,7 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
-    private void AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
+    private AppBarButton AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
     {
         var button = Id(new AppBarButton { Label = label, Icon = new SymbolIcon(icon) }, id);
         AutomationProperties.SetName(button, label); ToolTipService.SetToolTip(button, label);
@@ -230,6 +233,7 @@ internal sealed partial class PlanSheetView : Grid
             }, id);
         };
         bar.PrimaryCommands.Add(button);
+        return button;
     }
     internal Task Run(Func<Task> action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
     {
@@ -354,15 +358,24 @@ internal sealed partial class PlanSheetView : Grid
         Unpublished = Session.Changes(Today);
         var pendingRows = Pending.Keys.Select(k => k.Identity)
             .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
-        var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) || r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase)).Select(r => r.Identity).Append("").ToArray();
-        if (!RowIds.SequenceEqual(next)) { RowIds = next; List.ItemsSource = next; }
-        var dates = Schedule.Values.SelectMany(r => new[] { r.Start.Value, r.End.Value }).Where(d => d is not null).Select(d => d!.Value).Append(StatusDate).ToArray();
-        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - 5));
-        DayCount = Math.Max(365, dates.Max().DayNumber - FirstDay.DayNumber + 15);
+        SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
+        folded.IntersectWith(SummaryIds);
+        var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) ||
+            (acceptedFilter.Length > 0 ? r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase) : !HiddenByFold(r)))
+            .Select(r => r.Identity).Append("").ToArray();
+        if (!RowIds.SequenceEqual(next))
+        {
+            // Recycling the focused cell can synchronously select a new container.
+            // Reconcile the user's task selection after the source has been replaced.
+            var priorSelection = (selected, anchor, selectedField, anchorField);
+            RowIds = next; List.ItemsSource = next;
+            (selected, anchor, selectedField, anchorField) = priorSelection;
+        }
+        UpdateTimelineRange();
         rendering = true;
         try { statusDate.Date = new DateTimeOffset(StatusDate.ToDateTime(TimeOnly.MinValue)); }
         finally { rendering = false; }
-        ReconcileSelection(); RefreshLayout(); UpdateReason(); Changed?.Invoke();
+        ReconcileSelection(); RefreshLayout(); UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
     }
     internal string Header(Column column) => column.Field is { } field
         ? Session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)?.Name ?? column.Label : column.Label;
@@ -410,6 +423,7 @@ internal sealed partial class PlanSheetView : Grid
         var width = Math.Max(320, ActualWidth - 20);
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - 230));
         ChartViewport = width - SheetViewport;
+        if (acceptedZoom == 3) DayWidth = ChartViewport / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = Math.Max(22, 28 / (XamlRoot?.RasterizationScale ?? 1));
         sheetClip.Width = SheetViewport;
@@ -459,12 +473,12 @@ internal sealed partial class PlanSheetView : Grid
         for (var day = left; day < right && FirstDay.DayNumber + day <= DateOnly.MaxValue.DayNumber; day++)
         {
             var date = FirstDay.AddDays(day);
-            var label = acceptedZoom switch { 1 => DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - ((int)date.DayOfWeek + 6) % 7)).ToString("M/d"), 2 => date.ToString("yyyy/M"), _ => date.ToString("dd") };
+            var label = acceptedZoom switch { 1 => DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - ((int)date.DayOfWeek + 6) % 7)).ToString("M/d"), 2 or 3 => date.ToString("yyyy/M"), _ => date.ToString("dd") };
             if (label == last) continue; last = label;
             var text = new TextBlock { Text = label, FontSize = 11, Margin = new(2, 5, 0, 0), Foreground = Brush("TextFillColorSecondaryBrush") };
             var groupEnd = acceptedZoom switch {
                 1 => day + 7 - ((int)date.DayOfWeek + 6) % 7,
-                2 => day + DateTime.DaysInMonth(date.Year, date.Month) - date.Day + 1,
+                2 or 3 => day + DateTime.DaysInMonth(date.Year, date.Month) - date.Day + 1,
                 _ => day + 1 };
             var x = day * DayWidth - ChartOffset;
             var available = Math.Min(ChartViewport, groupEnd * DayWidth - ChartOffset) - Math.Max(0, x);

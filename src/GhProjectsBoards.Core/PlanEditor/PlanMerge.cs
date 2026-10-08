@@ -88,13 +88,15 @@ internal static class PlanMerge
         {
             if (!baseline.TryGetValue(r.Identity, out var b)) { local[r.Identity] = r; continue; }
             var l = local[r.Identity]; var merged = l;
-            foreach (var field in PlanValues.RowFields)
+            // Date adoption needs the merged progress state, regardless of enum declaration order.
+            foreach (var field in PlanValues.RowFields.OrderBy(field => field is PlanField.Start or PlanField.End))
             {
                 if (PlanOperations.IsLocalConstraint(field, document.State.Settings)) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
                 if (prior is not null && lv != rv)
                     conflicts.Add(prior with { Local = lv, Remote = rv });
+                else if (PlanOperations.NeedsProgressDate(l, merged, field)) merged = PlanValues.Set(merged, field, rv);
                 else if (lv == bv || lv == rv) merged = PlanValues.Set(merged, field, rv);
                 else if (rv != bv) conflicts.Add(new(r.Identity, field, bv, lv, rv));
             }

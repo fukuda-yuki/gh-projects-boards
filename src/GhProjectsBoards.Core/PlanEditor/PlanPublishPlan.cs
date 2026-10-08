@@ -176,12 +176,21 @@ internal static class PlanPublishPlan
     {
         foreach (var group in writes.GroupBy(w => (w.Stage, Phase: RelationshipPhase(w))).OrderBy(g => g.Key.Stage).ThenBy(g => g.Key.Phase))
         {
-            var numericDatesOnly = group.Key.Stage == PlanPublishStage.Fields && group.All(w =>
+            bool NumericDate(PlanWrite w) => group.Key.Stage == PlanPublishStage.Fields &&
                 w.Mutation == "updateProjectV2ItemFieldValue" && System.Text.Json.Nodes.JsonNode.Parse(w.Input)?["value"] is System.Text.Json.Nodes.JsonObject value &&
-                value.Any(p => p.Key is "number" or "date"));
+                value.Any(p => p.Key is "number" or "date");
             // Position changes depend on preceding moves; partial-alias retries would reorder siblings.
-            var size = group.Key.Stage == PlanPublishStage.Order || group.Key is (PlanPublishStage.Hierarchy, 2) ? 1 : numericDatesOnly ? 50 : 10;
-            foreach (var batch in group.Chunk(size)) yield return batch.ToImmutableArray();
+            var serial = group.Key.Stage == PlanPublishStage.Order || group.Key is (PlanPublishStage.Hierarchy, 2);
+            var pending = group.ToArray();
+            for (var offset = 0; offset < pending.Length;)
+            {
+                var numeric = 0;
+                if (!serial) while (numeric < 50 && offset + numeric < pending.Length && NumericDate(pending[offset + numeric])) numeric++;
+                // Keep short mixed sequences together; one assignee must not shrink the whole field phase.
+                var size = Math.Min(pending.Length - offset, serial ? 1 : numeric >= 10 ? numeric : 10);
+                yield return pending.AsSpan(offset, size).ToArray().ToImmutableArray();
+                offset += size;
+            }
         }
     }
 }

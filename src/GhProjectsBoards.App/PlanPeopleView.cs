@@ -22,6 +22,7 @@ internal sealed class PlanPeopleView : UserControl
     private readonly TextBlock range = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly PlanInputProblem inputProblem = new("PeopleInputProblem");
     private readonly HashSet<string> expanded = [];
+    private readonly Dictionary<string, DateOnly> overloadDay = [];
     // Edits outlive the controls rebuilt after an asynchronous save.
     private sealed class InputState(string text)
     {
@@ -41,6 +42,7 @@ internal sealed class PlanPeopleView : UserControl
     private Task operation = Task.CompletedTask;
     private bool rendering;
     private PeoplePlan report = null!;
+    private double[] periodWidths = [];
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 112];
     internal PlanPeopleView(PlanSession session)
@@ -79,6 +81,16 @@ internal sealed class PlanPeopleView : UserControl
     }
     private static T Id<T>(T item, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(item, id); return item; }
     private static string Number(decimal? value) => value?.ToString("0.##", CultureInfo.CurrentCulture) ?? "未入力";
+    private string LoadText(PersonPeriod load)
+    {
+        var text = load.Planned is null ? "未算定" : load.Capacity is null ? Number(load.Planned) + "h" : load.Capacity == 0 ? "稼働日なし" : Number(load.Percent) + "%";
+        if (load.Overloaded) text += " 超過";
+        if (scale != PlanPeriodScale.Day && load.DailyOverloads.Count > 0) {
+            var peak = load.DailyOverloads.Max(d => d.Percent);
+            text += $" / 日超過{load.DailyOverloads.Count}日・" + (peak is null ? "稼働可能0h" : $"最大{Number(peak)}%");
+        }
+        return text;
+    }
     private static TextBlock Text(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new(4, 0, 4, 0), TextTrimming = TextTrimming.CharacterEllipsis };
     private Button Button(string text, string id, Func<Task> action)
     {
@@ -173,7 +185,7 @@ internal sealed class PlanPeopleView : UserControl
     private void Columns(Grid grid) {
         grid.ColumnDefinitions.Clear();
         foreach (var width in Widths) grid.ColumnDefinitions.Add(new() { Width = new(width) });
-        foreach (var _ in report.Periods) grid.ColumnDefinitions.Add(new() { Width = new(104) });
+        foreach (var width in periodWidths) grid.ColumnDefinitions.Add(new() { Width = new(width) });
     }
     private static void Add(Grid grid, FrameworkElement control, int column) { grid.Children.Add(control); Grid.SetColumn(control, column); }
     internal void Refresh()
@@ -186,7 +198,16 @@ internal sealed class PlanPeopleView : UserControl
         generation++; rows.Items.Clear(); header.Children.Clear();
         foreach (var input in inputs.Values.Where(i => i.TaskIdentity is not null && (i.Dirty || i.Composing))) expanded.Add(input.Group);
         report = PlanPeople.Calculate(Session.Document, Today, anchor, scale, scale == PlanPeriodScale.Day ? 7 : 6);
-        table.Width = Widths.Sum() + 104 * report.Periods.Count;
+        periodWidths = Enumerable.Range(0, report.Periods.Count).Select(i => {
+            var width = 104d;
+            if (scale != PlanPeriodScale.Day) foreach (var person in report.People.Where(p => p.Periods[i].DailyOverloads.Count > 0)) {
+                var measured = Text(LoadText(person.Periods[i]));
+                measured.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+                width = Math.Max(width, Math.Ceiling(measured.DesiredSize.Width) + 12);
+            }
+            return width;
+        }).ToArray();
+        table.Width = Widths.Sum() + periodWidths.Sum();
         range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}  人時";
         Columns(header);
         var names = new[] { "担当者", "稼働%", "許容量", "見積", "実績", "残", "予測", "差分" };
@@ -220,9 +241,9 @@ internal sealed class PlanPeopleView : UserControl
             }
             for (var i = 0; i < report.Periods.Count; i++) {
                 var index = i; var load = person.Periods[i];
-                var label = Id(Text(load.Planned is null ? "未算定" : load.Capacity is null ? Number(load.Planned) + "h" : load.Capacity == 0 ? "稼働日なし" : Number(load.Percent) + "%"), $"PeopleLoad_{person.Identity}_{i}");
-                if (load.Overloaded) { label.Text += " 超過"; label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"]; }
-                var button = Button("", $"PeopleLoadOpen_{person.Identity}_{i}", () => { periodIndex = index; expanded.Add(person.Identity); Refresh(); return Task.CompletedTask; });
+                var label = Id(Text(LoadText(load)), $"PeopleLoad_{person.Identity}_{i}");
+                if (load.Overloaded || load.DailyOverloads.Count > 0) label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
+                var button = Button("", $"PeopleLoadOpen_{person.Identity}_{i}", () => { periodIndex = index; overloadDay.Remove(person.Identity); expanded.Add(person.Identity); Refresh(); return Task.CompletedTask; });
                 button.Content = label; button.HorizontalAlignment = HorizontalAlignment.Stretch;
                 var description = $"{person.Name} {report.Periods[i].Start:M/d}–{report.Periods[i].End:M/d} 計画 {Number(load.Planned)}h / 稼働可能 {Number(load.Capacity)}h {label.Text}";
                 AutomationProperties.SetName(button, description); ToolTipService.SetToolTip(button, description); Add(line, button, i + 8);
@@ -269,13 +290,29 @@ internal sealed class PlanPeopleView : UserControl
         var panel = new StackPanel { Margin = new(24, 4, 0, 8), Spacing = 4 };
         var period = report.Periods[periodIndex];
         panel.Children.Add(Text($"{person.Name}  {period.Start:M/d}–{period.End:M/d}" + (person.Missing.Count > 0 ? " — " + string.Join("、", person.Missing) : "")));
+        var load = person.Periods[periodIndex];
+        var selected = overloadDay.TryGetValue(person.Identity, out var date) ? load.DailyOverloads.FirstOrDefault(d => d.Date == date) : null;
+        if (selected is null) overloadDay.Remove(person.Identity);
+        if (scale != PlanPeriodScale.Day && load.DailyOverloads.Count > 0) {
+            var dates = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+            dates.Children.Add(Button("期間全体", "PeopleOverloadAll_" + person.Identity, () => { overloadDay.Remove(person.Identity); Refresh(); return Task.CompletedTask; }));
+            foreach (var day in load.DailyOverloads) {
+                var caption = $"{day.Date:M/d} {Number(day.Planned)}/{Number(day.Capacity)}h 超過";
+                dates.Children.Add(Button(caption, $"PeopleOverloadDay_{person.Identity}_{day.Date:yyyyMMdd}", () => {
+                    overloadDay[person.Identity] = day.Date; Refresh(); return Task.CompletedTask;
+                }));
+            }
+            panel.Children.Add(new ScrollViewer { Content = dates, HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollMode = ScrollMode.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxWidth = 1080, HorizontalAlignment = HorizontalAlignment.Left });
+            if (selected is not null) panel.Children.Add(Text($"{selected.Date:M/d} の超過に関係するタスク"));
+        }
         var headings = new StackPanel { Orientation = Orientation.Horizontal };
         foreach (var (name, width) in new[] { ("タスク", 250d), ("担当者", 160d), ("残", 90d), ("実績", 90d), ("日程固定", 90d) }) {
             var text = Text(name); text.Width = width - 8; headings.Children.Add(text);
         }
         panel.Children.Add(headings);
         var retained = inputs.Values.Where(i => i.Group == person.Identity && i.TaskIdentity is not null && (i.Dirty || i.Composing)).Select(i => i.TaskIdentity!);
-        var ids = person.Periods[periodIndex].Tasks.Concat(person.Unallocated).Concat(retained).ToHashSet();
+        var ids = (selected?.Tasks ?? load.Tasks).Concat(selected is null ? person.Unallocated : []).Concat(retained).ToHashSet();
         foreach (var row in Session.Document.State.Rows.Where(r => ids.Contains(r.Identity))) {
             var line = new StackPanel { Orientation = Orientation.Horizontal };
             var title = Text($"{Session.Document.State.Rows.IndexOf(row) + 1} {row.Title}" + (person.Unallocated.Contains(row.Identity) ? "（未配分）" : ""));

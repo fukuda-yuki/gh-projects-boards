@@ -29,6 +29,7 @@
             </ResourceDictionary.ThemeDictionaries>
             <ItemsPanelTemplate x:Key="PlanSheetRowsPanel"><ItemsStackPanel CacheLength="0"/></ItemsPanelTemplate>
             <DataTemplate x:Key="PlanSheetRowTemplate"><local:PlanSheetRow /></DataTemplate>
+            <DataTemplate x:Key="PlanPublishGroupTemplate"><local:PlanPublishGroupView /></DataTemplate>
             <DataTemplate x:Key="PlanProjectChoiceTemplate">
                 <StackPanel Spacing="2" HorizontalAlignment="Stretch" ToolTipService.ToolTip="{Binding Url}">
                     <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>

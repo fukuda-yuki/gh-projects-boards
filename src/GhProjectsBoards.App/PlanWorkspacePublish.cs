@@ -31,19 +31,27 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         publishReview.Children.Add(actions);
-        ScrollViewer.SetHorizontalScrollBarVisibility(reviewLines, ScrollBarVisibility.Auto);
-        ScrollViewer.SetHorizontalScrollMode(reviewLines, ScrollMode.Enabled);
+        reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
+        ScrollViewer.SetHorizontalScrollBarVisibility(reviewLines, ScrollBarVisibility.Disabled);
+        ScrollViewer.SetHorizontalScrollMode(reviewLines, ScrollMode.Disabled);
         reviewLines.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0, 4, 0, 4)),
-            new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Left) } };
+            new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         publishReview.Children.Add(reviewLines); Grid.SetRow(reviewLines, 1);
     }
 
     private void RenderReview()
     {
         if (workspace.Session is not { } session) return;
-        reviewLines.Items.Clear();
         var document = session.Document;
+        var groups = new Dictionary<string, PlanPublishReviewGroup>();
+        PlanPublishReviewGroup Group(string identity)
+        {
+            if (!groups.TryGetValue(identity, out var group))
+                groups.Add(identity, group = new(identity, Caption(document, identity),
+                    document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "", () => !publishing && !closing));
+            return group;
+        }
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         var scheduled = session.Schedule(Today).ToDictionary(r => r.Input.Identity);
         foreach (var row in document.State.Rows)
@@ -52,15 +60,14 @@ internal sealed partial class PlanWorkspaceView
             var current = row with { Start = result.Start.Value, End = result.End.Value };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
-            var caption = Caption(document, row.Identity);
-            if (isNew) reviewLines.Items.Add(Label($"{caption}  新規 Issue  {row.Repository}"));
+            if (isNew) Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}"));
             foreach (var field in PlanValues.RowFields)
             {
                 if (PlanOperations.IsSummaryEffort(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings)) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
-                AddReviewLine(document, caption, field, oldValue, newValue, conflict, isNew);
+                Group(row.Identity).Lines.Add(ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew));
             }
         }
         foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!)
@@ -71,58 +78,66 @@ internal sealed partial class PlanWorkspaceView
             var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
             var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
             if (children.Length > 1 && !previous.SequenceEqual(children) || conflict is not null)
-                AddReviewLine(document, Caption(document, parent), PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent));
+                Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
         }
         foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field == PlanField.Order))
-            AddReviewLine(document, Caption(document, conflict.Identity), conflict.Field, conflict.Baseline, conflict.Local, conflict);
+            Group(conflict.Identity).Lines.Add(ReviewLine(document, conflict.Identity, conflict.Field, conflict.Baseline, conflict.Local, conflict));
         if (session.Changes(Today).Fields.Any(p => p.Value.Contains(PlanField.Order)))
-            reviewLines.Items.Add(Label("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
+            Group(document.Project.NodeId).Lines.Add(new("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
         foreach (var identity in document.Sync.Unavailable)
         {
-            var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            line.Children.Add(Label(Caption(document, identity) + "  GitHubで取得できません"));
+            var line = new PlanPublishReviewLine("GitHubで取得できません");
             foreach (var copy in new[] { false, true })
-                line.Children.Add(Button(copy ? "新規Issueにコピー" : "計画から除く", "PlanUnavailable" + identity + copy, async () => {
+                line.Actions.Add(new(copy ? "新規Issueにコピー" : "計画から除く", "PlanUnavailable" + identity + copy, () => Run(async () => {
+                    var position = ReviewPosition(identity);
                     Check(await session.ResolveUnavailable(identity, copy, Today)); RenderTasks(); RenderReview();
-                }));
-            reviewLines.Items.Add(line);
+                    RestoreReviewPosition(identity, position);
+                })));
+            Group(identity).Lines.Add(line);
         }
         foreach (var failure in document.Sync.Failures)
-            reviewLines.Items.Add(Label(Caption(document, failure.Identity) + (failure.Reason == "NotDispatched" ? "  未送信: " : "  発行失敗: ") + PlanPublishText.Failure(failure)));
+            Group(failure.Identity).Lines.Add(new((failure.Reason == "NotDispatched" ? "未送信: " : "発行失敗: ") + PlanPublishText.Failure(failure)));
         foreach (var identity in document.Sync.Unverified)
-            reviewLines.Items.Add(Label(Caption(document, identity) + "  未検証 — 最新の情報に更新で確認"));
-        if (reviewLines.Items.Count == 0) reviewLines.Items.Add(Label("未発行の変更はありません"));
+            Group(identity).Lines.Add(new("未検証 — 最新の情報に更新で確認"));
+        if (groups.Count == 0) groups.Add("", new("", "", "", () => false) { Lines = [new("未発行の変更はありません")] });
+        reviewLines.ItemsSource = groups.Values.ToArray();
         confirmPublish.IsEnabled = !publishing && document.Sync.Conflicts.IsEmpty && document.Sync.Unavailable.IsEmpty;
     }
-    private void AddReviewLine(PlanDocument document, string caption, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
+    private int ReviewPosition(string identity) => reviewLines.Items.Cast<PlanPublishReviewGroup>().TakeWhile(g => g.Identity != identity).Count();
+    private void RestoreReviewPosition(string identity, int position)
     {
-        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        if (reviewLines.Items.Count == 0) return;
+        var item = reviewLines.Items.Cast<PlanPublishReviewGroup>().FirstOrDefault(g => g.Identity == identity) ??
+            reviewLines.Items[Math.Clamp(position, 0, reviewLines.Items.Count - 1)];
+        reviewLines.ScrollIntoView(item);
+        reviewLines.Focus(FocusState.Programmatic);
+    }
+    private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
+    {
         var label = document.State.Settings.Columns.FirstOrDefault(c => c.Role == field)?.Name ?? field switch {
             PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
-        line.Children.Add(Label(isNew ? $"{caption}  {label}  {ReviewValue(document, field, after)}" : $"{caption}  {label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}"));
+        var line = new PlanPublishReviewLine(isNew ? $"{label}  {ReviewValue(document, field, after)}" : $"{label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}");
         if (field is PlanField.Parent or PlanField.Predecessors &&
             new[] { before, after, conflict?.Remote }.Any(json => ReviewValue(document, field, json).Contains("未取得")))
         {
-            var source = document.State.Rows.FirstOrDefault(r => Caption(document, r.Identity) == caption);
-            if (source is not null && document.Sync.IssueLinks.TryGetValue(source.Identity, out var link) &&
+            if (document.Sync.IssueLinks.TryGetValue(identity, out var link) &&
                 Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == document.Project.Scope.Host)
-                line.Children.Add(new HyperlinkButton { Content = $"{link.Caption} の関連Issueを確認", NavigateUri = uri });
+            { line.Link = uri; line.LinkCaption = $"{link.Caption} の関連Issueを確認"; }
         }
         if (conflict is not null)
         {
-            line.Children.Add(Label("競合  GitHub: " + ReviewValue(document, field, conflict.Remote)));
+            line.Text += "  競合  GitHub: " + ReviewValue(document, field, conflict.Remote);
             foreach (var remote in new[] { false, true })
-                line.Children.Add(Button(remote ? "GitHubを採用" : "ローカルを採用", $"PlanResolve{conflict.Identity}_{field}_{remote}", async () => {
-                    var position = reviewLines.Items.IndexOf(line);
+                line.Actions.Add(new(remote ? "GitHubを採用" : "ローカルを採用", $"PlanResolve{conflict.Identity}_{field}_{remote}", () => Run(async () => {
+                    var position = ReviewPosition(identity);
                     Check(await workspace.Session!.ResolveConflict(conflict.Identity, field, remote, Today));
                     RenderTasks();
-                    if (reviewLines.Items.Count > 0) reviewLines.ScrollIntoView(reviewLines.Items[Math.Clamp(position, 0, reviewLines.Items.Count - 1)]);
-                    reviewLines.Focus(FocusState.Programmatic);
-                }));
+                    RestoreReviewPosition(identity, position);
+                })));
         }
-        reviewLines.Items.Add(line);
+        return line;
     }
     private static string Caption(PlanDocument document, string identity)
     {
@@ -187,7 +202,73 @@ internal sealed partial class PlanWorkspaceView
         settingsScroll.IsEnabled = !busy;
         if (peopleView is not null) peopleView.IsEnabled = !busy;
         confirmPublish.IsEnabled = !busy;
-        foreach (var button in reviewLines.Items.OfType<StackPanel>().SelectMany(p => p.Children.OfType<Button>())) button.IsEnabled = !busy;
+        if (reviewLines.ItemsPanelRoot is { } panel)
+            foreach (var group in panel.Children.OfType<ListViewItem>().Select(i => i.ContentTemplateRoot).OfType<PlanPublishGroupView>()) group.RefreshActions();
+    }
+}
+
+internal sealed record PlanPublishReviewGroup(string Identity, string Caption, string IssueCaption, Func<bool> CanAct)
+{
+    internal List<PlanPublishReviewLine> Lines { get; init; } = [];
+}
+internal sealed class PlanPublishReviewLine(string text)
+{
+    internal string Text { get; set; } = text;
+    internal Uri? Link { get; set; }
+    internal string? LinkCaption { get; set; }
+    internal List<PlanPublishReviewAction> Actions { get; } = [];
+}
+internal sealed record PlanPublishReviewAction(string Caption, string AutomationId, Func<Task> Invoke);
+
+// Only realized ListView items own native controls; the review source contains plain presentation data.
+public sealed class PlanPublishGroupView : Grid
+{
+    private readonly List<Button> actions = [];
+    public PlanPublishGroupView()
+    {
+        ColumnSpacing = 16;
+        ColumnDefinitions.Add(new() { Width = new(240) });
+        ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        HorizontalAlignment = HorizontalAlignment.Stretch;
+        DataContextChanged += (_, _) => Render();
+        Loaded += (_, _) => RefreshActions();
+    }
+    internal void RefreshActions()
+    {
+        var enabled = DataContext is PlanPublishReviewGroup group && group.CanAct();
+        foreach (var button in actions) button.IsEnabled = enabled;
+    }
+    private static TextBlock Text(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
+    private void Render()
+    {
+        Children.Clear(); actions.Clear();
+        if (DataContext is not PlanPublishReviewGroup group) return;
+        AutomationProperties.SetAutomationId(this, "PlanPublishGroup" + group.Identity);
+        var caption = new StackPanel { Spacing = 2 };
+        var title = Text(group.Caption); title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        caption.Children.Add(title);
+        if (group.IssueCaption.Length > 0) caption.Children.Add(Text(group.IssueCaption));
+        Children.Add(caption);
+        var differences = new StackPanel { Spacing = 4 };
+        Children.Add(differences); SetColumn(differences, 1);
+        var ordinary = group.Lines.Where(l => l.Actions.Count == 0 && l.Link is null).ToArray();
+        if (ordinary.Length > 0) differences.Children.Add(Text(string.Join("  /  ", ordinary.Select(l => l.Text))));
+        foreach (var line in group.Lines.Where(l => l.Actions.Count > 0 || l.Link is not null))
+        {
+            differences.Children.Add(Text(line.Text));
+            if (line.Link is not null) differences.Children.Add(new HyperlinkButton { Content = line.LinkCaption, NavigateUri = line.Link });
+            if (line.Actions.Count == 0) continue;
+            var choices = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            foreach (var action in line.Actions)
+            {
+                var button = new Button { Content = action.Caption };
+                AutomationProperties.SetAutomationId(button, action.AutomationId);
+                button.Click += async (_, _) => { if (button.IsLoaded && group.CanAct()) await action.Invoke(); };
+                actions.Add(button); choices.Children.Add(button);
+            }
+            differences.Children.Add(choices);
+        }
+        RefreshActions();
     }
 }
 

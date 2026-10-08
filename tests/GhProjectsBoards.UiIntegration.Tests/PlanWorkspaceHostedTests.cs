@@ -53,7 +53,7 @@ internal sealed class PlanWorkspaceHostedTests
         });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("CSV task")));
         await Ui.Run(async () => {
-            var lines = Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text).Where(t => t.Contains("CSV ")).ToArray();
+            var lines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroup" + row.Identity)).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(string.Join(" ", lines), Does.Not.Contain("未入力 →").And.Not.Contain(reason).And.Contain(text));
             Assert.That(lines.Any(t => t.Contains("Estimate") && t.Contains("16")), Is.True);
             if (reason == "NotDispatched") Assert.That(string.Join(" ", lines), Does.Contain("未送信").And.Not.Contain("発行失敗"));
@@ -500,12 +500,20 @@ internal sealed class PlanWorkspaceHostedTests
     [Test]
     public async Task PeopleViewFitsTwentyPeopleAndAssignmentGroupsAt1280By720()
     {
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { Issues = [
+            new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] }, "", true),
+            new(new("I2", "検証", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] }, "", true)], NextId = 3 });
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
+            StatusDate = new(2026, 10, 5),
             People = Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-" + i, 100, 80, [])).ToImmutableArray() }), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => { view.Width = 1280; view.Height = 720; Ui.Click("PlanShowPeople"); });
+        for (var scale = 0; scale < 3; scale++) {
+        await Ui.Run(() => Ui.Find<ComboBox>("PeopleScale").SelectedIndex = scale);
+        await Ui.Idle();
         await Ui.Until(() => Ui.Tree(view).OfType<FrameworkElement>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PeopleRow_multiple"));
-        await Ui.Run(async () => await RenderedEvidence.Capture(view, "people-day-1280x720"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, $"people-{scale}-1280x720"));
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("PeopleRows");
             Assert.That(list.Items.Count, Is.EqualTo(22));
@@ -516,10 +524,14 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(list.ActualHeight + 0.5), person);
                 Assert.That(row.ActualHeight, Is.GreaterThanOrEqualTo(24), person);
             }
-            Ui.Find<ComboBox>("PeopleScale").SelectedIndex = 1;
+            if (scale > 0) {
+                var load = Ui.Find<TextBlock>("PeopleLoad_U1_0");
+                Assert.That(load.Text, Does.Contain("日超過1日").And.Contain("最大200%"));
+                Assert.That(load.IsTextTrimmed, Is.False);
+                Assert.That(load.ActualHeight, Is.LessThanOrEqualTo(24));
+            }
         });
-        await Ui.Until(() => Ui.Find<Button>("PeoplePeriod_0").Content.ToString()!.Contains("週"));
-        await Ui.Run(async () => await RenderedEvidence.Capture(view, "people-week-1280x720"));
+        }
     }
 
     [Test]
@@ -559,9 +571,9 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => FakePlanEditor.Load(root).Issues[0].Row.Title == "設計の変更");
         await Ui.Until(() => workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount == 0);
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
         await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 1 タスク");
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));

@@ -58,13 +58,13 @@ public sealed class PlanningWorkspaceJourneyTests
                     Wait(() => window!.FindFirstDescendant(c => c.ByAutomationId("AvailableProjects"))?.AsListBox().Items.Length == 2);
                     Find(window!, "AvailableProjects").AsListBox().Select(0);
                 }
-                Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "開発計画");
-                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "工程 1" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
+                Wait(() => Find(window!, "OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");
+                Wait(() => Find(window!, "PlanTasks").FindAllDescendants().Any(e => e.Properties.AutomationId.ValueOrDefault == "PlanCell1_Title" && e.AsTextBox().Text == (launch == 0 ? "R01 受注データの外部連携" : "日本語の計画") && !e.Properties.IsOffscreen.ValueOrDefault && !e.BoundingRectangle.IsEmpty));
                 Wait(() => Find(window!, "PlanUnpublished").Properties.Name.ValueOrDefault == $"未発行 {launch} タスク");
                 Assert.That(window!.FindAllDescendants().Any(e => e.Properties.Name.ValueOrDefault == "Start date"), Is.True);
                 Wait(() => Find(window!, "RegisteredProjects").AsListBox().Items.Length == 1 &&
                     Find(window!, "RegisteredProjects").FindAllDescendants().Any(e =>
-                        (e.Properties.Name.ValueOrDefault ?? "").Contains("開発計画") && !e.Properties.IsOffscreen.ValueOrDefault));
+                        (e.Properties.Name.ValueOrDefault ?? "").Contains("第2027.04版") && !e.Properties.IsOffscreen.ValueOrDefault));
                 Assert.That(window.FindFirstDescendant(c => c.ByAutomationId("RegistrationUrl")), Is.Null);
                 Wait(() => Find(window, "PlanCell1_Predecessors").BoundingRectangle.Right <= Find(window, "PlanGanttHorizontal").BoundingRectangle.Left);
                 var chartBounds = Find(window, "PlanGanttHorizontal").BoundingRectangle;

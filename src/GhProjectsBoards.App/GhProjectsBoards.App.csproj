@@ -17,6 +17,8 @@
     <Content Include="../../templates/new-tasks.csv" Link="templates/new-tasks.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[1.8.260804001]" />
+    <!-- Unused Widgets component assets have different redistribution terms from the Runtime MSIX. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.Widgets" Version="[1.8.251231004]" ExcludeAssets="all" />
     <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
   </ItemGroup>
 </Project>

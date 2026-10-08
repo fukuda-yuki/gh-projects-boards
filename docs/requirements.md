@@ -1,12 +1,12 @@
 # Requirements
 
-Source of truth: [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76) and its child Issues. This is a navigation outline, not a replacement for their acceptance criteria.
+Source of truth: [Epic #88](https://github.com/fukuda-yuki/gh-projects-boards/issues/88) and its child Issues. [Epic #76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76) defines the implemented planning-editor foundation. This is a navigation outline, not a replacement for Issue acceptance criteria.
 
 ## Product goal
 
-A Windows planning editor for GitHub Projects. It replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. The PMO plans while seeing the whole schedule: creates tasks, enters effort in person-hours, assigns people and sets predecessors. Start and end dates follow automatically, and adopted changes are published to GitHub in one step. GitHub Projects cannot do this; its table and roadmap remain the place for general Issue work.
+A Windows planning editor for GitHub Projects. It replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. The PMO takes in Issues already registered on GitHub and their weekly updates, then maintains effort in person-hours, assignments and predecessors while seeing the whole schedule. Start and end dates follow automatically, and adopted changes are published to GitHub in one step. Creating Issues in the app is occasional. GitHub's table and roadmap remain the place for general Issue work.
 
-One PMO maintains the plan. Normal scale is about 1,000 tasks, fewer than 20 people and a weekly review.
+One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one Project. Normal scale is about 40 要求事項, each with 25 tasks across SA, UI, SS, PS, PG, PT, IT, ST and OT, numbered within each phase (for example SA-001), and about 20 people. The phase split is an evaluation placeholder until a real template is available. Initial planning is followed by a weekly refresh, plan correction and publish cycle. Assignment and overload resolution remain human decisions; the app never levels resources automatically.
 
 ## Agreed boundaries
 
@@ -32,13 +32,12 @@ One PMO maintains the plan. Normal scale is about 1,000 tasks, fewer than 20 peo
 
 | Area | Owning Issue |
 | --- | --- |
-| Rendering choice for plan sheet + Gantt; refresh and batched publish measurement | [#77](https://github.com/fukuda-yuki/gh-projects-boards/issues/77) |
-| Workspace shell and settings: open and switch Projects, column mapping, calendar, people | [#81](https://github.com/fukuda-yuki/gh-projects-boards/issues/81) |
-| Plan sheet with Gantt: tasks, effort, assignees, predecessors, automatic dates | [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78) |
-| Refresh and publish, including assignees and new Issues | [#79](https://github.com/fukuda-yuki/gh-projects-boards/issues/79) |
-| People view: daily load, allowance, forecast | [#80](https://github.com/fukuda-yuki/gh-projects-boards/issues/80) |
-| CSV import of new tasks with predecessors and parents (after #78 and #79) | [#82](https://github.com/fukuda-yuki/gh-projects-boards/issues/82) |
+| Version-shaped evaluation data, reusing existing sandbox Issues | [#89](https://github.com/fukuda-yuki/gh-projects-boards/issues/89) |
+| Initial planning and weekly maintenance in the task sheet at version scale | [#91](https://github.com/fukuda-yuki/gh-projects-boards/issues/91) |
+| Internal distribution without a development environment | [#92](https://github.com/fukuda-yuki/gh-projects-boards/issues/92) |
+| Backlog: mass Issue creation within GitHub limits | [#90](https://github.com/fukuda-yuki/gh-projects-boards/issues/90) |
+| Backlog: optional comparison against an agreed plan | [#93](https://github.com/fukuda-yuki/gh-projects-boards/issues/93) |
 
 ## Explicit exclusions
 
-Generic Issue administration, Kanban, Gantt drag editing, critical path, MS Project import, task creation by pasting from Excel, automatic resource leveling, minute-precision schedules, realtime synchronization, cross-Project publish and organization-wide load. Baseline comparison, weekly report copy and distribution/company-environment validation are deferred until the child Issues above are accepted. CSV import of new tasks is required and follows #78 and #79.
+Generic Issue administration, Kanban, Gantt drag editing, critical path, MS Project import, task creation by pasting from Excel, automatic resource leveling, minute-precision schedules, realtime synchronization, cross-Project publish and organization-wide load. Mass creation and agreed-plan comparison are unscheduled conveniences. CSV import remains available but is not required for the ordinary planning job. Team totals, weekly reports, additional backup and logging are not planned unless version-scale use demonstrates a need. GHEC + EMU uses the appropriate gh authentication; it is not a separate product track.
