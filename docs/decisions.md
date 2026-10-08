@@ -58,7 +58,7 @@ Accepted 2026-10-08. The owner would not use the app because of its design, chos
 - **Light only.** The app was forced to dark; the owner rejected the dark direction. One light look is designed and verified; High Contrast remains supported through system colors.
 - **One task hue, not phase colors.** The V-model phase is not GitHub data; deriving it from title prefixes would make color depend on naming. Bars encode state instead: completed share, remaining work and lateness against the published end.
 - **The Project picker replaces the left pane.** A version is one Project and the PMO works in one at a time, so a permanent list is not worth its width.
-- **Short date display, ISO input.** Dates display as `M/d (曜)` and are edited and copied as `yyyy-MM-dd`, so the published format and parsing are unchanged.
+- **Short date display, ISO edit form.** Dates display as `M/d (曜)` and are edited and copied as `yyyy-MM-dd`, so the published format is unchanged. Input also accepts `yyyy/M/d` and `M/d` because the PMO types what the sheet shows.
 
 ## Plan sheet and Gantt rendering (#77)
 
