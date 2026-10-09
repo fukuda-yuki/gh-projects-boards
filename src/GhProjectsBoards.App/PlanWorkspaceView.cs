@@ -102,11 +102,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         registered.MaxHeight = 320;
         registered.ContainerContentChanging += (_, args) => {
             if (args.InRecycleQueue) return;
-            args.RegisterUpdateCallback((_, updated) => {
-                if (updated.ItemContainer.ContentTemplateRoot is Grid item &&
-                    item.Children.OfType<FontIcon>().FirstOrDefault() is { } check)
-                    check.Opacity = updated.Item is ProjectChoice choice && choice.Id == workspace.Selected?.Id ? 1 : 0;
-            });
+            UpdateProjectCheck(args.ItemContainer, args.Item as ProjectChoice);
         };
         registered.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
@@ -116,6 +112,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projects.Children.Add(Command("Project を開く…", "PlanChooseProject", Symbol.OpenFile, () => { Show("chooser"); return Task.CompletedTask; }));
         projects.Children.Add(Command("接続…", "PlanConnection", Symbol.Link, () => { Show("connection"); return Task.CompletedTask; }));
         projectFlyout.Content = projects;
+        projectFlyout.Opened += (_, _) => RefreshProjectChecks();
         projectPicker.Flyout = projectFlyout;
         var projectCaption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         projectMetadata.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
@@ -435,6 +432,18 @@ internal sealed partial class PlanWorkspaceView : UserControl
         rendering = true;
         try { registered.ItemsSource = workspace.Registered; registered.SelectedItem = workspace.Selected; available.ItemsSource = workspace.Available; available.SelectedItem = null; }
         finally { rendering = false; }
+        RefreshProjectChecks();
+    }
+    private void RefreshProjectChecks()
+    {
+        for (var i = 0; i < registered.Items.Count; i++)
+            if (registered.ContainerFromIndex(i) is ListViewItem item)
+                UpdateProjectCheck(item, registered.Items[i] as ProjectChoice);
+    }
+    private void UpdateProjectCheck(Microsoft.UI.Xaml.Controls.Primitives.SelectorItem item, ProjectChoice? choice)
+    {
+        if (item.ContentTemplateRoot is Grid content && content.Children.OfType<FontIcon>().FirstOrDefault() is { } check)
+            check.Opacity = choice is not null && choice.Id == workspace.Selected?.Id ? 1 : 0;
     }
     private void RenderTasks()
     {

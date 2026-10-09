@@ -121,11 +121,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
         await Ui.Idle();
         await OpenProjectPicker();
-        await Ui.Until(() => {
-            var list = Ui.Find<ListView>("RegisteredProjects");
-            return list.ContainerFromIndex(1) is ListViewItem { IsLoaded: true } item &&
-                Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == ((ProjectChoice)list.Items[1]).Title);
-        });
+        await WaitForProjectPickerItems("P2");
         await Ui.Run(() => {
             var list = Ui.Find<ListView>("RegisteredProjects");
             var titleXs = new List<double>();
@@ -144,6 +140,46 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(((Border)content.Children[1]).Height, Is.EqualTo(1));
             foreach (var id in new[] { "PlanChooseProject", "PlanConnection" })
                 Assert.That(Ui.Tree(Ui.Find<Button>(id)).OfType<FontIcon>().Any(), Is.True);
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task ProjectPickerChecksCurrentProjectAfterTwoSwitchesAndReopening()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await Ui.Idle();
+        await OpenProjectPicker();
+        await WaitForProjectPickerItems("P2");
+        foreach (var project in new[] { "P1", "P2" }) {
+            await Ui.Run(() => Ui.Find<ListView>("RegisteredProjects").SelectedItem = workspace.Registered.Single(p => p.Id.NodeId == project));
+            await Ui.Until(() => workspace.Selected?.Id.NodeId == project);
+            await OpenProjectPicker();
+            await WaitForProjectPickerItems(project);
+            await Ui.Run(() => Ui.Find<Button>("PlanProjectPicker").Flyout.Hide());
+            await OpenProjectPicker();
+            await WaitForProjectPickerItems(project);
+        }
+    }
+
+    private async Task WaitForProjectPickerItems(string currentProject)
+    {
+        await Ui.Until(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            if (list.Items.Count != 2 || workspace.Selected?.Id.NodeId != currentProject) return false;
+            var checkedProjects = new List<string>();
+            for (var i = 0; i < list.Items.Count; i++) {
+                if (list.ContainerFromIndex(i) is not ListViewItem { IsLoaded: true } item) return false;
+                var choice = (ProjectChoice)list.Items[i];
+                var texts = Ui.Tree(item).OfType<TextBlock>().ToArray();
+                if (!texts.Any(t => t.Text == choice.Title) ||
+                    !texts.Any(t => t.Text == $"{choice.OwnerLogin} · Project {choice.Number}")) return false;
+                var check = Ui.Tree(item).OfType<FontIcon>().SingleOrDefault(f => f.Glyph == "\uE73E");
+                if (check is null || (check.Opacity != 0 && check.Opacity != 1)) return false;
+                if (check.Opacity == 1) checkedProjects.Add(choice.Id.NodeId);
+            }
+            return checkedProjects.SequenceEqual(new[] { currentProject });
         });
     }
 
