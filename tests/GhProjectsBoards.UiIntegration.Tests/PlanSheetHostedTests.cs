@@ -79,7 +79,8 @@ internal sealed class PlanSheetHostedTests
     {
         if (hideId || hideIndicator) {
             await Ui.ClickCommand("PlanSheetColumns");
-            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnId") is not null);
+            await Ui.Until(() => (!hideId || Ui.Popup<CheckBox>("PlanColumnId") is { IsLoaded: true, IsEnabled: true })
+                && (!hideIndicator || Ui.Popup<CheckBox>("PlanColumnIndicator") is { IsLoaded: true, IsEnabled: true }));
             if (hideId) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnId")!.IsChecked = false); await Ui.Idle(); }
             if (hideIndicator) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnIndicator")!.IsChecked = false); await Ui.Idle(); }
             await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide());
@@ -157,13 +158,13 @@ internal sealed class PlanSheetHostedTests
         });
     }
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "発行済みより 1 日遅れ", "\uE7BA")]
+    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8h）", "\uE814")]
     [TestCase("typed", "開始日を指定", "\uE718")]
     [TestCase("fixed", "日程固定", "\uE718")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
     [TestCase("failed", "発行失敗", "\uEA39")]
     [TestCase("unverified", "未検証", "\uEA39")]
-    [TestCase("summary", "発行済みより 2 日遅れ", "\uE7BA")]
+    [TestCase("summary", "配下に期限超過 1", "\uE814")]
     [Category("PlanSheetPhase2")]
     public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
     {
@@ -211,6 +212,156 @@ internal sealed class PlanSheetHostedTests
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
     }
+    private async Task MountPresentation(ImmutableArray<PlanRow> rows, ImmutableArray<PlanRow> baseline,
+        ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null)
+    {
+        await Ui.Unmount(sheetHost); await session.FlushAsync();
+        var settings = session.Document.State.Settings;
+        if (!people.IsDefault) settings = settings with { People = people };
+        var document = new PlanDocument(session.Document.Project, new(baseline, []), new(rows, settings)) {
+            Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty } };
+        session = await PlanSession.CreateAsync(new(Path.Combine(root, "presentation")), document, Today);
+        await Ui.Run(() => {
+            sheetHost.Children.Clear(); sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value);
+            sheetHost.Background = PlanSheetView.Brush("WorkspaceCardBrush");
+            sheetHost.Children.Add(sheet.statusDate); sheetHost.Children.Add(sheet); Grid.SetRow(sheet, 1);
+        });
+        await Ui.Mount(sheetHost);
+    }
+
+    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", true)]
+    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
+    [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE814", false, Category = "OverdueMissingWork")]
+    [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE814", false)]
+    [TestCase("later", "予定より遅れ: 発行済み 10/5 から +1 日", "\uE7BA", false)]
+    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", false)]
+    [TestCase("summary-overdue", "配下に期限超過 1", "\uE814", false)]
+    [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
+    [Category("SheetRowPresentation")]
+    public async Task LatenessMarkerAndEndColorFollowOverdueAndOwnEndMovement(string state, string expected, string glyph, bool critical)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8.5m, Remaining = 8.5m, Assignees = ["U1"] };
+        var baseline = row with { Start = Today, End = Today.AddDays(-3) };
+        if (state == "finish-estimate") row = row with { Remaining = null };
+        if (state == "finish-unknown") row = row with { Remaining = null, Estimate = null };
+        if (state == "start") baseline = baseline with { Start = Today.AddDays(-3), End = Today.AddDays(10) };
+        if (state == "later") baseline = baseline with { End = Today };
+        if (state == "unchanged") row = row with { Fixed = true, Start = Today.AddDays(-4), End = Today.AddDays(-3) };
+        var rows = ImmutableArray.Create(row); var baselines = ImmutableArray.Create(baseline);
+        if (state.StartsWith("summary")) {
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+            baselines = ImmutableArray.Create(baseline with { End = Today.AddDays(1) },
+                baseline with { Identity = "I2", Parent = "I1", End = state == "summary-later" ? Today : Today.AddDays(-3) });
+        }
+        await MountPresentation(rows, baselines);
+        await Ui.Run(async () => {
+            var indicator = Ui.Find<FontIcon>("PlanIndicator1");
+            var name = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator);
+            Assert.That(name, Does.Contain(expected).And.Not.Contain("発行済みより"));
+            if (state == "finish-unknown") Assert.That(name, Does.Not.Contain("（残"));
+            Assert.That(indicator.Glyph, Is.EqualTo(glyph));
+            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
+            if (state == "finish") Assert.That(name, Does.Contain("予定より遅れ: 発行済み 10/2 から +2 日"));
+            var end = Ui.Find<PlanSheetCell>("PlanCell1_End");
+            var red = ((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color;
+            Assert.That(((SolidColorBrush)end.Foreground).Color == red, Is.EqualTo(critical));
+            await RenderedEvidence.Capture(sheetHost, "row-" + state);
+        });
+        if (state.StartsWith("summary")) {
+            await Select(1, PlanField.Title);
+            await Ui.Run(() => Ui.Click("PlanFold1"));
+            await Ui.Until(() => sheet.RowIds.SequenceEqual(new[] { "I1", "" }));
+            await Ui.Ready<FontIcon>("PlanIndicator1");
+            await Ui.Run(() => Assert.That(Ui.Find<FontIcon>("PlanIndicator1").Glyph, Is.EqualTo(glyph)));
+        }
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task EnteredCellsHaveTintButRecalculatedDatesOnlyHaveCornersAndSelectionWins()
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 16, Assignees = ["U1"] };
+        await MountPresentation([row with { Estimate = 16, Assignees = ["U2"] }, row with { Identity = "I2", Predecessors = ["I1"] }],
+            [row with { Start = Today, End = Today }, row with { Identity = "I2", Predecessors = ["I1"], Start = Today.AddDays(1), End = Today.AddDays(1) }],
+            [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])]);
+        await Ui.Run(() => {
+            foreach (var (number, field, tinted) in new[] { (1, PlanField.Estimate, true), (1, PlanField.Assignees, true), (1, PlanField.End, false), (2, PlanField.End, false) }) {
+                var cell = Ui.Find<PlanSheetCell>($"PlanCell{number}_{field}");
+                var grid = (Grid)VisualTreeHelper.GetParent(cell); var frame = (Border)VisualTreeHelper.GetParent(grid);
+                Assert.That(grid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(((SolidColorBrush)frame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush(tinted ? "SheetChangedBrush" : "LayerFillColorDefaultBrush")).Color));
+            }
+        });
+        await Select(1, PlanField.Estimate);
+        await Ui.Run(() => {
+            var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(Ui.Find<PlanSheetCell>("PlanCell1_Estimate")));
+            Assert.That(frame.BorderThickness.Left, Is.EqualTo(2));
+            Assert.That(((SolidColorBrush)frame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SheetSelectionBrush")).Color));
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task SelectionAccentMovesAndEveryChildTitleStartsAfterItsParent()
+    {
+        var row = new PlanRow("I1", "Parent", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        ImmutableArray<PlanRow> rows = [row, row with { Identity = "I2", Parent = "I1" }, row with { Identity = "I3", Parent = "I1" }, row with { Identity = "I4", Parent = "I3" }];
+        await MountPresentation(rows, rows);
+        foreach (var selected in new[] { 1, 4 }) {
+            await Select(selected, PlanField.Title); await Ui.Idle();
+            await Ui.Run(() => {
+                for (var i = 1; i <= 4; i++) Assert.That(Ui.Find<Border>("PlanSelectionAccent" + i).Visibility, Is.EqualTo(i == selected ? Visibility.Visible : Visibility.Collapsed));
+                foreach (var (parent, child) in new[] { (1, 2), (1, 3), (3, 4) }) {
+                    double X(int n) { var t = Ui.Find<TextBlock>("PlanTitleDisplay" + n); return t.TransformToVisual(sheet).TransformPoint(new()).X; }
+                    Assert.That(X(child), Is.GreaterThan(X(parent)));
+                }
+            });
+        }
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task LongTitleTrimsOnlyDisplayAndKeepsFullValueThroughEditingAndCopy()
+    {
+        var title = string.Concat(Enumerable.Repeat("長いタスク名と詳細説明", 12));
+        var row = new PlanRow("I1", title, "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        await MountPresentation([row], [row]); await Select(1, PlanField.Title); await Ui.Idle();
+        await Ui.Run(async () => {
+            var display = Ui.Find<TextBlock>("PlanTitleDisplay1"); var cell = Ui.Find<PlanSheetCell>("PlanCell1_Title");
+            Assert.That(display.TextTrimming, Is.EqualTo(TextTrimming.CharacterEllipsis));
+            Assert.That(display.IsTextTrimmed, Is.True);
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo(title));
+            // The unchanged native TextBox peer reads this full value; the display must never replace it.
+            Assert.That(cell.Text, Is.EqualTo(title));
+            await RenderedEvidence.Capture(sheetHost, "row-long-title");
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.C); Assert.That(clipboard.Text, Is.EqualTo(title));
+            cell.Focus(FocusState.Programmatic); cell.BeginEditing();
+            Assert.That(display.Visibility, Is.EqualTo(Visibility.Collapsed)); Assert.That(cell.Text, Is.EqualTo(title));
+            cell.Text = title + "追記";
+        });
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Until(() => session.Document.State.Rows[0].Title == title + "追記");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanTitleDisplay1").Visibility, Is.EqualTo(Visibility.Visible)));
+    }
+
+    [TestCase(0, ""), TestCase(1, "渡辺"), TestCase(2, "渡辺 +1"), TestCase(3, "alice"), TestCase(4, "担当者（未確認）")]
+    [Category("SheetRowPresentation")]
+    public async Task AssigneeDisplayUsesNameThenLoginWhileEditAndCopyKeepAllInputs(int kind, string expected)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Assignees = kind switch { 0 => [], 2 => ["U1", "U2"], 4 => ["unknown"], _ => ["U1"] } };
+        await MountPresentation([row], [row], kind == 3 ? [] : [new("U1", "渡辺", 100, null, []), new("U2", "鈴木", 100, null, [])],
+            ImmutableDictionary<string, string>.Empty.Add("U1", "alice").Add("U2", "bob"));
+        await Select(1, PlanField.Assignees);
+        await Ui.Run(async () => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Assignees");
+            Assert.That(cell.Text, Is.EqualTo(expected));
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo(kind == 2 ? "渡辺, 鈴木" : expected));
+            var full = kind switch { 0 => "", 2 => "alice, bob", 4 => "担当者（未確認）", _ => "alice" };
+            Assert.That(sheet.EditForm("I1", PlanField.Assignees), Is.EqualTo(full));
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.C); Assert.That(clipboard.Text, Is.EqualTo(full));
+            cell.BeginEditing(); Assert.That(cell.Text, Is.EqualTo(full));
+            cell.EndEditing(); Assert.That(cell.Text, Is.EqualTo(expected));
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
     [Test, Category("PlanSheetNative"), Category("PlanSheetPhase2Keys")]
     public async Task NativeF2EnterEscapeAndCopyUseDateEditFormWithoutFixingCalculatedDates()
     {
@@ -508,7 +659,7 @@ internal sealed class PlanSheetHostedTests
     {
         await Edit(1, PlanField.Remaining, "invalid");
         await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is not null);
+        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is { IsLoaded: true, IsEnabled: true });
         CheckBox toggle = null!;
         await Ui.Run(() => { toggle = Ui.Popup<CheckBox>("PlanColumnRemaining")!; Ui.Toggle(toggle); });
         await Ui.Idle();
@@ -1092,7 +1243,7 @@ internal sealed class PlanSheetHostedTests
     public async Task SelectingAnOffscreenColumnMakesTheWholeCellReachableWithoutMovingTheChart()
     {
         await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is not null);
+        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide(); });
         await Ui.Idle();
         await Ui.Run(() => {
@@ -1246,7 +1397,7 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanRowId3").Text, Is.EqualTo("3"));
         });
         await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is not null);
+        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => Ui.Toggle(Ui.Popup<CheckBox>("PlanColumnStart")!)); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(sheet).OfType<TextBox>().Any(c =>

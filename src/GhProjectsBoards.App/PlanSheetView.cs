@@ -36,6 +36,7 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
+    private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
     internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
@@ -402,6 +403,7 @@ internal sealed partial class PlanSheetView : Grid
         var document = Session.Document;
         var today = Today;
         Rows = document.State.Rows.ToDictionary(r => r.Identity);
+        peopleNames = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
         Schedule = Session.Schedule(today).ToDictionary(r => r.Input.Identity);
         publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
@@ -443,7 +445,15 @@ internal sealed partial class PlanSheetView : Grid
         PlanField.End => Schedule.GetValueOrDefault(identity)?.End.Value,
         PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
     internal string EditForm(string identity, PlanField field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
-        ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "" : Display(identity, field);
+        ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""
+        : field == PlanField.Assignees && Rows.TryGetValue(identity, out var row)
+            ? string.Join(", ", row.Assignees.Select(id => Session.Document.Sync.PeopleNames.GetValueOrDefault(id)
+                ?? peopleNames.GetValueOrDefault(id) ?? "担当者（未確認）")) : Display(identity, field);
+    internal PlanTaskLateness? LatenessOf(string identity) => lateness.Tasks.GetValueOrDefault(identity);
+    private string AssigneeName(string id) => !string.IsNullOrWhiteSpace(peopleNames.GetValueOrDefault(id)) ? peopleNames[id]
+        : !string.IsNullOrWhiteSpace(Session.Document.Sync.PeopleNames.GetValueOrDefault(id)) ? Session.Document.Sync.PeopleNames[id] : "担当者（未確認）";
+    internal string AssigneeTooltip(string identity) => Rows.TryGetValue(identity, out var row)
+        ? string.Join(", ", row.Assignees.Select(AssigneeName)) : "";
     internal int? Lateness(string identity) => lateness.Tasks.GetValueOrDefault(identity)?.DaysLater;
     internal string Display(string identity, PlanField field)
     {
@@ -458,8 +468,8 @@ internal sealed partial class PlanSheetView : Grid
             PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
             PlanField.Fixed => row.Fixed ? "固定" : "",
             PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(p => PlanIds.TryGetValue(p, out var id) ? id.ToString() : "計画外")),
-            PlanField.Assignees => string.Join(", ", row.Assignees.Select(id => Session.Document.Sync.PeopleNames.GetValueOrDefault(id)
-                ?? Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）")),
+            PlanField.Assignees => row.Assignees.Length == 0 ? "" : AssigneeName(row.Assignees[0])
+                + (row.Assignees.Length > 1 ? $" +{row.Assignees.Length - 1}" : ""),
             _ => PlanOperations.Value(row, field)?.ToString() ?? ""
         };
     }
