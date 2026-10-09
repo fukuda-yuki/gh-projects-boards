@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
@@ -270,6 +271,7 @@ internal static class PlanOperations
     internal static PlanUnpublished Changes(PlanDocument d, DateOnly today)
     {
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
+        var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, PlanField Field)>();
         var baseline = d.Baseline.Rows.ToDictionary(r => r.Identity);
         var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
         var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
@@ -284,13 +286,27 @@ internal static class PlanOperations
                 if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryEffort(calculated.IsSummary, field) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
-            if (calculated.Start.Value != old.Start) fields.Add(PlanField.Start);
-            if (calculated.End.Value != old.End) fields.Add(PlanField.End);
+            // Historical inputs survive publication; automatic dates can coincidentally match them.
+            // Entered dates need a kept origin or an explicit start constraint that actually won.
+            if (calculated.Start.Value != old.Start)
+            {
+                fields.Add(PlanField.Start);
+                var kept = calculated.Start.Origin == DateOrigin.Kept && calculated.Start.Value == r.Start;
+                var specified = r.StartNoEarlierThan is { } constraint && calculated.Start.Value == constraint
+                    && calculated.StartReason == "開始日指定 " + constraint.ToString("M/d", CultureInfo.InvariantCulture);
+                if (calculated.IsSummary || !(kept || specified)) recalculated.Add((r.Identity, PlanField.Start));
+            }
+            if (calculated.End.Value != old.End)
+            {
+                fields.Add(PlanField.End);
+                if (calculated.IsSummary || calculated.End.Origin != DateOrigin.Kept || calculated.End.Value != r.End)
+                    recalculated.Add((r.Identity, PlanField.End));
+            }
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
             var children = d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity).ToArray();
             if (children.Length > 1 && !PreviousSiblingOrder(d, r.Identity).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
-        return new(result.ToImmutable());
+        return new(result.ToImmutable()) { RecalculatedDates = recalculated.ToImmutable() };
     }
 }

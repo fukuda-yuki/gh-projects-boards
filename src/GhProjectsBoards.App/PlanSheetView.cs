@@ -35,7 +35,7 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
-    private Dictionary<string, int?> lateness = [];
+    private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
     internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
@@ -400,15 +400,16 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (disposed) return;
         var document = Session.Document;
+        var today = Today;
         Rows = document.State.Rows.ToDictionary(r => r.Identity);
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
-        Schedule = Session.Schedule(Today).ToDictionary(r => r.Input.Identity);
+        Schedule = Session.Schedule(today).ToDictionary(r => r.Input.Identity);
         publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
         var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
         nonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
         timelineKey = null;
-        lateness = Schedule.ToDictionary(pair => pair.Key, pair => PlanScheduler.PublishedEndLateness(publishedEnds.GetValueOrDefault(pair.Key), pair.Value.End.Value, calendar));
-        Unpublished = Session.Changes(Today);
+        lateness = PlanLateness.Classify(Schedule.Values.ToArray(), document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
+        Unpublished = Session.Changes(today);
         var pendingRows = Pending.Keys.Select(k => k.Identity)
             .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
         SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
@@ -443,7 +444,7 @@ internal sealed partial class PlanSheetView : Grid
         PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
     internal string EditForm(string identity, PlanField field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
         ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "" : Display(identity, field);
-    internal int? Lateness(string identity) => lateness.GetValueOrDefault(identity);
+    internal int? Lateness(string identity) => lateness.Tasks.GetValueOrDefault(identity)?.DaysLater;
     internal string Display(string identity, PlanField field)
     {
         if (!Rows.TryGetValue(identity, out var row)) return "";
