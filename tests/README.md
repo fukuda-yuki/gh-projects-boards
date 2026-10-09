@@ -119,6 +119,10 @@ PlanPeopleTests covers both Issue examples, weighted day/week/month aggregation,
 
 PlanCsvImportTests verifies encoding, whole-file validation, line errors, keys/references, duplicates and one-step Undo. Publisher adapter tests verify 100 imported tasks and their relationships. Hosted workspace cases drive actual import controls with only file selection and remote access substituted. Native picker and live publication remain separate checks.
 
+## Main screen design conformance (#109)
+
+UI integration covers headers/tooltips, date round trips, indicator states, the lateness segment, labelled commands, shell Undo/Redo and the light theme. Whether the ordinary app matches the agreed mockup at the PMO's display size is a separate visual check. Its [conformance test plan](plans/issue-109/README.md) holds the states, viewports, checklist and reference images. It records findings and bug candidates; it does not establish the owner's acceptance.
+
 ## Offline evaluation fixture
 
 EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 40 requirements with 25 tasks each (1,040 Issues), 20 people, zero unpublished tasks before/after refresh, complete load allocation, near-capacity weekly demand across the two-wave plan, a daily overload hidden by its weekly average, one total-allowance overrun, native sibling order, and refusal to replace an occupied root. Every displayed week is reported, including the low-demand tail. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).

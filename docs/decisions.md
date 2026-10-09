@@ -58,6 +58,8 @@ Accepted 2026-10-08. The owner would not use the app because of its design, chos
 - **Light only.** The app was forced to dark; the owner rejected the dark direction. One light look is designed and verified; High Contrast remains supported through system colors.
 - **One task hue, not phase colors.** The V-model phase is not GitHub data; deriving it from title prefixes would make color depend on naming. Bars encode state instead: completed share, remaining work and lateness against the published end.
 - **The Project picker replaces the left pane.** A version is one Project and the PMO works in one at a time, so a permanent list is not worth its width.
+- **Overdue, not "later than published", is the strong lateness signal (2026-10-09).** Re-estimating one task made all of its successors red, and the PMO could not tell which row needed action. The PMO is the only user and judges the whole version, so the strong signal follows MS Project's Late tasks: work that should have finished or started before the 状況日 but has not. A due date on the 状況日 itself is not overdue. Work that is merely later than published, MS Project's Slipping tasks, keeps a quiet outline. Recalculated dates keep the unpublished corner marker without the tint, so the PMO's own entries stand out.
+- **The PMO's display is 1920 × 1080 at 100%.** Layout and acceptance are judged there first. Narrower windows keep a usable Gantt and scroll the sheet instead of freezing columns.
 - **Short date display, ISO edit form.** Dates display as `M/d (曜)` and are edited and copied as `yyyy-MM-dd`, so the published format is unchanged. Input also accepts `yyyy/M/d` and `M/d` because the PMO types what the sheet shows.
 
 ## Plan sheet and Gantt rendering (#77)
