@@ -1540,7 +1540,20 @@ internal sealed class PlanSheetHostedTests
     [Test]
     public async Task FilterKeepsPlanIdsAndColumnToggleRestoresTheMappedHeader()
     {
-        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 3");
+        await Ui.Run(() => {
+            var filter = Ui.Find<TextBox>("PlanSheetFilter");
+            var icon = Ui.Find<FontIcon>("PlanSheetFilterSearch");
+            Assert.That(icon.Glyph, Is.EqualTo("\uE721"));
+            Assert.That(icon.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(icon.IsHitTestVisible, Is.False);
+            Assert.That(icon.IsTabStop, Is.False);
+            var bounds = icon.TransformToVisual(filter).TransformBounds(new Windows.Foundation.Rect(0, 0, icon.ActualWidth, icon.ActualHeight));
+            Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Right, Is.LessThanOrEqualTo(filter.ActualWidth));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(filter.ActualHeight));
+            filter.Text = "Task 3";
+        });
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 12
             && (string)Ui.Find<ListView>("PlanTasks").Items[0] == "I3");
         await Ui.Ready<TextBlock>("PlanRowId3");

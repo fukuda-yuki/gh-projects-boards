@@ -18,10 +18,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Func<string, string, GhConnectionService> factory;
     private readonly Grid root = new();
     internal TitleBar WorkspaceTitleBar { get; } = new();
+    private XamlRoot? captionRoot;
     private readonly Grid surfaces = new();
     private readonly Flyout projectFlyout = new();
     private readonly Button projectPicker = Id(new Button(), "PlanProjectPicker");
     private readonly TextBlock projectMetadata = new();
+    private readonly StackPanel legend = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanGanttLegend");
     private readonly Border statusBar = new() { Height = 28 };
     private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
@@ -72,6 +74,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // Keep the existing 22-row people overview within a 720-DIP client area.
         WorkspaceTitleBar.Resources["TitleBarExpandedHeight"] = 32d;
         WorkspaceTitleBar.Resources["TitleBarCompactHeight"] = 32d;
+        // The stretch content column remains draggable between the picker and settings.
+        WorkspaceTitleBar.Resources["TitleBarMinDragRegionWidth"] = 4d;
+        WorkspaceTitleBar.Loaded += (_, _) => {
+            captionRoot = XamlRoot; captionRoot.Changed += CaptionRootChanged;
+            AlignCaptionInset(); ApplyCaptionColors();
+        };
+        WorkspaceTitleBar.SizeChanged += (_, _) => AlignCaptionInset();
+        ActualThemeChanged += (_, _) => ApplyCaptionColors();
         tabs.Padding = new(0);
         tasksTab.Padding = peopleTab.Padding = new Thickness(12, 5, 12, 3);
         projectPicker.MinHeight = 0; projectPicker.Height = 32;
@@ -84,12 +94,21 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         registered.ItemTemplate = available.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanProjectChoiceTemplate"];
         registered.MaxHeight = 320;
+        registered.ContainerContentChanging += (_, args) => {
+            if (args.InRecycleQueue) return;
+            args.RegisterUpdateCallback((_, updated) => {
+                if (updated.ItemContainer.ContentTemplateRoot is Grid item &&
+                    item.Children.OfType<FontIcon>().FirstOrDefault() is { } check)
+                    check.Opacity = updated.Item is ProjectChoice choice && choice.Id == workspace.Selected?.Id ? 1 : 0;
+            });
+        };
         registered.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         var projects = new StackPanel { Spacing = 8, Width = 340 };
         projects.Children.Add(registered);
-        projects.Children.Add(Button("Project を開く…", "PlanChooseProject", () => { Show("chooser"); return Task.CompletedTask; }));
-        projects.Children.Add(Button("接続…", "PlanConnection", () => { Show("connection"); return Task.CompletedTask; }));
+        projects.Children.Add(new Border { Height = 1, Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush") });
+        projects.Children.Add(Command("Project を開く…", "PlanChooseProject", Symbol.OpenFile, () => { Show("chooser"); return Task.CompletedTask; }));
+        projects.Children.Add(Command("接続…", "PlanConnection", Symbol.Link, () => { Show("connection"); return Task.CompletedTask; }));
         projectFlyout.Content = projects;
         projectPicker.Flyout = projectFlyout;
         var projectCaption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -99,7 +118,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectPicker.Content = projectCaption;
         AutomationProperties.SetName(projectPicker, "Project を選択");
         WorkspaceTitleBar.Subtitle = "計画エディタ";
-        WorkspaceTitleBar.IconSource = new SymbolIconSource { Symbol = Symbol.Calendar };
+        // Give the vector finite bounds: this SDK's IconSource Viewbox measures a PathIcon unbounded.
+        var appGlyph = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            """<PathIcon xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Width="16" Height="16" Margin="14,0,0,0" Data="M1,2 H11 V5 H1 Z M6,7 H15 V10 H6 Z M3,12 H9 V15 H3 Z" />""");
+        appGlyph.Foreground = PlanSheetView.Brush("SystemControlHighlightAccentBrush");
+        WorkspaceTitleBar.LeftHeader = appGlyph;
         WorkspaceTitleBar.Content = projectPicker;
         WorkspaceTitleBar.Resources["TitleBarContentHorizontalAlignment"] = HorizontalAlignment.Left;
         settingsButton = Button("設定", "PlanShowSettings", () => {
@@ -128,8 +151,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         };
         commandButtons.Children.Add(new TextBlock { Text = "状況日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
+        commandButtons.Children.Add(CommandDivider());
         commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(CommandDivider());
         unpublished.VerticalAlignment = VerticalAlignment.Center;
         unpublished.TextAlignment = TextAlignment.Center;
         unpublished.FontSize = 12;
@@ -174,7 +199,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         statusContent.Children.Add(statusCounts);
-        var legend = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center };
         foreach (var (caption, fill, stroke, dashed) in new[] {
             ("実績", "GanttTaskBrush", "GanttTaskBrush", false),
             ("残り", "GanttTaskTintBrush", "GanttTaskBrush", false),
@@ -192,9 +216,39 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 5);
-        Unloaded += (_, _) => { if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
+        Unloaded += (_, _) => {
+            if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
+            captionRoot = null;
+            if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
         Content = root;
         Show("connection");
+    }
+    private static Border CommandDivider() => new() {
+        Width = 1, Height = 20, VerticalAlignment = VerticalAlignment.Center,
+        Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush")
+    };
+    private void CaptionRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => AlignCaptionInset();
+    private void AlignCaptionInset()
+    {
+        if (XamlRoot is not { } xamlRoot) return;
+        var inset = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(xamlRoot.ContentIslandEnvironment.AppWindowId).TitleBar.RightInset;
+        // TitleBar 1.8 lays out the native pixel inset as DIPs. Correct its extra width at non-100% DPI.
+        WorkspaceTitleBar.Margin = new(0, 0, -inset * (1 - 1 / xamlRoot.RasterizationScale), 0);
+    }
+    private void ApplyCaptionColors()
+    {
+        if (XamlRoot is null) return;
+        var caption = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId).TitleBar;
+        // XAML's forced Light theme does not set the native AppWindow caption palette.
+        Windows.UI.Color Color(string key) => ((SolidColorBrush)Application.Current.Resources[key]).Color;
+        caption.ButtonForegroundColor = Color("WindowCaptionForeground");
+        caption.ButtonHoverForegroundColor = Color("WindowCaptionButtonStrokePointerOver");
+        caption.ButtonPressedForegroundColor = Color("WindowCaptionButtonStrokePressed");
+        caption.ButtonInactiveForegroundColor = Color("WindowCaptionForegroundDisabled");
+        caption.ButtonBackgroundColor = Color("WindowCaptionButtonBackground");
+        caption.ButtonInactiveBackgroundColor = Color("WindowCaptionButtonBackground");
+        caption.ButtonHoverBackgroundColor = Color("WindowCaptionButtonBackgroundPointerOver");
+        caption.ButtonPressedBackgroundColor = Color("WindowCaptionButtonBackgroundPressed");
     }
     private void SyncTabs()
     {
@@ -217,6 +271,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var parents = rows.Where(r => r.Parent is not null).Select(r => r.Parent).ToHashSet();
         var requirements = rows.Count(r => parents.Contains(r.Identity));
         statusCounts.Text = string.Create(CultureInfo.GetCultureInfo("ja-JP"), $"要求事項 {requirements:N0} · タスク {rows.Length - requirements:N0}");
+        // RenderTasks creates and refreshes the session's sheet before updating shell counts.
+        if (sheet?.Session == session) {
+            if (sheet.OverdueTasks > 0) statusCounts.Text += $" · 期限超過 {sheet.OverdueTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
+            if (sheet.LaterTasks > 0) statusCounts.Text += $" · 予定より遅れ {sheet.LaterTasks.ToString("N0", CultureInfo.GetCultureInfo("ja-JP"))}";
+        }
     }
     private static Button CommandButton(string text, string id, Symbol icon)
     {
@@ -230,6 +289,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private Button Command(string text, string id, Symbol icon, Func<Task> action)
     {
         var button = CommandButton(text, id, icon);
+        if (id is "PlanUndo" or "PlanRedo" or "PlanChooseProject" or "PlanConnection")
+            button.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
         button.Click += async (_, _) => { if (button.IsLoaded) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(action); } };
         return button;
     }
@@ -285,6 +346,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void Show(string page)
     {
         currentPage = page; SyncTabs();
+        legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         peopleArea.Visibility = page == "people" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
@@ -521,4 +583,3 @@ internal sealed partial class PlanWorkspaceView : UserControl
         }
     }
 }
-

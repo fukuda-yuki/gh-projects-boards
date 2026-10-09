@@ -114,7 +114,14 @@ internal sealed partial class PlanSheetView : Grid
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
-        scales.Children.Add(new TextBlock { Text = "尺度", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom); scales.Children.Add(filter);
+        scales.Children.Add(new TextBlock { Text = "尺度", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
+        var filterBox = new Grid();
+        filter.Padding = new(30, 4, 24, 4);
+        filterBox.Children.Add(filter);
+        filterBox.Children.Add(Id(new FontIcon { Glyph = "\uE721", FontSize = 14, Width = 14, Height = 14,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new(10, 0, 0, 0),
+            IsHitTestVisible = false, IsTabStop = false, Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetFilterSearch"));
+        scales.Children.Add(filterBox);
         controls.Children.Add(scales); SetColumn(scales, 1);
         AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
@@ -133,7 +140,7 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
         commands.SecondaryCommands.Add(new AppBarSeparator());
-        if (importCsv is not null) Overflow("CSV から追加", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
+        if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         var columns = Id(new AppBarButton { Label = "表示列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
         AutomationProperties.SetName(columns, "表示列"); ToolTipService.SetToolTip(columns, "表示列");
         var choices = new StackPanel { Spacing = 4 };

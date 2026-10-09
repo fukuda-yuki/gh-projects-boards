@@ -15,6 +15,135 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(1000), TestCase(1440), Category("ShellChrome")]
+    public async Task TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions(int width)
+    {
+        await Open();
+        await Ui.Run(() => {
+            Ui.Window.ExtendsContentIntoTitleBar = true;
+            Ui.Window.SetTitleBar(view.WorkspaceTitleBar);
+            ResizeWorkspace(width, 720);
+        });
+        try {
+            await Ui.Until(() => Math.Abs(Ui.Root.ActualWidth - width) < 1 && Math.Abs(view.ActualWidth - width) < 1);
+            await Ui.Run(() => {
+                var bar = view.WorkspaceTitleBar;
+                var gear = Ui.Find<Button>("PlanShowSettings");
+                var bounds = gear.TransformToVisual(Ui.Root).TransformBounds(new Rect(0, 0, gear.ActualWidth, gear.ActualHeight));
+                var captionLeft = Ui.Root.ActualWidth - Ui.Window.AppWindow.TitleBar.RightInset / Ui.Root.XamlRoot.RasterizationScale;
+                Console.WriteLine($"Title bar geometry: width={Ui.Root.ActualWidth}, scale={Ui.Root.XamlRoot.RasterizationScale}, rightInset={Ui.Window.AppWindow.TitleBar.RightInset}, gearRight={bounds.Right}, gap={captionLeft - bounds.Right}");
+                Assert.That(captionLeft - bounds.Right, Is.InRange(0d, 8d));
+                Assert.That(bar.IconSource, Is.Null);
+                Assert.That(bar.LeftHeader, Is.TypeOf<PathIcon>());
+                var geometry = ((PathIcon)bar.LeftHeader).Data as Microsoft.UI.Xaml.Media.PathGeometry;
+                Assert.That(geometry, Is.Not.Null);
+                Assert.That(geometry!.Figures.Select(f => f.StartPoint), Is.EqualTo(new[] { new Point(1, 2), new Point(6, 7), new Point(3, 12) }));
+                Assert.That(geometry.Figures.All(f => f.IsClosed), Is.True);
+            });
+        } finally { await Ui.Run(() => { Ui.Window.SetTitleBar(null); Ui.Window.ExtendsContentIntoTitleBar = false; }); }
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task CommandRowUsesSubtleHistoryAndSeparatesTheThreeGroups()
+    {
+        await Open();
+        await Ui.Run(() => {
+            var undo = Ui.Find<Button>("PlanUndo"); var redo = Ui.Find<Button>("PlanRedo");
+            Assert.That(undo.Style, Is.SameAs(Application.Current.Resources["SubtleButtonStyle"]));
+            Assert.That(redo.Style, Is.SameAs(undo.Style));
+            var group = (Panel)undo.Parent;
+            var dividers = group.Children.OfType<Border>().Where(b => b.Width == 1 && b.Height == 20).ToArray();
+            Assert.That(dividers, Has.Length.EqualTo(2));
+            var date = Ui.Find<CalendarDatePicker>("PlanStatusDate");
+            double X(FrameworkElement e) => e.TransformToVisual(group).TransformPoint(new Point()).X;
+            Assert.That(X(dividers[0]), Is.GreaterThan(X(date) + date.ActualWidth - 1).And.LessThan(X(undo)));
+            Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
+            var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
+            Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
+                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "表示列" }));
+            Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
+                Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task GanttLegendOnlyAppearsOnPlanWhileProjectCountsRemain()
+    {
+        await Open();
+        foreach (var command in new[] { "PlanShowTasks", "PlanShowPeople", "PlanShowSettings", "PlanShowTasks", "PlanPublish" }) {
+            await Ui.Run(() => Ui.Click(command)); await Ui.Idle();
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility,
+                    Is.EqualTo(command == "PlanShowTasks" ? Visibility.Visible : Visibility.Collapsed));
+                Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 1"));
+            });
+        }
+        foreach (var command in new[] { "PlanChooseProject", "PlanConnection" }) {
+            await PickerCommand(command);
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility, Is.EqualTo(Visibility.Collapsed));
+                Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 1"));
+            });
+        }
+    }
+
+    [TestCase(false, false, "要求事項 0 · タスク 2")]
+    [TestCase(true, false, "要求事項 0 · タスク 2 · 期限超過 1")]
+    [TestCase(false, true, "要求事項 0 · タスク 2 · 予定より遅れ 1")]
+    [TestCase(true, true, "要求事項 0 · タスク 2 · 期限超過 1 · 予定より遅れ 1")]
+    [Category("ShellChrome")]
+    public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expected)
+    {
+        var date = new DateOnly(2026, 10, 5);
+        var state = FakePlanEditor.Load(root);
+        var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2), Fixed = true };
+        FakePlanEditor.Save(root, state with { Issues = [
+            state.Issues[0] with { Row = row with { Start = overdue ? date.AddDays(-3) : date, End = overdue ? date.AddDays(-3) : date.AddDays(2) } },
+            new(row with { Identity = "I2", Title = "後続" }, "", true)] });
+        await Open();
+        await Ui.Run(async () => {
+            var session = workspace.Session!;
+            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
+            if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.End, date.AddDays(3))]), date);
+            Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo(expected));
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task ProjectPickerChecksOnlyOpenProjectAndSeparatesIconCommands()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await Ui.Idle();
+        await OpenProjectPicker();
+        await Ui.Until(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            return list.ContainerFromIndex(1) is ListViewItem { IsLoaded: true } item &&
+                Ui.Tree(item).OfType<TextBlock>().Any(t => t.Text == ((ProjectChoice)list.Items[1]).Title);
+        });
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            var titleXs = new List<double>();
+            for (var i = 0; i < list.Items.Count; i++) {
+                var choice = (ProjectChoice)list.Items[i];
+                var item = (ListViewItem)list.ContainerFromIndex(i);
+                var check = Ui.Tree(item).OfType<FontIcon>().Single(f => f.Glyph == "\uE73E");
+                Assert.That(check.Opacity, Is.EqualTo(choice.Id == workspace.Selected!.Id ? 1d : 0d));
+                var texts = Ui.Tree(item).OfType<TextBlock>().ToArray();
+                Assert.That(texts.Any(t => t.Text == $"{choice.OwnerLogin} · Project {choice.Number}"), Is.True, string.Join(" | ", texts.Select(t => t.Text)));
+                titleXs.Add(texts.Single(t => t.Text == choice.Title).TransformToVisual(list).TransformPoint(new Point()).X);
+            }
+            Assert.That(titleXs.Distinct().Count(), Is.EqualTo(1));
+            var content = (StackPanel)((Flyout)Ui.Find<Button>("PlanProjectPicker").Flyout).Content;
+            Assert.That(content.Children[1], Is.TypeOf<Border>());
+            Assert.That(((Border)content.Children[1]).Height, Is.EqualTo(1));
+            foreach (var id in new[] { "PlanChooseProject", "PlanConnection" })
+                Assert.That(Ui.Tree(Ui.Find<Button>(id)).OfType<FontIcon>().Any(), Is.True);
+        });
+    }
+
     [TestCase(false), TestCase(true), Category("PlanSheetPhase2")]
     public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
     {
@@ -168,6 +297,10 @@ internal sealed class PlanWorkspaceHostedTests
             await Open();
             await Ui.Run(() => {
                 Assert.That(view.ActualTheme, Is.EqualTo(ElementTheme.Light));
+                var caption = Ui.Window.AppWindow.TitleBar;
+                Assert.That(caption.ButtonForegroundColor, Is.EqualTo(Microsoft.UI.Colors.Black));
+                Assert.That(caption.ButtonHoverForegroundColor, Is.EqualTo(Microsoft.UI.Colors.Black));
+                Assert.That(caption.ButtonInactiveForegroundColor, Is.EqualTo(Windows.UI.Color.FromArgb(102, 0, 0, 0)));
                 Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 1 · タスク 2"));
             });
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "workspace-shell-light"));
@@ -253,6 +386,8 @@ internal sealed class PlanWorkspaceHostedTests
         workspace = new(new(root));
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
+        if (TestContext.CurrentContext.Test.MethodName == nameof(TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions))
+            await Ui.Run(() => { Ui.Window.ExtendsContentIntoTitleBar = true; Ui.Window.SetTitleBar(view.WorkspaceTitleBar); });
         await Ui.Mount(view);
         await Ui.Run(() => {
             var flyout = Ui.Find<Button>("PlanProjectPicker").Flyout;
@@ -272,7 +407,7 @@ internal sealed class PlanWorkspaceHostedTests
         }
         finally
         {
-            try { await Ui.Unmount(view, check: false); await Ui.Idle(); await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000))); }
+            try { await Ui.Unmount(view, check: false); await Ui.Run(() => { Ui.Window.SetTitleBar(null); Ui.Window.ExtendsContentIntoTitleBar = false; }); await Ui.Idle(); await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000))); }
             finally
             {
                 try { await workspace.Flush(); }
