@@ -1393,12 +1393,17 @@ internal sealed class PlanSheetHostedTests
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide(); });
         await Ui.Idle();
+        double barX = 0;
+        await Ui.Run(() => barX = Canvas.GetLeft(Ui.Find<Rectangle>("PlanBar1")));
         await Ui.Run(() => {
             var divider = Ui.Find<PlanSheetDivider>("PlanSheetDivider");
             var provider = (IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(divider).GetPattern(PatternInterface.RangeValue);
             provider.SetValue(560);
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
+        // Finish the divider's native date-viewport compensation before measuring column selection.
+        await Ui.Until(() => Math.Abs(Canvas.GetLeft(Ui.Find<Rectangle>("PlanBar1")) - barX) < 1);
+        await Ui.Idle();
         double chartOffset = 0;
         await Ui.Run(() => chartOffset = sheet.ChartOffset);
         await Select(1, PlanField.Status);
@@ -1427,7 +1432,7 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => {
             cellX = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).X;
             headerX = Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).X;
-            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.GreaterThan(3));
+            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.EqualTo(3));
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Line>("PlanStatusLine").X1, Is.EqualTo(sheet.X(Today)));
             Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true);
         });

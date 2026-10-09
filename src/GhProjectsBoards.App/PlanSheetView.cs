@@ -73,7 +73,9 @@ internal sealed partial class PlanSheetView : Grid
     private string acceptedFilter = "";
     private int acceptedZoom = 1;
     private bool initialChartPositioned;
-    private int statusLeadDays = 5;
+    internal bool ShowLatenessLabels => acceptedZoom is 0 or 1;
+    // Reserve the widest fixed mark (10 px) plus 2 px clearance, independent of the date span.
+    private double ChartDateInset => acceptedZoom == 3 ? 12 : 0;
     private readonly Canvas chartBackground = Id(new Canvas { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left }, "PlanChartBackground");
     private readonly Canvas chartStatus = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left };
     private HashSet<DateOnly> nonWorkingDates = [];
@@ -233,8 +235,8 @@ internal sealed partial class PlanSheetView : Grid
                 }
                 acceptedZoom = proposed;
                 DayWidth = acceptedZoom switch { 1 => 8, 2 => 2, _ => 24 };
-                UpdateTimelineRange(); RefreshLayout();
-                if (acceptedZoom == 3) chartHorizontal.ChangeView(0, null, null, true);
+                RefreshLayout(preserveDateViewport: false);
+                PositionTimelineAnchor();
             }, "Zoom");
         };
         filter.TextChanged += async (_, _) => {
@@ -255,8 +257,7 @@ internal sealed partial class PlanSheetView : Grid
         Unloaded += (_, _) => { disposed = true; inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             if (!initialChartPositioned) {
-                chartHorizontal.UpdateLayout();
-                chartHorizontal.ChangeView(Math.Max(0, (StatusDate.DayNumber - FirstDay.DayNumber) * DayWidth - ChartViewport / 4), null, null, true);
+                PositionTimelineAnchor();
                 initialChartPositioned = true;
             }
         };
@@ -437,7 +438,6 @@ internal sealed partial class PlanSheetView : Grid
             RowIds = next; List.ItemsSource = next;
             (selected, anchor, selectedField, anchorField) = priorSelection;
         }
-        UpdateTimelineRange();
         rendering = true;
         try { statusDate.Date = new DateTimeOffset(StatusDate.ToDateTime(TimeOnly.MinValue)); }
         finally { rendering = false; }
@@ -464,7 +464,6 @@ internal sealed partial class PlanSheetView : Grid
         : !string.IsNullOrWhiteSpace(Session.Document.Sync.PeopleNames.GetValueOrDefault(id)) ? Session.Document.Sync.PeopleNames[id] : "担当者（未確認）";
     internal string AssigneeTooltip(string identity) => Rows.TryGetValue(identity, out var row)
         ? string.Join(", ", row.Assignees.Select(AssigneeName)) : "";
-    internal int? Lateness(string identity) => lateness.Tasks.GetValueOrDefault(identity)?.DaysLater;
     internal string Display(string identity, PlanField field)
     {
         if (!Rows.TryGetValue(identity, out var row)) return "";
@@ -503,17 +502,15 @@ internal sealed partial class PlanSheetView : Grid
         if (target.Cell is null) { inputProblem.Close(); return; }
         inputProblem.Show(target.Cell, target.Problem);
     }
-    private void RefreshLayout()
+    private void RefreshLayout(bool preserveDateViewport = true)
     {
         if (disposed) return;
+        var previousOffset = ChartOffset;
         var width = Math.Max(320, ActualWidth - 20);
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - 230));
         ChartViewport = width - SheetViewport;
-        if (!initialChartPositioned) {
-            statusLeadDays = Math.Max(5, (int)Math.Ceiling(ChartViewport / (4 * DayWidth)));
-            UpdateTimelineRange();
-        }
-        if (acceptedZoom == 3) DayWidth = ChartViewport / DayCount;
+        var offsetShift = UpdateTimelineRange();
+        if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
         sheetClip.Width = SheetViewport;
@@ -521,8 +518,13 @@ internal sealed partial class PlanSheetView : Grid
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions[0].Width = new(SheetViewport); grid.ColumnDefinitions[1].Width = new(ChartViewport); }
         ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
-        ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth;
+        ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth + 2 * ChartDateInset;
         sheetHorizontal.Width = SheetViewport; chartHorizontal.Width = ChartViewport;
+        if (initialChartPositioned && preserveDateViewport && acceptedZoom != 3 && offsetShift != 0) {
+            // Native extent changes can clamp the old offset; restore the date using the pre-layout offset.
+            chartHorizontal.UpdateLayout();
+            chartHorizontal.ChangeView(Math.Clamp(previousOffset + offsetShift, 0, chartHorizontal.ScrollableWidth), null, null, true);
+        }
         RefreshHeaders(); RenderTimelineHeader(); RefreshRealized();
     }
     private void RefreshHeaders()
@@ -554,9 +556,9 @@ internal sealed partial class PlanSheetView : Grid
             layer.Margin = new(SheetViewport, 0, 0, 0);
             layer.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, height) };
         }
-        var first = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + (int)(ChartOffset / DayWidth)));
+        var first = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber, FirstDay.DayNumber + Math.Max(0, (int)((ChartOffset - ChartDateInset) / DayWidth))));
         var last = DateOnly.FromDayNumber(Math.Min(DateOnly.MaxValue.DayNumber,
-            FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport) / DayWidth))));
+            FirstDay.DayNumber + Math.Min(DayCount - 1, (int)((ChartOffset + ChartViewport - ChartDateInset) / DayWidth))));
         var upperBounds = new List<(double Left, double Right)>();
         bool AddLabel(string label, double x, double end, bool upper, string id) {
             var text = Id(new TextBlock { Text = label, FontSize = 11,
@@ -566,7 +568,7 @@ internal sealed partial class PlanSheetView : Grid
             text.Measure(new Size(double.PositiveInfinity, 24));
             var left = Math.Max(0, x) + 3;
             var availableEnd = Math.Min(ChartViewport, end);
-            if (upper && upperBounds.Count == 0) availableEnd = ChartViewport;
+            if (upper && upperBounds.Count == 0) { left = 3; availableEnd = ChartViewport; }
             if (upper && upperBounds.Count > 0) left = Math.Max(left, upperBounds[^1].Right + 6);
             if (left + text.DesiredSize.Width + 3 > availableEnd) { chartHead.Children.Remove(text); return false; }
             Canvas.SetLeft(text, left); Canvas.SetTop(text, upper ? 3 : 27);
@@ -580,7 +582,7 @@ internal sealed partial class PlanSheetView : Grid
             var endDay = monthScale ? Math.Min(DateOnly.MaxValue.DayNumber + 1, period.DayNumber + (DateTime.IsLeapYear(period.Year) ? 366 : 365))
                 : period.DayNumber + DateTime.DaysInMonth(period.Year, period.Month);
             var label = monthScale ? $"{period.Year}年" : firstUpper || period.Month == 1 ? $"{period.Year}年{period.Month}月" : $"{period.Month}月";
-            if (AddLabel(label, X(period), (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, true, "PlanTimelineUpper" + period.DayNumber)) firstUpper = false;
+            if (AddLabel(label, X(period), ChartDateInset + (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, true, "PlanTimelineUpper" + period.DayNumber)) firstUpper = false;
             if (endDay > DateOnly.MaxValue.DayNumber) break;
             period = DateOnly.FromDayNumber(endDay);
         }
@@ -597,7 +599,7 @@ internal sealed partial class PlanSheetView : Grid
         while (day <= last) {
             var endDay = day.DayNumber + (monthScale ? DateTime.DaysInMonth(day.Year, day.Month) : acceptedZoom == 1 ? 7 : 1);
             AddLabel(monthScale ? $"{day.Month}月" : acceptedZoom == 1 ? day.ToString("M/d") : day.Day.ToString(CultureInfo.InvariantCulture),
-                X(day), (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, false, "PlanTimelineLabel" + day.DayNumber);
+                X(day), ChartDateInset + (endDay - FirstDay.DayNumber) * DayWidth - ChartOffset, false, "PlanTimelineLabel" + day.DayNumber);
             if (endDay > DateOnly.MaxValue.DayNumber) break;
             day = DateOnly.FromDayNumber(endDay);
         }
@@ -630,9 +632,20 @@ internal sealed partial class PlanSheetView : Grid
         gaps.Add((gapStart, ChartViewport));
         var candidates = gaps.Where(g => g.Right - g.Left >= pillWidth)
             .Select(g => Math.Clamp(statusX - pillWidth / 2, g.Left, g.Right - pillWidth)).OrderBy(x => Math.Abs(x + pillWidth / 2 - statusX)).ToArray();
+        if (candidates.Length == 0 && acceptedZoom == 3 && upperBounds.Count > 0
+            && ChartViewport - upperBounds[0].Right - 4 >= pillWidth) {
+            // Exact full-period fitting can crowd year labels; keep the first year and the status pill.
+            var left = Math.Clamp(statusX - pillWidth / 2, upperBounds[0].Right + 4, ChartViewport - pillWidth);
+            foreach (var label in chartHead.Children.OfType<TextBlock>().Where(label =>
+                AutomationProperties.GetAutomationId(label).StartsWith("PlanTimelineUpper", StringComparison.Ordinal)
+                && Canvas.GetLeft(label) > upperBounds[0].Left
+                && Canvas.GetLeft(label) < left + pillWidth + 4 && Canvas.GetLeft(label) + label.DesiredSize.Width > left - 4).ToArray())
+                chartHead.Children.Remove(label);
+            candidates = [left];
+        }
         if (candidates.Length == 0) { chartHead.Children.Remove(pill); return; }
         Canvas.SetLeft(pill, candidates[0]); Canvas.SetTop(pill, 2);
     }
-    internal double X(DateOnly day) => (day.DayNumber - FirstDay.DayNumber) * DayWidth - ChartOffset;
+    internal double X(DateOnly day) => ChartDateInset + (day.DayNumber - FirstDay.DayNumber) * DayWidth - ChartOffset;
 }
 
