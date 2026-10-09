@@ -84,6 +84,7 @@ internal sealed class PlanPublishReviewHostedTests
         FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i with { Row = i.Row with { End = new(2038, 10, 5) } }).ToImmutableArray() });
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Any(c => c.Field == PlanField.End));
+        await Ui.Until(() => Ui.Find<Button>("PlanPublish").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<Button>("PlanResolveI1_End_True");
         await Ui.Run(async () => {
@@ -167,6 +168,7 @@ internal sealed class PlanPublishReviewHostedTests
         FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i.Row.Identity == "I60" ? i with { Row = i.Row with { Actual = 2 } } : i).ToImmutableArray() });
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Length == 1);
+        await Ui.Until(() => Ui.Find<Button>("PlanPublish").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
         await Ui.Run(() => {

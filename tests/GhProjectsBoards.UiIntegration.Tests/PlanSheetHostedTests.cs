@@ -1357,13 +1357,21 @@ internal sealed class PlanSheetHostedTests
         using (var writer = new FileStream(store.FileFor(session.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Edit(1, PlanField.Title, "Retained edit");
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+            await Ui.Until(() => Ui.Find<InfoBar>("PlanSheetSaveFailure").IsOpen);
+            await Ui.Ready<Button>("PlanSheetRetrySave");
             Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Retained edit"));
             Assert.That(session.UndoCount, Is.EqualTo(1));
-            await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanSheetRetrySave").Visibility, Is.EqualTo(Visibility.Visible)));
+            await Ui.Run(() => {
+                var failure = Ui.Find<InfoBar>("PlanSheetSaveFailure");
+                Assert.That(failure.Title, Is.EqualTo("保存できませんでした"));
+                Assert.That(failure.Severity, Is.EqualTo(InfoBarSeverity.Error));
+                Assert.That(failure.IsClosable, Is.False);
+                Assert.That(failure.ActionButton, Is.SameAs(Ui.Find<Button>("PlanSheetRetrySave")));
+                Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
+            });
         }
         await Ui.Run(() => Ui.Click("PlanSheetRetrySave")); await Ui.Idle();
-        await Ui.Until(() => Ui.Find<Button>("PlanSheetRetrySave").Visibility == Visibility.Collapsed);
+        await Ui.Until(() => !Ui.Find<InfoBar>("PlanSheetSaveFailure").IsOpen);
         var loaded = await store.LoadAsync(session.Document.Project);
         Assert.That(loaded.Checkpoint!.Document.State.Rows[0].Title, Is.EqualTo("Retained edit"));
         Assert.That(session.UndoCount, Is.EqualTo(1));

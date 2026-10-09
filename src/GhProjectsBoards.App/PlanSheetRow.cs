@@ -129,18 +129,18 @@ public sealed class PlanSheetRow : Grid
             var visible = owner.Hidden.Contains(field) ? Visibility.Collapsed : Visibility.Visible;
             frames[i].Width = column.Width; frames[i].Visibility = cell.Visibility = visible;
             var selected = owner.IsSelected(Identity, field);
-            frames[i].BorderBrush = PlanSheetView.Brush(selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
-            frames[i].BorderThickness = selected ? new(2) : new(0, 0, 0, 1);
-            frames[i].Background = PlanSheetView.Brush(selected || owner.IsSelectedRow(Identity) ? "SheetSelectionBrush"
+            var conflict = owner.Session.Document.Sync.Conflicts.Any(c => c.Identity == Identity && c.Field == field);
+            frames[i].BorderBrush = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
+            frames[i].BorderThickness = selected || conflict ? new(2) : new(0, 0, 0, 1);
+            frames[i].Background = PlanSheetView.Brush(conflict ? "LayerFillColorDefaultBrush" : selected || owner.IsSelectedRow(Identity) ? "SheetSelectionBrush"
                 : owner.IsChanged(Identity, field) && owner.Unpublished.InputKind(Identity, field) == PlanUnpublishedInputKind.Entered ? "SheetChangedBrush" : "LayerFillColorDefaultBrush");
             var changed = owner.IsChanged(Identity, field);
-            var conflict = owner.Session.Document.Sync.Conflicts.Any(c => c.Identity == Identity && c.Field == field);
             var outcome = field == PlanField.Title && remoteProblem.Length > 0;
-            markers[i].Text = conflict ? "競合" : outcome ? owner.Session.Document.Sync.Unverified.Contains(Identity) ? "未検証" : "失敗" : "•";
-            markers[i].Visibility = conflict || outcome ? Visibility.Visible : Visibility.Collapsed;
+            markers[i].Text = outcome ? owner.Session.Document.Sync.Unverified.Contains(Identity) ? "未検証" : "失敗" : "•";
+            markers[i].Visibility = !conflict && outcome ? Visibility.Visible : Visibility.Collapsed;
             markers[i].Foreground = PlanSheetView.Brush(conflict || outcome ? "SystemFillColorCriticalBrush" : "TextFillColorPrimaryBrush");
-            corners[i].Visibility = changed ? Visibility.Visible : Visibility.Collapsed;
-            corners[i].Fill = PlanSheetView.Brush("SheetChangedMarkBrush");
+            corners[i].Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
+            corners[i].Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
             handles[i].Visibility = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field)) ? Visibility.Visible : Visibility.Collapsed;
             handles[i].Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
             AutomationProperties.SetAutomationId(handles[i], $"PlanFillHandle{number}_{field}");
@@ -150,7 +150,7 @@ public sealed class PlanSheetRow : Grid
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             cell.IsReadOnly = owner.ReadOnly(Identity, field);
-            cell.MinHeight = cell.Height = owner.RowHeight - (selected ? 4 : 1);
+            cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
             var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (remoteProblem.Length > 0 ? remoteProblem : null);
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
@@ -158,7 +158,7 @@ public sealed class PlanSheetRow : Grid
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
             AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {owner.Header(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
-            AutomationProperties.SetHelpText(cell, problem ?? (conflict ? "競合" : changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
+            AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
             ToolTipService.SetToolTip(cell, problem ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text));
             if (problem is not null) frames[i].BorderBrush = PlanSheetView.Brush("SystemFillColorCriticalBrush");

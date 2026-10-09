@@ -136,6 +136,8 @@ internal sealed partial class PlanSheetView
         if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
+        if (Session.Document.Sync.Conflicts.FirstOrDefault(c => c.Identity == selected && c.Field == selectedField) is { } conflict)
+            reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
         AutomationProperties.SetName(reason, reason.Text);
         if (Problems.TryGetValue((selected, selectedField), out var problem)) error.Text = problem;
         ToolTipService.SetToolTip(reason, reason.Text);

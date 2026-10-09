@@ -148,7 +148,7 @@ internal sealed partial class PlanWorkspaceView
         return index >= 0 ? $"{index + 1} {document.State.Rows[index].Title}" : identity == document.Project.NodeId ? "プロジェクト" :
             document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "計画外Issue（未取得）";
     }
-    private static string ReviewValue(PlanDocument document, PlanField field, string? json)
+    internal static string ReviewValue(PlanDocument document, PlanField field, string? json)
     {
         if (json is null or "null") return "未入力";
         using var value = JsonDocument.Parse(json);
@@ -187,23 +187,34 @@ internal sealed partial class PlanWorkspaceView
             var save = await session.FlushAsync();
             if (!closing)
             {
-                error.Text = save.Succeeded ? result.Error ?? "" : save.Error ?? "保存できません。再試行してください。";
-                retrySave.Visibility = save.Retryable ? Visibility.Visible : Visibility.Collapsed;
+                if (!save.Succeeded) ShowSaveFailure(save.Error ?? "保存できません。再試行してください。");
+                else {
+                    ClearSaveFailures();
+                    publishFailure.Message = result.Error ?? "";
+                    publishFailure.IsOpen = !result.Succeeded && !OperationToken.IsCancellationRequested;
+                }
                 RenderTasks();
             }
+        }
+        catch (OperationCanceledException) when (OperationToken.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message);
+            else { publishFailure.Message = ex.Message; publishFailure.IsOpen = true; }
         }
         finally
         {
             publishing = false;
-            if (!closing) { publishStage.Text = ""; publishStage.Visibility = Visibility.Collapsed; SetPublishBusy(false); RenderReview(); }
+            publishStage.Text = ""; publishStage.Visibility = Visibility.Collapsed;
+            SetPublishBusy(false);
+            if (!closing) RenderReview();
         }
     }
     private void SetPublishBusy(bool busy)
     {
         projectPicker.IsEnabled = !busy; settingsButton.IsEnabled = !busy;
         tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
-        foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy || AutomationProperties.GetAutomationId(button) == "PlanPublish";
-        if (sheet is not null) sheet.SetRemoteBusy(busy);
+        SetRemotePresentation();
         settingsScroll.IsEnabled = !busy;
         if (peopleView is not null) peopleView.IsEnabled = !busy;
         confirmPublish.IsEnabled = !busy;

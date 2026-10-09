@@ -68,6 +68,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Canvas chartHead = new() { Height = 48 };
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
+    internal readonly InfoBar SaveFailure = Id(new InfoBar { Title = "保存できませんでした", Severity = InfoBarSeverity.Error, IsClosable = false }, "PlanSheetSaveFailure");
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
@@ -102,7 +103,8 @@ internal sealed partial class PlanSheetView : Grid
     private bool frameSubscribed;
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null)
+    internal event Action? SaveFeedbackChanged;
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -189,7 +191,9 @@ internal sealed partial class PlanSheetView : Grid
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
-        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error); feedback.Children.Add(retrySave);
+        var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error);
+        SaveFailure.ActionButton = retrySave;
+        if (!hostSaveFailure) feedback.Children.Add(SaveFailure);
         retrySave.Click += async (_, _) => await Run(async () => { Check(await Session.RetrySaveAsync()); }, "Retry save");
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = string.IsNullOrEmpty(error.Text) ? Visibility.Collapsed : Visibility.Visible);
         Children.Add(feedback); SetRow(feedback, 1);
@@ -312,7 +316,7 @@ internal sealed partial class PlanSheetView : Grid
                 try { error.Text = ""; await action(); }
                 catch (OperationCanceledException) when (token.IsCancellationRequested) { }
                 catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException or FormatException)
-                { if (!token.IsCancellationRequested) { error.Text = ex.Message; Refresh(); UpdateReason(); } }
+                { if (!token.IsCancellationRequested) { if (ex is not IOException || !SaveFailure.IsOpen) error.Text = ex.Message; Refresh(); UpdateReason(); } }
             }
             finally { commands.Remove(number); }
         }
@@ -320,8 +324,17 @@ internal sealed partial class PlanSheetView : Grid
     internal void Check(PlanSaveResult result)
     {
         if (disposed) return;
-        retrySave.Visibility = result.Succeeded ? Visibility.Collapsed : Visibility.Visible;
-        if (!result.Succeeded) throw new IOException(result.Error);
+        SaveFeedbackChanged?.Invoke();
+        if (result.Succeeded) ClearSaveFailure();
+        else {
+            error.Text = ""; SaveFailure.Message = result.Error ?? "保存できません。再試行してください。";
+            SaveFailure.IsOpen = true; retrySave.Visibility = Visibility.Visible;
+            throw new IOException(result.Error);
+        }
+    }
+    internal void ClearSaveFailure()
+    {
+        SaveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
     }
     internal async Task FlushInput()
     {
