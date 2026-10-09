@@ -18,6 +18,48 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(1280, 800), TestCase(1920, 1032), TestCase(1000, 720), TestCase(900, 720)]
+    [Category("PlanSheetReview")]
+    public async Task DefaultDividerFitsColumnsOrKeepsMinimumGanttAtWorkspaceClientSize(int width, int height)
+    {
+        FakePlanEditor.Save(root, new(Enumerable.Range(1, 40).Select(i => new PlanFakeIssue(
+            new("I" + i, i == 1 ? "設計" : "Planning task " + i, "acme/repo")
+                { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)).ToImmutableArray(), 41));
+        await Open();
+        await Ui.Run(() => ResizeWorkspace(width, height));
+        await Ui.Until(() => Math.Abs(Ui.Root.ActualWidth - width) < 1 && Math.Abs(Ui.Root.ActualHeight - height) < 1);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
+            var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
+            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "Predecessors" }
+                .Select(name => Ui.Find<TextBlock>("PlanHeader" + name)).ToArray();
+            var rowBounds = Ui.Tree(sheet.List).OfType<TextBox>()
+                .Where(cell => AutomationProperties.GetAutomationId(cell).EndsWith("_Title", StringComparison.Ordinal))
+                .Select(cell => cell.TransformToVisual(sheet.List).TransformBounds(new Rect(0, 0, cell.ActualWidth, cell.ActualHeight))).ToArray();
+            var fullRows = rowBounds.Count(bounds => bounds.Top >= 0 && bounds.Bottom <= sheet.List.ActualHeight);
+            Console.WriteLine($"Default divider: client={Ui.Root.ActualWidth}x{Ui.Root.ActualHeight}, scale={Ui.Root.XamlRoot.RasterizationScale}, sheetControl={sheet.ActualWidth}, sheetViewport={horizontal.ViewportWidth}, sheetExtent={horizontal.ExtentWidth}, sheetOffset={horizontal.HorizontalOffset}, Gantt={chart.ViewportWidth}, weeks={chart.ViewportWidth / (7 * sheet.DayWidth):F2}, rowViewport={sheet.List.ActualHeight}, fullRows={fullRows}");
+            Assert.That(horizontal.HorizontalOffset, Is.Zero);
+            Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320));
+            if (width >= 1280) {
+                foreach (var header in headers) {
+                    var bounds = header.TransformToVisual(sheet).TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight));
+                    Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0), header.Text);
+                    Assert.That(bounds.Right, Is.LessThanOrEqualTo(horizontal.ViewportWidth), header.Text);
+                }
+                Assert.That(horizontal.ScrollableWidth, Is.Zero);
+            } else Assert.That(horizontal.ExtentWidth, Is.GreaterThan(horizontal.ViewportWidth));
+            if (width == 1920) {
+                // Fixed chrome leaves 1920 - 42 (card) - 20 (right reservation) - 854 (sheet) = 1004.
+                // Even removing the sheet's 6 px clearance cannot reach the approximate 1040 px target.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(1004).Within(2), "Current ten-column budget, allowing pixel rounding.");
+                Assert.That(fullRows, Is.EqualTo(29).Within(2));
+            }
+        });
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, $"default-divider-{width}x{height}"));
+    }
+
     [TestCase(1000), TestCase(1440), Category("ShellChrome")]
     public async Task TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions(int width)
     {

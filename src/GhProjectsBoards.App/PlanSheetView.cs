@@ -527,7 +527,8 @@ internal sealed partial class PlanSheetView : Grid
         if (disposed) return;
         var previousOffset = ChartOffset;
         var width = Math.Max(320, ActualWidth - 20);
-        SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - 230));
+        var minimumChartWidth = dividerWidth.HasValue ? 230 : 320;
+        SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
         ChartViewport = width - SheetViewport;
         var offsetShift = UpdateTimelineRange();
         if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;

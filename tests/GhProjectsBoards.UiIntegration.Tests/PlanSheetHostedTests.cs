@@ -1179,7 +1179,7 @@ internal sealed class PlanSheetHostedTests
             var last = Ui.Find<TextBox>("PlanCell1_Predecessors");
             var viewport = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
             Assert.That(last.TransformToVisual(sheet).TransformPoint(new()).X + last.ActualWidth, Is.LessThanOrEqualTo(viewport.ActualWidth + 1));
-            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ActualWidth, Is.GreaterThanOrEqualTo(230));
+            Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").ActualWidth, Is.GreaterThanOrEqualTo(320));
             var first = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
             var second = Ui.Find<TextBox>("PlanCell2_Title").TransformToVisual(sheet).TransformPoint(new()).Y;
             Assert.That(second - first, Is.EqualTo(28).Within(1));
