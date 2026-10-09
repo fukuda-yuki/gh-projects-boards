@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Text.Json;
+using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
 using Microsoft.UI.Input;
@@ -95,18 +96,52 @@ internal sealed partial class PlanSheetView
         selectedTitle.Text = Rows.GetValueOrDefault(selected)?.Title ?? "";
         ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
         AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
-        slip.Text = Lateness(selected) is { } days ? $"発行済み {Session.Document.Baseline.Rows.First(r => r.Identity == selected).End!.Value.ToString("M/d", System.Globalization.CultureInfo.InvariantCulture)} から +{days} 日" : "";
+        var hasSelection = Schedule.TryGetValue(selected, out var task);
+        emptyHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
+        totals.Text = hasSelection ? "" : LatenessCounts(OverdueTasks, LaterTasks);
+        totals.Visibility = totals.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetName(totals, totals.Text);
+        var late = LatenessOf(selected);
+        slip.Text = "";
+        latenessDetail.Text = "";
+        if (late is not null && task is not null) {
+            if (task.IsSummary) {
+                var counts = LatenessCounts(late.OverdueDescendantTasks, late.LaterDescendantTasks);
+                latenessDetail.Text = counts.Length > 0 ? "配下: " + counts : "";
+            }
+            if (!task.IsSummary && late.OverdueKind is { } kind && late.MissedPublishedDate is { } missed) {
+                var missedDate = missed.ToString("M/d", CultureInfo.InvariantCulture);
+                slip.Text = kind == PlanOverdueKind.Finish ? $"完了予定 {missedDate} を過ぎて未完了" : $"開始予定 {missedDate} を過ぎて未着手";
+                if (late.DaysLater is { } days) slip.Text += $" · +{days} 日";
+            } else if (late.DaysLater is { } days && PublishedEnd(selected) is { } published) {
+                slip.Text = $"発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日";
+                if (!task.IsSummary && late.StartDelayedByPredecessor) latenessDetail.Text = "先行の遅れによる";
+            }
+        }
+        slipPill.Background = late?.Level == PlanLatenessLevel.Overdue ? Brush("GanttLateTintBrush") : null;
+        slipPill.BorderBrush = Brush("SystemFillColorCriticalBrush");
+        slipPill.BorderThickness = new(late?.Level == PlanLatenessLevel.Overdue ? 0 : 1);
         slipPill.Visibility = slip.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        latenessDetail.Visibility = latenessDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetName(slip, slip.Text);
+        AutomationProperties.SetName(slipPill, slip.Text);
+        AutomationProperties.SetName(latenessDetail, latenessDetail.Text);
+        AutomationProperties.SetName(selectedTitle, selectedTitle.Text);
         if (Session.Document.Sync.IssueLinks.TryGetValue(selected, out var link) && Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == Session.Document.Project.Scope.Host) {
             issueLink.Content = link.Caption; issueLink.NavigateUri = uri; issueLink.Visibility = Visibility.Visible;
         } else { issueLink.Content = ""; issueLink.NavigateUri = null; issueLink.Visibility = Visibility.Collapsed; }
-        reason.Text = Schedule.TryGetValue(selected, out var task) ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) + (task.Warnings.Count > 0 ? " · " + string.Join(" / ", task.Warnings) : "") : "";
+        AutomationProperties.SetName(issueLink, issueLink.Content?.ToString() ?? "");
+        reason.Text = task is not null ? (task.StartReason is "子タスクの集計" or "完了" or "日程固定" or "工数なし" or "入力エラー" ? task.StartReason : "開始: " + task.StartReason) : "";
+        if (task is not null && PlanLateness.EndReason(task, StatusDate) is { } endReason) reason.Text += " · " + endReason;
+        if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
         AutomationProperties.SetName(reason, reason.Text);
         if (Problems.TryGetValue((selected, selectedField), out var problem)) error.Text = problem;
         ToolTipService.SetToolTip(reason, reason.Text);
     }
+    private static string LatenessCounts(int overdue, int later) =>
+        overdue > 0 ? $"期限超過 {overdue}" + (later > 0 ? $" · 予定より遅れ {later}" : "") : later > 0 ? $"予定より遅れ {later}" : "";
     internal void MoveSelection(VirtualKey key, bool extend)
     {
         var row = Math.Max(0, RowIds.IndexOf(selected)); var column = Math.Max(0, Array.IndexOf(Fields, selectedField));

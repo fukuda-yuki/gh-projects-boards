@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.Json;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
@@ -196,11 +197,11 @@ internal sealed class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo("ID 1"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(Ui.Find<TextBlock>("PlanSheetSelection")), Does.Contain(row.Title));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.Not.Empty);
-            if (state is "typed" or "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5"));
+            if (state is "typed" or "late") Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Is.EqualTo("開始: 開始日指定 10/5 · 終了: 開始から 8h"));
             Assert.That(Ui.Find<HyperlinkButton>("PlanSheetIssue").Content, Is.EqualTo("acme/repo#1"));
             var slip = Ui.Find<TextBlock>("PlanSheetSlip").Text;
             if (state is "late" or "failed" or "unverified") {
-                Assert.That(slip, Is.EqualTo("発行済み 10/2 から +1 日"));
+                Assert.That(slip, Is.EqualTo(state == "late" ? "完了予定 10/2 を過ぎて未完了 · +1 日" : "発行済み 10/2 から +1 日"));
                 var text = Ui.Find<TextBlock>("PlanStartReason");
                 var pill = (Border)VisualTreeHelper.GetParent(Ui.Find<TextBlock>("PlanSheetSlip"));
                 var gap = pill.TransformToVisual(sheet).TransformPoint(new()).X - text.TransformToVisual(sheet).TransformPoint(new()).X - text.ActualWidth;
@@ -212,6 +213,151 @@ internal sealed class PlanSheetHostedTests
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
     }
+    [TestCase("started", "終了: 状況日 10/5 から残り 8h")]
+    [TestCase("unstarted", "終了: 開始から 8h")]
+    [TestCase("fixed", "終了: 指定")]
+    [TestCase("complete", null)]
+    [TestCase("summary", null)]
+    [Category("SelectionLine")]
+    public async Task SelectionExplainsEndReason(string state, string? expected)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        if (state == "started") row = row with { Actual = 4 };
+        if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
+        if (state == "complete") row = row with { Actual = 8, Remaining = 0 };
+        var rows = ImmutableArray.Create(row);
+        if (state == "summary") rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+        await MountPresentation(rows, rows); await Select(1, PlanField.Title);
+        await Ui.Run(() => {
+            var reason = Ui.Find<TextBlock>("PlanStartReason");
+            if (expected is null) Assert.That(reason.Text, Does.Not.Contain("終了:"));
+            else Assert.That(reason.Text, Does.Contain(expected));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(reason), Is.EqualTo(reason.Text));
+        });
+    }
+
+    [TestCase("finish", "完了予定 10/2 を過ぎて未完了 · +1 日")]
+    [TestCase("start", "開始予定 10/2 を過ぎて未着手")]
+    [TestCase("later", "発行済み 10/5 から +1 日")]
+    [Category("SelectionLine")]
+    public async Task SelectionPillKeepsGregorianDatesUnderNonGregorianCulture(string state, string expected)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") {
+            Estimate = 8, Remaining = state == "later" ? 16 : 8, Assignees = ["U1"] };
+        var baseline = row with {
+            Start = state == "start" ? Today.AddDays(-3) : Today,
+            End = state == "finish" ? Today.AddDays(-3) : state == "start" ? Today.AddDays(4) : Today };
+        await MountPresentation([row], [baseline]);
+        await Ui.Ready<TextBox>("PlanCell1_Title");
+        await Ui.Run(() => {
+            var previousCulture = CultureInfo.CurrentCulture;
+            try {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("ar-SA");
+                Assert.That(CultureInfo.CurrentCulture.DateTimeFormat.Calendar, Is.Not.InstanceOf<GregorianCalendar>());
+                SelectProvider("PlanCell1_Title").Select();
+                var slip = Ui.Find<TextBlock>("PlanSheetSlip");
+                Assert.That(slip.Text, Is.EqualTo(expected));
+                Assert.That(((Border)VisualTreeHelper.GetParent(slip)).Visibility, Is.EqualTo(Visibility.Visible));
+            }
+            finally { CultureInfo.CurrentCulture = previousCulture; }
+        });
+    }
+
+    [TestCase("finish", "完了予定 10/2 を過ぎて未完了", true, "")]
+    [TestCase("start", "開始予定 10/2 を過ぎて未着手", true, "")]
+    [TestCase("moved", "完了予定 10/2 を過ぎて未完了 · +1 日", true, "")]
+    [TestCase("later", "発行済み 10/5 から +1 日", false, "")]
+    [TestCase("predecessor", "発行済み 10/5 から +1 日", false, "先行の遅れによる")]
+    [TestCase("constraint", "発行済み 10/5 から +1 日", false, "")]
+    [TestCase("long", "発行済み 10/5 から +1 日", false, "")]
+    [TestCase("summary-overdue", "発行済み 10/2 から +1 日", true, "配下: 期限超過 1")]
+    [TestCase("summary-later", "発行済み 10/5 から +1 日", false, "配下: 予定より遅れ 1")]
+    [TestCase("summary-counts", "", false, "配下: 期限超過 1 · 予定より遅れ 1")]
+    [TestCase("none", "", false, "")]
+    [Category("SelectionLine")]
+    public async Task SelectionPresentsLatenessAndKeepsIssueAtRight(string state, string expected, bool tinted, string detail)
+    {
+        var row = new PlanRow("I1", "Selected task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var old = row with { Start = Today, End = Today };
+        if (state is "finish" or "moved" or "summary-overdue") old = old with { End = Today.AddDays(-3) };
+        if (state == "finish") row = row with { Fixed = true, Start = Today.AddDays(-3), End = Today.AddDays(-3) };
+        if (state == "start") old = old with { Start = Today.AddDays(-3), End = Today.AddDays(4) };
+        if (state is "later" or "summary-later") row = row with { Remaining = 16 };
+        if (state is "constraint" or "long") row = row with { StartNoEarlierThan = Today.AddDays(1) };
+        if (state == "long") row = row with { Title = string.Concat(Enumerable.Repeat("長いタスク名と終了理由の表示確認", 8)) };
+        var rows = ImmutableArray.Create(row); var baseline = ImmutableArray.Create(old);
+        if (state == "predecessor") {
+            rows = rows.SetItem(0, row with { Predecessors = ["I2"] }).Add(row with { Identity = "I2" });
+            baseline = baseline.Add(row with { Identity = "I2", Start = Today, End = Today });
+        }
+        if (state.StartsWith("summary-")) {
+            rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
+            baseline = baseline.Add(old with { Identity = "I2", Parent = "I1" });
+        }
+        if (state == "summary-counts") {
+            rows = rows.Add(row with { Identity = "I3", Parent = "I1", Remaining = 16 });
+            baseline = baseline.SetItem(0, old with { End = null })
+                .SetItem(1, old with { Identity = "I2", Parent = "I1", End = Today.AddDays(-3) })
+                .Add(old with { Identity = "I3", Parent = "I1" });
+        }
+        await MountPresentation(rows, baseline); await Select(1, PlanField.Title); await Ui.Idle();
+        await Ui.Until(() => Ui.Find<HyperlinkButton>("PlanSheetIssue").ActualWidth > 0
+            && Ui.Find<TextBlock>("PlanStartReason").ActualWidth > 0);
+        await Ui.Run(() => {
+            var slip = Ui.Find<TextBlock>("PlanSheetSlip"); var pill = (Border)VisualTreeHelper.GetParent(slip);
+            Assert.That(slip.Text, Is.EqualTo(expected));
+            Assert.That(pill.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
+            if (expected.Length > 0) {
+                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(pill), Is.EqualTo(expected));
+                Assert.That(((SolidColorBrush)slip.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
+                if (tinted) Assert.That(((SolidColorBrush)pill.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("GanttLateTintBrush")).Color));
+                else {
+                    Assert.That(pill.Background is null || pill.Background is SolidColorBrush { Color.A: 0 }, Is.True);
+                    Assert.That(pill.BorderThickness.Left, Is.EqualTo(1));
+                    Assert.That(((SolidColorBrush)pill.BorderBrush).Color, Is.EqualTo(((SolidColorBrush)slip.Foreground).Color));
+                }
+            }
+            Assert.That(Ui.Find<TextBlock>("PlanSheetLatenessDetail").Text, Is.EqualTo(detail));
+            var issue = Ui.Find<HyperlinkButton>("PlanSheetIssue");
+            Assert.That(issue.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(issue.Content, Is.EqualTo("acme/repo#1"));
+            var issueX = issue.TransformToVisual(sheet).TransformPoint(new()).X;
+            Assert.That(sheet.ActualWidth - issueX - issue.ActualWidth, Is.InRange(7d, 10d));
+            var reason = Ui.Find<TextBlock>("PlanStartReason");
+            Assert.That(reason.TextTrimming, Is.EqualTo(TextTrimming.CharacterEllipsis));
+            Assert.That(reason.TransformToVisual(sheet).TransformPoint(new()).X + reason.ActualWidth, Is.LessThan(issueX));
+            if (expected.Length > 0) Assert.That(pill.TransformToVisual(sheet).TransformPoint(new()).X + pill.ActualWidth, Is.LessThan(issueX));
+        });
+        if (state is "moved" or "predecessor" or "long") await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-" + state));
+    }
+
+    [TestCase(0, 0, "")]
+    [TestCase(1, 0, "期限超過 1")]
+    [TestCase(0, 1, "予定より遅れ 1")]
+    [TestCase(1, 1, "期限超過 1 · 予定より遅れ 1")]
+    [Category("SelectionLine")]
+    public async Task EmptySelectionShowsHintAndOnlyNonzeroTotals(int overdue, int later, string expected)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var rows = ImmutableArray.Create(row, row with { Identity = "I2", Remaining = later == 1 ? 16 : 8 });
+        var baseline = ImmutableArray.Create(row with { End = overdue == 1 ? Today.AddDays(-3) : Today }, row with { Identity = "I2", End = Today });
+        await MountPresentation(rows, baseline);
+        await Ui.Run(() => {
+            var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint"); var totals = Ui.Find<TextBlock>("PlanSheetTotals");
+            Assert.That(hint.Text, Is.EqualTo("タスクを選ぶと、開始と終了の理由がここに出ます"));
+            Assert.That(hint.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(hint), Is.EqualTo(hint.Text));
+            Assert.That(totals.Text, Is.EqualTo(expected));
+            Assert.That(totals.Visibility, Is.EqualTo(expected.Length == 0 ? Visibility.Collapsed : Visibility.Visible));
+        });
+        if (overdue == 1 && later == 1) await Ui.Run(() => RenderedEvidence.Capture(sheet, "selection-empty"));
+        await Select(1, PlanField.Title);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetEmptyHint").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetTotals").Visibility, Is.EqualTo(Visibility.Collapsed));
+        });
+    }
+
     private async Task MountPresentation(ImmutableArray<PlanRow> rows, ImmutableArray<PlanRow> baseline,
         ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null)
     {
@@ -219,7 +365,8 @@ internal sealed class PlanSheetHostedTests
         var settings = session.Document.State.Settings;
         if (!people.IsDefault) settings = settings with { People = people };
         var document = new PlanDocument(session.Document.Project, new(baseline, []), new(rows, settings)) {
-            Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty } };
+            Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty,
+                IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "presentation")), document, Today);
         await Ui.Run(() => {
             sheetHost.Children.Clear(); sheet = new(session, () => Task.FromResult(clipboard), value => clipboard = value);

@@ -36,6 +36,8 @@ internal sealed partial class PlanSheetView : Grid
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
+    internal int OverdueTasks => lateness.OverdueTasks;
+    internal int LaterTasks => lateness.LaterTasks;
     private Dictionary<string, string> peopleNames = new();
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
     internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
@@ -80,6 +82,9 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
+    private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
+    private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選ぶと、開始と終了の理由がここに出ます", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
+    private readonly TextBlock totals = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), HorizontalAlignment = HorizontalAlignment.Right }, "PlanSheetTotals");
     private readonly Border slipPill = new() { Background = Brush("GanttLateTintBrush"), CornerRadius = new(11), Padding = new(8, 2, 8, 2), Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
     internal readonly CalendarDatePicker statusDate = Id(new CalendarDatePicker { MinWidth = 170, Language = "ja-JP", DateFormat = "{year.full}/{month.integer(2)}/{day.integer(2)} ({dayofweek.abbreviated})" }, "PlanStatusDate");
@@ -161,13 +166,18 @@ internal sealed partial class PlanSheetView : Grid
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        explanation.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         reason.VerticalAlignment = VerticalAlignment.Center;
         reason.Foreground = Brush("TextFillColorSecondaryBrush");
         slip.FontSize = 12; slip.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         slipPill.Child = slip;
         explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
+        explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
         selectedLine.Children.Add(issueLink); SetColumn(issueLink, 3);
+        selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
+        selectedLine.Children.Add(totals); SetColumn(totals, 3);
+        AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
         var feedback = new StackPanel { Spacing = 2 }; feedback.Children.Add(error); feedback.Children.Add(retrySave);

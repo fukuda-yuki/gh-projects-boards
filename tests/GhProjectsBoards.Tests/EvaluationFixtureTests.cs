@@ -21,6 +21,10 @@ internal sealed class EvaluationFixtureTests
             Assert.That(session.Document.State.Settings.People.Length, Is.EqualTo(20));
             Assert.That(session.Changes(EvaluationFixture.Today).TaskCount, Is.Zero);
             Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(session.Document.State.Rows.Where(r => r.Parent == "I1").Select(r => r.Identity)));
+            Assert.That(session.Document.Sync.IssueLinks.Count, Is.EqualTo(1040));
+            foreach (var row in session.Document.State.Rows)
+                Assert.That(session.Document.Sync.IssueLinks[row.Identity], Is.EqualTo(
+                    new PlanIssueLink($"{row.Repository}#{row.Identity[1..]}", $"https://github.com/{row.Repository}/issues/{row.Identity[1..]}")));
             var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
             Assert.That((await publisher.RefreshAsync(session, EvaluationFixture.Today)).Succeeded, Is.True);
             Assert.That(session.Changes(EvaluationFixture.Today).TaskCount, Is.Zero);
