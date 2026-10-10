@@ -570,10 +570,11 @@ internal sealed class PlanOverviewHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(1));
 
         await Filter("", ["I1", "I4", ""]);
-        await Ui.Ready<TextBox>("PlanCell4_Assignees");
+        await Ui.Ready<FrameworkElement>("PlanCell4_Assignees");
         await Ui.Run(() => {
             Assert.That(VisibleRows(), Is.EqualTo(new[] { "I1", "I4", "" }));
-            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>("PlanCell4_Assignees"));
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>("PlanCell4_Assignees"));
+            Assert.That(peer.GetName(), Does.Contain("ID 4").And.Contain("担当者"));
             Assert.That(((ISelectionItemProvider)peer.GetPattern(PatternInterface.SelectionItem)).IsSelected, Is.True);
             Assert.That(Ui.Find<TextBox>("PlanSheetFilter").FocusState, Is.Not.EqualTo(FocusState.Unfocused),
                 "Changing the filter must keep typing focus in the filter.");
@@ -735,7 +736,7 @@ internal sealed class PlanOverviewHostedTests
 
     private PlanRow Row(string identity) => session.Document.State.Rows.Single(row => row.Identity == identity);
     private static string[] VisibleRows() => Ui.Find<ListView>("PlanTasks").Items.Cast<string>().ToArray();
-    private bool RowIsFocused(int number) => Ui.Tree(sheet).OfType<TextBox>().Any(cell =>
+    private bool RowIsFocused(int number) => Ui.Tree(sheet).OfType<Control>().Any(cell =>
         Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell).StartsWith($"PlanCell{number}_", StringComparison.Ordinal)
         && cell.FocusState != FocusState.Unfocused);
     private static async Task Filter(string text, string[] visible)
@@ -751,9 +752,9 @@ internal sealed class PlanOverviewHostedTests
     private static async Task SelectCell(int number, PlanField field, bool extend = false)
     {
         var id = $"PlanCell{number}_{field}";
-        await Ui.Ready<TextBox>(id);
+        await Ui.Ready<FrameworkElement>(id);
         await Ui.Run(() => {
-            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>(id));
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(id));
             var provider = (ISelectionItemProvider)peer.GetPattern(PatternInterface.SelectionItem);
             if (extend) provider.AddToSelection(); else provider.Select();
         });

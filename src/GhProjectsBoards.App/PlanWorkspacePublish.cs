@@ -10,6 +10,7 @@ internal sealed partial class PlanWorkspaceView
 {
     private readonly Grid publishReview = new() { RowSpacing = 8, Visibility = Visibility.Collapsed };
     private readonly ListView reviewLines = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanPublishLines");
+    private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private Button confirmPublish = null!;
     private bool publishing;
 
@@ -29,7 +30,10 @@ internal sealed partial class PlanWorkspaceView
         var close = Id(new Button { Content = "閉じる" }, "PlanPublishClose");
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
-        publishReview.Children.Add(actions);
+        var header = new StackPanel { Spacing = 8 };
+        header.Children.Add(actions); header.Children.Add(publishBlockedReason);
+        AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        publishReview.Children.Add(header);
         reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
         ScrollViewer.SetHorizontalScrollBarVisibility(reviewLines, ScrollBarVisibility.Disabled);
         ScrollViewer.SetHorizontalScrollMode(reviewLines, ScrollMode.Disabled);
@@ -43,6 +47,7 @@ internal sealed partial class PlanWorkspaceView
     {
         if (workspace.Session is not { } session) return;
         var document = session.Document;
+        var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
         PlanPublishReviewGroup Group(string identity)
         {
@@ -62,24 +67,24 @@ internal sealed partial class PlanWorkspaceView
             if (isNew) Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}"));
             foreach (var field in PlanValues.RowFields)
             {
-                if (PlanOperations.IsSummaryEffort(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings)) continue;
+                var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
+                if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
-                var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
                 Group(row.Identity).Lines.Add(ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew));
             }
         }
         foreach (var parent in document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!)
-            .Concat(document.Sync.Conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
+            .Concat(conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
         {
             if (!document.State.Rows.Any(r => r.Identity == parent)) continue;
             var previous = PlanOperations.PreviousSiblingOrder(document, parent);
             var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
-            var conflict = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
+            var conflict = conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
             if (children.Length > 1 && !previous.SequenceEqual(children) || conflict is not null)
                 Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
         }
-        foreach (var conflict in document.Sync.Conflicts.Where(c => c.Field == PlanField.Order))
+        foreach (var conflict in conflicts.Where(c => c.Field == PlanField.Order))
             Group(conflict.Identity).Lines.Add(ReviewLine(document, conflict.Identity, conflict.Field, conflict.Baseline, conflict.Local, conflict));
         if (session.Changes(Today).Fields.Any(p => p.Value.Contains(PlanField.Order)))
             Group(document.Project.NodeId).Lines.Add(new("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
@@ -100,7 +105,25 @@ internal sealed partial class PlanWorkspaceView
             Group(identity).Lines.Add(new("未検証 — 最新の情報に更新で確認"));
         if (groups.Count == 0) groups.Add("", new("", "", "", () => false) { Lines = [new("未発行の変更はありません")] });
         reviewLines.ItemsSource = groups.Values.ToArray();
-        confirmPublish.IsEnabled = !publishing && document.Sync.Conflicts.IsEmpty && document.Sync.Unavailable.IsEmpty;
+        UpdatePublishAvailability();
+    }
+    private void UpdatePublishAvailability()
+    {
+        var reasons = new List<string>();
+        if (publishing) reasons.Add("発行中です。完了までお待ちください。");
+        if (busyKind == "refresh") reasons.Add("最新の情報に更新しています。");
+        if (closing) reasons.Add("終了処理中です。");
+        if (workspace.Session is not { } session) reasons.Add("プロジェクトを開いてください。");
+        else {
+            var document = session.Document;
+            var count = PlanOperations.BlockingConflicts(document).Length;
+            if (count > 0)
+                reasons.Add($"競合を解決してください（{count}件）。");
+            if (!document.Sync.Unavailable.IsEmpty) reasons.Add("GitHubで取得できないタスクを確認してください。");
+        }
+        confirmPublish.IsEnabled = reasons.Count == 0;
+        publishBlockedReason.Text = string.Join(" ", reasons);
+        publishBlockedReason.Visibility = reasons.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
     private int ReviewPosition(string identity) => reviewLines.Items.Cast<PlanPublishReviewGroup>().TakeWhile(g => g.Identity != identity).Count();
     private void RestoreReviewPosition(string identity, int position)
@@ -217,7 +240,7 @@ internal sealed partial class PlanWorkspaceView
     private void SetPublishBusy(bool busy)
     {
         SetRemotePresentation();
-        confirmPublish.IsEnabled = !busy;
+        UpdatePublishAvailability();
         if (reviewLines.ItemsPanelRoot is { } panel)
             foreach (var group in panel.Children.OfType<ListViewItem>().Select(i => i.ContentTemplateRoot).OfType<PlanPublishGroupView>()) group.RefreshActions();
     }

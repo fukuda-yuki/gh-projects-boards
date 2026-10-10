@@ -240,7 +240,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     {
         var sync = session.Document.Sync;
         var complete = sync.Publish is null && session.Changes(today).TaskCount == 0 && sync.Unavailable.IsEmpty &&
-            sync.Conflicts.IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
+            PlanOperations.BlockingConflicts(session.Document).IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
         return new(complete, complete ? null : "未完了の変更があります。確認後に再発行してください。", review);
     }
     public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
@@ -260,7 +260,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
             {
-                if (!session.Document.Sync.Conflicts.IsEmpty || !session.Document.Sync.Unavailable.IsEmpty)
+                if (!PlanOperations.BlockingConflicts(session.Document).IsEmpty || !session.Document.Sync.Unavailable.IsEmpty)
                     return new(false, "競合を解決してください。", review);
                 var progress = session.Document.Sync.Publish;
                 IReadOnlyDictionary<string, string> repositories = new Dictionary<string, string>();

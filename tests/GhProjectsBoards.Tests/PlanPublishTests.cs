@@ -6,6 +6,24 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanPublishTests
 {
+    [TestCase(false), TestCase(true)]
+    public void SummaryAssignmentsAndDependenciesNeverProduceWrites(bool editedBeforeBecomingSummary)
+    {
+        var parent = new PlanRow("P", "Requirement", "acme/repo") { Assignees = ["U1"], Predecessors = ["X"] };
+        var child = new PlanRow("C", "Task", "acme/repo") { Parent = "P" };
+        var predecessor = new PlanRow("X", "Earlier", "acme/repo");
+        var local = editedBeforeBecomingSummary ? parent with { Assignees = ["U2"], Predecessors = [] } : parent;
+        var baseline = new PlanBaseline([parent, child, predecessor], []);
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), baseline, new([local, child, predecessor], new()));
+        var remote = new PlanRemoteSnapshot(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0);
+        var review = PlanPublishPlan.Build(document, remote, new(2026, 10, 5), "test");
+        Assert.That(review.Writes, Is.Empty);
+        Assert.That(review.Changes, Is.Empty);
+        Assert.That(PlanOperations.Changes(document, new(2026, 10, 5)).TaskCount, Is.Zero);
+        Assert.That(document.Baseline.Rows[0].Assignees, Is.EqualTo(new[] { "U1" }));
+        Assert.That(document.Baseline.Rows[0].Predecessors, Is.EqualTo(new[] { "X" }));
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     public void RemovingChildrenDoesNotInventAnOrderWriteForTheRemainingSingletonOrEmptyParent(int remaining)

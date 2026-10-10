@@ -142,8 +142,10 @@ internal sealed partial class PlanSheetView
         if (task?.Warnings.Count > 0) reason.Text += " · " + string.Join(" / ", task.Warnings);
         var remoteProblem = RemoteProblem(selected);
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
-        if (Session.Document.Sync.Conflicts.FirstOrDefault(c => c.Identity == selected && c.Field == selectedField) is { } conflict)
+        if (BlockingConflicts.FirstOrDefault(c => c.Identity == selected && c.Field == selectedField) is { } conflict)
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
+        if (SummaryIds.Contains(selected) && selectedField != PlanField.Title)
+            reason.Text = PlanOperations.SummaryReadOnlyReason(selectedField) + (reason.Text.Length > 0 ? " · " + reason.Text : "");
         AutomationProperties.SetName(reason, reason.Text);
         if (Problems.TryGetValue((selected, selectedField), out var problem)) error.Text = problem;
         ToolTipService.SetToolTip(reason, reason.Text);
@@ -175,7 +177,7 @@ internal sealed partial class PlanSheetView
         // A container from a replaced item source can still be loaded with the same task.
         // Focus placed there falls to the next tab stop when the list discards it.
         var row = (List.ContainerFromItem(target.Identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
-        var cell = row?.Cells.FirstOrDefault(c => c.Field == target.Field);
+        var cell = row?.SelectionTarget(target.Field);
         if (cell is not { IsLoaded: true, ActualWidth: > 0 } || !cell.Focus(FocusState.Keyboard)) return;
         requestedFocus = null;
         List.LayoutUpdated -= FocusAfterLayout;
@@ -189,6 +191,10 @@ internal sealed partial class PlanSheetView
     {
         await Commit(identity, field, text, generation, originalText);
         if (Pending.ContainsKey((identity, field)) || disposed) return;
+        NavigateCell(field, across, reverse);
+    }
+    internal void NavigateCell(PlanField field, bool across, bool reverse)
+    {
         var row = RowIds.IndexOf(selected); var column = Array.IndexOf(Fields, field);
         if (across)
         {
@@ -342,6 +348,7 @@ internal sealed partial class PlanSheetView
         Check(await Session.Execute(command, Today)); Refresh();
     }
     private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
+        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status
         ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field));
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
