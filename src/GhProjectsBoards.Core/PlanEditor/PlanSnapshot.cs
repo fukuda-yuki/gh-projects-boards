@@ -16,11 +16,11 @@ internal static class PlanSnapshot
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
         result.Problems.Select(p => $"{p.Stage}/{p.Kind}/{p.Failure}/{p.ApiOutcome}/{p.HttpStatus}"));
     internal static async Task<ProjectReadResult> ReadConsistentAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
-        ConnectionContext context, ScopedId project, CancellationToken token)
+        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null)
     {
         for (var attempt = 1; ; attempt++)
         {
-            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token).ConfigureAwait(false);
+            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token, progress).ConfigureAwait(false);
             if (result.Outcome == ProjectReadOutcome.Complete || attempt == 3 || result.Outcome != ProjectReadOutcome.Partial ||
                 result.Problems.Count == 0 || result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange)) return result;
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);

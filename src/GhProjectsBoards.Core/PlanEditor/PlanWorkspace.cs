@@ -117,11 +117,12 @@ internal sealed class PlanWorkspace(PlanStore store)
     }
     public async Task OpenUrl(string url, CancellationToken token = default)
         => await Open(await new ProjectDiscovery(Service!).ResolveAsync(Context!, url, token), token);
-    public async Task Open(ProjectChoice choice, CancellationToken token = default)
+    public async Task Open(ProjectChoice choice, CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
     {
         token.ThrowIfCancellationRequested();
         if (Service is null || Context is null || choice.Id.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
         await Flush();
+        var adoptionStarted = false;
         if (!sessions.TryGetValue(choice.Id, out var session))
         {
             var opened = await PlanSession.OpenAsync(store, choice.Id, DateOnly.FromDateTime(DateTime.Today));
@@ -130,7 +131,7 @@ internal sealed class PlanWorkspace(PlanStore store)
             if (session is null)
             {
                 using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
-                var read = await PlanSnapshot.ReadConsistentAsync(Service, lease, Context, choice.Id, token);
+                var read = await PlanSnapshot.ReadConsistentAsync(Service, lease, Context, choice.Id, token, progress);
                 token.ThrowIfCancellationRequested();
                 if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("Projectを取得できません。");
                 var project = read.Project;
@@ -146,13 +147,16 @@ internal sealed class PlanWorkspace(PlanStore store)
                 var remote = PlanSnapshot.From(read, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
                 { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
+                progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
+                adoptionStarted = true;
                 session = await PlanSession.CreateAsync(store, document, DateOnly.FromDateTime(DateTime.Today));
                 RequireSave(await session.FlushAsync());
             }
             sessions.Add(choice.Id, session);
         }
-        token.ThrowIfCancellationRequested();
+        // A new document and its selection complete together once adoption starts.
+        if (!adoptionStarted) token.ThrowIfCancellationRequested();
         var candidate = catalog with { Projects = catalog.Projects.Where(p => p.Id != choice.Id).Append(choice).ToImmutableArray(), Selected = choice.Id };
         catalog = await SaveCatalog(candidate);
         Selected = choice; Session = session;
@@ -174,6 +178,7 @@ internal sealed class PlanWorkspace(PlanStore store)
                 var response = await lease.SendAsync(GhProjectsBoards.App.GitHub.ApiRequest.GraphQl(
                     "query PlanAssignableUsers($owner:String!,$name:String!,$after:String){viewer{databaseId} repository(owner:$owner,name:$name){nameWithOwner assignableUsers(first:100,after:$after){totalCount nodes{id login} pageInfo{hasNextPage endCursor}}}}",
                     new { owner = parts[0], name = parts[1], after }), token);
+                token.ThrowIfCancellationRequested();
                 if (!response.IsSuccess || response.Data is not { } body)
                     throw new InvalidOperationException("担当者の一覧を取得できません。再試行してください。");
                 var data = body.GetProperty("data");
@@ -210,11 +215,10 @@ internal sealed class PlanWorkspace(PlanStore store)
         }
         return people.ToImmutable();
     }
-    public async Task Refresh(CancellationToken token = default)
+    public async Task Refresh(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
     {
         if (Session is null || Service is null || Context is null) return;
-        var result = await new PlanPublisher(Service, Context).RefreshAsync(Session, DateOnly.FromDateTime(DateTime.Today), token);
-        token.ThrowIfCancellationRequested();
+        var result = await new PlanPublisher(Service, Context).RefreshAsync(Session, DateOnly.FromDateTime(DateTime.Today), token, progress);
         if (!result.Succeeded) throw new InvalidOperationException(result.Error);
     }
     public async Task Flush()

@@ -46,6 +46,7 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
         {
             await WaitForOperationBudget(token).ConfigureAwait(false);
             var check = await RecheckCoreAsync(context, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
             if (!check.IsConnected || mutation && (check.Authentication?.Store != CredentialStore.Keyring ||
                 check.Authentication.HasScope("project") != true || check.Authentication.HasScope("repo") != true))
                 throw new InvalidOperationException("発行に必要な認証またはアクセス権を確認できません。");
