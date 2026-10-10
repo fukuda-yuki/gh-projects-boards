@@ -598,8 +598,7 @@ internal sealed class PlanWorkspaceHostedTests
 
     private async Task PreparePeoplePendingExit()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Actual");
+        await OpenPeopleTasks("PeopleTask_I1_Actual");
         await Ui.Run(() => {
             var actual = Ui.Find<TextBox>("PeopleTask_I1_Actual"); actual.Focus(FocusState.Programmatic); actual.Text = "invalid";
             var remaining = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); remaining.Focus(FocusState.Programmatic); remaining.Text = "0";
@@ -609,11 +608,21 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Ready<Grid>("PeopleRow_U1");
     }
 
+    // The drill-down lists the work in the first displayed day. Without a status date that day is
+    // today, which has no work on a weekend or holiday, so pin it to a working day.
+    private async Task OpenPeopleTasks(string input)
+    {
+        await Open();
+        var monday = new DateOnly(2026, 10, 5);
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = monday }), monday);
+        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
+        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>(input);
+    }
+
     [TestCase("fixed"), TestCase("assignee"), TestCase("zoom")]
     public async Task PeopleRefusedControlsReflectTheDocument(string control)
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await OpenPeopleTasks("PeopleTask_I1_Remaining");
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); cell.Focus(FocusState.Programmatic); cell.Text = "invalid";
             if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
@@ -684,8 +693,7 @@ internal sealed class PlanWorkspaceHostedTests
     [TestCase("fixed"), TestCase("assignee")]
     public async Task PeopleFailedSaveControlsReflectTheAcceptedDocument(string control)
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await OpenPeopleTasks("PeopleTask_I1_Remaining");
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
             await Ui.Run(() => {
                 if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
