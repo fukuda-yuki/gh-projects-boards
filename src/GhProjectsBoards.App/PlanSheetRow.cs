@@ -33,6 +33,9 @@ public sealed class PlanSheetRow : Grid
     private readonly List<Button> handles = [];
     private readonly Button fold = new() { Width = 20, MinWidth = 0, MinHeight = 0, Padding = new(0),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Dictionary<PlanField, PlanSummaryCell> summaryCells = [];
+    internal Control? SelectionTarget(PlanField field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
+        ? display : Cells.FirstOrDefault(c => c.Field == field);
     private string boundIdentity = "";
     public PlanSheetRow()
     {
@@ -83,6 +86,7 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(indicator, "");
         AutomationProperties.SetAutomationId(selectionAccent, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
+        foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
         foreach (var handle in handles) AutomationProperties.SetAutomationId(handle, "");
         AutomationProperties.SetAutomationId(fold, "");
         chart.Children.Clear();
@@ -127,9 +131,10 @@ public sealed class PlanSheetRow : Grid
         {
             var cell = Cells[i]; var column = PlanSheetView.Columns[i + 2]; var field = cell.Field;
             var visible = owner.Hidden.Contains(field) ? Visibility.Collapsed : Visibility.Visible;
-            frames[i].Width = column.Width; frames[i].Visibility = cell.Visibility = visible;
+            frames[i].Width = column.Width; frames[i].Visibility = visible;
+            cell.Visibility = summary && field != PlanField.Title ? Visibility.Collapsed : visible;
             var selected = owner.IsSelected(Identity, field);
-            var conflict = owner.Session.Document.Sync.Conflicts.Any(c => c.Identity == Identity && c.Field == field);
+            var conflict = owner.BlockingConflicts.Any(c => c.Identity == Identity && c.Field == field);
             frames[i].BorderBrush = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : selected ? "SheetSelectionStrokeBrush" : "SheetSeparatorBrush");
             frames[i].BorderThickness = selected || conflict ? new(2) : new(0, 0, 0, 1);
             frames[i].Background = PlanSheetView.Brush(conflict ? "LayerFillColorDefaultBrush" : selected || owner.IsSelectedRow(Identity) ? "SheetSelectionBrush"
@@ -141,7 +146,7 @@ public sealed class PlanSheetRow : Grid
             markers[i].Foreground = PlanSheetView.Brush(conflict || outcome ? "SystemFillColorCriticalBrush" : "TextFillColorPrimaryBrush");
             corners[i].Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
             corners[i].Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
-            handles[i].Visibility = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field)) ? Visibility.Visible : Visibility.Collapsed;
+            handles[i].Visibility = owner.IsRangeEnd(Identity, field) && !cell.Editing && !owner.ReadOnly(Identity, field) && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field)) ? Visibility.Visible : Visibility.Collapsed;
             handles[i].Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
             AutomationProperties.SetAutomationId(handles[i], $"PlanFillHandle{number}_{field}");
             cell.FontStyle = Windows.UI.Text.FontStyle.Normal;
@@ -161,6 +166,29 @@ public sealed class PlanSheetRow : Grid
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
             ToolTipService.SetToolTip(cell, problem ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
                 : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text));
+            if (summary && field != PlanField.Title) {
+                if (!summaryCells.TryGetValue(field, out var display)) {
+                    display = new PlanSummaryCell(this, field);
+                    summaryCells.Add(field, display);
+                    ((Grid)frames[i].Child).Children.Insert(1, display);
+                }
+                AutomationProperties.SetAutomationId(cell, "");
+                display.Visibility = visible;
+                display.Height = cell.Height;
+                display.Text.Text = owner.Display(Identity, field);
+                display.Text.Foreground = PlanSheetView.Brush(field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
+                    ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
+                AutomationProperties.SetAutomationId(display, $"PlanCell{number}_{field}");
+                var accessibleValue = field is PlanField.Start or PlanField.End && owner.CellDate(Identity, field) is { } accessibleDate
+                    ? PlanSheetView.DateText(accessibleDate, true) : display.Text.Text;
+                AutomationProperties.SetName(display, $"ID {number} {owner.Header(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
+                var fullValue = field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : accessibleValue;
+                AutomationProperties.SetHelpText(display, string.Join(" · ", new[] { fullValue, AutomationProperties.GetHelpText(cell) }.Where(value => value.Length > 0)));
+                ToolTipService.SetToolTip(display, problem ?? fullValue);
+            } else if (summaryCells.TryGetValue(field, out var display)) {
+                display.Visibility = Visibility.Collapsed;
+                AutomationProperties.SetAutomationId(display, "");
+            }
             if (problem is not null) frames[i].BorderBrush = PlanSheetView.Brush("SystemFillColorCriticalBrush");
         }
         var states = new List<string>();
@@ -371,6 +399,7 @@ internal sealed class PlanSheetCell : TextBox
     private string EditOriginal() => row.Owner is { } owner && Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees
         && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
     internal void BeginEditing() {
+        if (IsReadOnly) return;
         if (!Editing) {
             editingFrom = EditOriginal();
             // TextChanging can synchronously reenter presentation while Text is assigned.
@@ -458,6 +487,64 @@ internal sealed class PlanSheetCell : TextBox
         public void AddToSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, true);
         public void RemoveFromSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, false);
         public void Select() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, false);
+    }
+}
+// A focusable sheet selection target, with no text-input control or editing template.
+internal sealed class PlanSummaryCell : ContentControl
+{
+    private readonly PlanSheetRow row;
+    private readonly PlanField field;
+    internal TextBlock Text { get; }
+    internal PlanSummaryCell(PlanSheetRow row, PlanField field)
+    {
+        this.row = row; this.field = field;
+        IsTabStop = true; HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        VerticalContentAlignment = VerticalAlignment.Center;
+        Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        Text = new TextBlock { FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new(4, 1, 4, 1), TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false,
+            TextAlignment = field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors ? TextAlignment.Right : TextAlignment.Left };
+        Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(Text, FontNumeralAlignment.Tabular);
+        AutomationProperties.SetAccessibilityView(Text, AccessibilityView.Raw);
+        Content = Text;
+        GotFocus += (_, _) => {
+            if (row.Owner is { } owner && !owner.IsSelected(row.Identity, field)) owner.Select(row.Identity, field, false);
+        };
+        PointerPressed += (_, args) => row.Owner?.BeginRange(row.Identity, field, this, args);
+        DoubleTapped += (_, args) => args.Handled = true;
+    }
+    protected override void OnPreviewKeyDown(KeyRoutedEventArgs args)
+    {
+        if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
+        var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
+        if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
+        if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
+            args.Handled = true; owner.MoveSelection(args.Key, shift);
+        }
+        else if (!control && args.Key is VirtualKey.Tab or VirtualKey.Enter) {
+            args.Handled = true; owner.NavigateCell(field, args.Key == VirtualKey.Tab, shift);
+        }
+        else if (!control && args.Key == VirtualKey.Delete || control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y) {
+            args.Handled = true; _ = owner.KeyboardCommand(args.Key);
+        }
+        else if (!control && args.Key == VirtualKey.Escape) { args.Handled = true; owner.CancelDrag(); }
+        else if (!control && (args.Key == VirtualKey.F2 || args.Key == VirtualKey.Space
+            || args.Key is >= VirtualKey.Number0 and <= VirtualKey.Z
+            || args.Key is >= VirtualKey.NumberPad0 and <= VirtualKey.Divide
+            || (int)args.Key is >= 186 and <= 192 or >= 219 and <= 223 or 226)) args.Handled = true;
+        base.OnPreviewKeyDown(args);
+    }
+    protected override AutomationPeer OnCreateAutomationPeer() => new SummaryPeer(this);
+    private sealed class SummaryPeer(PlanSummaryCell cell) : FrameworkElementAutomationPeer(cell), ISelectionItemProvider
+    {
+        protected override string GetClassNameCore() => nameof(PlanSummaryCell);
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Text;
+        protected override object GetPatternCore(PatternInterface pattern) => pattern == PatternInterface.SelectionItem ? this : base.GetPatternCore(pattern);
+        public bool IsSelected => cell.row.Owner?.IsSelected(cell.row.Identity, cell.field) == true;
+        public IRawElementProviderSimple SelectionContainer => ProviderFromPeer(CreatePeerForElement(cell.row.Owner!.List));
+        public void AddToSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.field, true);
+        public void RemoveFromSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.field, false);
+        public void Select() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.field, false);
     }
 }
 internal sealed class PlanFillHandle(PlanSheetRow row, PlanField field) : Button

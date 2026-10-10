@@ -56,7 +56,7 @@ internal static class PlanPublishPlan
     }
     internal static PlanPublishReview Build(PlanDocument document, PlanRemoteSnapshot remote, DateOnly today, string runId)
     {
-        if (!document.Sync.Conflicts.IsEmpty || !document.Sync.Unavailable.IsEmpty) throw new InvalidOperationException("競合を解決してください。");
+        if (!PlanOperations.BlockingConflicts(document).IsEmpty || !document.Sync.Unavailable.IsEmpty) throw new InvalidOperationException("競合を解決してください。");
         var changes = ImmutableArray.CreateBuilder<PlanReviewChange>(); var writes = ImmutableArray.CreateBuilder<PlanWrite>();
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         void Add(string id, PlanPublishStage stage, string mutation, string type, object input, string selection)
@@ -80,7 +80,7 @@ internal static class PlanPublishPlan
             }
             foreach (var field in PlanValues.RowFields)
             {
-                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryEffort(scheduled.IsSummary, field)) continue;
+                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)) continue;
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;
                 if (isNew && field is PlanField.Repository or PlanField.Title) continue;

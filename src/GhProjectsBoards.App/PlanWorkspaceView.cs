@@ -390,6 +390,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
             button.IsEnabled = !busy || publishing && id == "PlanPublish";
         }
+        if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
         if (peopleView is not null) peopleView.IsEnabled = !busy;
         settingsScroll.IsEnabled = !busy;

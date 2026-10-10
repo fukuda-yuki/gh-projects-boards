@@ -12,6 +12,73 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanDocumentTests
 {
+    [TestCase(false), TestCase(true)]
+    public async Task SummaryRetainsConflictsAndLastChildOutdentOrUndoReactivatesThem(bool undo)
+    {
+        var session = await Create();
+        await session.Execute(Edit(PlanField.Assignees, ImmutableArray.Create("local-person")), Today);
+        await session.Execute(new IndentPlanRows(["issue:2"]), Today);
+        var rows = session.Document.Baseline.Rows.SetItem(0, session.Document.Baseline.Rows[0] with { Assignees = ["remote-person"] });
+        var remote = new PlanRemoteSnapshot(session.Document.Baseline with { Rows = rows }, ImmutableDictionary<string, string>.Empty, [], 0, 0);
+        await session.AcceptRefresh(remote, Today);
+        var conflict = session.Document.Sync.Conflicts.Single();
+        Assert.That(conflict.Field, Is.EqualTo(PlanField.Assignees));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document), Is.Empty);
+        Assert.DoesNotThrow(() => PlanPublishPlan.Build(session.Document, remote, Today, "summary"));
+        session = await Reopen();
+        if (undo) await session.Undo(Today);
+        else await session.Execute(new IndentPlanRows(["issue:2"], true), Today);
+        Assert.That(session.Document.Sync.Conflicts, Is.EqualTo(new[] { conflict }));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document), Is.EqualTo(new[] { conflict }));
+        Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, remote, Today, "task"));
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task ResolvingParentConflictReevaluatesOtherStoredConflicts(bool initiallySummary)
+    {
+        var initial = Initial(4);
+        var rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Parent = "issue:4" });
+        var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
+        await session.Execute(Edit(PlanField.Assignees, ImmutableArray.Create("local-person")), Today);
+        await session.Execute(Edit(PlanField.Parent, initiallySummary ? "issue:1" : null, "issue:2"), Today);
+        var remoteRows = rows.SetItem(0, rows[0] with { Assignees = ["remote-person"] })
+            .SetItem(1, rows[1] with { Parent = initiallySummary ? null : "issue:1" });
+        var remote = new PlanRemoteSnapshot(initial.Baseline with { Rows = remoteRows }, ImmutableDictionary<string, string>.Empty, [], 0, 0);
+        await session.AcceptRefresh(remote, Today);
+        var stored = session.Document.Sync.Conflicts.Single(c => c.Field == PlanField.Assignees);
+        Assert.That(session.Document.Sync.Conflicts, Has.Length.EqualTo(2));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document).Length, Is.EqualTo(initiallySummary ? 1 : 2));
+        await session.ResolveConflict("issue:2", PlanField.Parent, true, Today);
+        Assert.That(session.Document.Sync.Conflicts, Is.EqualTo(new[] { stored }));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document).Length, Is.EqualTo(initiallySummary ? 1 : 0));
+        if (initiallySummary) Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, remote, Today, "task"));
+        else Assert.DoesNotThrow(() => PlanPublishPlan.Build(session.Document, remote, Today, "summary"));
+        await session.Undo(Today);
+        Assert.That(session.Document.Sync.Conflicts, Has.Length.EqualTo(2));
+        await session.Redo(Today);
+        Assert.That(session.Document.Sync.Conflicts, Is.EqualTo(new[] { stored }));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document).Length, Is.EqualTo(initiallySummary ? 1 : 0));
+    }
+
+    [Test]
+    public async Task SummaryBaselinePredecessorConstrainsChildrenAfterLocalRemovalAndUndoRestoresInputs()
+    {
+        var initial = Initial();
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Predecessors = ["issue:3"] })
+            .SetItem(1, initial.State.Rows[1] with { Assignees = ["p1"] });
+        var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
+        await session.Execute(Edit(PlanField.Predecessors, ImmutableArray<string>.Empty), Today);
+        var before = Text(session.Document);
+        await session.Execute(new IndentPlanRows(["issue:2"]), Today);
+        var scheduled = session.Schedule(Today).ToDictionary(r => r.Input.Identity);
+        Assert.That(scheduled["issue:1"].Input.Predecessors, Is.EqualTo(new[] { "issue:3" }));
+        Assert.That(scheduled["issue:2"].Start.Value, Is.GreaterThan(scheduled["issue:3"].End.Value!.Value));
+        await session.Undo(Today);
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+        await session.Redo(Today);
+        Assert.That(session.Schedule(Today).Single(r => r.Input.Identity == "issue:1").Input.Predecessors, Is.EqualTo(new[] { "issue:3" }));
+    }
+
     [TestCase(null, "Backlog")]
     [TestCase("Done", "Done")]
     public async Task CreationAdoptionKeepsExplicitStatusAndAdoptsUnsetWorkflowValue(string? local, string expected)
@@ -402,6 +469,55 @@ internal sealed class PlanDocumentTests
         Assert.That(session.Schedule(Today)[0].Warnings, Is.Not.Empty);
         await session.Undo(Today);
         Assert.That(Text(session.Document.State.Rows), Is.EqualTo(Text(rows)));
+    }
+
+    private static IEnumerable<TestCaseData> SummaryEdits()
+    {
+        foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start,
+            PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status, PlanField.Assignees, PlanField.Predecessors })
+            foreach (var kind in new[] { PlanOperationKind.Cell, PlanOperationKind.Paste, PlanOperationKind.Fill, PlanOperationKind.CtrlD, PlanOperationKind.Clear })
+                yield return new(field, kind);
+    }
+    [TestCaseSource(nameof(SummaryEdits))]
+    public async Task SummaryNonTitleOperationRejectsAllTargetsWithoutSideEffects(PlanField field, PlanOperationKind kind)
+    {
+        var initial = Initial();
+        var rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Parent = "issue:1" });
+        initial = initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } };
+        var session = await Create(initial);
+        var before = Text(session.Document);
+        var unpublished = PlanOperations.Changes(session.Document, Today).TaskCount;
+        var remote = new PlanRemoteSnapshot(initial.Baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0);
+        var review = Text(PlanPublishPlan.Build(session.Document, remote, Today, "test"));
+        object? value = field switch {
+            PlanField.Assignees => ImmutableArray.Create("p1"), PlanField.Predecessors => ImmutableArray.Create("issue:3"),
+            PlanField.Status => "Done", PlanField.Fixed => true,
+            PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => Today, _ => 4m
+        };
+        PlanCommand command = kind switch {
+            PlanOperationKind.Clear => new ClearPlanCells(["issue:3", "issue:1"], [field]),
+            PlanOperationKind.Fill or PlanOperationKind.CtrlD => new FillPlanCells(kind, "issue:2", ["issue:3", "issue:1"], [field]),
+            _ => new EditPlanCells(kind, [new("issue:3", PlanField.Title, "Must not change"), new("issue:1", field, value)])
+        };
+        var error = Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
+        Assert.That(error!.Message, Does.Contain(field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
+            ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません"));
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(PlanOperations.Changes(session.Document, Today).TaskCount, Is.EqualTo(unpublished));
+        Assert.That(Text(PlanPublishPlan.Build(session.Document, remote, Today, "test")), Is.EqualTo(review));
+    }
+    [Test]
+    public async Task SummaryTitleRemainsEditableAndUndoable()
+    {
+        var initial = Initial();
+        initial = initial with { State = initial.State with { Rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Parent = "issue:1" }) } };
+        var session = await Create(initial);
+        await session.Execute(Edit(PlanField.Title, "Requirement"), Today);
+        Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Requirement"));
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        await session.Undo(Today);
+        Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
     }
 
     [TestCase("summary"), TestCase("closed"), TestCase("foreign identity"), TestCase("duplicate identity"), TestCase("date pair")]

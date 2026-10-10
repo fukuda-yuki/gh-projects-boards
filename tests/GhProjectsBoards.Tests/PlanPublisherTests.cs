@@ -10,6 +10,26 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPublisherTests
 {
     [Test]
+    public async Task LastChildOutdentReactivatesStoredAssigneeConflictBeforeAnyRemoteWrite()
+    {
+        await Start(2);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Assignees, new[] { "U1" })]), Today);
+        await session.Execute(new IndentPlanRows(["I2"]), Today);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i.Row.Identity == "I1" ? i with { Row = i.Row with { Assignees = ["U2"] } } : i).ToImmutableArray() });
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.Assignees));
+        Assert.That(PlanOperations.BlockingConflicts(session.Document), Is.Empty);
+        await session.Execute(new IndentPlanRows(["I2"], true), Today);
+        var before = FakePlanEditor.Load(root).MutationBatches;
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(PlanOperations.BlockingConflicts(session.Document).Single().Field, Is.EqualTo(PlanField.Assignees));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(before));
+        Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row.Assignees, Is.EqualTo(new[] { "U2" }));
+    }
+
+    [Test]
     public async Task RedactedProjectMembershipDoesNotBlockRefreshOrPublishVerification()
     {
         await Start(2, state => state with { Redacted = 1, HiddenItems = 1 });
@@ -175,9 +195,9 @@ internal sealed class PlanPublisherTests
         session = await PlanSession.CreateAsync(new(root), document, today);
         // The old checkpoint has no creation provenance. This is the explicit PMO recovery correction,
         // justified by the original CSV hash, whose schema has no Status column.
-        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, document.State.Rows.Where(r => r.CsvSourceHash is not null)
-            .Select(r => new PlanCellChange(r.Identity, PlanField.Status, "Backlog")).ToImmutableArray()), today);
         var scheduled = session.Schedule(today).ToDictionary(r => r.Input.Identity);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, document.State.Rows.Where(r => r.CsvSourceHash is not null && !scheduled[r.Identity].IsSummary)
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Status, "Backlog")).ToImmutableArray()), today);
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var result = await publisher.PublishAsync(session, today);
         watch.Stop();
@@ -191,7 +211,8 @@ internal sealed class PlanPublisherTests
             Assert.That(actual.Parent, Is.EqualTo(expected.Parent));
             Assert.That(actual.Predecessors, Is.EquivalentTo(expected.Predecessors));
             Assert.That(actual.Assignees, Is.EquivalentTo(expected.Assignees));
-            Assert.That(actual.Status, Is.EqualTo("Backlog"));
+            Assert.That(actual.Status, Is.EqualTo(scheduled[expected.Identity].IsSummary
+                ? document.Baseline.Rows.Single(r => r.Identity == expected.Identity).Status : "Backlog"));
             Assert.That((actual.Start, actual.End), Is.EqualTo((scheduled[expected.Identity].Start.Value, scheduled[expected.Identity].End.Value)));
             Assert.That((actual.StartNoEarlierThan, actual.Fixed), Is.EqualTo((expected.StartNoEarlierThan, expected.Fixed)));
             if (!scheduled[expected.Identity].IsSummary)
@@ -904,7 +925,7 @@ internal sealed class PlanPublisherTests
     }
     [TestCase("removed-during-write")]
     [TestCase("summary-conflict-during-write")]
-    public async Task VerificationProblemsCannotReportSuccessWithZeroUnpublishedTasks(string fault)
+    public async Task VerificationBlocksUnavailableTasksButIgnoresExcludedSummaryConflicts(string fault)
     {
         await Start(2);
         if (fault == "summary-conflict-during-write")
@@ -916,9 +937,16 @@ internal sealed class PlanPublisherTests
         Scenario(fault);
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
-        Assert.That(result.Succeeded, Is.False); Assert.That(result.Error, Is.Not.Empty);
-        if (fault == "removed-during-write") Assert.That(session.Document.Sync.Unavailable, Is.EqualTo(new[] { "I2" }));
-        else Assert.That(session.Document.Sync.Conflicts.Select(c => c.Field), Does.Contain(PlanField.Estimate));
+        if (fault == "removed-during-write") {
+            Assert.That(result.Succeeded, Is.False); Assert.That(result.Error, Is.Not.Empty);
+            Assert.That(session.Document.Sync.Unavailable, Is.EqualTo(new[] { "I2" }));
+        } else {
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.Estimate));
+            Assert.That(PlanOperations.BlockingConflicts(session.Document), Is.Empty);
+            Assert.That(session.Document.Baseline.Rows.Single(r => r.Identity == "I1").Estimate, Is.EqualTo(9));
+            Assert.That(FakePlanEditor.Load(root).Issues.Single(i => i.Row.Identity == "I1").Row.Estimate, Is.EqualTo(9));
+        }
         Assert.That((await PlanSession.OpenAsync(new(root), Project, Today)).Status, Is.EqualTo(PlanLoadStatus.Loaded));
     }
     [Test]

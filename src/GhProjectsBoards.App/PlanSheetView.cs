@@ -33,6 +33,7 @@ internal sealed partial class PlanSheetView : Grid
     internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
+    internal ImmutableArray<PlanConflict> BlockingConflicts { get; private set; } = [];
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
     private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
@@ -433,7 +434,8 @@ internal sealed partial class PlanSheetView : Grid
         if (disposed) return;
         var document = Session.Document;
         var today = Today;
-        Rows = document.State.Rows.ToDictionary(r => r.Identity);
+        BlockingConflicts = PlanOperations.BlockingConflicts(document);
+        Rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
         peopleNames = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
         PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
         Schedule = Session.Schedule(today).ToDictionary(r => r.Input.Identity);
@@ -507,7 +509,7 @@ internal sealed partial class PlanSheetView : Grid
         || field == PlanField.End && result.End.Origin == DateOrigin.Calculated
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
     internal bool ReadOnly(string identity, PlanField field) => remoteBusy || Schedule.TryGetValue(identity, out var result) && result.IsSummary &&
-        field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed;
+        field != PlanField.Title;
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);

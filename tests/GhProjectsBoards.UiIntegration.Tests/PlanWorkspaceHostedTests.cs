@@ -1251,6 +1251,43 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
     }
 
+    [TestCase(false), TestCase(true)]
+    public async Task ParentConflictResolutionKeepsReviewAndPublishAvailabilityConsistent(bool initiallySummary)
+    {
+        var initial = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, initial with { Issues = [initial.Issues[0],
+            new(new("I2", "Child", "acme/repo") { Parent = "I4" }, "", true),
+            new(new("I3", "Other", "acme/repo"), "", true),
+            new(new("I4", "Previous parent", "acme/repo"), "", true)], NextId = 5 });
+        await Open();
+        var session = workspace.Session!;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Assignees, new[] { "U2" }),
+            new("I2", PlanField.Parent, initiallySummary ? "I1" : null)]), today);
+        var rows = session.Document.Baseline.Rows.Select(r => r.Identity == "I1" ? r with { Assignees = ["U3"] }
+            : r.Identity == "I2" ? r with { Parent = initiallySummary ? null : "I1" } : r).ToImmutableArray();
+        await session.AcceptRefresh(new(session.Document.Baseline with { Rows = rows }, ImmutableDictionary<string, string>.Empty, [], 0, 0), today);
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Until(() => Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI2_Parent_True"));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanPublishBlockedReason").Text, Does.Contain("競合"));
+            Ui.Click("PlanResolveI2_Parent_True");
+        });
+        await Ui.Until(() => session.Document.Sync.Conflicts.Length == 1
+            && Ui.Find<Button>("PlanPublishConfirm").IsEnabled == !initiallySummary
+            && Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI1_Assignees_True") == initiallySummary);
+        await Ui.Run(() => {
+            Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.Assignees));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(!initiallySummary));
+            var reason = Ui.Find<TextBlock>("PlanPublishBlockedReason");
+            Assert.That(reason.Text, initiallySummary ? Does.Contain("競合") : Is.Empty);
+            Assert.That(reason.Visibility, Is.EqualTo(initiallySummary ? Visibility.Visible : Visibility.Collapsed));
+            Assert.That(Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI1_Assignees_True"), Is.EqualTo(initiallySummary));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task RefreshMarksConflictsAndReviewResolvesWithoutWriting(bool useGitHub)
