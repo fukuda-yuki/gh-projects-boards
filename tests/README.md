@@ -78,6 +78,8 @@ Run what the change puts at risk: focused logic tests while implementing, then t
 - **Windows desktop:** WinUI 3 cannot render without a desktop session, so the hosted UI suite and E2E need an unlocked interactive desktop that nobody uses during the run. The host records activation changes (`[WINDOW]`) and stray physical input (`[INPUT]`); an `[INPUT]` line in a routine run marks interference. Physical IME, native input and visual review need the PMO's real desktop.
 - **GitHub-hosted Windows runner:** the runner process owns an interactive desktop session (1920×1080 after `Set-DisplayResolution`), so nothing appears on the PMO's screen. CI runs for pull requests and for pushes to `main`, and the default E2E selection runs there alongside the Core suite. The [hosted-ui workflow](../.github/workflows/hosted-ui.yml) runs the routine UI selection on demand and prints failures, `[WINDOW]`/`[INPUT]` counts and the host's `[EXIT]` reason in its log. The runner is slower than the PMO desktop; a case that fails only there still needs its cause found, and a runner pass does not replace visual review on the PMO's display.
 
+For a focused hosted UI run, set the workflow's optional `where` input to an NUnit filter. Leave it empty for the routine selection. For example, `gh workflow run hosted-ui.yml --ref <branch> -f 'where=cat == OperationStates'` runs remote-operation feedback cases on that branch. Report a focused run only for its selected scope; the workflow preserves the filter and results in the same evidence artifact.
+
 ## Routine verification
 
 Run from the checkout root on Windows. Restore once in a network-enabled environment; missing assets or NU1301 block dependent builds, and a zero-run outcome is not a pass.
