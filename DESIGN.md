@@ -178,7 +178,6 @@ These are general expectations of any business application, drawn from the sourc
 | A4 | Color is never the only carrier of a state. | WCAG 2.2 AA |
 | A5 | At 200% Windows text size, content and commands remain reachable. | WCAG 2.2 AA |
 | P1 | Edits reach the screen within the specified target at version scale, and sheet rows and Gantt bars stay in step while scrolling. | NN/G response times; [specification](docs/spec.md#timeline-and-measurement) |
-| P2 | Responsiveness is measured with a repeatable metric on version-scale data so regressions are visible. | Product practice |
 | I1 | Editing, monitoring, configuration and publication review are separate, clearly named surfaces; leaving settings returns to the task. | NN/G IA; Microsoft app settings |
 
 ### Reference scope
