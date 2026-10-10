@@ -25,6 +25,9 @@ internal static class Program
             app.UnhandledException += (_, e) => { Ui.RecordFailure(e.Exception); e.Handled = true; };
             TaskScheduler.UnobservedTaskException += (_, e) => { Ui.RecordFailure(e.Exception); e.SetObserved(); };
         });
+        // NUnit can report every case passed while the host still fails: a failure recorded outside a case,
+        // or asynchronous work left after the window closed. State which, since results.xml cannot.
+        Ui.Trace($"[EXIT] nunitExit={Environment.ExitCode} failures={Ui.FailureCount} operations={TrackedContext.Operations} posts={TrackedContext.Posts} {TrackedContext.DescribePosts()}");
         return Ui.FailureCount == 0 && TrackedContext.Operations == 0 && TrackedContext.Posts == 0 ? Environment.ExitCode : 1;
     }
 

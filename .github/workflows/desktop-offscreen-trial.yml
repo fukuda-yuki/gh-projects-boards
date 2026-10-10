@@ -63,6 +63,8 @@ jobs:
           if (Test-Path $stderr) {
             $lines = Get-Content $stderr
             Write-Host "[WINDOW] lines: $(@($lines | Select-String -SimpleMatch '[WINDOW]').Count)  [INPUT] lines: $(@($lines | Select-String -SimpleMatch '[INPUT]').Count)"
+            # Everything but the per-case start/end lines: recorded failures, diagnostics, close and exit.
+            $lines | Where-Object { $_ -notmatch '^\[(START|END)\] ' } | Select-Object -First 200 | Out-Host
           }
           $xmlPath = Join-Path $run.FullName 'results.xml'
           if (Test-Path $xmlPath) {
@@ -73,7 +75,7 @@ jobs:
               $flat = $message -replace '\s+', ' '
               Write-Host ('  ' + $flat.Substring(0, [Math]::Min(600, $flat.Length)))
             }
-          } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 80 }
+          } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 20 }
       - name: Desktop E2E through fake gh (default selection, no IME)
         if: always() && steps.build.outcome == 'success'
         shell: pwsh
