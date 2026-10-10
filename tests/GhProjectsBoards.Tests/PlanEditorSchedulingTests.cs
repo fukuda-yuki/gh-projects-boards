@@ -32,14 +32,13 @@ internal sealed class PlanEditorSchedulingTests
     public void WorkUsesWorkingCalendar(string status, int work, string start, string end)
         => Dates(Run(Task(work: work), Settings with { StatusDate = D(status) }), start, end);
 
-    [TestCase(false, false, "2026-10-06")]
-    [TestCase(true, false, "2026-10-07")]
-    [TestCase(false, true, "2026-10-07")]
-    public void HalfRateUsesFullDayAndSkipsCompanyOrPersonalDays(bool company, bool personal, string end)
+    [TestCase(false, "2026-10-06")]
+    [TestCase(true, "2026-10-07")]
+    public void HalfRateUsesEveryProjectWorkingDayAndSkipsCompanyDaysOff(bool company, string end)
     {
         var settings = Settings with
         {
-            People = [new("p", 50) { DaysOff = personal ? new HashSet<DateOnly> { Monday.AddDays(1) } : new HashSet<DateOnly>() }],
+            People = [new("p", 50)],
             Calendar = new() { CompanyDaysOff = company ? new HashSet<DateOnly> { Monday.AddDays(1) } : new HashSet<DateOnly>() }
         };
         Dates(Run(Task() with { Assignees = ["p"] }, settings), "2026-10-05", end);
@@ -170,7 +169,7 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase(2, true)]
     public void NoOrMultipleAssigneesUseProjectCalendarAndFullRate(int count, bool warning)
     {
-        var result = Run(Task() with { Assignees = count == 0 ? [] : ["p", "q"] }, Settings with { People = [new("p", 50) { DaysOff = new HashSet<DateOnly> { Monday } }] });
+        var result = Run(Task() with { Assignees = count == 0 ? [] : ["p", "q"] }, Settings with { People = [new("p", 50)] });
         Dates(result, "2026-10-05", "2026-10-05");
         Assert.That(result.Warnings.Contains("担当者が複数"), Is.EqualTo(warning));
     }
@@ -353,12 +352,12 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [Test]
-    public void FractionalWorkAndDifferentSuccessorCalendarPreserveInternalEndpoint()
+    public void FractionalWorkAndAssignedSuccessorUseProjectCalendarAtInternalEndpoint()
     {
         var result = Calculate([Task(work: 1.5m), Task(2, 6.5m) with { Predecessors = ["issue:1"] }, Task(3, 1) with { Predecessors = ["issue:2"], Assignees = ["p"] }],
-            Settings with { People = [new("p") { DaysOff = new HashSet<DateOnly> { Monday.AddDays(1) } }] });
+            Settings with { People = [new("p")] });
         Dates(result[1], "2026-10-05", "2026-10-05");
-        Dates(result[2], "2026-10-07", "2026-10-07");
+        Dates(result[2], "2026-10-06", "2026-10-06");
     }
 
     [Test]

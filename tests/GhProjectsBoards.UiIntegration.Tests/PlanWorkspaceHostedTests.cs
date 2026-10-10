@@ -750,7 +750,7 @@ internal sealed class PlanWorkspaceHostedTests
             Row = state.Issues[0].Row with { Estimate = forecast, Remaining = forecast } }] });
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            People = [new("U1", "alice", 100, 120, [])] }), DateOnly.FromDateTime(DateTime.Today));
+            People = [new("U1", "alice", 100, 120)] }), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => { ResizeWorkspace(1280, 720); Ui.Click("PlanShowPeople"); });
         await Ui.Ready<TextBlock>("PeopleTotal_U1_4");
         await Ui.Run(() => {
@@ -789,7 +789,7 @@ internal sealed class PlanWorkspaceHostedTests
     {
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            People = [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])] }), DateOnly.FromDateTime(DateTime.Today));
+            People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U2");
         await Ui.Run(() => {
             var first = Ui.Find<TextBox>("PeopleAllowance_U1"); first.Focus(FocusState.Programmatic); first.Text = "80";
@@ -814,7 +814,7 @@ internal sealed class PlanWorkspaceHostedTests
     {
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            People = [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, []), new("U3", "carol", 100, null, [])] }), DateOnly.FromDateTime(DateTime.Today));
+            People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U3");
         await Ui.Run(() => {
             foreach (var (id, text) in new[] { ("U1", "80"), ("U2", "75"), ("U3", "7") }) {
@@ -873,7 +873,7 @@ internal sealed class PlanWorkspaceHostedTests
         var day = new DateOnly(2026, 10, 5);
         await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Start, day), new("I1", PlanField.End, day)]), day);
         await workspace.Session.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = day,
-            People = [new("U1", "alice", 100, 80, []), new("U2", "bob", 100, 80, [])] }), day);
+            People = [new("U1", "alice", 100, 80), new("U2", "bob", 100, 80)] }), day);
         if (field == PlanField.Fixed) await workspace.Session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", field, false)]), day);
         var before = workspace.Session.Document.State;
         var undo = workspace.Session.UndoCount;
@@ -908,7 +908,7 @@ internal sealed class PlanWorkspaceHostedTests
             new(new("I2", "検証", "acme/repo") { Estimate = 4, Remaining = 4, Actual = 0, Assignees = ["U1"] }, "", true)], NextId = 3 });
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            StatusDate = new(2026, 10, 5), People = [new("U1", "alice", 50, 80, [])] }), new(2026, 10, 5));
+            StatusDate = new(2026, 10, 5), People = [new("U1", "alice", 50, 80)] }), new(2026, 10, 5));
         await Ui.Run(() => Ui.Click("PlanShowPeople"));
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("200% 超過")));
         await Ui.Run(() => {
@@ -937,7 +937,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             StatusDate = new(2026, 10, 5),
-            People = Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-" + i, 100, 80, [])).ToImmutableArray() }), DateOnly.FromDateTime(DateTime.Today));
+            People = Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-" + i, 100, 80)).ToImmutableArray() }), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => { ResizeWorkspace(1280, 720); Ui.Click("PlanShowPeople"); });
         for (var scale = 0; scale < 3; scale++) {
         await Ui.Run(() => Ui.Find<ComboBox>("PeopleScale").SelectedIndex = scale);
@@ -1471,7 +1471,6 @@ internal sealed class PlanWorkspaceHostedTests
     }
     [TestCase("rate", "2026-10-06")]
     [TestCase("company", "2026-10-06")]
-    [TestCase("personal", "2026-10-06")]
     public async Task SettingChangesRecalculateAndOneUndoRestoresThePreviousDates(string setting, string expected)
     {
         await Open();
@@ -1479,7 +1478,7 @@ internal sealed class PlanWorkspaceHostedTests
         var history = workspace.Session!.UndoCount;
         await Settings();
         if (setting == "rate") await Ui.Run(() => Ui.Find<NumberBox>("PlanRateU1").Value = 50);
-        else await AddDay(setting == "company" ? "PlanCompanyDaysOff" : "PlanDaysOffU1", new(2026, 10, 5));
+        else await AddDay("PlanCompanyDaysOff", new(2026, 10, 5));
         await Ui.Until(() => workspace.Session.UndoCount == history + 1);
         await Ui.Idle();
         await Ui.Run(() => {
@@ -1821,13 +1820,14 @@ internal sealed class PlanWorkspaceHostedTests
         });
     }
 
-    [TestCase("PlanCompanyDaysOff"), TestCase("PlanDaysOffU1"), Category("PlanWorkspaceReview")]
+    [TestCase("PlanCompanyDaysOff"), Category("PlanWorkspaceReview")]
     public async Task CalendarDateListsAddOnceRemoveAndUndoWithoutTypedDateFormats(string id)
     {
         await Open(); await Settings();
         var day = new DateOnly(2026, 10, 7);
         await Ui.Run(() => {
             Assert.That(Ui.Find<Button>(id + "Add").IsEnabled, Is.False);
+            Assert.That(Ui.Tree(view).OfType<FrameworkElement>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e).StartsWith("PlanDaysOff") || e is TextBlock { Text: "個人休日" }), Is.False);
             Ui.Find<CalendarDatePicker>(id + "Date").Date = new DateTimeOffset(2026, 10, 7, 0, 0, 0, TimeSpan.Zero);
         });
         Assert.That(workspace.Session!.UndoCount, Is.Zero, "Selection alone must not change the calendar.");
@@ -1842,7 +1842,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
         var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));
         var settings = reopened.Session!.Document.State.Settings;
-        Assert.That(id == "PlanCompanyDaysOff" ? settings.CompanyDaysOff : settings.People.Single(p => p.Identity == "U1").DaysOff, Is.EqualTo(new[] { day }));
+        Assert.That(settings.CompanyDaysOff, Is.EqualTo(new[] { day }));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

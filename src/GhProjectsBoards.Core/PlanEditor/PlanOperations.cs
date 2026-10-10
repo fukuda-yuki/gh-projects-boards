@@ -29,7 +29,7 @@ internal static class PlanOperations
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate) { DaysOff = p.DaysOff.ToHashSet() }).ToArray() }, today);
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today);
     }
     internal static bool RowEqual(PlanRow? a, PlanRow? b) => ReferenceEquals(a, b) || a is not null && b is not null &&
         a with { Assignees = b.Assignees, Predecessors = b.Predecessors } == b &&
@@ -48,7 +48,6 @@ internal static class PlanOperations
         foreach (var p in s.People)
         {
             Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または許容量が不正です。");
-            Unique(p.DaysOff);
         }
         foreach (var c in s.Columns)
         {

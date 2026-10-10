@@ -9,14 +9,14 @@ internal sealed class PlanPeopleTests
     private static readonly DateOnly Day = new(2026, 10, 5);
     private static PlanRow Row(string id, decimal? remaining = 4) => new(id, id, "acme/repo") { Assignees = ["U1"], Estimate = 4, Actual = 0, Remaining = remaining };
     private static PlanDocument Document(ImmutableArray<PlanRow> rows, ProjectPlanSettings? settings = null) =>
-        new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80, [])] }));
+        new(new(new("github.com", 42), "P1"), new(rows, []), new(rows, settings ?? new() { StatusDate = Day, People = [new("U1", "alice", 50, 80)] }));
 
     [TestCase(80, 56, 40, 96, -16)]
     [TestCase(100, 0, 0, 0, 100)]
     public void ForecastAndAllowanceUseCurrentAssignment(decimal allowance, decimal actual, decimal remaining, decimal forecast, decimal difference)
     {
         var d = Document([Row("I1", remaining) with { Actual = actual }]);
-        d = d with { State = d.State with { Settings = d.State.Settings with { People = [new("U1", "alice", 50, allowance, [])] } } };
+        d = d with { State = d.State with { Settings = d.State.Settings with { People = [new("U1", "alice", 50, allowance)] } } };
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 1).People.Single(p => p.Identity == "U1");
         Assert.That(p.Forecast, Is.EqualTo(forecast)); Assert.That(p.Difference, Is.EqualTo(difference));
     }
@@ -40,13 +40,16 @@ internal sealed class PlanPeopleTests
         Assert.That((result.Periods[0].Start, result.Periods[0].End), Is.EqualTo((DateOnly.Parse(start), DateOnly.Parse(end))));
         Assert.That(result.Periods[1].Start, Is.EqualTo(DateOnly.Parse(end).AddDays(1)));
     }
-    [TestCase(PlanPeriodScale.Day, 4)]
-    [TestCase(PlanPeriodScale.Week, 16)]
-    [TestCase(PlanPeriodScale.Month, 80)]
-    public void CapacityExcludesPersonalDaysOffAndHolidays(PlanPeriodScale scale, decimal capacity)
+    [TestCase(PlanPeriodScale.Day, false, 4)]
+    [TestCase(PlanPeriodScale.Week, false, 20)]
+    [TestCase(PlanPeriodScale.Month, false, 84)]
+    [TestCase(PlanPeriodScale.Day, true, 4)]
+    [TestCase(PlanPeriodScale.Week, true, 16)]
+    [TestCase(PlanPeriodScale.Month, true, 80)]
+    public void CapacityUsesProjectWorkingDaysExcludingCompanyDaysOffAndHolidays(PlanPeriodScale scale, bool companyDayOff, decimal capacity)
     {
         var d = Document([Row("I1", 8)]);
-        d = d with { State = d.State with { Settings = d.State.Settings with { People = [new("U1", "alice", 50, 80, [Day.AddDays(1)])] } } };
+        d = d with { State = d.State with { Settings = d.State.Settings with { CompanyDaysOff = companyDayOff ? [Day.AddDays(1)] : [] } } };
         var p = PlanPeople.Calculate(d, Day, Day, scale, 1).People.Single(p => p.Identity == "U1");
         Assert.That(p.Periods[0].Capacity, Is.EqualTo(capacity));
         Assert.That(p.Periods[0].Planned, Is.EqualTo(scale == PlanPeriodScale.Day ? 4m : 8m));

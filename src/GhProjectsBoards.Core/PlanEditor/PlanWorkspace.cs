@@ -40,7 +40,7 @@ internal sealed class PlanWorkspace(PlanStore store)
             var document = session.Document;
             return document.State.Settings.People.Select(p => p with { Name = document.Sync.PeopleNames.GetValueOrDefault(p.Identity, p.Name) })
                 .Concat(document.State.Rows.SelectMany(r => r.Assignees).Distinct().Where(id => document.State.Settings.People.All(p => p.Identity != id))
-                    .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null, []))).ToArray();
+                    .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null))).ToArray();
         }
     }
     public static PlanWorkspace ForUser() => new(PlanStore.ForUser());
@@ -140,7 +140,7 @@ internal sealed class PlanWorkspace(PlanStore store)
                 var names = await ReadAssignablePeople(lease, Context, repositories, token);
                 names = names.SetItems(project.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(p => p.Id)
                     .Select(p => new KeyValuePair<string, string>(p.Id.NodeId, p.Login)));
-                var people = names.Select(p => new PlanResource(p.Key, p.Value, 100, null, [])).ToImmutableArray();
+                var people = names.Select(p => new PlanResource(p.Key, p.Value, 100, null)).ToImmutableArray();
                 var settings = new ProjectPlanSettings { Columns = PlanColumnMatching.Match(fields), People = people,
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
                 var remote = PlanSnapshot.From(read, settings);
