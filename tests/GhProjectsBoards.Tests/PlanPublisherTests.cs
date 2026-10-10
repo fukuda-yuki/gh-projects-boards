@@ -10,6 +10,38 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPublisherTests
 {
     [Test]
+    public async Task SuccessfulPublicationReportsStageWriteCountsThroughTheirTotals()
+    {
+        await Start(3);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [new("I2", PlanField.Actual, 3m), new("I2", PlanField.Parent, "I1"), new("I3", PlanField.Predecessors, new[] { "I2" })]), Today);
+        await session.Execute(new MovePlanRows(["I3"], "I1"), Today);
+        await session.Execute(new InsertPlanRows([PlanRow.New("New task", "acme/repo")]), Today);
+        var reports = new List<RemoteProgress>();
+        var result = await publisher.PublishAsync(session, Today, progressReporter: new InlineProgress<RemoteProgress>(reports.Add));
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        foreach (var stage in new[] { "新規 Issue", "フィールド・担当者", "親子関係", "先行タスク", "表示順" }) {
+            var counts = reports.Where(p => p.Stage == stage && p.Total is not null).ToArray();
+            Assert.That(counts, Is.Not.Empty, stage);
+            Assert.That(counts.Select(p => p.Completed), Is.Ordered, stage);
+            Assert.That(counts.Last().Completed, Is.EqualTo(counts.Last().Total), stage);
+            Assert.That(counts.Last().Total, Is.GreaterThan(0), stage);
+        }
+    }
+
+    [Test]
+    public async Task FailedWritesDoNotReportTheStageAsFullySuccessful()
+    {
+        await Start(1);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Actual, 3m)]), Today);
+        Scenario("field-denied");
+        var reports = new List<RemoteProgress>();
+        var result = await publisher.PublishAsync(session, Today, progressReporter: new InlineProgress<RemoteProgress>(reports.Add));
+        Assert.That(result.Succeeded, Is.False);
+        var last = reports.Last(p => p.Stage == "フィールド・担当者");
+        Assert.That(last.Completed, Is.LessThan(last.Total!.Value));
+    }
+
+    [Test]
     public async Task RedactedProjectMembershipDoesNotBlockRefreshOrPublishVerification()
     {
         await Start(2, state => state with { Redacted = 1, HiddenItems = 1 });
@@ -352,6 +384,94 @@ internal sealed class PlanPublisherTests
         Assert.That(resumed.Succeeded, Is.True, resumed.Error);
         Assert.That(FakePlanEditor.Load(root).Issues.Select(i => (i.Row.Title, i.Row.Repository)), Is.EquivalentTo(new[] { ("Default", "acme/repo"), ("Other", "acme/other") }));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [TestCase("PlanPublishRepository"), TestCase("PlanCreationGuard")]
+    public async Task CancelledCreationReconciliationPreservesPlanHistoryAndStoredDocument(string query)
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows([PlanRow.New("Unconfirmed", "acme/repo")]), Today);
+        Scenario("uncertain-verification");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(session.Document.Sync.Publish!.Writes.Any(w => w.Stage == PlanPublishStage.Create && w.State == PlanWriteState.Dispatched), Is.True);
+        await session.FlushAsync();
+        var document = session.Document;
+        var undo = session.UndoCount;
+        var redo = session.RedoCount;
+        var path = new PlanStore(root).FileFor(Project);
+        var saved = File.ReadAllBytes(path);
+        var mutations = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, holdQuery = query }));
+        using var cancellation = new CancellationTokenSource();
+        var refresh = publisher.RefreshAsync(session, Today, cancellation.Token);
+        try {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (!File.Exists(Path.Combine(root, "held-gh.pid")) && !refresh.IsCompleted && DateTime.UtcNow < deadline)
+                await Task.Delay(20);
+            Assert.That(File.Exists(Path.Combine(root, "held-gh.pid")), Is.True, "The lookup must be in flight before cancelling.");
+            cancellation.Cancel();
+            Assert.ThrowsAsync<OperationCanceledException>(async () => await refresh);
+            Assert.That(session.Document, Is.EqualTo(document));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+            Assert.That(session.RedoCount, Is.EqualTo(redo));
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(saved));
+            Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Is.EqualTo(mutations));
+        }
+        finally {
+            cancellation.Cancel();
+            File.WriteAllText(Path.Combine(root, "release-gh"), "release");
+            try { await refresh; } catch (OperationCanceledException) { }
+        }
+    }
+
+    [Test]
+    public async Task CancelledProjectReadRetainsOnlyTheConfirmedCreationLink()
+    {
+        await Start(0);
+        var row = PlanRow.New("Unconfirmed", "acme/repo");
+        await session.Execute(new InsertPlanRows([row]), Today);
+        Scenario("uncertain-verification");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        var before = session.Document;
+        var pending = before.Sync.Publish!;
+        var creation = pending.Writes.Single(w => w.Stage == PlanPublishStage.Create);
+        Assert.That(creation.State, Is.EqualTo(PlanWriteState.Dispatched));
+        var undo = session.UndoCount;
+        var redo = session.RedoCount;
+        var mutations = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, holdQuery = "ProjectFields" }));
+        using var cancellation = new CancellationTokenSource();
+        var refresh = publisher.RefreshAsync(session, Today, cancellation.Token);
+        try {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (!File.Exists(Path.Combine(root, "held-gh.pid")) && !refresh.IsCompleted && DateTime.UtcNow < deadline)
+                await Task.Delay(20);
+            Assert.That(File.Exists(Path.Combine(root, "held-gh.pid")), Is.True);
+            var linked = session.Document.Sync.Publish!.Writes.Single(w => w.Key == creation.Key);
+            Assert.That(linked.Identity, Is.EqualTo(row.Identity));
+            Assert.That(linked.State, Is.EqualTo(PlanWriteState.Succeeded));
+            Assert.That(linked, Is.EqualTo(creation with { State = PlanWriteState.Succeeded,
+                ResultId = FakePlanEditor.Load(root).Issues.Single().Row.Identity, Error = null }));
+            var expected = before with { Sync = before.Sync with { Publish = pending with {
+                Writes = pending.Writes.Select(w => w.Key == creation.Key ? linked : w).ToImmutableArray() } } };
+            var saved = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+            cancellation.Cancel();
+            Assert.ThrowsAsync<OperationCanceledException>(async () => await refresh);
+            Assert.That(JsonSerializer.Serialize(session.Document), Is.EqualTo(JsonSerializer.Serialize(expected)));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+            Assert.That(session.RedoCount, Is.EqualTo(redo));
+            Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(saved));
+            await Reopen();
+            Assert.That(JsonSerializer.Serialize(session.Document), Is.EqualTo(JsonSerializer.Serialize(expected)));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+            Assert.That(session.RedoCount, Is.EqualTo(redo));
+            Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Is.EqualTo(mutations));
+        }
+        finally {
+            cancellation.Cancel();
+            File.WriteAllText(Path.Combine(root, "release-gh"), "release");
+            try { await refresh; } catch (OperationCanceledException) { }
+        }
     }
 
     [Test]

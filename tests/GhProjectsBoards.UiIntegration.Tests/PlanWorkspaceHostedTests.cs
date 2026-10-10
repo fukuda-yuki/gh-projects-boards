@@ -265,7 +265,7 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [Test, Category("WorkspaceShell")]
-    public async Task QueuedViewSelectionsRetainTheLastRequestAfterPendingRefresh()
+    public async Task RemoteWorkDisablesViewSwitchesUntilCompletion()
     {
         await Open();
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
@@ -274,7 +274,10 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         try {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
-            await Ui.Run(() => { Ui.Click("PlanShowPeople"); Ui.Click("PlanShowTasks"); });
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsEnabled, Is.False);
+                Assert.That(Ui.Find<SelectorBarItem>("PlanShowTasks").IsEnabled, Is.False);
+            });
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Idle();
         await Ui.Run(() => {
@@ -1011,7 +1014,7 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [TestCase(false), TestCase(true), Category("OperationStates")]
-    public async Task RemoteWorkShowsRunningCommandAndLocksCellsUntilCompletion(bool publish)
+    public async Task RemoteWorkShowsBlockingPanelAndLocksCellsUntilCompletion(bool publish)
     {
         await Open();
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
@@ -1022,25 +1025,197 @@ internal sealed class PlanWorkspaceHostedTests
         try {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
             await Ui.Run(() => {
-                var progress = Ui.Tree(view).OfType<ProgressBar>().Single();
-                Assert.That(progress.Visibility, Is.EqualTo(Visibility.Visible));
-                Assert.That(progress.IsIndeterminate, Is.True);
-                Assert.That(progress.ActualHeight, Is.InRange(1d, 4d));
+                var panel = Ui.Find<ContentControl>("PlanBusyPanel");
+                Assert.That(panel.Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<ProgressRing>("PlanBusyRing").IsActive, Is.True);
+                var heading = publish ? "発行しています" : "最新の情報を取得しています";
+                Assert.That(Ui.Find<TextBlock>("PlanBusyHeading").Text, Is.EqualTo(heading));
+                Assert.That(AutomationProperties.GetName(panel), Does.StartWith(heading));
+                Assert.That(AutomationProperties.GetLiveSetting(panel), Is.EqualTo(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite));
                 var button = Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh");
-                var label = publish ? "発行中…" : "更新中…";
-                Assert.That(Ui.Tree(button).OfType<TextBlock>().Any(t => t.Text == label), Is.True);
-                Assert.That(AutomationProperties.GetName(button), Is.EqualTo(label));
-                if (publish) Ui.Click("PlanPublishClose");
+                Assert.That(button.IsEnabled, Is.False);
+                Assert.That(AutomationProperties.GetName(button), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
+                Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(publish ? Visibility.Collapsed : Visibility.Visible));
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.False);
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.True);
             });
             await Ui.Run(async () => await RenderedEvidence.Capture(view, publish ? "t6-publishing" : "t6-refreshing"));
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Idle();
         await Ui.Run(() => {
-            Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
         });
+    }
+
+    [TestCase(false), TestCase(true), Category("OperationStates")]
+    public async Task CancellingOpenKeepsPreviousProjectAndPlanWithoutError(bool previousProject)
+    {
+        if (previousProject) await Open();
+        else {
+            await Ui.Run(() => Ui.Click("PlanConnect"));
+            await Ui.Until(() => workspace.Available.Count == 2);
+        }
+        var previous = workspace.Session;
+        var selected = workspace.Selected;
+        if (previousProject) await PickerCommand("PlanChooseProject");
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "ProjectFields" }));
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = previousProject ? 1 : 0);
+        try {
+            await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
+            await Ui.Run(() => {
+                var expected = workspace.Available[previousProject ? 1 : 0].Title;
+                Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo(expected));
+                Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo(expected + " を読み込み中"));
+                Assert.That(AutomationProperties.GetName(Ui.Find<ContentControl>("PlanBusyPanel")), Does.StartWith(expected + " を開いています"));
+                if (previousProject) Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.False);
+                var panel = Ui.Find<ContentControl>("PlanBusyPanel");
+                var ring = Ui.Find<ProgressRing>("PlanBusyRing");
+                var heading = Ui.Find<TextBlock>("PlanBusyHeading");
+                var cancel = Ui.Find<Button>("PlanBusyCancel");
+                Assert.That(ring.ActualWidth, Is.EqualTo(40));
+                Assert.That(ring.ActualHeight, Is.EqualTo(40));
+                Assert.That(heading.FontSize, Is.EqualTo(20));
+                Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
+                foreach (var element in new FrameworkElement[] { ring, heading, cancel }) {
+                    var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+                    Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2));
+                }
+                Ui.Click("PlanBusyCancel");
+            });
+            await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
+            Assert.That(workspace.Session, Is.SameAs(previous));
+            Assert.That(workspace.Selected, Is.EqualTo(selected));
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+                Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False);
+                Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo(selected?.Title ?? "GitHub Projects"));
+                if (!previousProject) Assert.That(Ui.Find<ListView>("AvailableProjects").ActualHeight, Is.GreaterThan(0));
+            });
+        } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+    }
+
+    [TestCase(false), TestCase(true), Category("OperationStates")]
+    public async Task CancellingUrlResolutionRestoresChooserAndBlocksAnotherOpen(bool previousProject)
+    {
+        if (previousProject) { await Open(); await PickerCommand("PlanChooseProject"); }
+        else {
+            await Ui.Run(() => Ui.Click("PlanConnect"));
+            await Ui.Until(() => workspace.Available.Count == 2);
+        }
+        var previous = workspace.Session;
+        var selected = workspace.Selected;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "RegistrationResolve" }));
+        await Ui.Run(() => Ui.Tree(view).OfType<Expander>().Single(e => Equals(e.Header, "URLで開く")).IsExpanded = true);
+        await Ui.Ready<Button>("PlanOpenUrl");
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("PlanProjectUrl").Text = "https://github.com/users/fixture-user/projects/3";
+            Ui.Click("PlanOpenUrl");
+        });
+        try {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")) && Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
+            await Ui.Run(() => {
+                var panel = Ui.Find<ContentControl>("PlanBusyPanel");
+                Assert.That(AutomationProperties.GetName(panel), Does.Contain("Project を確認"));
+                Assert.That(Ui.Find<ProgressRing>("PlanBusyRing").IsActive, Is.True);
+                Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<Button>("PlanBusyCancel").IsEnabled, Is.True);
+                Assert.That(Ui.Find<Button>("PlanOpenUrl").IsEnabled, Is.False);
+                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").IsEnabled, Is.False);
+                Assert.That(Ui.Find<ListView>("AvailableProjects").IsEnabled, Is.False);
+                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").Focus(FocusState.Programmatic), Is.False);
+                Ui.Click("PlanBusyCancel");
+            });
+            await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
+            await Ui.Run(() => {
+                Assert.That(workspace.Session, Is.SameAs(previous));
+                Assert.That(workspace.Selected, Is.EqualTo(selected));
+                Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+                Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False);
+                Assert.That(Ui.Find<Button>("PlanOpenUrl").IsEnabled, Is.True);
+                Assert.That(Ui.Find<TextBox>("PlanProjectUrl").Focus(FocusState.Programmatic), Is.True);
+            });
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+    }
+
+    [TestCase(false), TestCase(true), Category("OperationStates")]
+    public async Task CalculationKeepsCancelVisibleButDisabled(bool refresh)
+    {
+        if (refresh) await Open();
+        else {
+            await Ui.Run(() => Ui.Click("PlanConnect"));
+            await Ui.Until(() => workspace.Available.Count == 2);
+        }
+        var observed = false;
+        var enabled = true;
+        var visibility = Visibility.Collapsed;
+        long callback = 0;
+        await Ui.Run(() => {
+            var panel = Ui.Find<ContentControl>("PlanBusyPanel");
+            callback = panel.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => {
+                if (!AutomationProperties.GetName(panel).Contains("日程を計算")) return;
+                observed = true;
+                var cancel = Ui.Find<Button>("PlanBusyCancel");
+                enabled = cancel.IsEnabled;
+                visibility = cancel.Visibility;
+            });
+            if (refresh) Ui.Click("PlanRefresh");
+            else Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
+        });
+        try {
+            await Ui.Until(() => observed);
+            await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
+            Assert.That(enabled, Is.False);
+            Assert.That(visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(workspace.Session, Is.Not.Null);
+            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty));
+        }
+        finally {
+            await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
+        }
+    }
+
+    [Test, Category("OperationStates")]
+    public async Task CachedProjectOpenDoesNotFlashTheDelayedPanel()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        var shown = false; long callback = 0;
+        await Ui.Run(() => {
+            var panel = Ui.Find<ContentControl>("PlanBusyPanel");
+            callback = panel.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => shown |= panel.Visibility == Visibility.Visible);
+            Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
+        });
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").SelectedItem is null);
+        await Task.Delay(350);
+        await Ui.Run(() => {
+            Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, callback);
+            Assert.That(shown, Is.False);
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.True);
+        });
+    }
+
+    [Test, Category("OperationStates")]
+    public async Task CancellingRefreshRetainsLocalPlanAndDoesNotShowFailure()
+    {
+        await Open();
+        await CommitText("PlanCell1_Title", "ローカルの計画");
+        var before = workspace.Session!.Document;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "ProjectFields" }));
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        try {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Run(() => Ui.Click("PlanBusyCancel"));
+            await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
+            Assert.That(workspace.Session.Document, Is.EqualTo(before));
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False);
+                Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
+            });
+        } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
     }
 
     [Test, Category("OperationStates")]
@@ -1052,12 +1227,12 @@ internal sealed class PlanWorkspaceHostedTests
         var shown = false;
         long callback = 0;
         await Ui.Run(() => {
-            var progress = Ui.Tree(view).OfType<ProgressBar>().Single();
+            var progress = Ui.Find<ContentControl>("PlanBusyPanel");
             callback = progress.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => shown |= progress.Visibility == Visibility.Visible);
             Ui.Click("PlanUndo");
         });
         await Ui.Idle();
-        await Ui.Run(() => Ui.Tree(view).OfType<ProgressBar>().Single().UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, callback));
+        await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, callback));
         Assert.That(workspace.Session!.Document.State.Rows[0].Title, Is.EqualTo("設計"));
         Assert.That(shown, Is.False);
     }
@@ -1099,7 +1274,7 @@ internal sealed class PlanWorkspaceHostedTests
         if (sheet.Visibility == Visibility.Visible && sheet.ActualHeight > 0)
             Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(sheet.TransformToVisual(card).TransformPoint(new Point()).Y + 1));
         Assert.That(Ui.Find<TextBlock>("PlanError").Visibility, Is.EqualTo(Visibility.Collapsed));
-        Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+        Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
         Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
         Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
     }
@@ -1123,7 +1298,7 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible));
                 Assert.That(Ui.Find<Button>("PlanRefresh").IsEnabled, Is.True);
                 Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
-                Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+                Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             });
         }
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
@@ -1160,20 +1335,21 @@ internal sealed class PlanWorkspaceHostedTests
         await workspace.Session.Execute(new MovePlanRows(["I2"], "I1"), DateOnly.FromDateTime(DateTime.Today));
         var stages = new List<string>(); long callback = 0;
         await Ui.Run(() => {
-            var progress = Ui.Find<TextBlock>("PlanPublishStage");
-            callback = progress.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => stages.Add(progress.Text));
+            var progress = Ui.Find<ContentControl>("PlanBusyPanel");
+            callback = progress.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => stages.Add(AutomationProperties.GetName(progress)));
             Ui.Click("PlanPublish");
         });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-review"));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-        await Ui.Run(() => Ui.Find<TextBlock>("PlanPublishStage").UnregisterPropertyChangedCallback(TextBlock.TextProperty, callback));
+        await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
         var remote = FakePlanEditor.Load(root);
         Assert.That(remote.Issues.Single(i => i.Row.Title == "子タスク").Row.Parent, Is.EqualTo("I1"));
         Assert.That(remote.Issues.Single(i => i.Row.Title == "子タスク").Row.Predecessors, Is.EqualTo(new[] { "I2" }));
         Assert.That(remote.Issues[0].Row.Identity, Is.EqualTo("I2"));
-        Assert.That(stages, Does.Contain("発行中: 親子関係").And.Contain("発行中: 先行タスク").And.Contain("発行中: 表示順"));
+        foreach (var stage in new[] { "親子関係", "先行タスク", "表示順" })
+            Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage);
     }
 
     [TestCase("partial")]
@@ -1229,25 +1405,31 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [Test]
-    public async Task NewIssueReviewCanCloseDuringPublicationWithVisibleStages()
+    public async Task NewIssuePublicationReplacesReviewWithVisibleStages()
     {
         await Open();
-        var stages = new List<string>(); long callback = 0;
+        var stages = new List<string>(); long callback = 0; var prematureVerification = false;
         await Ui.Run(() => {
-            var progress = Ui.Find<TextBlock>("PlanPublishStage");
-            callback = progress.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => stages.Add(progress.Text));
+            var progress = Ui.Find<ContentControl>("PlanBusyPanel");
+            callback = progress.RegisterPropertyChangedCallback(AutomationProperties.NameProperty, (_, _) => {
+                var name = AutomationProperties.GetName(progress); stages.Add(name);
+                if (name.Contains("フィールド・担当者"))
+                    prematureVerification |= Ui.Tree(progress).OfType<TextBlock>().Any(t => t.Text == "✓ 検証");
+            });
             var input = Ui.Find<TextBox>("PlanCell0_Title"); input.Focus(FocusState.Programmatic); input.Text = "新しい計画";
             Ui.Click("PlanPublish");
         });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
         Assert.That(FakePlanEditor.Load(root).Issues.Length, Is.EqualTo(1));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStage").Text.StartsWith("発行中:"));
-        await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanPublish"); });
+        await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublish").IsEnabled, Is.False));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-        await Ui.Run(() => Ui.Find<TextBlock>("PlanPublishStage").UnregisterPropertyChangedCallback(TextBlock.TextProperty, callback));
+        await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
+        Assert.That(prematureVerification, Is.False);
         Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Title == "新しい計画" && i.Added), Is.EqualTo(1));
-        Assert.That(stages, Does.Contain("発行中: 新規 Issue").And.Contain("発行中: フィールド・担当者").And.Contain("発行中: 検証"));
+        foreach (var stage in new[] { "新規 Issue", "フィールド・担当者", "検証" })
+            Assert.That(stages.Any(s => s.Contains(stage)), Is.True, stage);
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-result"));
     }
 
@@ -1766,7 +1948,7 @@ internal sealed class PlanWorkspaceHostedTests
         Assert.That(await stop, Is.True);
         if (stage == "refresh") await Ui.Run(() => {
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
-            Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
         });
         process.Refresh(); Assert.That(process.HasExited, Is.True);

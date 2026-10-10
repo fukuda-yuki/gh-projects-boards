@@ -7,11 +7,11 @@ namespace GhProjectsBoards.Core.Projects;
 internal sealed class ProjectReader(GhConnectionService service, GhConnectionService.OperationLease? lease = null)
 {
     public Task<ProjectReadResult> ReadAsync(ConnectionContext context, ScopedId project,
-        CancellationToken cancellationToken = default, Action<ProjectReadProgress>? progress = null)
+        CancellationToken cancellationToken = default, IProgress<RemoteProgress>? progress = null)
         => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken, Action<ProjectReadProgress>? progress, GhConnectionService.OperationLease? lease = null)
+        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -301,7 +301,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     if (page.ValueKind == JsonValueKind.Undefined)
                     {
                         if (stopped) return false;
-                        progress?.Invoke(new(stage, fields.Count, items.Count, issues.Count));
+                        if (stage == "items" && total is null) progress?.Report(new("プロジェクトの項目を取得"));
                         var result = await SendAsync(query, new { id, after });
                         trusted = result.IsSuccess;
                         if (!trusted)
@@ -324,12 +324,14 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var expected = NonnegativeInt(page, "totalCount");
                     if (total is not null && total != expected) throw new ReadException(ReadProblemKind.ConcurrentChange);
                     total = expected;
+                    if (stage == "items" && count == 0) progress?.Report(new("プロジェクトの項目を取得", count, total));
                     var nodes = Array(page, "nodes");
                     foreach (var node in nodes.EnumerateArray())
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         await accept(node);
                         count++;
+                        if (stage == "items") progress?.Report(new("プロジェクトの項目を取得", count, total));
                     }
                     var info = Property(page, "pageInfo");
                     var next = Boolean(info, "hasNextPage");

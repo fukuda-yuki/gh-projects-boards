@@ -9,6 +9,31 @@ namespace GhProjectsBoards.Tests;
 internal sealed class GhConnectionTests
 {
     [Test]
+    public async Task CancelledOperationRecheckReportsCancellationAndAllowsRetry()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var cancelRecheck = false;
+        var baseline = ConnectedRunner();
+        var runner = new ScriptedRunner(command => {
+            if (cancelRecheck && command.Arguments[0] == "auth") {
+                cancellation.Cancel();
+                return new GhProcessResult(ProcessCompletion.Cancelled);
+            }
+            return baseline.RunAsync(command).GetAwaiter().GetResult();
+        });
+        var service = new GhConnectionService("gh.exe", "github.com", runner);
+        var context = (await service.ConnectAsync()).Context!;
+        cancelRecheck = true;
+        Assert.ThrowsAsync<OperationCanceledException>(async () => {
+            using var lease = await service.BeginOperationAsync(context, cancellation.Token, mutation: false);
+        });
+        cancelRecheck = false;
+        using var retry = await service.BeginOperationAsync(context, CancellationToken.None, mutation: false);
+        Assert.That(context.IsInvalidated, Is.False);
+        Assert.That(runner.Commands.All(c => c.Arguments[0] != "api" || c.Arguments[1] == "user"), Is.True);
+    }
+
+    [Test]
     public async Task NetworkFailureDuringAuthPreflightIsNotReportedAsExpiredCredentials()
     {
         var broken = false;
