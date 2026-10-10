@@ -12,9 +12,9 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 
 - Launch from a Windows executable; no browser extension or Excel dependency.
 - Register Projects explicitly and switch between them. Each scoped Project is one workspace. Only Issues are planned; draft items and pull requests are not.
-- Edit locally and publish explicitly, as with MS Project and the TFS Office integration. No request is sent per edit. All unpublished local changes can be discarded back to the last refreshed GitHub state as one undoable step ([#123](https://github.com/fukuda-yuki/gh-projects-boards/issues/123)).
+- Edit locally and publish explicitly, as with MS Project and the TFS Office integration. No request is sent per edit. The PMO can reset the plan to GitHub's current state, discarding every local change; afterwards nothing remains unpublished because of the PMO's earlier work or the status date ([#123](https://github.com/fukuda-yuki/gh-projects-boards/issues/123)). The schedule never moves by itself: dates change only through the PMO's edits, the status date the PMO sets, or GitHub updates brought in by refresh ([#130](https://github.com/fukuda-yuki/gh-projects-boards/issues/130)).
 - The published plan is reproducible from GitHub plus the exported settings file: Issue title and assignees, blocked-by predecessors, sub-issue hierarchy, Estimate/Remaining/Actual number fields, Start/Target date fields, and two added Project fields, **開始日指定** (date) and **日程固定** (single select). Calendar, rates and allowances are local settings.
-- Columns use standard Japanese headers and name the mapped GitHub field in their tooltip (#109 replaced showing the raw GitHub field name). In settings the PMO chooses the visible columns, including other Project fields, and gives each a display name, as GitHub Projects allows ([#125](https://github.com/fukuda-yuki/gh-projects-boards/issues/125)).
+- Columns use standard Japanese headers and name the mapped GitHub field in their tooltip (#109 replaced showing the raw GitHub field name). In settings the PMO chooses the visible columns, including other Project fields, and gives each a display name, as GitHub Projects allows; those fields are edited and published like the planning fields ([#125](https://github.com/fukuda-yuki/gh-projects-boards/issues/125)).
 - Delegate authentication and API access to GitHub CLI (`gh api`); do not require manually issued PATs or a custom GitHub App.
 - Start with local development and the designated sandbox. Company GHEC + EMU behavior remains unverified until tested there.
 
@@ -25,7 +25,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 - Scheduling is a bounded subset of MS Project auto-scheduling: finish-to-start predecessors, effort, the assignee's rate for the Project, the calendar, 開始日指定 (start no earlier than) and 日程固定 (keep typed dates). No lag, other link or constraint types, critical path, leveling or cost.
 - Open tasks with work that are not 日程固定 are calculated; completed tasks, 日程固定 tasks and tasks without effort keep their GitHub dates. A calculated date that differs from GitHub is an unpublished change. The [plan sheet Issue](https://github.com/fukuda-yuki/gh-projects-boards/issues/78) lists the exact rules.
 - The schedule is shown by day. Dates are recomputed from the inputs; minute endpoints are not stored.
-- One status date (状況日), today by default, anchors actual and remaining entry. No remaining work is scheduled before it.
+- One status date (状況日), set explicitly by the PMO, anchors actual and remaining entry. No remaining work is scheduled before it. It does not follow the calendar day by itself ([#130](https://github.com/fukuda-yuki/gh-projects-boards/issues/130)).
 - A summary view shows the version against its start and end dates: elapsed and remaining working days, progress, forecast finish and remaining work against remaining capacity, by phase and by person × phase, with each person's allowance, forecast (Actual + Remaining) and daily load ([#127](https://github.com/fukuda-yuki/gh-projects-boards/issues/127)). Overloads are shown, never levelled automatically.
 
 ## Requirement map
