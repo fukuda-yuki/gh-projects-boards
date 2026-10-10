@@ -1082,8 +1082,10 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(ring.ActualHeight, Is.EqualTo(40));
                 Assert.That(heading.FontSize, Is.EqualTo(20));
                 Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
+                Assert.That(heading.TextAlignment, Is.EqualTo(TextAlignment.Center));
                 foreach (var element in new FrameworkElement[] { ring, heading, cancel }) {
-                    var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+                    // TextBlock.ActualWidth measures text, while ActualSize measures its arranged box.
+                    var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualSize.X, element.ActualSize.Y));
                     Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2),
                         $"{AutomationProperties.GetAutomationId(element)} bounds={bounds}; panel={panel.ActualWidth}x{panel.ActualHeight}");
                 }
