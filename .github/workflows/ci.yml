@@ -1,28 +1,83 @@
 name: ci
 on:
+  # Check each commit once. A pull request is checked by this trigger, and main is the only
+  # branch that is checked after a merge, so a branch push that already has a pull request no
+  # longer reports two conclusions for the same work.
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
+concurrency:
+  # One run per pull request, with the superseded run cancelled. Every push to main keeps its
+  # own group, so no merge is left unchecked.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
     runs-on: windows-latest
+    # The Core suite is about 23 minutes of this job; cap a hang instead of allowing the
+    # 360-minute default.
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
       - name: Test the TestResults cleanup rule
         shell: pwsh
         run: |
-          Import-Module Pester -MinimumVersion 5.0
+          # Pin Pester instead of inheriting whatever the runner image provides (windows-latest
+          # ships 5.9.0 today). The install only runs when the image stops providing that version.
+          $pester = [version]'5.9.0'
+          if (-not (Get-Module -ListAvailable Pester | Where-Object Version -eq $pester)) {
+            Install-Module Pester -RequiredVersion $pester -Scope CurrentUser -Force
+          }
+          Import-Module Pester -RequiredVersion $pester
           $result = Invoke-Pester -Path scripts/Clear-TestResults.Tests.ps1 -PassThru -Output Detailed
           if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) { throw 'TestResults cleanup tests failed.' }
       - name: Build the WinUI application and test projects
         run: dotnet build GhProjectsBoards.sln --configuration Release
       - name: Run Core unit and integration tests (no live GitHub)
-        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci
+        # --blame-hang writes a sequence file and a test host dump when the host stops
+        # responding, which is the known risk with the fake gh subprocesses; its one-hour
+        # default would outlast this job. The TRX carries the per-case result and duration.
+        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger 'trx;LogFileName=core.trx' --results-directory TestResults/ci --blame-hang --blame-hang-timeout 10m
+      - name: Upload test results and blame evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: core-test-results
+          path: TestResults/ci
+          if-no-files-found: warn
+      - name: Report failed cases
+        if: failure()
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem -Path TestResults/ci -Recurse -Filter '*.trx' -ErrorAction SilentlyContinue)
+          if ($files.Count -eq 0) {
+            # Write-Host, not Write-Warning: the runner silences the warning stream.
+            Write-Host 'No TRX file was produced; the failing step ran before the tests. See the core-test-results artifact.'
+            exit 0
+          }
+          $counters = [ordered]@{ total = 0; passed = 0; failed = 0; notExecuted = 0 }
+          foreach ($file in $files) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName -Raw
+            $summary = $trx.TestRun.ResultSummary.Counters
+            foreach ($name in @($counters.Keys)) { $counters[$name] += [int]$summary.$name }
+            # A TRX declares a default namespace, so match names locally.
+            foreach ($case in $trx.SelectNodes('//*[local-name()="UnitTestResult"][@outcome="Failed"]')) {
+              Write-Host "FAILED $($case.testName) ($($case.duration))"
+              $message = [string]$case.Output.ErrorInfo.Message
+              if ($message) { Write-Host $message }
+              $annotation = "$($case.testName): $message" -replace '%', '%25' -replace "`r", '%0D' -replace "`n", '%0A'
+              Write-Host "::error::$annotation"
+            }
+          }
+          $line = "Core tests: total=$($counters.total) passed=$($counters.passed) failed=$($counters.failed) notExecuted=$($counters.notExecuted)"
+          Write-Host $line
+          if ($env:GITHUB_STEP_SUMMARY) { $line | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY }
       - name: Discover hosted WinUI tests (no UI execution on this runner)
         run: ./scripts/Test-UiIntegration.ps1 -Discover -NoBuild
 
@@ -30,9 +85,12 @@ jobs:
     # The runner process owns an interactive desktop session, so the ordinary app and FlaUI run
     # there instead of on the PMO's screen. The journeys use the fake gh and no IME.
     runs-on: windows-latest
+    # The default selection takes about three minutes on a hosted runner; cap a hang in the app
+    # or the driver instead of allowing the 360-minute default.
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
@@ -46,7 +104,7 @@ jobs:
         run: ./scripts/Test-E2E.ps1 -Configuration Release
       - name: Upload E2E evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e
           path: TestResults/e2e
