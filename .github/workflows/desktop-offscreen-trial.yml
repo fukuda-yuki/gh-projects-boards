@@ -63,8 +63,8 @@ jobs:
           if (Test-Path $stderr) {
             $lines = Get-Content $stderr
             Write-Host "[WINDOW] lines: $(@($lines | Select-String -SimpleMatch '[WINDOW]').Count)  [INPUT] lines: $(@($lines | Select-String -SimpleMatch '[INPUT]').Count)"
-            # Everything but the per-case start/end lines: recorded failures, diagnostics, close and exit.
-            $lines | Where-Object { $_ -notmatch '^\[(START|END)\] ' } | Select-Object -First 200 | Out-Host
+            # Recorded failures, lifecycle diagnostics, activation changes, window close and the host's exit reason.
+            $lines | Select-String -Pattern 'Exception|^\s+at |\[(DIAGNOSTIC|WINDOW|INPUT|CLOSE|EXIT)\]' | Select-Object -First 200 | ForEach-Object Line | Out-Host
           }
           $xmlPath = Join-Path $run.FullName 'results.xml'
           if (Test-Path $xmlPath) {
