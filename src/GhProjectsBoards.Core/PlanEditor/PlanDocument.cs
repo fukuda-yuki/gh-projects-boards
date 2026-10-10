@@ -81,8 +81,13 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
+internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
 {
     public int TaskCount => Fields.Count;
+    public ImmutableHashSet<(string Identity, PlanField Field)> RecalculatedDates { get; init; } = [];
+    public PlanUnpublishedInputKind? InputKind(string identity, PlanField field)
+        => !Fields.TryGetValue(identity, out var fields) || !fields.Contains(field) ? null
+            : RecalculatedDates.Contains((identity, field)) ? PlanUnpublishedInputKind.Recalculated : PlanUnpublishedInputKind.Entered;
 }
 internal sealed record PlanSettingsFile(int Version, ProjectPlanSettings Settings);

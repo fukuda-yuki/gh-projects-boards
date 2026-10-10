@@ -1,4 +1,5 @@
 ﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -46,7 +47,13 @@ internal static class Program
             {
                 var result = new AutoRun(typeof(Program).Assembly).Execute(Environment.GetCommandLineArgs().Skip(1).ToArray());
                 Environment.ExitCode = result == 0 && Ui.FailureCount == 0 ? 0 : 1;
-                if (!Ui.Queue.TryEnqueue(() => { Ui.Window.Close(); Exit(); })) Environment.Exit(2);
+                if (!Ui.Queue.TryEnqueue(() => {
+                    // Each mounted workspace TitleBar registers non-client regions on this shared window and leaves
+                    // them after it unloads. Closing the window with those stale regions fail-fasts in Microsoft.UI.Input.
+                    Ui.Trace("[CLOSE] regions");
+                    InputNonClientPointerSource.GetForWindowId(Ui.Window.AppWindow.Id).ClearAllRegionRects();
+                    Ui.Trace("[CLOSE] window"); Ui.Window.Close(); Exit();
+                })) Environment.Exit(2);
             });
         }
     }

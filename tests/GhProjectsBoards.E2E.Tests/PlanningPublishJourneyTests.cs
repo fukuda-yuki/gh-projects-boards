@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
+using FlaUI.Core.Definitions;
 using FlaUI.UIA3;
 using NUnit.Framework;
 using Application = FlaUI.Core.Application;
@@ -58,7 +59,23 @@ public sealed class PlanningPublishJourneyTests
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"review-{launch}.png"));
                 Find("PlanPublishConfirm").AsButton().Invoke();
                 if (launch == 0 && interrupted)
-                    Wait(() => !string.IsNullOrEmpty(Find("PlanError").Properties.Name.ValueOrDefault) && Find("PlanPublishConfirm").IsEnabled);
+                {
+                    Wait(() =>
+                    {
+                        var failure = Find("PlanPublishFailure");
+                        var retry = failure.FindFirstDescendant(c => c.ByAutomationId("PlanRetryPublish"));
+                        // Require message text, not just the InfoBar title or retry button label.
+                        var hasMessage = failure.FindAllDescendants(c => c.ByControlType(ControlType.Text))
+                            .Any(text => !text.Properties.IsOffscreen.ValueOrDefault &&
+                                !string.IsNullOrWhiteSpace(text.Properties.Name.ValueOrDefault) &&
+                                text.Properties.Name.ValueOrDefault != "発行できませんでした" &&
+                                text.Properties.Name.ValueOrDefault != "再試行");
+                        var confirm = Find("PlanPublishConfirm");
+                        return !failure.Properties.IsOffscreen.ValueOrDefault && hasMessage &&
+                            retry is not null && !retry.Properties.IsOffscreen.ValueOrDefault && retry.IsEnabled &&
+                            !confirm.Properties.IsOffscreen.ValueOrDefault && confirm.IsEnabled;
+                    });
+                }
                 else
                 {
                     Wait(() => Find("PlanUnpublished").Properties.Name.ValueOrDefault == "未発行 0 タスク" && Find("PlanPublishConfirm").IsEnabled);

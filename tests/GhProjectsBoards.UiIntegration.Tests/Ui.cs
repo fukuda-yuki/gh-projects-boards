@@ -49,8 +49,12 @@ internal static class Ui
         // is bounded.
         var released = Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }).Wait(TimeSpan.FromSeconds(10));
         using var process = System.Diagnostics.Process.GetCurrentProcess();
-        diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts} released={released} gcPauseMs={GC.GetTotalPauseDuration().TotalMilliseconds:F0} privateMB={process.PrivateMemorySize64 >> 20}");
+        diagnostics.WriteLine($"[END] {DateTime.UtcNow:O} {caseName} {caseTimer.Elapsed.TotalSeconds:F3}s operations={TrackedContext.Operations} posts={TrackedContext.Posts} released={released} gcPauseMs={GC.GetTotalPauseDuration().TotalMilliseconds:F0} privateMB={process.PrivateMemorySize64 >> 20} unmountedAlive={UnmountedAlive()}");
     }
+    // Views unmounted by any case. Only the fixture's current view should remain reachable;
+    // a growing count means detached views and their native trees are retained.
+    private static readonly List<WeakReference<FrameworkElement>> unmounted = [];
+    private static int UnmountedAlive() { lock (unmounted) { unmounted.RemoveAll(view => !view.TryGetTarget(out _)); return unmounted.Count; } }
     public static async Task Run(Action action, [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
         => await Run(() => { action(); return Task.CompletedTask; }, operation: operation);
     public static async Task Run(Func<Task> action, bool check = true, [System.Runtime.CompilerServices.CallerMemberName] string operation = "", TimeSpan? timeout = null)
@@ -151,6 +155,7 @@ internal static class Ui
         RoutedEventHandler handler = (_, _) => { diagnostics.WriteLine($"[UNLOADED] {view.GetType().Name}"); unloaded.TrySetResult(); };
         await Run(() => {
             diagnostics.WriteLine("[UNMOUNT before remove] " + Describe(view));
+            lock (unmounted) unmounted.Add(new(view));
             view.Unloaded += handler;
             if (!Root.Children.Remove(view)) unloaded.TrySetResult();
             diagnostics.WriteLine("[UNMOUNT after remove] " + Describe(view));

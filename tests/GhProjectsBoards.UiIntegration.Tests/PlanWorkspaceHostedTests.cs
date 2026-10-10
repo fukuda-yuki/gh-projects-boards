@@ -9,12 +9,222 @@ using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Media;
+using Polygon = Microsoft.UI.Xaml.Shapes.Polygon;
 using NUnit.Framework;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(1280, 800), TestCase(1920, 1032), TestCase(1000, 720), TestCase(900, 720)]
+    [Category("PlanSheetReview")]
+    public async Task DefaultDividerFitsColumnsOrKeepsMinimumGanttAtWorkspaceClientSize(int width, int height)
+    {
+        FakePlanEditor.Save(root, new(Enumerable.Range(1, 40).Select(i => new PlanFakeIssue(
+            new("I" + i, i == 1 ? "設計" : "Planning task " + i, "acme/repo")
+                { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)).ToImmutableArray(), 41));
+        await Open();
+        await Ui.Run(() => ResizeWorkspace(width, height));
+        await Ui.Until(() => Math.Abs(Ui.Root.ActualWidth - width) < 1 && Math.Abs(Ui.Root.ActualHeight - height) < 1);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            var horizontal = Ui.Find<ScrollViewer>("PlanSheetHorizontal");
+            var chart = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
+            var headers = new[] { "Id", "Indicator", "Title", "Assignees", "Estimate", "Remaining", "Actual", "Start", "End", "Predecessors" }
+                .Select(name => Ui.Find<TextBlock>("PlanHeader" + name)).ToArray();
+            var rowBounds = Ui.Tree(sheet.List).OfType<TextBox>()
+                .Where(cell => AutomationProperties.GetAutomationId(cell).EndsWith("_Title", StringComparison.Ordinal))
+                .Select(cell => cell.TransformToVisual(sheet.List).TransformBounds(new Rect(0, 0, cell.ActualWidth, cell.ActualHeight))).ToArray();
+            var fullRows = rowBounds.Count(bounds => bounds.Top >= 0 && bounds.Bottom <= sheet.List.ActualHeight);
+            Console.WriteLine($"Default divider: client={Ui.Root.ActualWidth}x{Ui.Root.ActualHeight}, scale={Ui.Root.XamlRoot.RasterizationScale}, sheetControl={sheet.ActualWidth}, sheetViewport={horizontal.ViewportWidth}, sheetExtent={horizontal.ExtentWidth}, sheetOffset={horizontal.HorizontalOffset}, Gantt={chart.ViewportWidth}, weeks={chart.ViewportWidth / (7 * sheet.DayWidth):F2}, rowViewport={sheet.List.ActualHeight}, fullRows={fullRows}");
+            Assert.That(horizontal.HorizontalOffset, Is.Zero);
+            Assert.That(chart.ViewportWidth, Is.GreaterThanOrEqualTo(320));
+            if (width >= 1280) {
+                foreach (var header in headers) {
+                    var bounds = header.TransformToVisual(sheet).TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight));
+                    Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0), header.Text);
+                    Assert.That(bounds.Right, Is.LessThanOrEqualTo(horizontal.ViewportWidth), header.Text);
+                }
+                Assert.That(horizontal.ScrollableWidth, Is.Zero);
+            } else Assert.That(horizontal.ExtentWidth, Is.GreaterThan(horizontal.ViewportWidth));
+            if (width == 1920) {
+                // Fixed chrome leaves 1920 - 42 (card) - 20 (right reservation) - 854 (sheet) = 1004.
+                // Even removing the sheet's 6 px clearance cannot reach the approximate 1040 px target.
+                Assert.That(chart.ViewportWidth, Is.EqualTo(1004).Within(2), "Current ten-column budget, allowing pixel rounding.");
+                Assert.That(fullRows, Is.EqualTo(29).Within(2));
+            }
+        });
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, $"default-divider-{width}x{height}"));
+    }
+
+    [TestCase(1000), TestCase(1440), Category("ShellChrome")]
+    public async Task TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions(int width)
+    {
+        await Open();
+        await Ui.Run(() => {
+            Ui.Window.ExtendsContentIntoTitleBar = true;
+            Ui.Window.SetTitleBar(view.WorkspaceTitleBar);
+            ResizeWorkspace(width, 720);
+        });
+        try {
+            await Ui.Until(() => Math.Abs(Ui.Root.ActualWidth - width) < 1 && Math.Abs(view.ActualWidth - width) < 1);
+            await Ui.Run(() => {
+                var bar = view.WorkspaceTitleBar;
+                var gear = Ui.Find<Button>("PlanShowSettings");
+                var bounds = gear.TransformToVisual(Ui.Root).TransformBounds(new Rect(0, 0, gear.ActualWidth, gear.ActualHeight));
+                var captionLeft = Ui.Root.ActualWidth - Ui.Window.AppWindow.TitleBar.RightInset / Ui.Root.XamlRoot.RasterizationScale;
+                Console.WriteLine($"Title bar geometry: width={Ui.Root.ActualWidth}, scale={Ui.Root.XamlRoot.RasterizationScale}, rightInset={Ui.Window.AppWindow.TitleBar.RightInset}, gearRight={bounds.Right}, gap={captionLeft - bounds.Right}");
+                Assert.That(captionLeft - bounds.Right, Is.InRange(0d, 8d));
+                Assert.That(bar.IconSource, Is.Null);
+                Assert.That(bar.LeftHeader, Is.TypeOf<PathIcon>());
+                var geometry = ((PathIcon)bar.LeftHeader).Data as Microsoft.UI.Xaml.Media.PathGeometry;
+                Assert.That(geometry, Is.Not.Null);
+                Assert.That(geometry!.Figures.Select(f => f.StartPoint), Is.EqualTo(new[] { new Point(1, 2), new Point(6, 7), new Point(3, 12) }));
+                Assert.That(geometry.Figures.All(f => f.IsClosed), Is.True);
+            });
+        } finally { await Ui.Run(() => { Ui.Window.SetTitleBar(null); Ui.Window.ExtendsContentIntoTitleBar = false; }); }
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task CommandRowUsesSubtleHistoryAndSeparatesTheThreeGroups()
+    {
+        await Open();
+        await Ui.Run(() => {
+            var undo = Ui.Find<Button>("PlanUndo"); var redo = Ui.Find<Button>("PlanRedo");
+            Assert.That(undo.Style, Is.SameAs(Application.Current.Resources["SubtleButtonStyle"]));
+            Assert.That(redo.Style, Is.SameAs(undo.Style));
+            var group = (Panel)undo.Parent;
+            var dividers = group.Children.OfType<Border>().Where(b => b.Width == 1 && b.Height == 20).ToArray();
+            Assert.That(dividers, Has.Length.EqualTo(2));
+            var date = Ui.Find<CalendarDatePicker>("PlanStatusDate");
+            double X(FrameworkElement e) => e.TransformToVisual(group).TransformPoint(new Point()).X;
+            Assert.That(X(dividers[0]), Is.GreaterThan(X(date) + date.ActualWidth - 1).And.LessThan(X(undo)));
+            Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
+            var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
+            Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
+                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "表示列" }));
+            Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
+                Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task GanttLegendOnlyAppearsOnPlanWhileProjectCountsRemain()
+    {
+        await Open();
+        foreach (var command in new[] { "PlanShowTasks", "PlanShowPeople", "PlanShowSettings", "PlanShowTasks", "PlanPublish" }) {
+            await Ui.Run(() => Ui.Click(command)); await Ui.Idle();
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility,
+                    Is.EqualTo(command == "PlanShowTasks" ? Visibility.Visible : Visibility.Collapsed));
+                Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 1"));
+            });
+        }
+        foreach (var command in new[] { "PlanChooseProject", "PlanConnection" }) {
+            await PickerCommand(command);
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility, Is.EqualTo(Visibility.Collapsed));
+                Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 0 · タスク 1"));
+            });
+        }
+    }
+
+    [TestCase(false, false, "要求事項 0 · タスク 2")]
+    [TestCase(true, false, "要求事項 0 · タスク 2 · 期限超過 1")]
+    [TestCase(false, true, "要求事項 0 · タスク 2 · 予定より遅れ 1")]
+    [TestCase(true, true, "要求事項 0 · タスク 2 · 期限超過 1 · 予定より遅れ 1")]
+    [Category("ShellChrome")]
+    public async Task StatusCountsOmitZeroLatenessParts(bool overdue, bool later, string expected)
+    {
+        var date = new DateOnly(2026, 10, 5);
+        var state = FakePlanEditor.Load(root);
+        var row = state.Issues[0].Row with { Start = date, End = date.AddDays(2), Fixed = true };
+        FakePlanEditor.Save(root, state with { Issues = [
+            state.Issues[0] with { Row = row with { Start = overdue ? date.AddDays(-3) : date, End = overdue ? date.AddDays(-3) : date.AddDays(2) } },
+            new(row with { Identity = "I2", Title = "後続" }, "", true)] });
+        await Open();
+        await Ui.Run(async () => {
+            var session = workspace.Session!;
+            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = date }), date);
+            if (later) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.End, date.AddDays(3))]), date);
+            Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
+            Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo(expected));
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task ProjectPickerChecksOnlyOpenProjectAndSeparatesIconCommands()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await Ui.Idle();
+        await OpenProjectPicker();
+        await WaitForProjectPickerItems("P2");
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            var titleXs = new List<double>();
+            for (var i = 0; i < list.Items.Count; i++) {
+                var choice = (ProjectChoice)list.Items[i];
+                var item = (ListViewItem)list.ContainerFromIndex(i);
+                var check = Ui.Tree(item).OfType<FontIcon>().Single(f => f.Glyph == "\uE73E");
+                Assert.That(check.Opacity, Is.EqualTo(choice.Id == workspace.Selected!.Id ? 1d : 0d));
+                var texts = Ui.Tree(item).OfType<TextBlock>().ToArray();
+                Assert.That(texts.Any(t => t.Text == $"{choice.OwnerLogin} · Project {choice.Number}"), Is.True, string.Join(" | ", texts.Select(t => t.Text)));
+                titleXs.Add(texts.Single(t => t.Text == choice.Title).TransformToVisual(list).TransformPoint(new Point()).X);
+            }
+            Assert.That(titleXs.Distinct().Count(), Is.EqualTo(1));
+            var content = (StackPanel)((Flyout)Ui.Find<Button>("PlanProjectPicker").Flyout).Content;
+            Assert.That(content.Children[1], Is.TypeOf<Border>());
+            Assert.That(((Border)content.Children[1]).Height, Is.EqualTo(1));
+            foreach (var id in new[] { "PlanChooseProject", "PlanConnection" })
+                Assert.That(Ui.Tree(Ui.Find<Button>(id)).OfType<FontIcon>().Any(), Is.True);
+        });
+    }
+
+    [Test, Category("ShellChrome")]
+    public async Task ProjectPickerChecksCurrentProjectAfterTwoSwitchesAndReopening()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await Ui.Idle();
+        await OpenProjectPicker();
+        await WaitForProjectPickerItems("P2");
+        foreach (var project in new[] { "P1", "P2" }) {
+            await Ui.Run(() => Ui.Find<ListView>("RegisteredProjects").SelectedItem = workspace.Registered.Single(p => p.Id.NodeId == project));
+            await Ui.Until(() => workspace.Selected?.Id.NodeId == project);
+            await OpenProjectPicker();
+            await WaitForProjectPickerItems(project);
+            await Ui.Run(() => Ui.Find<Button>("PlanProjectPicker").Flyout.Hide());
+            await OpenProjectPicker();
+            await WaitForProjectPickerItems(project);
+        }
+    }
+
+    private async Task WaitForProjectPickerItems(string currentProject)
+    {
+        await Ui.Until(() => {
+            var list = Ui.Find<ListView>("RegisteredProjects");
+            if (list.Items.Count != 2 || workspace.Selected?.Id.NodeId != currentProject) return false;
+            var checkedProjects = new List<string>();
+            for (var i = 0; i < list.Items.Count; i++) {
+                if (list.ContainerFromIndex(i) is not ListViewItem { IsLoaded: true } item) return false;
+                var choice = (ProjectChoice)list.Items[i];
+                var texts = Ui.Tree(item).OfType<TextBlock>().ToArray();
+                if (!texts.Any(t => t.Text == choice.Title) ||
+                    !texts.Any(t => t.Text == $"{choice.OwnerLogin} · Project {choice.Number}")) return false;
+                var check = Ui.Tree(item).OfType<FontIcon>().SingleOrDefault(f => f.Glyph == "\uE73E");
+                if (check is null || (check.Opacity != 0 && check.Opacity != 1)) return false;
+                if (check.Opacity == 1) checkedProjects.Add(choice.Id.NodeId);
+            }
+            return checkedProjects.SequenceEqual(new[] { currentProject });
+        });
+    }
+
     [TestCase(false), TestCase(true), Category("PlanSheetPhase2")]
     public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
     {
@@ -168,6 +378,10 @@ internal sealed class PlanWorkspaceHostedTests
             await Open();
             await Ui.Run(() => {
                 Assert.That(view.ActualTheme, Is.EqualTo(ElementTheme.Light));
+                var caption = Ui.Window.AppWindow.TitleBar;
+                Assert.That(caption.ButtonForegroundColor, Is.EqualTo(Microsoft.UI.Colors.Black));
+                Assert.That(caption.ButtonHoverForegroundColor, Is.EqualTo(Microsoft.UI.Colors.Black));
+                Assert.That(caption.ButtonInactiveForegroundColor, Is.EqualTo(Windows.UI.Color.FromArgb(102, 0, 0, 0)));
                 Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 1 · タスク 2"));
             });
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "workspace-shell-light"));
@@ -253,6 +467,8 @@ internal sealed class PlanWorkspaceHostedTests
         workspace = new(new(root));
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
+        if (TestContext.CurrentContext.Test.MethodName == nameof(TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions))
+            await Ui.Run(() => { Ui.Window.ExtendsContentIntoTitleBar = true; Ui.Window.SetTitleBar(view.WorkspaceTitleBar); });
         await Ui.Mount(view);
         await Ui.Run(() => {
             var flyout = Ui.Find<Button>("PlanProjectPicker").Flyout;
@@ -272,7 +488,7 @@ internal sealed class PlanWorkspaceHostedTests
         }
         finally
         {
-            try { await Ui.Unmount(view, check: false); await Ui.Idle(); await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000))); }
+            try { await Ui.Unmount(view, check: false); await Ui.Run(() => { Ui.Window.SetTitleBar(null); Ui.Window.ExtendsContentIntoTitleBar = false; }); await Ui.Idle(); await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1400, 1000))); }
             finally
             {
                 try { await workspace.Flush(); }
@@ -382,8 +598,7 @@ internal sealed class PlanWorkspaceHostedTests
 
     private async Task PreparePeoplePendingExit()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Actual");
+        await OpenPeopleTasks("PeopleTask_I1_Actual");
         await Ui.Run(() => {
             var actual = Ui.Find<TextBox>("PeopleTask_I1_Actual"); actual.Focus(FocusState.Programmatic); actual.Text = "invalid";
             var remaining = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); remaining.Focus(FocusState.Programmatic); remaining.Text = "0";
@@ -393,11 +608,21 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Ready<Grid>("PeopleRow_U1");
     }
 
+    // The drill-down lists the work in the first displayed day. Without a status date that day is
+    // today, which has no work on a weekend or holiday, so pin it to a working day.
+    private async Task OpenPeopleTasks(string input)
+    {
+        await Open();
+        var monday = new DateOnly(2026, 10, 5);
+        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = monday }), monday);
+        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
+        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>(input);
+    }
+
     [TestCase("fixed"), TestCase("assignee"), TestCase("zoom")]
     public async Task PeopleRefusedControlsReflectTheDocument(string control)
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await OpenPeopleTasks("PeopleTask_I1_Remaining");
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); cell.Focus(FocusState.Programmatic); cell.Text = "invalid";
             if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
@@ -468,8 +693,7 @@ internal sealed class PlanWorkspaceHostedTests
     [TestCase("fixed"), TestCase("assignee")]
     public async Task PeopleFailedSaveControlsReflectTheAcceptedDocument(string control)
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await OpenPeopleTasks("PeopleTask_I1_Remaining");
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
             await Ui.Run(() => {
                 if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
@@ -786,6 +1010,100 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1")));
     }
 
+    [TestCase(false), TestCase(true), Category("OperationStates")]
+    public async Task RemoteWorkShowsRunningCommandAndLocksCellsUntilCompletion(bool publish)
+    {
+        await Open();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
+            planEditor = true, workspace = true, holdQuery = publish ? "mutation PlanPublish(" : "ProjectFields"
+        }));
+        if (publish) { await Ui.Run(() => Ui.Click("PlanPublish")); await Ui.Idle(); }
+        await Ui.Run(() => Ui.Click(publish ? "PlanPublishConfirm" : "PlanRefresh"));
+        try {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Run(() => {
+                var progress = Ui.Tree(view).OfType<ProgressBar>().Single();
+                Assert.That(progress.Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(progress.IsIndeterminate, Is.True);
+                Assert.That(progress.ActualHeight, Is.InRange(1d, 4d));
+                var button = Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh");
+                var label = publish ? "発行中…" : "更新中…";
+                Assert.That(Ui.Tree(button).OfType<TextBlock>().Any(t => t.Text == label), Is.True);
+                Assert.That(AutomationProperties.GetName(button), Is.EqualTo(label));
+                if (publish) Ui.Click("PlanPublishClose");
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.True);
+            });
+            await Ui.Run(async () => await RenderedEvidence.Capture(view, publish ? "t6-publishing" : "t6-refreshing"));
+        } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
+        });
+    }
+
+    [Test, Category("OperationStates")]
+    public async Task LocalUndoDoesNotShowRemoteProgress()
+    {
+        await Open();
+        await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "変更"; Ui.Click("PlanPublish"); });
+        await Ui.Idle();
+        var shown = false;
+        long callback = 0;
+        await Ui.Run(() => {
+            var progress = Ui.Tree(view).OfType<ProgressBar>().Single();
+            callback = progress.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => shown |= progress.Visibility == Visibility.Visible);
+            Ui.Click("PlanUndo");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Ui.Tree(view).OfType<ProgressBar>().Single().UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, callback));
+        Assert.That(workspace.Session!.Document.State.Rows[0].Title, Is.EqualTo("設計"));
+        Assert.That(shown, Is.False);
+    }
+
+    [Test, Category("OperationStates")]
+    public async Task SheetSaveFailureAppearsAboveWorkspaceAndKeepsOneRetry()
+    {
+        await Open();
+        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
+            await Ui.Run(() => {
+                var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "保存待ち";
+                Ui.Find<TextBox>("PlanCell1_Estimate").Focus(FocusState.Programmatic);
+            });
+            await Ui.Ready<Button>("PlanSheetRetrySave");
+            await Ui.Run(() => {
+                AssertFailure("PlanSheetSaveFailure", "保存できませんでした", "保存を再試行");
+                Assert.That(Ui.Tree(view).OfType<InfoBar>().Count(b => b.IsOpen && b.Title == "保存できませんでした"), Is.EqualTo(1));
+            });
+            await Ui.Run(async () => await RenderedEvidence.Capture(view, "t6-sheet-save-failure"));
+        }
+        await Ui.Run(() => Ui.Click("PlanSheetRetrySave")); await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanSheetSaveFailure").IsOpen, Is.False));
+    }
+
+    private void AssertFailure(string id, string title, string retry)
+    {
+        var bar = Ui.Find<InfoBar>(id);
+        Assert.That(bar.IsOpen, Is.True);
+        Assert.That(bar.IsClosable, Is.False);
+        Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Error));
+        Assert.That(bar.Title, Is.EqualTo(title));
+        Assert.That(bar.Message, Is.Not.Empty);
+        Assert.That(((Button)bar.ActionButton).Content, Is.EqualTo(retry));
+        var card = Ui.Find<Border>("PlanWorkCard");
+        var bounds = bar.TransformToVisual(card).TransformBounds(new Rect(0, 0, bar.ActualWidth, bar.ActualHeight));
+        Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+        Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(card.ActualHeight));
+        var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+        if (sheet.Visibility == Visibility.Visible && sheet.ActualHeight > 0)
+            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(sheet.TransformToVisual(card).TransformPoint(new Point()).Y + 1));
+        Assert.That(Ui.Find<TextBlock>("PlanError").Visibility, Is.EqualTo(Visibility.Collapsed));
+        Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+        Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
+        Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
+    }
+
     [Test]
     public async Task FailedSaveWhileClosingPublicationKeepsRetryAndEditingReachable()
     {
@@ -800,14 +1118,17 @@ internal sealed class PlanWorkspaceHostedTests
         {
             await Ui.Run(async () => stopped = await view.StopAsync());
             Assert.That(stopped, Is.False);
+            await Ui.Ready<Button>("PlanRetrySave");
             await Ui.Run(() => {
                 Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible));
                 Assert.That(Ui.Find<Button>("PlanRefresh").IsEnabled, Is.True);
+                Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
+                Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
             });
         }
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
         await Ui.Run(() => Ui.Click("PlanRetrySave"));
-        await Ui.Until(() => Ui.Find<Button>("PlanRetrySave").Visibility == Visibility.Collapsed);
+        await Ui.Until(() => !Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
     }
 
     [Test]
@@ -819,12 +1140,13 @@ internal sealed class PlanWorkspaceHostedTests
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0 && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
-            await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible)));
+            await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+            await Ui.Ready<Button>("PlanRetrySave");
+            await Ui.Run(() => AssertFailure("PlanSaveFailure", "保存できませんでした", "保存を再試行"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         }
         await Ui.Run(() => Ui.Click("PlanRetrySave"));
-        await Ui.Until(() => Ui.Find<Button>("PlanRetrySave").Visibility == Visibility.Collapsed && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
+        await Ui.Until(() => !Ui.Find<InfoBar>("PlanSaveFailure").IsOpen && Ui.Find<TextBlock>("PlanError").Text.Length == 0);
     }
 
     [Test]
@@ -863,8 +1185,10 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "発行予定"; Ui.Click("PlanPublish"); });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0 && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanPublishFailure").IsOpen && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Ready<Button>("PlanRetryPublish");
         await Ui.Run(() => {
+            AssertFailure("PlanPublishFailure", "発行できませんでした", "再試行");
             Assert.That(string.Join(" ", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text)), Does.Contain(fault == "partial" ? "発行失敗" : "未検証"));
             Ui.Click("PlanPublishClose");
         });
@@ -872,7 +1196,10 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Title")), Does.Contain(fault == "partial" ? "Synthetic failure" : "未検証"));
         });
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-        await Ui.Run(() => Ui.Click("PlanPublish"));
+        var writesBeforeRetry = FakePlanEditor.Load(root).MutationBatches;
+        await Ui.Run(() => Ui.Click("PlanRetryPublish"));
+        await Ui.Idle();
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(writesBeforeRetry));
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
@@ -888,13 +1215,17 @@ internal sealed class PlanWorkspaceHostedTests
         var before = workspace.Session!.Document;
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"readfailure\"}");
         await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen);
+        await Ui.Ready<Button>("PlanRetryRefresh");
+        await Ui.Run(() => AssertFailure("PlanRefreshFailure", "最新の情報に更新できませんでした", "再試行"));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "t6-refresh-failure"));
         Assert.That(workspace.Session.Document, Is.EqualTo(before));
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
         var state = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Title = "更新済み" } }] });
-        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Run(() => Ui.Click("PlanRetryRefresh"));
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Title").Text == "更新済み");
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False));
     }
 
     [Test]
@@ -932,7 +1263,21 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Length == 1);
         await Ui.Run(() => Ui.Click("PlanShowTasks"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text == "競合"));
+        await Ui.Until(() => AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Title")).Contains("競合"));
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Title");
+            cell.Focus(FocusState.Programmatic);
+            var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell));
+            var critical = ((SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"]).Color;
+            Assert.That(((SolidColorBrush)frame.BorderBrush).Color, Is.EqualTo(critical));
+            Assert.That(frame.BorderThickness.Left, Is.InRange(1d, 2d));
+            Assert.That(((SolidColorBrush)frame.Background).Color, Is.Not.EqualTo(((SolidColorBrush)Application.Current.Resources["SheetChangedBrush"]).Color));
+            var corner = Ui.Tree(frame).OfType<Polygon>().Single();
+            Assert.That(corner.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(((SolidColorBrush)corner.Fill).Color, Is.EqualTo(critical));
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("競合: GitHub では GitHub変更"));
+        });
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "t6-conflict-cell-" + useGitHub));
         await Ui.Run(() => {
             Assert.That(workspace.Session!.Document.State.Rows[0].Actual, Is.EqualTo(1));
             Ui.Click("PlanPublish");
@@ -1292,6 +1637,41 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Idle();
     }
 
+    [TestCase(false), TestCase(true), Category("PlanWorkspaceReview")]
+    public async Task SuccessfulChangeClearsPreviousSettingsSaveFailure(bool fromPeople)
+    {
+        await Open(); await Settings();
+        var store = new PlanStore(root);
+        var firstDay = new DateOnly(2026, 10, 7);
+        var secondDay = new DateOnly(2026, 10, 8);
+        using (var writer = new FileStream(store.FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
+            await AddDay("PlanCompanyDaysOff", firstDay);
+            await Ui.Ready<Button>("PlanRetrySave");
+            await Ui.Run(() => {
+                var failure = Ui.Find<InfoBar>("PlanSaveFailure");
+                Assert.That(failure.IsOpen, Is.True);
+                Assert.That(failure.Title, Is.EqualTo("保存できませんでした"));
+                Assert.That(((Button)failure.ActionButton).Visibility, Is.EqualTo(Visibility.Visible));
+            });
+        }
+        if (fromPeople) {
+            await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
+            await Ui.Run(() => {
+                var input = Ui.Find<TextBox>("PeopleAllowance_U1"); input.Focus(FocusState.Programmatic); input.Text = "80";
+                Ui.Click("PeopleNext");
+            });
+            await Ui.Idle();
+        } else await AddDay("PlanCompanyDaysOff", secondDay);
+        var stored = await store.LoadAsync(workspace.Session.Document.Project);
+        Assert.That(stored.Checkpoint!.Document.State.Settings.CompanyDaysOff, Is.EqualTo(fromPeople ? new[] { firstDay } : new[] { firstDay, secondDay }));
+        if (fromPeople) Assert.That(stored.Checkpoint.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
+        await Ui.Run(() => {
+            var failure = Ui.Find<InfoBar>("PlanSaveFailure");
+            Assert.That(failure.IsOpen, Is.False, "A successful later save must remove the obsolete failure.");
+            Assert.That(((Button)failure.ActionButton).Visibility, Is.EqualTo(Visibility.Collapsed));
+        });
+    }
+
     [Test, Category("PlanWorkspaceReview")]
     public async Task SaveRetryRecoversPendingSettingsAndAllowsRefreshAndNormalClose()
     {
@@ -1302,7 +1682,7 @@ internal sealed class PlanWorkspaceHostedTests
             using (var writer = new FileStream(path + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
                 await CommitText("PlanProjectStart", "2026-10-07");
-                await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+                await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
                 await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
             }
             await Ui.Run(() => Ui.Click("PlanRetrySave")); await Ui.Idle();
@@ -1330,7 +1710,7 @@ internal sealed class PlanWorkspaceHostedTests
         using (var lockedCatalog = new FileStream(Path.Combine(workspace.Root, "workspace.json"), FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             await SelectRegistered("P2");
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0); await Ui.Idle();
+            await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen); await Ui.Idle();
             Assert.That(workspace.Selected!.Id.NodeId, Is.EqualTo("P1"));
             await OpenProjectPicker();
             await Ui.Run(() => {
@@ -1384,6 +1764,11 @@ internal sealed class PlanWorkspaceHostedTests
             await stop.WaitAsync(TimeSpan.FromSeconds(10));
         }
         Assert.That(await stop, Is.True);
+        if (stage == "refresh") await Ui.Run(() => {
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
+            Assert.That(Ui.Tree(view).OfType<ProgressBar>().Single().Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
+        });
         process.Refresh(); Assert.That(process.HasExited, Is.True);
         if (before is not null) Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before));
         else Assert.That(workspace.Session, Is.Null);

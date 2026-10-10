@@ -58,12 +58,16 @@
             <DataTemplate x:Key="PlanSheetRowTemplate"><local:PlanSheetRow /></DataTemplate>
             <DataTemplate x:Key="PlanPublishGroupTemplate"><local:PlanPublishGroupView /></DataTemplate>
             <DataTemplate x:Key="PlanProjectChoiceTemplate">
-                <StackPanel Spacing="2" HorizontalAlignment="Stretch" ToolTipService.ToolTip="{Binding Url}">
-                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
-                    <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
-                        <Run Text="{Binding OwnerLogin}"/><Run Text=" #"/><Run Text="{Binding Number}"/>
-                    </TextBlock>
-                </StackPanel>
+                <Grid ColumnSpacing="8" ToolTipService.ToolTip="{Binding Url}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE73E;" FontSize="12" Opacity="0" IsHitTestVisible="False" IsTabStop="False" Foreground="{ThemeResource SystemControlHighlightAccentBrush}"/>
+                    <StackPanel Grid.Column="1" Spacing="2" HorizontalAlignment="Stretch">
+                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
+                        <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                            <Run Text="{Binding OwnerLogin}"/><Run Text=" · Project "/><Run Text="{Binding Number}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
             </DataTemplate>
             <Style x:Key="WorkspaceCardStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource WorkspaceCardBrush}"/>

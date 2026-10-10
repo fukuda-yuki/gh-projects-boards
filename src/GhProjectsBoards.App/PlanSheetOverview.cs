@@ -74,16 +74,33 @@ internal sealed partial class PlanSheetView
         Refresh();
     }
 
-    private void UpdateTimelineRange()
+    private double UpdateTimelineRange()
     {
+        var previousFirst = FirstDay;
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
-        if (acceptedZoom != 3 || dates.Length == 0) dates = dates.Append(StatusDate).ToArray();
-        var first = dates.Min().DayNumber - 5;
-        if (acceptedZoom != 3) first = Math.Min(first, StatusDate.DayNumber - statusLeadDays);
-        FirstDay = DateOnly.FromDayNumber(Math.Max(0, first));
-        var span = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + 5) - FirstDay.DayNumber + 1;
-        DayCount = acceptedZoom == 3 ? span : Math.Max(365, span + 9);
+        dates = dates.Append(StatusDate).ToArray();
+        // Any task can become the zoom anchor without selection changing the date coordinate system.
+        // Full-period fixed marks use pixel gutters in the fitted scale, not extra calendar days.
+        var lead = acceptedZoom == 3 ? 0 : (int)Math.Ceiling(ChartViewport / (4 * DayWidth));
+        var trail = acceptedZoom == 3 ? 0 : (int)Math.Ceiling(ChartViewport * .75 / DayWidth);
+        FirstDay = DateOnly.FromDayNumber(Math.Max(0, dates.Min().DayNumber - lead));
+        var last = Math.Min(DateOnly.MaxValue.DayNumber, dates.Max().DayNumber + trail);
+        var span = last - FirstDay.DayNumber + 1;
+        DayCount = acceptedZoom == 3 ? span : Math.Max(365, span);
+        return (previousFirst.DayNumber - FirstDay.DayNumber) * DayWidth;
+    }
+
+    private DateOnly TimelineAnchor => SelectedDate() ?? StatusDate;
+
+    internal static double AnchorOffset(DateOnly anchor, DateOnly first, double dayWidth, double viewport) =>
+        Math.Max(0, (anchor.DayNumber - first.DayNumber) * dayWidth - viewport / 4);
+
+    private void PositionTimelineAnchor()
+    {
+        // ChangeView clamps against the arranged native extent, not the new content width alone.
+        chartHorizontal.UpdateLayout();
+        chartHorizontal.ChangeView(acceptedZoom == 3 ? 0 : AnchorOffset(TimelineAnchor, FirstDay, DayWidth, ChartViewport), null, null, true);
     }
 
     private DateOnly? SelectedDate() => Schedule.TryGetValue(selected, out var task) ? task.Start.Value ?? task.End.Value : null;

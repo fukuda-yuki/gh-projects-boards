@@ -66,7 +66,7 @@ Restore once in a network-enabled development environment. Missing assets or NU1
 
 ## Planning editor Core scheduler (#78)
 
-PlanEditorSchedulingTests covers work/rate/calendar boundaries, status date and Project start, kept/calculated dates, zero-effort milestones, in-progress and complete work, hierarchy roll-ups, cycles, external predecessors, isolation of invalid refreshed values, exact fractional hours and no leveling. PlanSheetEditingTests covers input conversion and operation preparation. HolidayCsvImportTests and PlanningReaderTests retain the actual holiday/parser/read boundaries. Timing is opt-in; use [performance measurement](../docs/performance.md).
+PlanEditorSchedulingTests covers work/rate/calendar boundaries, status date and Project start, kept/calculated dates, zero-effort milestones, in-progress and complete work, hierarchy roll-ups, cycles, external predecessors, isolation of invalid refreshed values, exact fractional hours and no leveling. PlanLatenessTests covers status-date boundaries, both lateness levels, descendant roll-ups and leaf totals, predecessor delay, end reasons, and entered versus recalculated unpublished inputs. PlanSheetEditingTests covers input conversion and operation preparation. HolidayCsvImportTests and PlanningReaderTests retain the actual holiday/parser/read boundaries. Timing is opt-in; use [performance measurement](../docs/performance.md).
 
 ## Planning editor local document (#78 / #79 / #81)
 
@@ -74,11 +74,11 @@ PlanDocumentTests and PlanHistoryTests use real operations, scheduler and isolat
 
 ## Workspace shell and settings (#81)
 
-PlanWorkspaceTests exercises real connection/discovery, Project selection and catalog persistence through fake-gh subprocesses. PlanWorkspaceHostedTests mounts actual controls for connection/open/switch, mapping, calendar/people settings, file picking, operation cancellation and failure recovery. Only external endpoints and native file selection are substituted. PlanningWorkspaceJourneyTests drives the ordinary app, opens the offline evaluation Project at zero unpublished tasks, edits and restarts.
+PlanWorkspaceTests exercises real connection/discovery, Project selection and catalog persistence through fake-gh subprocesses. PlanWorkspaceHostedTests mounts actual controls for connection/open/switch, the current-Project checkmark, shell chrome and view-specific legend, status counts, default divider geometry at wide and narrow client sizes, mapping, calendar/people settings, file picking, operation cancellation and failure recovery. Only external endpoints and native file selection are substituted. PlanningWorkspaceJourneyTests drives the ordinary app, opens the offline evaluation Project at zero unpublished tasks, edits and restarts.
 
 ## Plan sheet and Gantt (#78)
 
-PlanSheetHostedTests exercises real cells, events, selection, input, rectangular operations, Undo, visible dates/bars, alignment and pending-input retention with a real PlanSession. PlanOverviewHostedTests adds requirement folding with stable identities, filter/input focus, full-period and rapid selected-date navigation, and searchable predecessor selection with visible popup bounds. Routine clipboard cases substitute the OS transport. Native clipboard/keys/pointer and frame performance are opt-in:
+PlanSheetHostedTests exercises real cells, events, selection, input, rectangular operations, Undo, visible dates/bars, alignment and pending-input retention with a real PlanSession. It also covers two-level lateness markers and end-date color, entered versus recalculated unpublished cells, full-value title/assignee editing and copying, selection-line reasons/pills/totals, and Gantt lateness tint/labels and row geometry. PlanOverviewHostedTests adds requirement folding with stable identities, filter/input focus, full-period and rapid selected-date navigation, scale anchors and date-viewport preservation, full-period gutters and status-date inclusion, dependency-arrow direction, and searchable predecessor selection with visible popup bounds. Routine clipboard cases substitute the OS transport. Native clipboard/keys/pointer and frame performance are opt-in:
 
 ```powershell
 C:\w\g76\scripts\Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetNative'
@@ -109,7 +109,7 @@ Require nine passing samples and CleanupComplete in plan-publish-live.json. Keep
 
 ## Publish workspace (#79)
 
-Publish cases in PlanWorkspaceHostedTests cover changed markers/count, review, conflicts, failures/retry, pending inputs and workspace-owned operation lifetime. PlanPublishReviewHostedTests covers grouped full-value review, 1,040-Issue virtualization and last-item access, and recycled conflict actions without sending mutations. PlanningPublishJourneyTests drives two ordinary-app workflows including interrupted publication/restart through fake gh. Neither establishes live service acceptance.
+Publish cases in PlanWorkspaceHostedTests cover changed markers/count, review, conflict outlines and selected GitHub values, failure InfoBars/retry, pending inputs and workspace-owned operation lifetime. Remote-operation cases cover the progress bar, running command labels and locked cells; local Undo leaves remote progress hidden, and successful saves clear save failures. PlanPublishReviewHostedTests covers grouped full-value review, 1,040-Issue virtualization and last-item access, and recycled conflict actions without sending mutations. PlanningPublishJourneyTests drives two ordinary-app workflows including interrupted publication/restart through fake gh. Neither establishes live service acceptance.
 
 ## People view (#80)
 
@@ -121,7 +121,7 @@ PlanCsvImportTests verifies encoding, whole-file validation, line errors, keys/r
 
 ## Main screen design conformance (#109)
 
-UI integration covers headers/tooltips, date round trips, indicator states, the lateness segment, labelled commands, shell Undo/Redo and the light theme. Whether the ordinary app matches the agreed mockup at the PMO's display size is a separate visual check. Its [conformance test plan](plans/issue-109/README.md) holds the states, viewports, checklist and reference images. It records findings and bug candidates; it does not establish the owner's acceptance.
+UI integration covers headers/tooltips, date round trips, two lateness levels, unpublished and conflict markers, selection-line explanations, Gantt geometry and scale navigation, labelled commands, shell chrome and Undo/Redo, default divider widths, operation-state feedback and the light theme. Whether the ordinary app matches the agreed mockup at the PMO's display size is a separate visual check. Its [conformance test plan](plans/issue-109/README.md) holds the states, viewports, checklist and reference images. It records findings and bug candidates; it does not establish the owner's acceptance.
 
 ## Offline evaluation fixture
 

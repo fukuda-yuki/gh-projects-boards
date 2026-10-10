@@ -13,7 +13,7 @@ namespace GhProjectsBoards.App;
 internal sealed class PlanPeopleView : UserControl
 {
     internal PlanSession Session { get; }
-    internal event Action? Changed;
+    internal event Action<PlanSaveResult>? Changed;
     private readonly Grid root = new() { RowSpacing = 4 };
     private readonly Grid table = new();
     private readonly Grid header = new();
@@ -134,7 +134,7 @@ internal sealed class PlanPeopleView : UserControl
     private async Task Apply(PlanCommand command)
     {
         var result = await Session.Execute(command, Today);
-        Changed?.Invoke();
+        Changed?.Invoke(result);
         if (!result.Succeeded) throw new IOException(result.Error);
     }
     private TextBox Input(Func<string> committed, string id, string name, Func<string, PlanCommand> command, string group, string? taskIdentity = null)

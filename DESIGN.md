@@ -33,12 +33,12 @@ Apply these rules across the app:
 | Element | Rule |
 | --- | --- |
 | Theme | Light regardless of the Windows app mode; High Contrast honored. Semantic resources in App.xaml carry every product color. |
-| Shell | Title bar: app name, Project picker (registered Projects, Project を開く…, 接続…), settings gear. Below it: view tabs (計画, 担当者) on the left; 状況日, Undo/Redo, 未発行 count, **最新の情報に更新** and **発行…** on the right; the work surface on a card; a status bar with requirement and task counts. |
+| Shell | Title bar: app name, Project picker (registered Projects, Project を開く…, 接続…), settings gear. Below it: view tabs (計画, 担当者) on the left; 状況日, Undo/Redo, 未発行 count, **最新の情報に更新** and **発行…** on the right; the work surface on a card; a status bar with requirement and task counts and nonzero lateness counts; the Gantt legend appears only on 計画. |
 | Commands | Every primary command shows an icon and a label. Group by purpose with separators; infrequent commands and commands normally used through standard shortcuts (clipboard) go to the overflow with their shortcuts. One location per command. |
 | Typography | Segoe UI Variable / Yu Gothic UI. One page title size, one body size for cells and labels, a smaller secondary size for metadata. Hierarchy comes from weight and color, not from many sizes. Tabular figures for numbers and dates. |
-| Color | Accent marks selection, the current view, the status date and the one primary action. Amber marks unpublished work: tint and corner for values the PMO entered, corner only for recalculated dates. Critical red marks overdue work strongly (filled marker, tint, red end date), later-than-published work quietly (outline only), and conflicts and failures by outline and icon. A critical tint is reserved for overdue work. Green marks completion. Every color state also has a marker, text or accessible name. |
+| Color | Accent marks selection, the current view, the status date and the one primary action. Amber marks unpublished work: tint and corner for values the PMO entered, corner only for recalculated dates. Critical red marks overdue work strongly (filled marker and lateness-segment tint, with a red end date only when that row's end moved later than published), later-than-published work quietly (outline only), and conflicts and failures by outline and icon. A critical tint is reserved for overdue work. Green marks completion. Every color state also has a marker, text or accessible name. |
 | Sheet | Japanese column headers; a wide task name; quiet separators; requirement rows bold; calculated values in secondary text and typed values in primary text; an indicator column for row state; a selection line explaining the selected task. |
-| Gantt | Two-tier timescale; shaded non-working days; one task hue with the completed share solid and the rest tinted; bracket bars for summaries; neutral dependency arrows; an accent status-date line; lateness against the published end drawn as a dashed critical segment. Only overdue work fills it and labels its working-day count, and only at 日 and 週. |
+| Gantt | Two-tier timescale; shaded non-working days; one task hue with the completed share solid and the rest tinted; bracket bars for summaries; neutral dependency arrows; an accent status-date line; lateness against the published end drawn as a dashed critical segment. Only overdue work fills it; only at 日 and 週 does that work also label its working-day count. |
 
 ## Information architecture and surface roles
 
@@ -50,7 +50,7 @@ Apply these rules across the app:
 - **Good / bad:** Connection settings configure connection; Project registration adds an existing Project to the local workspace; editing prepares work; review supports a send decision; results explain its outcome. A connection screen that also owns registration and Apply obscures these roles.
 - **Check:** Can users predict where an action belongs and what it changes from its name and context? Can they distinguish local preparation, GitHub actions and settings without explanatory narration?
 
-Use the [workspace and settings](docs/spec.md#current-workspace-and-project-settings-81), [connection](docs/spec.md#connection-and-api-access), [local document](docs/spec.md#current-local-plan-document-operations-and-storage-78--79--81) and [publishing](docs/spec.md#current-planning-editor-refresh-and-publishing-contract-79) contracts for routes and behavior. These responsibilities do not require one screen per role or a forced wizard.
+Use the [workspace and settings](docs/spec.md#current-workspace-and-project-settings-81--109), [connection](docs/spec.md#connection-and-api-access), [local document](docs/spec.md#current-local-plan-document-operations-and-storage-78--79--81) and [publishing](docs/spec.md#current-planning-editor-refresh-and-publishing-contract-79) contracts for routes and behavior. These responsibilities do not require one screen per role or a forced wizard.
 
 ## Information display policy
 

@@ -39,7 +39,11 @@ internal static class EvaluationFixture
         var scheduled = PlanOperations.Schedule(document, plan.StatusDate).ToDictionary(t => t.Input.Identity);
         rows = rows.Select(r => r with { Start = scheduled[r.Identity].Start.Value, End = scheduled[r.Identity].End.Value }).ToImmutableArray();
         var orders = rows.ToImmutableDictionary(r => r.Identity, r => rows.Where(c => c.Parent == r.Identity).Select(c => c.Identity).ToImmutableArray());
-        document = document with { Baseline = new(rows, columns), State = new(rows, settings), Sync = new() { NativeOrders = orders } };
+        document = document with { Baseline = new(rows, columns), State = new(rows, settings), Sync = new() {
+            NativeOrders = orders,
+            IssueLinks = rows.ToImmutableDictionary(r => r.Identity,
+                r => new PlanIssueLink($"{r.Repository}#{r.Identity[1..]}", $"https://github.com/{r.Repository}/issues/{r.Identity[1..]}"))
+        } };
         FakePlanEditor.Save(fake, new(rows.Select(r => new PlanFakeIssue(r, "", true)).ToImmutableArray(), rows.Length + 1) {
             SubOrders = orders, AddedFields = [nameof(PlanField.StartNoEarlierThan), nameof(PlanField.Fixed)]
         });
