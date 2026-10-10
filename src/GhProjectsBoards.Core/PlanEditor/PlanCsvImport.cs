@@ -106,7 +106,7 @@ internal static class PlanCsvImport
                 else
                 {
                     assignees.Add(person.Value.Value);
-                    people.TryAdd(person.Value.Value, new(person.Value.Value, person.Value.Key, 100, null, []));
+                    people.TryAdd(person.Value.Value, new(person.Value.Value, person.Value.Key, 100, null));
                 }
             }
             string? Resolve(string token)

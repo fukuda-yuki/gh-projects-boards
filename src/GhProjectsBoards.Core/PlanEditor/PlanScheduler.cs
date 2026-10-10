@@ -287,10 +287,10 @@ internal static class PlanScheduler
             {
                 if (task.Actual > 0) warnings.Add("進行中タスクの開始日なし");
                 remainingStart = earliest;
-                start = Normalize(remainingStart, person);
+                start = Normalize(remainingStart);
             }
-            remainingStart = Normalize(remainingStart, person);
-            end = AddWork(remainingStart, work, rate, person, out var daily);
+            remainingStart = Normalize(remainingStart);
+            end = AddWork(remainingStart, work, rate, out var daily);
             var scheduled = Create(task, start, end, startOrigin, DateOrigin.Calculated, reason, warnings);
             return scheduled with { Row = scheduled.Row with { PlannedHours = daily } };
 
@@ -301,14 +301,13 @@ internal static class PlanScheduler
             }
         }
 
-        private Point Normalize(Point point, PlanPerson? person)
+        private Point Normalize(Point point)
         {
             while (true)
             {
                 var date = point.Date;
                 var working = date.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)
-                    && !holidays.Contains(date) && !settings.Calendar.CompanyDaysOff.Contains(date)
-                    && !(person?.DaysOff.Contains(date) ?? false);
+                    && !holidays.Contains(date) && !settings.Calendar.CompanyDaysOff.Contains(date);
                 if (working)
                 {
                     if (point.Hour < 9) return point with { Hour = 9 };
@@ -320,7 +319,7 @@ internal static class PlanScheduler
             }
         }
 
-        private Point AddWork(Point start, decimal work, Hours rate, PlanPerson? person, out IReadOnlyDictionary<DateOnly, decimal> daily)
+        private Point AddWork(Point start, decimal work, Hours rate, out IReadOnlyDictionary<DateOnly, decimal> daily)
         {
             // Even an always-working calendar cannot place more than this in the supported date range.
             Hours remaining = work;
@@ -342,7 +341,7 @@ internal static class PlanScheduler
                     return point with { Hour = point.Hour + remaining / rate };
                 }
                 remaining -= capacity;
-                point = Normalize(point with { Hour = boundary }, person);
+                point = Normalize(point with { Hour = boundary });
             }
         }
 

@@ -60,7 +60,7 @@ internal sealed class PlanDocumentTests
         var rows = Enumerable.Range(1, count).Select(i => new PlanRow($"issue:{i}", $"Task {i}", "acme/work")
         { Estimate = 8, Start = Today, End = Today, Assignees = i == 1 ? ["p1"] : [] }).ToImmutableArray();
         var settings = new ProjectPlanSettings { DefaultRepository = "acme/work", StatusDate = Today,
-            Columns = [new(PlanField.Estimate, "estimate", "Estimate", "NUMBER")], People = [new("p1", "Alice", 100, null, [])] };
+            Columns = [new(PlanField.Estimate, "estimate", "Estimate", "NUMBER")], People = [new("p1", "Alice", 100, null)] };
         return new(Project, new(rows, [new("estimate", "Estimate", "NUMBER")]), new(rows, settings));
     }
     private async Task<PlanSession> Create(PlanDocument? document = null, PlanStore? store = null)
@@ -166,7 +166,7 @@ internal sealed class PlanDocumentTests
             "duplicate" => new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.Title, "A"), new("issue:1", PlanField.Title, "B")]),
             "missing" => Edit(PlanField.Title, "Do not insert", "missing"),
             "cycle" => new EditPlanCells(PlanOperationKind.Paste, [new("issue:1", PlanField.Predecessors, new[] { "issue:2" }), new("issue:2", PlanField.Predecessors, new[] { "issue:1" })]),
-            _ => new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 0, null, [])] })
+            _ => new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 0, null)] })
         };
         Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
         Assert.That(Text(session.Document), Is.EqualTo(before));
@@ -222,7 +222,7 @@ internal sealed class PlanDocumentTests
         Assert.That(changes.TaskCount, Is.EqualTo(1));
         Assert.That(changes.Fields["issue:1"], Is.EquivalentTo(new[] { PlanField.Estimate, PlanField.Remaining, PlanField.End }));
         await session.Undo(Today);
-        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 100, 80, [])] }), Today);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 100, 80)] }), Today);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = Today.AddDays(1) }), Today);
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(3));
@@ -286,7 +286,7 @@ internal sealed class PlanDocumentTests
         Assert.That((await Reopen()).Document.State.Rows[0].Title, Is.EqualTo("Writer A"));
     }
 
-    [TestCase("json"), TestCase("version"), TestCase("scope"), TestCase("history"), TestCase("unknown property")]
+    [TestCase("json"), TestCase("version"), TestCase("scope"), TestCase("history"), TestCase("unknown property"), TestCase("personal days")]
     public async Task CorruptCheckpointIsPreservedAndCannotCreateANewSessionOverIt(string problem)
     {
         var store = new PlanStore(root); var session = await Create(store: store); await session.Execute(Edit(PlanField.Title, "Saved"), Today);
@@ -295,6 +295,7 @@ internal sealed class PlanDocumentTests
         if (problem == "scope") node["document"]!["project"]!["nodeId"] = "different";
         if (problem == "history") node["undo"]![0]!["rows"]![0]!["after"]!["title"] = "Not current";
         if (problem == "unknown property") node["unexpected"] = true;
+        if (problem == "personal days") node["document"]!["state"]!["settings"]!["people"]![0]!["daysOff"] = new JsonArray();
         var bad = problem == "json" ? "{broken" : node.ToJsonString(); await File.WriteAllTextAsync(store.FileFor(Project), bad);
         var opened = await PlanSession.OpenAsync(store, Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Blocked)); Assert.That(opened.Session, Is.Null);
@@ -349,7 +350,7 @@ internal sealed class PlanDocumentTests
         {
             ProjectStart = Today.AddDays(1), StatusDate = null, CompanyDaysOff = [Today.AddDays(2)],
             ImportedHolidays = PlanHolidayData.FromPreset(PlanningContract.BundledHolidays()),
-            People = [new("p1", "Alice", 50, 80, [Today.AddDays(3)]), new("unknown-person", "Bob", 75, null, [])],
+            People = [new("p1", "Alice", 50, 80), new("unknown-person", "Bob", 75, null)],
             Columns = [new(PlanField.Estimate, "estimate", "Estimate", "NUMBER"), new(PlanField.Remaining, "unknown-field", "Remaining", "NUMBER")]
         };
         await first.Execute(new ReplacePlanSettings(settings), Today);
@@ -366,7 +367,7 @@ internal sealed class PlanDocumentTests
         await second.Undo(Today); Assert.That(Text(second.Document), Is.EqualTo(before));
     }
 
-    [TestCase("rate"), TestCase("allowance"), TestCase("people"), TestCase("days"), TestCase("mapping"), TestCase("repository"), TestCase("version"), TestCase("unknown property"), TestCase("missing property")]
+    [TestCase("rate"), TestCase("allowance"), TestCase("people"), TestCase("days"), TestCase("mapping"), TestCase("repository"), TestCase("version"), TestCase("unknown property"), TestCase("missing property"), TestCase("personal days")]
     public async Task InvalidSettingsImportChangesNothing(string defect)
     {
         var session = await Create(); var before = Text(session.Document);
@@ -382,6 +383,7 @@ internal sealed class PlanDocumentTests
             case "repository": settings["defaultRepository"] = "https://wrong.example/repo"; break;
             case "version": node["version"] = 2; break;
             case "unknown property": settings["mystery"] = 1; break;
+            case "personal days": settings["people"]![0]!["daysOff"] = new JsonArray(); break;
             case "missing property": settings.AsObject().Remove("people"); break;
         }
         var path = Path.Combine(root, "invalid-settings.json"); await File.WriteAllTextAsync(path, node.ToJsonString());

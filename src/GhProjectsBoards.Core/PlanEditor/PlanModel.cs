@@ -25,10 +25,7 @@ internal sealed record PlanTask(string Identity, int RowId)
     public bool IsComplete => Closed || Remaining == 0 && (Estimate > 0 || Actual > 0);
     public bool KeepsDates => IsComplete || Fixed || Estimate is null && Remaining is null;
 }
-internal sealed record PlanPerson(string Identity, decimal Rate = 100m)
-{
-    public IReadOnlySet<DateOnly> DaysOff { get; init; } = new HashSet<DateOnly>();
-}
+internal sealed record PlanPerson(string Identity, decimal Rate = 100m);
 internal sealed record PlanCalendar
 {
     public HolidayPreset Holidays { get; init; } = PlanningContract.BundledHolidays();

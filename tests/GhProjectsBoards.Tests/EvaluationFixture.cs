@@ -35,7 +35,7 @@ internal static class EvaluationFixture
         var settings = new ProjectPlanSettings {
             StatusDate = statusDate, ProjectStart = plan.ProjectStart, DefaultRepository = "acme/repo",
             Columns = PlanColumnMatching.Roles.Select(r => new PlanColumnMapping(r.Role, "F-" + r.Role, r.Name, r.Type)).ToImmutableArray(),
-            People = plan.People.Select(p => new PlanResource(p.Identity, p.Name, p.Rate, p.Allowance, [])).ToImmutableArray()
+            People = plan.People.Select(p => new PlanResource(p.Identity, p.Name, p.Rate, p.Allowance)).ToImmutableArray()
         };
         return new PlanDocument(new ScopedId(new("github.com", 42), "P1"), new(rows, columns), new(rows, settings));
     }

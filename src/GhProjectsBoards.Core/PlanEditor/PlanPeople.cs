@@ -37,8 +37,8 @@ internal static class PlanPeople
         }
         var holidays = PlanningContract.BundledHolidays().Dates.Select(d => d.Date).Concat(settings.ImportedHolidays?.Dates.Select(d => d.Date) ?? [])
             .Concat(settings.CompanyDaysOff).ToHashSet();
-        bool Working(DateOnly day, PlanResource? person) => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) &&
-            !holidays.Contains(day) && !(person?.DaysOff.Contains(day) ?? false);
+        bool Working(DateOnly day) => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) &&
+            !holidays.Contains(day);
         static IEnumerable<DateOnly> Days(DateOnly from, DateOnly to) {
             for (var n = from.DayNumber; n <= to.DayNumber; n++) yield return DateOnly.FromDayNumber(n);
         }
@@ -50,7 +50,7 @@ internal static class PlanPeople
         {
             var ambiguous = id is Unassigned or Multiple;
             var person = ambiguous ? null : settings.People.FirstOrDefault(p => p.Identity == id) ??
-                new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null, []);
+                new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null);
             var tasks = scheduled.Where(s => Owner(s) == id).ToArray();
             var missing = new HashSet<string>(); var unallocated = new List<string>();
             decimal? Total(Func<ScheduledTask, decimal?> value, string label) {
@@ -68,7 +68,7 @@ internal static class PlanPeople
                 if (reason is null && task.PlannedHours is { } daily) allocations[task.Input.Identity] = daily;
                 else if (reason is null && task.Remaining == 0) allocations[task.Input.Identity] = new Dictionary<DateOnly, decimal>();
                 else if (reason is null) {
-                    var days = Days(task.Start.Value!.Value, task.End.Value!.Value).Where(d => Working(d, person)).ToArray();
+                    var days = Days(task.Start.Value!.Value, task.End.Value!.Value).Where(Working).ToArray();
                     if (days.Length == 0) reason = "期間内に稼働日なし";
                     else {
                         var values = days.ToDictionary(d => d, _ => task.Remaining!.Value / days.Length);
@@ -81,7 +81,7 @@ internal static class PlanPeople
             var dailyOverloads = person is null ? [] : allocations
                 .SelectMany(a => a.Value.Where(d => d.Value > 0).Select(d => (Date: d.Key, Hours: d.Value, Task: a.Key)))
                 .GroupBy(d => d.Date)
-                .Select(g => new PersonDayOverload(g.Key, g.Sum(d => d.Hours), Working(g.Key, person) ? 8m * person.Rate / 100m : 0,
+                .Select(g => new PersonDayOverload(g.Key, g.Sum(d => d.Hours), Working(g.Key) ? 8m * person.Rate / 100m : 0,
                     g.Select(d => d.Task).ToArray()))
                 .Where(d => d.Planned > d.Capacity).OrderBy(d => d.Date).ToArray();
             var loads = periods.Select(period => {
@@ -89,7 +89,7 @@ internal static class PlanPeople
                 var unknown = tasks.Any(t => unallocated.Contains(t.Input.Identity) &&
                     (t.Start.Value is null || t.End.Value is null || t.Start.Value <= period.End && t.End.Value >= period.Start));
                 decimal? load = unknown ? null : contributing.Sum(a => a.Value.Where(d => d.Key >= period.Start && d.Key <= period.End).Sum(d => d.Value));
-                decimal? capacity = person is null ? null : Days(period.Start, period.End).Count(d => Working(d, person)) * 8m * person.Rate / 100m;
+                decimal? capacity = person is null ? null : Days(period.Start, period.End).Count(Working) * 8m * person.Rate / 100m;
                 return new PersonPeriod(load, capacity, contributing.Select(a => a.Key).ToArray()) {
                     DailyOverloads = dailyOverloads.Where(d => d.Date >= period.Start && d.Date <= period.End).ToArray()
                 };

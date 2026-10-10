@@ -280,7 +280,7 @@ internal sealed class PlanPeopleView : UserControl
         decimal? value = text.Length == 0 ? null : decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number) ? number : throw new ArgumentException("数値を入力してください。");
         if (rate && (value is null || value <= 0 || value > 100) || !rate && value < 0) throw new ArgumentException(rate ? "稼働率は0より大きく100以下にしてください。" : "許容量は0以上の人時で入力してください。");
         var settings = Session.Document.State.Settings;
-        var resource = settings.People.FirstOrDefault(p => p.Identity == person.Identity) ?? new(person.Identity, person.Name, 100, null, []);
+        var resource = settings.People.FirstOrDefault(p => p.Identity == person.Identity) ?? new(person.Identity, person.Name, 100, null);
         resource = rate ? resource with { Rate = value!.Value } : resource with { Allowance = value };
         var people = settings.People.Any(p => p.Identity == person.Identity) ? settings.People.Select(p => p.Identity == person.Identity ? resource : p).ToImmutableArray() : settings.People.Add(resource);
         return new ReplacePlanSettings(settings with { People = people });

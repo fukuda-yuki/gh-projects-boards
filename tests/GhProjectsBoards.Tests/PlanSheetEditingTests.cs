@@ -11,7 +11,7 @@ internal sealed class PlanSheetEditingTests
             new("I1", "first", "acme/repo"),
             new("I2", "second", "acme/repo"),
             new("I3", "third", "acme/repo")],
-            new() { People = [new("U1", "alice", 100, null, [])] }));
+            new() { People = [new("U1", "alice", 100, null)] }));
     [TestCase("2026-10-14", "2026-10-05", "2026-10-14")]
     [TestCase("2026/10/14", "2026-10-05", "2026-10-14")]
     [TestCase("10/14", "2026-10-05", "2026-10-14")]
