@@ -28,7 +28,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 - The schedule is shown by day. Dates are recomputed from the inputs; minute endpoints are not stored.
 - One status date (基準日) anchors actual and remaining entry. No remaining work is scheduled before it. It is the day of the latest GitHub read (the first take-in, 最新の情報に更新 or a reset to GitHub) unless the PMO picks another date, which holds until the next read; opening the app or a new day does not move it. After the first take-in and after a reset the plan shows GitHub's dates as they are and recalculates at the PMO's next planning action ([#130](https://github.com/fukuda-yuki/gh-projects-boards/issues/130)).
 - A summary view shows the version against its start and end dates: elapsed and remaining working days, progress, forecast finish and remaining work against remaining capacity, by phase (a 工程 single-select Project field) and by person × phase, with each person's allowance, forecast (Actual + Remaining) and daily load ([#127](https://github.com/fukuda-yuki/gh-projects-boards/issues/127)). Overloads are shown, never levelled automatically.
-- Milestones with target dates appear on the Gantt and in the summary, so the forecast finish can be checked against them. [#133](https://github.com/fukuda-yuki/gh-projects-boards/issues/133) settles where they come from.
+- GitHub milestones appear on the Gantt and in the summary at their due dates, so the forecast finish can be checked against them. Their due dates are kept on GitHub ([#133](https://github.com/fukuda-yuki/gh-projects-boards/issues/133)).
 
 ## Requirement map
 
