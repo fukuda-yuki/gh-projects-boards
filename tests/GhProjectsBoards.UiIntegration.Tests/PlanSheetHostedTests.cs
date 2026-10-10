@@ -1234,6 +1234,21 @@ internal sealed class PlanSheetHostedTests
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
     }
+    [TestCase(false), TestCase(true)]
+    public async Task AutomationSelectionMovesKeyboardFocusSoAnotherCellCannotReclaimTheSelection(bool extend)
+    {
+        await Ui.Ready<TextBox>("PlanCell1_Title");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Keyboard), Is.True));
+        if (extend) await Select(2, PlanField.Title);
+        await Select(3, PlanField.Title, extend);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PlanCell3_Title")));
+            Assert.That(SelectProvider("PlanCell1_Title").IsSelected, Is.False);
+            Assert.That(SelectProvider("PlanCell2_Title").IsSelected, Is.EqualTo(extend));
+            Assert.That(SelectProvider("PlanCell3_Title").IsSelected, Is.True);
+        });
+    }
     [Test]
     public async Task FilterKeepsPlanIdsAndColumnToggleRestoresTheMappedHeader()
     {

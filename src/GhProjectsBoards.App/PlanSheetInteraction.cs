@@ -66,6 +66,12 @@ internal sealed partial class PlanSheetView
         });
         UpdateReason(); RefreshOverviewCommands(); RefreshRealized();
     }
+    // Selection that leaves keyboard focus on another cell lets that cell reclaim it
+    // through GotFocus, so typing or a command would act on the previous task.
+    internal void SelectAndFocus(string identity, PlanField field, bool extend)
+    {
+        Select(identity, field, extend); FocusSelected();
+    }
     private void EnsureColumnVisible(PlanField field)
     {
         var left = 0d;

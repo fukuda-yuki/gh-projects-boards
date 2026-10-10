@@ -376,9 +376,9 @@ internal sealed class PlanSheetCell : TextBox
         protected override object GetPatternCore(PatternInterface pattern) => pattern == PatternInterface.SelectionItem ? this : base.GetPatternCore(pattern);
         public bool IsSelected => cell.row.Owner?.IsSelected(cell.row.Identity, cell.Field) == true;
         public IRawElementProviderSimple SelectionContainer => ProviderFromPeer(FrameworkElementAutomationPeer.CreatePeerForElement(cell.row.Owner!.List));
-        public void AddToSelection() => cell.row.Owner?.Select(cell.row.Identity, cell.Field, true);
-        public void RemoveFromSelection() => cell.row.Owner?.Select(cell.row.Identity, cell.Field, false);
-        public void Select() => cell.row.Owner?.Select(cell.row.Identity, cell.Field, false);
+        public void AddToSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, true);
+        public void RemoveFromSelection() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, false);
+        public void Select() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.Field, false);
     }
 }
 internal sealed class PlanFillHandle(PlanSheetRow row, PlanField field) : Button
