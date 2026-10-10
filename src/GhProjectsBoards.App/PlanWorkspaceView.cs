@@ -125,8 +125,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var appGlyph = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
             """<PathIcon xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Width="16" Height="16" Margin="14,0,0,0" Data="M1,2 H11 V5 H1 Z M6,7 H15 V10 H6 Z M3,12 H9 V15 H3 Z" />""");
         appGlyph.Foreground = PlanSheetView.Brush("SystemControlHighlightAccentBrush");
-        WorkspaceTitleBar.LeftHeader = appGlyph;
-        WorkspaceTitleBar.Content = projectPicker;
         WorkspaceTitleBar.Resources["TitleBarContentHorizontalAlignment"] = HorizontalAlignment.Left;
         settingsButton = Button("設定", "PlanShowSettings", () => {
             if (currentPage != "settings") settingsReturnPage = currentPage;
@@ -137,7 +135,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         settingsButton.MinHeight = 0; settingsButton.Height = 32; settingsButton.Padding = new(8, 0, 8, 0);
         AutomationProperties.SetName(settingsButton, "設定");
         ToolTipService.SetToolTip(settingsButton, "設定");
-        WorkspaceTitleBar.RightHeader = settingsButton;
         root.Children.Add(WorkspaceTitleBar);
         root.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -228,10 +225,15 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 5);
+        // A TitleBar that has been loaded keeps its header elements after it unloads, and their
+        // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
+        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = settingsButton; };
         Unloaded += (_, _) => {
+            WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
-            if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel(); };
+            if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
+        };
         Content = root;
         Show("connection");
     }
