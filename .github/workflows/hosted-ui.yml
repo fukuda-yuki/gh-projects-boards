@@ -26,7 +26,7 @@ jobs:
       - name: Build
         id: build
         run: dotnet build GhProjectsBoards.sln --configuration Release
-      - name: Hosted UI integration (default routine selection)
+      - name: Hosted UI integration
         shell: pwsh
         env:
           GHPB_UI_WHERE: ${{ inputs.where }}

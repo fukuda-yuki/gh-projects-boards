@@ -43,7 +43,6 @@ internal static class RenderedEvidence
         var dpi = 96 * view.XamlRoot.RasterizationScale;
         encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, dpi, dpi, pixels);
         await encoder.FlushAsync().AsTask(deadline.Token);
-        TestContext.AddTestAttachment(file.Path, name);
         Console.WriteLine("Rendered review evidence: " + file.Path);
     }
 }
