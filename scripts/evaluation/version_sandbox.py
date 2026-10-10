@@ -123,6 +123,11 @@ def save(path, value):
 
 def export_inputs(manifest, evidence, through, offline=False):
     selected = [r for r in manifest['rows'] if int(r['key'][1:3]) <= through]
+    positions = {r['key']: index+1 for index, r in enumerate(selected)}
+    for row in selected:
+        for predecessor in row['predecessors']:
+            if predecessor not in positions:
+                raise ValueError(f'Missing predecessor {predecessor}; use --through 40. No inputs were exported.')
     if not offline:
         project, issues, _, counts = inventory(manifest)
         if any(row['key'] not in issues for row in selected):
@@ -130,7 +135,6 @@ def export_inputs(manifest, evidence, through, offline=False):
         expected_order = [issues[row['key']]['id'] for row in selected]
         if counts['sheetIssueIds'] != expected_order:
             raise ValueError('The entire sheet Issue order must match the selected WBS; extra, archived or reordered Issues make row references unsafe.')
-    positions = {r['key']: index+1 for index, r in enumerate(selected)}
     lines = []
     for row in selected:
         is_task = row['parent'] is not None
@@ -234,9 +238,11 @@ def main():
     parser.add_argument('--manifest', type=Path, default=DEFAULT_PATH)
     parser.add_argument('--evidence', type=Path, required=True)
     parser.add_argument('--apply', action='store_true')
-    parser.add_argument('--through', type=int, choices=[39, 40], default=39)
+    parser.add_argument('--through', type=int, choices=[39, 40])
     parser.add_argument('--offline', action='store_true', help='Export inputs with the 20 synthetic assignee logins.')
     args = parser.parse_args()
+    if args.through is None:
+        args.through = 40 if args.action == 'inputs' else 39
     manifest = json.loads(args.manifest.read_text(encoding='utf-8'))
     if args.action == 'inputs':
         if args.apply:

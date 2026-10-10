@@ -17,7 +17,7 @@ Regenerate both with `python scripts/evaluation/generate_version.py`; `--check` 
 
 ## Simulated progress
 
-The fixture replays the team's work day by day from the project start with the real scheduler. Each day the team works the plan's hours, records 実績 and keeps 残 as its current estimate (#131). A task's Issue is closed on the day its work is done, with 残 0 and 終了日 on that day. Each status date is a plan the PMO has just published, so a fresh evaluation opens at 未発行 0.
+The fixture replays the team's work day by day from the project start with the real scheduler. Each day tasks are processed in scheduled dependency order; work is recorded only after every predecessor has finished its work, including same-day handoffs. Hours blocked by a predecessor's re-estimate are not worked. The team records 実績 and keeps 残 as its current estimate (#131). A task's Issue is closed on the day its work is done, with 残 0 and 終了日 on that day. Each status date is a plan the PMO has just published, so a fresh evaluation opens at 未発行 0.
 
 Deviations:
 
@@ -41,7 +41,7 @@ python scripts/evaluation/version_sandbox.py register --evidence TestResults/ver
 
 Without `--apply`, commands only read GitHub and write local evidence. Registration completes R01–R39 (1,014 Issues), or R01–R40 with `--through 40`, preserving existing Issue identities, planning values and unrelated or inaccessible Project members. It refuses duplicate WBS keys, changed titles, existing conflicting parents and mass recreation. Only missing Issues, memberships, hierarchy and WBS order are written.
 
-The optional `inputs` command exports a first-pass TSV for the ordinary sheet, never a GitHub mutation. Its numeric predecessor references require the entire visible Issue order to match the selected WBS exactly; it refuses anything else before writing.
+The optional `inputs` command exports a first-pass TSV for the ordinary sheet, never a GitHub mutation. It defaults to the whole WBS (`--through 40`); `register` still defaults to 39. A selected range with an outside predecessor is refused before any file is written, naming the missing key and directing the caller to use `--through 40`. Its numeric predecessor references require the entire visible Issue order to match the selected WBS exactly; it refuses anything else before writing.
 
 The live rewrite to the waterfall shape, with the 工程 field, milestones and weekly progress, follows the summary view (#118, Batch 2). Planning values are entered and published through the app, not by script.
 

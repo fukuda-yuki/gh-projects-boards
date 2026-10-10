@@ -35,7 +35,21 @@ internal sealed class EvaluationFixtureTests
     {
         var plan = EvaluationFixture.ReadPlan(version);
         var snapshots = EvaluationFixture.Simulate(plan, plan.StatusDates);
-        foreach (var snapshot in snapshots) Report(EvaluationFixture.Measures(plan, snapshot));
+        using (Assert.EnterMultipleScope())
+        foreach (var snapshot in snapshots)
+        {
+            var recorded = EvaluationFixture.Measures(plan, snapshot);
+            Report(recorded);
+            Assert.That(recorded.People.Select(p => p.WorkingDays), Is.All.EqualTo(20), $"{snapshot.StatusDate}: every person has 20 working days measured.");
+            var byId = snapshot.Rows.ToDictionary(r => r.Identity);
+            foreach (var task in snapshot.Rows.Where(r => r.Actual > 0))
+            foreach (var predecessor in task.Predecessors.Select(id => byId[id]))
+            {
+                if (predecessor.End is { } end)
+                    Assert.That(task.Start, Is.GreaterThanOrEqualTo(end), $"{snapshot.StatusDate}: {task.Title} starts after {predecessor.Title} finishes.");
+                Assert.That(!predecessor.Closed && predecessor.Remaining > 0, Is.False, $"{snapshot.StatusDate}: {task.Title} has no unfinished predecessor {predecessor.Title}.");
+            }
+        }
         var middle = snapshots.Single(s => s.StatusDate == plan.StatusDate);
         var measures = EvaluationFixture.Measures(plan, middle);
         var tasks = middle.Rows.Where(r => r.Parent is not null).ToArray();

@@ -11,6 +11,22 @@ from generate_version import generate
 
 
 class InputExportTests(unittest.TestCase):
+    def test_inputs_default_exports_the_whole_generated_wbs_offline(self):
+        with tempfile.TemporaryDirectory() as root:
+            manifest = Path(root, 'manifest.json')
+            manifest.write_text(json.dumps(generate()), encoding='utf-8')
+            output = Path(root, 'inputs')
+            with patch('sys.argv', ['version_sandbox.py', 'inputs', '--manifest', str(manifest),
+                                    '--evidence', str(output), '--offline']), contextlib.redirect_stdout(io.StringIO()):
+                sandbox.main()
+            self.assertEqual(len((output / 'first-pass.tsv').read_text(encoding='utf-8').splitlines()), 1040)
+
+    def test_incomplete_dependency_range_refuses_before_writing(self):
+        with tempfile.TemporaryDirectory() as root:
+            with self.assertRaisesRegex(ValueError, r'R40-SA-003.*--through 40'):
+                sandbox.export_inputs(generate(), Path(root), 39, offline=True)
+            self.assertEqual(list(Path(root).iterdir()), [])
+
     def export_with_items(self, manifest, items, root):
         issues = [dict(id=row['key'], title=row['title']) for row in manifest['rows']]
         def connection(nodes):

@@ -58,19 +58,30 @@ internal static class EvaluationFixture
         {
             var schedule = PlanOperations.Schedule(Document(plan, rows, day), day).ToDictionary(t => t.Input.Identity);
             if (statusDates.Contains(day)) snapshots.Add(Publish(day));
-            rows = rows.Select(row => {
-                if (row.Parent is null || row.Closed || row.Remaining == 0) return row;
+            var updated = rows.ToDictionary(r => r.Identity);
+            var visited = new HashSet<string>();
+            foreach (var task in schedule.Values.OrderBy(t => t.Start.Value)) Work(task.Input.Identity);
+            rows = rows.Select(row => updated[row.Identity]).ToImmutableArray();
+
+            void Work(string identity)
+            {
+                if (!visited.Add(identity)) return;
+                var row = updated[identity];
+                foreach (var predecessor in row.Predecessors) Work(predecessor);
+                if (row.Parent is null || row.Closed || row.Remaining == 0) return;
+                // Re-estimates can invalidate today's planned handoff; only work already done releases it.
+                if (row.Predecessors.Any(id => !updated[id].Closed && updated[id].Remaining != 0)) return;
                 var hours = schedule[row.Identity].PlannedHours?.GetValueOrDefault(day) ?? 0;
-                if (hours == 0) return row;
+                if (hours == 0) return;
                 var task = source[row.Identity];
                 var estimate = task.Estimate!.Value;
                 var work = task.Work ?? estimate;
                 var actual = Math.Min(work, row.Actual!.Value + hours);
                 var remaining = actual == work ? 0 : work <= estimate || actual * 2 < estimate ? estimate - actual : work - actual;
                 var done = remaining == 0;
-                return row with { Actual = actual, Remaining = remaining, Start = row.Start ?? day, End = done ? day : row.End,
+                updated[identity] = row with { Actual = actual, Remaining = remaining, Start = row.Start ?? day, End = done ? day : row.End,
                     Closed = done && !task.OpenAtZero, Status = done && !task.OpenAtZero ? "Done" : "In progress" };
-            }).ToImmutableArray();
+            }
             rows = rows.Select(row => row.Parent is null && rows.Where(c => c.Parent == row.Identity).All(c => c.Closed) ? row with { Closed = true, Status = "Done" } : row).ToImmutableArray();
         }
         return snapshots;
@@ -123,7 +134,7 @@ internal static class EvaluationFixture
         public decimal Progress => Forecast == 0 ? 0 : Math.Round(Actual / Forecast * 100, 1);
     }
     internal sealed record PhaseMeasure(string Phase, Effort Effort, DateOnly? Start, DateOnly? Forecast, DateOnly Due, int LateWorkingDays);
-    internal sealed record PersonMeasure(string Person, Effort Effort, int OverloadedDaysNext20, decimal PeakPercentNext20);
+    internal sealed record PersonMeasure(string Person, Effort Effort, int WorkingDays, int OverloadedDaysNext20, decimal PeakPercentNext20);
     internal sealed record StatusMeasures(DateOnly StatusDate, Effort Total, DateOnly? Forecast, IReadOnlyList<PhaseMeasure> Phases, IReadOnlyList<PersonMeasure> People);
 
     // Summary measures follow #131: 見込 = 実績 + 残, 差異 = 見込 − 見積, progress = 実績 ÷ 見込, completion by closing.
@@ -146,11 +157,18 @@ internal static class EvaluationFixture
             var due = plan.Milestones.Single(m => m.Phase == phase).Due;
             return new PhaseMeasure(phase, Sum(tasks), tasks.Min(t => t.Start.Value), forecast, due, PlanScheduler.PublishedEndLateness(due, forecast, calendar) ?? 0);
         }).ToArray();
-        var load = PlanPeople.Calculate(snapshot.Document, snapshot.StatusDate, snapshot.StatusDate, PlanPeriodScale.Day, 28);
+        var holidays = calendar.Holidays.Dates.Select(d => d.Date).ToHashSet();
+        var days = 0;
+        for (var workingDays = 0; workingDays < 20; days++)
+        {
+            var day = snapshot.StatusDate.AddDays(days);
+            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !holidays.Contains(day)) workingDays++;
+        }
+        var load = PlanPeople.Calculate(snapshot.Document, snapshot.StatusDate, snapshot.StatusDate, PlanPeriodScale.Day, days);
         var people = plan.People.Select(person => {
             var periods = load.People.Single(p => p.Identity == person.Identity).Periods.Where(p => p.Capacity > 0).Take(20).ToArray();
             return new PersonMeasure(person.Identity, Sum(schedule.Where(t => t.Input.Assignees.Contains(person.Identity))),
-                periods.Count(p => p.Overloaded), periods.Length == 0 ? 0 : Math.Round(periods.Max(p => p.Percent ?? 0), 0));
+                periods.Length, periods.Count(p => p.Overloaded), periods.Length == 0 ? 0 : Math.Round(periods.Max(p => p.Percent ?? 0), 0));
         }).ToArray();
         return new(snapshot.StatusDate, Sum(schedule), schedule.Max(t => t.End.Value), phases, people);
     }
