@@ -3,7 +3,7 @@
     [switch]$Discover,
     [switch]$NoBuild,
     [string]$BinaryRoot,
-    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 900
+    [ValidateRange(1, 3600)][int]$TimeoutSeconds = 3600
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
