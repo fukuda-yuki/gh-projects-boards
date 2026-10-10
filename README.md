@@ -25,14 +25,17 @@ Run `./scripts/Publish-Internal.ps1 -ArtifactsRoot C:\w\ghpb-distribution` to bu
 The evaluation launcher defaults to Release. Use `-Configuration Debug` to build or run Debug app and fixture binaries together; keep the same configuration when resuming.
 
 ```powershell
-./scripts/Start-Evaluation.ps1 -NoBuild
+./scripts/Start-Evaluation.ps1
+# The twelve-month version, or another status date of the same version:
+./scripts/Start-Evaluation.ps1 -NoBuild -Version 2027.10
+./scripts/Start-Evaluation.ps1 -NoBuild -StatusDate 2027-02-17
 # Continue the same evaluation; use the data root printed above:
 ./scripts/Start-Evaluation.ps1 -NoBuild -Resume -DataRoot '<absolute printed path>'
 ```
 
-Omit `-NoBuild` to build the selected configuration with `--no-restore` first. The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then **第2027.04版**. No network or real account is used. The ordinary app starts at **未発行 0 タスク**, with 40 requirements, 1,000 executable tasks and 20 people. The fixed 状況日 is 2026-10-05. One daily overload is hidden by the weekly average; another person exceeds their total allowance. The two-wave schedule keeps active weeks near capacity; `evaluation.json` reports every week, including the low-demand tail. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
+`-NoBuild` skips the build of the selected configuration (`--no-restore`). The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then the version. No network or real account is used. The ordinary app starts at **未発行 0 タスク** in the middle of a waterfall version: 40 requirements, 1,000 tasks, 20 people, with progress replayed up to the 状況日 (default 2027-01-13 for 第2027.04版 and 2027-03-24 for 第2027.10版). Detailed design (PS) runs late after re-estimates, one person is overloaded and one open task has 残 0. `evaluation.json` records the summary measures for three status dates. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
 
-The shared WBS and reproducible sandbox commands are described in [version evaluation](evaluation/README.md). Live evaluation uses a **different**, fresh data root and real gh against Project 3. Reuse the existing R01–R39 Issues, complete the initial planning pass in the sheet, then simulate four weekly updates, adding R40 in week three. Live assignment evidence uses actual sandbox users; 20-person workload evaluation uses the offline fixture.
+The data and the sandbox commands are described in [version evaluation](evaluation/README.md). Live evaluation uses a **different**, fresh data root and real gh against Project 3. Live assignment evidence uses actual sandbox users; 20-person workload evaluation uses the offline fixture.
 
 ## Open a Project
 
