@@ -4,7 +4,10 @@ param([string]$ArtifactsRoot)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = Split-Path $PSScriptRoot -Parent
-if (-not $ArtifactsRoot) { $ArtifactsRoot = Join-Path $repo 'TestResults/internal-distribution' }
+if (-not $ArtifactsRoot) {
+    & (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
+    $ArtifactsRoot = Join-Path $repo 'TestResults/internal-distribution'
+}
 if (-not [IO.Path]::IsPathFullyQualified($ArtifactsRoot)) { throw 'ArtifactsRoot must be an absolute path.' }
 $run = Join-Path ([IO.Path]::GetFullPath($ArtifactsRoot)) ([guid]::NewGuid().ToString('N').Substring(0, 12))
 $build = Join-Path $run 'build'

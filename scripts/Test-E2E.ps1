@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Desktop E2E requires Windows and an unlocked interactive desktop.' }
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { throw 'Install the .NET 10 SDK before running this script.' }
 $repoRoot = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
 $testProject = 'tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj'
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')
 $results = Join-Path $repoRoot "TestResults/e2e/$runId"

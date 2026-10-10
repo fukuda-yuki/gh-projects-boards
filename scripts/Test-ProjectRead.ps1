@@ -3,6 +3,7 @@ param([string]$GhPath = 'C:\Program Files\GitHub CLI\gh.exe')
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $GhPath -PathType Leaf)) { throw 'The selected GitHub CLI does not exist.' }
 $repoRoot = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
 $results = Join-Path $repoRoot ('TestResults/project-read/' + (Get-Date -Format yyyyMMdd-HHmmss) + '-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $results | Out-Null
 $names = @('GHPB_RUN_PROJECT_READ','GHPB_PROJECT_READ_ARTIFACTS','GHPB_PROJECT_READ_GH','GHPB_PROJECT_READ_SOURCE')

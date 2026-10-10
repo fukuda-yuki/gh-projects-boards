@@ -11,6 +11,7 @@ if ($env:OS -ne 'Windows_NT' -or -not (Test-Path -LiteralPath $GhPath -PathType 
     throw 'Live validation requires Windows, an unlocked interactive desktop, and the real GitHub CLI.'
 }
 $repoRoot = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')
 $results = Join-Path $repoRoot "TestResults/live/$runId"
 $previous = @{}

@@ -138,3 +138,9 @@ EvaluationFixtureTests runs the fixture initializer, stored document, workspace 
 ## Execution evidence
 
 Record source, environment, exact command, executed/passed/failed/skipped counts and artifacts. Retain failed attempts and distinguish exclusions from skips. The hosted runner records source diff, source/binary hashes and runtime outcomes; E2E records the ordinary executable and substituted endpoint. Inspect captured images before claiming visual review. Physical IME, live GitHub, performance and PMO evaluation are separate claims.
+
+## Test output retention
+
+`TestResults/` is disposable local output. [Clear-TestResults.ps1](../scripts/Clear-TestResults.ps1) deletes every entry in it that has not been written for 14 days; inside the per-run folders of the test scripts (`coverage`, `e2e`, `evaluation`, `internal-distribution`, `live`, `project-read`, `ui-integration`) it judges each run separately. An entry counts as written when anything inside it changed, so a workspace or evaluation root in use is kept. The test scripts and the Claude Code session hook run it automatically; set `GHPB_TESTRESULTS_DAYS` to change the period. Nothing outside `TestResults/` is touched. Keep evidence that must outlive the period in the Issue or PR, or copy it outside `TestResults/`.
+
+[Clear-TestResults.Tests.ps1](../scripts/Clear-TestResults.Tests.ps1) covers the rule with temporary folders and runs in CI. Locally it needs Pester 5: `Invoke-Pester ./scripts/Clear-TestResults.Tests.ps1`.
