@@ -9,7 +9,8 @@ internal static class FakeGhProgram
 {
     public static async Task<int> Main(string[] args)
     {
-        if (args.FirstOrDefault() == "--prepare-evaluation" && args.Length == 2) { await EvaluationFixture.Create(args[1]); return 0; }
+        if (args.FirstOrDefault() == "--prepare-evaluation" && args.Length is 2 or 3 or 4)
+        { await EvaluationFixture.Create(args[1], args.Length > 2 ? args[2] : EvaluationFixture.DefaultVersion, args.Length > 3 ? DateOnly.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : null); return 0; }
         if (args.FirstOrDefault() == "--plan-publish-live" && args.Length == 3) return await PlanPublisherLive.Run(args[1], args[2]);
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);

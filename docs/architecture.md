@@ -44,4 +44,4 @@ The [test policy](../tests/README.md) prioritizes logic, then UI integration, th
 
 ## Evaluation boundary
 
-The test executable generates the offline evaluation data using PlanOperations.Schedule, persists an ordinary PlanStore document and serves the matching remote rows through FakePlanEditor. Start-Evaluation.ps1 launches the ordinary app with an isolated data root and child-only PATH pointing to that fake executable. There is no product evaluation branch, network fallback or additional dependency. Resume retains both local edits and the fake remote state.
+The test executable generates the offline evaluation data by replaying the team's daily progress with PlanOperations.Schedule, persists an ordinary PlanStore document and serves the matching remote rows through FakePlanEditor. Start-Evaluation.ps1 launches the ordinary app with an isolated data root and child-only PATH pointing to that fake executable. There is no product evaluation branch, network fallback or additional dependency. Resume retains both local edits and the fake remote state.
