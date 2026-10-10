@@ -1323,8 +1323,7 @@
           "identity": "U1",
           "name": "fukuda-yuki",
           "rate": 100,
-          "allowance": null,
-          "daysOff": []
+          "allowance": null
         }
       ],
       "projectStart": null,

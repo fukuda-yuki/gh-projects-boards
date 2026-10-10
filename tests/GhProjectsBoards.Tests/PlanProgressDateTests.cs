@@ -29,7 +29,7 @@ internal sealed class PlanProgressDateTests
         ImmutableArray<PlanRow> baseline = [parent, task, next];
         return new(new(new("github.com", 42), "P1"), new(baseline, []),
             new(baseline.Select(r => r with { Start = null, End = null }).ToImmutableArray(),
-                new() { StatusDate = Start, People = [new("U1", "alice", 100, null, [])] }));
+                new() { StatusDate = Start, People = [new("U1", "alice", 100, null)] }));
     }
     private static PlanRemoteSnapshot Remote(PlanBaseline baseline) => new(baseline,
         baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "item-" + r.Identity), [], 0, 0);

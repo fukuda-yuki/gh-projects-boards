@@ -7,7 +7,7 @@ internal enum PlanField { Title, Repository, Status, Closed, Assignees, Estimate
 internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType);
 internal sealed record PlanColumnMapping(PlanField Role, string FieldId, string Name, string DataType);
-internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance, ImmutableArray<DateOnly> DaysOff);
+internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance);
 internal sealed record PlanHoliday(DateOnly Date, string Name);
 internal sealed record PlanHolidayData(string Version, string Source, string SourceSha256, DateTimeOffset RetrievedAt,
     int FirstYear, int LastYear, ImmutableArray<PlanHoliday> Dates)

@@ -47,7 +47,7 @@ internal sealed class PlanSheetHostedTests
         }).ToImmutableArray();
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
-                People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null, [])).ToImmutableArray() : [new("U1", "alice", 100, null, [])],
+                People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE")] })), Today);
         await Ui.Run(() => sheet = new(session, () => clipboardReader is { } read ? read() : Task.FromResult(clipboard), value => { if (clipboardWriter is { } write) write(value); else clipboard = value; }));
         await Ui.Run(() => {
@@ -81,7 +81,7 @@ internal sealed class PlanSheetHostedTests
         var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1", Estimate = 8, Assignees = ["U1"] };
         var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
         await MountPresentation([parent with { Assignees = ["local"], Predecessors = [], StartNoEarlierThan = Today.AddDays(7), Fixed = !held, Status = "Local" }, child, predecessor],
-            [parent, child, predecessor], [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])]);
+            [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         await Ui.ClickCommand("PlanSheetColumns");
         foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status })
             await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
@@ -585,7 +585,7 @@ internal sealed class PlanSheetHostedTests
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 16, Assignees = ["U1"] };
         await MountPresentation([row with { Estimate = 16, Assignees = ["U2"] }, row with { Identity = "I2", Predecessors = ["I1"] }],
             [row with { Start = Today, End = Today }, row with { Identity = "I2", Predecessors = ["I1"], Start = Today.AddDays(1), End = Today.AddDays(1) }],
-            [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])]);
+            [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         await Ui.Run(() => {
             foreach (var (number, field, tinted) in new[] { (1, PlanField.Estimate, true), (1, PlanField.Assignees, true), (1, PlanField.End, false), (2, PlanField.End, false) }) {
                 var cell = Ui.Find<PlanSheetCell>($"PlanCell{number}_{field}");
@@ -649,7 +649,7 @@ internal sealed class PlanSheetHostedTests
     public async Task AssigneeDisplayUsesNameThenLoginWhileEditAndCopyKeepAllInputs(int kind, string expected)
     {
         var row = new PlanRow("I1", "Task", "acme/repo") { Assignees = kind switch { 0 => [], 2 => ["U1", "U2"], 4 => ["unknown"], _ => ["U1"] } };
-        await MountPresentation([row], [row], kind == 3 ? [] : [new("U1", "渡辺", 100, null, []), new("U2", "鈴木", 100, null, [])],
+        await MountPresentation([row], [row], kind == 3 ? [] : [new("U1", "渡辺", 100, null), new("U2", "鈴木", 100, null)],
             ImmutableDictionary<string, string>.Empty.Add("U1", "alice").Add("U2", "bob"));
         await Select(1, PlanField.Assignees);
         await Ui.Run(async () => {

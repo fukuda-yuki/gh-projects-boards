@@ -567,9 +567,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     finally { rendering = false; }
                 });
                 line.Children.Add(rate);
-                line.Children.Add(DateListSetting("個人休日", "PlanDaysOff" + person.Identity,
-                    () => session.Document.State.Settings.People.SingleOrDefault(p => p.Identity == person.Identity)?.DaysOff ?? person.DaysOff,
-                    dates => ChangePerson(person, p => p with { DaysOff = dates })));
                 settings.Children.Add(line);
             }
             settings.Children.Add(TextSetting("Project開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",

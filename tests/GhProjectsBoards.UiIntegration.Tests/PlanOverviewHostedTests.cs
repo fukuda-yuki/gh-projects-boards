@@ -36,7 +36,7 @@ internal sealed class PlanOverviewHostedTests
             TaskRow("I6", "承認", "I4", new(2027, 4, 12)));
         var document = new PlanDocument(new(new("github.com", 1), "P1"), new(rows, []), new(rows, new() {
             StatusDate = Today, DefaultRepository = "acme/repo",
-            People = [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])]
+            People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]
         })) { Sync = new() { IssueLinks = rows.Select((row, index) => new KeyValuePair<string, PlanIssueLink>(
             row.Identity, new($"acme/repo#{101 + index}", $"https://github.com/acme/repo/issues/{101 + index}"))).ToImmutableDictionary() } };
         session = await PlanSession.CreateAsync(new(root), document, Today);

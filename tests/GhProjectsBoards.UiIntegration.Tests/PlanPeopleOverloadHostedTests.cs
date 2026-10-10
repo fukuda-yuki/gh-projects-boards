@@ -25,7 +25,7 @@ internal sealed class PlanPeopleOverloadHostedTests
             Assignees = ["U1"], Estimate = 8, Remaining = 8, Actual = 0, StartNoEarlierThan = i == 3 ? Day.AddDays(1) : Day
         }).ToImmutableArray();
         var document = new PlanDocument(new(new("github.com", 1), "P1"), new(rows, []), new(rows, new() {
-            StatusDate = Day, People = [new("U1", "alice", 100, null, []), new("U2", "bob", 100, null, [])]
+            StatusDate = Day, People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]
         }));
         session = await PlanSession.CreateAsync(new(root), document, Day);
         await Ui.Run(() => view = new(session) { Width = 1280, Height = 720 });
