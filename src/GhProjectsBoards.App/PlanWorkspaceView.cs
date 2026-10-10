@@ -386,6 +386,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         surfaceHost.IsEnabled = !busy;
         statusDateHost.IsHitTestVisible = !busy;
         if (sheet is not null) sheet.statusDate.IsEnabled = !busy;
+        if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
         if (peopleView is not null) peopleView.IsEnabled = !busy;
         settingsScroll.IsEnabled = !busy;

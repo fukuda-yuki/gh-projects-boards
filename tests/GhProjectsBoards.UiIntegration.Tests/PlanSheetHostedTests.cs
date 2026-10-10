@@ -74,6 +74,161 @@ internal sealed class PlanSheetHostedTests
             }
         finally { Ui.EndTest(); }
     }
+    [TestCase(false), TestCase(true)]
+    public async Task SummaryCopiesBaselineFieldsAndExposesEveryAssignee(bool held)
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo") { Assignees = held ? ["U1", "U2"] : [], Predecessors = held ? ["I3"] : [], StartNoEarlierThan = held ? Today : null, Fixed = held, Status = held ? "Todo" : null };
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1", Estimate = 8, Assignees = ["U1"] };
+        var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
+        await MountPresentation([parent with { Assignees = ["local"], Predecessors = [], StartNoEarlierThan = Today.AddDays(7), Fixed = !held, Status = "Local" }, child, predecessor],
+            [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
+        await Ui.ClickCommand("PlanSheetColumns");
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status })
+            await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
+        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
+            (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
+            await Select(1, field);
+            await Ui.Run(async () => {
+                await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
+                Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""));
+                using var metadata = JsonDocument.Parse(clipboard.Metadata!);
+                Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo(JsonSerializer.Serialize(PlanOperations.Value(parent, field), PlanJson.Options)));
+            });
+        }
+        await Select(1, PlanField.Assignees);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSummaryCell>("PlanCell1_Assignees");
+            Assert.That(cell.Text.Text, Is.EqualTo(held ? "alice +1" : ""));
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo(held ? "alice, bob" : ""));
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(cell);
+            Assert.That(peer.GetHelpText(), held ? Does.Contain("alice, bob") : Is.Empty);
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanSheetNative")]
+    public async Task SummaryStartTabAndEnterOnlyNavigate(bool tab)
+    {
+        await session.Execute(new IndentPlanRows(["I3"]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        await Select(2, PlanField.Start); await SheetNativeInput.ActivateWindow();
+        await SheetNativeInput.Click("PlanCell2_Start");
+        await SheetNativeInput.Press(tab ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Enter);
+        await Ui.Until(() => SelectProvider(tab ? "PlanCell2_End" : "PlanCell3_Start").IsSelected);
+        await Ui.Run(() => {
+            Assert.That(sheet.Pending, Is.Empty);
+            Assert.That(sheet.Problems, Is.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+        });
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+
+    [TestCase(Windows.System.VirtualKey.F6, false, false)]
+    [TestCase(Windows.System.VirtualKey.F10, false, false)]
+    [TestCase(Windows.System.VirtualKey.F, true, false)]
+    [TestCase(Windows.System.VirtualKey.Tab, true, false)]
+    [TestCase(Windows.System.VirtualKey.Left, false, true)]
+    [Category("PlanSheetNative")]
+    public async Task SummaryLeavesWindowShortcutsUnhandled(Windows.System.VirtualKey key, bool control, bool alt)
+    {
+        await session.Execute(new IndentPlanRows(["I3"]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
+        await Select(2, PlanField.Estimate); await SheetNativeInput.ActivateWindow();
+        await SheetNativeInput.Click("PlanCell2_Estimate");
+        var observed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        KeyEventHandler handler = (_, args) => { if (args.Key == key) observed.TrySetResult(args.Handled); };
+        await Ui.Run(() => Ui.Find<PlanSummaryCell>("PlanCell2_Estimate").AddHandler(UIElement.KeyDownEvent, handler, true));
+        try {
+            await SheetNativeInput.Press(key, control ? [Windows.System.VirtualKey.Control] : alt ? [Windows.System.VirtualKey.Menu] : []);
+            Assert.That(await observed.Task.WaitAsync(TimeSpan.FromSeconds(5)), Is.False);
+        }
+        finally { await Ui.Run(() => Ui.Find<PlanSummaryCell>("PlanCell2_Estimate").RemoveHandler(UIElement.KeyDownEvent, handler)); }
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task SummaryNonRolledUpCellsShowOnlyGitHubHeldValues(bool held)
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo") {
+            Assignees = held ? ["U1"] : [], Predecessors = held ? ["I3"] : [],
+            StartNoEarlierThan = held ? Today : null, Fixed = held, Status = held ? "Todo" : null };
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1", Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
+        await MountPresentation([parent, child, predecessor], [parent, child, predecessor]);
+        await Ui.ClickCommand("PlanSheetColumns");
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status })
+            await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
+        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "3"),
+            (PlanField.StartNoEarlierThan, "10/5 (月)"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
+            await Select(1, field);
+            await Ui.Run(() => {
+                var cell = Ui.Find<FrameworkElement>($"PlanCell1_{field}");
+                Assert.That(cell, Is.Not.InstanceOf<TextBox>());
+                Assert.That(Ui.Tree(cell).OfType<TextBlock>().Single().Text, Is.EqualTo(held ? expected : ""));
+                Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(cell).GetName(), Does.Contain("要求事項の行では編集できません"));
+            });
+        }
+    }
+
+    [TestCase(PlanField.Estimate, "子タスクから集計（編集不可）")]
+    [TestCase(PlanField.Assignees, "要求事項の行では編集できません")]
+    public async Task SummaryCellsExposeStaticValuesAndSelectionReason(PlanField field, string reason)
+    {
+        await session.Execute(new IndentPlanRows(["I3"]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
+        await Select(2, field);
+        await Ui.Run(() => {
+            var cell = Ui.Find<FrameworkElement>($"PlanCell2_{field}");
+            Assert.That(cell, Is.Not.InstanceOf<TextBox>());
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(cell);
+            Assert.That(peer.GetPattern(PatternInterface.Text), Is.Null);
+            Assert.That(peer.GetPattern(PatternInterface.Value), Is.Null);
+            Assert.That(peer.GetName(), Does.Contain(reason));
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain(reason));
+            Assert.That(Ui.Find<Button>($"PlanFillHandle2_{field}").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(SelectProvider($"PlanCell2_{field}").IsSelected, Is.True);
+        });
+    }
+    [TestCase(PlanField.Estimate), TestCase(PlanField.Assignees)]
+    [Category("PlanSheetNative")]
+    public async Task SummaryPointerAndKeysNeverOpenEditorAndArrowsTraverseCells(PlanField field)
+    {
+        await session.Execute(new IndentPlanRows(["I3"]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        await Select(2, field); await SheetNativeInput.ActivateWindow();
+        var id = $"PlanCell2_{field}";
+        await SheetNativeInput.Click(id);
+        await Ui.Run(() => Assert.That(FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Is.SameAs(Ui.Find<FrameworkElement>(id))));
+        var doubleTapped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        DoubleTappedEventHandler observed = (_, _) => doubleTapped.TrySetResult();
+        await Ui.Run(() => Ui.Root.AddHandler(UIElement.DoubleTappedEvent, observed, true));
+        try {
+            await SheetNativeInput.Click(id); await SheetNativeInput.Click(id);
+            await doubleTapped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { await Ui.Run(() => Ui.Root.RemoveHandler(UIElement.DoubleTappedEvent, observed)); }
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await SheetNativeInput.Press(Windows.System.VirtualKey.A);
+        await Ui.Idle();
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => {
+            Assert.That(sheet.Pending, Is.Empty);
+            Assert.That(Ui.Find<FrameworkElement>(id), Is.Not.InstanceOf<TextBox>());
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain(PlanOperations.SummaryReadOnlyReason(field)));
+        });
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Right);
+        await Ui.Run(() => Assert.That(SelectProvider($"PlanCell2_{(field == PlanField.Assignees ? PlanField.Estimate : PlanField.Remaining)}").IsSelected, Is.True));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Left);
+        await Ui.Run(() => Assert.That(SelectProvider(id).IsSelected, Is.True));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Tab);
+        await Ui.Run(() => Assert.That(SelectProvider($"PlanCell2_{(field == PlanField.Assignees ? PlanField.Estimate : PlanField.Remaining)}").IsSelected, Is.True));
+    }
+
     [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
     [Category("PlanSheetFollowup")]
     public async Task PointerRangeEndsAtEstimateAndClearChangesOnlyItsCells(bool hideId, bool hideIndicator)
@@ -409,9 +564,10 @@ internal sealed class PlanSheetHostedTests
             Assert.That(indicator.Glyph, Is.EqualTo(glyph));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(name));
             if (state == "finish") Assert.That(name, Does.Contain("予定より遅れ: 発行済み 10/2 から +2 日"));
-            var end = Ui.Find<PlanSheetCell>("PlanCell1_End");
+            var end = state.StartsWith("summary") ? Ui.Find<PlanSummaryCell>("PlanCell1_End").Text.Foreground
+                : Ui.Find<PlanSheetCell>("PlanCell1_End").Foreground;
             var red = ((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color;
-            Assert.That(((SolidColorBrush)end.Foreground).Color == red, Is.EqualTo(critical));
+            Assert.That(((SolidColorBrush)end).Color == red, Is.EqualTo(critical));
             await RenderedEvidence.Capture(sheetHost, "row-" + state);
         });
         if (state.StartsWith("summary")) {
@@ -1086,10 +1242,10 @@ internal sealed class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Earlier"));
     }
     private static ISelectionItemProvider SelectProvider(string id)
-        => (ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>(id)).GetPattern(PatternInterface.SelectionItem);
+        => (ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(id)).GetPattern(PatternInterface.SelectionItem);
     private async Task Select(int row, PlanField field, bool extend = false)
     {
-        await Ui.Ready<TextBox>($"PlanCell{row}_{field}");
+        await Ui.Ready<FrameworkElement>($"PlanCell{row}_{field}");
         await Ui.Run(() => { var provider = SelectProvider($"PlanCell{row}_{field}"); if (extend) provider.AddToSelection(); else provider.Select(); });
     }
     private async Task Edit(int row, PlanField field, string text)
@@ -1540,12 +1696,14 @@ internal sealed class PlanSheetHostedTests
         await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.EqualTo("I2"));
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.True);
-            Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").FontStyle, Is.EqualTo(Windows.UI.Text.FontStyle.Normal));
+            Assert.That(Ui.Find<FrameworkElement>("PlanCell2_Remaining"), Is.Not.InstanceOf<TextBox>());
         });
         await Ui.ClickCommand("PlanSheetOutdent");
         await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.False));
+        await Edit(2, PlanField.Remaining, "16");
+        Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));
     }
     [TestCase(false), TestCase(true)]
     public async Task AutomationSelectionMovesKeyboardFocusSoAnotherCellCannotReclaimTheSelection(bool extend)

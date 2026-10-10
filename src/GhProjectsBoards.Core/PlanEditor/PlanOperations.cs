@@ -21,11 +21,30 @@ internal static class PlanOperations
             ? before.Start is null && current.Start is null && !(before.Actual > 0) && (complete || current.Actual > 0)
             : before.End is null && current.End is null && complete;
     }
+    internal static ImmutableArray<PlanRow> EffectiveRows(PlanDocument document)
+    {
+        var summaries = document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
+        var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        // Keep local inputs intact for hierarchy Undo; summary consumers use only GitHub-held values.
+        return document.State.Rows.Select(r => !summaries.Contains(r.Identity) ? r : r with {
+            Assignees = baseline.GetValueOrDefault(r.Identity)?.Assignees ?? [],
+            Predecessors = baseline.GetValueOrDefault(r.Identity)?.Predecessors ?? [],
+            StartNoEarlierThan = baseline.GetValueOrDefault(r.Identity)?.StartNoEarlierThan,
+            Fixed = baseline.GetValueOrDefault(r.Identity)?.Fixed ?? false,
+            Status = baseline.GetValueOrDefault(r.Identity)?.Status
+        }).ToImmutableArray();
+    }
+    internal static ImmutableArray<PlanConflict> BlockingConflicts(PlanDocument document)
+    {
+        var summaries = document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
+        return document.Sync.Conflicts.Where(c => !summaries.Contains(c.Identity)
+            || !(IsSummaryPublishExcluded(true, c.Field) || c.Field is PlanField.Start or PlanField.End)).ToImmutableArray();
+    }
     internal static IReadOnlyList<ScheduledTask> Schedule(PlanDocument document, DateOnly today)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         var settings = document.State.Settings;
-        return PlanScheduler.Calculate(document.State.Rows.Select((r, i) => TaskInput(r, i) with
+        return PlanScheduler.Calculate(EffectiveRows(document).Select((r, i) => TaskInput(r, i) with
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
@@ -101,7 +120,8 @@ internal static class PlanOperations
             case FillPlanCells fill:
                 Require(fill.Kind is PlanOperationKind.Fill or PlanOperationKind.CtrlD, "コピー操作の種類が不正です。");
                 Require(byId.ContainsKey(fill.Source), "コピー元がありません。");
-                return Apply(d, new EditPlanCells(fill.Kind, fill.Targets.SelectMany(id => fill.Fields.Select(f => new PlanCellChange(id, f, Value(byId[fill.Source], f)))).ToImmutableArray()), today);
+                var source = EffectiveRows(d).Single(r => r.Identity == fill.Source);
+                return Apply(d, new EditPlanCells(fill.Kind, fill.Targets.SelectMany(id => fill.Fields.Select(f => new PlanCellChange(id, f, Value(source, f)))).ToImmutableArray()), today);
             case ClearPlanCells clear:
                 return Apply(d, new EditPlanCells(PlanOperationKind.Clear, clear.Targets.SelectMany(id => clear.Fields.Select(f => new PlanCellChange(id, f, null))).ToImmutableArray()), today);
             case EditPlanCells edit:
@@ -112,7 +132,9 @@ internal static class PlanOperations
                 foreach (var c in edit.Cells)
                 {
                     Require(byId.ContainsKey(c.Identity), "編集先の行がありません。");
-                    Require(!summaries.Contains(c.Identity) || c.Field is not (PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed), "集計行の工数と日付は子タスクから計算します。");
+                    Require(!summaries.Contains(c.Identity) || c.Field is not (PlanField.Estimate or PlanField.Remaining or PlanField.Actual
+                        or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed
+                        or PlanField.Status or PlanField.Assignees or PlanField.Predecessors), SummaryReadOnlyReason(c.Field));
                     byId[c.Identity] = Edit(byId[c.Identity], c.Field, c.Value);
                 }
                 foreach (var group in edit.Cells.GroupBy(c => c.Identity))
@@ -260,7 +282,11 @@ internal static class PlanOperations
         return baseline with { Rows = forward ? baseline.Rows.Where(r => !discarded.Contains(r.Identity)).ToImmutableArray()
             : baseline.Rows.AddRange(patch.DiscardedRows.Where(r => !baseline.Rows.Any(current => current.Identity == r.Identity))) };
     }
-    internal static bool IsSummaryEffort(bool summary, PlanField field) => summary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual;
+    internal static string SummaryReadOnlyReason(PlanField field) => field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
+        ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません";
+    internal static bool IsSummaryPublishExcluded(bool summary, PlanField field) => summary && field is
+        PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Assignees or PlanField.Predecessors
+        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status;
     internal static bool IsLocalConstraint(PlanField field, ProjectPlanSettings settings)
         => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
     internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent)
@@ -282,9 +308,9 @@ internal static class PlanOperations
             var fields = ImmutableArray.CreateBuilder<PlanField>();
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Closed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
-                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryEffort(calculated.IsSummary, field) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
-            if (!r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
-            if (!r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
+                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
+            if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
+            if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
             // Historical inputs survive publication; automatic dates can coincidentally match them.
             // Entered dates need a kept origin or an explicit start constraint that actually won.
             if (calculated.Start.Value != old.Start)
