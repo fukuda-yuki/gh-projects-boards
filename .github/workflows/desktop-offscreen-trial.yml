@@ -70,7 +70,8 @@ jobs:
             foreach ($case in $xml.SelectNodes("//test-case[@result='Failed']")) {
               $message = "$($case.failure.message.'#cdata-section')$($case.failure.message.InnerText)"
               Write-Host "FAILED $($case.fullname)"
-              Write-Host ('  ' + ($message -replace '\s+', ' ').Substring(0, [Math]::Min(600, $message.Length)))
+              $flat = $message -replace '\s+', ' '
+              Write-Host ('  ' + $flat.Substring(0, [Math]::Min(600, $flat.Length)))
             }
           } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 80 }
       - name: Desktop E2E through fake gh (default selection, no IME)
