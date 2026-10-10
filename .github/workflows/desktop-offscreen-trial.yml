@@ -50,6 +50,29 @@ jobs:
       - name: Hosted UI integration (default routine selection)
         shell: pwsh
         run: ./scripts/Test-UiIntegration.ps1 -NoBuild -TimeoutSeconds 3600
+      - name: Summarize the hosted UI run
+        if: always() && steps.build.outcome == 'success'
+        shell: pwsh
+        run: |
+          $run = Get-ChildItem TestResults/ui-integration -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
+          if (-not $run) { Write-Host 'No UI integration run folder.'; exit 0 }
+          $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
+          Write-Host "exitCode=$($meta.exitCode) timedOut=$($meta.timedOut) elapsedSeconds=$($meta.elapsedSeconds)"
+          $meta.counts | ConvertTo-Json | Out-Host
+          $stderr = Join-Path $run.FullName 'stderr.log'
+          if (Test-Path $stderr) {
+            $lines = Get-Content $stderr
+            Write-Host "[WINDOW] lines: $(@($lines | Select-String -SimpleMatch '[WINDOW]').Count)  [INPUT] lines: $(@($lines | Select-String -SimpleMatch '[INPUT]').Count)"
+          }
+          $xmlPath = Join-Path $run.FullName 'results.xml'
+          if (Test-Path $xmlPath) {
+            [xml]$xml = Get-Content -Raw $xmlPath
+            foreach ($case in $xml.SelectNodes("//test-case[@result='Failed']")) {
+              $message = "$($case.failure.message.'#cdata-section')$($case.failure.message.InnerText)"
+              Write-Host "FAILED $($case.fullname)"
+              Write-Host ('  ' + ($message -replace '\s+', ' ').Substring(0, [Math]::Min(600, $message.Length)))
+            }
+          } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 80 }
       - name: Desktop E2E through fake gh (default selection, no IME)
         if: always() && steps.build.outcome == 'success'
         shell: pwsh
