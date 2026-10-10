@@ -12,6 +12,23 @@ internal sealed class ProjectReaderTests
     private static readonly ConnectionScope Scope = new("github.com", 42);
 
     [Test]
+    public async Task CompleteMultipageReadReportsItemsThroughTheLastPage()
+    {
+        var boundary = new ProjectBoundary { Override = (query, variables) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", variables.GetProperty("after").ValueKind == JsonValueKind.Null
+                ? Page([Item("P1", "T1", Page([], 0), Issue("I1", 1))], 2, true, "page-2")
+                : Page([Item("P1", "T2", Page([], 0), Issue("I2", 2))], 2))) : null };
+        var service = new GhConnectionService("gh.exe", Scope.Host, boundary.Runner);
+        var context = (await service.ConnectAsync()).Context!;
+        var reports = new List<RemoteProgress>();
+        var result = await new ProjectReader(service).ReadAsync(context, new(Scope, "P1"), progress: new InlineProgress<RemoteProgress>(reports.Add));
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(reports.Where(p => p.Total is not null).Select(p => p.Completed), Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(reports.Where(p => p.Total is not null).Select(p => p.Total), Is.All.EqualTo(2));
+        boundary.AssertQueriesOnly();
+    }
+
+    [Test]
     public async Task CursorCompleteProjectPagesCountUndeliveredAndRedactedItemsAsInaccessible()
     {
         // Sandbox reproduction: first:100 delivers 99 then 72 nodes for totalCount 172.

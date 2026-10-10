@@ -10,7 +10,6 @@ internal sealed partial class PlanWorkspaceView
 {
     private readonly Grid publishReview = new() { RowSpacing = 8, Visibility = Visibility.Collapsed };
     private readonly ListView reviewLines = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanPublishLines");
-    private readonly TextBlock publishStage = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishStage");
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private Button confirmPublish = null!;
     private bool publishing;
@@ -20,17 +19,16 @@ internal sealed partial class PlanWorkspaceView
         var open = CommandButton("発行…", "PlanPublish", Symbol.Upload);
         open.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         open.Click += async (_, _) => {
-            if (publishing) { Show("publish"); return; }
+            if (publishing) return;
             await Run(() => { RenderReview(); Show("publish"); return Task.CompletedTask; });
         };
         commandButtons.Children.Add(open);
-        AutomationProperties.SetLiveSetting(publishStage, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.RowDefinitions.Add(new() { Height = GridLength.Auto });
         publishReview.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         confirmPublish = Button("発行する", "PlanPublishConfirm", Publish);
         var close = Id(new Button { Content = "閉じる" }, "PlanPublishClose");
-        close.Click += (_, _) => { if (!closing) Show("tasks"); };
+        close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
         header.Children.Add(actions); header.Children.Add(publishBlockedReason);
@@ -113,7 +111,7 @@ internal sealed partial class PlanWorkspaceView
     {
         var reasons = new List<string>();
         if (publishing) reasons.Add("発行中です。完了までお待ちください。");
-        if (refreshing) reasons.Add("最新の情報に更新しています。");
+        if (busyKind == "refresh") reasons.Add("最新の情報に更新しています。");
         if (closing) reasons.Add("終了処理中です。");
         if (workspace.Session is not { } session) reasons.Add("プロジェクトを開いてください。");
         else {
@@ -189,10 +187,13 @@ internal sealed partial class PlanWorkspaceView
     private async Task Publish()
     {
         if (workspace.Session is not { } session || publishing) return;
-        publishing = true; SetPublishBusy(true);
+        publishing = true;
+        Show("tasks");
+        var reporter = BeginBusy("publish", "発行しています");
+        SetPublishBusy(true);
+        var outcome = "発行を中断しました";
         try
         {
-            var reporter = new Progress<string>(stage => { if (IsLoaded && !closing && publishing) { publishStage.Text = "発行中: " + stage; publishStage.Visibility = Visibility.Visible; } });
             var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var result = await publisher.PublishAsync(session, Today, OperationToken, reporter);
@@ -207,7 +208,9 @@ internal sealed partial class PlanWorkspaceView
                 catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException)
                 { System.Diagnostics.Debug.WriteLine("Publish metrics could not be saved: " + ex.Message); }
             }
+            outcome = result.Succeeded ? "発行しました" : "発行できませんでした。" + result.Error;
             var save = await session.FlushAsync();
+            if (!save.Succeeded) outcome = "保存できませんでした。" + save.Error;
             if (!closing)
             {
                 if (!save.Succeeded) ShowSaveFailure(save.Error ?? "保存できません。再試行してください。");
@@ -222,24 +225,21 @@ internal sealed partial class PlanWorkspaceView
         catch (OperationCanceledException) when (OperationToken.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
+            outcome = "発行できませんでした。" + ex.Message;
             if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message);
             else { publishFailure.Message = ex.Message; publishFailure.IsOpen = true; }
         }
         finally
         {
             publishing = false;
-            publishStage.Text = ""; publishStage.Visibility = Visibility.Collapsed;
+            EndBusy(outcome);
             SetPublishBusy(false);
-            if (!closing) RenderReview();
+            if (!closing) { RenderReview(); Show("publish"); }
         }
     }
     private void SetPublishBusy(bool busy)
     {
-        projectPicker.IsEnabled = !busy; settingsButton.IsEnabled = !busy;
-        tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
         SetRemotePresentation();
-        settingsScroll.IsEnabled = !busy;
-        if (peopleView is not null) peopleView.IsEnabled = !busy;
         UpdatePublishAvailability();
         if (reviewLines.ItemsPanelRoot is { } panel)
             foreach (var group in panel.Children.OfType<ListViewItem>().Select(i => i.ContentTemplateRoot).OfType<PlanPublishGroupView>()) group.RefreshActions();

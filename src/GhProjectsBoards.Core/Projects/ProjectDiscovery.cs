@@ -98,6 +98,7 @@ internal sealed class ProjectDiscovery(GhConnectionService service)
     private async Task<JsonElement> Send(ConnectionContext context, string query, object variables, CancellationToken token)
     {
         var result = await service.SendAsync(context, ApiRequest.GraphQl(query, variables), token);
+        token.ThrowIfCancellationRequested();
         if (!result.IsSuccess) throw new DiscoveryException(result.Failure);
         return At(result.Data ?? default, "data");
     }

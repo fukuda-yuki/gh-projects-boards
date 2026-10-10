@@ -25,7 +25,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
-    private bool refreshing;
     private readonly Flyout projectFlyout = new();
     private readonly Button projectPicker = Id(new Button(), "PlanProjectPicker");
     private readonly TextBlock projectMetadata = new();
@@ -62,7 +61,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid toolbar = new() { Height = 36, Margin = new(12, 0, 12, 0) };
     private readonly Border statusDateHost = new();
     private readonly StackPanel commandButtons = new() { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-    private readonly ProgressBar progress = new() { IsIndeterminate = true, Height = 3, Visibility = Visibility.Collapsed };
     private Task operation = Task.CompletedTask;
     private CancellationTokenSource? operationCancellation;
     private CancellationToken OperationToken => operationCancellation?.Token ?? CancellationToken.None;
@@ -95,7 +93,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectPicker.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
         root.Style = (Style)Application.Current.Resources["PlanWorkspaceSurfaceStyle"];
         this.workspace = workspace; this.factory = factory ?? ((path, server) => new(path, server));
-        for (var i = 0; i < 4; i++) root.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        for (var i = 0; i < 3; i++) root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         root.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         registered.ItemTemplate = available.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanProjectChoiceTemplate"];
@@ -168,7 +166,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         error.Style = (Style)Application.Current.Resources["WorkspaceErrorStyle"];
         error.RegisterPropertyChangedCallback(TextBlock.TextProperty, (_, _) => error.Visibility = error.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible);
         problem.Children.Add(error);
-        problem.Children.Add(publishStage);
         retrySave = Button("保存を再試行", "PlanRetrySave", async () => {
             await workspace.RetrySave(); await CommitPending();
             ClearSaveFailures(); RenderTasks(); RenderSettings();
@@ -178,8 +175,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
-        root.Children.Add(progress); Grid.SetRow(progress, 2);
-        root.Children.Add(problem); Grid.SetRow(problem, 3);
+        root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
             await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
@@ -191,19 +187,20 @@ internal sealed partial class PlanWorkspaceView : UserControl
         chooser.Children.Add(available);
         var address = new Expander { Header = "URLで開く", HorizontalAlignment = HorizontalAlignment.Stretch };
         var addressPanel = new StackPanel { Spacing = 8 }; addressPanel.Children.Add(url);
-        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", async () => { await workspace.OpenUrl(url.Text, OperationToken); Opened(); }));
+        addressPanel.Children.Add(Button("開く", "PlanOpenUrl", () => OpenProject(null, url.Text)));
         address.Content = addressPanel; chooser.Children.Add(address);
 
-        registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); } };
-        available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(async () => { await workspace.Open(choice, OperationToken); Opened(); }); };
+        registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(() => OpenProject(choice)); } };
+        available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(() => OpenProject(choice)); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
         foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
         var cardContent = new Grid();
         cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
         cardContent.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-        cardContent.Children.Add(failures); cardContent.Children.Add(surfaces); Grid.SetRow(surfaces, 1);
+        cardContent.Children.Add(failures); cardContent.Children.Add(surfaceHost); Grid.SetRow(surfaceHost, 1);
+        InitializeBusy(cardContent);
         var card = Id(new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Child = cardContent }, "PlanWorkCard");
-        root.Children.Add(card); Grid.SetRow(card, 4);
+        root.Children.Add(card); Grid.SetRow(card, 3);
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
@@ -224,7 +221,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusContent.Children.Add(legend); Grid.SetColumn(legend, 1);
         statusBar.Child = statusContent;
         statusCounts.Style = (Style)Application.Current.Resources["WorkspaceMetadataStyle"];
-        root.Children.Add(statusBar); Grid.SetRow(statusBar, 5);
+        root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
         Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = settingsButton; };
@@ -317,7 +314,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private Task Run(Func<Task> action, bool commitPending = true)
     {
-        if (closing) return Task.CompletedTask;
+        if (closing || busyKind is not null) return Task.CompletedTask;
         var previous = operation;
         // Publish the tail before executing, including synchronous focus events raised by the command.
         operation = Execute();
@@ -333,7 +330,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { if (commitPending) await CommitPending(); await action(); }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                if (cancellation.IsCancellationRequested) return;
+                if (ex is OperationCanceledException && cancellation.IsCancellationRequested) return;
                 RefreshLists();
                 if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
@@ -359,37 +356,36 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private async Task RefreshRemote()
     {
-        refreshing = true; SetRemotePresentation();
+        var reporter = BeginBusy("refresh", "最新の情報を取得しています");
+        var outcome = "更新を中止しました";
         try {
-            await workspace.Refresh(OperationToken);
+            await workspace.Refresh(OperationToken, reporter);
+            outcome = "最新の情報に更新しました";
             refreshFailure.IsOpen = false; ClearSaveFailures();
             if (workspace.Session is { } session && session.Document.Sync.Failures.IsEmpty && session.Document.Sync.Unverified.IsEmpty)
                 publishFailure.IsOpen = false;
         }
         catch (OperationCanceledException) when (OperationToken.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is not OutOfMemoryException) {
+            outcome = "最新の情報に更新できませんでした。" + ex.Message;
             if (workspace.Session is { } session && await session.FlushAsync() is { Succeeded: false } save)
                 ShowSaveFailure(save.Error ?? ex.Message);
             else { refreshFailure.Message = ex.Message; refreshFailure.IsOpen = true; }
         }
         finally {
-            refreshing = false; SetRemotePresentation();
+            EndBusy(outcome);
             RenderTasks(); RenderSettings();
         }
     }
     private void SetRemotePresentation()
     {
-        var busy = refreshing || publishing;
-        progress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var button in commandButtons.Children.OfType<Button>()) {
-            var id = AutomationProperties.GetAutomationId(button);
-            if (id is "PlanRefresh" or "PlanPublish") {
-                var text = id == "PlanRefresh" ? refreshing ? "更新中…" : "最新の情報に更新" : publishing ? "発行中…" : "発行…";
-                ((StackPanel)button.Content).Children.OfType<TextBlock>().Single().Text = text;
-                AutomationProperties.SetName(button, text);
-            }
-            button.IsEnabled = !busy || publishing && id == "PlanPublish";
-        }
+        var busy = busyKind is not null;
+        foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy;
+        projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
+        tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
+        surfaceHost.IsEnabled = !busy;
+        statusDateHost.IsHitTestVisible = !busy;
+        if (sheet is not null) sheet.statusDate.IsEnabled = !busy;
         if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
         if (peopleView is not null) peopleView.IsEnabled = !busy;
@@ -405,7 +401,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         catch (Exception ex)
         {
             closing = false;
-            publishStage.Text = ""; publishStage.Visibility = Visibility.Collapsed;
             SetPublishBusy(false); RenderTasks(); RenderReview();
             if (ex is IOException or UnauthorizedAccessException) ShowSaveFailure(ex.Message);
             else error.Text = ex.Message;

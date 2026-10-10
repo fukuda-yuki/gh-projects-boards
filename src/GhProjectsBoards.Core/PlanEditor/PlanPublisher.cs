@@ -13,16 +13,17 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
     private readonly SemaphoreSlim gate = new(1, 1);
-    public async Task<PlanPublishResult> RefreshAsync(PlanSession session, DateOnly today, CancellationToken token = default)
+    public async Task<PlanPublishResult> RefreshAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
     {
         await gate.WaitAsync(token).ConfigureAwait(false);
         try
         {
             using var operation = session.BeginRemoteOperation();
             using var lease = await service.BeginOperationAsync(context, token, mutation: false).ConfigureAwait(false);
-            await Reconcile(session, lease, today, token).ConfigureAwait(false);
+            await Reconcile(session, lease, today, token, progressReporter).ConfigureAwait(false);
             return new(true, null, null);
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) { var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false); return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null); }
         finally { gate.Release(); }
     }
@@ -68,11 +69,13 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (Exception ex) when (Expected(ex)) { return new(false, ex.Message, null); }
         finally { gate.Release(); }
     }
-    private async Task<PlanRemoteSnapshot> Read(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token)
+    private async Task<PlanRemoteSnapshot> Read(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null)
     {
         var document = session.Document;
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
-        return PlanSnapshot.From(await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token).ConfigureAwait(false), document.State.Settings);
+        var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter).ConfigureAwait(false);
+        token.ThrowIfCancellationRequested();
+        return PlanSnapshot.From(read, document.State.Settings);
     }
     private static bool Expected(Exception ex) => ex is InvalidOperationException or ArgumentException or IOException or OperationCanceledException or JsonException or KeyNotFoundException or FormatException or OverflowException;
     private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token)
@@ -155,6 +158,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     {
         var parts = repository.Split('/');
         var response = await lease.SendAsync(ApiRequest.GraphQl("query PlanPublishRepository($owner:String!,$name:String!){repository(owner:$owner,name:$name){id nameWithOwner hasIssuesEnabled isArchived viewerCanCreateIssues}}", new { owner = parts[0], name = parts[1] }), token);
+        token.ThrowIfCancellationRequested();
         if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("リポジトリを取得できません。");
         var repo = body.GetProperty("data").GetProperty("repository");
         if (repo.ValueKind != JsonValueKind.Object || !repo.GetProperty("hasIssuesEnabled").GetBoolean() || repo.GetProperty("isArchived").GetBoolean() || !repo.GetProperty("viewerCanCreateIssues").GetBoolean() ||
@@ -168,6 +172,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         do
         {
             var response = await lease.SendAsync(ApiRequest.GraphQl("query PlanCreationGuard($id:ID!,$after:String){node(id:$id){... on Repository{issues(first:100,after:$after){nodes{id body} pageInfo{hasNextPage endCursor}}}}}", new { id = repositoryId, after }), token);
+            token.ThrowIfCancellationRequested();
             if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("作成結果を確認できません。再作成は行いません。");
             var connection = body.GetProperty("data").GetProperty("node").GetProperty("issues");
             found.AddRange(connection.GetProperty("nodes").EnumerateArray().Where(n => n.GetProperty("body").GetString()?.Contains(marker, StringComparison.Ordinal) == true).Select(n => n.GetProperty("id").GetString()!));
@@ -210,10 +215,12 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
     }
-    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token)
+    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null)
     {
         await ReconcileCreations(session, lease, token).ConfigureAwait(false);
-        var remote = await Read(session, lease, token).ConfigureAwait(false);
+        var remote = await Read(session, lease, token, progressReporter).ConfigureAwait(false);
+        progressReporter?.Report(new("日程を計算"));
+        token.ThrowIfCancellationRequested();
         RequireSave(await (session.Document.Sync.Publish is null ? session.AcceptRefresh(remote, today) : session.AcceptPublished(remote, today)).ConfigureAwait(false));
         return remote;
     }
@@ -236,7 +243,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             PlanOperations.BlockingConflicts(session.Document).IsEmpty && sync.Failures.IsEmpty && sync.Unverified.IsEmpty;
         return new(complete, complete ? null : "未完了の変更があります。確認後に再発行してください。", review);
     }
-    public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<string>? progressReporter = null)
+    public async Task<PlanPublishResult> PublishAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
     {
         await gate.WaitAsync(token).ConfigureAwait(false);
         PlanPublishReview? review = null;
@@ -248,7 +255,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(1, (deadline - DateTimeOffset.UtcNow).TotalMilliseconds)), token).ConfigureAwait(false);
             using var lease = await service.BeginOperationAsync(context, token).ConfigureAwait(false);
             CreationWait = TimeSpan.Zero; CreationPhaseStarted = null; EffectiveBatchSizes.Clear();
-            progressReporter?.Report("最新情報の確認");
+            progressReporter?.Report(new("最新情報の確認"));
             var remote = await Reconcile(session, lease, today, token).ConfigureAwait(false);
             // Creation outcomes are adopted before the remaining writes are planned from current local inputs.
             while (true)
@@ -276,22 +283,31 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 else if (progress.Writes.Any(w => w.Stage == PlanPublishStage.Create && w.ResultId is null))
                     repositories = await Repositories(progress.Writes, lease, token).ConfigureAwait(false);
                 var creating = progress.Writes.Any(w => w.Stage == PlanPublishStage.Create);
+                static string StageName(PlanPublishStage stage) => stage switch {
+                    PlanPublishStage.Create or PlanPublishStage.Add => "新規 Issue",
+                    PlanPublishStage.Fields => "フィールド・担当者",
+                    PlanPublishStage.Hierarchy => "親子関係",
+                    PlanPublishStage.Dependencies => "先行タスク",
+                    _ => "表示順" };
+                void ReportWrites(PlanPublishStage stage)
+                {
+                    if (progressReporter is null) return;
+                    var name = StageName(stage);
+                    var writes = progress.Writes.Where(w => StageName(w.Stage) == name).ToArray();
+                    progressReporter?.Report(new(name, writes.Count(w => w.State == PlanWriteState.Succeeded), writes.Length));
+                }
                 async Task Save(IEnumerable<PlanWrite> updates)
                 {
                     var byKey = updates.ToDictionary(w => w.Key);
                     progress = progress with { Writes = progress.Writes.Select(w => byKey.GetValueOrDefault(w.Key) ?? w).ToImmutableArray() };
                     RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
+                    foreach (var stage in byKey.Values.Select(w => w.Stage).Distinct()) ReportWrites(stage);
                 }
                 var reducedLimits = new Dictionary<PlanPublishStage, int>();
                 async Task SendBatch(ImmutableArray<PlanWrite> group)
                 {
                     token.ThrowIfCancellationRequested();
-                    progressReporter?.Report(group[0].Stage switch {
-                        PlanPublishStage.Create or PlanPublishStage.Add => "新規 Issue",
-                        PlanPublishStage.Fields => "フィールド・担当者",
-                        PlanPublishStage.Hierarchy => "親子関係",
-                        PlanPublishStage.Dependencies => "先行タスク",
-                        _ => "表示順" });
+                    ReportWrites(group[0].Stage);
                     var variables = new Dictionary<string, JsonNode>();
                     var declarations = new List<string>(); var selections = new List<string>();
                     for (var i = 0; i < group.Length; i++)
@@ -396,7 +412,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (batch[0].Stage == PlanPublishStage.Create && progress.Writes.Any(w => batch.Any(b => b.Key == w.Key) && w.State != PlanWriteState.Succeeded)) break;
                 }
 
-                progressReporter?.Report("検証");
+                progressReporter?.Report(new("検証"));
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
                 remote = await ReadMemberships(session, lease, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));

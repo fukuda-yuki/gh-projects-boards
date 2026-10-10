@@ -1,4 +1,5 @@
 using GhProjectsBoards.Core.PlanEditor;
+using GhProjectsBoards.Core.Projects;
 using NUnit.Framework;
 using GhProjectsBoards.App.GitHub;
 namespace GhProjectsBoards.Tests;
@@ -16,7 +17,14 @@ internal sealed class PlanWorkspaceTests
             FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
             var workspace = new PlanWorkspace(new(root));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
-            await workspace.Open(workspace.Available[0]);
+            var reports = new List<RemoteProgress>();
+            await workspace.Open(workspace.Available[0], progress: new InlineProgress<RemoteProgress>(reports.Add));
+            Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
+            Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
+            reports.Clear();
+            await workspace.Refresh(progress: new InlineProgress<RemoteProgress>(reports.Add));
+            Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
+            Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
             var session = workspace.Session!;
             Assert.That(PlanSheetEditing.Parse(session.Document, PlanField.Assignees, "late-user"), Is.EqualTo(new[] { "U101" }));
             Assert.That(workspace.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
@@ -27,6 +35,117 @@ internal sealed class PlanWorkspaceTests
         }
         finally { Directory.Delete(root, true); }
     }
+    [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
+    public async Task CancellationBeforeAdoptionKeepsPreviousProjectPlanHistoryAndStorage(bool refresh, bool afterRead)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-progress-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true), new(new("I2", "Second", "acme/repo"), "", true)], 3));
+            var store = new PlanStore(root);
+            var workspace = new PlanWorkspace(store);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var original = workspace.Session!;
+            await original.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local edit")]), DateOnly.FromDateTime(DateTime.Today));
+            await original.FlushAsync();
+            var undo = original.UndoCount;
+            var redo = original.RedoCount;
+            var document = original.Document;
+            var selected = workspace.Selected;
+            var saved = File.ReadAllBytes(store.FileFor(document.Project));
+            var choice = workspace.Available[1];
+            using var cancellation = new CancellationTokenSource();
+            var reports = new List<RemoteProgress>();
+            var reporter = new InlineProgress<RemoteProgress>(value => {
+                reports.Add(value);
+                if (afterRead ? value.Stage == "日程を計算" : value.Completed == 1) cancellation.Cancel();
+            });
+            Assert.ThrowsAsync<OperationCanceledException>(() => refresh
+                ? workspace.Refresh(cancellation.Token, reporter) : workspace.Open(choice, cancellation.Token, reporter));
+            Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 2)));
+            Assert.That(workspace.Session, Is.SameAs(original));
+            Assert.That(workspace.Selected, Is.EqualTo(selected));
+            Assert.That(original.Document, Is.EqualTo(document));
+            Assert.That(original.UndoCount, Is.EqualTo(undo));
+            Assert.That(original.RedoCount, Is.EqualTo(redo));
+            Assert.That(File.ReadAllBytes(store.FileFor(document.Project)), Is.EqualTo(saved));
+            Assert.That(File.Exists(store.FileFor(choice.Id)), Is.False);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task FirstOpenCancelledBeforeAdoptionCreatesNoDocumentOrSelection()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-first-open-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true)], 2));
+            var store = new PlanStore(root);
+            var workspace = new PlanWorkspace(store);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            var choice = workspace.Available[0];
+            using var cancellation = new CancellationTokenSource();
+            var reporter = new InlineProgress<RemoteProgress>(value => {
+                if (value.Stage == "日程を計算") cancellation.Cancel();
+            });
+            Assert.ThrowsAsync<OperationCanceledException>(() => workspace.Open(choice, cancellation.Token, reporter));
+            Assert.That(workspace.Session, Is.Null);
+            Assert.That(workspace.Selected, Is.Null);
+            Assert.That(File.Exists(store.FileFor(choice.Id)), Is.False);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+            await workspace.Open(choice);
+            Assert.That(workspace.Selected, Is.EqualTo(choice));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task CancelledUrlResolutionKeepsSelectionAndCanBeRetried()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-url-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true)], 2));
+            var store = new PlanStore(root);
+            var workspace = new PlanWorkspace(store);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[1]);
+            var original = workspace.Session;
+            var selected = workspace.Selected;
+            var saved = File.ReadAllBytes(store.FileFor(selected!.Id));
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"holdQuery\":\"RegistrationResolve\"}");
+            using var cancellation = new CancellationTokenSource();
+            var open = workspace.OpenUrl("https://github.com/users/fixture-user/projects/3", cancellation.Token);
+            try {
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!File.Exists(Path.Combine(root, "held-gh.pid")) && !open.IsCompleted && DateTime.UtcNow < deadline)
+                    await Task.Delay(20);
+                Assert.That(File.Exists(Path.Combine(root, "held-gh.pid")), Is.True);
+                cancellation.Cancel();
+                Assert.ThrowsAsync<OperationCanceledException>(async () => await open);
+                Assert.That(workspace.Session, Is.SameAs(original));
+                Assert.That(workspace.Selected, Is.EqualTo(selected));
+                Assert.That(File.ReadAllBytes(store.FileFor(selected.Id)), Is.EqualTo(saved));
+                Assert.That(File.Exists(store.FileFor(workspace.Available[0].Id)), Is.False);
+            }
+            finally {
+                cancellation.Cancel();
+                File.WriteAllText(Path.Combine(root, "release-gh"), "release");
+                try { await open; } catch (Exception ex) when (ex is OperationCanceledException or DiscoveryException) { }
+            }
+            await workspace.OpenUrl("https://github.com/users/fixture-user/projects/3");
+            Assert.That(workspace.Selected!.Id, Is.EqualTo(workspace.Available[0].Id));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [TestCase("catalog-network")]
     [TestCase("catalog-incomplete")]
     [TestCase("catalog-identity")]
