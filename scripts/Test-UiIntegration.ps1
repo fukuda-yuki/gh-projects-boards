@@ -7,6 +7,7 @@
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
+& (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
 $run = Join-Path $repo ('TestResults/ui-integration/run-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8))
 New-Item -ItemType Directory -Path $run | Out-Null
 $project = Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests/GhProjectsBoards.UiIntegration.Tests.csproj'

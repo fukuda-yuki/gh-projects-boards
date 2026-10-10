@@ -14,7 +14,7 @@ $env:GHPB_DATA_ROOT = Join-Path (Get-Location) 'TestResults/workspace-evaluation
 & ./src/GhProjectsBoards.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe
 ~~~
 
-GHPB_DATA_ROOT must be absolute. Omit it to use the normal per-user root. The app writes under PlanningEditor/v1. A long checkout can cause MSB3030 during app-local packaging; if a short junction is needed, verify that it points to the selected checkout before using it. The development executable includes app-local .NET and Windows App SDK runtimes.
+GHPB_DATA_ROOT must be absolute. Omit it to use the normal per-user root. Data under `TestResults/` is deleted after 14 days without changes; see [test output retention](tests/README.md#test-output-retention). The app writes under PlanningEditor/v1. A long checkout can cause MSB3030 during app-local packaging; if a short junction is needed, verify that it points to the selected checkout before using it. The development executable includes app-local .NET and Windows App SDK runtimes.
 
 ## Internal distribution
 

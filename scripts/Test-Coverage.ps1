@@ -5,6 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
+& (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
 $run = Join-Path $repo ('TestResults/coverage/' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Path $run | Out-Null
 $project = Join-Path $repo 'tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj'

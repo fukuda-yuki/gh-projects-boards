@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not $DataRoot) {
     if ($Resume) { throw '-Resume requires -DataRoot.' }
+    & (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
     $DataRoot = Join-Path $repo ('TestResults/evaluation/' + [guid]::NewGuid().ToString('N'))
 }
 if (-not [IO.Path]::IsPathFullyQualified($DataRoot)) { throw 'DataRoot must be absolute.' }

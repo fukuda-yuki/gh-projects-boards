@@ -15,6 +15,12 @@ jobs:
           dotnet-quality: 'ga'
       - name: Restore local tools
         run: dotnet tool restore
+      - name: Test the TestResults cleanup rule
+        shell: pwsh
+        run: |
+          Import-Module Pester -MinimumVersion 5.0
+          $result = Invoke-Pester -Path scripts/Clear-TestResults.Tests.ps1 -PassThru -Output Detailed
+          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) { throw 'TestResults cleanup tests failed.' }
       - name: Restore coverage history
         shell: pwsh
         run: |
