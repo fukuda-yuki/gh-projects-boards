@@ -133,7 +133,7 @@ UI integration covers headers/tooltips, date round trips, two lateness levels, u
 
 ## Offline evaluation fixture
 
-EvaluationFixtureTests runs the fixture initializer, stored document, workspace connection and refresh through real fake-gh subprocesses. It verifies 40 requirements with 25 tasks each (1,040 Issues), 20 people, zero unpublished tasks before/after refresh, complete load allocation, near-capacity weekly demand across the two-wave plan, a daily overload hidden by its weekly average, one total-allowance overrun, native sibling order, and refusal to replace an occupied root. Every displayed week is reported, including the low-demand tail. Start-Evaluation.ps1 uses this initializer and the ordinary executable. Its fixed status date makes restart reproducible; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
+EvaluationFixtureTests covers both waterfall versions. The baseline meets every phase milestone, and IT, ST and OT start on their version-wide dates. At the default status date the replayed progress shows PS late after re-estimates, open overruns, one open task with 残 0, early completions, closed tasks ending on their close date and U7's overload; the measures of every recorded status date are printed. The initializer, stored document, workspace connection and refresh run through real fake-gh subprocesses: 1,040 Issues, 20 people, the 工程 value on every task, zero unpublished tasks before and after refresh, and refusal to replace an occupied root. Start-Evaluation.ps1 uses this initializer and the ordinary executable; Resume retains local and synthetic remote changes. See [Build and run](../README.md#offline-evaluation).
 
 ## Execution evidence
 

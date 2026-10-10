@@ -6,8 +6,8 @@ using GhProjectsBoards.Core.PlanEditor;
 
 namespace GhProjectsBoards.Tests;
 
-internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } }
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; } }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -34,7 +34,7 @@ internal static class FakePlanEditor
         {
             object Choice(string projectId, string owner) => new { id = projectId, number = projectId == "P1" ? 3 : 4,
                 url = "https://github.com/" + (owner == "fixture-user" ? "users/" : "orgs/") + owner + "/projects/" + (projectId == "P1" ? "3" : "4"),
-                    title = projectId == "P1" ? scenario.TryGetProperty("versionEvaluation", out var version) && version.GetBoolean() ? "第2027.04版" : "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
+                    title = projectId == "P1" ? scenario.TryGetProperty("versionTitle", out var version) ? version.GetString() : "開発計画" : "運用計画", owner = new { id = "O1", __typename = owner == "fixture-user" ? "User" : "Organization", login = owner } };
             if (query.Contains("RegistrationOwners")) Write(new { data = new { viewer = new { organizations = Page([new { login = "acme" }], 1) } } });
             else if (query.Contains("RegistrationProjects"))
             {
@@ -64,6 +64,15 @@ internal static class FakePlanEditor
             return Page(children.Skip(offset).Take(100).Select(id => (object)new { id }), children.Length,
                 offset + 100 < children.Length, offset + 100 < children.Length ? (offset + 100).ToString() : null);
         }
+        // 工程 is an ordinary single-select custom field; the app reads it like any other Project field.
+        object PhaseField() => new { __typename = "ProjectV2SingleSelectField", id = "F-Phase", name = "工程", dataType = "SINGLE_SELECT", isIssueField = false, project = new { id = projectId },
+            options = state.Phases.Select(p => new { id = "phase-" + p, name = p }).ToArray() };
+        object[] Values(PlanFakeIssue issue)
+        {
+            var values = fieldRoles.Where(f => PlanValues.Get(issue.Row, f) is not ("null" or "false")).Select(f => Value(issue.Row, f));
+            return (issue.Phase is null ? values : values.Append(new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = issue.Row.Identity + "-Phase",
+                field = new { id = "F-Phase", project = new { id = projectId } }, optionId = "phase-" + issue.Phase })).ToArray();
+        }
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
@@ -74,7 +83,7 @@ internal static class FakePlanEditor
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
                     parent = row.Parent is null ? null : new { id = row.Parent } },
-                fieldValues = Page(fieldRoles.Where(f => PlanValues.Get(row, f) is not ("null" or "false")).Select(f => Value(row, f)), fieldRoles.Count(f => PlanValues.Get(row, f) is not ("null" or "false"))) };
+                fieldValues = Page(Values(issue), Values(issue).Length) };
         }
         object? node = null;
         if (query.Contains("PlanAddField"))
@@ -132,7 +141,7 @@ internal static class FakePlanEditor
         }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
-                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field), fieldRoles.Length) };
+                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1)) };
         else if (query.Contains("ProjectItems"))
         {
             var all = state.Issues.Where(i => i.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4 && state.ReadAttempts < 2 && int.Parse(i.Row.Identity[1..]) % 2 == 0)).ToArray();

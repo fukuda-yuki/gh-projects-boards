@@ -1,6 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
-param([ValidateSet("Debug", "Release")][string]$Configuration = "Release", [string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
+param([ValidateSet("Debug", "Release")][string]$Configuration = "Release", [ValidateSet("2027.04", "2027.10")][string]$Version = "2027.04",
+    [ValidatePattern('^\d{4}-\d{2}-\d{2}$')][string]$StatusDate, [string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not $DataRoot) {
@@ -30,7 +31,8 @@ if ($Resume) {
     if (-not (Test-Path -LiteralPath (Join-Path $DataRoot 'evaluation.json')) -or -not (Test-Path -LiteralPath $fake)) { throw 'Not a prepared evaluation root. Use a new empty root without -Resume.' }
 } else {
     $prepare = IsolatedStart $fixture
-    $prepare.ArgumentList.Add('--prepare-evaluation'); $prepare.ArgumentList.Add($DataRoot)
+    $prepare.ArgumentList.Add('--prepare-evaluation'); $prepare.ArgumentList.Add($DataRoot); $prepare.ArgumentList.Add($Version)
+    if ($StatusDate) { $prepare.ArgumentList.Add($StatusDate) }
     $process = [Diagnostics.Process]::Start($prepare)
     try { $process.WaitForExit(); if ($process.ExitCode -ne 0) { throw 'Evaluation initialization failed; existing files were not replaced.' } }
     finally { $process.Dispose() }
@@ -40,7 +42,8 @@ if ($Resume) {
 }
 Write-Host "Data root: $DataRoot"
 Write-Host "Offline fake gh: $fake"
-Write-Host '接続 → 第2027.04版。40要求事項・1,000タスク・20名。初期状態は 未発行 0 タスク。状況日は 2026-10-05。'
+$summary = Get-Content -LiteralPath (Join-Path $DataRoot 'evaluation.json') -Raw | ConvertFrom-Json
+Write-Host "接続 → $($summary.title)。40要求事項・1,000タスク・20名。初期状態は 未発行 0 タスク。状況日は $($summary.statusDate)。"
 Write-Host "Resume: & '$PSCommandPath' -NoBuild -Configuration $Configuration -Resume -DataRoot '$DataRoot'"
 if ($PrepareOnly) { return }
 $start = IsolatedStart $app
