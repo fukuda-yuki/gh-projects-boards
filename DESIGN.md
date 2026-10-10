@@ -144,12 +144,55 @@ Use these scenarios to challenge a proposed design, not as a mandatory whole-app
 
 Dataset sizes, visible-row thresholds, performance targets and screenshots belong to the individual Issue's acceptance conditions. A documentation review establishes the usefulness and consistency of these rules, not that the running product satisfies them.
 
+### Baseline usability checklist
+
+These are general expectations of any business application, drawn from the sources named in each row, not product decisions. A design that misses one needs no owner report to be called a defect. Audit the ordinary app with version-scale data at the PMO's 1920 × 1080 display, and record each row's result (met, partly met, not met, not verified) with its evidence in the owning Issue, never in this document. Product decisions that go beyond these rows belong to the requirements and specification.
+
+| ID | Check | Source |
+| --- | --- | --- |
+| S1 | Direct manipulation (selection, typing, toggles, scrolling) responds within about 0.1 s; nothing the user did appears ignored. | NN/G response times |
+| S2 | An operation that can exceed 1 s shows, where the user is looking, that work is under way. Beyond 10 s it names the current step, shows progress when known (n of N) and offers a safe way to stop. | NN/G response times; Nielsen 1 |
+| S3 | While input is blocked, the blocked surface looks blocked, with a blocking indicator and a label, rather than only disabled buttons. A non-blocking indicator is used only while the user can keep working. | Microsoft progress controls; DADS progress indicator |
+| S4 | A wait that affects part of the screen does not animate the rest. Skeleton placeholders are not used. | DADS progress indicator |
+| S5 | The user can always tell which Project and view are open, how current the GitHub data is, and how much local work is unpublished. | Nielsen 1 |
+| S6 | The outcome of a long operation stays visible until it is superseded; success needs no modal dialog. | DADS modal dialog; Primer notification messaging |
+| W1 | Labels use the words Japanese PMOs already use for the concept (MS Project, TFS, SI practice), not literal translations or coined terms. One concept has one term across the UI, the manual and messages. | Nielsen 2, 4 |
+| W2 | Units (h, 日, 件) are explicit and consistent; each context uses one date format. | Nielsen 4 |
+| W3 | A message states what happened, its effect on the plan and what to do, in plain Japanese; technical detail is available on request. | Nielsen 9; Microsoft writing style |
+| C1 | Local changes can be undone one by one, and there is a clearly marked way back to the last known good state. A destructive command states its scope and can itself be undone; a confirmation dialog is not the only safeguard. | Nielsen 3; DADS modal dialog |
+| C2 | Every mode (editing, review, long operation) has a visible exit that says what it keeps or discards. | Nielsen 3 |
+| K1 | Editable, calculated and non-editable values look different. A value that cannot be edited never looks or behaves like an input: no field chrome, caret, editor on click or F2, or fill handle. | DADS input text (readonly); Nielsen 4, 5 |
+| K2 | A command or value that is unavailable says why, next to it or when focused, and stays reachable by keyboard when it carries information. | DADS button (disabled) |
+| K3 | A command has one name, one place and one shortcut. Windows and Excel conventions (Ctrl+Z/Y, F2, Esc, Delete, Ctrl+C/V/D) behave as users expect. | Nielsen 4; Microsoft CommandBar |
+| E1 | Invalid input is caught at its cell with a reason before it affects other work. An operation that would lose work asks first or can be undone. | Nielsen 5 |
+| R1 | What a decision needs (identity, values, reason) is on one screen; users do not carry values between screens in memory. | Nielsen 6 |
+| R2 | Column headers, abbreviations and markers are understandable without the manual; tooltips explain the non-obvious. | Nielsen 6, 10 |
+| F1 | Frequent work has keyboard paths and range operations; experienced users can tailor frequently used views. | Nielsen 7 |
+| M1 | No animation or transition that does not explain a state change. Scrolling and resizing do not flicker, blank out or shift content. | Nielsen 8; Microsoft motion |
+| M2 | Each visible element supports the current decision. | Nielsen 8 |
+| D1 | A failure names the affected work and offers recovery where it happened; retry keeps the user's place. | Nielsen 9 |
+| H1 | The manual is reachable from the app and uses the current UI terms. | Nielsen 10 |
+| A1 | Text contrast is at least 4.5:1 (3:1 for large text); controls, focus and state markers at least 3:1. | WCAG 2.2 AA / JIS X 8341-3:2016 |
+| A2 | Every function works by keyboard with visible focus in visual order; focus returns after a flyout or dialog closes. | WCAG 2.2 AA; DADS accessibility |
+| A3 | Accessible names match visible labels; progress, completion and errors are announced. | WCAG 2.2 AA |
+| A4 | Color is never the only carrier of a state. | WCAG 2.2 AA |
+| A5 | At 200% Windows text size, content and commands remain reachable. | WCAG 2.2 AA |
+| P1 | Edits reach the screen within the specified target at version scale, and sheet rows and Gantt bars stay in step while scrolling. | NN/G response times; [specification](docs/spec.md#timeline-and-measurement) |
+| P2 | Responsiveness is measured with a repeatable metric on version-scale data so regressions are visible. | Product practice |
+| I1 | Editing, monitoring, configuration and publication review are separate, clearly named surfaces; leaving settings returns to the task. | NN/G IA; Microsoft app settings |
+
 ### Reference scope
 
-References consulted on **2026-09-19**. The adopted criteria above are maintained here; upstream changes do not automatically change this product's contract. External examples inform decisions and do not mandate web components, a screen layout or new dependencies.
+References consulted on **2026-09-19**, with later additions dated in their rows. The adopted criteria above are maintained here; upstream changes do not automatically change this product's contract. External examples inform decisions and do not mandate web components, a screen layout or new dependencies.
 
 | Source | Adopted idea and boundary |
 | --- | --- |
+| NN/G: [10 Usability Heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/) and [Response Times: The 3 Important Limits](https://www.nngroup.com/articles/response-times-3-important-limits/) (reviewed 2026-10-10) | Backbone of the baseline checklist ("Nielsen 1–10" refers to the heuristics in their published order). The 0.1 s / 1 s / 10 s limits set when feedback, a progress indication and a way to stop are expected. |
+| デジタル庁デザインシステムβ版 Markdown, 2026-10-08 edition ([resources](https://design.digital.go.jp/dads/resources/); 出典：デジタル庁デザインシステムウェブサイト https://design.digital.go.jp/dads/) (reviewed 2026-10-10) | Japanese-language guidance adopted for progress indicators (labelled indicator for whole-screen waits, no skeleton UI), avoiding disabled and readonly inputs that look usable, modal dialog restraint, and destructive actions that can be undone. It is a web design system for public services; its components, colors and layout are not adopted. |
+| Microsoft Learn: [Progress controls](https://learn.microsoft.com/en-us/windows/apps/design/controls/progress-controls) (reviewed 2026-10-10) | An indeterminate ProgressBar means the user can keep working; an indeterminate ProgressRing means interaction waits. Pair either with text naming the operation. |
+| W3C [WCAG 2.2](https://www.w3.org/TR/WCAG22/) level AA, which JIS X 8341-3:2016 aligns with through WCAG 2.0 (reviewed 2026-10-10) | Contrast, keyboard, name, color-independence and text-resize checks A1–A5 for a desktop app. Web-only success criteria do not apply. |
+| Microsoft Learn: [Motion in Windows apps](https://learn.microsoft.com/en-us/windows/apps/design/motion/) (reviewed 2026-10-10) | Motion should have a purpose, such as explaining a change; decorative motion is not adopted. |
+| [impeccable](https://github.com/pbakaus/impeccable) (reviewed 2026-10-10) | Not adopted yet. Its deterministic detector targets web HTML/CSS, not a WinUI desktop app; its platform-independent critique and audit heuristics are trialled against the checklist in [#119](https://github.com/fukuda-yuki/gh-projects-boards/issues/119). The installed Microsoft WinUI design skill remains the platform reference. |
 | GitHub [Projects table layout](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-table-layout), Primer [Empty states](https://primer.style/product/ui-patterns/empty-states/), and Microsoft [CommandBar](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/command-bar) (reviewed 2026-10-04) | Keep the table central, configuration grouped, the empty state's next action singular, and commands in native overflow. Preserve target identity, recovery and keyboard access. These references inform concrete behavior, not a claim of comparative usability or a requirement to copy web components. |
 | Azure Boards [Bulk modify work items](https://learn.microsoft.com/en-us/azure/devops/boards/backlogs/bulk-modify-work-items?view=azure-devops) (reviewed 2026-10-04) | Bulk editing already exists in established products. This product must justify its value through the connected local planning, actual/remaining correction, load comparison and explicit publication job, not through the existence of a table or bulk command alone. |
 | MS Project [views](https://support.microsoft.com/en-gb/office/overview-of-project-views-6cb1dbcd-5cd5-4cc2-a878-aa365564266d) and Azure Boards [capacity](https://learn.microsoft.com/en-us/azure/devops/boards/sprints/set-capacity?view=azure-devops) (reviewed 2026-10-05) | The Gantt Chart view (task sheet plus row-aligned chart) shapes the plan sheet; Resource Usage and per-person capacity bars shape the people view. Adopt their familiar structure and terms, not their full feature sets. |
