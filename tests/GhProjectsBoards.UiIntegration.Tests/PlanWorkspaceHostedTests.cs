@@ -1064,6 +1064,10 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = previousProject ? 1 : 0);
         try {
             await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
+            await Ui.Until(() => new[] { "PlanBusyPanel", "PlanBusyRing", "PlanBusyHeading", "PlanBusyCancel" }
+                .All(id => Ui.Tree(view).OfType<FrameworkElement>().Any(element => AutomationProperties.GetAutomationId(element) == id &&
+                    element.IsLoaded && element.ActualWidth > 0 && element.ActualHeight > 0)));
+            await Ui.Run(async () => await RenderedEvidence.Capture(view, "opening-before-cancel-" + previousProject));
             await Ui.Run(() => {
                 var expected = workspace.Available[previousProject ? 1 : 0].Title;
                 Assert.That(Ui.Find<TextBlock>("OpenProjectName").Text, Is.EqualTo(expected));
@@ -1080,7 +1084,8 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(heading.FontWeight, Is.EqualTo(Microsoft.UI.Text.FontWeights.SemiBold));
                 foreach (var element in new FrameworkElement[] { ring, heading, cancel }) {
                     var bounds = element.TransformToVisual(panel).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
-                    Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2));
+                    Assert.That(bounds.Left + bounds.Width / 2, Is.EqualTo(panel.ActualWidth / 2).Within(2),
+                        $"{AutomationProperties.GetAutomationId(element)} bounds={bounds}; panel={panel.ActualWidth}x{panel.ActualHeight}");
                 }
                 Ui.Click("PlanBusyCancel");
             });
@@ -1115,6 +1120,8 @@ internal sealed class PlanWorkspaceHostedTests
         });
         try {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")) && Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
+            await Ui.Ready<ProgressRing>("PlanBusyRing");
+            await Ui.Ready<Button>("PlanBusyCancel");
             await Ui.Run(() => {
                 var panel = Ui.Find<ContentControl>("PlanBusyPanel");
                 Assert.That(AutomationProperties.GetName(panel), Does.Contain("Project を確認"));
@@ -1202,18 +1209,33 @@ internal sealed class PlanWorkspaceHostedTests
     {
         await Open();
         await CommitText("PlanCell1_Title", "ローカルの計画");
-        var before = workspace.Session!.Document;
+        await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "ローカルの計画");
+        await Ui.Idle();
+        var session = workspace.Session!;
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        var redo = session.RedoCount;
+        var path = new PlanStore(root).FileFor(session.Document.Project);
+        var savedBefore = File.ReadAllBytes(path);
+        Assert.That(PlanJson.Read<PlanCheckpoint>(savedBefore).Document.State.Rows[0].Title, Is.EqualTo("ローカルの計画"));
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "ProjectFields" }));
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         try {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Ready<Button>("PlanBusyCancel");
             await Ui.Run(() => Ui.Click("PlanBusyCancel"));
             await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Collapsed);
-            Assert.That(workspace.Session.Document, Is.EqualTo(before));
+            await Ui.Idle();
+            Assert.That(PlanJson.Text(workspace.Session!.Document), Is.EqualTo(before));
+            Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+            Assert.That(workspace.Session.RedoCount, Is.EqualTo(redo));
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(savedBefore));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await Ui.Run(() => {
                 Assert.That(Ui.Find<InfoBar>("PlanRefreshFailure").IsOpen, Is.False);
                 Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("ローカルの計画"));
             });
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
     }
@@ -1444,6 +1466,7 @@ internal sealed class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with { Row = state.Issues[0].Row with { Title = "GitHub変更", Actual = 1 } }] });
         await Ui.Run(() => Ui.Click("PlanRefresh"));
         await Ui.Until(() => workspace.Session!.Document.Sync.Conflicts.Length == 1);
+        await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanShowTasks"));
         await Ui.Until(() => AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Title")).Contains("競合"));
         await Ui.Run(() => {
@@ -1866,6 +1889,7 @@ internal sealed class PlanWorkspaceHostedTests
                 await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
                 await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
             }
+            await Ui.Ready<Button>("PlanRetrySave");
             await Ui.Run(() => Ui.Click("PlanRetrySave")); await Ui.Idle();
             await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty));
             var reopened = await PlanSession.OpenAsync(new(root), workspace.Selected!.Id, new(2026, 10, 6));

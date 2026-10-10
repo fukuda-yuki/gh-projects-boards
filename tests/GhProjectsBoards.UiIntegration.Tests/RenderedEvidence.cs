@@ -34,7 +34,7 @@ internal static class RenderedEvidence
         Assert.That(bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0, Is.True);
         var buffer = await bitmap.GetPixelsAsync().AsTask(deadline.Token); using var reader = DataReader.FromBuffer(buffer);
         var pixels = new byte[buffer.Length]; reader.ReadBytes(pixels); Assert.That(pixels.Any(b => b != 0), Is.True);
-        var folder = Path.Combine(Path.GetTempPath(), "ghpb-review-" + TestContext.CurrentContext.Test.ID + "-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(TestContext.CurrentContext.WorkDirectory, "screenshots", TestContext.CurrentContext.Test.ID + "-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
         var destination = await StorageFolder.GetFolderFromPathAsync(folder).AsTask(deadline.Token);
         var file = await destination.CreateFileAsync(name + ".png", CreationCollisionOption.FailIfExists).AsTask(deadline.Token);
@@ -42,6 +42,8 @@ internal static class RenderedEvidence
         var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream).AsTask(deadline.Token);
         var dpi = 96 * view.XamlRoot.RasterizationScale;
         encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, dpi, dpi, pixels);
-        await encoder.FlushAsync().AsTask(deadline.Token); Console.WriteLine("Rendered review evidence: " + file.Path);
+        await encoder.FlushAsync().AsTask(deadline.Token);
+        TestContext.AddTestAttachment(file.Path, name);
+        Console.WriteLine("Rendered review evidence: " + file.Path);
     }
 }

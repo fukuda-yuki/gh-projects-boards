@@ -30,7 +30,7 @@ try {
     })
     $metadata.packageAssets = (Get-FileHash -LiteralPath (Join-Path $repo 'tests/GhProjectsBoards.UiIntegration.Tests/obj/project.assets.json')).Hash
     $result = Join-Path $run 'results.xml'
-    $arguments = @('--workers=0', '--where', $Where, '--noheader')
+    $arguments = @('--workers=0', '--where', $Where, '--noheader', "--work=$run")
     if ($Discover) { $arguments += "--explore=$result" }
     else { $arguments += "--result=$result" }
     $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $binaryRoot 'GhProjectsBoards.UiIntegration.Tests.exe'))

@@ -14,7 +14,7 @@ Build Release with `--no-restore`, then run `./scripts/Test-UiIntegration.ps1 -N
 
 The process deadline defaults to 3,600 seconds for the routine selection. A deadline expiry is not a view lifecycle failure; the per-view Unloaded deadline remains 10 seconds.
 
-`RenderedEvidence` captures native XAML after layout for design review. It is not a desktop or compositor latency measurement, and tests assert state and geometry separately from capture timing.
+`RenderedEvidence` captures native XAML after layout for design review. The launcher sets NUnit's work directory to the run's evidence directory, so screenshots are retained under `screenshots/` with the logs and results and included in the hosted workflow artifact. Each capture is also attached to its NUnit case. It is not a desktop or compositor latency measurement, and tests assert state and geometry separately from capture timing.
 
 ## Desktop interference
 
