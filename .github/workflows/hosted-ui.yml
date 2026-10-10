@@ -1,0 +1,59 @@
+# The hosted WinUI suite on a GitHub-hosted runner's interactive desktop, so a UI change can be
+# checked without the PMO's screen. Run on demand; see tests/README.md#where-tests-run.
+name: hosted-ui
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hosted-ui:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - name: Set the PMO display size (1920x1080)
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Build
+        id: build
+        run: dotnet build GhProjectsBoards.sln --configuration Release
+      - name: Hosted UI integration (default routine selection)
+        shell: pwsh
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -TimeoutSeconds 3600
+      - name: Summarize the hosted UI run
+        if: always() && steps.build.outcome == 'success'
+        shell: pwsh
+        run: |
+          $run = Get-ChildItem TestResults/ui-integration -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
+          if (-not $run) { Write-Host 'No UI integration run folder.'; exit 0 }
+          $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
+          Write-Host "exitCode=$($meta.exitCode) timedOut=$($meta.timedOut) elapsedSeconds=$($meta.elapsedSeconds)"
+          $meta.counts | ConvertTo-Json | Out-Host
+          $stderr = Join-Path $run.FullName 'stderr.log'
+          if (Test-Path $stderr) {
+            $lines = Get-Content $stderr
+            Write-Host "[WINDOW] lines: $(@($lines | Select-String -SimpleMatch '[WINDOW]').Count)  [INPUT] lines: $(@($lines | Select-String -SimpleMatch '[INPUT]').Count)"
+            # Recorded failures, lifecycle diagnostics, activation changes, window close and the host's exit reason.
+            $lines | Select-String -Pattern 'Exception|^\s+at |\[(DIAGNOSTIC|WINDOW|INPUT|CLOSE|EXIT)\]' | Select-Object -First 200 | ForEach-Object Line | Out-Host
+          }
+          $xmlPath = Join-Path $run.FullName 'results.xml'
+          if (Test-Path $xmlPath) {
+            [xml]$xml = Get-Content -Raw $xmlPath
+            foreach ($case in $xml.SelectNodes("//test-case[@result='Failed']")) {
+              $message = "$($case.failure.message.'#cdata-section')$($case.failure.message.InnerText)"
+              Write-Host "FAILED $($case.fullname)"
+              $flat = $message -replace '\s+', ' '
+              Write-Host ('  ' + $flat.Substring(0, [Math]::Min(600, $flat.Length)))
+            }
+          } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 20 }
+      - name: Upload run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-ui
+          path: TestResults/ui-integration
+          if-no-files-found: warn

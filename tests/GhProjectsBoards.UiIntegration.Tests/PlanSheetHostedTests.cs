@@ -643,12 +643,14 @@ internal sealed class PlanSheetHostedTests
     public async Task LabelledCommandsStayReachableInNarrowNativeOverflowIncludingColumnChoices()
     {
         await Ui.Run(() => { sheetHost.Width = 760; sheetHost.Height = 600; }); await Ui.Idle();
+        // CommandBar moves primary commands into the overflow on a later layout pass than the resize,
+        // so the narrow state is awaited rather than read once.
+        await Ui.Until(() => Ui.Find<CommandBar>("PlanSheetCommands").PrimaryCommands.OfType<AppBarButton>().Any(b => b.IsInOverflow));
         await Ui.Run(() => {
             var bar = Ui.Find<CommandBar>("PlanSheetCommands");
             Assert.That(bar.DefaultLabelPosition, Is.EqualTo(CommandBarDefaultLabelPosition.Right));
             var buttons = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>().ToArray();
             Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
-            Assert.That(bar.PrimaryCommands.OfType<AppBarButton>().Any(b => b.IsInOverflow), Is.True);
             Assert.That(bar.SecondaryCommands.OfType<AppBarButton>().Where(b => b.Label == "コピー").Single().KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+C"));
             bar.IsOpen = true;
         });
