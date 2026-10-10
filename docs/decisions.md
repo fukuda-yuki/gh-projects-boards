@@ -90,7 +90,7 @@ Verify behavior at the lowest reliable boundary: logic unit tests, then UI integ
 
 Coverage percentage is not a goal and is not published; a local report helps find untested logic. The agent accountable for a change reviews its behavior list, and the owner receives a summary only when agreed behavior changes.
 
-WinUI 3 cannot render without an interactive desktop session, so the hosted UI suite and E2E need one; physical IME, native input and visual review need the PMO's real desktop.
+WinUI 3 cannot render without an interactive desktop session, so the hosted UI suite and E2E need one. A GitHub-hosted Windows runner provides that session, so CI runs the fake-gh E2E journeys and the hosted UI suite can run there on demand instead of on the PMO's screen; physical IME, native input and visual review need the PMO's real desktop.
 
 The [test policy](../tests/README.md) owns the rules, selection and evidence requirements.
 

@@ -1,49 +1,23 @@
-# Trial for #141: can the hosted WinUI suite and the fake-gh E2E journeys run on a
-# GitHub-hosted Windows runner instead of the owner's desktop? WinUI 3 has no headless
-# renderer, so this only works if the runner process owns an interactive desktop session.
-name: desktop-offscreen-trial
+# The hosted WinUI suite on a GitHub-hosted runner's interactive desktop, so a UI change can be
+# checked without the PMO's screen. Run on demand; see tests/README.md#where-tests-run.
+name: hosted-ui
 on:
-  push:
-    branches: [claude/project-thread-txzs55]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  desktop:
+  hosted-ui:
     runs-on: windows-latest
-    timeout-minutes: 150
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
-      - name: Report the desktop session before changes
-        shell: pwsh
-        run: |
-          Add-Type -AssemblyName System.Windows.Forms
-          [ordered]@{
-            os = [Environment]::OSVersion.VersionString
-            sessionId = [Diagnostics.Process]::GetCurrentProcess().SessionId
-            userInteractive = [Environment]::UserInteractive
-            user = [Environment]::UserName
-            screens = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { "$($_.DeviceName) $($_.Bounds.Width)x$($_.Bounds.Height) primary=$($_.Primary)" })
-          } | ConvertTo-Json | Out-Host
       - name: Set the PMO display size (1920x1080)
         shell: pwsh
-        continue-on-error: true
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
-      - name: Report the desktop session after changes
-        shell: pwsh
-        run: |
-          Add-Type -AssemblyName System.Windows.Forms
-          [ordered]@{
-            os = [Environment]::OSVersion.VersionString
-            sessionId = [Diagnostics.Process]::GetCurrentProcess().SessionId
-            userInteractive = [Environment]::UserInteractive
-            user = [Environment]::UserName
-            screens = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { "$($_.DeviceName) $($_.Bounds.Width)x$($_.Bounds.Height) primary=$($_.Primary)" })
-          } | ConvertTo-Json | Out-Host
       - name: Build
         id: build
         run: dotnet build GhProjectsBoards.sln --configuration Release
@@ -76,16 +50,10 @@ jobs:
               Write-Host ('  ' + $flat.Substring(0, [Math]::Min(600, $flat.Length)))
             }
           } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 20 }
-      - name: Desktop E2E through fake gh (default selection, no IME)
-        if: always() && steps.build.outcome == 'success'
-        shell: pwsh
-        run: ./scripts/Test-E2E.ps1 -Configuration Release
       - name: Upload run evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-offscreen-trial
-          path: |
-            TestResults/ui-integration
-            TestResults/e2e
+          name: hosted-ui
+          path: TestResults/ui-integration
           if-no-files-found: warn

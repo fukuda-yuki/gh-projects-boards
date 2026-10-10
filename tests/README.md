@@ -76,6 +76,7 @@ Run what the change puts at risk: focused logic tests while implementing, then t
 
   Adapter tests that start the fake gh as a Windows executable or expect Windows paths and credential storage fail there; they are Windows evidence, not Linux defects.
 - **Windows desktop:** WinUI 3 cannot render without a desktop session, so the hosted UI suite and E2E need an unlocked interactive desktop that nobody uses during the run. The host records activation changes (`[WINDOW]`) and stray physical input (`[INPUT]`); an `[INPUT]` line in a routine run marks interference. Physical IME, native input and visual review need the PMO's real desktop.
+- **GitHub-hosted Windows runner:** the runner process owns an interactive desktop session (1920×1080 after `Set-DisplayResolution`), so nothing appears on the PMO's screen. CI runs the default E2E selection on every push. The [hosted-ui workflow](../.github/workflows/hosted-ui.yml) runs the routine UI selection on demand and prints failures, `[WINDOW]`/`[INPUT]` counts and the host's `[EXIT]` reason in its log. The runner is slower than the PMO desktop; a case that fails only there still needs its cause found, and a runner pass does not replace visual review on the PMO's display.
 
 ## Routine verification
 

@@ -23,8 +23,31 @@ jobs:
         run: dotnet build GhProjectsBoards.sln --configuration Release
       - name: Run Core unit and integration tests (no live GitHub)
         run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger trx --results-directory TestResults/ci
-      - name: Discover desktop tests (not desktop or IME acceptance)
-        run: dotnet test tests/GhProjectsBoards.E2E.Tests/GhProjectsBoards.E2E.Tests.csproj --configuration Release --no-build --list-tests
       - name: Discover hosted WinUI tests (no UI execution on this runner)
         run: ./scripts/Test-UiIntegration.ps1 -Discover -NoBuild
 
+  e2e:
+    # The runner process owns an interactive desktop session, so the ordinary app and FlaUI run
+    # there instead of on the PMO's screen. The journeys use the fake gh and no IME.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - name: Set the PMO display size (1920x1080)
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Restore
+        run: dotnet restore GhProjectsBoards.sln
+      - name: Desktop E2E through fake gh (default selection, no IME)
+        shell: pwsh
+        run: ./scripts/Test-E2E.ps1 -Configuration Release
+      - name: Upload E2E evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e
+          path: TestResults/e2e
+          if-no-files-found: warn
