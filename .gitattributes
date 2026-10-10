@@ -4,3 +4,5 @@ docs/notices/* -text -diff
 docs/notices/*.json text diff
 # Preserve the selected official CSV bytes used for import provenance checks.
 tests/GhProjectsBoards.Tests/Fixtures/JapanHolidays.csv -text -diff
+# Shell scripts run under bash, including the Claude Code hook on Windows checkouts.
+*.sh text eol=lf

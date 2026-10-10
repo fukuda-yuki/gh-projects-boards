@@ -64,6 +64,14 @@ C:\w\g76\scripts\Test-E2E.ps1 -Configuration Release -Filter 'FullyQualifiedName
 
 Restore once in a network-enabled development environment. Missing assets or NU1301 block dependent builds; do not call a zero-run outcome passed. Use the short path above for Release packaging when a long checkout causes MSB3030. The complete default hosted suite is the UI regression boundary; native-input, performance and infrastructure-failure categories are separately selected. See the [host guide](GhProjectsBoards.UiIntegration.Tests/README.md).
 
+Claude Code cloud sessions run on Linux and can only exercise Core logic. The [session hook](../.claude/hooks/session-start.sh) installs the .NET 10 SDK and restores the Core test project for `net10.0`, because NUnit skips the whole `net10.0-windows` assembly on Linux. Build and test there with the same override and `--no-restore`; an implicit restore drops the override and reverts the assets to `net10.0-windows`:
+
+```bash
+dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-restore -p:TargetFramework=net10.0 --filter 'TestCategory!=LiveGitHub&TestCategory!=HistorySequence&FullyQualifiedName!~ThousandTasks'
+```
+
+Adapter tests that start fake gh as a Windows executable or expect Windows paths and credential storage fail there; they are Windows evidence, not Linux defects. Windows CI and the owner's PC remain the evidence for those adapters and for every UI, desktop, IME and live boundary.
+
 ## Planning editor Core scheduler (#78)
 
 PlanEditorSchedulingTests covers work/rate/calendar boundaries, status date and Project start, kept/calculated dates, zero-effort milestones, in-progress and complete work, hierarchy roll-ups, cycles, external predecessors, isolation of invalid refreshed values, exact fractional hours and no leveling. PlanLatenessTests covers status-date boundaries, both lateness levels, descendant roll-ups and leaf totals, predecessor delay, end reasons, and entered versus recalculated unpublished inputs. PlanSheetEditingTests covers input conversion and operation preparation. HolidayCsvImportTests and PlanningReaderTests retain the actual holiday/parser/read boundaries. Timing is opt-in; use [performance measurement](../docs/performance.md).
