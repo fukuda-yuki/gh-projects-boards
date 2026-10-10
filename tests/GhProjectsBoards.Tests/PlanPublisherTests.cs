@@ -569,7 +569,13 @@ internal sealed class PlanPublisherTests
         var creates = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Select(line => JsonDocument.Parse(line).RootElement.Clone())
             .Where(r => r.GetProperty("query").GetString()!.Contains("createIssue")).Select(r => r.GetProperty("started").GetDateTimeOffset()).ToArray();
         Assert.That((creates[0] - started).TotalSeconds, Is.LessThan(5), "The first create batch needs no pacing wait.");
-        Assert.That((creates[1] - creates[0]).TotalSeconds, Is.InRange(9.9, 13), "Ten created Issues reserve the next ten seconds start-to-start, even when the following batch contains only one Issue.");
+        // Each request reaches gh after its reservation by a save and a process start whose latency varies on a
+        // shared machine, so the spacing GitHub sees is checked against the persisted reservations, not between arrivals.
+        await Reopen();
+        var reserved = session.Document.Sync.CreationStarts;
+        Assert.That(reserved.Select(s => s.Issues), Is.EqualTo(new[] { 10, 1 }));
+        Assert.That((reserved[1].Started - reserved[0].Started).TotalSeconds, Is.InRange(10, 13), "Ten created Issues reserve the next ten seconds start-to-start, even when the following batch contains only one Issue.");
+        Assert.That(creates.Zip(reserved, (sent, reservation) => sent >= reservation.Started), Is.All.True, "No create batch reaches GitHub before its reserved start.");
     }
     [Test]
     public async Task PositionUpdatesCompleteWhenMultiAliasPositionRequestsLoseTheirResponsePartway()
