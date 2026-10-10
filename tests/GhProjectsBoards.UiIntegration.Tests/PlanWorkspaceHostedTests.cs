@@ -972,12 +972,12 @@ internal sealed class PlanWorkspaceHostedTests
     {
         var state = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, state with { Issues = [
-            state.Issues[0] with { Row = state.Issues[0].Row with { Parent = "I99", Predecessors = ["I98"] } },
-            new(new("I2", "子A", "acme/repo") { Parent = "I1" }, "", true),
+            state.Issues[0] with { Row = state.Issues[0].Row with { Parent = "I99" } },
+            new(new("I2", "子A", "acme/repo") { Parent = "I1", Predecessors = ["I98"] }, "", true),
             new(new("I3", "子B", "acme/repo") { Parent = "I1" }, "", true)],
             SubOrders = state.SubOrders.SetItem("I1", ["I3", "I2"]), NextId = 4 });
         await Open();
-        await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Parent, null), new("I1", PlanField.Predecessors, ImmutableArray<string>.Empty)]), DateOnly.FromDateTime(DateTime.Today));
+        await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Parent, null), new("I2", PlanField.Predecessors, ImmutableArray<string>.Empty)]), DateOnly.FromDateTime(DateTime.Today));
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("親タスク")));
         await Ui.Run(() => {

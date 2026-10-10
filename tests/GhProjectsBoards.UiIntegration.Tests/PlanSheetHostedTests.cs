@@ -83,8 +83,10 @@ internal sealed class PlanSheetHostedTests
         await MountPresentation([parent with { Assignees = ["local"], Predecessors = [], StartNoEarlierThan = Today.AddDays(7), Fixed = !held, Status = "Local" }, child, predecessor],
             [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         await Ui.ClickCommand("PlanSheetColumns");
-        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status })
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) {
+            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
             await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
+        }
         await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
         foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
@@ -158,8 +160,10 @@ internal sealed class PlanSheetHostedTests
         var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
         await MountPresentation([parent, child, predecessor], [parent, child, predecessor]);
         await Ui.ClickCommand("PlanSheetColumns");
-        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status })
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) {
+            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
             await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
+        }
         await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
         foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "10/5 (月)"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
