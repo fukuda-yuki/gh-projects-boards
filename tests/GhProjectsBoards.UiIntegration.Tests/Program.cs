@@ -51,6 +51,10 @@ internal static class Program
                 var result = new AutoRun(typeof(Program).Assembly).Execute(Environment.GetCommandLineArgs().Skip(1).ToArray());
                 Environment.ExitCode = result == 0 && Ui.FailureCount == 0 ? 0 : 1;
                 if (!Ui.Queue.TryEnqueue(() => {
+                    // Native TitleBar teardown needs content-extended mode even after the hosted view unloads.
+                    // https://github.com/microsoft/microsoft-ui-reactor/pull/646
+                    Ui.Trace("[CLOSE] title-bar mode");
+                    Ui.Window.ExtendsContentIntoTitleBar = true;
                     // Each mounted workspace TitleBar registers non-client regions on this shared window and leaves
                     // them after it unloads. Closing the window with those stale regions fail-fasts in Microsoft.UI.Input.
                     Ui.Trace("[CLOSE] regions");
