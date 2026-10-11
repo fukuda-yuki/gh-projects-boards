@@ -43,18 +43,25 @@ Optional `-Today yyyy-MM-dd` sets `GHPB_TODAY` only in the child app. Without it
 
 Read the [authorized scope](https://github.com/fukuda-yuki/codex-sandbox/issues/1). All script writes target `fukuda-yuki/codex-sandbox` and the owner's Project 3, 第2027.04版. The script selects these targets explicitly, removes token/host overrides from its child environment and uses gh's stored authentication.
 
-From the repository root:
+The live version is the project-start baseline (基準日 2026-10-13): Actual 0, Remaining = Estimate from the manifest, manifest predecessors and start constraints, and only person-U1 assigned to `fukuda-yuki`; all other assignees are empty. Requirement rows have empty phase and effort. Weekly progress remains offline: GitHub cannot backdate closedAt. Planning values, including 工程, must be pasted and published through the ordinary app after the summary view.
+
+Run these commands from this checkout on the PMO's network-enabled machine:
 
 ```powershell
-python scripts/evaluation/version_sandbox.py register --evidence TestResults/version-sandbox
-python scripts/evaluation/version_sandbox.py register --evidence TestResults/version-sandbox --apply
+Set-Location C:\w\b126; python scripts/evaluation/version_sandbox.py setup --evidence TestResults/version-sandbox/setup-plan
+Set-Location C:\w\b126; python scripts/evaluation/version_sandbox.py setup --apply --evidence TestResults/version-sandbox/setup-apply
+Set-Location C:\w\b126; python scripts/evaluation/version_sandbox.py inputs --through 40 --evidence TestResults/version-sandbox/inputs
+# After pasting and publishing in the ordinary app:
+Set-Location C:\w\b126; python scripts/evaluation/version_sandbox.py verify --evidence TestResults/version-sandbox/verify
 ```
 
-Without `--apply`, commands only read GitHub and write local evidence. Registration completes R01–R39 (1,014 Issues), or R01–R40 with `--through 40`, preserving existing Issue identities, planning values and unrelated or inaccessible Project members. It refuses duplicate WBS keys, changed titles, existing conflicting parents and mass recreation. Only missing Issues, memberships, hierarchy and WBS order are written.
+`setup` inventories all WBS Issues and plans the missing 工程 single-select field, milestones and memberships in `setup-plan.json`. Only `--apply` enables writes. Options must be SA, UI, SS, PS, PG, PT, IT, ST, OT in that order. Conflicting field types/options, duplicate milestone titles, different due dates and non-manifest milestone memberships refuse the whole operation before any write. Tasks receive their phase milestone; requirements have no milestone. REST milestone creation uses `due_on=YYYY-MM-DDT12:00:00Z`, because GitHub keeps only the date and midnight UTC reads back as the previous day; independent GraphQL readback compares the UTC calendar date, as the app does. Issue updates use at most ten aliases per request, followed by at least one second per mutation in the batch (single creates wait one second). Failures stop without retry; rerun from a fresh inventory to reconcile uncertain writes. `setup-result.json` records fresh readback, including mismatches.
 
-The optional `inputs` command exports a first-pass TSV for the ordinary sheet, never a GitHub mutation. It defaults to the whole WBS (`--through 40`); `register` still defaults to 39. A selected range with an outside predecessor is refused before any file is written, naming the missing key and directing the caller to use `--through 40`. Its numeric predecessor references require the entire visible Issue order to match the selected WBS exactly; it refuses anything else before writing.
+`inputs` writes a headerless `first-pass.tsv`, in sheet order: title, 工程, 担当者, 見積, 残, 実績, 開始日, 終了日, 先行タスク, 開始日指定. Dates calculated by the app have empty input cells. After setup, refresh the ordinary app and confirm 工程 is mapped. Show 開始日指定 and 日程固定 through 表示列. With all 1,040 Issues visible in the exported order and no filtering/sorting, first select 工程 through 日程固定 for each requirement's 25 task rows and press Delete to clear old inputs (40 task blocks; exclude the read-only requirement rows and leave titles intact). TSV empty cells mean no change in the app, so this clearing step is required to remove old assignees, effort, predecessors, date constraints and fixed flags. Requirement rows must already have empty phase/effort; if verify reports stored values there, stop for a separate app correction because summary rows reject those edits. Then paste starting at the first title cell; set project dates from the manifest, map each 工程 to its milestone in settings and set 基準日 to 2026-10-13, review the scheduled result, then publish. The export refuses missing predecessors or any mismatch in the entire visible Issue order before replacing files. It defaults to all 40 requirements; `--offline` instead exports synthetic assignees without contacting GitHub.
 
-The live rewrite to the waterfall shape, with the 工程 field, milestones and weekly progress, follows the summary view (#118, Batch 2). Planning values are entered and published through the app, not by script.
+`verify` never writes GitHub. It independently reads every WBS item's 工程, Estimate/Remaining/Actual, 開始日指定, native predecessors, assignees and open state, plus setup resources. It saves `verification.json` with each observed Issue/item identity, expected/actual values, read time, a canonical manifest SHA-256 and mismatches; it exits unsuccessfully on differences. It does not establish ordinary-app usability or owner acceptance. The app's configured planning-field mappings must use these field names.
+
+`register` remains available for missing WBS registration (`--through 40` for the whole version; default 39). Without `--apply` it only plans. It preserves existing identities and refuses conflicting parents, changed titles, duplicate keys and mass recreation. Setup and verify always cover the entire manifest.
 
 ## Evidence
 
