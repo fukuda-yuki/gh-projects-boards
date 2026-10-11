@@ -84,11 +84,13 @@ internal sealed partial class PlanWorkspaceView
             .Concat(conflicts.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity)).Distinct())
         {
             if (!document.State.Rows.Any(r => r.Identity == parent)) continue;
-            var previous = PlanOperations.PreviousSiblingOrder(document, parent);
-            var children = document.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
             var conflict = conflicts.SingleOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
-            if (children.Length > 1 && !previous.SequenceEqual(children) || conflict is not null)
-                Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
+            // The same comparison decides the unpublished count, this line and the publish writes.
+            var sibling = PlanOperations.SiblingOrderChange(document, parent);
+            if (sibling is null && conflict is null) continue;
+            var previous = sibling?.Before ?? PlanOperations.PreviousSiblingOrder(document, parent);
+            var children = sibling?.After ?? PlanOperations.PlanChildren(document, parent);
+            Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
         }
         foreach (var conflict in conflicts.Where(c => c.Field == PlanField.Order))
             Group(conflict.Identity).Lines.Add(ReviewLine(document, conflict.Identity, conflict.Field, conflict.Baseline, conflict.Local, conflict));

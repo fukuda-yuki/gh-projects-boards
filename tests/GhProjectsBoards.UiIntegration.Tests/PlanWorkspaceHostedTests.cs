@@ -667,7 +667,7 @@ internal sealed partial class PlanWorkspaceHostedTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public async Task SiblingReviewAndUnpublishedCountAgreeWhenNativeOrderIsAbsent(bool reverse)
+    public async Task DivergentNativeChildOrderAloneIsNotReviewedOrCountedAsUnpublished(bool reversedNativeOrder)
     {
         var state = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, state with { Issues = [
@@ -675,16 +675,17 @@ internal sealed partial class PlanWorkspaceHostedTests
             new(new("I2", "子A", "acme/repo") { Parent = "I1" }, "", true),
             new(new("I3", "子B", "acme/repo") { Parent = "I1" }, "", true)] });
         await Open();
+        // GitHub's native sub-issue order differs from the Project item order the plan displays (Issue #167).
         await workspace.Session!.SaveSync(workspace.Session.Document.Sync with {
-            NativeOrders = reverse ? ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]) : ImmutableDictionary<string, ImmutableArray<string>>.Empty });
+            NativeOrders = reversedNativeOrder ? ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]) : ImmutableDictionary<string, ImmutableArray<string>>.Empty });
         await Ui.Ready<TextBox>("PlanCell2_Title");
         await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanCell2_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "子Aの変更"; Ui.Click("PlanPublish"); });
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("子A → 子Aの変更")));
         await Ui.Run(() => {
-            Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(reverse ? 2 : 1));
-            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo((reverse ? "2" : "1")));
+            Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(1), "Only the edited task is unpublished.");
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
             var lines = Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text).ToArray();
-            Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.EqualTo(reverse ? 1 : 0));
+            Assert.That(lines.Count(t => t.Contains("子タスクの順序")), Is.Zero, "A GitHub-side child-order difference is not a plan change.");
         });
     }
 
@@ -983,7 +984,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("親タスク")));
         await Ui.Run(() => {
             var text = string.Join("\n", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text));
-            Assert.That(text, Does.Contain("子タスクの順序  3 子B、2 子A → 2 子A、3 子B"));
+            // The parent's native sub-issue order differs from the Project item order, but the PMO changed no child order (Issue #167).
+            Assert.That(text, Does.Not.Contain("子タスクの順序"));
             Assert.That(text, Does.Contain("親タスク  計画外Issue（未取得） → 未入力"));
             Assert.That(text, Does.Contain("先行  計画外Issue（未取得） → 未入力"));
             Assert.That(Ui.Tree(view).OfType<HyperlinkButton>().Any(b => b.NavigateUri?.AbsoluteUri == "https://github.com/acme/repo/issues/1"), Is.True);

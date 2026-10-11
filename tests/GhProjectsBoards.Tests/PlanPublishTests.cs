@@ -42,22 +42,313 @@ internal sealed class PlanPublishTests
         Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public void SiblingOrderDifferenceCountsTheSameParentThatWillBePublished(bool reverse)
+    [TestCase("I2,I3", "I2,I3", "I3,I2")]
+    [TestCase("I3,I2", "I3,I2", "I2,I3")]
+    public void DifferingGitHubChildOrdersAreNotAnUnpublishedChange(string projectOrder, string planOrder, string nativeOrder)
     {
+        // Issue #167: the Project item order and the native sub-issue order differ before the PMO
+        // changes anything, so neither order may be counted, reviewed or published as an edit.
+        var document = SiblingPlan(projectOrder, planOrder, nativeOrder);
+        var changes = PlanOperations.Changes(document, Day);
+        var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(changes.TaskCount, Is.Zero);
+        Assert.That(review.Changes.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
+        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+    }
+
+    [Test]
+    public void MovingAChildRowPublishesTheReorderThatMoveImplies()
+    {
+        var document = SiblingPlan("I2,I3", "I3,I2", "I2,I3");
+        var changes = PlanOperations.Changes(document, Day);
+        var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(changes.Fields["I1"], Is.EquivalentTo(new[] { PlanField.SubIssueOrder }));
+        var change = review.Changes.Single(c => c.Field == PlanField.SubIssueOrder);
+        Assert.That((change.Before, change.After), Is.EqualTo((PlanJson.Text(new[] { "I2", "I3" }), PlanJson.Text(new[] { "I3", "I2" }))));
+        var writes = review.Writes.Where(w => w.Mutation == "reprioritizeSubIssue").ToArray();
+        string Input(PlanWrite write, string key) => System.Text.Json.JsonDocument.Parse(write.Input).RootElement.GetProperty(key).GetString()!;
+        Assert.That(writes.Select(w => w.Identity), Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(Input(writes[0], "beforeId"), Is.EqualTo("I2"));
+        Assert.That(Input(writes[1], "afterId"), Is.EqualTo("I3"));
+        Assert.That(review.Writes.Any(w => w.Mutation == "updateProjectV2ItemPosition"), Is.True);
+    }
+
+    [Test]
+    public void MovingAChildRowIntoTheOrderGitHubAlreadyHasSendsNoReorder()
+    {
+        var document = SiblingPlan("I2,I3", "I3,I2", "I3,I2");
+        var changes = PlanOperations.Changes(document, Day);
+        var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(changes.Fields["I3"], Does.Contain(PlanField.Order));
+        Assert.That(review.Changes.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
+        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+    }
+
+    [Test]
+    public void AFailedReorderIsRetriedWhileThePlanStillAsksForTheSameOrder()
+    {
+        // The Project position already carries the move, so only the recorded failed reorder keeps it pending.
+        var document = SiblingPlan("I3,I2", "I3,I2", "I2,I3");
+        var retry = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden") { Value = PlanJson.Text(new[] { "I3", "I2" }) }] } };
+        var change = PlanOperations.SiblingOrderChange(retry, "I1");
+        Assert.That(change, Is.Not.Null);
+        Assert.That((PlanJson.Text(change!.Before), PlanJson.Text(change.After)), Is.EqualTo((PlanJson.Text(new[] { "I2", "I3" }), PlanJson.Text(new[] { "I3", "I2" }))));
+        Assert.That(PlanOperations.Changes(retry, Day).TaskCount, Is.EqualTo(1));
+        var review = PlanPublishPlan.Build(retry, SiblingRemote(retry), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(2));
+        Assert.That(review.Changes.Single(c => c.Field == PlanField.SubIssueOrder).Before, Is.EqualTo(PlanJson.Text(new[] { "I2", "I3" })));
+    }
+
+    [TestCase("creation"), TestCase("title")]
+    public async Task VerifiedUnrelatedPhaseKeepsThePendingSiblingRetry(string phase)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I2,I3");
+        var failure = new PlanPublishFailure("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2" }) };
+        var added = PlanRow.New("Added task", "acme/repo");
+        document = document with {
+            State = document.State with { Rows = phase == "creation" ? document.State.Rows.Add(added)
+                : document.State.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" } : r).ToImmutableArray() },
+            Sync = document.Sync with { Failures = [failure] }
+        };
+        var remote = SiblingRemote(document);
+        var review = PlanPublishPlan.Build(document, remote, Day, Guid.NewGuid().ToString("N"));
+        var processed = review.Writes.Where(w => phase == "creation" ? w.Stage is PlanPublishStage.Create or PlanPublishStage.Add
+            : w.Mutation == "updateIssue").Select(w => w with { State = PlanWriteState.Succeeded,
+                ResultId = w.Stage == PlanPublishStage.Create ? "I4" : w.Stage == PlanPublishStage.Add ? "T4" : "I3" }).ToImmutableArray();
+        Assert.That(processed, Has.Length.EqualTo(phase == "creation" ? 2 : 1));
+        document = document with { Sync = document.Sync with { Publish = new(Guid.NewGuid().ToString("N"), processed) { DispatchStarted = true } } };
+        remote = remote with {
+            Baseline = document.Baseline with { Rows = phase == "creation" ? document.Baseline.Rows.Add(added with { Identity = "I4" }) : document.State.Rows },
+            Items = ImmutableDictionary<string, string>.Empty.Add("I1", "T1").Add("I2", "T2").Add("I3", "T3").Add("I4", "T4")
+        };
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-phase-retry-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptPublished(remote, Day);
+            TestContext.Out.WriteLine($"Phase verification save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Document.Sync.Failures, Is.EqualTo(new[] { failure }));
+            var remaining = PlanPublishPlan.Build(session.Document, remote, Day, Guid.NewGuid().ToString("N"));
+            Assert.That(remaining.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(remaining.Changes.Single().After, Is.EqualTo(failure.Value));
+
+            // A verified retry retires its old failures and must not be planned again.
+            await session.SaveSync(session.Document.Sync with { Publish = new(Guid.NewGuid().ToString("N"),
+                remaining.Writes.Select(w => w with { State = PlanWriteState.Succeeded }).ToImmutableArray()) { DispatchStarted = true } });
+            remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I3", "I2"]) };
+            await session.AcceptPublished(remote, Day);
+            Assert.That(session.Document.Sync.Failures, Is.Empty);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, Guid.NewGuid().ToString("N")).Writes, Is.Empty);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [TestCase(PlanField.Status), TestCase(PlanField.Order), TestCase(PlanField.SubIssueOrder)]
+    public async Task VerificationRetiresUnrequestedFailuresWithoutPublishingThem(string obsoleteField)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I3,I2");
+        var failure = new PlanPublishFailure(obsoleteField == PlanField.Status ? "I1" : "I3", obsoleteField, "Forbidden")
+            { Value = obsoleteField == PlanField.SubIssueOrder ? PlanJson.Text(new[] { "I3", "I2" }) : null };
+        document = document with {
+            State = document.State with { Rows = document.State.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" }
+                : r.Identity == "I1" && obsoleteField == PlanField.Status ? r with { Status = "Done" } : r).ToImmutableArray() },
+            Sync = document.Sync with { Failures = [failure] }
+        };
+        var remote = SiblingRemote(document);
+        var review = PlanPublishPlan.Build(document, remote, Day, Guid.NewGuid().ToString("N"));
+        Assert.That(review.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "updateIssue" }),
+            "Neither a summary Status nor an already-converged order may be written to clear an old failure.");
+        document = document with { Sync = document.Sync with { Publish = new(Guid.NewGuid().ToString("N"),
+            review.Writes.Select(w => w with { State = PlanWriteState.Succeeded }).ToImmutableArray()) { DispatchStarted = true } } };
+        remote = remote with { Baseline = document.Baseline with {
+            Rows = document.Baseline.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" } : r).ToImmutableArray() } };
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-obsolete-failure-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptPublished(remote, Day);
+            TestContext.Out.WriteLine($"Verification save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(session.Document.Sync.Failures, Is.Empty, "An inapplicable historical failure must not block completion.");
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "complete").Writes, Is.Empty);
+            if (obsoleteField == PlanField.Status)
+                Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Status, Is.EqualTo("Done"),
+                    "Retiring the failure must preserve the summary's dormant local input.");
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task ResetUndoRestoresThePendingSiblingRetryAsOneOperation(bool refreshAfterReset)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I2,I3");
+        document = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2" }) }] } };
+        var remote = SiblingRemote(document);
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-reset-retry-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptRefresh(remote, Day, reset: true);
+            TestContext.Out.WriteLine($"Reset save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(session.Document.Sync.Failures, Is.Empty);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "reset").Writes, Is.Empty);
+            if (refreshAfterReset) await session.AcceptRefresh(remote, Day);
+            await session.Undo(Day);
+            var retry = PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset");
+            Assert.That(retry.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(retry.Changes.Single().After, Is.EqualTo(PlanJson.Text(new[] { "I3", "I2" })));
+            Assert.That(session.Document.Sync.Failures, Is.Empty, "Undo restores the requested order, not a historical publication outcome.");
+            await session.Redo(Day);
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redo-reset").Writes, Is.Empty);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public void AReorderThePlanNoLongerAsksForIsNotRetried()
+    {
+        // Undoing the move leaves a stale failure, whose recorded order no longer matches the plan.
+        var document = SiblingPlan("I3,I2", "I2,I3", "I2,I3");
+        var stale = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden") { Value = PlanJson.Text(new[] { "I3", "I2" }) }] } };
+        Assert.That(PlanOperations.SiblingOrderChange(stale, "I1"), Is.Null);
+        var review = PlanPublishPlan.Build(stale, SiblingRemote(stale), Day, Guid.NewGuid().ToString("N"));
+        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+    }
+
+    [Test]
+    public void AFailedSiblingRetryRequiresAConflictDecisionBeforePlanningWrites()
+    {
+        var document = SiblingPlan("I3,I2,I4", "I3,I2,I4", "I2,I3,I4");
+        document = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2", "I4" }) }] } };
+        var remote = SiblingRemote(document) with { SubIssueOrders = document.Sync.NativeOrders.SetItem("I1", ["I4", "I2", "I3"]) };
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, remote.Baseline), remote.SubIssueOrders);
+        Assert.That(merged.Sync.Conflicts.SingleOrDefault()?.Field, Is.EqualTo(PlanField.SubIssueOrder));
+        Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(merged, remote, Day, "blocked"));
+    }
+
+    [TestCase("undo-redo"), TestCase("github"), TestCase("reset"), TestCase("converged"), TestCase("converged-external"), TestCase("changed-plan")]
+    public async Task LocalSiblingConflictChoiceRemainsInThePublishPlanAfterBaselineConvergence(string next)
+    {
+        var document = SiblingPlan("I2,I3,I4", "I3,I2,I4", "I2,I3,I4");
+        var remote = SiblingRemote(document) with {
+            Baseline = document.Baseline with { Rows = document.State.Rows },
+            SubIssueOrders = document.Sync.NativeOrders.SetItem("I1", ["I4", "I2", "I3"])
+        };
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, remote.Baseline), remote.SubIssueOrders);
+        Assert.That(merged.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-order-choice-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), merged, Day);
+        try
+        {
+            var saved = await session.ResolveConflict("I1", PlanField.SubIssueOrder, false, Day);
+            TestContext.Out.WriteLine($"Conflict choice save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Document.Sync.Conflicts, Is.Empty);
+            var review = PlanPublishPlan.Build(session.Document, remote, Day, "local-choice");
+            Assert.That(review.Changes.SingleOrDefault(c => c.Field == PlanField.SubIssueOrder)?.After,
+                Is.EqualTo(PlanJson.Text(new[] { "I3", "I2", "I4" })));
+            Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+            Assert.That(review.Writes.Any(w => w.Mutation == "updateProjectV2ItemPosition"), Is.False);
+            if (next == "undo-redo")
+            {
+                await session.Undo(Day);
+                Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, remote, Day, "undone"));
+                await session.Redo(Day);
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redone").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                var changed = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I2", "I4", "I3"]) };
+                await session.AcceptRefresh(changed, Day);
+                Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+                Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, changed, Day, "changed-again"));
+                return;
+            }
+            if (next == "github")
+            {
+                await session.Undo(Day);
+                await session.ResolveConflict("I1", PlanField.SubIssueOrder, true, Day);
+            }
+            else if (next == "reset")
+            {
+                await session.AcceptRefresh(remote, Day, reset: true);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "reset").Writes, Is.Empty);
+                await session.Undo(Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                await session.Redo(Day);
+            }
+            else if (next.StartsWith("converged", StringComparison.Ordinal))
+            {
+                remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", next == "converged-external" ? ["outside", "I3", "I2", "I4"] : ["I3", "I2", "I4"]) };
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "observed").Writes, Is.Empty);
+                remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I4", "I2", "I3"]) };
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(session.Document.Sync.Conflicts, Is.Empty, "A completed choice must not create a later conflict.");
+            }
+            else
+            {
+                await session.Execute(new MovePlanRows(["I4"], "I3"), Day);
+                await session.Execute(new MovePlanRows(["I2"], "I3"), Day);
+            }
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "no-reorder").Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public void ChildrenTheLastReadCouldNotDeliverDoNotInventAChildOrderChange()
+    {
+        var parent = new PlanRow("I1", "Parent", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "I1" };
+        var state = new PlanState([parent, Child("X"), Child("I2"), Child("I3")], new());
+        var baseline = new PlanBaseline([parent, Child("I2"), Child("I3"), Child("X")], []);
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), baseline, state) { Sync = new()
+            { Unavailable = ["X"], NativeOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]) } };
+        Assert.That(PlanOperations.SiblingOrderChange(document, "I1"), Is.Null);
+        Assert.That(PlanOperations.Changes(document, Day).Fields.ContainsKey("I1"), Is.False);
+    }
+
+    private static readonly DateOnly Day = new(2026, 10, 5);
+    private static PlanDocument SiblingPlan(string projectOrder, string planOrder, string nativeOrder)
+    {
+        var parent = new PlanRow("I1", "Parent", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "I1" };
+        var baseline = new PlanBaseline([parent, .. projectOrder.Split(',').Select(Child)], []);
+        var state = new PlanState([parent, .. planOrder.Split(',').Select(Child)], new());
+        return new PlanDocument(new(new("github.com", 42), "P1"), baseline, state) { Sync = new()
+            { NativeOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", nativeOrder.Split(',').ToImmutableArray()) } };
+    }
+    private static PlanRemoteSnapshot SiblingRemote(PlanDocument document)
+        => new(document.Baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0) { SubIssueOrders = document.Sync.NativeOrders };
+
+    [Test]
+    public async Task EditingRowsKeepsARecordedReorderFailureAndDropsResolvedRowFailures()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-failure-" + Guid.NewGuid().ToString("N"));
         var project = new ScopedId(new("github.com", 42), "P1");
-        ImmutableArray<PlanRow> rows = [new("I1", "Parent", "acme/repo"), new("I2", "A", "acme/repo") { Parent = "I1" }, new("I3", "B", "acme/repo") { Parent = "I1" }];
-        var baseline = new PlanBaseline(rows, []);
-        var orders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("I1", reverse ? ["I3", "I2"] : ["I2", "I3"]);
-        var document = new PlanDocument(project, baseline, new(rows, new())) { Sync = new() { NativeOrders = orders } };
-        var remote = new PlanRemoteSnapshot(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0) { SubIssueOrders = orders };
-        var changes = PlanOperations.Changes(document, new(2026, 10, 5));
-        var review = PlanPublishPlan.Build(document, remote, new(2026, 10, 5), Guid.NewGuid().ToString("N"));
-        Assert.That(changes.TaskCount, Is.EqualTo(reverse ? 1 : 0));
-        Assert.That(review.Changes.Where(c => c.Field == PlanField.SubIssueOrder).Select(c => c.Identity),
-            Is.EqualTo(reverse ? new[] { "I1" } : Array.Empty<string>()));
-        Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(reverse));
+        var parent = new PlanRow("I1", "Parent", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "I1" };
+        var rows = new[] { parent, Child("I2"), Child("I3") }.ToImmutableArray();
+        var session = await PlanSession.CreateAsync(new(root), new(project, new(rows, []), new(rows, new())), Day);
+        try
+        {
+            await session.SaveSync(session.Document.Sync with { Failures = [
+                new("I3", PlanField.SubIssueOrder, "Forbidden") { Value = PlanJson.Text(new[] { "I3", "I2" }) },
+                new("I2", PlanField.Actual, "Forbidden")] });
+            // Editing a child that carries the reorder failure must not retire the retry anchor.
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Actual, 4m), new("I2", PlanField.Actual, 4m)]), Day);
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder), Is.True,
+                    "Only the plan's own child order may retire a reorder failure.");
+                Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.Actual), Is.False,
+                    "A row failure is dropped once that row is edited.");
+            });
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
     }
 
     [Test]

@@ -5,13 +5,19 @@ using System.Text.Json.Nodes;
 namespace GhProjectsBoards.Core.PlanEditor;
 
 internal sealed record PlanConflict(string Identity, string Field, string? Baseline, string? Local, string? Remote);
-internal sealed record PlanPublishFailure(string Identity, string Field, string Reason);
+internal sealed record PlanPublishFailure(string Identity, string Field, string Reason)
+{
+    // The child order a failed sub-issue reorder asked for, so the retry can tell whether the plan
+    // still wants that order.
+    public string? Value { get; init; }
+}
 internal sealed record PlanIssueLink(string Caption, string Url);
 internal sealed record PlanSync
 {
     public ImmutableArray<string> Unverified { get; init; } = [];
     public ImmutableArray<PlanPublishFailure> Failures { get; init; } = [];
     public ImmutableDictionary<string, ImmutableArray<string>> NativeOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
+    public ImmutableDictionary<string, ImmutableArray<string>> LocalOrderChoices { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
     public ImmutableArray<PlanCreationStart> CreationStarts { get; init; } = [];
     public DateTimeOffset? NotBefore { get; init; }
     public PlanPublishProgress? Publish { get; init; }
@@ -68,17 +74,28 @@ internal static class PlanMerge
     {
         var conflicts = merged.Sync.Conflicts.ToBuilder(); var state = merged.State;
         var members = state.Rows.Select(r => r.Identity).ToHashSet();
+        var unavailable = original.Sync.Unavailable;
         remote = remote.Where(pair => members.Contains(pair.Key)).ToImmutableDictionary();
         foreach (var (parent, remoteIds) in remote)
         {
             var prior = original.Sync.Conflicts.FirstOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
-            var baselineIds = original.Sync.NativeOrders.GetValueOrDefault(parent, remoteIds);
-            string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(members.Contains));
-            var b = Text(baselineIds); var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity)); var r = Text(remoteIds);
-            if (l != r && (prior is not null || l != b && r != b)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
+            var readIds = original.Sync.NativeOrders.GetValueOrDefault(parent, remoteIds);
+            // Rows the read could not deliver are appended to the baseline, so they carry no displayed order.
+            string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(id => members.Contains(id) && !unavailable.Contains(id)));
+            var b = Text(readIds);
+            var p = Text(original.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var r = Text(remoteIds);
+            // "Local" means the plan's child order moved away from the order the plan read. A difference
+            // that already exists between the two GitHub orders is not a local change. A pending retry
+            // or explicit local conflict choice still counts after the Project baseline has advanced.
+            var localChange = l != p || PlanOperations.SiblingOrderChange(original, parent) is not null; var remoteChange = r != b;
+            if (l != r && (prior is not null || localChange && remoteChange)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
             else if (l == b && r != b) state = SiblingOrder(state, parent, remoteIds);
         }
-        return merged with { State = state, Sync = merged.Sync with { NativeOrders = remote, Conflicts = conflicts.ToImmutable() } };
+        return merged with { State = state, Sync = merged.Sync with { NativeOrders = remote, Conflicts = conflicts.ToImmutable(),
+            LocalOrderChoices = merged.Sync.LocalOrderChoices.Where(p => members.Contains(p.Key) &&
+                (!remote.TryGetValue(p.Key, out var observed) || !p.Value.SequenceEqual(observed.Where(id => members.Contains(id) && !merged.Sync.Unavailable.Contains(id))))).ToImmutableDictionary() } };
     }
     internal static PlanDocument Merge(PlanDocument document, PlanBaseline remote)
     {

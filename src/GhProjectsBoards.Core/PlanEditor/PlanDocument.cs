@@ -117,6 +117,8 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? BeforeLocalOrderChoices { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? AfterLocalOrderChoices { get; init; }
     public ImmutableArray<PlanConflict>? BeforeConflicts { get; init; }
     public ImmutableArray<PlanConflict>? AfterConflicts { get; init; }
 }
@@ -130,6 +132,7 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
+internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<string>> Fields)
 {
