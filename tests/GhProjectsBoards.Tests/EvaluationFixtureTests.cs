@@ -45,7 +45,7 @@ internal sealed class EvaluationFixtureTests
             foreach (var task in snapshot.Rows.Where(r => r.Actual > 0))
             foreach (var predecessor in task.Predecessors.Select(id => byId[id]))
             {
-                if (predecessor.End is { } end)
+                if (predecessor.Closed && predecessor.CloseDate is { } end)
                     Assert.That(task.Start, Is.GreaterThanOrEqualTo(end), $"{snapshot.StatusDate}: {task.Title} starts after {predecessor.Title} finishes.");
                 Assert.That(!predecessor.Closed && predecessor.Remaining > 0, Is.False, $"{snapshot.StatusDate}: {task.Title} has no unfinished predecessor {predecessor.Title}.");
             }
@@ -57,9 +57,10 @@ internal sealed class EvaluationFixtureTests
         Assert.That(measures.Phases.Single(p => p.Phase == "PS").Effort.Variance, Is.GreaterThan(0), "見込 exceeds 見積 where 残 was raised.");
         Assert.That(measures.Total.Overruns, Is.GreaterThan(0), "Open tasks re-estimated above 見積 are still being worked on.");
         Assert.That(tasks.Count(t => !t.Closed && t.Remaining == 0), Is.EqualTo(1), "One open task has 残 0.");
+        Assert.That(tasks.Single(t => !t.Closed && t.Remaining == 0).End, Is.EqualTo(middle.StatusDate));
         Assert.That(tasks.Count(t => t.Closed && t.Actual < t.Estimate), Is.GreaterThan(0), "Some tasks finish early.");
-        Assert.That(tasks.Where(t => t.Closed).All(t => t.Remaining == 0 && t.End < middle.StatusDate && t.Start <= t.End), Is.True, "A closed task ends on its close date before the status date.");
-        Assert.That(tasks.Where(t => !t.Closed && t.Actual > 0).All(t => t.Start < middle.StatusDate), Is.True);
+        Assert.That(tasks.Where(t => t.Closed).All(t => t.Remaining == 0 && t.End == t.CloseDate && t.End < middle.StatusDate && t.Start <= t.End), Is.True, "A closed task ends on its close date before the status date.");
+        Assert.That(tasks.Where(t => !t.Closed && t.Actual > 0 && t.Remaining > 0).All(t => t.Start < middle.StatusDate), Is.True);
         Assert.That(measures.Total.Closed, Is.InRange(250, 750), "The status date is in the middle of the project.");
         Assert.That(measures.People.Single(p => p.Person == "U7").OverloadedDaysNext20, Is.GreaterThan(0), "U7 carries shared parts on top of their own work.");
         Assert.That(measures.People.Count(p => p.OverloadedDaysNext20 > 0), Is.LessThanOrEqualTo(3), "Overload is an exception, not the plan.");
@@ -89,6 +90,7 @@ internal sealed class EvaluationFixtureTests
             Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(session.Document.State.Rows.Where(r => r.Parent == "I1").Select(r => r.Identity)));
             var rows = session.Document.State.Rows;
             Assert.That(rows.Count(r => r.Closed), Is.GreaterThan(0));
+            Assert.That(rows.Where(r => r.Closed).All(r => r.CloseDate == r.End), Is.True, "Reader preserves replayed close dates.");
             Assert.That(rows.Where(r => r.Parent is not null).All(r => r.Assignees.Length == 1 && r.Estimate > 0), Is.True);
             var fake = FakePlanEditor.Load(Path.Combine(root, "fake-gh"));
             Assert.That(fake.Issues.Where(i => i.Row.Parent is not null).All(i => plan.Phases.Contains(i.Phase)), Is.True, "Every task has a 工程 value.");

@@ -68,7 +68,7 @@ internal static class PlanLateness
     internal static string? EndReason(ScheduledTask task, DateOnly statusDate)
     {
         if (task.IsSummary || task.Input.IsComplete || task.StartReason == "入力エラー") return null;
-        var work = task.Input.Remaining ?? task.Input.Estimate;
+        var work = task.Remaining;
         if (work == 0) return null;
         if (task.End.Origin == DateOrigin.Kept) return task.End.Value.HasValue ? "終了: 指定" : null;
         if (!(work > 0)) return null;

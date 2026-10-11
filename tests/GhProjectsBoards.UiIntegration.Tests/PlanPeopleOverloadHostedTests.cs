@@ -4,6 +4,7 @@ using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NUnit.Framework;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
@@ -41,6 +42,109 @@ internal sealed class PlanPeopleOverloadHostedTests
             if (session is not null) await session.FlushAsync();
             if (Directory.Exists(root)) Directory.Delete(root, true);
         } finally { Ui.EndTest(); }
+    }
+
+    [Test, Category("PlanSheetNative")]
+    public async Task EmptyCalculatedRemainingCommitEndsEditingBeforeRefreshAndFlush()
+    {
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [
+            new("I1", PlanField.Estimate, 40m), new("I1", PlanField.Actual, 8m),
+            new("I1", PlanField.Remaining, null)]), Day);
+        var undo = session.UndoCount;
+        await Ui.Run(() => { view.Refresh(); Ui.Click("PeopleLoadOpen_U1_0"); });
+        await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await SheetNativeInput.Click("PeopleTask_I1_Remaining");
+        await Ui.Run(() => Ui.Find<TextBox>("PeopleTask_I1_Remaining").Text = "");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Enter);
+        await Ui.Idle();
+        await Ui.Run(() => view.FlushInput());
+        await Ui.Run(() => view.Refresh());
+        await Ui.Idle();
+        await Ui.Run(() => view.FlushInput());
+        Assert.That(session.Document.State.Rows[0].Remaining, Is.Null);
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PeopleTask_I1_Remaining").Text, Is.EqualTo("32")));
+    }
+
+    [Test]
+    public async Task ClosedTaskRetainedInDetailsShowsPlainRemainingWithSharedReadOnlyReason()
+    {
+        await Ui.Run(() => Ui.Click("PeopleLoadOpen_U1_0"));
+        await Ui.Ready<TextBox>("PeopleTask_I1_Actual");
+        await Ui.Run(() => Ui.Find<TextBox>("PeopleTask_I1_Actual").Text = "1");
+        var baseline = session.Document.Baseline;
+        var closed = baseline.Rows[0] with { Closed = true, CloseDate = Day, Remaining = -5 };
+        await session.AcceptRefresh(new(baseline with { Rows = baseline.Rows.SetItem(0, closed) },
+            ImmutableDictionary<string, string>.Empty, [], 0, 0), Day);
+        await Ui.Run(() => view.Refresh());
+        await Ui.Ready<TextBlock>("PeopleTask_I1_Remaining");
+        await Ui.Run(() => {
+            var value = Ui.Find<TextBlock>("PeopleTask_I1_Remaining");
+            Assert.That(value.Text, Is.EqualTo("0"));
+            const string reason = "完了したタスクは Issue のクローズで確定します（編集不可）";
+            Assert.That(PlanOperations.ReadOnlyReason(closed, false, PlanField.Remaining), Is.EqualTo(reason));
+            Assert.That(ToolTipService.GetToolTip(value), Is.EqualTo(reason));
+            Assert.That(AutomationProperties.GetHelpText(value), Is.EqualTo(reason));
+            Assert.That(AutomationProperties.GetName(value), Does.Contain("残").And.Contain("0"));
+            Assert.That(Ui.Tree(view).OfType<TextBox>().Select(AutomationProperties.GetAutomationId),
+                Does.Not.Contain("PeopleTask_I1_Remaining"));
+        });
+        await Ui.Run(() => view.FlushInput());
+        Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(-5));
+    }
+
+    [TestCase("Enter", true), TestCase("Tab", true), TestCase("Leave", true)]
+    [TestCase("Escape", false), TestCase("Open", false)]
+    [Category("PlanSheetNative")]
+    public async Task CalculatedDetailRemainingUsesStoredBaselineOnlyDuringEditing(string exit, bool explicitValue)
+    {
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [
+            new("I1", PlanField.Estimate, 40m), new("I1", PlanField.Actual, 8m),
+            new("I1", PlanField.Remaining, null)]), Day);
+        var undo = session.UndoCount;
+        await Ui.Run(() => view.Refresh());
+        await Ui.Ready<Button>("PeopleLoadOpen_U1_0");
+        await Ui.Run(() => Ui.Click("PeopleLoadOpen_U1_0"));
+        await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        if (exit != "Open") await SheetNativeInput.Click("PeopleTask_I1_Remaining");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PeopleTask_I1_Remaining").Text, Is.EqualTo("32")));
+        if (exit == "Enter") await SheetNativeInput.Press(Windows.System.VirtualKey.Enter);
+        else if (exit == "Tab") await SheetNativeInput.Press(Windows.System.VirtualKey.Tab);
+        else if (exit == "Escape") {
+            await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
+            await Ui.Idle();
+        }
+        if (exit is "Leave" or "Escape")
+            await Ui.Run(() => Ui.Find<ComboBox>("PeopleScale").Focus(FocusState.Programmatic));
+        await Ui.Idle();
+        await Ui.Run(() => view.FlushInput());
+        await Ui.Run(() => {
+            Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(explicitValue ? 32m : (decimal?)null));
+            Assert.That(session.UndoCount, Is.EqualTo(undo + (explicitValue ? 1 : 0)));
+            var cell = Ui.Find<TextBox>("PeopleTask_I1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("32"));
+            Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)Application.Current.Resources[
+                explicitValue ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush"]).Color));
+        });
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task DetailsShowEffectiveRemainingWithCalculatedOrEnteredText(bool entered)
+    {
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, [
+            new("I1", PlanField.Estimate, 40m), new("I1", PlanField.Actual, 8m),
+            new("I1", PlanField.Remaining, entered ? 32m : null)]), Day);
+        await Ui.Run(() => view.Refresh());
+        await Ui.Ready<Button>("PeopleLoadOpen_U1_0");
+        await Ui.Run(() => Ui.Click("PeopleLoadOpen_U1_0"));
+        await Ui.Ready<TextBox>("PeopleTask_I1_Remaining");
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PeopleTask_I1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("32"));
+            Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)Application.Current.Resources[
+                entered ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush"]).Color));
+        });
+        Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(entered ? 32m : (decimal?)null));
     }
 
     [TestCase(1)]

@@ -18,6 +18,16 @@ internal sealed class PlanCsvImportTests
         new[] { $"p{g},Group {g},,,,,," }.Concat(Enumerable.Range(1, 9).Select(i =>
             $"t{g}-{i},Task {g}-{i},8,alice,{(i == 1 ? "" : $"t{g}-{i - 1}")},p{g},,"))));
 
+    [Test]
+    public void ImportedEstimateLeavesRemainingAsCalculatedDefault()
+    {
+        var preview = PlanCsvImport.Prepare(Empty(), Read("a,A,8,alice,,,,"), Catalog, Today);
+        Assert.That(preview.Errors, Is.Empty);
+        var row = preview.Command!.Rows.Single();
+        Assert.That(row.Remaining, Is.Null);
+        Assert.That(PlanScheduler.Calculate([PlanOperations.TaskInput(row)], new(), Today).Single().Remaining, Is.EqualTo(8));
+    }
+
     [TestCase("UTF8"), TestCase("BOM"), TestCase("SJIS")]
     public void ExcelEncodingsPreserveQuotedTitlesAndPhysicalLineNumbers(string encoding)
     {

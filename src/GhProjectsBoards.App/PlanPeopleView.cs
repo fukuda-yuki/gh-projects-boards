@@ -27,10 +27,10 @@ internal sealed class PlanPeopleView : UserControl
     private sealed class InputState(string text)
     {
         internal string Accepted = text;
-        internal bool Composing;
+        internal bool Composing, Editing;
         internal string Group = "";
         internal string? TaskIdentity, Problem;
-        internal bool Dirty => Box is not null && Box.Text != Accepted;
+        internal bool Dirty => Editing && Box is not null && Box.Text != Accepted;
         internal TextBox Box = null!;
         internal Func<Task> Commit = null!;
     }
@@ -40,8 +40,9 @@ internal sealed class PlanPeopleView : UserControl
     private PlanPeriodScale scale;
     private int periodIndex, generation;
     private Task operation = Task.CompletedTask;
-    private bool rendering;
+    private bool rendering, restoringFocus;
     private PeoplePlan report = null!;
+    private IReadOnlyDictionary<string, ScheduledTask> scheduled = null!;
     private double[] periodWidths = [];
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 112];
@@ -137,26 +138,39 @@ internal sealed class PlanPeopleView : UserControl
         Changed?.Invoke(result);
         if (!result.Succeeded) throw new IOException(result.Error);
     }
-    private TextBox Input(Func<string> committed, string id, string name, Func<string, PlanCommand> command, string group, string? taskIdentity = null)
+    private TextBox Input(Func<string> committed, string id, string name, Func<string, PlanCommand> command, string group, string? taskIdentity = null, Func<string>? baseline = null)
     {
         var text = committed();
-        if (!inputs.TryGetValue(id, out var input)) inputs[id] = input = new(text);
+        var original = baseline?.Invoke() ?? text;
+        if (!inputs.TryGetValue(id, out var input)) inputs[id] = input = new(original);
         input.Group = group; input.TaskIdentity = taskIdentity;
         if (input.Dirty) text = input.Box.Text;
-        else input.Accepted = text;
+        else input.Accepted = original;
         var box = Id(new TextBox { Text = text, MinHeight = 0, Height = 24, Padding = new(3, 0, 3, 0), VerticalContentAlignment = VerticalAlignment.Center }, id);
         AutomationProperties.SetName(box, name);
         input.Box = box; var current = generation;
         box.Loaded += (_, _) => UpdateInputProblem();
-        box.GotFocus += (_, _) => UpdateInputProblem();
+        box.GotFocus += (_, _) => {
+            if (!restoringFocus && !box.IsReadOnly) input.Editing = true;
+            UpdateInputProblem();
+        };
+        var presented = text;
+        box.TextChanging += (_, _) => {
+            if (current != generation || box.IsReadOnly || box.Text == presented) return;
+            presented = box.Text; input.Editing = true;
+        };
         var composing = false; var justComposed = false;
-        box.TextCompositionStarted += (_, _) => input.Composing = composing = true;
+        box.TextCompositionStarted += (_, _) => { input.Editing = true; input.Composing = composing = true; };
         box.TextCompositionEnded += (_, _) => { input.Composing = composing = false; justComposed = true;
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => justComposed = false); };
         async Task Commit() {
             try {
                 if (input.Composing) throw new InvalidOperationException("文字の変換を確定してください。");
-                if (input.Dirty) { var changed = input.Box.Text; await Apply(command(changed)); input.Accepted = changed; }
+                if (input.Dirty) {
+                    var changed = input.Box.Text; await Apply(command(changed));
+                    input.Accepted = baseline?.Invoke() ?? changed;
+                    input.Editing = input.Box.Text != changed;
+                } else input.Editing = false;
                 input.Problem = null; UpdateInputProblem();
             } catch (Exception ex) when (ex is not OutOfMemoryException) {
                 input.Problem = ex.Message; UpdateInputProblem(); throw;
@@ -164,14 +178,15 @@ internal sealed class PlanPeopleView : UserControl
         }
         input.Commit = Commit;
         box.LostFocus += async (_, _) => {
-            if (!composing && current == generation && input.Dirty)
+            if (!composing && current == generation && input.Editing)
                 await Run(async () => { await Commit(); Refresh(); }, commitPending: false);
         };
         box.KeyDown += async (_, e) => {
             if (composing || justComposed) return;
-            if (e.Key == VirtualKey.Enter) { e.Handled = true; await Run(() => { Refresh(); return Task.CompletedTask; }); }
+            if (e.Key == VirtualKey.Enter) { e.Handled = true; input.Editing = !box.IsReadOnly; await Run(() => { Refresh(); return Task.CompletedTask; }); }
             else if (e.Key == VirtualKey.Escape) {
-                box.Text = input.Accepted = committed(); input.Problem = null;
+                presented = committed(); input.Editing = false;
+                box.Text = presented; input.Accepted = baseline?.Invoke() ?? presented; input.Problem = null;
                 if (!inputs.Values.Any(i => i.Problem is not null)) { error.Text = ""; error.Visibility = Visibility.Collapsed; }
                 e.Handled = true; Refresh();
             }
@@ -197,6 +212,7 @@ internal sealed class PlanPeopleView : UserControl
         var offset = Descendants(rows).OfType<ScrollViewer>().FirstOrDefault()?.VerticalOffset ?? 0;
         generation++; rows.Items.Clear(); header.Children.Clear();
         foreach (var input in inputs.Values.Where(i => i.TaskIdentity is not null && (i.Dirty || i.Composing))) expanded.Add(input.Group);
+        scheduled = Session.Schedule(Today).ToDictionary(task => task.Input.Identity);
         report = PlanPeople.Calculate(Session.Document, Today, anchor, scale, scale == PlanPeriodScale.Day ? 7 : 6);
         periodWidths = Enumerable.Range(0, report.Periods.Count).Select(i => {
             var width = 104d;
@@ -258,7 +274,9 @@ internal sealed class PlanPeopleView : UserControl
             void RestoreFocus(object sender, RoutedEventArgs args) {
                 next.Box.Loaded -= RestoreFocus;
                 if (generation != refreshed) return;
-                next.Box.Focus(FocusState.Programmatic);
+                restoringFocus = true;
+                try { next.Box.Focus(FocusState.Programmatic); }
+                finally { restoringFocus = false; }
                 var at = Math.Min(selection, next.Box.Text.Length);
                 next.Box.Select(at, Math.Min(selectionLength, next.Box.Text.Length - at));
             }
@@ -321,10 +339,27 @@ internal sealed class PlanPeopleView : UserControl
             foreach (var field in new[] { PlanField.Remaining, PlanField.Actual }) {
                 string Committed() {
                     var current = Session.Document.State.Rows.Single(r => r.Identity == row.Identity);
-                    return (field == PlanField.Remaining ? current.Remaining : current.Actual)?.ToString(CultureInfo.CurrentCulture) ?? "";
+                    return (field == PlanField.Remaining ? scheduled[row.Identity].Remaining : current.Actual)?.ToString(CultureInfo.CurrentCulture) ?? "";
                 }
-                var input = Input(Committed, $"PeopleTask_{row.Identity}_{field}", row.Title + " " + (field == PlanField.Remaining ? "残" : "実績"),
-                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value))]), person.Identity, row.Identity);
+                var id = $"PeopleTask_{row.Identity}_{field}";
+                var name = row.Title + " " + (field == PlanField.Remaining ? "残" : "実績");
+                if (PlanOperations.ReadOnlyReason(row, false, field) is { } reason) {
+                    inputs.Remove(id);
+                    var value = Id(Text(Committed()), id);
+                    value.Width = 82;
+                    value.Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
+                    AutomationProperties.SetName(value, name + " " + value.Text);
+                    AutomationProperties.SetHelpText(value, reason);
+                    ToolTipService.SetToolTip(value, reason);
+                    line.Children.Add(value);
+                    continue;
+                }
+                var input = Input(Committed, id, name,
+                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value))]), person.Identity, row.Identity,
+                    () => PlanSheetEditing.EditBaseline(Session.Document.State.Rows.Single(r => r.Identity == row.Identity), field, Committed()));
+                input.Foreground = (Brush)Application.Current.Resources[field == PlanField.Remaining
+                    && (row.Closed || row.Remaining is null && scheduled[row.Identity].Remaining is not null)
+                    ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush"];
                 input.Width = 90; line.Children.Add(input);
             }
             var fixedBox = Id(new CheckBox { Content = "固定", IsChecked = row.Fixed, MinHeight = 24 }, "PeopleTask_" + row.Identity + "_Fixed");

@@ -19,7 +19,8 @@ internal sealed record ReadValue<T>(ValueAvailability Availability, T? Value = d
 internal sealed record RepositoryReadModel(ScopedId Id, ScopedId OwnerId, string NameWithOwner);
 internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repository, int Number, string Url,
     ReadValue<string> Title, ReadValue<IssueState?> State, CapabilityObservation? Capability = null,
-    IssuePlanningObservation? Native = null);
+    IssuePlanningObservation? Native = null)
+{ public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded); }
 internal sealed record NativePerson(ScopedId Id, string Login);
 internal sealed record IssuePlanningObservation(NativePerson[] Assignees, ScopedId[] Predecessors,
     ReadValue<ScopedId> Parent, bool Complete) { public ScopedId[] SubIssues { get; init; } = []; }

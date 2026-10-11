@@ -26,7 +26,7 @@ internal static class PlanSnapshot
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
         }
     }
-    internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings)
+    internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings, TimeZoneInfo? timeZone = null)
     {
         if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true } p)
             throw new InvalidOperationException("プロジェクト全体を取得できませんでした。計画は変更していません。再試行してください。 " + ReadDiagnostic(result));
@@ -37,11 +37,14 @@ internal static class PlanSnapshot
         {
             if (item.ContentId is null || !p.Issues.TryGetValue(item.ContentId, out var issue) || !item.ValuesComplete ||
                 issue.Native is not { Complete: true } native || issue.Title.Availability != ValueAvailability.Present ||
-                issue.State.Availability != ValueAvailability.Present || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
+                issue.State.Availability != ValueAvailability.Present ||
+                issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                 throw new InvalidOperationException("Issue の取得が不完全です。");
             var row = new PlanRow(issue.Id.NodeId, issue.Title.Value!, issue.Repository.NameWithOwner)
             {
                 Closed = issue.State.Value == IssueState.Closed,
+                CloseDate = issue.State.Value == IssueState.Closed && issue.ClosedAt.Value is { } closedAt
+                    ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(closedAt, timeZone ?? TimeZoneInfo.Local).DateTime) : null,
                 Assignees = native.Assignees.Select(x => x.Id.NodeId).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Predecessors = native.Predecessors.Select(x => x.NodeId).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Parent = native.Parent.Value?.NodeId

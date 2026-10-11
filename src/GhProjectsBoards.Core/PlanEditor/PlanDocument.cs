@@ -32,6 +32,7 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public bool Closed { get; init; }
+    public DateOnly? CloseDate { get; init; }
     public ImmutableArray<string> Assignees { get; init; } = [];
     public ImmutableArray<string> Predecessors { get; init; } = [];
     public string? Parent { get; init; }
@@ -85,9 +86,9 @@ internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
 {
     public int TaskCount => Fields.Count;
-    public ImmutableHashSet<(string Identity, PlanField Field)> RecalculatedDates { get; init; } = [];
+    public ImmutableHashSet<(string Identity, PlanField Field)> RecalculatedFields { get; init; } = [];
     public PlanUnpublishedInputKind? InputKind(string identity, PlanField field)
         => !Fields.TryGetValue(identity, out var fields) || !fields.Contains(field) ? null
-            : RecalculatedDates.Contains((identity, field)) ? PlanUnpublishedInputKind.Recalculated : PlanUnpublishedInputKind.Entered;
+            : RecalculatedFields.Contains((identity, field)) ? PlanUnpublishedInputKind.Recalculated : PlanUnpublishedInputKind.Entered;
 }
 internal sealed record PlanSettingsFile(int Version, ProjectPlanSettings Settings);

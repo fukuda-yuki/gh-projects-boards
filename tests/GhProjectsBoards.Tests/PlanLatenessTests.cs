@@ -11,7 +11,8 @@ internal sealed class PlanLatenessTests
     private static PlanRow Row(string id = "task") => new(id, id, "acme/work");
     private static PlanDocument Document(params PlanRow[] rows)
         => new(new(new("github.com", 42), "P1"), new(rows.ToImmutableArray(), []),
-            new(rows.ToImmutableArray(), new() { StatusDate = Status }));
+            new(rows.ToImmutableArray(), new() { StatusDate = Status,
+                Columns = [new(PlanField.Start, "S", "Start", "DATE"), new(PlanField.End, "E", "End", "DATE")] }));
     private static PlanLatenessResult Classify(PlanDocument document, DateOnly? today = null)
         => PlanLateness.Classify(PlanOperations.Schedule(document, today ?? Status), document.Baseline,
             new(), document.State.Settings.StatusDate ?? today ?? Status);

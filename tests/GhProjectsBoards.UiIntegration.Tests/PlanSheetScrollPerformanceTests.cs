@@ -34,7 +34,7 @@ internal sealed partial class PlanSheetHostedTests
         var previous = 0d;
         TaskCompletionSource? nextFrame = null;
         var evidence = Environment.GetEnvironmentVariable("GHPB_PLAN_EVIDENCE")
-            ?? Path.Combine(Path.GetTempPath(), "ghpb-plan-evidence-" + Guid.NewGuid().ToString("N"));
+            ?? TestContext.CurrentContext.WorkDirectory;
         Directory.CreateDirectory(evidence);
 
         void Rendered(object? sender, RenderedEventArgs args)
