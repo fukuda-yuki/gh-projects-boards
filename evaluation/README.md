@@ -2,7 +2,7 @@
 
 Two synthetic waterfall versions share one WBS shape: 40 requirement Issues with 25 tasks each (1,040 Issues) and 20 people. Titles and keys are the registered sandbox WBS identities.
 
-| File | Version | Project | Default 状況日 | Recorded status dates |
+| File | Version | Project | Default 基準日 | Recorded status dates |
 | --- | --- | --- | --- | --- |
 | `version-plan.json` | 第2027.04版 | 2026-10-13 to 2027-04-30 | 2027-01-13 | 2026-12-16, 2027-01-13, 2027-02-17 |
 | `version-plan-12m.json` | 第2027.10版 | 2026-10-13 to 2027-10-29 | 2027-03-24 | 2027-02-03, 2027-03-24, 2027-06-02 |

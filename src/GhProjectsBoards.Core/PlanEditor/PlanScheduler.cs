@@ -260,7 +260,7 @@ internal static class PlanScheduler
                     task.GitHubEnd is { } heldEnd ? new Point(heldEnd.DayNumber, 18) : null,
                     DateOrigin.Kept, DateOrigin.Kept, "GitHub の日付（次の編集で再計算）", warnings);
             var earliest = Point.Morning(statusDate);
-            var reason = "状況日";
+            var reason = "基準日";
             void Consider(Point candidate, string candidateReason, bool winTie = true)
             {
                 if (candidate.CompareTo(earliest) > 0 || winTie && candidate.CompareTo(earliest) == 0)

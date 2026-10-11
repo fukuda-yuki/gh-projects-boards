@@ -55,7 +55,7 @@ internal sealed partial class PlanWorkspaceView
         busyHeading.Text = heading;
         busyExplanation.Text = kind == "publish"
             ? "GitHub に書き込んでいます。終わるまで計画は操作できません。"
-            : "GitHub から プロジェクトの内容を読み込んでいます。終わるまで計画は操作できません。";
+            : "GitHub からプロジェクトの内容を読み込んでいます。終わるまで計画は操作できません。";
         busyCancel.IsEnabled = true;
         busyCancel.Visibility = kind == "publish" ? Visibility.Collapsed : Visibility.Visible;
         busyNote.Text = kind == "publish"
@@ -64,7 +64,7 @@ internal sealed partial class PlanWorkspaceView
             : "中止すると、操作の前の状態に戻ります。";
         var steps = kind == "publish"
             ? new[] { "最新情報の確認", "新規 Issue", "フィールド・担当者", "親子関係", "先行タスク", "表示順", "検証" }
-            : resolvingUrl ? new[] { "Project を確認", "プロジェクトの項目を取得", "日程を計算" }
+            : resolvingUrl ? new[] { "プロジェクトを確認", "プロジェクトの項目を取得", "日程を計算" }
             : new[] { "プロジェクトの項目を取得", "日程を計算" };
         foreach (var step in steps) {
             var row = new Grid { ColumnSpacing = 12 };
@@ -143,7 +143,7 @@ internal sealed partial class PlanWorkspaceView
     {
         var previousPage = currentPage;
         title.Text = choice?.Title ?? "プロジェクトを開いています";
-        projectMetadata.Text = choice is null ? "" : $"{choice.OwnerLogin} · Project {choice.Number}";
+        projectMetadata.Text = choice is null ? "" : $"{choice.OwnerLogin} · プロジェクト {choice.Number}";
         statusBar.Visibility = Visibility.Visible;
         statusCounts.Text = choice is null ? "プロジェクトを確認中" : choice.Title + " を読み込み中";
         var reporter = BeginBusy("open", choice is null ? "プロジェクトを開いています" : choice.Title + " を開いています", resolvingUrl: choice is null);
@@ -151,7 +151,7 @@ internal sealed partial class PlanWorkspaceView
         try {
             if (choice is null) {
                 choice = await new ProjectDiscovery(workspace.Service!).ResolveAsync(workspace.Context!, address!, OperationToken);
-                title.Text = choice.Title; projectMetadata.Text = $"{choice.OwnerLogin} · Project {choice.Number}";
+                title.Text = choice.Title; projectMetadata.Text = $"{choice.OwnerLogin} · プロジェクト {choice.Number}";
                 statusCounts.Text = choice.Title + " を読み込み中";
                 busyHeading.Text = choice.Title + " を開いています";
                 UpdateBusyProgress(new("プロジェクトの項目を取得"));

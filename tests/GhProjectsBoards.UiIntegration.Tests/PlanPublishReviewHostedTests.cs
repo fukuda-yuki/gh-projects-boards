@@ -155,9 +155,9 @@ internal sealed class PlanPublishReviewHostedTests
             var first = (ListViewItem)list.ContainerFromIndex(0);
             var text = string.Join("\n", Ui.Tree(first).OfType<TextBlock>().Select(t => t.Text));
             Assert.That(text, Does.Contain("acme/repo#1").And.Contain("要求タスク 1 → " + longTitle)
-                .And.Contain("実績 h  0 → 3").And.Contain("残 h  8 → 5"));
-            var comparison = Ui.Tree(first).OfType<TextBlock>().Single(t => t.Text.Contains("実績 h  0 → 3"));
-            Assert.That(comparison.Text, Does.Contain("残 h  8 → 5"));
+                .And.Contain("実績工数  0h → 3h").And.Contain("見込み残存工数  8h → 5h"));
+            var comparison = Ui.Tree(first).OfType<TextBlock>().Single(t => t.Text.Contains("実績工数  0h → 3h"));
+            Assert.That(comparison.Text, Does.Contain("見込み残存工数  8h → 5h"));
             Assert.That(comparison.TextWrapping, Is.EqualTo(TextWrapping.Wrap));
             Assert.That(comparison.TextTrimming, Is.EqualTo(TextTrimming.None));
             Assert.That(first.ActualWidth, Is.LessThanOrEqualTo(list.ActualWidth));
@@ -193,8 +193,8 @@ internal sealed class PlanPublishReviewHostedTests
             var list = Ui.Find<ListView>("PlanPublishLines");
             var last = (ListViewItem)list.ContainerFromIndex(1039);
             var text = string.Join("\n", Ui.Tree(last).OfType<TextBlock>().Select(t => t.Text));
-            Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積 h  8 → 16")
-                .And.Contain("実績 h  0 → 3").And.Contain("残 h  8 → 13"));
+            Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h")
+                .And.Contain("実績工数  0h → 3h").And.Contain("見込み残存工数  8h → 13h"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "publish-grouped-version-end");
@@ -257,7 +257,7 @@ internal sealed class PlanPublishReviewHostedTests
             var bounds = group.TransformToVisual(list).TransformBounds(new(0, 0, group.ActualWidth, group.ActualHeight));
             Assert.That(bounds.Bottom, Is.GreaterThan(0));
             Assert.That(bounds.Top, Is.LessThan(list.ActualHeight), "The resolved Issue must remain in the review viewport.");
-            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("残 h  8 → 5").And.Not.Contain("競合"));
+            Assert.That(string.Join(" ", Ui.Tree(group).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("見込み残存工数  8h → 5h").And.Not.Contain("競合"));
             Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
             await RenderedEvidence.Capture(view, "publish-recycled-conflict-resolved");
         });

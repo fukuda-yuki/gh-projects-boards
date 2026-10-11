@@ -58,12 +58,12 @@ internal static class PlanPeople
                 if (tasks.Any(t => value(t) < 0)) { missing.Add(label + "が不正"); return null; }
                 return tasks.Sum(t => value(t)!.Value);
             }
-            var estimate = Total(t => t.Estimate, "見積"); var actual = Total(t => t.Actual ?? 0, "実績"); var remaining = Total(t => t.Remaining, "残");
+            var estimate = Total(t => t.Estimate, "見積工数"); var actual = Total(t => t.Actual ?? 0, "実績工数"); var remaining = Total(t => t.Remaining, "見込み残存工数");
             var allocations = new Dictionary<string, IReadOnlyDictionary<DateOnly, decimal>>();
             foreach (var task in tasks)
             {
                 if (task.Input.IsComplete) { allocations[task.Input.Identity] = new Dictionary<DateOnly, decimal>(); continue; }
-                var reason = task.Remaining is null ? "残が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" :
+                var reason = task.Remaining is null ? "見込み残存工数が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" :
                     task.Start.Value is null || task.End.Value is null ? "日程が未入力" : null;
                 if (reason is null && task.PlannedHours is { } daily) allocations[task.Input.Identity] = daily;
                 else if (reason is null && task.Remaining == 0) allocations[task.Input.Identity] = new Dictionary<DateOnly, decimal>();

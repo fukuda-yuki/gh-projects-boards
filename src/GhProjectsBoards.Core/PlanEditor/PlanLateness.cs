@@ -74,7 +74,7 @@ internal static class PlanLateness
         if (!(work > 0)) return null;
         var hours = work.Value.ToString("0.############################", CultureInfo.InvariantCulture);
         return task.Input.Actual > 0
-            ? $"終了: 状況日 {statusDate.ToString("M/d", CultureInfo.InvariantCulture)} から残り {hours}h"
+            ? $"終了: 基準日 {statusDate.ToString("M/d", CultureInfo.InvariantCulture)} から見込み残存工数 {hours}h"
             : $"終了: 開始から {hours}h";
     }
 }

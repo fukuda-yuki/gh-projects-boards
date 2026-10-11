@@ -43,7 +43,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) {
             var saved = reset ? null : await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
+            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
         }
         finally { gate.Release(); }
     }
@@ -154,7 +154,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             if (identifier && node is JsonValue value && value.TryGetValue<string>(out var text))
             {
                 if (text.StartsWith("repository:", StringComparison.Ordinal)) return JsonValue.Create(repositories.GetValueOrDefault(text[11..]) ?? throw new InvalidOperationException("リポジトリを確認できません。"));
-                if (text.StartsWith("item:", StringComparison.Ordinal)) return JsonValue.Create(items.GetValueOrDefault(text[5..]) ?? throw new InvalidOperationException("Project への追加が完了していません。"));
+                if (text.StartsWith("item:", StringComparison.Ordinal)) return JsonValue.Create(items.GetValueOrDefault(text[5..]) ?? throw new InvalidOperationException("プロジェクトへの追加が完了していません。"));
                 if (text.StartsWith("local:", StringComparison.Ordinal)) return JsonValue.Create(ids.GetValueOrDefault(text) ?? throw new InvalidOperationException("Issue の作成が完了していません。"));
             }
             return node;
@@ -210,12 +210,12 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         do
         {
             var response = await lease.SendAsync(ApiRequest.GraphQl("query PlanExistingItem($id:ID!,$after:String){node(id:$id){... on Issue{projectItems(first:100,after:$after){nodes{id project{id}} pageInfo{hasNextPage endCursor}}}}}", new { id = issue, after }), token);
-            if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("既存のProject項目を確認できません。");
+            if (!response.IsSuccess || response.Data is not { } body) throw new InvalidOperationException("既存のプロジェクト項目を確認できません。");
             var connection = body.GetProperty("data").GetProperty("node").GetProperty("projectItems");
             found.AddRange(connection.GetProperty("nodes").EnumerateArray().Where(n => n.GetProperty("project").GetProperty("id").GetString() == project).Select(n => n.GetProperty("id").GetString()!));
             var page = connection.GetProperty("pageInfo"); if (!page.GetProperty("hasNextPage").GetBoolean()) break;
             after = page.GetProperty("endCursor").GetString();
-            if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after)) throw new InvalidOperationException("Project項目のページ取得が不完全です。");
+            if (string.IsNullOrWhiteSpace(after) || !cursors.Add(after)) throw new InvalidOperationException("プロジェクト項目のページ取得が不完全です。");
         } while (true);
         return found.Count == 1 ? found[0] : null;
     }
@@ -443,7 +443,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         catch (Exception ex) when (Expected(ex))
         {
             var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false);
-            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
+            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は GitHub で未確認です。「最新の情報に更新」で確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), review);
         }
         finally { gate.Release(); }
     }

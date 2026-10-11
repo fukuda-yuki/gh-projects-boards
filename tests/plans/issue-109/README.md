@@ -58,12 +58,12 @@ Build these states in order in one data root. Note the plan IDs you used, becaus
 
 | ID | State | How to produce it |
 | --- | --- | --- |
-| S1 | Fresh open, no selection | Open the version. 状況日 2026-10-05, 週. |
-| S2 | One overdue finish and one overdue start, with successors later than published | Set 状況日 to a working day after several wave-1 tasks were due, so their published end or start is before it. Mark every due task complete except two. Use the title filter for the flat list of matching tasks, then paste 実績 h and 残 h (Actual = Estimate, Remaining = 0). Leave one in-progress task with Remaining > 0 and a published end before the 状況日: the overdue finish. Leave one task with Actual 0 and a published start before the 状況日: the overdue start. Clear the filter. |
+| S1 | Fresh open, no selection | Open the version. 基準日 2026-10-05, 週. |
+| S2 | One overdue finish and one overdue start, with successors later than published | Set 基準日 to a working day after several wave-1 tasks were due, so their published end or start is before it. Mark every due task complete except two. Use the title filter for the flat list of matching tasks, then paste 実績 h and 残 h (Actual = Estimate, Remaining = 0). Leave one in-progress task with Remaining > 0 and a published end before the 基準日: the overdue finish. Leave one task with Actual 0 and a published start before the 基準日: the overdue start. Clear the filter. |
 | S3 | Entered value next to recalculated dates | In S2, type a new 見積 h or 担当者 on one task. |
 | S4 | Folded overview | In S3, **すべて折りたたむ**, then view at 週 and 全期間. |
-| S5 | Scale change with a selection | Select a task whose start is far from the 状況日. Switch 週 → 日 → 月 → 全期間 → 週. |
-| S6 | 状況日 before every task | Set 状況日 2026-10-05 (before the first task) and view 全期間. |
+| S5 | Scale change with a selection | Select a task whose start is far from the 基準日. Switch 週 → 日 → 月 → 全期間 → 週. |
+| S6 | 基準日 before every task | Set 基準日 2026-10-05 (before the first task) and view 全期間. |
 | S7 | Parts | Open the Project picker and the「…」menu. Hover an indicator icon and a header. Tab to a command to show keyboard focus. Type a title longer than the column. Give one task two assignees if the sheet's assignee input allows it, otherwise record it as unverified. |
 | S8 | Progress, failure, conflict | Capture 最新の情報に更新 while it runs. Induce a refresh failure and a conflict only through mechanisms the offline fixture already offers; check the fake gh and fixture options first. If you find none, mark the item unverified and cite the hosted UI tests that cover it. |
 | S9 | Other views | Open 担当者, 設定 and the publication review (**発行…**, then cancel without publishing). |
@@ -85,22 +85,22 @@ Give each item one verdict: **pass**, **partial**, **fail** or **unverified**. A
 | B4 | Settings gear immediately left of the minimize button | S1 V1–V4 |
 | B5 | Caption buttons are legible in the active window, with the system caption colors | S1 |
 | C1 | 計画 / 担当者 tabs; the current tab is bold with a short accent underline | S1 |
-| C2 | Right side order: 状況日, Undo/Redo, unpublished count, 最新の情報に更新, 発行… | S1 |
-| C3 | 「状況日」 label and a date picker showing the weekday | S1 |
+| C2 | Right side order: 基準日, Undo/Redo, unpublished count, 最新の情報に更新, 発行… | S1 |
+| C3 | 「基準日」 label and a date picker showing the weekday | S1 |
 | C4 | 元に戻す / やり直し are borderless, with hover fill | S1 |
-| C5 | Thin vertical separators: 状況日 \| Undo/Redo \| unpublished + GitHub commands | S1 |
+| C5 | Thin vertical separators: 基準日 \| Undo/Redo \| unpublished + GitHub commands | S1 |
 | C6 | Amber count badge + 未発行のタスク; 未発行 0 タスク at zero | S1, S3 |
 | C7 | 発行… is the only accent-filled button | S1 |
 | D1 | Left-aligned labelled commands in the agreed groups and order | S1 |
 | D2 | Separator between the task and overview groups | S1 |
 | D3 | 「…」 holds コピー Ctrl+C, 貼り付け Ctrl+V, 下へコピー Ctrl+D, クリア Delete, CSV から追加…, 表示列 | S7 |
-| D4 | 「尺度」 and the scale combo at the right end; 全期間 fits without wrapping | S1, S4 |
+| D4 | 「表示単位」 and the scale combo at the right end; 全期間 fits without wrapping | S1, S4 |
 | D5 | Search icon inside the title filter | S1 |
 | D6 | Stroke below the command bar | S1 |
 | E1 | Selection line: very light ground, strokes | S2 |
 | E2 | Plan ID (secondary) and title (bold) | S2 |
 | E3 | Start reason 「開始: N の終了後」 | S2 |
-| E4 | End reason: 「終了: 状況日 M/d から残り Nh」, 「終了: 開始から Nh」 or 「終了: 指定」; omitted for complete tasks and summaries | S2 |
+| E4 | End reason: 「終了: 基準日 M/d から残り Nh」, 「終了: 開始から Nh」 or 「終了: 指定」; omitted for complete tasks and summaries | S2 |
 | E5 | Lateness pill per N3 | S2 |
 | E6 | Right-aligned Issue reference link. If the fixture lacks references, say so. | S2 |
 | F1 | Headers ID, indicator icon, タスク名, 担当者, 見積 h, 残 h, 実績 h, 開始日, 終了日, 先行 | S1 |
@@ -120,36 +120,36 @@ Give each item one verdict: **pass**, **partial**, **fail** or **unverified**. A
 | H1 | One indicator icon per row by priority; the tooltip lists all applicable states | S2, S7 |
 | I1 | Upper tier months; year on the first label and in January | S1 |
 | I2 | Lower tier Monday dates `10/19` at 週 | S1 |
-| I3 | Accent pill 「状況日 M/d」 | S1 |
+| I3 | Accent pill 「基準日 M/d」 | S1 |
 | I4 | Thin month separators | S1 |
 | J1 | Non-working days shaded at 日 and 週 | S1 |
 | J2 | Row separators in the Gantt at the sheet's row positions | S1, S2 |
-| J3 | 2 px accent 状況日 line | S1 |
+| J3 | 2 px accent 基準日 line | S1 |
 | J4 | Task bars 14 px, radius 3, tinted with outline, completed share solid | S2 |
 | J5 | Summary bracket bars with end caps | S1 |
 | J6 | Lateness segment per N2 | S2 |
 | J7 | Arrow leaves the predecessor end horizontally, turns down and enters the successor bar from above with a filled triangle | S2 |
 | J8 | Selected-row band continues across the Gantt | S2 |
-| J9 | Opens at 週 with the 状況日 about a quarter from the left | S1 |
+| J9 | Opens at 週 with the 基準日 about a quarter from the left | S1 |
 | K1 | Status bar 「要求事項 40 · タスク 1,000」, then nonzero overdue / later counts | S1, S2 |
-| K2 | Legend: 実績, 残り, 発行済みからの遅れ, 非稼働日 | S1 |
+| K2 | Legend: 実績, 残り, 発行済みの終了日からの遅れ, 非稼働日 | S1 |
 | K3 | No Gantt legend on 担当者, 設定 or the publication review | S9 |
 
 ### N: the addendum (追補1–4)
 
 | ID | Expected | State |
 | --- | --- | --- |
-| N1 | **Overdue rule.** Filled critical warning only for: an incomplete task with a published end before the 状況日, or a task with Actual 0 and a published start before the 状況日. A task due on the 状況日 itself is not overdue. Check both S2 tasks, a task due exactly on the 状況日 and a completed task. | S2 |
+| N1 | **Overdue rule.** Filled critical warning only for: an incomplete task with a published end before the 基準日, or a task with Actual 0 and a published start before the 基準日. A task due on the 基準日 itself is not overdue. Check both S2 tasks, a task due exactly on the 基準日 and a completed task. | S2 |
 | N2 | Overdue row with a later end: red end date; Gantt segment tinted, dashed, labelled `+N日` at 日/週 | S2 |
 | N3 | Later-than-published only: outlined warning, ordinary end-date color, dashed outline without tint or label. Selection line: outlined pill 「発行済み M/d から +N 日」, then 「先行の遅れによる」 when its start also moved later after a predecessor. Overdue row: tinted pill 「完了予定 M/d を過ぎて未完了」 (· +N 日) or 「開始予定 M/d を過ぎて未着手」 | S2 |
 | N4 | Unpublished: the entered value has tint + corner; dates changed only by recalculation have the corner without tint | S3 |
 | N5 | Folded requirement: filled warning when it contains an overdue task, including when its own end did not move; outlined when it contains only later-than-published work. The tooltip and selection line read 「配下: 期限超過 N · 予定より遅れ M」 | S4 |
-| N6 | Scale change keeps the selected task's start about a quarter from the left; with no selection, the 状況日 | S5 |
+| N6 | Scale change keeps the selected task's start about a quarter from the left; with no selection, the 基準日 | S5 |
 | N7 | No `+N日` text at 月 or 全期間; the number stays in the tooltip, accessible name and selection line | S4, S5 |
-| N8 | Empty selection line: 「タスクを選ぶと、開始と終了の理由がここに出ます」, and nonzero counts at the right | S1, S2 |
+| N8 | Empty selection line: 「タスクを選択すると、開始日と終了日の根拠を表示します」, and nonzero counts at the right | S1, S2 |
 | N9 | V1: all ten default columns without horizontal scrolling; Gantt about 1,040 px (about 18 weeks at 週); about 29 rows visible. Measure and report the actual numbers. | S2 V1 |
 | N10 | V3: all ten columns visible. V4: Gantt at least 320 px, the sheet scrolls horizontally, commands reachable through overflow | S1 V3, V4 |
-| N11 | 全期間 includes the 状況日 when it is before every task: line and pill visible | S6 |
+| N11 | 全期間 includes the 基準日 when it is before every task: line and pill visible | S6 |
 | N12 | Project picker: two-line items, current checked, separator, Project を開く…, 接続… | S7 |
 | N13 | Standard tooltips and a visible keyboard focus ring | S7 |
 | N14 | Long title ends with an ellipsis, with the full title in the tooltip. Several assignees show `first +N`, none shows blank, and a missing display name falls back to the login. | S7 |

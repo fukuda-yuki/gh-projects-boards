@@ -51,7 +51,7 @@ internal static class PlanPublishPlan
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
             if (input.RootElement.TryGetProperty("projectId", out var project))
-                PlanOperations.Require(project.GetString() == document.Project.NodeId, "発行先のProjectが一致しません。");
+                PlanOperations.Require(project.GetString() == document.Project.NodeId, "発行先のプロジェクトが一致しません。");
         }
     }
     internal static PlanPublishReview Build(PlanDocument document, PlanRemoteSnapshot remote, DateOnly today, string runId)

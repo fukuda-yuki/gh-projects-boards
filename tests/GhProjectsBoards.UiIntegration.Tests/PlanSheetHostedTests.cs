@@ -330,7 +330,10 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(1, PlanField.Remaining, "");
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
-            Assert.That(cell.Text, Is.EqualTo("8"));
+            Assert.That(cell.Text, Is.EqualTo("8h"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(cell), Is.EqualTo("ID 1 見込み残存工数"));
+            Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo("見込み残存工数 · 8h"));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderRemaining").Text, Is.EqualTo("残 h"));
             Assert.That(cell.IsReadOnly, Is.False);
             Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
         });
@@ -339,7 +342,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(((SolidColorBrush)Ui.Find<TextBox>("PlanCell1_Remaining").Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorPrimaryBrush")).Color));
             var indicator = Ui.Find<FontIcon>("PlanIndicator1");
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("見積超過: 見込 16h（見積 8h、差異 +8h）"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("見積超過: 見込工数 16h（見積工数 8h、差異 +8h）"));
             Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
             Assert.That(indicator.Glyph, Is.Not.Empty);
         });
@@ -362,7 +365,7 @@ internal sealed partial class PlanSheetHostedTests
         await Select(1, PlanField.Remaining);
         await SheetNativeInput.Click("PlanCell1_Remaining");
         if (exit != "Select") await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
-        await Ui.Run(() => Assert.That(Ui.Find<PlanSheetCell>("PlanCell1_Remaining").Text, Is.EqualTo("32")));
+        await Ui.Run(() => Assert.That(Ui.Find<PlanSheetCell>("PlanCell1_Remaining").Text, Is.EqualTo(exit == "Select" ? "32h" : "32")));
         if (exit is "Leave" or "Select")
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         else await SheetNativeInput.Press(exit == "Enter" ? Windows.System.VirtualKey.Enter
@@ -404,7 +407,7 @@ internal sealed partial class PlanSheetHostedTests
             Estimate = 40, Actual = 40, Remaining = 8, Start = Today.AddDays(-7), End = Today.AddDays(2) };
         await MountPresentation([row], [row]);
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("0"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("0h"));
             Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/5 (月)"));
             foreach (var field in new[] { PlanField.Remaining, PlanField.End }) {
                 var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
@@ -418,12 +421,12 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [TestCase("completed", "完了", "\uE73E")]
-    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8h）", "\uE814")]
+    [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8h）", "\uE814")]
     [TestCase("typed", "開始日を指定", "\uE718")]
     [TestCase("fixed", "日程固定", "\uE718")]
     [TestCase("changed", "未発行の変更あり", "\u2022")]
     [TestCase("failed", "発行失敗", "\uEA39")]
-    [TestCase("unverified", "未検証", "\uEA39")]
+    [TestCase("unverified", "GitHub で未確認", "\uEA39")]
     [TestCase("summary", "配下に期限超過 1", "\uE814")]
     [Category("PlanSheetPhase2")]
     public async Task IndicatorPriorityAndSelectionExplainAllApplicableRowStates(string state, string expected, string glyph)
@@ -472,7 +475,7 @@ internal sealed partial class PlanSheetHostedTests
             if (state is "failed" or "unverified") Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("完了").And.Contain("開始日を指定").And.Contain("未発行の変更あり"));
         });
     }
-    [TestCase("started", "終了: 状況日 10/5 から残り 8h")]
+    [TestCase("started", "終了: 基準日 10/5 から見込み残存工数 8h")]
     [TestCase("unstarted", "終了: 開始から 8h")]
     [TestCase("fixed", "終了: 指定")]
     [TestCase("complete", null)]
@@ -603,7 +606,7 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation(rows, baseline);
         await Ui.Run(() => {
             var hint = Ui.Find<TextBlock>("PlanSheetEmptyHint"); var totals = Ui.Find<TextBlock>("PlanSheetTotals");
-            Assert.That(hint.Text, Is.EqualTo("タスクを選ぶと、開始と終了の理由がここに出ます"));
+            Assert.That(hint.Text, Is.EqualTo("タスクを選択すると、開始日と終了日の根拠を表示します"));
             Assert.That(hint.Visibility, Is.EqualTo(Visibility.Visible));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(hint), Is.EqualTo(hint.Text));
             Assert.That(totals.Text, Is.EqualTo(expected));
@@ -635,12 +638,12 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Mount(sheetHost);
     }
 
-    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", true)]
-    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
+    [TestCase("finish", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true)]
+    [TestCase("finish-estimate", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", true, Category = "OverdueMissingWork")]
     [TestCase("finish-unknown", "期限超過: 完了予定 10/2 を過ぎて未完了", "\uE814", false, Category = "OverdueMissingWork")]
     [TestCase("start", "期限超過: 開始予定 10/2 を過ぎて未着手", "\uE814", false)]
     [TestCase("later", "予定より遅れ: 発行済み 10/5 から +1 日", "\uE7BA", false)]
-    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8.5h）", "\uE814", false)]
+    [TestCase("unchanged", "期限超過: 完了予定 10/2 を過ぎて未完了（見込み残存工数 8.5h）", "\uE814", false)]
     [TestCase("summary-overdue", "配下に期限超過 1", "\uE814", false)]
     [TestCase("summary-later", "配下に予定より遅れ 1", "\uE7BA", false)]
     [Category("SheetRowPresentation")]
@@ -926,7 +929,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is not null);
         await Ui.Run(() => {
             Assert.That(Ui.Popup<CheckBox>("PlanColumnStart")!.Content, Is.EqualTo("開始日"));
-            Assert.That(Ui.Popup<CheckBox>("PlanColumnIndicator")!.Content, Is.EqualTo("インジケーター"));
+            Assert.That(Ui.Popup<CheckBox>("PlanColumnIndicator")!.Content, Is.EqualTo("状態"));
         });
     }
     [Test, Category("PlanSheetPhase2")]
@@ -941,7 +944,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(start.Text, Is.EqualTo("開始日"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(start), Is.EqualTo("GitHub: Start date"));
             Assert.That(ToolTipService.GetToolTip(start), Is.EqualTo("GitHub: Start date"));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderRemaining")), Is.EqualTo("未設定"));
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderRemaining")), Is.EqualTo("見込み残存工数 · 未設定"));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text, Is.EqualTo("タスク名"));
             var cell = Ui.Find<TextBox>("PlanCell1_Start");
             Assert.That(cell.Text, Is.EqualTo("10/5 (月)"));
@@ -1870,7 +1873,7 @@ internal sealed partial class PlanSheetHostedTests
     {
         await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(2026, 10, 20, 0, 0, 0, TimeSpan.Zero));
         await Ui.Idle(); await Select(1, PlanField.Title);
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("状況日")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("基準日")));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
         await Edit(1, PlanField.Predecessors, "2");
         await Ui.Run(() => Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text,

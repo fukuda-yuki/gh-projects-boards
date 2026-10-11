@@ -73,7 +73,7 @@ internal static class PlanOperations
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
         foreach (var p in s.People)
         {
-            Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または許容量が不正です。");
+            Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または上限工数が不正です。");
         }
         foreach (var c in s.Columns)
         {
