@@ -3,6 +3,7 @@ using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using NUnit.Framework;
 using Windows.Foundation;
@@ -119,9 +120,40 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
-            Assert.That(Ui.Tree(sheet).OfType<Polyline>().Select(AutomationProperties.GetAutomationId), Is.EquivalentTo(new[] {
+            string[] expectedArrows = [
                 "PlanArrow1_3_1", "PlanArrow1_3_3", "PlanArrow1_3_90",
-                "PlanArrow4_2_3", "PlanArrow4_2_90", "PlanArrow4_2_95" }));
+                "PlanArrow4_2_3", "PlanArrow4_2_90", "PlanArrow4_2_95" ];
+            var currentRows = sheet.List.Items.Cast<string>().Select(identity => {
+                var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+                Assert.That(row, Is.Not.Null, $"Current filtered row {identity}");
+                Assert.That(row!.IsLoaded, Is.True);
+                Assert.That(row.Owner, Is.SameAs(sheet));
+                Assert.That(row.Identity, Is.EqualTo(identity));
+                return row;
+            }).ToArray();
+            Assert.That(currentRows.SelectMany(row => Ui.Tree(row).OfType<Polyline>()).Select(AutomationProperties.GetAutomationId),
+                Is.EquivalentTo(expectedArrows), "Every active dependency belongs to the current filtered topology.");
+            var allArrows = Ui.Tree(sheet).OfType<Polyline>().ToArray();
+            Assert.That(allArrows.Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0),
+                Is.EquivalentTo(expectedArrows), "Recycled rows must not expose old dependency identities.");
+            Assert.That(Ui.Tree(sheet).OfType<Polygon>().Select(AutomationProperties.GetAutomationId)
+                .Where(id => id.StartsWith("PlanArrowHead", StringComparison.Ordinal)),
+                Is.EquivalentTo(new[] { "PlanArrowHead1_3_90", "PlanArrowHead4_2_3" }));
+            var retainedCounts = new Dictionary<PlanSheetRow, int>();
+            foreach (var line in allArrows.Where(line => AutomationProperties.GetAutomationId(line).Length == 0)) {
+                PlanSheetRow? retainedRow = null;
+                var hidden = false;
+                for (DependencyObject? parent = line; parent is not null && !ReferenceEquals(parent, sheet); parent = VisualTreeHelper.GetParent(parent)) {
+                    if (parent is UIElement element && (element.Visibility == Visibility.Collapsed || element.Opacity == 0)) hidden = true;
+                    if (parent is PlanSheetRow row) retainedRow = row;
+                }
+                Assert.That(retainedRow, Is.Not.Null);
+                Assert.That(retainedRow!.Owner, Is.Null, "Only recycled rows may retain unidentified dependency geometry.");
+                Assert.That(hidden, Is.True, "Retained geometry must be hidden, not merely missing an automation ID.");
+                retainedCounts[retainedRow] = retainedCounts.GetValueOrDefault(retainedRow) + 1;
+            }
+            // At most two of this fixture's dependencies cross any one task row.
+            Assert.That(retainedCounts.Values, Is.All.LessThanOrEqualTo(2), "Recycled rows retain one bounded row slice.");
             AssertDependencyEntersBar(1, 3, 90, true);
             AssertDependencyEntersBar(4, 2, 3, false);
         });
