@@ -932,7 +932,11 @@ internal sealed partial class PlanSheetHostedTests
     [Test, Category("PlanSheetPhase2")]
     public async Task StandardHeadersAndShortDatesExposeMappedFieldsAndFullDates()
     {
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with {
+            Columns = session.Document.State.Settings.Columns.Where(column => column.Role != PlanField.Remaining).ToImmutableArray()
+        }), Today);
         await Ui.Run(() => {
+            sheet.Refresh();
             var start = Ui.Find<TextBlock>("PlanHeaderStart");
             Assert.That(start.Text, Is.EqualTo("開始日"));
             Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(start), Is.EqualTo("GitHub: Start date"));

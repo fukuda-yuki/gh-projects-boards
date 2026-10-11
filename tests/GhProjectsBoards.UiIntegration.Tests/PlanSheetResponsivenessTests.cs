@@ -24,7 +24,7 @@ internal sealed partial class PlanSheetHostedTests
             vertical.ChangeView(null, 1120, null, true);
         });
         await Ui.Until(() => Math.Abs(vertical.VerticalOffset - 1120) < 1
-            && sheet.List.ContainerFromIndex(40) is ListViewItem { ContentTemplateRoot: PlanSheetRow { IsLoaded: true } });
+            && sheet.List.ContainerFromIndex(40) is ListViewItem { ContentTemplateRoot: PlanSheetRow { IsLoaded: true, Identity: "I41" } });
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             var row = (PlanSheetRow)((ListViewItem)sheet.List.ContainerFromIndex(40)).ContentTemplateRoot;
