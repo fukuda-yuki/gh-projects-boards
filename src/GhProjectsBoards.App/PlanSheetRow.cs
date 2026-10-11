@@ -93,7 +93,7 @@ public sealed class PlanSheetRow : Grid
         };
         DataContextChanged += (_, _) => { ClearIds(); Refresh(); Owner?.UpdateInputProblem(); };
     }
-    internal void SetOwner(PlanSheetView? owner)
+    internal void SetOwner(PlanSheetView? owner, string? expectedIdentity)
     {
         if (ReferenceEquals(Owner, owner)) return;
         // A recycled container can stay loaded while its task and visual parent change.
@@ -101,7 +101,12 @@ public sealed class PlanSheetRow : Grid
         var previous = Owner;
         previous?.Realized.Remove(this);
         Owner = owner;
-        if (owner is not null) { owner.Realized.Add(this); Refresh(); }
+        if (owner is not null) {
+            owner.Realized.Add(this);
+            // The native content notification precedes DataContext assignment. A
+            // new binding paints in DataContextChanged; a same-item reattach paints now.
+            if (DataContext is string identity && identity == expectedIdentity) Refresh();
+        }
         previous?.UpdateInputProblem(); owner?.UpdateInputProblem();
     }
     private void ClearIds()
