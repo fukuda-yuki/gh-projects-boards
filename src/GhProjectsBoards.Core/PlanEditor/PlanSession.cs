@@ -221,6 +221,7 @@ internal sealed class PlanSession
             {
                 Identity = r.Identity == identity ? replacement! : r.Identity,
                 Closed = r.Identity == identity ? false : r.Closed,
+                CloseDate = r.Identity == identity ? null : r.CloseDate,
                 Status = r.Identity == identity ? null : r.Status,
                 Parent = r.Parent == identity ? replacement : r.Parent,
                 Predecessors = r.Predecessors.Where(id => id != identity || copyToNew).Select(id => id == identity ? replacement! : id).ToImmutableArray()
@@ -326,7 +327,7 @@ internal sealed class PlanSession
                             row = PlanValues.Set(row, field, PlanValues.Get(observed, field));
                 }
                 return row with { Identity = Id(row.Identity), Parent = row.Parent is null ? null : Id(row.Parent),
-                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed };
+                    Predecessors = row.Predecessors.Select(Id).ToImmutableArray(), Closed = observed?.Closed ?? row.Closed, CloseDate = observed is null ? row.CloseDate : observed.CloseDate };
             }
             PlanState State(PlanState state) => state with { Rows = state.Rows.Select(Row).ToImmutableArray() };
             var state = State(document.State);

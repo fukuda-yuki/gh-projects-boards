@@ -282,9 +282,13 @@ internal sealed class PlanOverviewHostedTests
         foreach (var scale in new[] { "日", "月", "週" }) {
             await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale);
             await Ui.Idle();
+            await Ui.Run(() => TestContext.Out.WriteLine($"Before frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={(selectTask ? Canvas.GetLeft(Ui.Find<Shape>("PlanBar5")) : Ui.Find<Line>("PlanStatusLine").X1)}"));
+            // Dispatcher work can finish before the scroll-driven rendering callback.
+            await SheetNativeInput.Rendered();
             await Ui.Run(() => {
                 sheet.UpdateLayout();
                 var x = selectTask ? Canvas.GetLeft(Ui.Find<Shape>("PlanBar5")) : Ui.Find<Line>("PlanStatusLine").X1;
+                TestContext.Out.WriteLine($"After frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={x}");
                 Assert.That(x, Is.EqualTo(sheet.ChartViewport / 4).Within(2), "Anchor tolerance is two pixels.");
             });
         }
@@ -348,8 +352,20 @@ internal sealed class PlanOverviewHostedTests
         await Ui.ClickCommand("PlanSheetExpandAll");
         await Ui.Idle();
         double x = 0, width = 0;
+        var renderedPositions = new List<double>();
+        void RecordPosition(object? sender, RenderedEventArgs args)
+        {
+            if (sheet.ChartViewport <= width + 50) return;
+            var bar = Ui.Find<Shape>("PlanBar3");
+            var scroll = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
+            renderedPositions.Add(bar.TransformToVisual(sheet).TransformPoint(new()).X
+                - scroll.TransformToVisual(sheet).TransformPoint(new()).X);
+        }
         var windowSize = default(Windows.Graphics.SizeInt32);
-        await Ui.Run(() => { x = BarXInChart(3); width = sheet.ChartViewport; windowSize = Ui.Window.AppWindow.Size; });
+        await Ui.Run(() => {
+            x = BarXInChart(3); width = sheet.ChartViewport; windowSize = Ui.Window.AppWindow.Size;
+            CompositionTarget.Rendered += RecordPosition;
+        });
         try {
             await Ui.Run(() => {
                 if (resizeWindow) Ui.Window.AppWindow.Resize(new(windowSize.Width + 200, windowSize.Height));
@@ -365,8 +381,18 @@ internal sealed class PlanOverviewHostedTests
             await Ui.ClickCommand("PlanSheetExpandAll");
             await Ui.Idle();
             await Ui.Run(() => Assert.That(BarXInChart(3), Is.EqualTo(x).Within(1), "The next refresh must preserve the same dates."));
+            await Ui.Until(() => renderedPositions.Count > 0);
+            await Ui.Run(() => {
+                TestContext.Out.WriteLine($"Resize frames: expectedX={x}; actual=[{string.Join(",", renderedPositions)}]");
+                Assert.That(renderedPositions, Is.All.EqualTo(x).Within(1), "Every rendered frame must preserve the date coordinate.");
+            });
         }
-        finally { if (resizeWindow) await Ui.Run(() => Ui.Window.AppWindow.Resize(windowSize)); }
+        finally {
+            await Ui.Run(() => {
+                CompositionTarget.Rendered -= RecordPosition;
+                if (resizeWindow) Ui.Window.AppWindow.Resize(windowSize);
+            });
+        }
     }
 
     [TestCase("週"), TestCase("月")]
@@ -381,8 +407,14 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Idle();
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale);
         await Ui.Idle();
+        await Ui.Run(() => TestContext.Out.WriteLine($"Before frame: scale={scale}; offset={sheet.ChartOffset}; barX={BarXInChart(5)}"));
+        await SheetNativeInput.Rendered();
         double x = 0;
-        await Ui.Run(() => { x = BarXInChart(5); Assert.That(x, Is.InRange(0d, sheet.ChartViewport)); });
+        await Ui.Run(() => {
+            x = BarXInChart(5);
+            TestContext.Out.WriteLine($"After frame: scale={scale}; offset={sheet.ChartOffset}; barX={x}");
+            Assert.That(x, Is.InRange(0d, sheet.ChartViewport));
+        });
         var early = Today.AddMonths(-3);
         await SelectCell(3, PlanField.Start);
         await Ui.Run(() => {
@@ -393,6 +425,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Until(() => Row("I3").Start == early);
         await Ui.Idle();
+        await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             Assert.That(sheet.Schedule["I5"].Start.Value, Is.EqualTo(new DateOnly(2027, 4, 12)));
             Assert.That(BarXInChart(5), Is.EqualTo(x).Within(1));
@@ -615,7 +648,8 @@ internal sealed class PlanOverviewHostedTests
             var editor = Ui.Find<TextBox>("PlanCell2_Remaining");
             Assert.That(editor.Text, Is.EqualTo("invalid"));
             Assert.That(editor.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Not.Empty);
+            Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text, Is.Not.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
         });
         Assert.That(Row("I2").Remaining, Is.EqualTo(8));
         Assert.That(session.UndoCount, Is.Zero);

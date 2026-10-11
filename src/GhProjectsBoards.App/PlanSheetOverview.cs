@@ -135,8 +135,9 @@ internal sealed partial class PlanSheetView
         var content = new StackPanel { Width = Math.Min(560, Math.Max(240, ActualWidth - 80)), Spacing = 8 };
         content.Children.Add(query); content.Children.Add(candidates); content.Children.Add(feedback); content.Children.Add(actions);
         var flyout = predecessorFlyout = new Flyout {
+            AreOpenCloseAnimationsEnabled = false,
             Content = content, Placement = FlyoutPlacementMode.Bottom,
-            FlyoutPresenterStyle = new Style(typeof(FlyoutPresenter)) { Setters = {
+            FlyoutPresenterStyle = new Style(typeof(FlyoutPresenter)) { BasedOn = (Style)Application.Current.Resources["PlanFlyoutPresenterStyle"], Setters = {
                 new Setter(FrameworkElement.MaxWidthProperty, Math.Max(0, XamlRoot.Size.Width - 32))
             } }
         };

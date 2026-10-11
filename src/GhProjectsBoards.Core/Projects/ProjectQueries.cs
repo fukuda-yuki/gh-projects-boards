@@ -56,7 +56,7 @@ internal static class ProjectQueries
                     __typename
                     ... on Node { id }
                     ... on Issue {
-                      number url title state viewerCanUpdate NATIVE
+                      number url title state closedAt viewerCanUpdate NATIVE
                       repository { id nameWithOwner owner { id } }
                     }
                   }

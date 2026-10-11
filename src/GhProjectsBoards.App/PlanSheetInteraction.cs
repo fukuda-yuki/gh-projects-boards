@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
@@ -144,10 +144,9 @@ internal sealed partial class PlanSheetView
         if (remoteProblem.Length > 0) reason.Text += " · " + remoteProblem;
         if (BlockingConflicts.FirstOrDefault(c => c.Identity == selected && c.Field == selectedField) is { } conflict)
             reason.Text = "競合: GitHub では " + PlanWorkspaceView.ReviewValue(Session.Document, selectedField, conflict.Remote);
-        if (SummaryIds.Contains(selected) && selectedField != PlanField.Title)
-            reason.Text = PlanOperations.SummaryReadOnlyReason(selectedField) + (reason.Text.Length > 0 ? " · " + reason.Text : "");
+        if (ReadOnlyReason(selected, selectedField) is { } readOnlyReason)
+            reason.Text = readOnlyReason + (reason.Text.Length > 0 ? " · " + reason.Text : "");
         AutomationProperties.SetName(reason, reason.Text);
-        if (Problems.TryGetValue((selected, selectedField), out var problem)) error.Text = problem;
         ToolTipService.SetToolTip(reason, reason.Text);
     }
     private static string LatenessCounts(int overdue, int later) =>
