@@ -1,16 +1,18 @@
-# The hosted WinUI suite on a GitHub-hosted runner's interactive desktop, so a UI change can be
-# checked without the PMO's screen. Run on demand; see tests/README.md#where-tests-run.
+# TEMPORARY measurement branch for #124 acceptance (not for merge): baseline 05fe629 + exported scroll harness
+# vs candidate b5284c0 on one runner at 1920x1080, alternating runs, with desktop recordings.
 name: hosted-ui
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  hosted-ui:
+  measure-124:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
@@ -18,42 +20,76 @@ jobs:
       - name: Set the PMO display size (1920x1080)
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
-      - name: Build
-        id: build
-        run: dotnet build GhProjectsBoards.sln --configuration Release
-      - name: Hosted UI integration (default routine selection)
-        shell: pwsh
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -TimeoutSeconds 3600
-      - name: Summarize the hosted UI run
-        if: always() && steps.build.outcome == 'success'
+      - name: Prepare baseline (05fe629 + exported test-only scroll harness)
         shell: pwsh
         run: |
-          $run = Get-ChildItem TestResults/ui-integration -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
-          if (-not $run) { Write-Host 'No UI integration run folder.'; exit 0 }
-          $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
-          Write-Host "exitCode=$($meta.exitCode) timedOut=$($meta.timedOut) elapsedSeconds=$($meta.elapsedSeconds)"
-          $meta.counts | ConvertTo-Json | Out-Host
-          $stderr = Join-Path $run.FullName 'stderr.log'
-          if (Test-Path $stderr) {
-            $lines = Get-Content $stderr
-            Write-Host "[WINDOW] lines: $(@($lines | Select-String -SimpleMatch '[WINDOW]').Count)  [INPUT] lines: $(@($lines | Select-String -SimpleMatch '[INPUT]').Count)"
-            # Recorded failures, lifecycle diagnostics, activation changes, window close and the host's exit reason.
-            $lines | Select-String -Pattern 'Exception|^\s+at |\[(DIAGNOSTIC|WINDOW|INPUT|CLOSE|EXIT)\]' | Select-Object -First 200 | ForEach-Object Line | Out-Host
+          ./scripts/Export-PlanScrollHarness.ps1 -Baseline 05fe629 -OutputPath ../plan-scroll-harness
+          git worktree add --detach ../base 05fe629
+          $suite = 'tests/GhProjectsBoards.UiIntegration.Tests'
+          foreach ($file in 'PlanSheetHostedTests.cs', 'PlanSheetScrollPerformanceTests.cs') {
+              Copy-Item -LiteralPath "../plan-scroll-harness/$suite/$file" -Destination "../base/$suite/$file"
           }
-          $xmlPath = Join-Path $run.FullName 'results.xml'
-          if (Test-Path $xmlPath) {
-            [xml]$xml = Get-Content -Raw $xmlPath
-            foreach ($case in $xml.SelectNodes("//test-case[@result='Failed']")) {
-              $message = "$($case.failure.message.'#cdata-section')$($case.failure.message.InnerText)"
-              Write-Host "FAILED $($case.fullname)"
-              $flat = $message -replace '\s+', ' '
-              Write-Host ('  ' + $flat.Substring(0, [Math]::Min(600, $flat.Length)))
+          git -C ../base diff --stat
+          New-Item -ItemType Directory -Force measure-out | Out-Null
+          Copy-Item ../plan-scroll-harness/manifest.json measure-out/baseline-overlay-manifest.json
+      - name: Build candidate and baseline
+        shell: pwsh
+        run: |
+          dotnet build GhProjectsBoards.sln --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'candidate build failed' }
+          dotnet build ../base/GhProjectsBoards.sln --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'baseline build failed' }
+      - name: Get ffmpeg for desktop recordings
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress | Out-Null }
+          ffmpeg -version | Select-Object -First 1
+      - name: Measure alternately (baseline, candidate, baseline, candidate)
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'measure-out'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $ffmpeg = (Get-Command ffmpeg -ErrorAction SilentlyContinue)?.Source
+          foreach ($pass in 1, 2) {
+            foreach ($side in 'baseline', 'candidate') {
+              $root = if ($side -eq 'baseline') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
+              $name = "$side-$pass"
+              $env:GHPB_PLAN_EVIDENCE = Join-Path $out $name
+              $rec = $null
+              if ($ffmpeg -and $pass -eq 1) {
+                $rec = Start-Process $ffmpeg -ArgumentList @('-y','-f','gdigrab','-framerate','30','-i','desktop','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p','-f','matroska', (Join-Path $out "$name.mkv")) -PassThru -WindowStyle Hidden -RedirectStandardError (Join-Path $out "$name-ffmpeg.log")
+                Start-Sleep -Seconds 2
+              }
+              Push-Location $root
+              try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetPerformance' -TimeoutSeconds 1800 } catch { Write-Host "$name failed: $_" }
+              finally { Pop-Location }
+              if ($rec) { Stop-Process -Id $rec.Id -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
+              $run = Get-ChildItem (Join-Path $root 'TestResults/ui-integration') -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
+              Copy-Item -Recurse $run.FullName (Join-Path $out "$name-run")
+              $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
+              Write-Host "$name exit=$($meta.exitCode) counts=$($meta.counts | ConvertTo-Json -Compress)"
+              Get-ChildItem $env:GHPB_PLAN_EVIDENCE -Filter *.json -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "== $name $($_.Name)"; Get-Content -Raw $_.FullName | Write-Host }
             }
-          } elseif (Test-Path $stderr) { Get-Content $stderr -Tail 20 }
-      - name: Upload run evidence
+          }
+          Remove-Item Env:\GHPB_PLAN_EVIDENCE
+      - name: Native keys, pointer and clipboard (baseline, candidate)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          foreach ($side in 'baseline', 'candidate') {
+            $root = if ($side -eq 'baseline') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
+            Push-Location $root
+            try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetNative' -TimeoutSeconds 1800 } catch { Write-Host "$side native failed: $_" }
+            finally { Pop-Location }
+            $run = Get-ChildItem (Join-Path $root 'TestResults/ui-integration') -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
+            Copy-Item -Recurse $run.FullName (Join-Path $env:GITHUB_WORKSPACE "measure-out/$side-native-run")
+            Write-Host "$side native counts=$((Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json).counts | ConvertTo-Json -Compress)"
+          }
+      - name: Upload measurements and recordings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: hosted-ui
-          path: TestResults/ui-integration
+          name: measure-124
+          path: measure-out
           if-no-files-found: warn
