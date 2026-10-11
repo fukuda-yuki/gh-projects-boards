@@ -80,13 +80,30 @@ internal sealed class PlanPublishReviewHostedTests
         if (refresh)
         {
             await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
-            await Ui.Until(() => Ui.Find<Button>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
+            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
             await Ui.Run(() => Ui.Click("PlanPublish"));
             await Ui.Ready<TextBlock>("PlanPublishStatusDate");
         }
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
             Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。" + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReset")]
+    public async Task ReviewNamesResetOriginAfterTheNextPlanningEdit()
+    {
+        readDay = new(2026, 10, 6);
+        await Open(1);
+        await workspace.Reset();
+        Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.Zero);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", PlanField.Title, "Edited after reset")]), Today));
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Ready<TextBlock>("PlanPublishStatusDate");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
+            Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。（GitHub の状態に戻したあとの再計算）")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 

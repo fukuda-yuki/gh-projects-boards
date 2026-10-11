@@ -21,19 +21,30 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         if (result.Succeeded) RequireSave(await session.CompletePublication().ConfigureAwait(false));
         return result;
     }
-    public async Task<PlanPublishResult> RefreshAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
+    public Task<PlanPublishResult> RefreshAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
+        => ReadProjectAsync(session, today, false, token, progressReporter);
+    public Task<PlanPublishResult> ResetAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
+        => ReadProjectAsync(session, today, true, token, progressReporter);
+    private async Task<PlanPublishResult> ReadProjectAsync(PlanSession session, DateOnly today, bool reset, CancellationToken token, IProgress<RemoteProgress>? progressReporter)
     {
-        await gate.WaitAsync(token).ConfigureAwait(false);
+        if (reset) {
+            if (!await gate.WaitAsync(0, token).ConfigureAwait(false)) return new(false, "更新または発行が進行中です。", null);
+        } else await gate.WaitAsync(token).ConfigureAwait(false);
         try
         {
             using var operation = session.BeginRemoteOperation();
+            if (reset && session.ResetUnavailableReason is { } reason) return new(false, reason, null);
             using var lease = await service.BeginOperationAsync(context, token, mutation: false).ConfigureAwait(false);
             var before = session.Document;
-            await Reconcile(session, lease, today, token, progressReporter, refresh: true).ConfigureAwait(false);
-            return new(true, null, null) { Refresh = new(before.State.Settings.StatusDate ?? today, today, PlanOperations.ChangedTaskDates(before, session.Document, today)) };
+            await Reconcile(session, lease, today, token, progressReporter, refresh: true, reset: reset).ConfigureAwait(false);
+            return new(true, null, null) { Refresh = new(before.State.Settings.StatusDate ?? today, today,
+                reset ? [] : PlanOperations.ChangedTaskDates(before, session.Document, today)) };
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-        catch (Exception ex) when (Expected(ex)) { var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false); return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null); }
+        catch (Exception ex) when (Expected(ex)) {
+            var saved = reset ? null : await RetainInterruptedAttempt(session).ConfigureAwait(false);
+            return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null);
+        }
         finally { gate.Release(); }
     }
     public async Task<PlanPublishResult> AddSchedulingFieldsAsync(PlanSession session, DateOnly today, CancellationToken token = default)
@@ -224,13 +235,13 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
     }
-    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false)
+    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false, bool reset = false)
     {
         await ReconcileCreations(session, lease, token).ConfigureAwait(false);
         var remote = await Read(session, lease, token, progressReporter).ConfigureAwait(false);
         progressReporter?.Report(new("日程を計算"));
         token.ThrowIfCancellationRequested();
-        RequireSave(await (session.Document.Sync.Publish is null ? session.AcceptRefresh(remote, today, refresh: refresh) : session.AcceptPublished(remote, today, refresh)).ConfigureAwait(false));
+        RequireSave(await (session.Document.Sync.Publish is null ? session.AcceptRefresh(remote, today, refresh: refresh, reset: reset) : session.AcceptPublished(remote, today, refresh)).ConfigureAwait(false));
         return remote;
     }
     private static async Task<PlanSaveResult?> RetainInterruptedAttempt(PlanSession session)

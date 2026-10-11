@@ -222,6 +222,13 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         if (!result.Succeeded) throw new InvalidOperationException(result.Error);
         return result.Refresh;
     }
+    public async Task<PlanRefreshResult?> Reset(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
+    {
+        if (Session is null || Service is null || Context is null) return null;
+        var result = await new PlanPublisher(Service, Context).ResetAsync(Session, today(), token, progress);
+        if (!result.Succeeded) throw new InvalidOperationException(result.Error);
+        return result.Refresh;
+    }
     public async Task Flush()
     {
         foreach (var session in sessions.Values) RequireSave(await session.FlushAsync());
