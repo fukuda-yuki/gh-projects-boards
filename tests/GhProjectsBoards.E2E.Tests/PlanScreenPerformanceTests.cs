@@ -62,10 +62,13 @@ public sealed class PlanScreenPerformanceTests
             Assert.That(fixture.WaitForExit(30000), Is.True, "Evaluation preparation must finish.");
             Assert.That(fixture.ExitCode, Is.Zero);
         }
+        var fixtureContext = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "evaluation.json"))).RootElement.Clone();
+        var referenceDay = fixtureContext.GetProperty("statusDate").GetString()!;
         using var dpi = new DesktopDpiScope();
         using var automation = new UIA3Automation();
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable)!, WindowStyle = ProcessWindowStyle.Hidden };
         start.Environment["GHPB_DATA_ROOT"] = data;
+        start.Environment["GHPB_TODAY"] = referenceDay;
         start.Environment["GH_CONFIG_DIR"] = Path.Combine(data, "fake-gh");
         start.Environment["PATH"] = Path.Combine(data, "fake-gh", "bin") + Path.PathSeparator + start.Environment["PATH"];
         start.Environment["GHPB_PLAN_METRICS"] = Path.Combine(root, "product-stages.jsonl");
@@ -103,7 +106,7 @@ public sealed class PlanScreenPerformanceTests
                 os = Environment.OSVersion.ToString(), runtime = Environment.Version.ToString(),
                 processors = Environment.ProcessorCount, initialVerticalScrollPercent = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value,
                 clientAreaAnimationsEnabled = originalAnimation != 0 || changedAnimation,
-                fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "evaluation.json"))).RootElement.Clone()
+                today = referenceDay, fixture = fixtureContext
             };
             list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
             Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
