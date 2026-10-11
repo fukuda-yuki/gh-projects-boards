@@ -67,10 +67,11 @@ Read the [test policy](tests/README.md) before changing production behavior; it 
 
 - Exact live-validation resources:
   - Repository: https://github.com/fukuda-yuki/codex-sandbox
-  - Project: https://github.com/users/fukuda-yuki/projects/3
+  - Project: number `3` with owner `fukuda-yuki` — https://github.com/users/fukuda-yuki/projects/3 (node ID `PVT_kwHOBGPKL84BjFYc`)
 - The user has pre-authorized operations confined to these resources, including remote writes, configuration changes and deletions. Do not ask again for in-scope sandbox validation or cleanup. This permission does not require live execution for every task; select it under the test policy.
 - Read the [sandbox scope and validation record](https://github.com/fukuda-yuki/codex-sandbox/issues/1) before sandbox work. Keep its task history in Issues.
 - GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`. Explicitly select repository `fukuda-yuki/codex-sandbox` and Project `3` with owner `fukuda-yuki`, or verify equivalent API IDs. Never infer mutation targets from the checkout.
+- Identify a Project by its number or node ID, never by its title: Project `3` holds the `codex-sandbox` items although its title reads `第2027.04版`, while Project `2` is titled `sandbox` and holds this repository's roadmap items. Re-read the number and node ID above before a sandbox mutation.
 - Sandbox authorization does not cover other repositories, Projects, account/organization settings, or override enforced execution restrictions. Repository development writes need authority from the current task.
 
 ## Closeout
