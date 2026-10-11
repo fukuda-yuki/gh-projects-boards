@@ -22,8 +22,13 @@ internal static class Program
             TrackedContext.Start(dispatcher);
             var app = new HostedApplication();
             Ui.Queue = dispatcher;
-            app.UnhandledException += (_, e) => { Ui.RecordFailure(e.Exception); e.Handled = true; };
-            TaskScheduler.UnobservedTaskException += (_, e) => { Ui.RecordFailure(e.Exception); e.SetObserved(); };
+            app.UnhandledException += (_, e) => {
+                Ui.Trace($"[UNHANDLED XAML] {e.Message}{Environment.NewLine}{Environment.StackTrace}");
+                Ui.RecordFailure(e.Exception); e.Handled = true;
+            };
+            TaskScheduler.UnobservedTaskException += (_, e) => {
+                Ui.Trace("[UNOBSERVED TASK]"); Ui.RecordFailure(e.Exception); e.SetObserved();
+            };
         });
         // NUnit can report every case passed while the host still fails: a failure recorded outside a case,
         // or asynchronous work left after the window closed. State which, since results.xml cannot.
@@ -43,6 +48,7 @@ internal static class Program
             // Routine cases drive focus only through XAML and UI Automation. Activation changes and
             // physical input from the desktop session would invalidate focus and input observations.
             Ui.Window.Activated += (_, e) => Ui.Trace("[WINDOW] " + e.WindowActivationState);
+            Ui.Window.Closed += (_, _) => Ui.Trace("[WINDOW] Closed");
             Ui.Root.AddHandler(UIElement.PreviewKeyDownEvent, new KeyEventHandler((_, e) => Ui.Trace("[INPUT] key " + e.OriginalKey)), true);
             Ui.Root.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) => Ui.Trace("[INPUT] pointer " + e.Pointer.PointerDeviceType)), true);
             Ui.Window.Activate();
@@ -55,7 +61,10 @@ internal static class Program
                     // them after it unloads. Closing the window with those stale regions fail-fasts in Microsoft.UI.Input.
                     Ui.Trace("[CLOSE] regions");
                     InputNonClientPointerSource.GetForWindowId(Ui.Window.AppWindow.Id).ClearAllRegionRects();
-                    Ui.Trace("[CLOSE] window"); Ui.Window.Close(); Exit();
+                    // Closing the host's only window ends the application; do not request exit again during that close.
+                    Ui.Trace("[CLOSE] window");
+                    Ui.Window.Close();
+                    Ui.Trace("[CLOSE] window returned");
                 })) Environment.Exit(2);
             });
         }
