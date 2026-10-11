@@ -300,11 +300,16 @@ internal sealed class PlanSession
                 // The read is baseline adoption; only the discard becomes an Undo step.
                 var state = merged.State with { Rows = remote.Baseline.Rows };
                 var dates = new PlanDateState(PlanDateHoldOrigin.Reset);
+                // Reset clears publication outcomes; Undo must still restore the order those failures requested.
+                var choices = merged.Sync.LocalOrderChoices;
+                foreach (var parent in merged.State.Rows)
+                    if (PlanOperations.SiblingOrderChange(merged, parent.Identity) is { } order)
+                        choices = choices.SetItem(parent.Identity, order.After);
                 var patch = PlanOperations.Difference(merged.State, state, PlanOperationKind.Reset) with {
                     DiscardedRows = merged.Baseline.Rows.Where(r => merged.Sync.Unavailable.Contains(r.Identity)).ToImmutableArray(),
                     BeforeUnavailable = merged.Sync.Unavailable, AfterUnavailable = [],
                     BeforeConflicts = merged.Sync.Conflicts, AfterConflicts = [],
-                    BeforeLocalOrderChoices = merged.Sync.LocalOrderChoices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty,
+                    BeforeLocalOrderChoices = choices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty,
                     BeforeDates = merged.Dates, AfterDates = dates
                 };
                 merged = merged with { State = state, Baseline = remote.Baseline, Dates = dates,
@@ -397,12 +402,16 @@ internal sealed class PlanSession
                 (w.State == PlanWriteState.Dispatched || w.ResultId is not null && !remote.Items.ContainsKey(w.ResultId))) ||
                 writes.Any(w => w.Stage == PlanPublishStage.Add && w.State != PlanWriteState.Succeeded && created.Contains(w.Identity));
             var remaining = unresolvedCreation ? progress with { Writes = writes } : null;
+            // A creation/addition phase cannot retire an earlier failure for a write it did not process.
+            var processed = writes.Select(w => (Identity: Id(w.Identity), Field: PlanVerification.Field(w, document.State.Settings))).ToHashSet();
+            var retainedFailures = document.Sync.Failures.Select(f => f with { Identity = Id(f.Identity) })
+                .Where(f => !processed.Contains((f.Identity, f.Field)));
             var failures = writes.Where(w => w.State != PlanWriteState.Succeeded).Select(w =>
             {
                 var field = PlanVerification.Field(w, document.State.Settings);
                 return new PlanPublishFailure(Id(w.Identity), field, w.Error ?? "NotDispatched")
                 { Value = field == PlanField.SubIssueOrder ? AttemptedOrder(Id(w.Identity)) : null };
-            }).DistinctBy(f => (f.Identity, f.Field)).ToImmutableArray();
+            }).Concat(retainedFailures).DistinctBy(f => (f.Identity, f.Field)).ToImmutableArray();
             // A failed reorder records the child order it asked for; the retry needs it to tell whether
             // the plan still wants that order.
             string? AttemptedOrder(string child) => state.Rows.FirstOrDefault(r => r.Identity == child)?.Parent is { } parent
@@ -446,6 +455,19 @@ internal sealed class PlanSession
                     NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
                     Unavailable = missing.Select(r => r.Identity).ToImmutableArray() } };
             if (refresh) updated = ReadDate(updated, today);
+            // Old outcomes must not block completion after their requested changes converge or become inapplicable.
+            // Keep this phase's failures, and keep an unprocessed retry only while the plan still requests it.
+            var pendingFields = PlanOperations.Changes(updated, today).Fields;
+            bool StillRequested(PlanPublishFailure failure)
+            {
+                if (failure.Field != PlanField.SubIssueOrder)
+                    return pendingFields.TryGetValue(failure.Identity, out var fields) && fields.Contains(failure.Field);
+                var parent = updated.State.Rows.FirstOrDefault(r => r.Identity == failure.Identity)?.Parent;
+                return parent is not null && PlanOperations.SiblingOrderChange(updated, parent) is { } order &&
+                    failure.Value == PlanJson.Text(order.After);
+            }
+            updated = updated with { Sync = updated.Sync with { Failures = failures.Where(f =>
+                processed.Contains((f.Identity, f.Field)) || StillRequested(f)).ToImmutableArray() } };
             PlanOperations.ValidateDocument(updated, today);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated, Undo = undo, Redo = redo };
             return QueueSave();

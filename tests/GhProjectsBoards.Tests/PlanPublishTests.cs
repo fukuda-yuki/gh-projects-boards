@@ -99,6 +99,115 @@ internal sealed class PlanPublishTests
         Assert.That(review.Changes.Single(c => c.Field == PlanField.SubIssueOrder).Before, Is.EqualTo(PlanJson.Text(new[] { "I2", "I3" })));
     }
 
+    [TestCase("creation"), TestCase("title")]
+    public async Task VerifiedUnrelatedPhaseKeepsThePendingSiblingRetry(string phase)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I2,I3");
+        var failure = new PlanPublishFailure("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2" }) };
+        var added = PlanRow.New("Added task", "acme/repo");
+        document = document with {
+            State = document.State with { Rows = phase == "creation" ? document.State.Rows.Add(added)
+                : document.State.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" } : r).ToImmutableArray() },
+            Sync = document.Sync with { Failures = [failure] }
+        };
+        var remote = SiblingRemote(document);
+        var review = PlanPublishPlan.Build(document, remote, Day, Guid.NewGuid().ToString("N"));
+        var processed = review.Writes.Where(w => phase == "creation" ? w.Stage is PlanPublishStage.Create or PlanPublishStage.Add
+            : w.Mutation == "updateIssue").Select(w => w with { State = PlanWriteState.Succeeded,
+                ResultId = w.Stage == PlanPublishStage.Create ? "I4" : w.Stage == PlanPublishStage.Add ? "T4" : "I3" }).ToImmutableArray();
+        Assert.That(processed, Has.Length.EqualTo(phase == "creation" ? 2 : 1));
+        document = document with { Sync = document.Sync with { Publish = new(Guid.NewGuid().ToString("N"), processed) { DispatchStarted = true } } };
+        remote = remote with {
+            Baseline = document.Baseline with { Rows = phase == "creation" ? document.Baseline.Rows.Add(added with { Identity = "I4" }) : document.State.Rows },
+            Items = ImmutableDictionary<string, string>.Empty.Add("I1", "T1").Add("I2", "T2").Add("I3", "T3").Add("I4", "T4")
+        };
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-phase-retry-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptPublished(remote, Day);
+            TestContext.Out.WriteLine($"Phase verification save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Document.Sync.Failures, Is.EqualTo(new[] { failure }));
+            var remaining = PlanPublishPlan.Build(session.Document, remote, Day, Guid.NewGuid().ToString("N"));
+            Assert.That(remaining.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(remaining.Changes.Single().After, Is.EqualTo(failure.Value));
+
+            // A verified retry retires its old failures and must not be planned again.
+            await session.SaveSync(session.Document.Sync with { Publish = new(Guid.NewGuid().ToString("N"),
+                remaining.Writes.Select(w => w with { State = PlanWriteState.Succeeded }).ToImmutableArray()) { DispatchStarted = true } });
+            remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I3", "I2"]) };
+            await session.AcceptPublished(remote, Day);
+            Assert.That(session.Document.Sync.Failures, Is.Empty);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, Guid.NewGuid().ToString("N")).Writes, Is.Empty);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [TestCase(PlanField.Status), TestCase(PlanField.Order), TestCase(PlanField.SubIssueOrder)]
+    public async Task VerificationRetiresUnrequestedFailuresWithoutPublishingThem(PlanField obsoleteField)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I3,I2");
+        var failure = new PlanPublishFailure(obsoleteField == PlanField.Status ? "I1" : "I3", obsoleteField, "Forbidden")
+            { Value = obsoleteField == PlanField.SubIssueOrder ? PlanJson.Text(new[] { "I3", "I2" }) : null };
+        document = document with {
+            State = document.State with { Rows = document.State.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" }
+                : r.Identity == "I1" && obsoleteField == PlanField.Status ? r with { Status = "Done" } : r).ToImmutableArray() },
+            Sync = document.Sync with { Failures = [failure] }
+        };
+        var remote = SiblingRemote(document);
+        var review = PlanPublishPlan.Build(document, remote, Day, Guid.NewGuid().ToString("N"));
+        Assert.That(review.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "updateIssue" }),
+            "Neither a summary Status nor an already-converged order may be written to clear an old failure.");
+        document = document with { Sync = document.Sync with { Publish = new(Guid.NewGuid().ToString("N"),
+            review.Writes.Select(w => w with { State = PlanWriteState.Succeeded }).ToImmutableArray()) { DispatchStarted = true } } };
+        remote = remote with { Baseline = document.Baseline with {
+            Rows = document.Baseline.Rows.Select(r => r.Identity == "I3" ? r with { Title = "Renamed" } : r).ToImmutableArray() } };
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-obsolete-failure-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptPublished(remote, Day);
+            TestContext.Out.WriteLine($"Verification save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(session.Document.Sync.Failures, Is.Empty, "An inapplicable historical failure must not block completion.");
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "complete").Writes, Is.Empty);
+            if (obsoleteField == PlanField.Status)
+                Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Status, Is.EqualTo("Done"),
+                    "Retiring the failure must preserve the summary's dormant local input.");
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task ResetUndoRestoresThePendingSiblingRetryAsOneOperation(bool refreshAfterReset)
+    {
+        var document = SiblingPlan("I3,I2", "I3,I2", "I2,I3");
+        document = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2" }) }] } };
+        var remote = SiblingRemote(document);
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-reset-retry-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        try
+        {
+            var saved = await session.AcceptRefresh(remote, Day, reset: true);
+            TestContext.Out.WriteLine($"Reset save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(session.Document.Sync.Failures, Is.Empty);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "reset").Writes, Is.Empty);
+            if (refreshAfterReset) await session.AcceptRefresh(remote, Day);
+            await session.Undo(Day);
+            var retry = PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset");
+            Assert.That(retry.Writes.Select(w => w.Mutation), Is.EqualTo(new[] { "reprioritizeSubIssue", "reprioritizeSubIssue" }));
+            Assert.That(retry.Changes.Single().After, Is.EqualTo(PlanJson.Text(new[] { "I3", "I2" })));
+            Assert.That(session.Document.Sync.Failures, Is.Empty, "Undo restores the requested order, not a historical publication outcome.");
+            await session.Redo(Day);
+            Assert.That(session.Changes(Day).TaskCount, Is.Zero);
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redo-reset").Writes, Is.Empty);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
     [Test]
     public void AReorderThePlanNoLongerAsksForIsNotRetried()
     {

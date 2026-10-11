@@ -318,6 +318,49 @@ internal sealed class PlanPublisherTests
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
+    [TestCase("creation"), TestCase("reset-undo")]
+    public async Task FailedSiblingRetrySurvivesCreationOrResetUndo(string intervening)
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3"])
+        });
+        await session.Execute(new MovePlanRows(["I3"], "I2"), Today);
+        Scenario("sibling-denied");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(session.Document.Baseline.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I3", "I2" }));
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder), Is.True);
+        var mutationsBefore = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Length;
+        Scenario();
+        if (intervening == "creation")
+            await session.Execute(new InsertPlanRows([PlanRow.New("Added task", "acme/repo")]), Today);
+        else
+        {
+            Assert.That((await publisher.ResetAsync(session, Today)).Succeeded, Is.True);
+            Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+            await Reopen();
+            Assert.That((await session.Undo(Today)).Succeeded, Is.True);
+            Assert.That(session.Changes(Today).Fields.GetValueOrDefault("I1"), Does.Contain(PlanField.SubIssueOrder));
+            Assert.That(File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")), Has.Length.EqualTo(mutationsBefore));
+        }
+        await Reopen();
+        var published = await publisher.PublishAsync(session, Today);
+        Assert.That(published.Succeeded, Is.True, published.Error);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That(session.Document.Sync.Failures, Is.Empty);
+        var sent = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl")).Skip(mutationsBefore)
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
+        Assert.That(sent.Count(r => r.GetProperty("query").GetString()!.Contains("reprioritizeSubIssue")), Is.EqualTo(2));
+        Assert.That(sent.Count(r => r.GetProperty("query").GetString()!.Contains("createIssue")), Is.EqualTo(intervening == "creation" ? 1 : 0));
+        var positions = sent.Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value.GetProperty("itemId").GetString())).ToArray();
+        Assert.That(positions, Does.Not.Contain("T-I1").And.Not.Contain("T-I2").And.Not.Contain("T-I3"));
+        var completedMutations = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Is.EqualTo(completedMutations));
+    }
+
     [Test]
     public async Task FailedSiblingRetryConflictsWithANewNativeOrderWithoutSendingWrites()
     {
