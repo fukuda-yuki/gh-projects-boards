@@ -16,8 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    # The Core suite is about 23 minutes of this job; cap a hang instead of allowing the
-    # 360-minute default.
+    # Bound build/test hangs instead of allowing the 360-minute default.
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

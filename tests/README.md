@@ -78,7 +78,17 @@ Run what the change puts at risk: focused logic tests while implementing, then t
 - **Windows desktop:** WinUI 3 cannot render without a desktop session, so the hosted UI suite and E2E need an unlocked interactive desktop that nobody uses during the run. The host records activation changes (`[WINDOW]`) and stray physical input (`[INPUT]`); an `[INPUT]` line in a routine run marks interference. Physical IME, native input and visual review need the PMO's real desktop.
 - **GitHub-hosted Windows runner:** the runner process owns an interactive desktop session (1920×1080 after `Set-DisplayResolution`), so nothing appears on the PMO's screen. CI runs for pull requests and for pushes to `main`, and the default E2E selection runs there alongside the Core suite. The [hosted-ui workflow](../.github/workflows/hosted-ui.yml) runs the routine UI selection on demand and prints failures, `[WINDOW]`/`[INPUT]` counts and the host's `[EXIT]` reason in its log. The runner is slower than the PMO desktop; a case that fails only there still needs its cause found, and a runner pass does not replace visual review on the PMO's display.
 
+For a focused hosted UI run, set the workflow's optional `where` input to an NUnit filter. Leave it empty for the routine selection. For example, `gh workflow run hosted-ui.yml --ref <branch> -f 'where=cat == OperationStates'` runs remote-operation feedback cases on that branch. Report a focused run only for its selected scope; the workflow preserves the filter and results in the same evidence artifact.
+
 ## Routine verification
+
+### Core parallel execution
+
+Core fixtures opt in to NUnit parallel execution after their shared state is reviewed. `PlanPublisherTests` uses `FixtureLifeCycle(LifeCycle.InstancePerTestCase)` and `Parallelizable(ParallelScope.All)`: each case owns its session, publisher, process runner and GUID-named storage root, also passed to each fake-gh child as `GH_CONFIG_DIR`. Shared settings are immutable. New cases in that fixture need no CI assignment; new fixtures require the same independence review before opting in. Keep process-wide mutable state or shared resources non-parallel, using `NonParallelizable` at the smallest necessary scope.
+
+The Core assembly caps NUnit at four workers by default. For comparison, append `-- NUnit.NumberOfTestWorkers=0`, `=2` or `=4` to the same `dotnet test` command; zero disables parallel execution. Keep the filter, build, runner image and instrumentation identical, repeat each setting, and compare TRX case identities, outcomes and elapsed time before changing the cap. Record measurements in the owning Issue/PR. UI integration and E2E keep their own execution settings.
+
+### Commands
 
 Run from the checkout root on Windows. Restore once in a network-enabled environment; missing assets or NU1301 block dependent builds, and a zero-run outcome is not a pass.
 
