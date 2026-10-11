@@ -1849,8 +1849,9 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task SwitchingPreservesEachProjectsUnpublishedWorkAndRestartsTheSelectedProject()
     {
         await Open();
-        await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell,
-            [new("I1", PlanField.Title, "未発行の設計")]), new(2026, 10, 5)));
+        // Edit through the sheet: its cached unpublished count is what the badge shows after switching back.
+        await CommitText("PlanCell1_Title", "未発行の設計");
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Title == "未発行の設計");
         await PickerCommand("PlanChooseProject");
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2");
