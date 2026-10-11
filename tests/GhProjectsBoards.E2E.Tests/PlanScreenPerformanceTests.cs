@@ -288,18 +288,18 @@ public sealed class PlanScreenPerformanceTests
                 var point = trigger.GetClickablePoint();
                 File.WriteAllText(Path.Combine(root, name + "-input.json"), JsonSerializer.Serialize(new {
                     commandId, markerId, popupBounds, region, triggerBounds, point, preparedUtc = DateTime.UtcNow,
-                    input = "FlaUI native SendInput down/up at the prepared point; no UIA calls during capture."
+                    input = "FlaUI Mouse.Click at the prepared point, matching AutomationElement.Click's native primitive; cursor remains there throughout capture. No UIA calls during capture."
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 Assert.That(SetCursorPos(point.X, point.Y), Is.True);
                 FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                 var opened = RecordPixels(Path.Combine(root, name + "-open"), region, mark => {
-                    mark(name + " click");
-                    Mouse.Down(); Mouse.Up();
-                    // Match the successful probe's native input boundary. Moving the
-                    // cursor away before queued press/release is processed can leave
-                    // only hover feedback instead of invoking the menu item.
+                    mark(name + " click start");
+                    Mouse.Click(point);
+                    mark(name + " click submitted");
+                    // Match the successful probe and retain the click position through
+                    // capture. This sleep is FlaUI's normal input boundary, not proof
+                    // that the app has already dispatched the queued pointer events.
                     FlaUI.Core.Input.Wait.UntilInputIsProcessed();
-                    Assert.That(SetCursorPos(1850, 1030), Is.True);
                 }, TimeSpan.FromSeconds(2));
                 process.Refresh();
                 Assert.That(process.HasExited, Is.False, name + " opening must leave the app running.");
