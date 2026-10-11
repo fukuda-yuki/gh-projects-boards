@@ -96,7 +96,7 @@ internal static class SheetNativeInput
         await Ui.Run(() => result = ScreenPoint(find(), x, y));
         return result;
     }
-    // Call on the UI thread for controls in the host's main visual tree.
+    // Call on the UI thread to convert XAML root coordinates to physical screen coordinates.
     internal static Point ScreenPoint(FrameworkElement control, double x = .5, double y = .5)
     {
         Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);

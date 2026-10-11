@@ -327,12 +327,12 @@ internal sealed partial class PlanSheetHostedTests
                 await SheetNativeInput.Rendered();
                 await Ui.Run(() => {
                     item = Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!;
-                    // Retain both coordinate descriptions. Native popup islands use
-                    // a distinct HWND; do not assume their peer's coordinates need
-                    // the main host's client origin added a second time.
+                    // The peer returns client coordinates. Desktop evidence confirms
+                    // the popup item needs the host's screen origin just like the
+                    // main tree; retain both rectangles to diagnose future failures.
                     var bounds = FrameworkElementAutomationPeer.CreatePeerForElement(item).GetBoundingRectangle();
                     Assert.That(bounds.Width > 0 && bounds.Height > 0, Is.True);
-                    point = new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
+                    point = SheetNativeInput.ScreenPoint(item);
                     var local = item.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, item.ActualWidth, item.ActualHeight));
                     trace.Add($"opening={opening} peerMenu={bounds} rootMenu={local} click={point}");
                     presenter = (FrameworkElement)VisualTreeHelper.GetOpenPopupsForXamlRoot(Ui.Root.XamlRoot)
