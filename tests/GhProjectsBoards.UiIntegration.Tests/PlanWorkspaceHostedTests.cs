@@ -1844,6 +1844,11 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(((TextBlock)Ui.Popup<Border>("SettingsInputProblem")!.Child).Text, Does.Contain("終了日は開始日以降"));
         });
         await CommitText("PlanProjectEnd", "2027-04-30");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
+            Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null, "Correction must dismiss the old validation message.");
+            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").FocusState, Is.EqualTo(FocusState.Unfocused), "Stale recovery must not steal focus after correction.");
+        });
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();

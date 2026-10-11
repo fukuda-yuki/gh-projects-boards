@@ -109,9 +109,13 @@ internal sealed class PlanSummaryView : UserControl
     }
     private static void Cell(Grid row, FrameworkElement cell, int column)
     {
-        // TextBlock.ActualWidth otherwise follows glyph width, even in a wider grid slot.
-        if (cell is TextBlock && row.ColumnDefinitions[column].Width.IsAbsolute)
-            cell.Width = Math.Max(0, row.ColumnDefinitions[column].Width.Value - cell.Margin.Left - cell.Margin.Right);
+        // Align the glyph-sized TextBlock inside an explicit cell, not by its reported text width.
+        if (cell is TextBlock text && row.ColumnDefinitions[column].Width.IsAbsolute) {
+            var width = row.ColumnDefinitions[column].Width.Value;
+            text.MaxWidth = Math.Max(0, width - text.Margin.Left - text.Margin.Right);
+            text.HorizontalAlignment = text.TextAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+            cell = new Border { Width = width, Child = text };
+        }
         Grid.SetColumn(cell, column); row.Children.Add(cell);
     }
     private static void Heading(Panel panel, string title) => panel.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"], Margin = new(0, 2, 0, 4) });
@@ -318,7 +322,7 @@ internal sealed class PlanSummaryView : UserControl
         var table = new StackPanel { Width = widths.Sum(), HorizontalAlignment = HorizontalAlignment.Left };
         var list = Id(new StackPanel(), "SummaryTasks");
         var header = Row(widths); string[] labels = ["ID", "タスク名", "見積 h", "実績 h", "残 h", "開始日", "終了日", "状態"];
-        for (var i = 0; i < labels.Length; i++) Cell(header, TableText(labels[i], "SummaryTaskHeader_" + i, numeric: i == 0 || i is >= 2 and <= 6), i);
+        for (var i = 0; i < labels.Length; i++) Cell(header, TableText(labels[i], "SummaryTaskHeader_" + i, numeric: i is >= 2 and <= 6), i);
         table.Children.Add(header);
         var calendar = new PlanCalendar { CompanyDaysOff = document!.State.Settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset() };
         var lateness = PlanLateness.Classify(schedule.Values.ToArray(), document.Baseline, calendar, day);
@@ -342,7 +346,7 @@ internal sealed class PlanSummaryView : UserControl
             if (unallocated?.Contains(row.Identity) == true) states.Add("未配分: " + (task.Remaining is null ? "見込み残存工数が未入力" : task.StartReason == "入力エラー" || task.Remaining < 0 ? "入力エラー" : task.Start.Value is null || task.End.Value is null ? "日程が未入力" : "期間内に稼働日なし"));
             var item = Row(widths);
             string[] values = [rowIds[row.Identity].ToString(Japanese), row.Title, Number(task.Estimate), Number(task.Actual), Number(task.Remaining), Date(task.Start.Value), Date(task.End.Value), string.Join("、", states)];
-            for (var i = 0; i < values.Length; i++) Cell(item, TableText(values[i], i == 7 ? "SummaryTask_" + row.Identity : i == 0 ? "SummaryTaskId_" + row.Identity : $"SummaryTaskValue_{row.Identity}_{i}", i == 0 || i is >= 2 and <= 6), i);
+            for (var i = 0; i < values.Length; i++) Cell(item, TableText(values[i], i == 7 ? "SummaryTask_" + row.Identity : i == 0 ? "SummaryTaskId_" + row.Identity : $"SummaryTaskValue_{row.Identity}_{i}", i is >= 2 and <= 6), i);
             AutomationProperties.SetName(item, string.Join(" · ", values)); list.Children.Add(item);
         }
         table.Children.Add(list); detail.Children.Add(Wide(table));

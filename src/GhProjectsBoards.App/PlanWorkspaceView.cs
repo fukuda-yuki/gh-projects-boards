@@ -72,6 +72,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly PlanInputProblem settingsInputProblem = new("SettingsInputProblem");
     private TextBox? invalidSetting;
     private string? invalidSettingMessage;
+    private string? invalidSettingText;
     private bool revealingSetting;
     private int settingsGeneration;
     private bool rendering, closing;
@@ -206,7 +207,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
         settingsScroll.ViewChanged += async (_, args) => {
             if (rendering || args.IsIntermediate || currentPage != "settings") return;
-            if (invalidSetting is not null) { RevealSettingsInput(); return; }
+            if (invalidSetting is { } invalid && invalid.Text == invalidSettingText) { RevealSettingsInput(); return; }
             var focused = FocusManager.GetFocusedElement(XamlRoot);
             var pending = settingsTextInputs.FirstOrDefault(p => ReferenceEquals(p.Input, focused) && p.Dirty());
             if (pending.Input is not null && !SettingIsVisible(pending.Input)) await Run(pending.Commit, commitPending: false);
@@ -682,17 +683,18 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         settingsInputProblem.Close();
         if (invalidSetting is not null) AutomationProperties.SetHelpText(invalidSetting, "");
-        invalidSetting = null; invalidSettingMessage = null;
+        invalidSetting = null; invalidSettingMessage = null; invalidSettingText = null;
     }
     private void RevealSettingsInput()
     {
-        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || invalidSettingMessage is not { } message) return;
+        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || input.Text != invalidSettingText || invalidSettingMessage is not { } message) return;
+        var rejectedText = invalidSettingText;
         revealingSetting = true;
         input.Focus(FocusState.Programmatic);
         PositionProblem();
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             revealingSetting = false;
-            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded) {
+            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded && input.Text == rejectedText) {
                 input.Focus(FocusState.Programmatic); PositionProblem();
             }
         });
@@ -723,7 +725,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
                 var name = AutomationProperties.GetName(input);
                 var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
-                invalidSetting = input; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
+                invalidSetting = input; invalidSettingText = text; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
                 AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
                 throw new InvalidOperationException(invalidSettingMessage, ex);
             }

@@ -62,6 +62,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U1_0")), Does.Contain("28"));
             Ui.Click("SummaryCell_U1_0");
+        });
+        await Ui.Ready<FrameworkElement>("SummaryTasks");
+        await Ui.Run(() => {
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
         await Ui.Ready<Button>("SummaryFilter");
@@ -88,6 +91,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             var cell = Ui.Find<Button>("SummaryMonth_U1_0");
             Assert.That(AutomationProperties.GetName(cell), Does.Contain("日超過"));
             Ui.Click("SummaryMonth_U1_0");
+        });
+        await Ui.Ready<FrameworkElement>("SummaryTasks");
+        await Ui.Run(() => {
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
     }
@@ -133,6 +139,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Ready<Button>("SummaryMonth_U1_0");
         await Ui.Run(() => {
             Ui.Click("SummaryMonth_U1_0");
+        });
+        await Ui.Ready<FrameworkElement>("SummaryTasks");
+        await Ui.Run(() => {
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
         await Ui.Ready<TextBlock>("SummaryTask_I2");
