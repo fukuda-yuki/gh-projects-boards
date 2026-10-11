@@ -319,6 +319,61 @@ internal sealed class PlanPublisherTests
     }
 
     [Test]
+    public async Task FailedSiblingRetryConflictsWithANewNativeOrderWithoutSendingWrites()
+    {
+        await Start(4, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3", "I4"])
+        });
+        await session.Execute(new MovePlanRows(["I3"], "I2"), Today);
+        Scenario("sibling-denied");
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(session.Document.Baseline.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I3", "I2", "I4" }));
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder), Is.True);
+        Scenario();
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { SubOrders = remote.SubOrders.SetItem("I1", ["I4", "I2", "I3"]) });
+        var mutations = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Sync.Conflicts.Any(c => c.Identity == "I1" && c.Field == PlanField.SubIssueOrder), Is.True);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Is.EqualTo(mutations));
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I4", "I2", "I3" }));
+    }
+
+    [Test]
+    public async Task ChoosingLocalSiblingOrderPublishesAfterProjectOrderConverges()
+    {
+        await Start(4, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3", "I4"])
+        });
+        await session.Execute(new MovePlanRows(["I3"], "I2"), Today);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with {
+            Issues = new[] { "I1", "I3", "I2", "I4" }.Select(id => remote.Issues.Single(i => i.Row.Identity == id)).ToImmutableArray(),
+            SubOrders = remote.SubOrders.SetItem("I1", ["I4", "I2", "I3"])
+        });
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+        Assert.That((await session.ResolveConflict("I1", PlanField.SubIssueOrder, false, Today)).Succeeded, Is.True);
+        await Reopen();
+        Assert.That(session.Document.Sync.Conflicts, Is.Empty);
+        Assert.That(session.Changes(Today).Fields.GetValueOrDefault("I1"), Does.Contain(PlanField.SubIssueOrder));
+        await session.Undo(Today);
+        Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+        await session.Redo(Today);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I2", "I4" }));
+        var mutations = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(mutations, Does.Contain("reprioritizeSubIssue"));
+        Assert.That(mutations, Does.Not.Contain("updateProjectV2ItemPosition"));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Is.EqualTo(mutations));
+    }
+
+    [Test]
     public async Task ReversingSiblingOrderPreservesRequestedOrderUnderPartialResourceLimits()
     {
         await Start(5, state => state with

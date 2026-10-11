@@ -111,6 +111,85 @@ internal sealed class PlanPublishTests
     }
 
     [Test]
+    public void AFailedSiblingRetryRequiresAConflictDecisionBeforePlanningWrites()
+    {
+        var document = SiblingPlan("I3,I2,I4", "I3,I2,I4", "I2,I3,I4");
+        document = document with { Sync = document.Sync with { Failures = [new("I3", PlanField.SubIssueOrder, "Forbidden")
+            { Value = PlanJson.Text(new[] { "I3", "I2", "I4" }) }] } };
+        var remote = SiblingRemote(document) with { SubIssueOrders = document.Sync.NativeOrders.SetItem("I1", ["I4", "I2", "I3"]) };
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, remote.Baseline), remote.SubIssueOrders);
+        Assert.That(merged.Sync.Conflicts.SingleOrDefault()?.Field, Is.EqualTo(PlanField.SubIssueOrder));
+        Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(merged, remote, Day, "blocked"));
+    }
+
+    [TestCase("undo-redo"), TestCase("github"), TestCase("reset"), TestCase("converged"), TestCase("converged-external"), TestCase("changed-plan")]
+    public async Task LocalSiblingConflictChoiceRemainsInThePublishPlanAfterBaselineConvergence(string next)
+    {
+        var document = SiblingPlan("I2,I3,I4", "I3,I2,I4", "I2,I3,I4");
+        var remote = SiblingRemote(document) with {
+            Baseline = document.Baseline with { Rows = document.State.Rows },
+            SubIssueOrders = document.Sync.NativeOrders.SetItem("I1", ["I4", "I2", "I3"])
+        };
+        var merged = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, remote.Baseline), remote.SubIssueOrders);
+        Assert.That(merged.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-order-choice-" + Guid.NewGuid().ToString("N"));
+        var session = await PlanSession.CreateAsync(new(root), merged, Day);
+        try
+        {
+            var saved = await session.ResolveConflict("I1", PlanField.SubIssueOrder, false, Day);
+            TestContext.Out.WriteLine($"Conflict choice save: {saved.Succeeded}; {saved.Error}");
+            Assert.That(session.Document.Sync.Conflicts, Is.Empty);
+            var review = PlanPublishPlan.Build(session.Document, remote, Day, "local-choice");
+            Assert.That(review.Changes.SingleOrDefault(c => c.Field == PlanField.SubIssueOrder)?.After,
+                Is.EqualTo(PlanJson.Text(new[] { "I3", "I2", "I4" })));
+            Assert.That(review.Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+            Assert.That(review.Writes.Any(w => w.Mutation == "updateProjectV2ItemPosition"), Is.False);
+            if (next == "undo-redo")
+            {
+                await session.Undo(Day);
+                Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, remote, Day, "undone"));
+                await session.Redo(Day);
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "redone").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                var changed = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I2", "I4", "I3"]) };
+                await session.AcceptRefresh(changed, Day);
+                Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.SubIssueOrder));
+                Assert.Throws<InvalidOperationException>(() => PlanPublishPlan.Build(session.Document, changed, Day, "changed-again"));
+                return;
+            }
+            if (next == "github")
+            {
+                await session.Undo(Day);
+                await session.ResolveConflict("I1", PlanField.SubIssueOrder, true, Day);
+            }
+            else if (next == "reset")
+            {
+                await session.AcceptRefresh(remote, Day, reset: true);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "reset").Writes, Is.Empty);
+                await session.Undo(Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "undo-reset").Writes.Count(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(3));
+                await session.Redo(Day);
+            }
+            else if (next.StartsWith("converged", StringComparison.Ordinal))
+            {
+                remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", next == "converged-external" ? ["outside", "I3", "I2", "I4"] : ["I3", "I2", "I4"]) };
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "observed").Writes, Is.Empty);
+                remote = remote with { SubIssueOrders = remote.SubIssueOrders.SetItem("I1", ["I4", "I2", "I3"]) };
+                await session.AcceptRefresh(remote, Day);
+                Assert.That(session.Document.Sync.Conflicts, Is.Empty, "A completed choice must not create a later conflict.");
+            }
+            else
+            {
+                await session.Execute(new MovePlanRows(["I4"], "I3"), Day);
+                await session.Execute(new MovePlanRows(["I2"], "I3"), Day);
+            }
+            Assert.That(PlanPublishPlan.Build(session.Document, remote, Day, "no-reorder").Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [Test]
     public void ChildrenTheLastReadCouldNotDeliverDoNotInventAChildOrderChange()
     {
         var parent = new PlanRow("I1", "Parent", "acme/repo");

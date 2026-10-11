@@ -342,6 +342,8 @@ internal static class PlanOperations
         if (children.Length < 2) return null;
         var native = NativeChildOrder(document, parent);
         if (!children.SequenceEqual(ReadChildOrder(document, parent)) && !children.SequenceEqual(native)) return new(native, children);
+        if (!children.SequenceEqual(native) && document.Sync.LocalOrderChoices.TryGetValue(parent, out var chosen) &&
+            children.SequenceEqual(chosen)) return new(native, children);
         var attempted = PlanJson.Text(children);
         return document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder && f.Value == attempted &&
             children.Contains(f.Identity) && !children.SequenceEqual(native)) ? new(native, children) : null;

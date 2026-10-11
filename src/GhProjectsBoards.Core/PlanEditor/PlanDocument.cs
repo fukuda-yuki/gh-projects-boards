@@ -77,6 +77,8 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? BeforeLocalOrderChoices { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? AfterLocalOrderChoices { get; init; }
     public ImmutableArray<PlanConflict>? BeforeConflicts { get; init; }
     public ImmutableArray<PlanConflict>? AfterConflicts { get; init; }
 }

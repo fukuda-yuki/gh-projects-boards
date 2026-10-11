@@ -112,7 +112,7 @@ internal sealed class PlanSession
                 throw new InvalidOperationException("発行結果を確認してから行を取り消してください。");
             var baseline = PlanOperations.ReplayBaseline(checkpoint.Document.Baseline, patch, forward);
             PlanOperations.ValidateDocument(checkpoint.Document with { State = state, Baseline = baseline }, today);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? checkpoint.Document.Dates, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? checkpoint.Document.Dates, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? checkpoint.Document.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
                 Undo = forward ? checkpoint.Undo.Add(patch) : checkpoint.Undo.RemoveAt(checkpoint.Undo.Length - 1),
                 Redo = forward ? checkpoint.Redo.RemoveAt(checkpoint.Redo.Length - 1) : checkpoint.Redo.Add(patch) };
             return QueueSave();
@@ -200,6 +200,9 @@ internal sealed class PlanSession
                 }
                 else state = state with { Rows = state.Rows.Select(r => r.Identity == identity ? PlanValues.Set(r, field, conflict.Remote!) : r).ToImmutableArray() };
             }
+            var choices = document.Sync.LocalOrderChoices;
+            if (field == PlanField.SubIssueOrder)
+                choices = useGitHub ? choices.Remove(identity) : choices.SetItem(identity, PlanOperations.PlanChildren(document, identity));
             var conflicts = document.Sync.Conflicts.Remove(conflict);
             var publish = document.Sync.Publish;
             if (useGitHub && publish is not null)
@@ -208,11 +211,12 @@ internal sealed class PlanSession
                 publish = remaining.IsEmpty ? null : publish with { Writes = remaining };
             }
             var patch = PlanOperations.Difference(document.State, state, PlanOperationKind.ResolveConflict) with
-                { BeforeConflicts = document.Sync.Conflicts, AfterConflicts = conflicts };
+                { BeforeConflicts = document.Sync.Conflicts, AfterConflicts = conflicts,
+                    BeforeLocalOrderChoices = document.Sync.LocalOrderChoices, AfterLocalOrderChoices = choices };
             PlanOperations.ValidateDocument(document with { State = state }, today);
             patch = DateTransition(patch, document, ReleaseDates(document));
             var undo = checkpoint.Undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = document with { State = state, Dates = ReleaseDates(document), Sync = document.Sync with { Conflicts = conflicts, Publish = publish } }, Undo = undo, Redo = [] };
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = document with { State = state, Dates = ReleaseDates(document), Sync = document.Sync with { Conflicts = conflicts, Publish = publish, LocalOrderChoices = choices } }, Undo = undo, Redo = [] };
             return QueueSave();
         }
     }
@@ -300,10 +304,11 @@ internal sealed class PlanSession
                     DiscardedRows = merged.Baseline.Rows.Where(r => merged.Sync.Unavailable.Contains(r.Identity)).ToImmutableArray(),
                     BeforeUnavailable = merged.Sync.Unavailable, AfterUnavailable = [],
                     BeforeConflicts = merged.Sync.Conflicts, AfterConflicts = [],
+                    BeforeLocalOrderChoices = merged.Sync.LocalOrderChoices, AfterLocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty,
                     BeforeDates = merged.Dates, AfterDates = dates
                 };
                 merged = merged with { State = state, Baseline = remote.Baseline, Dates = dates,
-                    Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [] } };
+                    Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [], LocalOrderChoices = ImmutableDictionary<string, ImmutableArray<string>>.Empty } };
                 PlanOperations.ValidateDocument(merged, today);
                 undo = undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
                 redo = [];
@@ -325,7 +330,7 @@ internal sealed class PlanSession
         {
             var patch = patches[i];
             var before = current with { State = PlanOperations.Replay(current.State, patch, forward), Baseline = PlanOperations.ReplayBaseline(current.Baseline, patch, forward),
-                Sync = current.Sync with { Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? current.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? current.Sync.Unavailable } };
+                Sync = current.Sync with { LocalOrderChoices = (forward ? patch.AfterLocalOrderChoices : patch.BeforeLocalOrderChoices) ?? current.Sync.LocalOrderChoices, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? current.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? current.Sync.Unavailable } };
             var rebasedBefore = PlanMerge.NativeOrder(before, PlanMerge.Merge(before, historyBaseline), historyOrders);
             var rebasedAfter = PlanMerge.NativeOrder(current, PlanMerge.Merge(current, historyBaseline), historyOrders);
             if (readDay is { } day) { rebasedBefore = ReadDate(rebasedBefore, day); rebasedAfter = ReadDate(rebasedAfter, day); }
@@ -337,8 +342,9 @@ internal sealed class PlanSession
                 DiscardedRows = (forward ? rebasedAfter : rebasedBefore).Baseline.Rows.Where(r => !(forward ? rebasedBefore : rebasedAfter).Baseline.Rows.Any(after => after.Identity == r.Identity)).ToImmutableArray(),
                 BeforeUnavailable = forward ? rebasedAfter.Sync.Unavailable : rebasedBefore.Sync.Unavailable, AfterUnavailable = forward ? rebasedBefore.Sync.Unavailable : rebasedAfter.Sync.Unavailable
             };
+            if (patch.BeforeLocalOrderChoices is not null) rebased = rebased with { BeforeLocalOrderChoices = forward ? rebasedAfter.Sync.LocalOrderChoices : rebasedBefore.Sync.LocalOrderChoices, AfterLocalOrderChoices = forward ? rebasedBefore.Sync.LocalOrderChoices : rebasedAfter.Sync.LocalOrderChoices };
             if (patch.BeforeConflicts.HasValue) rebased = rebased with { BeforeConflicts = forward ? rebasedAfter.Sync.Conflicts : rebasedBefore.Sync.Conflicts, AfterConflicts = forward ? rebasedBefore.Sync.Conflicts : rebasedAfter.Sync.Conflicts };
-            if (!rebased.Rows.IsEmpty || rebased.BeforeOrder.HasValue || rebased.BeforeSettings is not null || rebased.BeforeConflicts.HasValue || rebased.BeforeDates is not null || !rebased.DiscardedRows.IsEmpty)
+            if (!rebased.Rows.IsEmpty || rebased.BeforeOrder.HasValue || rebased.BeforeSettings is not null || rebased.BeforeConflicts.HasValue || rebased.BeforeLocalOrderChoices is not null || rebased.BeforeDates is not null || !rebased.DiscardedRows.IsEmpty)
                 history.Add(rebased);
             current = before;
         }
@@ -434,7 +440,10 @@ internal sealed class PlanSession
             undo = RebaseHistory(original, undo, external, orders, readDay: refresh ? today : null);
             redo = RebaseHistory(original, redo, external, orders, forward: true, readDay: refresh ? today : null);
             var updated = merged with { Baseline = baseline, Sync = merged.Sync with
-                { Publish = remaining, Failures = failures, Unverified = [], NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
+                { Publish = remaining, Failures = failures, Unverified = [],
+                    LocalOrderChoices = merged.Sync.LocalOrderChoices.Where(p => state.Rows.Any(r => r.Identity == p.Key) &&
+                        (!remote.SubIssueOrders.TryGetValue(p.Key, out var observed) || !p.Value.SequenceEqual(observed.Where(id => state.Rows.Any(r => r.Identity == id) && !missing.Any(r => r.Identity == id))))).ToImmutableDictionary(),
+                    NativeOrders = remote.SubIssueOrders.Where(p => state.Rows.Any(r => r.Identity == p.Key)).ToImmutableDictionary(), InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames),
                     Unavailable = missing.Select(r => r.Identity).ToImmutableArray() } };
             if (refresh) updated = ReadDate(updated, today);
             PlanOperations.ValidateDocument(updated, today);
