@@ -15,6 +15,26 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanSheetHostedTests
 {
     [Test]
+    public async Task ScrollMeasurementTargetsRowsDespiteNestedEditorScrollViewers()
+    {
+        ScrollViewer vertical = null!;
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(sheet.List).OfType<ScrollViewer>().Count(), Is.GreaterThan(1));
+            vertical = ScrollMeasurementViewport();
+            vertical.ChangeView(null, 1120, null, true);
+        });
+        await Ui.Until(() => Math.Abs(vertical.VerticalOffset - 1120) < 1
+            && sheet.List.ContainerFromIndex(40) is ListViewItem { ContentTemplateRoot: PlanSheetRow { IsLoaded: true } });
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var row = (PlanSheetRow)((ListViewItem)sheet.List.ContainerFromIndex(40)).ContentTemplateRoot;
+            Assert.That(row.Identity, Is.EqualTo("I41"));
+            Assert.That(row.TransformToVisual(vertical).TransformPoint(new()).Y, Is.EqualTo(0).Within(2));
+            Assert.That(session.UndoCount, Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task FilterTypingKeepsRowsUntilPauseAndShowsAcceptedMatchCountWithoutEditingPlan()
     {
         var before = session.Document.State;
@@ -228,6 +248,9 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(1, PlanField.Remaining, "invalid");
         await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is not null);
         await Ui.Run(() => {
+            sheet.Refresh();
+            sheet.Select("I1", PlanField.Title, false);
+            sheet.Select("I1", PlanField.Remaining, false);
             sheet.UpdateLayout();
             foreach (var row in sheet.Realized.Where(r => positions.ContainsKey(r.Identity)))
                 Assert.That(row.TransformToVisual(sheet).TransformPoint(new()).Y, Is.EqualTo(positions[row.Identity]));

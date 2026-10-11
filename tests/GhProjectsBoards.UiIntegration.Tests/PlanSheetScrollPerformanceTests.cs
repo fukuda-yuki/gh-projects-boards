@@ -11,6 +11,10 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanSheetHostedTests
 {
+    // Editors contain their own ScrollViewers; the ItemsPresenter owns the list's row viewport.
+    private ScrollViewer ScrollMeasurementViewport() => Ui.Tree(sheet.List).OfType<ScrollViewer>()
+        .Single(scroll => scroll.Content is ItemsPresenter);
+
     private sealed record ScrollFrame(double ElapsedMs, double IntervalMs, string Phase, double RequestedOffset,
         double VerticalOffset, double HorizontalOffset, int[] UnpopulatedRows);
 
@@ -88,7 +92,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(session.Document.State.Rows.Length, Is.EqualTo(1040));
             await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1920, 1080)));
             await Ui.Run(() => {
-                vertical = Ui.Tree(sheet.List).OfType<ScrollViewer>().Single();
+                vertical = ScrollMeasurementViewport();
                 horizontal = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
                 vertical.ChangeView(null, 0, null, true);
                 horizontal.ChangeView(0, null, null, true);

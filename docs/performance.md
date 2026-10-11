@@ -22,6 +22,21 @@ The same `PlanSheetPerformance` selection also runs `VersionRowsScrollRoundTripR
 
 The PMO runs the harness on the baseline with only the test-harness changes applied, then on the candidate with the product changes. Keep the baseline product unchanged and retain both source diffs and binary hashes from the hosted runner. Use separate evidence directories, for example `TestResults/plan-performance/before-124` and `TestResults/plan-performance/after-124`, in the command above. A candidate-only measurement is not a before/after comparison. Agents must not launch the host or the ordinary app on the owner's desktop.
 
+Export the candidate's scroll case together with the baseline fixture's minimal setup change. Copying these two complete UTF-8 files avoids patch-context differences between LF and CRLF checkouts; the export does not copy product code or change baseline behavior assertions. Run from the candidate checkout, using a fresh output directory and baseline worktree:
+
+~~~powershell
+./scripts/Export-PlanScrollHarness.ps1 -Baseline 05fe629 -OutputPath ../plan-scroll-harness
+git worktree add --detach ../plan-scroll-baseline 05fe629
+$suite = 'tests/GhProjectsBoards.UiIntegration.Tests'
+foreach ($file in 'PlanSheetHostedTests.cs', 'PlanSheetScrollPerformanceTests.cs') {
+    Copy-Item -LiteralPath "../plan-scroll-harness/$suite/$file" -Destination "../plan-scroll-baseline/$suite/$file"
+}
+git -C ../plan-scroll-baseline diff --stat
+dotnet build ../plan-scroll-baseline/GhProjectsBoards.sln -c Release
+~~~
+
+Retain `plan-scroll-harness/manifest.json` with the measurements. Its baseline commit and file hashes identify the exact test overlay; `PlanSheetScrollPerformanceTests.cs` is identical on both sides. The baseline fixture differs only in being partial and selecting the 1,040-row version fixture for the new case. Inspect the baseline diff before measuring. The harness locates the ScrollViewer hosting the list's ItemsPresenter, excluding the nested TextBox scroll regions.
+
 For the scroll case alone:
 
 ~~~powershell

@@ -17,6 +17,7 @@ internal sealed partial class PlanSheetView : Grid
     private CommandBar commandBar = null!;
     internal void SetRemoteBusy(bool value)
     {
+        if (value) CancelPendingFilter();
         remoteBusy = value;
         commandBar.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
         RefreshRealized();
@@ -74,6 +75,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
+    private long filterGeneration;
     private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
         Foreground = Brush("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center }, "PlanSheetFilterCount");
@@ -258,6 +260,7 @@ internal sealed partial class PlanSheetView : Grid
         };
         filter.TextChanged += async (_, _) => {
             filterDelay.Stop();
+            filterGeneration++;
             if (rendering || disposed || filter.Text == acceptedFilter) return;
             if (filter.Text.Length == 0) await ApplyFilter();
             else filterDelay.Start();
@@ -268,7 +271,7 @@ internal sealed partial class PlanSheetView : Grid
             args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; filterDelay.Stop(); filter.Text = acceptedFilter; CompositionTarget.Rendering -= RefreshScrolledRows;
+        Unloaded += (_, _) => { disposed = true; CancelPendingFilter(); CompositionTarget.Rendering -= RefreshScrolledRows;
             scrollSubscribed = sheetScrollPending = chartScrollPending = false;
             inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
@@ -281,21 +284,31 @@ internal sealed partial class PlanSheetView : Grid
 
         Refresh();
     }
+    internal void CancelPendingFilter()
+    {
+        filterDelay.Stop();
+        filterGeneration++;
+        var wasRendering = rendering;
+        rendering = true;
+        try { filter.Text = acceptedFilter; }
+        finally { rendering = wasRendering; }
+    }
     private Task ApplyFilter()
     {
         filterDelay.Stop();
         var proposed = filter.Text;
+        var generation = filterGeneration;
         if (disposed || proposed == acceptedFilter) return Task.CompletedTask;
         return Run(async () => {
-            if (filter.Text != proposed || proposed == acceptedFilter) return;
+            if (generation != filterGeneration || filter.Text != proposed || proposed == acceptedFilter) return;
             try { await CommitPending(); }
             catch {
                 rendering = true;
-                try { if (filter.Text == proposed) filter.Text = acceptedFilter; }
+                try { if (generation == filterGeneration && filter.Text == proposed) filter.Text = acceptedFilter; }
                 finally { rendering = false; }
                 throw;
             }
-            if (filter.Text != proposed || disposed) return;
+            if (generation != filterGeneration || filter.Text != proposed || disposed) return;
             acceptedFilter = proposed; Refresh();
         }, "Filter");
     }

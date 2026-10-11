@@ -409,6 +409,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void Show(string page)
     {
+        if (page != "tasks") sheet?.CancelPendingFilter();
         currentPage = page; SyncTabs();
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         peopleArea.Visibility = page == "people" ? Visibility.Visible : Visibility.Collapsed;
