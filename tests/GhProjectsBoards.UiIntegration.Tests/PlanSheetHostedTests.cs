@@ -50,7 +50,9 @@ internal sealed partial class PlanSheetHostedTests
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "End date", "DATE"),
                     new(PlanField.Remaining, "remaining", "Remaining", "NUMBER")] })), Today);
-        if (TestContext.CurrentContext.Test.MethodName == nameof(VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation))
+        if (TestContext.CurrentContext.Test.MethodName is nameof(VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation)
+            or nameof(VersionRowsCommitToRenderedDatesAndBarsRecordsTwentySamples)
+            or nameof(VersionRowsFilterApplicationRecordsPauseAndFrameTimings))
         {
             var plan = GhProjectsBoards.Tests.EvaluationFixture.ReadPlan();
             var snapshot = GhProjectsBoards.Tests.EvaluationFixture.Simulate(plan, [plan.StatusDate]).Single();
@@ -94,7 +96,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
             await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
         }
-        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
         foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
@@ -171,7 +173,7 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
             await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
         }
-        await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
         foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "10/5 (月)"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
@@ -199,7 +201,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(peer.GetPattern(PatternInterface.Value), Is.Null);
             Assert.That(peer.GetName(), Does.Contain(reason));
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain(reason));
-            Assert.That(Ui.Find<Button>($"PlanFillHandle2_{field}").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Tree(sheet).OfType<Button>().Where(button => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(button) == $"PlanFillHandle2_{field}")
+                .Any(button => button.Visibility == Visibility.Visible), Is.False);
             Assert.That(SelectProvider($"PlanCell2_{field}").IsSelected, Is.True);
         });
     }
@@ -250,7 +253,7 @@ internal sealed partial class PlanSheetHostedTests
                 && (!hideIndicator || Ui.Popup<CheckBox>("PlanColumnIndicator") is { IsLoaded: true, IsEnabled: true }));
             if (hideId) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnId")!.IsChecked = false); await Ui.Idle(); }
             if (hideIndicator) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnIndicator")!.IsChecked = false); await Ui.Idle(); }
-            await Ui.Run(() => Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide());
+            await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide());
         }
         var before = session.Document.State.Rows;
         await Select(1, PlanField.Estimate);
@@ -391,7 +394,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(cell.IsReadOnly, Is.True);
             cell.BeginEditing();
             Assert.That(cell.Editing, Is.False);
-            Assert.That(Ui.Find<FrameworkElement>("PlanFillHandle1_Remaining").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Tree(sheet).OfType<Button>().Where(button => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(button) == "PlanFillHandle1_Remaining")
+                .Any(button => button.Visibility == Visibility.Visible), Is.False);
             Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("完了したタスクは Issue のクローズで確定します（編集不可）"));
             Assert.That(Ui.Find<PlanSheetCell>("PlanCell1_Estimate").IsReadOnly, Is.False);
         });
@@ -912,14 +916,20 @@ internal sealed partial class PlanSheetHostedTests
             var buttons = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>().ToArray();
             Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
             Assert.That(bar.SecondaryCommands.OfType<AppBarButton>().Where(b => b.Label == "コピー").Single().KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+C"));
-            bar.IsOpen = true;
+            Ui.Click("PlanSheetMore");
         });
-        await Ui.Ready<AppBarButton>("PlanSheetCopy");
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetCopy");
         await Ui.Run(() => {
             var bar = Ui.Find<CommandBar>("PlanSheetCommands");
             foreach (var button in bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>()) {
-                Assert.That(button.IsLoaded && button.ActualWidth > 0 && button.ActualHeight > 0, Is.True, button.Label);
-                Assert.That(Ui.Tree(button).OfType<TextBlock>().Any(t => t.Text == button.Label && t.ActualWidth > 0), Is.True, button.Label);
+                var id = Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(button);
+                var visible = button.IsInOverflow ? (FrameworkElement)Ui.Find<MenuFlyoutItem>(id) : button;
+                Assert.That(visible.IsLoaded && visible.ActualWidth > 0 && visible.ActualHeight > 0, Is.True, button.Label);
+                Assert.That(Ui.Tree(visible).OfType<TextBlock>().Any(t => t.Text == button.Label && t.ActualWidth > 0), Is.True, button.Label);
+                var accessible = Ui.Tree(Ui.Root).Concat(VisualTreeHelper.GetOpenPopupsForXamlRoot(sheet.XamlRoot)
+                    .Where(p => p.IsOpen).SelectMany(p => Ui.Tree(p.Child))).OfType<FrameworkElement>()
+                    .Where(e => e.IsLoaded && Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == id).Distinct();
+                Assert.That(accessible.Count(), Is.EqualTo(1), id);
             }
         });
         await Ui.ClickCommand("PlanSheetColumns");
@@ -1079,7 +1089,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(toggle.IsChecked, Is.True);
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Visibility, Is.EqualTo(Visibility.Visible));
-            Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide();
+            Ui.CommandButton("PlanSheetColumns").Flyout.Hide();
         });
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
     }
@@ -1666,10 +1676,10 @@ internal sealed partial class PlanSheetHostedTests
     {
         await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is { IsLoaded: true, IsEnabled: true });
-        await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.Find<AppBarButton>("PlanSheetColumns").Flyout.Hide(); });
+        await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.CommandButton("PlanSheetColumns").Flyout.Hide(); });
         await Ui.Idle();
         double barX = 0;
-        await Ui.Run(() => barX = Canvas.GetLeft(Ui.Find<Rectangle>("PlanBar1")));
+        await Ui.Run(() => barX = Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport);
         await Ui.Run(() => {
             var divider = Ui.Find<PlanSheetDivider>("PlanSheetDivider");
             var provider = (IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(divider).GetPattern(PatternInterface.RangeValue);
@@ -1677,7 +1687,7 @@ internal sealed partial class PlanSheetHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
         // Finish the divider's native date-viewport compensation before measuring column selection.
-        await Ui.Until(() => Math.Abs(Canvas.GetLeft(Ui.Find<Rectangle>("PlanBar1")) - barX) < 1);
+        await Ui.Until(() => Math.Abs(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport - barX) < 1);
         await Ui.Idle();
         double chartOffset = 0;
         await Ui.Run(() => chartOffset = sheet.ChartOffset);
@@ -1703,8 +1713,11 @@ internal sealed partial class PlanSheetHostedTests
     {
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日"); await Ui.Idle();
         await Ui.Ready<TextBox>("PlanCell1_Title");
-        double cellX = 0, headerX = 0;
+        double cellX = 0, headerX = 0, barX = 0, arrowX = 0, offset = 0;
         await Ui.Run(() => {
+            barX = Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X;
+            arrowX = Ui.Find<Microsoft.UI.Xaml.Shapes.Polygon>("PlanArrowHead1_2_2").TransformToVisual(sheet).TransformPoint(new()).X;
+            offset = sheet.ChartOffset;
             cellX = Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).X;
             headerX = Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).X;
             Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polyline>("PlanArrow1_2_2").Points.Count, Is.EqualTo(3));
@@ -1716,6 +1729,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<ScrollViewer>("PlanSheetHorizontal").HorizontalOffset, Is.Zero);
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(cellX));
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(headerX));
+            Assert.That(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(barX + offset - 120).Within(1));
+            Assert.That(Ui.Find<Microsoft.UI.Xaml.Shapes.Polygon>("PlanArrowHead1_2_2").TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(arrowX + offset - 120).Within(1));
         });
     }
     [Test, Category("PlanSheetPerformance")]

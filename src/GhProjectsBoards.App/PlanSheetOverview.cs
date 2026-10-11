@@ -182,7 +182,6 @@ internal sealed partial class PlanSheetView
         flyout.Opened += (_, _) => query.Focus(FocusState.Programmatic);
         flyout.Closed += (_, _) => { if (ReferenceEquals(predecessorFlyout, flyout)) predecessorFlyout = null; };
         Search();
-        commandBar.IsOpen = false;
         // The whole sheet leaves no useful space above or below its placement bounds.
         flyout.ShowAt(commandBar);
     }

@@ -49,7 +49,13 @@ internal static class SheetNativeInput
         X = (int)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1)),
         Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)), Flags = 0x0001 | 0x4000 | 0x8000 } });
     internal static void Button(bool down) => Send(new() { Mouse = new() { Flags = down ? 0x0002u : 0x0004u } });
-    internal static void Wheel(int delta) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = 0x0800 } });
+    internal static void Wheel(int delta, bool horizontal = false) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = horizontal ? 0x1000u : 0x0800u } });
+    internal static async Task ScrollWheel(int delta, bool horizontal = false, bool shift = false)
+    {
+        if (shift) Key(VirtualKey.Shift, true);
+        try { await PointerStep(UIElement.PointerWheelChangedEvent, () => Wheel(delta, horizontal)); }
+        finally { if (shift) Key(VirtualKey.Shift, false); }
+    }
     internal static uint WheelLines()
     {
         Assert.That(SystemParametersInfo(0x0068, 0, out var lines, 0), Is.True);

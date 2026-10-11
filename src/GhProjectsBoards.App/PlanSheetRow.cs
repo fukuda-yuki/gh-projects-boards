@@ -19,8 +19,10 @@ public sealed class PlanSheetRow : Grid
     internal string Identity => DataContext as string ?? "";
     internal PlanSheetCell[] Cells { get; }
     private readonly Grid sheetClip = new(), chartClip = new();
+    private readonly RectangleGeometry sheetGeometry = new(), chartGeometry = new();
     private readonly StackPanel line = new() { Orientation = Orientation.Horizontal };
     private readonly TranslateTransform lineTranslation = new();
+    private readonly TranslateTransform chartTranslation = new();
     private readonly Border chartSeparator = new() { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false };
     private readonly Canvas chart = new() { Height = 28 };
     private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(4, 3, 8, 0) };
@@ -28,10 +30,10 @@ public sealed class PlanSheetRow : Grid
     private readonly Border selectionAccent = new() { Width = 3, Height = 16, CornerRadius = new(1.5),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
     private readonly FontIcon indicator = new() { FontSize = 13, Width = 28, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = true };
-    private readonly List<Polygon> corners = [];
+    private readonly List<Polygon?> corners = [];
     private readonly List<Border> frames = [];
-    private readonly List<TextBlock> markers = [];
-    private readonly List<Button> handles = [];
+    private readonly List<TextBlock?> markers = [];
+    private readonly List<Button?> handles = [];
     private readonly Button fold = new() { Width = 20, MinWidth = 0, MinHeight = 0, Padding = new(0),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
     private readonly Dictionary<PlanField, PlanSummaryCell> summaryCells = [];
@@ -39,14 +41,26 @@ public sealed class PlanSheetRow : Grid
         ? display : Cells.FirstOrDefault(c => c.Field == field);
     private string boundIdentity = "";
     private double chartOffset = double.NaN;
+    private double chartOriginOffset;
+    private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
+        bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? PublishedEnd,
+        bool ShowLabels, DateOnly FirstDay, double DateInset, double DayWidth, double Viewport, double Height, ElementTheme Theme, Brush ThemeBrush);
+    private sealed record ChartDependency(PlanSheetView.Edge Edge, DateOnly? PredecessorStart, bool PredecessorMilestone,
+        DateOnly? SuccessorEnd, bool SuccessorMilestone, bool SuccessorSummary);
+    private ChartPresentation? chartPresentation;
+    private ChartDependency[] chartDependencies = [];
     public PlanSheetRow()
     {
         Height = 28; HorizontalAlignment = HorizontalAlignment.Left; ColumnDefinitions.Add(new()); ColumnDefinitions.Add(new());
         line.RenderTransform = lineTranslation;
+        chart.RenderTransform = chartTranslation;
+        sheetClip.Clip = sheetGeometry; chartClip.Clip = chartGeometry;
         sheetClip.Children.Add(line);
         sheetClip.Children.Add(new Border { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false });
         chartClip.Children.Add(chartSeparator);
         chartClip.Children.Add(chart);
+        chartClip.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
         idCell.Children.Add(id); idCell.Children.Add(selectionAccent);
         line.Children.Add(idCell); line.Children.Add(indicator);
@@ -54,20 +68,11 @@ public sealed class PlanSheetRow : Grid
         Cells = PlanSheetView.Columns.Where(c => c.Field is not null).Select(c => new PlanSheetCell(this, c.Field!.Value)).ToArray();
         foreach (var cell in Cells)
         {
-            var marker = new TextBlock { Text = "•", FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Top, Margin = new(0, -3, 3, 0), IsHitTestVisible = false };
-            var handle = new PlanFillHandle(this, cell.Field) { Width = 8, Height = 8, MinHeight = 0, MinWidth = 0, Padding = new(0),
-                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, IsTabStop = false };
-            AutomationProperties.SetName(handle, "選択範囲へコピー"); ToolTipService.SetToolTip(handle, "上下にドラッグしてコピー");
-            handle.Click += async (_, _) => { if (Owner is { } owner) await owner.Run(() => owner.Fill(PlanOperationKind.Fill)); };
             var grid = new Grid(); grid.Children.Add(cell);
             if (cell.TitleDisplay is { } display) grid.Children.Add(display);
-            grid.Children.Add(marker);
-            var corner = new Polygon { Points = [new(0, 0), new(6, 0), new(0, 6)], Width = 6, Height = 6, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
-            grid.Children.Add(corner); corners.Add(corner); grid.Children.Add(handle);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
-            line.Children.Add(frame); frames.Add(frame); markers.Add(marker); handles.Add(handle);
+            line.Children.Add(frame); frames.Add(frame); markers.Add(null); corners.Add(null); handles.Add(null);
         }
         fold.Click += async (_, _) => {
             if (Owner is not { } owner) return;
@@ -90,9 +95,10 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetAutomationId(selectionAccent, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
-        foreach (var handle in handles) AutomationProperties.SetAutomationId(handle, "");
+        foreach (var handle in handles) if (handle is not null) AutomationProperties.SetAutomationId(handle, "");
         AutomationProperties.SetAutomationId(fold, "");
         chart.Children.Clear();
+        chartPresentation = null; chartDependencies = [];
     }
     internal void Refresh()
     {
@@ -102,8 +108,10 @@ public sealed class PlanSheetRow : Grid
         var number = owner.PlanIds.GetValueOrDefault(Identity);
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
         Width = owner.SheetViewport + owner.ChartViewport;
-        sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, owner.SheetViewport, owner.RowHeight) };
-        chartClip.Clip = new RectangleGeometry { Rect = new(0, 0, owner.ChartViewport, owner.RowHeight) };
+        var sheetBounds = new Rect(0, 0, owner.SheetViewport, owner.RowHeight);
+        var chartBounds = new Rect(0, 0, owner.ChartViewport, owner.RowHeight);
+        if (sheetGeometry.Rect != sheetBounds) sheetGeometry.Rect = sheetBounds;
+        if (chartGeometry.Rect != chartBounds) chartGeometry.Rect = chartBounds;
         lineTranslation.X = -owner.SheetOffset;
         idCell.Width = PlanSheetView.Columns[0].Width; idCell.Visibility = owner.Hidden.Contains(null) ? Visibility.Collapsed : Visibility.Visible;
         selectionAccent.Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
@@ -144,15 +152,39 @@ public sealed class PlanSheetRow : Grid
                 : owner.IsChanged(Identity, field) && owner.Unpublished.InputKind(Identity, field) == PlanUnpublishedInputKind.Entered ? "SheetChangedBrush" : "LayerFillColorDefaultBrush");
             var changed = owner.IsChanged(Identity, field);
             var outcome = field == PlanField.Title && remoteProblem.Length > 0;
-            markers[i].Text = outcome ? owner.Session.Document.Sync.Unverified.Contains(Identity) ? "未検証" : "失敗" : "•";
-            markers[i].Visibility = !conflict && outcome ? Visibility.Visible : Visibility.Collapsed;
-            markers[i].Foreground = PlanSheetView.Brush(conflict || outcome ? "SystemFillColorCriticalBrush" : "TextFillColorPrimaryBrush");
-            corners[i].Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
-            corners[i].Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
+            if (outcome && markers[i] is null) {
+                var marker = new TextBlock { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Top, Margin = new(0, -3, 3, 0), IsHitTestVisible = false };
+                markers[i] = marker; ((Grid)frames[i].Child).Children.Add(marker);
+            }
+            if (markers[i] is { } outcomeMarker) {
+                outcomeMarker.Text = owner.Session.Document.Sync.Unverified.Contains(Identity) ? "未検証" : "失敗";
+                outcomeMarker.Visibility = !conflict && outcome ? Visibility.Visible : Visibility.Collapsed;
+                outcomeMarker.Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush");
+            }
+            if ((conflict || changed) && corners[i] is null) {
+                var corner = new Polygon { Points = [new(0, 0), new(6, 0), new(0, 6)], Width = 6, Height = 6,
+                    HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+                corners[i] = corner; ((Grid)frames[i].Child).Children.Add(corner);
+            }
+            if (corners[i] is { } changeMarker) {
+                changeMarker.Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
+                changeMarker.Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
+            }
             cell.IsReadOnly = owner.ReadOnly(Identity, field);
-            handles[i].Visibility = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field)) ? Visibility.Visible : Visibility.Collapsed;
-            handles[i].Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
-            AutomationProperties.SetAutomationId(handles[i], $"PlanFillHandle{number}_{field}");
+            var showHandle = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field));
+            if (showHandle && handles[i] is null) {
+                var handle = new PlanFillHandle(this, field) { Width = 8, Height = 8, MinHeight = 0, MinWidth = 0, Padding = new(0),
+                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, IsTabStop = false };
+                AutomationProperties.SetName(handle, "選択範囲へコピー"); ToolTipService.SetToolTip(handle, "上下にドラッグしてコピー");
+                handle.Click += async (_, _) => { if (Owner is { } current) await current.Run(() => current.Fill(PlanOperationKind.Fill)); };
+                handles[i] = handle; ((Grid)frames[i].Child).Children.Add(handle);
+            }
+            if (handles[i] is { } fillHandle) {
+                fillHandle.Visibility = showHandle ? Visibility.Visible : Visibility.Collapsed;
+                fillHandle.Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
+                AutomationProperties.SetAutomationId(fillHandle, $"PlanFillHandle{number}_{field}");
+            }
             cell.FontStyle = Windows.UI.Text.FontStyle.Normal;
             cell.Foreground = PlanSheetView.Brush(field == PlanField.End && late?.Level == PlanLatenessLevel.Overdue
                 && owner.CellDate(Identity, field) > owner.PublishedEnd(Identity) ? "SystemFillColorCriticalBrush"
@@ -240,20 +272,47 @@ public sealed class PlanSheetRow : Grid
     {
         if (Owner is not { } owner) return;
         if (sheet && lineTranslation.X != -owner.SheetOffset) lineTranslation.X = -owner.SheetOffset;
-        if (gantt && chartOffset != owner.ChartOffset) DrawChart();
+        if (gantt && chartOffset != owner.ChartOffset) RefreshChartOffset(owner);
+    }
+    private void RefreshChartOffset(PlanSheetView owner)
+    {
+        chartOffset = owner.ChartOffset;
+        // Scroll in composition without reallocating every bar and dependency shape.
+        chartTranslation.X = chartOriginOffset - chartOffset;
     }
     private void DrawChart()
     {
-        chartOffset = Owner?.ChartOffset ?? double.NaN;
-        chart.Children.Clear();
         AutomationProperties.SetAutomationId(chartSeparator, Owner is { } view ? "PlanChartSeparator" + view.PlanIds.GetValueOrDefault(Identity) : "");
-        if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) return;
+        if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) {
+            if (chart.Children.Count > 0) chart.Children.Clear();
+            chartPresentation = null; chartDependencies = [];
+            return;
+        }
         var number = owner.PlanIds[Identity];
+        var rowIndex = owner.RowIndexes.GetValueOrDefault(Identity, -1);
+        decimal? completeFraction = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
+        var presentation = new ChartPresentation(Identity, number, rowIndex, task.Start.Value, task.End.Value,
+            task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.PublishedEnd(Identity),
+            owner.ShowLatenessLabels, owner.FirstDay, owner.ChartDateInset, owner.DayWidth, owner.ChartViewport, owner.RowHeight,
+            ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
+        var dependencies = owner.Edges.Where(edge => rowIndex >= Math.Min(edge.From, edge.To) && rowIndex <= Math.Max(edge.From, edge.To))
+            .Select(edge => {
+                var predecessor = owner.Schedule[owner.RowIds[edge.From]];
+                var successor = owner.Schedule[owner.RowIds[edge.To]];
+                return new ChartDependency(edge, predecessor.Start.Value, predecessor.IsMilestone,
+                    successor.End.Value, successor.IsMilestone, successor.IsSummary);
+            }).ToArray();
+        if (presentation == chartPresentation && dependencies.SequenceEqual(chartDependencies)) {
+            RefreshChartOffset(owner);
+            return;
+        }
+        chartPresentation = presentation; chartDependencies = dependencies;
+        chartOriginOffset = owner.ChartOffset; RefreshChartOffset(owner);
+        chart.Children.Clear();
         chart.Width = owner.ChartViewport;
-        var rowIndex = owner.RowIds.IndexOf(Identity);
-        foreach (var edge in owner.Edges)
+        foreach (var dependency in dependencies)
         {
-            if (rowIndex < Math.Min(edge.From, edge.To) || rowIndex > Math.Max(edge.From, edge.To)) continue;
+            var edge = dependency.Edge;
             var successor = owner.Schedule[owner.RowIds[edge.To]];
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];

@@ -197,17 +197,26 @@ internal static class Ui
     }
     public static async Task ClickCommand(string id, bool focus = false)
     {
-        Button button = null!;
+        Control command = null!;
         await Run(() =>
         {
-            var bar = Tree(Root).OfType<CommandBar>().Single(c => c.PrimaryCommands.Concat(c.SecondaryCommands)
-                .OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == id));
-            button = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<Button>().Single(b => AutomationProperties.GetAutomationId(b) == id);
-            if (!button.IsLoaded || button is AppBarButton { IsInOverflow: true }) bar.IsOpen = true;
+            var button = CommandButton(id);
+            if (button.IsLoaded && !button.IsInOverflow) command = button;
+            else if (Popup<MenuFlyoutItem>(id) is null) Click("PlanSheetMore");
         });
-        await Until(() => button.IsLoaded && button.IsEnabled);
-        await Run(() => { if (focus) Assert.That(button.Focus(FocusState.Keyboard), Is.True); Click(button); });
+        await Until(() => {
+            command ??= Popup<MenuFlyoutItem>(id)!;
+            return command is { IsLoaded: true, IsEnabled: true };
+        });
+        await Run(() => {
+            if (focus) Assert.That(command.Focus(FocusState.Keyboard), Is.True);
+            if (command is Button button) Click(button);
+            else ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(command).GetPattern(PatternInterface.Invoke)).Invoke();
+        });
     }
+    public static AppBarButton CommandButton(string id) => Tree(Root).OfType<CommandBar>()
+        .SelectMany(c => c.PrimaryCommands.Concat(c.SecondaryCommands)).OfType<AppBarButton>()
+        .Single(b => AutomationProperties.GetAutomationId(b) == id);
     public static void Click(string id)
     {
         var control = Find<Control>(id);

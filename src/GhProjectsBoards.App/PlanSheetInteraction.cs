@@ -22,7 +22,18 @@ internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
     private PlanField selectedField = PlanField.Title, anchorField = PlanField.Title;
-    private PlanField[] Fields => VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!.Value).ToArray();
+    private Column[]? fieldColumns;
+    private PlanField[] visibleFields = [];
+    private PlanField[] Fields
+    {
+        get {
+            if (!ReferenceEquals(fieldColumns, VisibleColumns)) {
+                fieldColumns = VisibleColumns;
+                visibleFields = VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!.Value).ToArray();
+            }
+            return visibleFields;
+        }
+    }
     internal sealed record Edge(int From, int To, DateOnly End, DateOnly Start);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
@@ -30,7 +41,7 @@ internal sealed partial class PlanSheetView
     {
         get
         {
-            var a = Math.Max(0, RowIds.IndexOf(anchor)); var b = Math.Max(0, RowIds.IndexOf(selected));
+            var a = Math.Max(0, RowIndexes.GetValueOrDefault(anchor, -1)); var b = Math.Max(0, RowIndexes.GetValueOrDefault(selected, -1));
             var c = Math.Max(0, Array.IndexOf(Fields, anchorField)); var d = Math.Max(0, Array.IndexOf(Fields, selectedField));
             return new(Math.Min(a, b), Math.Min(c, d), Math.Abs(a - b) + 1, Math.Abs(c - d) + 1);
         }
@@ -50,7 +61,7 @@ internal sealed partial class PlanSheetView
     }
     internal bool IsSelected(string identity, PlanField field)
     {
-        var range = Range; var row = RowIds.IndexOf(identity); var column = Array.IndexOf(Fields, field);
+        var range = Range; var row = RowIndexes.GetValueOrDefault(identity, -1); var column = Array.IndexOf(Fields, field);
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;

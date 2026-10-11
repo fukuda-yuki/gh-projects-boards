@@ -62,6 +62,35 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
+    public async Task FilterAfterCalendarChangeAndUndoKeepsCurrentDatesAndCalendarShading()
+    {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日");
+        await Ui.Idle();
+        bool Shaded() => Ui.Tree(sheet).OfType<FrameworkElement>().Any(element =>
+            AutomationProperties.GetAutomationId(element) == "PlanNonWorking20261005");
+        await Ui.Run(() => Assert.That(Shaded(), Is.False));
+
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { CompanyDaysOff = [Today] }), Today);
+        await Ui.Run(() => { sheet.Refresh(); Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 1"; });
+        await Ui.Until(() => sheet.List.Items.Count == 13);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/6 (火)"));
+            Assert.That(Shaded(), Is.True);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
+            Assert.That(session.UndoCount, Is.EqualTo(1), "Filtering adds no operation to Undo.");
+        });
+
+        await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)"));
+            Assert.That(Shaded(), Is.False, "Undo must also refresh a calendar whose date range did not change.");
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
+            Assert.That(session.UndoCount, Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task EmptyFilterCancelsPendingTextAndRestoresRowsWithoutWaitingForPause()
     {
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "no match");
@@ -239,7 +268,7 @@ internal sealed partial class PlanSheetHostedTests
             selection = Ui.Find<TextBlock>("PlanSheetSelection").Text;
             scroll = Ui.Find<ScrollViewer>(gantt ? "PlanGanttHorizontal" : "PlanSheetHorizontal");
             cellX = cell.TransformToVisual(sheet).TransformPoint(new()).X;
-            barX = Canvas.GetLeft(Ui.Find<FrameworkElement>("PlanBar1"));
+            barX = Ui.Find<FrameworkElement>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X;
             offset = scroll.HorizontalOffset;
             target = offset + 120 <= scroll.ScrollableWidth ? offset + 120 : Math.Max(0, offset - 120);
             Assert.That(target, Is.Not.EqualTo(offset));
@@ -256,7 +285,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo(selection));
             Assert.That(cell.TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(cellX - (gantt ? 0 : target - offset)).Within(1));
-            Assert.That(Canvas.GetLeft(Ui.Find<FrameworkElement>("PlanBar1")),
+            Assert.That(Ui.Find<FrameworkElement>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(barX - (gantt ? target - offset : 0)).Within(1));
         });
         Assert.That(session.Document.State, Is.EqualTo(before));
@@ -311,7 +340,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is { IsLoaded: true });
         await Ui.Run(() => {
-            var flyout = Ui.Find<AppBarButton>("PlanSheetColumns").Flyout;
+            var flyout = Ui.CommandButton("PlanSheetColumns").Flyout;
             Assert.That(flyout.AreOpenCloseAnimationsEnabled, Is.False);
             AssertQuietPresenter();
             flyout.Hide();

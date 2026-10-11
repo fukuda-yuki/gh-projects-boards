@@ -282,12 +282,12 @@ internal sealed class PlanOverviewHostedTests
         foreach (var scale in new[] { "日", "月", "週" }) {
             await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = scale);
             await Ui.Idle();
-            await Ui.Run(() => TestContext.Out.WriteLine($"Before frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={(selectTask ? Canvas.GetLeft(Ui.Find<Shape>("PlanBar5")) : Ui.Find<Line>("PlanStatusLine").X1)}"));
+            await Ui.Run(() => TestContext.Out.WriteLine($"Before frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={(selectTask ? BarXInChart(5) : Ui.Find<Line>("PlanStatusLine").X1)}"));
             // Dispatcher work can finish before the scroll-driven rendering callback.
             await SheetNativeInput.Rendered();
             await Ui.Run(() => {
                 sheet.UpdateLayout();
-                var x = selectTask ? Canvas.GetLeft(Ui.Find<Shape>("PlanBar5")) : Ui.Find<Line>("PlanStatusLine").X1;
+                var x = selectTask ? BarXInChart(5) : Ui.Find<Line>("PlanStatusLine").X1;
                 TestContext.Out.WriteLine($"After frame: scale={scale}; offset={sheet.ChartOffset}; anchorX={x}");
                 Assert.That(x, Is.EqualTo(sheet.ChartViewport / 4).Within(2), "Anchor tolerance is two pixels.");
             });
@@ -312,7 +312,7 @@ internal sealed class PlanOverviewHostedTests
         double barX = 0, offset = 0;
         await Ui.Run(() => {
             sheet.UpdateLayout();
-            barX = Canvas.GetLeft(Ui.Find<Shape>("PlanBar3"));
+            barX = BarXInChart(3);
             offset = Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset;
         });
 
@@ -330,7 +330,7 @@ internal sealed class PlanOverviewHostedTests
             sheet.UpdateLayout();
             Assert.That(sheet.Schedule["I3"].Start.Value, Is.EqualTo(early));
             Assert.That(sheet.Schedule["I6"].End.Value, Is.EqualTo(early));
-            Assert.That(Canvas.GetLeft(Ui.Find<Shape>("PlanBar3")), Is.EqualTo(barX).Within(1));
+            Assert.That(BarXInChart(3), Is.EqualTo(barX).Within(1));
             Assert.That(Ui.Find<ScrollViewer>("PlanGanttHorizontal").HorizontalOffset, Is.EqualTo(offset).Within(1));
         });
     }
