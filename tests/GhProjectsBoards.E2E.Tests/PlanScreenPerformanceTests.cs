@@ -275,7 +275,9 @@ public sealed class PlanScreenPerformanceTests
 
                 // Discover the actual popup's content bounds before recording; do not
                 // poll UIA or retain full-window bitmaps during the measured transition.
-                PrepareCommand().Click();
+                var probeTrigger = PrepareCommand();
+                var probeTriggerDetails = DescribeTrigger(probeTrigger);
+                probeTrigger.Click();
                 Wait(() => Visible(markerId) is not null);
                 Thread.Sleep(350);
                 var popupBounds = contentIds.Select(id => Rectangle.Round(Visible(id)!.BoundingRectangle)).Aggregate(Rectangle.Union);
@@ -286,20 +288,19 @@ public sealed class PlanScreenPerformanceTests
                 var trigger = PrepareCommand();
                 var triggerBounds = trigger.BoundingRectangle;
                 var point = trigger.GetClickablePoint();
+                var triggerDetails = DescribeTrigger(trigger);
+                var invoke = trigger.Patterns.Invoke.Pattern;
                 File.WriteAllText(Path.Combine(root, name + "-input.json"), JsonSerializer.Serialize(new {
                     commandId, markerId, popupBounds, region, triggerBounds, point, preparedUtc = DateTime.UtcNow,
-                    input = "FlaUI Mouse.Click at the prepared point, matching AutomationElement.Click's native primitive; cursor remains there throughout capture. No UIA calls during capture."
+                    probeTriggerDetails, triggerDetails,
+                    input = "Pre-resolved UIA Invoke opens the flyout while an independent thread captures desktop pixels. No UIA search or polling during capture. The earlier native-click probe verifies its first opening, not repeated native activation."
                 }, new JsonSerializerOptions { WriteIndented = true }));
-                Assert.That(SetCursorPos(point.X, point.Y), Is.True);
+                Assert.That(SetCursorPos(1850, 1030), Is.True);
                 FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                 var opened = RecordPixels(Path.Combine(root, name + "-open"), region, mark => {
-                    mark(name + " click start");
-                    Mouse.Click(point);
-                    mark(name + " click submitted");
-                    // Match the successful probe and retain the click position through
-                    // capture. This sleep is FlaUI's normal input boundary, not proof
-                    // that the app has already dispatched the queued pointer events.
-                    FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+                    mark(name + " UIA Invoke start");
+                    invoke.Invoke();
+                    mark(name + " UIA Invoke returned");
                 }, TimeSpan.FromSeconds(2));
                 process.Refresh();
                 Assert.That(process.HasExited, Is.False, name + " opening must leave the app running.");
@@ -315,13 +316,23 @@ public sealed class PlanScreenPerformanceTests
                 Assert.That(Visible(markerId), Is.Null, name + " content must be dismissed by Escape.");
                 Assert.That(closed.ScreenChanged && closed.FinalStateStable, Is.True, name + " must disappear from the recorded pixels.");
                 flyoutRecordings.Add(new { name, commandId, markerId, popupBounds, region, triggerBounds, opened, closed,
-                    boundary = "Ordinary-app native click/Escape with Windows animations enabled. Raw frames and copy timestamps define the observation cadence; inspect complete popup content separately from native caret/hover feedback. No physical one-frame assertion is inferred from sampling." });
+                    boundary = "Ordinary-app pre-resolved UIA Invoke/native Escape with Windows animations enabled. This observes flyout animation, not native pointer delivery or repeated native activation. Raw frames and copy timestamps define the observation cadence; inspect complete popup content separately from native caret/hover feedback. No physical one-frame assertion is inferred from sampling." });
                 WriteSummary();
                 if (Visible("PlanSheetCopy") is not null) {
                     Keyboard.Type(VirtualKeyShort.ESCAPE);
                     Wait(() => Visible("PlanSheetCopy") is null);
                     Thread.Sleep(350);
                 }
+
+                object DescribeTrigger(AutomationElement element) => new {
+                    runtimeId = element.Properties.RuntimeId.ValueOrDefault,
+                    controlType = element.ControlType.ToString(),
+                    className = element.Properties.ClassName.ValueOrDefault,
+                    name = element.Properties.Name.ValueOrDefault,
+                    isOffscreen = element.IsOffscreen,
+                    isEnabled = element.IsEnabled,
+                    bounds = element.BoundingRectangle
+                };
             }
         }
         catch (Exception ex)

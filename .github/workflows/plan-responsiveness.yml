@@ -99,7 +99,7 @@ jobs:
           if-no-files-found: warn
       - name: Check synthesized wheel and menu keyboard routes on the isolated desktop
         if: always() && steps.candidate-build.outcome == 'success'
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|HorizontalWheelAtTimelineEdges|VerticalWheelOverGantt|OverflowKeyboard|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|HorizontalWheelAtTimelineEdges|VerticalWheelOverGantt|OverflowKeyboard|OverflowPointer|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
       - name: Upload native input evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
