@@ -17,7 +17,7 @@ namespace GhProjectsBoards.App;
 public sealed class PlanSheetRow : Grid
 {
     internal PlanSheetView? Owner { get; private set; }
-    internal string Identity => DataContext as string ?? "";
+    internal string Identity => boundIdentity ?? "";
     internal PlanSheetCell[] Cells { get; }
     private readonly Grid sheetClip = new(), chartClip = new();
     private readonly RectangleGeometry sheetGeometry = new(), chartGeometry = new();
@@ -41,7 +41,7 @@ public sealed class PlanSheetRow : Grid
     private readonly Dictionary<PlanField, PlanSummaryCell> summaryCells = [];
     internal Control? SelectionTarget(PlanField field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
         ? display : Cells.FirstOrDefault(c => c.Field == field);
-    private string boundIdentity = "";
+    private string? boundIdentity;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
         bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? PublishedEnd,
@@ -97,23 +97,27 @@ public sealed class PlanSheetRow : Grid
             var identity = Identity;
             await owner.Run(() => owner.SetFold(identity, !owner.IsFolded(identity)), "Fold requirement");
         };
-        DataContextChanged += (_, _) => { ClearIds(); Refresh(); Owner?.UpdateInputProblem(); };
     }
-    internal void SetOwner(PlanSheetView? owner, string? expectedIdentity)
+    internal void SetOwner(PlanSheetView? owner, string? identity)
     {
-        if (ReferenceEquals(Owner, owner)) return;
+        if (owner is not null) ArgumentNullException.ThrowIfNull(identity);
+        else identity = null;
+        if (ReferenceEquals(Owner, owner) && boundIdentity == identity) return;
         // A recycled container can stay loaded while its task and visual parent change.
-        // The ListView's content/recycle notification owns this lifetime.
+        // The native item notification owns both identity and lifetime. In particular,
+        // an empty string item need not produce a string template DataContext.
         var previous = Owner;
+        var hadBinding = boundIdentity is not null;
         previous?.Realized.Remove(this);
-        Owner = owner;
+        Owner = null; boundIdentity = null;
+        if (hadBinding) ClearIds();
+        Owner = owner; boundIdentity = identity;
         if (owner is not null) {
             owner.Realized.Add(this);
-            // The native content notification precedes DataContext assignment. A
-            // new binding paints in DataContextChanged; a same-item reattach paints now.
-            if (DataContext is string identity && identity == expectedIdentity) Refresh();
+            Refresh();
         }
-        previous?.UpdateInputProblem(); owner?.UpdateInputProblem();
+        if (!ReferenceEquals(previous, owner)) previous?.UpdateInputProblem();
+        owner?.UpdateInputProblem();
     }
     private void ClearIds()
     {
@@ -123,6 +127,7 @@ public sealed class PlanSheetRow : Grid
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
         foreach (var handle in handles) if (handle is not null) AutomationProperties.SetAutomationId(handle, "");
         AutomationProperties.SetAutomationId(fold, "");
+        AutomationProperties.SetAutomationId(chartSeparator, "");
         // A recycled row keeps native dependency geometry, but none of the old
         // task's paint or automation identity may escape before rebinding finishes.
         chart.Opacity = 0;
@@ -137,8 +142,7 @@ public sealed class PlanSheetRow : Grid
     }
     internal void Refresh()
     {
-        if (Owner is not { } owner) return;
-        if (boundIdentity != Identity) { foreach (var cell in Cells) cell.Rebind(); boundIdentity = Identity; }
+        if (Owner is not { } owner || boundIdentity is null) return;
         Height = chart.Height = owner.RowHeight;
         var number = owner.PlanIds.GetValueOrDefault(Identity);
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
@@ -305,11 +309,11 @@ public sealed class PlanSheetRow : Grid
     }
     internal void RefreshHorizontal(bool sheet, bool gantt)
     {
-        if (Owner is not { } owner) return;
+        if (Owner is not { } owner || boundIdentity is null) return;
         if (sheet && lineTranslation.X != -owner.SheetOffset) lineTranslation.X = -owner.SheetOffset;
         if (gantt && chartOffset != owner.ChartOffset) {
             RefreshChartOffset(owner);
-            if (DataContext is string) RefreshCrossings(owner, owner.PlanIds.GetValueOrDefault(Identity));
+            RefreshCrossings(owner, owner.PlanIds.GetValueOrDefault(Identity));
         }
     }
     private void RefreshChartOffset(PlanSheetView owner)
@@ -322,11 +326,10 @@ public sealed class PlanSheetRow : Grid
         owner.ChartDateInset + (day.DayNumber - owner.FirstDay.DayNumber) * owner.DayWidth;
     private void DrawChart()
     {
-        AutomationProperties.SetAutomationId(chartSeparator, Owner is { } view ? "PlanChartSeparator" + view.PlanIds.GetValueOrDefault(Identity) : "");
-        // Native recycling can unbind before supplying the next identity. Keep
-        // that row's bounded geometry hidden through the intermediate state.
-        if (DataContext is not string) { chart.Opacity = 0; return; }
-        if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) {
+        // Recycle notifications hide the old bounded slice before assigning another item.
+        if (Owner is not { } owner || boundIdentity is null) { chart.Opacity = 0; return; }
+        AutomationProperties.SetAutomationId(chartSeparator, "PlanChartSeparator" + owner.PlanIds.GetValueOrDefault(Identity));
+        if (!owner.Schedule.TryGetValue(Identity, out var task)) {
             dependencyChart.Children.Clear(); dependencyVisuals.Clear(); taskChart.Children.Clear();
             crossingXs = []; ClearCrossings();
             chartPresentation = null; chart.Opacity = 1;

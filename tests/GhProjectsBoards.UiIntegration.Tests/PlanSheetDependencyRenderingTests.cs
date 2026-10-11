@@ -34,7 +34,7 @@ internal sealed partial class PlanSheetHostedTests
     private PlanSheetRow? CurrentDependencyRow(string identity)
     {
         var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
-        return row is { IsLoaded: true, DataContext: string current } && current == identity && row.Owner == sheet ? row : null;
+        return row is { IsLoaded: true } && row.Identity == identity && row.Owner == sheet ? row : null;
     }
     private async Task WaitForDependencyPresentation(int from, int to, int number)
     {
@@ -91,7 +91,7 @@ internal sealed partial class PlanSheetHostedTests
             await ShowDependencyRow(number);
             await SheetNativeInput.Rendered();
             await Ui.Run(() => {
-                foreach (var row in sheet.Realized.Where(row => row.IsLoaded && row.DataContext is string { Length: > 0 })) {
+                foreach (var row in sheet.Realized.Where(row => row.IsLoaded && row.Identity.Length > 0)) {
                     var current = int.Parse(row.Identity[1..]);
                     var expected = new List<string>();
                     if (current is 1 or 2) expected.Add($"PlanArrow1_2_{current}");
@@ -245,25 +245,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => sheet.List.Items.Count == 5);
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
-        // Native placeholders may still hold a null DataContext after a rendered
-        // frame. In particular, Identity's empty fallback is not the bound append row.
-        try {
-            await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
-        } catch (TimeoutException) {
-            await Ui.Run(() => {
-                static string Value(object? value) => value is null ? "<null>" : $"{value.GetType().Name}:'{value}'";
-                foreach (var identity in sheet.List.Items.Cast<string>()) {
-                    var container = sheet.List.ContainerFromItem(identity) as ListViewItem;
-                    var row = container?.ContentTemplateRoot as PlanSheetRow;
-                    var ids = row is null ? "" : string.Join(",", Ui.Tree(row).Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0));
-                    TestContext.Out.WriteLine($"Filtered dependency binding: item={Value(identity)}; container={container is not null}; "
-                        + $"container-content={Value(container?.Content)}; container-context={Value(container?.DataContext)}; "
-                        + $"row-context={Value(row?.DataContext)}; row-loaded={row?.IsLoaded}; owner={row?.Owner == sheet}; "
-                        + $"realized={row is not null && sheet.Realized.Contains(row)}; row-size={row?.ActualWidth}x{row?.ActualHeight}; IDs=[{ids}]");
-                }
-            });
-            throw;
-        }
+        await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
         await WaitForDependencyPresentation(1, 3, 90);
         await WaitForDependencyPresentation(4, 2, 3);
         await Ui.Run(() => {
@@ -274,9 +256,11 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(row, Is.Not.Null, $"Current filtered row {identity}");
                 Assert.That(row!.IsLoaded, Is.True);
                 Assert.That(row.Owner, Is.SameAs(sheet));
-                Assert.That(row.DataContext, Is.EqualTo(identity));
+                Assert.That(row.Identity, Is.EqualTo(identity));
                 return row;
             }).ToArray();
+            Assert.That(Ui.Find<TextBox>("PlanCell0_Title", CurrentDependencyRow("")!).Text, Is.Empty,
+                "The current empty append item exposes its native editor after filtering.");
             Assert.That(currentRows.SelectMany(row => Ui.Tree(row).OfType<Polyline>()).Select(AutomationProperties.GetAutomationId),
                 Is.EquivalentTo(expectedArrows), "Every active dependency belongs to the current filtered topology.");
             var forwardX = Ui.Find<Polygon>("PlanArrowHead1_3_90", CurrentDependencyRow("I90")!)

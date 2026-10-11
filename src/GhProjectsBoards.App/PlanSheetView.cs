@@ -635,7 +635,7 @@ internal sealed partial class PlanSheetView : Grid
     private void RowContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
-            row.SetOwner(args.InRecycleQueue ? null : this, args.Item as string);
+            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item);
         else if (!args.InRecycleQueue && args.Phase == 0)
             args.RegisterUpdateCallback(1, RowContentChanging);
     }

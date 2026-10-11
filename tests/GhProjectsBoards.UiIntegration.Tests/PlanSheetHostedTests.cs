@@ -991,21 +991,14 @@ internal sealed partial class PlanSheetHostedTests
         await Edit(1, PlanField.Remaining, "invalid");
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is not null);
-        PlanSheetRow originalRow = null!;
         await Ui.Run(() => {
-            originalRow = Ui.Tree(sheet).OfType<PlanSheetRow>().Single(r => r.Identity == "I1");
             var list = Ui.Find<ListView>("PlanTasks"); list.ScrollIntoView(list.Items[90]);
         });
         await Ui.Ready<TextBox>("PlanCell91_Title"); await Ui.Idle();
-        await Ui.Run(() => {
-            // Native recycling may keep a popup anchor cached offscreen. Exercise the
-            // actual DataContextChanged event as well, without calling its handler.
-            originalRow.DataContext = "I91";
-        });
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
         await Ui.Run(() => {
             Assert.That(Ui.Popup<Border>("SheetInputProblem"), Is.Null,
                 "An offscreen problem must not label the task now occupying its recycled editor.");
-            originalRow.ClearValue(FrameworkElement.DataContextProperty);
         });
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
@@ -1608,26 +1601,9 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task BottomEmptyRowCreatesOneTaskInTheDefaultRepositoryAndUndoRemovesIt()
     {
-        var emptyBindings = new List<string>();
-        Windows.Foundation.TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs> observer = (_, args) => {
-            if (args.Item is string { Length: > 0 } || emptyBindings.Count >= 16) return;
-            var row = args.ItemContainer.ContentTemplateRoot as PlanSheetRow;
-            emptyBindings.Add($"itemNull={args.Item is null}, itemString={args.Item is string}, phase={args.Phase}, recycle={args.InRecycleQueue}, root={row is not null}, contextNull={row?.DataContext is null}, contextString={row?.DataContext is string}, owner={ReferenceEquals(row?.Owner, sheet)}");
-        };
-        await Ui.Run(() => { sheet.List.ContainerContentChanging += observer; sheet.List.ScrollIntoView(""); });
-        try { await Ui.Ready<TextBox>("PlanCell0_Title"); }
-        catch {
-            await Ui.Run(() => {
-                var container = sheet.List.ContainerFromItem("") as ListViewItem;
-                var row = container?.ContentTemplateRoot as PlanSheetRow;
-                var title = row?.Cells.Single(cell => cell.Field == PlanField.Title);
-                Ui.Trace($"[APPEND] items={sheet.List.Items.Count}, tail=[{string.Join(",", sheet.List.Items.Cast<string>().TakeLast(3))}], container={container is not null}, contentNull={container?.Content is null}, contentString={container?.Content is string}, row={row is not null}, contextNull={row?.DataContext is null}, contextString={row?.DataContext is string}, identity={row?.Identity}, owner={ReferenceEquals(row?.Owner, sheet)}, rowLoaded={row?.IsLoaded}, titleLoaded={title?.IsLoaded}, titleId={(title is null ? "" : AutomationProperties.GetAutomationId(title))}, {sheet.WorkDescription}");
-                foreach (var state in emptyBindings) Ui.Trace("[APPEND BIND] " + state);
-                foreach (var scroll in Ui.Tree(sheet.List).OfType<ScrollViewer>().Where(scroll => scroll.ScrollableHeight > 0).Take(4))
-                    Ui.Trace($"[APPEND SCROLL] offset={scroll.VerticalOffset}, extent={scroll.ExtentHeight}, viewport={scroll.ViewportHeight}, loaded={scroll.IsLoaded}");
-            });
-            throw;
-        } finally { await Ui.Run(() => sheet.List.ContainerContentChanging -= observer); }
+        await Ui.Run(() => sheet.List.ScrollIntoView(""));
+        await Ui.Ready<TextBox>("PlanCell0_Title");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell0_Title").Text, Is.Empty));
         await Edit(0, PlanField.Title, "New task");
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[^1].Title, Is.EqualTo("New task"));
@@ -1637,6 +1613,15 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(clipboard.Text, Is.EqualTo("New task"), "The created task stays selected without the empty placeholder.");
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(100));
+        await Ui.Run(() => sheet.List.ScrollIntoView(""));
+        await Ui.Ready<TextBox>("PlanCell0_Title");
+        await Ui.Run(() => {
+            var row = (sheet.List.ContainerFromItem("") as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+            Assert.That(row?.Owner, Is.SameAs(sheet));
+            Assert.That(row!.Identity, Is.Empty);
+            Assert.That(Ui.Find<TextBox>("PlanCell0_Title", row).Text, Is.Empty,
+                "Undo restores the empty editor without the removed task's text.");
+        });
     }
     [Test]
     public async Task InvalidTextSurvivesScrollingAndCorrectionDoesNotCreateAnUndoForTheOriginalValue()
@@ -1960,7 +1945,7 @@ internal sealed partial class PlanSheetHostedTests
         PlanSheetRow? CurrentRow()
         {
             var row = (sheet.List.ContainerFromItem("I75") as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
-            return row is { IsLoaded: true, DataContext: "I75" } && row.Owner == sheet ? row : null;
+            return row is { IsLoaded: true, Identity: "I75" } && row.Owner == sheet ? row : null;
         }
         void WriteRowLayout(string phase)
         {
