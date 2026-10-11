@@ -15,6 +15,42 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanSheetHostedTests
 {
     [Test]
+    public async Task MovingAndContractingSelectionClearsOldBordersAndFillHandles()
+    {
+        var before = PlanJson.Text(session.Document.State);
+        async Task CheckSelection(int first, int last, PlanField[] fields, int active, PlanField end)
+        {
+            await Ui.Run(() => {
+                for (var number = 1; number <= 6; number++) {
+                    Assert.That(Ui.Find<Border>($"PlanSelectionAccent{number}").Visibility,
+                        Is.EqualTo(number == active ? Visibility.Visible : Visibility.Collapsed));
+                    foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining }) {
+                        var selected = number >= first && number <= last && fields.Contains(field);
+                        var id = $"PlanCell{number}_{field}";
+                        Assert.That(SelectProvider(id).IsSelected, Is.EqualTo(selected));
+                        var cell = Ui.Find<TextBox>(id);
+                        var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell));
+                        Assert.That(frame.BorderThickness.Left, Is.EqualTo(selected ? 2 : 0));
+                        Assert.That(cell.Text, Is.EqualTo("8"));
+                    }
+                }
+                var handles = Ui.Tree(sheet).OfType<Button>().Where(button => button.Visibility == Visibility.Visible
+                    && AutomationProperties.GetAutomationId(button).StartsWith("PlanFillHandle", StringComparison.Ordinal));
+                Assert.That(handles.Select(AutomationProperties.GetAutomationId), Is.EqualTo(new[] { $"PlanFillHandle{active}_{end}" }));
+            });
+        }
+        await Select(1, PlanField.Estimate);
+        await Select(4, PlanField.Remaining, true);
+        await CheckSelection(1, 4, [PlanField.Estimate, PlanField.Remaining], 4, PlanField.Remaining);
+        await Select(2, PlanField.Estimate, true);
+        await CheckSelection(1, 2, [PlanField.Estimate], 2, PlanField.Estimate);
+        await Select(6, PlanField.Remaining);
+        await CheckSelection(6, 6, [PlanField.Remaining], 6, PlanField.Remaining);
+        Assert.That(PlanJson.Text(session.Document.State), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [Test]
     public async Task ScrollMeasurementTargetsRowsDespiteNestedEditorScrollViewers()
     {
         ScrollViewer vertical = null!;

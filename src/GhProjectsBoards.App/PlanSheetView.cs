@@ -639,10 +639,19 @@ internal sealed partial class PlanSheetView : Grid
         else if (!args.InRecycleQueue && args.Phase == 0)
             args.RegisterUpdateCallback(1, RowContentChanging);
     }
-    internal void RefreshRealized()
+    internal void RefreshRealized(CellRange? previousSelection = null)
     {
         var rows = Realized.ToArray();
-        metrics.Count("realizedRows", rows.Length); metrics.Mark("rows-start");
+        metrics.Count("realizedRows", rows.Length);
+        if (previousSelection is { } previous) {
+            var current = Range;
+            rows = rows.Where(row => {
+                var index = RowIndexes.GetValueOrDefault(row.Identity, -1);
+                return index >= previous.Row && index < previous.Row + previous.RowCount
+                    || index >= current.Row && index < current.Row + current.RowCount;
+            }).ToArray();
+        }
+        metrics.Count("refreshedRows", rows.Length); metrics.Mark("rows-start");
         var started = metrics.MeasureStart();
         try { foreach (var row in rows) row.Refresh(); }
         finally { metrics.AddDuration("rowRefresh", started); }
