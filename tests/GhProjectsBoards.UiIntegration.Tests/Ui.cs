@@ -208,11 +208,33 @@ internal static class Ui
             command ??= Popup<MenuFlyoutItem>(id)!;
             return command is { IsLoaded: true, IsEnabled: true };
         });
-        await Run(() => {
-            if (focus) Assert.That(command.Focus(FocusState.Keyboard), Is.True);
-            if (command is Button button) Click(button);
-            else ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(command).GetPattern(PatternInterface.Invoke)).Invoke();
-        });
+        MenuFlyout? menu = null;
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<object> dismissed = (_, _) => { Trace($"[COMMAND] {id} Closed"); closed.TrySetResult(); };
+        RoutedEventHandler clicked = (_, _) => Trace($"[COMMAND] {id} Click");
+        try {
+            await Run(() => {
+                if (command is MenuFlyoutItem item) {
+                    menu = (MenuFlyout)Find<AppBarButton>("PlanSheetMore").Flyout;
+                    menu.Closed += dismissed;
+                    item.Click += clicked;
+                }
+                if (focus) Assert.That(command.Focus(FocusState.Keyboard), Is.True);
+                Trace($"[COMMAND] {id} Invoke {command.GetType().Name}");
+                if (command is Button button) Click(button);
+                else ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(command).GetPattern(PatternInterface.Invoke)).Invoke();
+            });
+            // The menu command starts in Closed, when the native presenter unloads.
+            // Invoke and popup disappearance can precede that event; Idle cannot
+            // track an asynchronous handler that has not begun yet.
+            if (menu is not null) await closed.Task.WaitAsync(TimeSpan.FromSeconds(20));
+        }
+        finally {
+            await Run(() => {
+                if (menu is not null) menu.Closed -= dismissed;
+                if (command is MenuFlyoutItem item) item.Click -= clicked;
+            });
+        }
     }
     public static AppBarButton CommandButton(string id) => Tree(Root).OfType<CommandBar>()
         .SelectMany(c => c.PrimaryCommands.Concat(c.SecondaryCommands)).OfType<AppBarButton>()

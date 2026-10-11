@@ -107,13 +107,15 @@ internal sealed partial class PlanSheetHostedTests
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var phase = "single-notch calibration";
         var burstUnits = 0;
-        var burstDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var burstEvents = 0;
+        var burstSteps = Enumerable.Range(0, 8).Select(_ =>
+            new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
         Microsoft.UI.Xaml.Input.PointerEventHandler observe = (_, args) => {
             var wheel = args.GetCurrentPoint(sheet).Properties;
             Record($"wheel delta={wheel.MouseWheelDelta} horizontal={wheel.IsHorizontalMouseWheel} modifiers={args.KeyModifiers} handled={args.Handled} source={args.OriginalSource.GetType().Name}");
             if (phase == "eight-notch burst") {
                 burstUnits += Math.Abs(wheel.MouseWheelDelta);
-                if (burstUnits >= 8 * 120) burstDelivered.TrySetResult();
+                if (burstEvents < burstSteps.Length) burstSteps[burstEvents++].TrySetResult(wheel.MouseWheelDelta);
             }
         };
         EventHandler<ScrollViewerViewChangedEventArgs> viewChanged = (_, args) => Record($"view intermediate={args.IsIntermediate}");
@@ -130,8 +132,7 @@ internal sealed partial class PlanSheetHostedTests
                 horizontal.ViewChanged += viewChanged;
                 horizontal.ViewChanging += viewChanging;
             });
-            var pointer = await SheetNativeInput.PointFor(row, x);
-            SheetNativeInput.Move(pointer);
+            SheetNativeInput.Move(await SheetNativeInput.PointFor(row, x));
             await SheetNativeInput.ScrollWheel(shift ? -120 : 120, horizontal: !shift, shift: shift);
             await Ui.Until(() => sheet.ChartOffset > start);
             await Ui.Run(() => {
@@ -140,17 +141,18 @@ internal sealed partial class PlanSheetHostedTests
                 horizontal.ChangeView(start, null, null, true);
             });
             await Ui.Until(() => Math.Abs(sheet.ChartOffset - start) < 1);
-            // A native pointer move separates the calibration gesture from this
-            // batch: Windows can otherwise coalesce its prior delta into the burst.
-            await SheetNativeInput.MoveAndWait(new(pointer.X + 2, pointer.Y));
-            await SheetNativeInput.Rendered();
             phase = "eight-notch burst";
             if (shift) SheetNativeInput.Key(VirtualKey.Shift, true);
             try {
-                for (var i = 0; i < 8; i++) SheetNativeInput.Wheel(shift ? -120 : 120, horizontal: !shift);
-                // WinUI reads modifiers when the queued pointer event is routed.
-                // Keep Shift held through delivery, without spacing the wheel inputs.
-                await burstDelivered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                // Acknowledge each native event, without a frame wait or UI dispatch
+                // between inputs. Unacknowledged SendInput batches can be coalesced
+                // by the desktop into a different delta than the injected total.
+                for (var i = 0; i < burstSteps.Length; i++) {
+                    var delta = shift ? -120 : 120;
+                    SheetNativeInput.Wheel(delta, horizontal: !shift);
+                    Assert.That(await burstSteps[i].Task.WaitAsync(TimeSpan.FromSeconds(5)), Is.EqualTo(delta));
+                }
+                // Keep Shift held until the queued pointer event has been routed.
             }
             finally { if (shift) SheetNativeInput.Key(VirtualKey.Shift, false); }
             Assert.That(burstUnits, Is.EqualTo(8 * 120), "The independent native gesture must deliver exactly eight notches.");
@@ -160,8 +162,6 @@ internal sealed partial class PlanSheetHostedTests
             phase = "external scroll then notch";
             await Ui.Run(() => horizontal.ChangeView(start + step * 2, null, null, true));
             await Ui.Until(() => Math.Abs(sheet.ChartOffset - (start + step * 2)) < 1);
-            await SheetNativeInput.MoveAndWait(new(pointer.X + 4, pointer.Y));
-            await SheetNativeInput.Rendered();
             await SheetNativeInput.ScrollWheel(shift ? -120 : 120, horizontal: !shift, shift: shift);
             await Ui.Until(() => Math.Abs(sheet.ChartOffset - (start + step * 3)) < 1);
             phase = "boundary reversal";
@@ -171,33 +171,36 @@ internal sealed partial class PlanSheetHostedTests
                 horizontal.ChangeView(nearEnd, null, null, true);
             });
             await Ui.Until(() => Math.Abs(sheet.ChartOffset - nearEnd) < 1);
-            await SheetNativeInput.MoveAndWait(new(pointer.X + 6, pointer.Y));
-            await SheetNativeInput.Rendered();
-            var outwardDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var reverseDelivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var outwardSteps = Enumerable.Range(0, 4).Select(_ =>
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+            var reverseDelivered = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var outwardEvents = 0;
             var outwardUnits = 0;
             var reverseUnits = 0;
             Microsoft.UI.Xaml.Input.PointerEventHandler observeBoundary = (_, args) => {
                 var delta = args.GetCurrentPoint(sheet).Properties.MouseWheelDelta;
                 if (Math.Sign(delta) == (shift ? -1 : 1)) {
                     outwardUnits += Math.Abs(delta);
-                    if (outwardUnits >= 4 * 120) outwardDelivered.TrySetResult();
+                    if (outwardEvents < outwardSteps.Length) outwardSteps[outwardEvents++].TrySetResult(delta);
                 }
                 else {
                     reverseUnits += Math.Abs(delta);
-                    if (reverseUnits >= 120) reverseDelivered.TrySetResult();
+                    reverseDelivered.TrySetResult(delta);
                 }
             };
             await Ui.Run(() => Ui.Root.AddHandler(UIElement.PointerWheelChangedEvent, observeBoundary, true));
             try {
                 if (shift) SheetNativeInput.Key(VirtualKey.Shift, true);
                 try {
-                    for (var i = 0; i < 4; i++) SheetNativeInput.Wheel(shift ? -120 : 120, horizontal: !shift);
-                    // Establish the direction boundary in the native route; do not
-                    // wait for a frame before reversing the pending scroll target.
-                    await outwardDelivered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-                    SheetNativeInput.Wheel(shift ? 120 : -120, horizontal: !shift);
-                    await reverseDelivered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                    for (var i = 0; i < outwardSteps.Length; i++) {
+                        var delta = shift ? -120 : 120;
+                        SheetNativeInput.Wheel(delta, horizontal: !shift);
+                        Assert.That(await outwardSteps[i].Task.WaitAsync(TimeSpan.FromSeconds(5)), Is.EqualTo(delta));
+                    }
+                    // Reverse after routed delivery, without waiting for a frame.
+                    var reverse = shift ? 120 : -120;
+                    SheetNativeInput.Wheel(reverse, horizontal: !shift);
+                    Assert.That(await reverseDelivered.Task.WaitAsync(TimeSpan.FromSeconds(5)), Is.EqualTo(reverse));
                 }
                 finally { if (shift) SheetNativeInput.Key(VirtualKey.Shift, false); }
             }
@@ -264,7 +267,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<CommandBar>("PlanSheetCommands").IsOpen, Is.False);
             expand.Collapse();
         });
-        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null);
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null
+            && expand.ExpandCollapseState == ExpandCollapseState.Collapsed);
         await Ui.Run(() => toggle.Toggle());
         await Ui.Ready<MenuFlyoutItem>("PlanSheetCopy");
         await Ui.Run(() => {
@@ -272,7 +276,8 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<CommandBar>("PlanSheetCommands").IsOpen, Is.False);
             toggle.Toggle();
         });
-        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null);
+        await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null
+            && expand.ExpandCollapseState == ExpandCollapseState.Collapsed);
     }
 
     [Test, Category("PlanSheetNative")]
@@ -309,8 +314,13 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanSheetCopy") is null);
         await Ui.Run(() => {
             Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").IsEnabled, Is.False);
-            sheet.SetRemoteBusy(false);
         });
+        // Popup disappearance precedes the native Closed event that resets the
+        // public expand/collapse state during same-flyout teardown.
+        await Ui.Until(() => ((IExpandCollapseProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
+            Ui.Find<CommandBar>("PlanSheetCommands")).GetPattern(PatternInterface.ExpandCollapse)).ExpandCollapseState
+            == ExpandCollapseState.Collapsed);
+        await Ui.Run(() => sheet.SetRemoteBusy(false));
         await Select(1, PlanField.Title);
         await Ui.Run(() => Ui.Click("PlanSheetMore"));
         await Ui.Ready<MenuFlyoutItem>("PlanSheetGoToDate");

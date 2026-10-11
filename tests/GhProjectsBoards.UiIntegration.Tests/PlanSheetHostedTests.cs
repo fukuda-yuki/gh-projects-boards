@@ -1151,8 +1151,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => session.Document.State.Rows.Length == before.Length + 1);
         var added = session.Document.State.Rows.Single(r => !before.Any(old => old.Identity == r.Identity));
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Contains(added.Identity));
-        await Ui.Until(() => FocusManager.GetFocusedElement(Ui.Root.XamlRoot) is TextBox text && text.Text.Length == 0);
-        await Ui.Run(() => ((TextBox)FocusManager.GetFocusedElement(Ui.Root.XamlRoot)).Text = "New planned task");
+        var titleId = $"PlanCell{session.Document.State.Rows.IndexOf(added) + 1}_Title";
+        await Ui.Ready<TextBox>(titleId);
+        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Ui.Find<TextBox>(titleId)));
+        await Ui.Run(() => {
+            var title = Ui.Find<TextBox>(titleId);
+            Assert.That(title.Text, Is.Empty);
+            title.Text = "New planned task";
+        });
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Run(() => sheet.FlushInput()); await Ui.Idle();
         Assert.That(session.Document.State.Rows.Single(r => r.Identity == added.Identity).Title, Is.EqualTo("New planned task"));
@@ -1830,6 +1836,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.ClickCommand("PlanSheetOutdent");
         await Ui.Until(() => session.Document.State.Rows[2].Parent is null);
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
+        await Ui.Ready<TextBox>("PlanCell2_Remaining");
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.False));
         await Edit(2, PlanField.Remaining, "16");
         Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));

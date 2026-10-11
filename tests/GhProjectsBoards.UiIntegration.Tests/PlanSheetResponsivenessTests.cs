@@ -94,7 +94,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task DeepFilteredDependencyRemainsCoherentWhenClearedFoldedAndUndone()
     {
-        var before = session.Document.State;
+        var before = PlanJson.Text(session.Document.State);
         await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
             [new("I100", PlanField.Parent, "I99"), new("I100", PlanField.Predecessors, System.Collections.Immutable.ImmutableArray.Create("I1"))]), Today);
         await Ui.Run(() => { sheet.Refresh(); sheet.List.ScrollIntoView("I100"); });
@@ -119,7 +119,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => !sheet.List.Items.Contains("I100"));
         await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
         await Ui.Until(() => sheet.List.Items.Count == 101);
-        Assert.That(session.Document.State, Is.EqualTo(before));
+        Assert.That(PlanJson.Text(session.Document.State), Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.Zero);
     }
 
@@ -159,14 +159,27 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "no match");
         await Ui.Until(() => sheet.List.Items.Count == 1);
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("0 件")));
-        var elapsed = Stopwatch.StartNew();
-        await Ui.Run(() => {
-            var filter = Ui.Find<TextBox>("PlanSheetFilter");
-            filter.Text = "Task 20";
-            filter.Text = "";
-        });
-        await Ui.Until(() => sheet.List.Items.Count == 101);
-        Assert.That(elapsed.ElapsedMilliseconds, Is.LessThan(300), "Clear must bypass the debounce.");
+        var elapsed = new Stopwatch();
+        var applied = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Windows.Foundation.Collections.VectorChangedEventHandler<object> observer = (_, args) => {
+            if (elapsed.IsRunning && args.CollectionChange == Windows.Foundation.Collections.CollectionChange.ItemInserted)
+                applied.TrySetResult(elapsed.Elapsed.TotalMilliseconds);
+        };
+        await Ui.Run(() => sheet.List.Items.VectorChanged += observer);
+        try {
+            await Ui.Run(() => {
+                var filter = Ui.Find<TextBox>("PlanSheetFilter");
+                filter.Text = "Task 20";
+                elapsed.Restart();
+                filter.Text = "";
+            });
+            var clearToRows = await applied.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            TestContext.Out.WriteLine($"Clear to first restored row: {clearToRows:F3} ms");
+            Assert.That(clearToRows, Is.LessThan(300), "Clear must start restoring rows without the debounce; full layout has a separate performance measurement.");
+            await Ui.Until(() => sheet.List.Items.Count == 101);
+        } finally {
+            await Ui.Run(() => sheet.List.Items.VectorChanged -= observer);
+        }
         await Task.Delay(350);
         await Ui.Run(() => {
             Assert.That(sheet.List.Items.Count, Is.EqualTo(101));

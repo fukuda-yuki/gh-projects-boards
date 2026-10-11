@@ -48,7 +48,6 @@ internal static class SheetNativeInput
     internal static void Move(Point point) => Send(new() { Mouse = new() {
         X = (int)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1)),
         Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)), Flags = 0x0001 | 0x4000 | 0x8000 } });
-    internal static Task MoveAndWait(Point point) => PointerStep(UIElement.PointerMovedEvent, () => Move(point));
     internal static void Button(bool down) => Send(new() { Mouse = new() { Flags = down ? 0x0002u : 0x0004u } });
     internal static void Wheel(int delta, bool horizontal = false) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = horizontal ? 0x1000u : 0x0800u } });
     internal static async Task ScrollWheel(int delta, bool horizontal = false, bool shift = false)
