@@ -22,6 +22,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid surfaces = new();
     private readonly StackPanel failures = new();
     private readonly Border sheetFailureHost = new();
+    private readonly SplitButton refreshButton = Id(new SplitButton { Height = 32 }, "PlanRefresh");
+    private readonly MenuFlyoutItem resetItem = Id(new MenuFlyoutItem { Text = "GitHub の状態に戻す…", AllowFocusWhenDisabled = true }, "PlanReset");
     private readonly InfoBar refreshResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanRefreshResult");
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
@@ -161,7 +163,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var unpublishedGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         unpublishedGroup.Children.Add(unpublishedBadge); unpublishedGroup.Children.Add(unpublishedLabel);
         commandButtons.Children.Add(unpublishedGroup);
-        commandButtons.Children.Add(Command("最新の情報に更新", "PlanRefresh", Symbol.Refresh, RefreshRemote));
+        InitializeRefreshCommands();
+        commandButtons.Children.Add(refreshButton);
         InitializePublishing();
         var problem = new StackPanel { Spacing = 4, Margin = new(12, 0, 12, 0) };
         error.Style = (Style)Application.Current.Resources["WorkspaceErrorStyle"];
@@ -358,24 +361,31 @@ internal sealed partial class PlanWorkspaceView : UserControl
         saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed;
         foreach (var entry in sheets.Values) entry.ClearSaveFailure();
     }
-    private async Task RefreshRemote()
+    private Task RefreshRemote() => ReadRemote(false);
+    private async Task ReadRemote(bool reset)
     {
-        var reporter = BeginBusy("refresh", "最新の情報を取得しています");
-        var outcome = "更新を中止しました";
+        var reporter = BeginBusy(reset ? "reset" : "refresh", reset ? "GitHub の状態に戻しています" : "最新の情報を取得しています");
+        var outcome = reset ? "GitHub の状態に戻す操作を中止しました" : "更新を中止しました";
         try {
-            var result = await workspace.Refresh(OperationToken, reporter);
-            if (result is not null) ShowRefreshResult(result);
-            outcome = "最新の情報に更新しました";
+            var result = reset ? await workspace.Reset(OperationToken, reporter) : await workspace.Refresh(OperationToken, reporter);
+            if (result is not null) {
+                if (reset) ShowResetResult(result.StatusDate); else ShowRefreshResult(result);
+            }
+            outcome = reset ? "GitHub の状態に戻しました" : "最新の情報に更新しました";
             refreshFailure.IsOpen = false; ClearSaveFailures();
             if (workspace.Session is { } session && session.Document.Sync.Failures.IsEmpty && session.Document.Sync.Unverified.IsEmpty)
                 publishFailure.IsOpen = false;
         }
         catch (OperationCanceledException) when (OperationToken.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is not OutOfMemoryException) {
-            outcome = "最新の情報に更新できませんでした。" + ex.Message;
+            outcome = (reset ? "GitHub の状態に戻せませんでした。" : "最新の情報に更新できませんでした。") + ex.Message;
             if (workspace.Session is { } session && await session.FlushAsync() is { Succeeded: false } save)
                 ShowSaveFailure(save.Error ?? ex.Message);
-            else { refreshFailure.Message = ex.Message; refreshFailure.IsOpen = true; }
+            else {
+                refreshFailure.Title = reset ? "GitHub の状態に戻せませんでした" : "最新の情報に更新できませんでした";
+                refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", reset ? ConfirmReset : RefreshRemote);
+                refreshFailure.Message = ex.Message; refreshFailure.IsOpen = true;
+            }
         }
         finally {
             EndBusy(outcome);
@@ -410,6 +420,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         var busy = busyKind is not null;
         foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy;
+        refreshButton.IsEnabled = !busy;
+        UpdateResetAvailability();
         projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
         tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
         surfaceHost.IsEnabled = !busy;

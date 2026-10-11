@@ -118,6 +118,7 @@ internal sealed partial class PlanWorkspaceView
         var reasons = new List<string>();
         if (publishing) reasons.Add("発行中です。完了までお待ちください。");
         if (busyKind == "refresh") reasons.Add("最新の情報に更新しています。");
+        if (busyKind == "reset") reasons.Add("GitHub の状態に戻しています。");
         if (closing) reasons.Add("終了処理中です。");
         if (workspace.Session is not { } session) reasons.Add("プロジェクトを開いてください。");
         else {

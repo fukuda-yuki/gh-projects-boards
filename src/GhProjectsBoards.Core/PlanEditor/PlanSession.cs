@@ -109,7 +109,7 @@ internal sealed class PlanSession
                 throw new InvalidOperationException("発行結果を確認してから行を取り消してください。");
             var baseline = PlanOperations.ReplayBaseline(checkpoint.Document.Baseline, patch, forward);
             PlanOperations.ValidateDocument(checkpoint.Document with { State = state, Baseline = baseline }, today);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? checkpoint.Document.Dates, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Baseline = baseline, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? checkpoint.Document.Dates, Sync = checkpoint.Document.Sync with { Publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state), Failures = forward && patch.Kind == PlanOperationKind.Reset ? [] : checkpoint.Document.Sync.Failures, Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? checkpoint.Document.Sync.Conflicts, Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? checkpoint.Document.Sync.Unavailable } },
                 Undo = forward ? checkpoint.Undo.Add(patch) : checkpoint.Undo.RemoveAt(checkpoint.Undo.Length - 1),
                 Redo = forward ? checkpoint.Redo.RemoveAt(checkpoint.Redo.Length - 1) : checkpoint.Redo.Add(patch) };
             return QueueSave();
@@ -255,10 +255,13 @@ internal sealed class PlanSession
             return QueueSave();
         }
     }
-    internal Task<PlanSaveResult> AcceptRefresh(PlanRemoteSnapshot remote, DateOnly today, PlanPublishProgress? adopted = null, bool refresh = true)
+    internal string? ResetUnavailableReason => Document.Sync is { } sync && (sync.Publish is not null || !sync.Unverified.IsEmpty)
+        ? "発行の結果を確認するまで使えません" : null;
+    internal Task<PlanSaveResult> AcceptRefresh(PlanRemoteSnapshot remote, DateOnly today, PlanPublishProgress? adopted = null, bool refresh = true, bool reset = false)
     {
         lock (gate)
         {
+            if (reset && ResetUnavailableReason is { } reason) throw new InvalidOperationException(reason);
             var original = checkpoint.Document;
             var merged = PlanMerge.NativeOrder(original, PlanMerge.Merge(original, remote.Baseline), remote.SubIssueOrders);
             merged = merged with { Sync = merged.Sync with { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, IssueLinks = original.Sync.IssueLinks.SetItems(remote.IssueLinks), PeopleNames = original.Sync.PeopleNames.SetItems(remote.PeopleNames) } };
@@ -285,6 +288,23 @@ internal sealed class PlanSession
             }
             var undo = RebaseHistory(original, checkpoint.Undo, historyBaseline, historyOrders, readDay: refresh ? today : null);
             var redo = RebaseHistory(original, checkpoint.Redo, historyBaseline, historyOrders, forward: true, readDay: refresh ? today : null);
+            if (reset)
+            {
+                // The read is baseline adoption; only the discard becomes an Undo step.
+                var state = merged.State with { Rows = remote.Baseline.Rows };
+                var dates = new PlanDateState(PlanDateHoldOrigin.Reset);
+                var patch = PlanOperations.Difference(merged.State, state, PlanOperationKind.Reset) with {
+                    DiscardedRows = merged.Baseline.Rows.Where(r => merged.Sync.Unavailable.Contains(r.Identity)).ToImmutableArray(),
+                    BeforeUnavailable = merged.Sync.Unavailable, AfterUnavailable = [],
+                    BeforeConflicts = merged.Sync.Conflicts, AfterConflicts = [],
+                    BeforeDates = merged.Dates, AfterDates = dates
+                };
+                merged = merged with { State = state, Baseline = remote.Baseline, Dates = dates,
+                    Sync = merged.Sync with { Unavailable = [], Conflicts = [], Failures = [] } };
+                PlanOperations.ValidateDocument(merged, today);
+                undo = undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
+                redo = [];
+            }
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = merged, Undo = undo, Redo = redo };
             return QueueSave();
         }

@@ -4,7 +4,7 @@ using GhProjectsBoards.Core.Projects;
 namespace GhProjectsBoards.Core.PlanEditor;
 
 internal enum PlanField { Title, Repository, Status, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder }
-internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict }
+internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType);
 internal sealed record PlanColumnMapping(PlanField Role, string FieldId, string Name, string DataType);
 internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance);
@@ -94,6 +94,10 @@ internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
 {
     public int TaskCount => Fields.Count;
+    public int NewTaskCount => Fields.Count(pair => pair.Value.Contains(PlanField.NewTask));
+    public int EnteredTaskCount => Fields.Count(pair => pair.Value.Contains(PlanField.NewTask)
+        || pair.Value.Any(value => InputKind(pair.Key, value) == PlanUnpublishedInputKind.Entered));
+    public int RecalculatedTaskCount => TaskCount - EnteredTaskCount;
     public ImmutableHashSet<(string Identity, PlanField Field)> RecalculatedFields { get; init; } = [];
     public PlanUnpublishedInputKind? InputKind(string identity, PlanField field)
         => !Fields.TryGetValue(identity, out var fields) || !fields.Contains(field) ? null

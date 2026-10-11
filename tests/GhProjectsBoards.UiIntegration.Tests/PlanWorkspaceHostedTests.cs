@@ -18,6 +18,106 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    private static void OpenRefreshMenu()
+    {
+        var split = Ui.Find<SplitButton>("PlanRefresh");
+        ((Microsoft.UI.Xaml.Automation.Provider.IExpandCollapseProvider)Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(split)
+            .GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.ExpandCollapse)).Expand();
+    }
+    private async Task OpenResetDialog()
+    {
+        await Ui.Run(OpenRefreshMenu);
+        await Ui.Until(() => Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
+            .SelectMany(p => Ui.Tree(p.Child)).OfType<MenuFlyoutItem>().Any(i => AutomationProperties.GetAutomationId(i) == "PlanReset"));
+        await Ui.Run(() => {
+            var item = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
+                .SelectMany(p => Ui.Tree(p.Child)).OfType<MenuFlyoutItem>().Single(i => AutomationProperties.GetAutomationId(i) == "PlanReset");
+            Assert.That(item.IsEnabled, Is.True);
+            ((Microsoft.UI.Xaml.Automation.Provider.IInvokeProvider)Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(item)
+                .GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke)).Invoke();
+        });
+        await Ui.DialogReady("PlanResetConfirm");
+    }
+
+    [Test, Category("PlanReset")]
+    public async Task ResetConfirmationCancelBusyResultAndUndoUseTheRealView()
+    {
+        readDay = PlanClock.Today;
+        var dateText = readDay.ToString("M/d (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
+        await Open();
+        await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local edit")]), readDay);
+        await workspace.Session.Execute(new InsertPlanRows([PlanRow.New("New task", "acme/repo")]), readDay);
+        var before = PlanJson.Text(workspace.Session.Document);
+        await OpenResetDialog();
+        await Ui.Run(() => {
+            var dialog = Ui.Dialog("PlanResetConfirm")!;
+            Assert.That(dialog.Title, Is.EqualTo("GitHub の状態に戻しますか？"));
+            Assert.That(dialog.DefaultButton, Is.EqualTo(ContentDialogButton.Close));
+            Assert.That(dialog.PrimaryButtonText, Is.EqualTo("GitHub の状態に戻す"));
+            Assert.That(dialog.CloseButtonText, Is.EqualTo("キャンセル"));
+            var text = Ui.DialogText("PlanResetConfirm");
+            Assert.That(text, Does.Contain("破棄する未発行のタスク 2"));
+            Assert.That(text, Does.Contain("入力した変更 2（新しく追加した 1 タスクを含む。これらは作られません）"));
+            Assert.That(text, Does.Contain("基準日は今日 " + dateText));
+            Assert.That(text, Does.Contain("元に戻す"));
+            Ui.DialogButton("PlanResetConfirm", "CloseButton");
+        });
+        await Ui.Idle();
+        Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "ProjectFields" }));
+        await OpenResetDialog();
+        await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
+        try {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<TextBlock>("PlanBusyHeading").Text, Is.EqualTo("GitHub の状態に戻しています"));
+                Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(Ui.Find<SplitButton>("PlanRefresh").IsEnabled, Is.False);
+                var reset = ((MenuFlyout)Ui.Find<SplitButton>("PlanRefresh").Flyout).Items.OfType<MenuFlyoutItem>().Single();
+                Assert.That(reset.IsEnabled, Is.False);
+                Assert.That(AutomationProperties.GetHelpText(reset), Is.EqualTo("更新または発行が進行中です。"));
+            });
+        } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 0 タスク"));
+            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
+            Assert.That(bar.IsOpen, Is.True);
+            Assert.That(bar.Title, Does.StartWith("GitHub の状態に戻しました（"));
+            Assert.That(bar.Message, Is.EqualTo("基準日を " + dateText + " にしました。日程は GitHub の値のままです。"));
+            Assert.That(bar.ActionButton, Is.Null);
+        });
+        await OpenResetDialog();
+        await Ui.Run(() => {
+            Assert.That(Ui.DialogText("PlanResetConfirm"), Does.Contain("未発行の変更はありません。"));
+            Ui.DialogButton("PlanResetConfirm", "CloseButton");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("2")));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanReset")]
+    public async Task ResetMenuExplainsUnreconciledPublication(bool unverified)
+    {
+        await Open();
+        await workspace.Session!.SaveSync(workspace.Session.Document.Sync with {
+            Publish = new(Guid.NewGuid().ToString("N"), []), Unverified = unverified ? ["I1"] : []
+        });
+        await Ui.Run(OpenRefreshMenu);
+        await Ui.Until(() => VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot).SelectMany(p => Ui.Tree(p.Child)).OfType<MenuFlyoutItem>().Any());
+        await Ui.Run(() => {
+            var item = VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot).SelectMany(p => Ui.Tree(p.Child)).OfType<MenuFlyoutItem>()
+                .Single(i => AutomationProperties.GetAutomationId(i) == "PlanReset");
+            Assert.That(item.IsEnabled, Is.False);
+            Assert.That(AutomationProperties.GetHelpText(item), Is.EqualTo("発行の結果を確認するまで使えません"));
+            Assert.That(ToolTipService.GetToolTip(item), Is.EqualTo("発行の結果を確認するまで使えません"));
+            Ui.Find<SplitButton>("PlanRefresh").Flyout.Hide();
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
     public async Task RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared(bool closeBar, bool advanceDate)
     {
@@ -30,7 +130,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Open();
         if (advanceDate) readDay = new(2026, 10, 7);
         await Ui.Run(() => Ui.Click("PlanRefresh"));
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<Button>("PlanRefresh").IsEnabled);
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Ready<Button>("PlanRefreshChangedFilter");
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
@@ -53,7 +153,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility, Is.EqualTo(Visibility.Collapsed));
             Ui.Click("PlanRefresh");
         });
-        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<Button>("PlanRefresh").IsEnabled);
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日 10/7 (水) で日程を再計算しました。" : "基準日 10/6 (火) で日程を再計算しました。"));
@@ -542,7 +642,7 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<TextBlock>("PlanStatusCounts").Text, Is.EqualTo("要求事項 1 · タスク 2"));
             });
             await Ui.Run(async () => await RenderedEvidence.Capture(view, "workspace-shell-light"));
-            await Ui.Run(async () => await RenderedEvidence.Capture((FrameworkElement)Ui.Find<Button>("PlanRefresh").Parent, "workspace-command-row"));
+            await Ui.Run(async () => await RenderedEvidence.Capture((FrameworkElement)Ui.Find<SplitButton>("PlanRefresh").Parent, "workspace-command-row"));
         } finally { await Ui.Run(() => Ui.Root.RequestedTheme = ElementTheme.Default); }
     }
 
@@ -1199,7 +1299,7 @@ internal sealed class PlanWorkspaceHostedTests
                 Assert.That(Ui.Find<TextBlock>("PlanBusyHeading").Text, Is.EqualTo(heading));
                 Assert.That(AutomationProperties.GetName(panel), Does.StartWith(heading));
                 Assert.That(AutomationProperties.GetLiveSetting(panel), Is.EqualTo(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite));
-                var button = Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh");
+                var button = Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh");
                 Assert.That(button.IsEnabled, Is.False);
                 Assert.That(AutomationProperties.GetName(button), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(publish ? Visibility.Collapsed : Visibility.Visible));
@@ -1211,7 +1311,7 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
         });
     }
@@ -1466,7 +1566,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(sheet.TransformToVisual(card).TransformPoint(new Point()).Y + 1));
         Assert.That(Ui.Find<TextBlock>("PlanError").Visibility, Is.EqualTo(Visibility.Collapsed));
         Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
-        Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
+        Assert.That(AutomationProperties.GetName(Ui.Find<SplitButton>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
         Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
     }
 
@@ -1488,7 +1588,7 @@ internal sealed class PlanWorkspaceHostedTests
             await Ui.Ready<Button>("PlanRetrySave");
             await Ui.Run(() => {
                 Assert.That(Ui.Find<Button>("PlanRetrySave").Visibility, Is.EqualTo(Visibility.Visible));
-                Assert.That(Ui.Find<Button>("PlanRefresh").IsEnabled, Is.True);
+                Assert.That(Ui.Find<SplitButton>("PlanRefresh").IsEnabled, Is.True);
                 Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanPublish")), Is.EqualTo("発行…"));
                 Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             });
@@ -2179,7 +2279,7 @@ internal sealed class PlanWorkspaceHostedTests
         }
         Assert.That(await stop, Is.True);
         if (stage == "refresh") await Ui.Run(() => {
-            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<SplitButton>("PlanRefresh")), Is.EqualTo("最新の情報に更新"));
             Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
         });
