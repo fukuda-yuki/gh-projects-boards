@@ -47,7 +47,13 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
 }
 internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns);
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
-internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State) { public PlanSync Sync { get; init; } = new(); }
+internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
+internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
+internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, PlanState State)
+{
+    public PlanSync Sync { get; init; } = new();
+    public PlanDateState Dates { get; init; } = new();
+}
 internal sealed record PlanCellChange(string Identity, PlanField Field, object? Value);
 internal abstract record PlanCommand;
 internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand;
@@ -66,6 +72,8 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     ImmutableArray<string>? BeforeOrder, ImmutableArray<string>? AfterOrder,
     ProjectPlanSettings? BeforeSettings, ProjectPlanSettings? AfterSettings)
 {
+    public PlanDateState? BeforeDates { get; init; }
+    public PlanDateState? AfterDates { get; init; }
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }

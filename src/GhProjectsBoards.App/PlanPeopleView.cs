@@ -44,7 +44,7 @@ internal sealed class PlanPeopleView : UserControl
     private PeoplePlan report = null!;
     private IReadOnlyDictionary<string, ScheduledTask> scheduled = null!;
     private double[] periodWidths = [];
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly Today => PlanClock.Today;
     private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 112];
     internal PlanPeopleView(PlanSession session)
     {
@@ -355,7 +355,7 @@ internal sealed class PlanPeopleView : UserControl
                     continue;
                 }
                 var input = Input(Committed, id, name,
-                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value))]), person.Identity, row.Identity,
+                    value => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, PlanSheetEditing.Parse(Session.Document, field, value, Today))]), person.Identity, row.Identity,
                     () => PlanSheetEditing.EditBaseline(Session.Document.State.Rows.Single(r => r.Identity == row.Identity), field, Committed()));
                 input.Foreground = (Brush)Application.Current.Resources[field == PlanField.Remaining
                     && (row.Closed || row.Remaining is null && scheduled[row.Identity].Remaining is not null)

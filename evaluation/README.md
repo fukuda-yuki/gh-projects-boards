@@ -28,6 +28,17 @@ Deviations:
 
 `evaluation.json` in the data root records, for each recorded status date, the measures from the real scheduler: 見積, 実績, 残, 見込, 差異, progress (実績 ÷ 見込), closed tasks, open overruns and open tasks with 残 0, in total, per phase (window, forecast finish against the milestone in working days) and per person (overloaded days in the next 20 working days). Milestones are recorded there; the app does not read them yet (#133).
 
+## Offline day simulation
+
+Run the ordinary app against an isolated fake gh from the repository root:
+
+```powershell
+./scripts/Start-Evaluation.ps1 -NoBuild -DataRoot C:\ghpb-evaluation\read-date
+./scripts/Start-Evaluation.ps1 -NoBuild -Resume -DataRoot C:\ghpb-evaluation\read-date -Today 2027-01-14
+```
+
+Optional `-Today yyyy-MM-dd` sets `GHPB_TODAY` only in the child app. Without it, the child uses the evaluation status date. Resume preserves the saved plan and fake remote; choosing a later Today simulates reopening on another calendar day. Reopening alone preserves 基準日 and dates. **最新の情報に更新** advances 基準日 to the simulated read day and recalculates. A PMO date pick holds until that next read. The App ignores an empty or malformed `GHPB_TODAY` and otherwise uses the local calendar day; the launch script rejects an invalid explicit `-Today`.
+
 ## Live sandbox
 
 Read the [authorized scope](https://github.com/fukuda-yuki/codex-sandbox/issues/1). All script writes target `fukuda-yuki/codex-sandbox` and the owner's Project 3, 第2027.04版. The script selects these targets explicitly, removes token/host overrides from its child environment and uses gh's stored authentication.

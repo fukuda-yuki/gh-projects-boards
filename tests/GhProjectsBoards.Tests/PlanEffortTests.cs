@@ -161,7 +161,7 @@ internal sealed class PlanEffortTests
         var original = PlanSheetEditing.EditBaseline(row, PlanField.Remaining, "32");
         Assert.That(original, Is.Empty, "Calculated text must not be the no-change baseline.");
         d = d with { State = PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
-            [new("I1", PlanField.Remaining, PlanSheetEditing.Parse(d, PlanField.Remaining, "32"))]), Day).State };
+            [new("I1", PlanField.Remaining, PlanSheetEditing.Parse(d, PlanField.Remaining, "32", Day))]), Day).State };
         d = d with { State = PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
             [new("I1", PlanField.Actual, 16m)]), Day).State };
         Assert.That(d.State.Rows[0].Remaining, Is.EqualTo(32));

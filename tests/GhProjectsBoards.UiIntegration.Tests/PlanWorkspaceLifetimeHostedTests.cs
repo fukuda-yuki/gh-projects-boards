@@ -50,7 +50,7 @@ internal sealed class PlanWorkspaceLifetimeHostedTests
     private async Task<WeakReference> MountAndRelease()
     {
         PlanWorkspaceView view = null!;
-        await Ui.Run(() => view = new PlanWorkspaceView(new PlanWorkspace(new(root)),
+        await Ui.Run(() => view = new PlanWorkspaceView(new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today)),
             (_, host) => new("gh.exe", host, new GhProcessRunner(new Dictionary<string, string?>()))));
         try {
             await Ui.Mount(view);

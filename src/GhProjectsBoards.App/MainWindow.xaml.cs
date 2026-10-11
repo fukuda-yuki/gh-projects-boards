@@ -16,7 +16,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         try
         {
-            workspace = new(PlanWorkspace.ForUser()) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this) };
+            workspace = new(PlanWorkspace.ForUser(() => PlanClock.Today)) { WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this) };
             WorkspaceRoot.Children.Add(workspace);
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(workspace.WorkspaceTitleBar);

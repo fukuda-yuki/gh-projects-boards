@@ -11,6 +11,7 @@ internal sealed partial class PlanWorkspaceView
     private readonly Grid publishReview = new() { RowSpacing = 8, Visibility = Visibility.Collapsed };
     private readonly ListView reviewLines = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanPublishLines");
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
+    private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
     private Button confirmPublish = null!;
     private bool publishing;
 
@@ -31,7 +32,7 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
         reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
@@ -47,6 +48,11 @@ internal sealed partial class PlanWorkspaceView
     {
         if (workspace.Session is not { } session) return;
         var document = session.Document;
+        publishStatusDate.Text = "日付は基準日 " + (document.State.Settings.StatusDate ?? Today).ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))
+            + " で計算したものです。" + (document.Dates.Recalculated switch {
+                PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
+                PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
+            });
         var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
         PlanPublishReviewGroup Group(string identity)

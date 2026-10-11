@@ -342,13 +342,13 @@ internal sealed partial class PlanSheetView
                 }
             command = new(PlanOperationKind.Paste, changes.ToImmutable());
         }
-        else command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text);
+        else command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text, Today);
         foreach (var change in command.Cells) RequireNoPending([change.Identity], [change.Field]);
         Check(await Session.Execute(command, Today)); Refresh();
     }
     private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
         or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status
-        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field));
+        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field), Today);
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
     internal async Task Fill(PlanOperationKind kind)
