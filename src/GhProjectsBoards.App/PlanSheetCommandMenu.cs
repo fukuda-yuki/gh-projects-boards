@@ -94,21 +94,22 @@ internal sealed partial class PlanSheetView
 
     // AppBar's default peer opens its own popup even with the built-in More button
     // hidden. Route the public automation patterns to the same menu users operate.
-    private sealed class SheetCommandBarAutomationPeer(SheetCommandBar owner) : CommandBarAutomationPeer(owner), IExpandCollapseProvider, IToggleProvider
+    private sealed class SheetCommandBarAutomationPeer(SheetCommandBar owner) : AppBarAutomationPeer(owner), IExpandCollapseProvider, IToggleProvider
     {
         protected override object GetPatternCore(PatternInterface pattern) => pattern is PatternInterface.ExpandCollapse or PatternInterface.Toggle
             ? this : base.GetPatternCore(pattern);
-        public ExpandCollapseState ExpandCollapseState => owner.MenuOpen ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed;
-        public ToggleState ToggleState => owner.MenuOpen ? ToggleState.On : ToggleState.Off;
-        public void Expand() => owner.ChangeMenuOpen(true);
-        public void Collapse() => owner.ChangeMenuOpen(false);
-        public void Toggle() => owner.ChangeMenuOpen(!owner.MenuOpen);
+        ExpandCollapseState IExpandCollapseProvider.ExpandCollapseState => owner.MenuOpen ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed;
+        ToggleState IToggleProvider.ToggleState => owner.MenuOpen ? ToggleState.On : ToggleState.Off;
+        void IExpandCollapseProvider.Expand() => owner.ChangeMenuOpen(true);
+        void IExpandCollapseProvider.Collapse() => owner.ChangeMenuOpen(false);
+        void IToggleProvider.Toggle() => owner.ChangeMenuOpen(!owner.MenuOpen);
         internal void MenuStateChanged(bool open)
         {
             RaisePropertyChangedEvent(ExpandCollapsePatternIdentifiers.ExpandCollapseStateProperty,
-                open ? ExpandCollapseState.Collapsed : ExpandCollapseState.Expanded, ExpandCollapseState);
+                open ? ExpandCollapseState.Collapsed : ExpandCollapseState.Expanded,
+                open ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed);
             RaisePropertyChangedEvent(TogglePatternIdentifiers.ToggleStateProperty,
-                open ? ToggleState.Off : ToggleState.On, ToggleState);
+                open ? ToggleState.Off : ToggleState.On, open ? ToggleState.On : ToggleState.Off);
         }
     }
 }

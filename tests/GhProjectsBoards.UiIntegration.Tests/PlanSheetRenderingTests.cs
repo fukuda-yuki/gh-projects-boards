@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Shapes;
 using NUnit.Framework;
+using Path = System.IO.Path;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 
