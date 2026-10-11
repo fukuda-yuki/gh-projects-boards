@@ -1,4 +1,5 @@
-# TEMPORARY rerun branch for #124 acceptance (not for merge): suspect hosted tests, baseline 05fe629 vs candidate b5284c0.
+# TEMPORARY A/B for #124 acceptance (not for merge): candidate b5284c0 vs the same with the
+# ShowsScrollingPlaceholders=False setter removed, alternating scroll measurements at 1920x1080.
 name: hosted-ui
 on:
   workflow_dispatch:
@@ -19,46 +20,56 @@ jobs:
       - name: Set the PMO display size (1920x1080)
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
-      - name: Prepare baseline (05fe629 + exported test-only scroll harness)
+      - name: Prepare variant (candidate without ShowsScrollingPlaceholders=False)
         shell: pwsh
         run: |
-          ./scripts/Export-PlanScrollHarness.ps1 -Baseline 05fe629 -OutputPath ../plan-scroll-harness
-          git worktree add --detach ../base 05fe629
-          $suite = 'tests/GhProjectsBoards.UiIntegration.Tests'
-          foreach ($file in 'PlanSheetHostedTests.cs', 'PlanSheetScrollPerformanceTests.cs') {
-              Copy-Item -LiteralPath "../plan-scroll-harness/$suite/$file" -Destination "../base/$suite/$file"
-          }
+          git worktree add --detach ../base HEAD
+          $xaml = '../base/src/GhProjectsBoards.App/App.xaml'
+          $text = Get-Content -Raw $xaml
+          $line = '<Setter Property="ShowsScrollingPlaceholders" Value="False"/>'
+          if (-not $text.Contains($line)) { throw 'setter not found' }
+          Set-Content -NoNewline $xaml ($text.Replace($line, ''))
           git -C ../base diff --stat
           New-Item -ItemType Directory -Force measure-out | Out-Null
-          Copy-Item ../plan-scroll-harness/manifest.json measure-out/baseline-overlay-manifest.json
-      - name: Build candidate and baseline
+      - name: Build candidate and variant
         shell: pwsh
         run: |
           dotnet build GhProjectsBoards.sln --configuration Release
           if ($LASTEXITCODE -ne 0) { throw 'candidate build failed' }
           dotnet build ../base/GhProjectsBoards.sln --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw 'baseline build failed' }
-      - name: Rerun the suspect tests five times on each side
+          if ($LASTEXITCODE -ne 0) { throw 'variant build failed' }
+      - name: Measure alternately (variant, candidate) x3
         shell: pwsh
-        continue-on-error: true
         run: |
-          $where = "test =~ /InsertAndIndentRollUpTheParent|ChartWidthChangesKeepVisibleDates|EmptyFilterCancelsPendingText|EnterAppliesFilterBeforePause/"
-          foreach ($pass in 1..5) {
-            foreach ($side in 'baseline', 'candidate') {
-              $root = if ($side -eq 'baseline') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
+          $out = Join-Path $env:GITHUB_WORKSPACE 'measure-out'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $ffmpeg = $null
+          foreach ($pass in 1, 2, 3) {
+            foreach ($side in 'variant', 'candidate') {
+              $root = if ($side -eq 'variant') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
+              $name = "$side-$pass"
+              $env:GHPB_PLAN_EVIDENCE = Join-Path $out $name
+              $rec = $null
+              if ($ffmpeg -and $pass -eq 1) {
+                $rec = Start-Process $ffmpeg -ArgumentList @('-y','-f','gdigrab','-framerate','30','-i','desktop','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p','-f','matroska', (Join-Path $out "$name.mkv")) -PassThru -WindowStyle Hidden -RedirectStandardError (Join-Path $out "$name-ffmpeg.log")
+                Start-Sleep -Seconds 2
+              }
               Push-Location $root
-              try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where $where -TimeoutSeconds 900 } catch { Write-Host "$side-$pass failed: $_" }
+              try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetPerformance' -TimeoutSeconds 1800 } catch { Write-Host "$name failed: $_" }
               finally { Pop-Location }
+              if ($rec) { Stop-Process -Id $rec.Id -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
               $run = Get-ChildItem (Join-Path $root 'TestResults/ui-integration') -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
-              Copy-Item -Recurse $run.FullName (Join-Path $env:GITHUB_WORKSPACE "measure-out/rerun-$side-$pass")
-              [xml]$x = Get-Content -Raw (Join-Path $run.FullName 'results.xml')
-              foreach ($c in $x.SelectNodes('//test-case')) { Write-Host "RERUN $side-$pass $($c.result) $($c.name) $($c.failure.message.'#cdata-section' -replace '\s+',' ')" }
+              Copy-Item -Recurse $run.FullName (Join-Path $out "$name-run")
+              $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
+              Write-Host "$name exit=$($meta.exitCode) counts=$($meta.counts | ConvertTo-Json -Compress)"
+              Get-ChildItem $env:GHPB_PLAN_EVIDENCE -Filter *.json -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "== $name $($_.Name)"; Get-Content -Raw $_.FullName | Write-Host }
             }
           }
+          Remove-Item Env:\GHPB_PLAN_EVIDENCE
       - name: Upload measurements and recordings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: rerun-124
+          name: ab-124
           path: measure-out
           if-no-files-found: warn
