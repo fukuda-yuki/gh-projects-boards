@@ -592,16 +592,62 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanRowId2").Text, Does.StartWith("2"));
             Assert.That(Ui.Find<TextBlock>("PlanRowId5").Text, Does.StartWith("5"));
         });
-        await SelectCell(2, PlanField.Assignees);
-        await SelectCell(5, PlanField.Assignees, extend: true);
-        clipboard = new("bob", null);
-        await Ui.ClickCommand("PlanSheetPaste");
-        await Ui.Idle();
-        Assert.That(Row("I2").Assignees, Is.EqualTo(new[] { "U2" }));
-        Assert.That(Row("I5").Assignees, Is.EqualTo(new[] { "U2" }));
-        Assert.That(Row("I3").Assignees, Is.EqualTo(new[] { "U1" }));
-        Assert.That(Row("I6").Assignees, Is.EqualTo(new[] { "U1" }));
-        Assert.That(session.UndoCount, Is.EqualTo(1));
+        var selectionTrace = new List<string>();
+        RoutedEventHandler focusChanged = (_, _) => TraceSelection("GotFocus");
+        MenuFlyout menu = null!;
+        EventHandler<object> menuOpening = (_, _) => TraceSelection("menu Opening");
+        EventHandler<object> menuClosed = (_, _) => TraceSelection("menu Closed");
+        await Ui.Run(() => {
+            menu = (MenuFlyout)Ui.Find<AppBarButton>("PlanSheetMore").Flyout;
+            Ui.Root.GotFocus += focusChanged;
+            menu.Opening += menuOpening;
+            menu.Closed += menuClosed;
+            TraceSelection("before selection");
+        });
+        try {
+            await SelectCell(2, PlanField.Assignees);
+            await Ui.Run(() => TraceSelection("after Select I2"));
+            await SelectCell(5, PlanField.Assignees, extend: true);
+            await Ui.Run(() => {
+                TraceSelection("after AddToSelection I5");
+                foreach (var number in new[] { 2, 5 }) {
+                    var peer = FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>($"PlanCell{number}_Assignees"));
+                    Assert.That(((ISelectionItemProvider)peer.GetPattern(PatternInterface.SelectionItem)).IsSelected, Is.True,
+                        $"ID {number} must belong to the visible bulk-edit selection before paste.");
+                }
+            });
+            clipboard = new("bob", null);
+            await Ui.ClickCommand("PlanSheetPaste");
+            await Ui.Idle();
+            await Ui.Run(() => TraceSelection("after paste"));
+            Assert.That(Row("I2").Assignees.ToArray(), Is.EqualTo(new[] { "U2" }));
+            Assert.That(Row("I5").Assignees.ToArray(), Is.EqualTo(new[] { "U2" }));
+            Assert.That(Row("I3").Assignees.ToArray(), Is.EqualTo(new[] { "U1" }));
+            Assert.That(Row("I6").Assignees.ToArray(), Is.EqualTo(new[] { "U1" }));
+            Assert.That(session.UndoCount, Is.EqualTo(1));
+        }
+        finally {
+            await Ui.Run(() => {
+                TraceSelection("final");
+                Ui.Root.GotFocus -= focusChanged;
+                menu.Opening -= menuOpening;
+                menu.Closed -= menuClosed;
+            });
+            TestContext.Out.WriteLine(string.Join(Environment.NewLine, selectionTrace));
+        }
+
+        void TraceSelection(string phase)
+        {
+            if (selectionTrace.Count >= 40) return;
+            var focus = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(sheet.XamlRoot) as FrameworkElement;
+            var cells = sheet.Realized.Select(row => {
+                var cell = row.Cells.SingleOrDefault(cell => cell.Field == PlanField.Assignees);
+                var peer = cell is null ? null : FrameworkElementAutomationPeer.CreatePeerForElement(cell);
+                var selected = peer?.GetPattern(PatternInterface.SelectionItem) is ISelectionItemProvider provider && provider.IsSelected;
+                return $"{row.Identity}:context={row.DataContext},loaded={row.IsLoaded},owner={ReferenceEquals(row.Owner, sheet)},cell={Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(cell ?? (DependencyObject)row)},selected={selected},focus={cell?.FocusState}";
+            });
+            selectionTrace.Add($"{phase}: focus={focus?.GetType().Name}/{(focus is null ? "" : Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(focus))}; undo={session.UndoCount}; I2=[{string.Join(',', Row("I2").Assignees)}]; I5=[{string.Join(',', Row("I5").Assignees)}]; pending=[{string.Join(';', sheet.Pending.Select(pair => $"{pair.Key.Identity}/{pair.Key.Field}={pair.Value.Text}"))}]; rows=[{string.Join(';', cells)}]");
+        }
 
         await Filter("", ["I1", "I4", ""]);
         await Ui.Ready<FrameworkElement>("PlanCell4_Assignees");

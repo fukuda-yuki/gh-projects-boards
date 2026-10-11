@@ -6,6 +6,7 @@ using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
 using GhProjectsBoards.E2E.Tests;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
@@ -1152,8 +1153,19 @@ internal sealed partial class PlanSheetHostedTests
         var added = session.Document.State.Rows.Single(r => !before.Any(old => old.Identity == r.Identity));
         await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Contains(added.Identity));
         var titleId = $"PlanCell{session.Document.State.Rows.IndexOf(added) + 1}_Title";
-        await Ui.Ready<TextBox>(titleId);
-        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Ui.Find<TextBox>(titleId)));
+        try {
+            await Ui.Ready<TextBox>(titleId);
+            await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(Ui.Root.XamlRoot), Ui.Find<TextBox>(titleId)));
+        } catch {
+            await Ui.Run(() => {
+                string DescribeRow(PlanSheetRow row) => $"identity={row.Identity}, owner={ReferenceEquals(row.Owner, sheet)}, loaded={row.IsLoaded}, realized={sheet.Realized.Contains(row)}, titleId={AutomationProperties.GetAutomationId(row.Cells.Single(c => c.Field == PlanField.Title))}, width={row.ActualWidth}, height={row.ActualHeight}";
+                var container = sheet.List.ContainerFromItem(added.Identity) as ListViewItem;
+                var focus = FocusManager.GetFocusedElement(Ui.Root.XamlRoot) as DependencyObject;
+                Ui.Trace($"[INSERT] expected={added.Identity}/{titleId}, planId={sheet.PlanIds.GetValueOrDefault(added.Identity)}, itemCount={sheet.List.Items.Count}, containerContent={container?.Content}, containerData={container?.DataContext}, target={(container?.ContentTemplateRoot is PlanSheetRow target ? DescribeRow(target) : "none")}, focus={focus?.GetType().Name}/{(focus is null ? "" : AutomationProperties.GetAutomationId(focus))}, {sheet.WorkDescription}");
+                foreach (var row in Ui.Tree(sheet.List).OfType<PlanSheetRow>()) Ui.Trace("[INSERT ROW] " + DescribeRow(row));
+            });
+            throw;
+        }
         await Ui.Run(() => {
             var title = Ui.Find<TextBox>(titleId);
             Assert.That(title.Text, Is.Empty);
