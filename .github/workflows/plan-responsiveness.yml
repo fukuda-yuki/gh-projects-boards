@@ -69,6 +69,16 @@ jobs:
         if: steps.baseline-build.outcome == 'success'
         continue-on-error: true
         run: '& "$env:PLAN_BASELINE/scripts/Test-PlanPerformance.ps1" -NoBuild'
+      - name: Upload baseline evidence including failed attempts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-baseline
+          path: |
+            ${{ env.PLAN_BASELINE }}/TestResults/plan-performance
+            ${{ env.PLAN_BASELINE }}/TestResults/ui-integration
+            ${{ env.PLAN_BASELINE }}/TestResults/e2e
+          if-no-files-found: warn
       - name: Build candidate
         id: candidate-build
         if: always()
@@ -76,12 +86,6 @@ jobs:
       - name: Measure candidate serially
         if: always() && steps.candidate-build.outcome == 'success'
         run: ./scripts/Test-PlanPerformance.ps1 -NoBuild
-      - name: Check affected hosted behavior after measurement
-        if: always() && steps.candidate-build.outcome == 'success'
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview) and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
-      - name: Check synthesized wheel and menu keyboard routes on the isolated desktop
-        if: always() && steps.candidate-build.outcome == 'success'
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|VerticalWheelOverGantt|OverflowKeyboard|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
       - name: Upload candidate evidence including failed attempts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -92,13 +96,16 @@ jobs:
             TestResults/ui-integration
             TestResults/e2e
           if-no-files-found: warn
-      - name: Upload baseline evidence including failed attempts
+      - name: Check affected hosted behavior after measurement
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview) and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
+      - name: Check synthesized wheel and menu keyboard routes on the isolated desktop
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|HorizontalWheelAtTimelineEdges|VerticalWheelOverGantt|OverflowKeyboard|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
+      - name: Upload hosted regression evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: plan-baseline
-          path: |
-            ${{ env.PLAN_BASELINE }}/TestResults/plan-performance
-            ${{ env.PLAN_BASELINE }}/TestResults/ui-integration
-            ${{ env.PLAN_BASELINE }}/TestResults/e2e
+          name: plan-regressions
+          path: TestResults/ui-integration
           if-no-files-found: warn

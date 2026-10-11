@@ -23,6 +23,10 @@ public sealed class PlanScreenPerformanceTests
     private static extern bool GetSystemParameter(uint action, uint parameter, ref int value, uint flags);
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
     private static extern bool SetSystemParameter(uint action, uint parameter, nint value, uint flags);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll", EntryPoint = "mouse_event")]
+    private static extern void MouseEvent(uint flags, uint x, uint y, uint data, nuint extraInfo);
 
     [Test]
     public void VersionEditsRecordNativeEnterToChangedDatePixelsInTheOrdinaryApp()
@@ -55,6 +59,7 @@ public sealed class PlanScreenPerformanceTests
         using var app = Application.Attach(process.Id);
         Window? window = null;
         var samples = new List<object>();
+        var wheelRecordings = new List<object>();
         string outcome = "incomplete";
         string? failure = null;
         object? environment = null;
@@ -77,9 +82,6 @@ public sealed class PlanScreenPerformanceTests
             Wait(() => Find("OpenProjectName").Properties.Name.ValueOrDefault == "第2027.04版");
             Wait(() => Find("PlanCell1_Title").IsOffscreen == false && Find("PlanUnpublished").Properties.Name.ValueOrDefault == "未発行 0 タスク");
             var list = Find("PlanTasks");
-            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
-            Wait(() => Find("PlanCell144_Remaining").IsOffscreen == false);
-            Thread.Sleep(500);
             environment = new {
                 window = window.BoundingRectangle, scale = GetDpiForWindow(window.Properties.NativeWindowHandle.Value) / 96d,
                 os = Environment.OSVersion.ToString(), runtime = Environment.Version.ToString(),
@@ -87,6 +89,41 @@ public sealed class PlanScreenPerformanceTests
                 clientAreaAnimationsEnabled = originalAnimation != 0 || changedAnimation,
                 fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(data, "evaluation.json"))).RootElement.Clone()
             };
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
+            Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
+            var rowBounds = Rectangle.Round(list.BoundingRectangle);
+            var rowRegion = new Rectangle(rowBounds.Left + 2, rowBounds.Top + 2,
+                Math.Min(600, rowBounds.Width - 4), Math.Min(650, rowBounds.Height - 4));
+            Assert.That(rowRegion.Width > 100 && rowRegion.Height > 100, Is.True);
+            Assert.That(SetCursorPos(rowRegion.Left + 200, rowRegion.Top + 100), Is.True);
+            using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-scroll.png"));
+            foreach (var down in new[] { true, false })
+            {
+                var direction = down ? "down" : "up";
+                var beforeOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
+                var recording = RecordPixels(Path.Combine(root, "scroll-" + direction), rowRegion, mark => {
+                    for (var notch = 1; notch <= 40; notch++) {
+                        mark($"wheel-{direction}:{notch}");
+                        MouseEvent(0x0800, 0, 0, unchecked((uint)(down ? -120 : 120)), 0);
+                        Thread.Sleep(50);
+                    }
+                }, TimeSpan.FromSeconds(1));
+                var afterOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
+                wheelRecordings.Add(new { direction, notches = 40, requestedIntervalMs = 50,
+                    beforeVerticalPercent = beforeOffset, afterVerticalPercent = afterOffset, region = rowRegion,
+                    recording.ScreenChanged, recording.FinalStateStable, recording.MaxCaptureIntervalMs,
+                    boundary = "Native wheel input and raw desktop pixels over the visible row IDs/titles; inspect images for stale/blank content. Hash changes do not classify population or physical display flicker." });
+                WriteSummary();
+                using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-scroll-" + direction + ".png"));
+                Assert.That(down ? afterOffset > beforeOffset : afterOffset < beforeOffset, Is.True,
+                    "The ordinary app must receive the recorded wheel input.");
+            }
+            // Record the native return position above, then reset outside the edit measurement.
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
+            Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
+            Wait(() => Find("PlanCell144_Remaining").IsOffscreen == false);
+            Thread.Sleep(500);
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-edits.png"));
             var original = Find("PlanCell144_Remaining").AsTextBox().Text;
             Assert.That(double.TryParse(original, out var remaining), Is.True, "ID 144 must be an editable version task.");
@@ -115,25 +152,33 @@ public sealed class PlanScreenPerformanceTests
                 Assert.That(valid, Is.True, "A timing sample needs changed dates, unchanged screen coordinates and stable changed pixels; raw frames are preserved.");
             }
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-edits.png"));
-            // Native typing at the rhythm that exposed #155; retain actual screen frames and final result count.
+            // Retain native character delivery and filtering separately at both typing rhythms.
             var filter = Find("PlanSheetFilter").AsTextBox();
-            filter.Focus();
             var filterRegion = Rectangle.Round(window.BoundingRectangle);
             filterRegion.Height = Math.Min(450, filterRegion.Height);
-            RecordPixels(Path.Combine(root, "filter-slow"), filterRegion, mark => {
-                foreach (var character in "PS-00") { mark("key:" + character); Keyboard.Type(character.ToString()); Thread.Sleep(700); }
-            }, TimeSpan.FromSeconds(2));
-            Assert.That(filter.Text, Is.EqualTo("PS-00"));
-            Assert.That(Find("PlanSheetFilterCount").Properties.Name.ValueOrDefault, Is.Not.Null.And.Not.Empty);
-            File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
-                text = filter.Text, count = Find("PlanSheetFilterCount").Properties.Name.ValueOrDefault,
-                boundary = "Native typing at 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
-            }));
-            filter.Text = "";
-            Keyboard.Type(VirtualKeyShort.RETURN);
-            Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetFilterCount")) is null or { IsOffscreen: true });
-            // Let row realization after clearing the filter settle outside the menu recording.
-            Thread.Sleep(1000);
+            var filterResults = new List<object>();
+            foreach (var pauseMs in new[] { 200, 700 })
+            {
+                filter.Focus();
+                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+                var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
+                RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
+                    foreach (var character in "PS-00") { mark("key:" + character); Keyboard.Type(character.ToString()); Thread.Sleep(pauseMs); }
+                }, TimeSpan.FromSeconds(2));
+                var count = Find("PlanSheetFilterCount").Properties.Name.ValueOrDefault;
+                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
+                File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
+                    results = filterResults,
+                    boundary = "Native typing at 200 and 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
+                }));
+                Assert.That(filter.Text, Is.EqualTo("PS-00"));
+                Assert.That(count, Is.EqualTo("120 件"));
+                filter.Text = "";
+                Keyboard.Type(VirtualKeyShort.RETURN);
+                Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetFilterCount")) is null or { IsOffscreen: true });
+                // Settle row realization outside the next typing/menu recording.
+                Thread.Sleep(1000);
+            }
             Assert.That(originalAnimation != 0 || changedAnimation, Is.True, "Menu recording requires Windows client-area animations enabled.");
             var more = window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetMoreCommands"))
                 ?? window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetMore"))
@@ -167,7 +212,7 @@ public sealed class PlanScreenPerformanceTests
             if (changedAnimation) SetSystemParameter(0x1043, 0, nint.Zero, 0);
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
-            schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, samples,
+            schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, wheelRecordings, samples,
             targetMs = 200, boundary = "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. Capture interval brackets each result; CI runner timings are reported, not asserted as PMO hardware acceptance."
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
