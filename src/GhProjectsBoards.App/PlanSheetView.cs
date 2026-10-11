@@ -28,6 +28,7 @@ internal sealed partial class PlanSheetView : Grid
     private long inputGeneration;
     internal readonly Dictionary<(string Identity, PlanField Field), Input> Pending = [];
     private readonly PlanInputProblem inputProblem = new("SheetInputProblem");
+    private sealed class InputRejectedException(string message, Exception? inner = null) : InvalidOperationException(message, inner);
     internal void SetInput(string identity, PlanField field, string text, string originalText) => Pending[(identity, field)] = new(text, ++inputGeneration, originalText);
     internal long Generation(string identity, PlanField field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
     internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
@@ -73,6 +74,10 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
+    private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
+        Foreground = Brush("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center }, "PlanSheetFilterCount");
+    private bool scrollSubscribed, sheetScrollPending, chartScrollPending;
     private int acceptedZoom = 1;
     private bool initialChartPositioned;
     internal bool ShowLatenessLabels => acceptedZoom is 0 or 1;
@@ -124,7 +129,7 @@ internal sealed partial class PlanSheetView : Grid
         filterBox.Children.Add(Id(new FontIcon { Glyph = "\uE721", FontSize = 14, Width = 14, Height = 14,
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new(10, 0, 0, 0),
             IsHitTestVisible = false, IsTabStop = false, Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetFilterSearch"));
-        scales.Children.Add(filterBox);
+        scales.Children.Add(filterBox); scales.Children.Add(filterCount);
         controls.Children.Add(scales); SetColumn(scales, 1);
         AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
@@ -169,7 +174,7 @@ internal sealed partial class PlanSheetView : Grid
             toggle.Checked += VisibilityChanged; toggle.Unchecked += VisibilityChanged;
             choices.Children.Add(toggle);
         }
-        columns.Flyout = new Flyout { Content = choices }; commands.SecondaryCommands.Add(columns);
+        columns.Flyout = new Flyout { Content = choices, AreOpenCloseAnimationsEnabled = false }; commands.SecondaryCommands.Add(columns);
         controls.Children.Add(commands);
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
@@ -207,7 +212,7 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(headers); SetRow(headers, 3);
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
-        List.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
+        List.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(Control.BorderThicknessProperty, new Thickness(0)),
             new Setter(FrameworkElement.MinHeightProperty, 0d),
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
@@ -225,8 +230,8 @@ internal sealed partial class PlanSheetView : Grid
         AutomationProperties.SetName(divider, "シートとガントの幅");
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
         Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
-        sheetHorizontal.ViewChanged += (_, _) => { sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset }; RefreshRealized(); };
-        chartHorizontal.ViewChanged += (_, _) => { RenderTimelineHeader(); RefreshRealized(); };
+        sheetHorizontal.ViewChanged += (_, _) => QueueScrollRefresh(sheet: true);
+        chartHorizontal.ViewChanged += (_, _) => QueueScrollRefresh(sheet: false);
         SizeChanged += (_, _) => RefreshLayout();
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
@@ -252,21 +257,20 @@ internal sealed partial class PlanSheetView : Grid
             }, "Zoom");
         };
         filter.TextChanged += async (_, _) => {
-            if (rendering || filter.Text == acceptedFilter) return;
-            var proposed = filter.Text;
-            await Run(async () => {
-                try { await CommitPending(); }
-                catch {
-                    rendering = true;
-                    try { filter.Text = acceptedFilter; }
-                    finally { rendering = false; }
-                    throw;
-                }
-                acceptedFilter = proposed; Refresh();
-            }, "Filter");
+            filterDelay.Stop();
+            if (rendering || disposed || filter.Text == acceptedFilter) return;
+            if (filter.Text.Length == 0) await ApplyFilter();
+            else filterDelay.Start();
+        };
+        filterDelay.Tick += async (_, _) => await ApplyFilter();
+        filter.KeyDown += async (_, args) => {
+            if (args.Key != Windows.System.VirtualKey.Enter) return;
+            args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+        Unloaded += (_, _) => { disposed = true; filterDelay.Stop(); filter.Text = acceptedFilter; CompositionTarget.Rendering -= RefreshScrolledRows;
+            scrollSubscribed = sheetScrollPending = chartScrollPending = false;
+            inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             if (!initialChartPositioned) {
                 PositionTimelineAnchor();
@@ -276,6 +280,42 @@ internal sealed partial class PlanSheetView : Grid
         ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RenderTimelineHeader(); RefreshRealized(); };
 
         Refresh();
+    }
+    private Task ApplyFilter()
+    {
+        filterDelay.Stop();
+        var proposed = filter.Text;
+        if (disposed || proposed == acceptedFilter) return Task.CompletedTask;
+        return Run(async () => {
+            if (filter.Text != proposed || proposed == acceptedFilter) return;
+            try { await CommitPending(); }
+            catch {
+                rendering = true;
+                try { if (filter.Text == proposed) filter.Text = acceptedFilter; }
+                finally { rendering = false; }
+                throw;
+            }
+            if (filter.Text != proposed || disposed) return;
+            acceptedFilter = proposed; Refresh();
+        }, "Filter");
+    }
+    private void QueueScrollRefresh(bool sheet)
+    {
+        if (disposed) return;
+        if (sheet) sheetScrollPending = true; else chartScrollPending = true;
+        if (scrollSubscribed) return;
+        scrollSubscribed = true; CompositionTarget.Rendering += RefreshScrolledRows;
+    }
+    private void RefreshScrolledRows(object? sender, object args)
+    {
+        CompositionTarget.Rendering -= RefreshScrolledRows; scrollSubscribed = false;
+        var sheet = sheetScrollPending; var chart = chartScrollPending;
+        sheetScrollPending = chartScrollPending = false;
+        if (disposed) return;
+        if (sheet) sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
+        if (chart) RenderTimelineHeader();
+        foreach (var row in Realized.ToArray()) row.RefreshHorizontal(sheet, chart);
+        if (sheet) UpdateInputProblem();
     }
     private static ScrollViewer Horizontal(string id) => Id(new ScrollViewer {
         HorizontalScrollBarVisibility = ScrollBarVisibility.Visible, HorizontalScrollMode = ScrollMode.Enabled,
@@ -317,7 +357,10 @@ internal sealed partial class PlanSheetView : Grid
                 try { error.Text = ""; await action(); }
                 catch (OperationCanceledException) when (token.IsCancellationRequested) { }
                 catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException or FormatException)
-                { if (!token.IsCancellationRequested) { if (ex is not IOException || !SaveFailure.IsOpen) error.Text = ex.Message; Refresh(); UpdateReason(); } }
+                { if (!token.IsCancellationRequested) {
+                    if (ex is not InputRejectedException && (ex is not IOException || !SaveFailure.IsOpen)) error.Text = ex.Message;
+                    Refresh(); UpdateReason();
+                } }
             }
             finally { commands.Remove(number); }
         }
@@ -355,7 +398,7 @@ internal sealed partial class PlanSheetView : Grid
             var identity = Realized.First(r => r.Cells.Contains(composing)).Identity;
             Problems[(identity, composing.Field)] = "IME変換を確定または取消してください。";
             Select(identity, composing.Field, false); FocusSelected(); UpdateInputProblem();
-            throw new InvalidOperationException(Problems[(identity, composing.Field)]);
+            throw new InputRejectedException(Problems[(identity, composing.Field)]);
         }
         foreach (var input in Pending.ToArray())
         {
@@ -416,7 +459,8 @@ internal sealed partial class PlanSheetView : Grid
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
-            Problems[(identity, field)] = ex.Message; RefreshRealized(); metrics.End(pendingFrame, "rejected"); throw;
+            Problems[(identity, field)] = ex.Message; RefreshRealized(); metrics.End(pendingFrame, "rejected");
+            throw new InputRejectedException(ex.Message, ex);
         }
     }
     private void FrameRendered(object? sender, RenderedEventArgs args)
@@ -452,6 +496,8 @@ internal sealed partial class PlanSheetView : Grid
         var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) ||
             (acceptedFilter.Length > 0 ? r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase) : !HiddenByFold(r)))
             .Select(r => r.Identity).Append("").ToArray();
+        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{document.State.Rows.Count(r => r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase)):N0} 件";
+        filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (!RowIds.SequenceEqual(next))
         {
             // Recycling the focused cell can synchronously select a new container.

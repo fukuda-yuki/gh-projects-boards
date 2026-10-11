@@ -615,7 +615,8 @@ internal sealed class PlanOverviewHostedTests
             var editor = Ui.Find<TextBox>("PlanCell2_Remaining");
             Assert.That(editor.Text, Is.EqualTo("invalid"));
             Assert.That(editor.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
-            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Not.Empty);
+            Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text, Is.Not.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Visibility, Is.EqualTo(Visibility.Collapsed));
         });
         Assert.That(Row("I2").Remaining, Is.EqualTo(8));
         Assert.That(session.UndoCount, Is.Zero);

@@ -15,7 +15,7 @@ using Rectangle = Microsoft.UI.Xaml.Shapes.Rectangle;
 using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanSheet")]
-internal sealed class PlanSheetHostedTests
+internal sealed partial class PlanSheetHostedTests
 {
     private string root = null!;
     private PlanSession session = null!;
@@ -49,6 +49,12 @@ internal sealed class PlanSheetHostedTests
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null)).ToImmutableArray() : [new("U1", "alice", 100, null)],
                 Columns = [new(PlanField.Start, "start", "Start date", "DATE")] })), Today);
+        if (TestContext.CurrentContext.Test.MethodName == nameof(VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation))
+        {
+            var plan = GhProjectsBoards.Tests.EvaluationFixture.ReadPlan();
+            var snapshot = GhProjectsBoards.Tests.EvaluationFixture.Simulate(plan, [plan.StatusDate]).Single();
+            session = await PlanSession.CreateAsync(new(root), snapshot.Document, plan.StatusDate);
+        }
         await Ui.Run(() => sheet = new(session, () => clipboardReader is { } read ? read() : Task.FromResult(clipboard), value => { if (clipboardWriter is { } write) write(value); else clipboard = value; }));
         await Ui.Run(() => {
             var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
@@ -1254,7 +1260,8 @@ internal sealed class PlanSheetHostedTests
         var before = session.UndoCount;
         await Ui.Run(() => { var cell = Ui.Find<TextBox>($"PlanCell{row}_{field}"); Assert.That(cell.Focus(FocusState.Programmatic), Is.True); cell.Text = text; });
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic), Is.True));
-        await Ui.Until(() => session.UndoCount != before || Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
+        await Ui.Until(() => session.UndoCount != before || Ui.Popup<Border>("SheetInputProblem") is not null
+            || Ui.Find<TextBlock>("PlanSheetError").Text.Length > 0);
         await Ui.Idle();
     }
     [Test, Category("PlanSheetReview")]
@@ -1764,7 +1771,8 @@ internal sealed class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("状況日")));
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(new DateOnly(2026, 10, 20)));
         await Edit(1, PlanField.Predecessors, "2");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Does.Contain("#1").And.Contain("#2")));
+        await Ui.Run(() => Assert.That(((TextBlock)Ui.Popup<Border>("SheetInputProblem")!.Child).Text,
+            Does.Contain("#1").And.Contain("#2")));
         Assert.That(session.Document.State.Rows[0].Predecessors, Is.Empty);
     }
     [TestCase("日", 24d), TestCase("週", 8d), TestCase("月", 2d)]

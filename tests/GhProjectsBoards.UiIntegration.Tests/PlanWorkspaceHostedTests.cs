@@ -18,6 +18,29 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [Test]
+    public async Task ProjectAndReviewListsHaveNoTransitionsOrScrollingPlaceholders()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Ready<ListView>("AvailableProjects");
+        await Ui.Run(() => {
+            PlanSheetHostedTests.AssertQuietList(Ui.Find<ListView>("AvailableProjects"));
+            Assert.That(Ui.Find<Button>("PlanProjectPicker").Flyout.AreOpenCloseAnimationsEnabled, Is.False);
+        });
+        await OpenProjectPicker();
+        await Ui.Run(() => {
+            PlanSheetHostedTests.AssertQuietList(Ui.Popup<ListView>("RegisteredProjects")!);
+            Ui.Find<Button>("PlanProjectPicker").Flyout.Hide();
+        });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => PlanSheetHostedTests.AssertQuietList(Ui.Find<ListView>("PlanPublishLines")));
+    }
+
     [TestCase(1280, 800), TestCase(1920, 1032), TestCase(1000, 720), TestCase(900, 720)]
     [Category("PlanSheetReview")]
     public async Task DefaultDividerFitsColumnsOrKeepsMinimumGanttAtWorkspaceClientSize(int width, int height)

@@ -10,7 +10,7 @@ Build Release with `--no-restore`, then run `./scripts/Test-UiIntegration.ps1 -N
 
 - `Infrastructure`: deliberate runner failures.
 - `PlanSheetNative`: physical keys, pointer and clipboard; run it on the PMO desktop.
-- `PlanSheetPerformance`: 1,000 tasks, 20 people, ten-task chains and 20 commit-to-Rendered samples with every outcome retained; see [performance measurement](../../docs/performance.md).
+- `PlanSheetPerformance`: 1,000 tasks, 20 people, ten-task chains and 20 commit-to-Rendered samples with every outcome retained; also the 1,040-row offline version's vertical/Gantt scroll round trip, frame intervals and viewport population lag in `plan-scroll.json`. See [performance measurement](../../docs/performance.md).
 
 The process deadline defaults to 3,600 seconds for the routine selection. A deadline expiry is not a view lifecycle failure; the per-view Unloaded deadline remains 10 seconds.
 

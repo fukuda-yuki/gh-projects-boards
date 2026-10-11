@@ -37,7 +37,7 @@ internal sealed partial class PlanWorkspaceView
         reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
         ScrollViewer.SetHorizontalScrollBarVisibility(reviewLines, ScrollBarVisibility.Disabled);
         ScrollViewer.SetHorizontalScrollMode(reviewLines, ScrollMode.Disabled);
-        reviewLines.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
+        reviewLines.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0, 4, 0, 4)),
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         publishReview.Children.Add(reviewLines); Grid.SetRow(reviewLines, 1);

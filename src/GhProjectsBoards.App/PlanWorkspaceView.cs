@@ -25,7 +25,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
-    private readonly Flyout projectFlyout = new();
+    private readonly Flyout projectFlyout = new() { AreOpenCloseAnimationsEnabled = false };
     private readonly Button projectPicker = Id(new Button(), "PlanProjectPicker");
     private readonly TextBlock projectMetadata = new();
     private readonly StackPanel legend = Id(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20, Margin = new(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanGanttLegend");
