@@ -156,46 +156,12 @@ public sealed class PlanScreenPerformanceTests
                 Assert.That(valid, Is.True, "A timing sample needs changed dates, unchanged screen coordinates and stable changed pixels; raw frames are preserved.");
             }
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-edits.png"));
-            // Retain native character delivery and filtering separately at both typing rhythms.
-            var filter = Find("PlanSheetFilter").AsTextBox();
-            var filterRegion = Rectangle.Round(window.BoundingRectangle);
-            filterRegion.Height = Math.Min(450, filterRegion.Height);
-            var filterResults = new List<object>();
-            foreach (var pauseMs in new[] { 200, 700 })
-            {
-                filter.Focus();
-                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
-                var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
-                RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
-                    var cadence = Stopwatch.StartNew();
-                    var index = 0;
-                    foreach (var character in "PS-00") {
-                        // FlaUI includes input-processing time. Schedule key starts
-                        // absolutely so that overhead does not lengthen each pause.
-                        var remaining = TimeSpan.FromMilliseconds(index++ * pauseMs) - cadence.Elapsed;
-                        if (remaining > TimeSpan.Zero) Thread.Sleep(remaining);
-                        mark("key:" + character);
-                        Keyboard.Type(character.ToString());
-                    }
-                }, TimeSpan.FromSeconds(2));
-                var count = Find("PlanSheetFilterCount").Properties.Name.ValueOrDefault;
-                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
-                File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
-                    results = filterResults,
-                    boundary = "Native typing at 200 and 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
-                }));
-                Assert.That(filter.Text, Is.EqualTo("PS-00"));
-                Assert.That(count, Is.EqualTo("120 件"));
-                filter.Text = "";
-                Keyboard.Type(VirtualKeyShort.RETURN);
-                Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetFilterCount")) is null or { IsOffscreen: true });
-                // Settle row realization outside the next typing/menu recording.
-                Thread.Sleep(1000);
-            }
             Assert.That(originalAnimation != 0 || changedAnimation, Is.True, "Menu recording requires Windows client-area animations enabled.");
-            var more = window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetMoreCommands"))
-                ?? window.FindFirstDescendant(c => c.ByAutomationId("PlanSheetMore"))
-                ?? Find("MoreButton");
+            var commands = Find("PlanSheetCommands");
+            var more = commands.FindFirstDescendant(c => c.ByAutomationId("MoreButton"));
+            // Search the bounded command bar for the baseline's native button. The
+            // candidate's adjacent button is known to exist when that button is hidden.
+            if (more is null || more.IsOffscreen) more = Find("PlanSheetMore");
             var menuBounds = more.BoundingRectangle;
             var menuRegion = Rectangle.FromLTRB(Math.Max(0, (int)menuBounds.Left - 300), (int)menuBounds.Bottom + 2,
                 Math.Min(1920, (int)menuBounds.Right + 300), Math.Min(1080, (int)menuBounds.Bottom + 550));
@@ -222,6 +188,61 @@ public sealed class PlanScreenPerformanceTests
                 ["PlanPredecessorSearch", "PlanPredecessorCandidates", "PlanPredecessorConfirm", "PlanPredecessorCancel"]);
             RecordFlyout("project", "PlanProjectPicker", "PlanChooseProject",
                 ["RegisteredProjects", "PlanChooseProject", "PlanConnection"]);
+            // Retain native character delivery and filtering separately at both typing rhythms.
+            var filter = Find("PlanSheetFilter").AsTextBox();
+            var filterRegion = Rectangle.Round(window.BoundingRectangle);
+            filterRegion.Height = Math.Min(450, filterRegion.Height);
+            var filterResults = new List<object>();
+            AutomationElement? countElement = null;
+            foreach (var pauseMs in new[] { 200, 700 })
+            {
+                filter.Focus();
+                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+                var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
+                RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
+                    var cadence = Stopwatch.StartNew();
+                    var index = 0;
+                    foreach (var character in "PS-00") {
+                        // FlaUI includes input-processing time. Schedule key starts
+                        // absolutely so that overhead does not lengthen each pause.
+                        var remaining = TimeSpan.FromMilliseconds(index++ * pauseMs) - cadence.Elapsed;
+                        if (remaining > TimeSpan.Zero) Thread.Sleep(remaining);
+                        mark("key:" + character);
+                        Keyboard.Type(character.ToString());
+                    }
+                }, TimeSpan.FromSeconds(2));
+                countElement ??= Find("PlanSheetFilterCount");
+                var count = countElement.Properties.Name.ValueOrDefault;
+                filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
+                File.WriteAllText(Path.Combine(root, "filter-result.json"), JsonSerializer.Serialize(new {
+                    results = filterResults,
+                    boundary = "Native typing at 200 and 700 ms intervals and raw desktop pixel frames; inspect character delivery and result replacement separately."
+                }));
+                Assert.That(filter.Text, Is.EqualTo("PS-00"));
+                Assert.That(count, Is.EqualTo("120 件"));
+                var clearEvidence = Path.Combine(root, $"filter-clear-{pauseMs}.json");
+                var clearTimer = Stopwatch.StartNew();
+                File.WriteAllText(clearEvidence, JsonSerializer.Serialize(new { phase = "started", utc = DateTime.UtcNow }));
+                filter.Focus();
+                Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+                double? clearInputEndMs = null;
+                var clearRecording = RecordPixels(Path.Combine(root, recordingName + "-clear"), filterRegion, mark => {
+                    mark("Ctrl+A");
+                    using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
+                    mark("Backspace");
+                    Keyboard.Type(VirtualKeyShort.BACK);
+                    clearInputEndMs = clearTimer.Elapsed.TotalMilliseconds;
+                }, TimeSpan.FromSeconds(3));
+                // These toolbar controls survive row filtering. Observe their retained
+                // peers directly; an absent-element search traverses the virtualized list.
+                Wait(() => filter.Text.Length == 0 && countElement.IsOffscreen);
+                File.WriteAllText(clearEvidence, JsonSerializer.Serialize(new {
+                    phase = "completed", utc = DateTime.UtcNow, clearInputEndMs, clearRecording,
+                    observedMs = clearTimer.Elapsed.TotalMilliseconds, text = filter.Text, countOffscreen = countElement.IsOffscreen
+                }));
+                // Settle row realization outside the next typing recording.
+                Thread.Sleep(1000);
+            }
             window.Close();
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
             Assert.That(process.ExitCode, Is.Zero);
