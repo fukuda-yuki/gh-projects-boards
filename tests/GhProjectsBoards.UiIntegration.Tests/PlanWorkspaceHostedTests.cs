@@ -1834,6 +1834,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open(); await Settings();
         await CommitText("PlanProjectStart", "2026-10-05");
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectStart == new DateOnly(2026, 10, 5));
         var undo = workspace.Session!.UndoCount;
         await CommitText("PlanProjectEnd", "2026-10-04");
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
