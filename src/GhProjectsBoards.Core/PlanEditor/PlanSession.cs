@@ -82,7 +82,11 @@ internal sealed class PlanSession
             if (!fromRemote) RequireEditable(command);
             else PlanOperations.Require(remoteOperation && checkpoint.Document.Sync.Publish is null, "列設定を変更できません。");
             var (state, kind) = PlanOperations.Apply(checkpoint.Document, command, today);
-            var dates = fromRemote ? checkpoint.Document.Dates : ReleaseDates(checkpoint.Document);
+            var priorSettings = checkpoint.Document.State.Settings;
+            var mappingOnly = command is ReplacePlanSettings && !PlanOperations.SettingsEqual(priorSettings, state.Settings)
+                && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones });
+            // Milestone targets are comparisons, including while GitHub dates are held.
+            var dates = fromRemote || mappingOnly ? checkpoint.Document.Dates : ReleaseDates(checkpoint.Document);
             var patch = DateTransition(PlanOperations.Difference(checkpoint.Document.State, state, kind), checkpoint.Document, dates);
             if (patch.Rows.IsEmpty && patch.BeforeOrder is null && patch.BeforeSettings is null && patch.BeforeDates is null) return CurrentSave();
             var publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state);

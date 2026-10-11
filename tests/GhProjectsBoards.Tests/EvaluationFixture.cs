@@ -33,11 +33,12 @@ internal static class EvaluationFixture
     {
         var columns = PlanColumnMatching.Roles.Select(r => new PlanColumnDefinition("F-" + r.Role, r.Name, r.Type) { Options = r.Role == PlanField.Phase ? [.. plan.Phases] : [] }).ToImmutableArray();
         var settings = new ProjectPlanSettings {
+            PhaseMilestones = plan.Milestones.ToImmutableDictionary(m => m.Phase, m => m.Title),
             StatusDate = statusDate, ProjectStart = plan.ProjectStart, ProjectEnd = plan.ProjectEnd, DefaultRepository = "acme/repo",
             Columns = PlanColumnMatching.Roles.Select(r => new PlanColumnMapping(r.Role, "F-" + r.Role, r.Name, r.Type)).ToImmutableArray(),
             People = plan.People.Select(p => new PlanResource(p.Identity, p.Name, p.Rate, p.Allowance)).ToImmutableArray()
         };
-        return new PlanDocument(new ScopedId(new("github.com", 42), "P1"), new(rows, columns), new(rows, settings));
+        return new PlanDocument(new ScopedId(new("github.com", 42), "P1"), new(rows, columns) { Milestones = plan.Milestones.Select(m => new PlanMilestone(m.Title, m.Due, false, false)).ToImmutableArray() }, new(rows, settings));
     }
 
     // The team works day by day as the plan says and updates 実績 and 残 as it goes: 残 is the
@@ -48,6 +49,7 @@ internal static class EvaluationFixture
         var identities = Identities(plan);
         var source = plan.Rows.ToDictionary(r => identities[r.Key]);
         var rows = plan.Rows.Select(r => new PlanRow(identities[r.Key], r.Title, "acme/repo") {
+            MilestoneTitle = plan.Milestones.SingleOrDefault(m => m.Phase == r.Phase)?.Title,
             Phase = r.Phase, Parent = r.Parent is null ? null : identities[r.Parent], Estimate = r.Estimate, Remaining = r.Estimate,
             Actual = r.Parent is null ? null : 0, Assignees = r.Person is null ? [] : [r.Person],
             Predecessors = r.Predecessors.Select(k => identities[k]).ToImmutableArray(), StartNoEarlierThan = r.Start
@@ -115,6 +117,7 @@ internal static class EvaluationFixture
         var phases = plan.Rows.Where(r => r.Phase is not null).ToDictionary(r => identities[r.Key], r => r.Phase!);
         var fake = Path.Combine(root, "fake-gh"); Directory.CreateDirectory(fake);
         FakePlanEditor.Save(fake, new(rows.Select(r => new PlanFakeIssue(r, "", true) { Phase = phases.GetValueOrDefault(r.Identity) }).ToImmutableArray(), rows.Length + 1) {
+            Milestones = plan.Milestones.Select((m, i) => new PlanFakeMilestone("M" + i, "acme/repo", m.Title, m.Due)).ToImmutableArray(),
             SubOrders = orders, AddedFields = [nameof(PlanField.StartNoEarlierThan), nameof(PlanField.Fixed)], Phases = [.. plan.Phases]
         });
         await File.WriteAllTextAsync(Path.Combine(fake, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, versionTitle = plan.Title }));

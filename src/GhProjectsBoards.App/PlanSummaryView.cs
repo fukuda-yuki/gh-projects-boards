@@ -56,6 +56,7 @@ internal sealed class PlanSummaryView : UserControl
     private static string Number(decimal? number) => number?.ToString("#,0.##", Japanese) ?? "—";
     private static string Date(DateOnly? date) => date?.ToString("M/d (ddd)", Japanese) ?? "—";
     private static string Signed(decimal? value) => value is null ? "—" : value.Value.ToString("+#,0.##;-#,0.##;0", Japanese);
+    private static string Days(int? value) => value is null ? "—" : Signed(value) + "日";
     private static string Percent(decimal? value) => PlanSummaryPresentation.Percent(value);
     private static string Progress(SummaryValue value) => Percent(value.Value) + (value.Excluded > 0 ? $"（工数未入力 {value.Excluded:N0} タスクを除く）" : "");
     private static string Value(SummaryValue value) => Number(value.Value) + (value.Excluded > 0 ? $"（工数未入力 {value.Excluded:N0} タスクを除く）" : "");
@@ -161,19 +162,39 @@ internal sealed class PlanSummaryView : UserControl
             phases.ColumnDefinitions.Add(new()); phases.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
             var table = Id(new StackPanel(), "SummaryPhaseTable"); Heading(table, "工程別");
             var rows = new StackPanel();
-            double[] widths = [88, 112, 72, 72, 72, 72, 72, 64, 108, 76, 76];
+            double[] widths = [88, 112, 72, 72, 72, 72, 72, 64, 108, 108, 64, 76, 76];
             phases.SizeChanged += (_, args) => phases.ColumnDefinitions[0].Width = new(Math.Min(widths.Sum(), Math.Max(0, args.NewSize.Width - 276)));
-            var header = Row(widths); header.Height = 54; var names = new[] { "工程", "完了 / タスク", "見積 h", "実績 h", "残 h", "見込 h", "差異 h", "進捗", "完了見込", "期限超過", "見積超過" };
+            var header = Row(widths); header.Height = 54; var names = new[] { "工程", "完了 / タスク", "見積 h", "実績 h", "残 h", "見込 h", "差異 h", "進捗", "目標日", "完了見込", "差", "期限超過", "見積超過" };
             for (var i = 0; i < names.Length; i++) Cell(header, TableText(names[i], numeric: i > 0), i); rows.Children.Add(header);
             for (var n = 0; n < report.Phases.Count; n++) {
                 var phase = report.Phases[n]; var t = phase.Tasks; var row = Id(Row(widths), $"SummaryPhaseRow_{n}"); row.MinHeight = 29;
                 Cell(row, TableCell(Phase(phase), phase.IsTotal ? "SummaryPhaseTotal" : $"SummaryPhase_{n}", () => Select(Phase(phase), t.Identities), left: true), 0);
-                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t.Progress), Date(t.Finish), $"{t.Overdue:N0}", $"{t.OverEstimate:N0}"];
+                string[] values = [$"{t.Closed:N0} / {t.Count:N0}", Value(t.Estimate), Value(t.Actual), Value(t.Remaining), Value(t.Forecast), Signed(t.Variance.Value) + (t.Variance.Excluded > 0 ? $"（工数未入力 {t.Variance.Excluded:N0} タスクを除く）" : ""), Progress(t.Progress), Date(phase.Target), Date(t.Finish), Days(phase.Difference), $"{t.Overdue:N0}", $"{t.OverEstimate:N0}"];
                 for (var i = 0; i < values.Length; i++) { var text = TableText(values[i], numeric: true); ToolTipService.SetToolTip(text, names[i + 1] + " " + values[i]); AutomationProperties.SetName(text, Phase(phase) + " " + names[i + 1] + " " + values[i]); Cell(row, text, i + 1); }
                 AutomationProperties.SetName(row, Phase(phase) + " " + string.Join(" · ", values.Select((value, i) => names[i + 1] + " " + value)));
                 rows.Children.Add(row);
             }
             table.Children.Add(Wide(rows)); Cell(phases, table, 0); Cell(phases, Timeline(), 1); body.Children.Add(phases);
+        }
+        if (report.Milestones.Count > 0) {
+            var table = Id(new StackPanel(), "SummaryMilestoneTable"); Heading(table, "マイルストーン");
+            double[] widths = [200, 108, 108, 72, 112, 88];
+            var header = Row(widths); header.Height = 32;
+            string[] names = ["名前", "期日", "完了見込", "差", "完了 / タスク", "状態"];
+            for (var i = 0; i < names.Length; i++) Cell(header, TableText(names[i], numeric: i is > 0 and < 5), i);
+            table.Children.Add(header);
+            for (var n = 0; n < report.Milestones.Count; n++) {
+                var milestone = report.Milestones[n]; var m = milestone.Milestone;
+                var row = Id(Row(widths), "SummaryMilestoneRow_" + n); row.MinHeight = 29;
+                var title = TableCell(m.Title, "SummaryMilestone_" + n, () => Select(m.Title + " · 期日を過ぎるタスク", milestone.LateTasks), left: true);
+                var description = m.Title + (m.ConflictingDates ? " · 期日がリポジトリで異なります" : "");
+                ToolTipService.SetToolTip(title, description); AutomationProperties.SetName(title, description);
+                Cell(row, title, 0);
+                string[] values = [Date(m.DueDate), Date(milestone.Forecast), Days(milestone.Difference), $"{milestone.Closed:N0} / {milestone.Tasks.Count:N0}", m.Closed ? "クローズ" : "オープン"];
+                for (var i = 0; i < values.Length; i++) Cell(row, TableText(values[i], numeric: i < 4), i + 1);
+                table.Children.Add(row);
+            }
+            body.Children.Add(Wide(table));
         }
         Heading(body, "担当者 × 工程");
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -196,6 +217,8 @@ internal sealed class PlanSummaryView : UserControl
         if (start is null || end is null) { panel.Children.Add(Text("期間が未設定です")); return panel; }
         var until = report.ForecastFinish > end ? report.ForecastFinish.Value : end.Value;
         var phases = report.Phases.Where(p => !p.IsTotal).ToArray();
+        if (phases.Where(p => p.Target.HasValue).Select(p => p.Target!.Value).DefaultIfEmpty(until).Max() is var latest && latest > until) until = latest;
+        if (phases.Where(p => p.Target.HasValue).Select(p => p.Target!.Value).DefaultIfEmpty(start.Value).Min() is var earliest && earliest < start) start = earliest;
         var chart = new Canvas { Height = axisHeight + report.Phases.Count * rowHeight, HorizontalAlignment = HorizontalAlignment.Stretch };
         void Draw()
         {
@@ -224,6 +247,12 @@ internal sealed class PlanSummaryView : UserControl
                 var phase = phases[i]; var top = axisHeight + i * rowHeight;
                 var separator = new Border { Width = chart.ActualWidth, Height = 1, Background = PlanSheetView.Brush("SheetSeparatorBrush") };
                 Canvas.SetTop(separator, top + rowHeight - 1); chart.Children.Add(separator);
+                if (phase.Target is { } target) {
+                    var marker = Id(new TextBlock { Text = "◆", FontSize = 12, Foreground = PlanSheetView.Brush(phase.Tasks.Finish > target ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush") }, "SummaryPhaseTarget_" + i);
+                    var description = $"{Phase(phase)} 目標日 {Date(target)} · 差 {Days(phase.Difference)}";
+                    AutomationProperties.SetName(marker, description); ToolTipService.SetToolTip(marker, description);
+                    Canvas.SetZIndex(marker, 1); Canvas.SetLeft(marker, X(target.DayNumber) - 6); Canvas.SetTop(marker, top + 6); chart.Children.Add(marker);
+                }
                 if (phase.Tasks.Start is not { } first || phase.Tasks.Finish is not { } last) continue;
                 var width = Math.Max(2, X(last.DayNumber + 1) - X(first.DayNumber));
                 var bar = new Border { Width = width, Height = 12, Background = PlanSheetView.Brush("GanttTaskTintBrush") };

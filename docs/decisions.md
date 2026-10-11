@@ -194,3 +194,7 @@ Project item totalCount can include items that are not returned to the viewer. A
 ## Waterfall summary (#127)
 
 Use the same scheduled result as the sheet and compare it with the optional Project end, which is not a scheduling constraint. Show required load beside the forecast because scheduling does not level resources. Known effort remains useful when some tasks are unestimated: sum known contributors with explicit exclusion counts, using matching sets for progress and variance. Do not compare effort progress with time elapsed. Phase is an existing mapped Project single-select field; never create it on refresh. Rates and allowances belong in settings, while summary drill-down is read-only and returns exact task sets to the plan.
+
+## Milestone targets (#133)
+
+Use GitHub repository milestones as the source of target dates and Issue membership, grouping exact titles across repositories. Use the latest known due date on disagreement and disclose that disagreement. A group is closed only when all sources are closed. Targets inform comparison and drill-down, never scheduling. Due dates and membership remain owned by GitHub; only optional phase mappings are edited locally.

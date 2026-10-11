@@ -28,7 +28,7 @@ internal static class PlanSnapshot
     }
     internal static PlanRemoteSnapshot From(ProjectReadResult result, ProjectPlanSettings settings, TimeZoneInfo? timeZone = null)
     {
-        if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true } p)
+        if (result.Outcome != ProjectReadOutcome.Complete || result.Project is not { FieldsComplete: true, ItemsComplete: true, MilestonesComplete: true } p)
             throw new InvalidOperationException("プロジェクト全体を取得できませんでした。計画は変更していません。再試行してください。 " + ReadDiagnostic(result));
         var statusField = p.Fields.SingleOrDefault(f => f.Name == "Status" && f.DataType == "SINGLE_SELECT" && f.ValueOwner == FieldOwner.ProjectItem);
         if (statusField is not null && statusField.Availability != ValueAvailability.Present) throw new InvalidOperationException("Status を読み取れません。");
@@ -36,12 +36,13 @@ internal static class PlanSnapshot
         foreach (var item in p.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived))
         {
             if (item.ContentId is null || !p.Issues.TryGetValue(item.ContentId, out var issue) || !item.ValuesComplete ||
-                issue.Native is not { Complete: true } native || issue.Title.Availability != ValueAvailability.Present ||
+                issue.Native is not { Complete: true } native || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
                 issue.State.Availability != ValueAvailability.Present ||
                 issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                 throw new InvalidOperationException("Issue の取得が不完全です。");
             var row = new PlanRow(issue.Id.NodeId, issue.Title.Value!, issue.Repository.NameWithOwner)
             {
+                MilestoneTitle = issue.Milestone.Value?.Title,
                 Closed = issue.State.Value == IssueState.Closed,
                 CloseDate = issue.State.Value == IssueState.Closed && issue.ClosedAt.Value is { } closedAt
                     ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(closedAt, timeZone ?? TimeZoneInfo.Local).DateTime) : null,
@@ -83,7 +84,9 @@ internal static class PlanSnapshot
             }
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
         }
-        return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()),
+        return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()) {
+                Milestones = p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
+                    g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray() },
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))
         { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
           IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),

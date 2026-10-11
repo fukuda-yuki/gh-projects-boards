@@ -11,6 +11,61 @@ namespace GhProjectsBoards.Tests;
 [Parallelizable(ParallelScope.All)]
 internal sealed class PlanPublisherTests
 {
+    [Test]
+    public async Task MilestoneCatalogPagesGroupsAndRefreshResetAndPublishNeverWriteMembership()
+    {
+        await Start(3, state => state with {
+            Milestones = Enumerable.Range(0, 101).Select(n => new PlanFakeMilestone("M" + n, "acme/repo", "Target" + n, Today))
+                .Append(new("Other", "acme/other", "Target0", Today.AddDays(3), true)).ToImmutableArray(),
+            Issues = state.Issues.Select((i, n) => i with { Row = i.Row with {
+                Repository = n == 2 ? "acme/other" : "acme/repo", MilestoneTitle = "Target0" } }).ToImmutableArray()
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+        var first = session.Document.Baseline.Milestones.Single(m => m.Title == "Target0");
+        Assert.That((first.DueDate, first.ConflictingDates, first.Closed), Is.EqualTo((Today.AddDays(3), true, false)));
+        Assert.That(session.Document.Baseline.Milestones.Length, Is.EqualTo(101));
+        Assert.That(session.Document.Baseline.Rows.All(r => r.MilestoneTitle == "Target0"), Is.True);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with {
+            Milestones = remote.Milestones.Select(m => m with { DueDate = Today.AddDays(4), Closed = true }).ToImmutableArray(),
+            Issues = remote.Issues.Select(i => i with { Row = i.Row with { MilestoneTitle = null } }).ToImmutableArray()
+        });
+        Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Baseline.Milestones.Single(m => m.Title == "Target0"), Is.EqualTo(new PlanMilestone("Target0", Today.AddDays(4), true, false)));
+        Assert.That(session.Document.State.Rows.All(r => r.MilestoneTitle is null), Is.True);
+        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), Today);
+        Assert.That((await publisher.PublishAsync(session, Today)).Succeeded, Is.True);
+        remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with {
+            Milestones = remote.Milestones.Select(m => m with { DueDate = Today.AddDays(5) }).ToImmutableArray(),
+            Issues = remote.Issues.Select(i => i.Row.Identity == "I1" ? i with { Row = i.Row with { MilestoneTitle = "Target1" } } : i).ToImmutableArray()
+        });
+        var writesBeforeReset = remote.MutationBatches;
+        Assert.That((await publisher.ResetAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Document.Baseline.Milestones.All(m => m.DueDate == Today.AddDays(5)), Is.True);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").MilestoneTitle, Is.EqualTo("Target1"));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        await session.Undo(Today);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").MilestoneTitle, Is.EqualTo("Target1"));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(writesBeforeReset));
+        var writes = File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl"));
+        Assert.That(writes, Does.Not.Contain("milestone").IgnoreCase);
+    }
+
+    [Test]
+    public async Task IncompleteMilestoneCatalogCannotReplaceBaseline()
+    {
+        await Start(1);
+        var before = PlanJson.Text(session.Document);
+        Scenario("milestones-incomplete");
+        var result = await publisher.RefreshAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [Test, Category("PlanReset")]
     public async Task ResetAdoptsFreshValuesAndDatesAndUndoRestoresMergedWork()
     {

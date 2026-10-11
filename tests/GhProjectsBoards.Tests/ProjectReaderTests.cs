@@ -11,6 +11,60 @@ internal sealed class ProjectReaderTests
 {
     private static readonly ConnectionScope Scope = new("github.com", 42);
 
+    [TestCase("2026-11-13T00:00:00Z", "2026-11-13", false, true)]
+    [TestCase("2026-11-13T00:00:00Z", "2026-11-13", false, false)]
+    [TestCase("2026-11-16T00:00:00Z", "2026-11-16", true, true)]
+    [TestCase(null, "2026-11-13", true, true)]
+    public async Task MilestonesGroupExactTitlesAcrossPagedRepositoryCatalogs(string? otherDue, string expected, bool conflicting, bool otherClosed)
+    {
+        object Milestone(string id, string title, string? due) => new { id, title, dueOn = due, state = "CLOSED" };
+        var member = Milestone("M1", "Release", "2026-11-13T00:00:00Z");
+        var issue1 = JsonSerializer.SerializeToNode(Issue())!; issue1["milestone"] = JsonSerializer.SerializeToNode(member);
+        var issue2 = JsonSerializer.SerializeToNode(Issue("I2", 2))!;
+        issue2["repository"]!["id"] = "R2"; issue2["repository"]!["nameWithOwner"] = "example/other";
+        var boundary = new ProjectBoundary { Override = (query, variables) => {
+            if (query.Contains("ProjectItems")) {
+                Assert.That(query, Does.Contain("milestone { id title dueOn state }"));
+                return Response(Project("P1", "items", Page([Item("P1", "T1", content: issue1), Item("P1", "T2", content: issue2, values: Page([], 0))], 2)));
+            }
+            if (!query.Contains("ProjectMilestones")) return null;
+            var id = variables.GetProperty("id").GetString();
+            var second = variables.GetProperty("after").ValueKind == JsonValueKind.String;
+            return Response(new { __typename = "Repository", id, milestones = id == "R2"
+                ? Page([new { id = "M3", title = "Release", dueOn = otherDue, state = otherClosed ? "CLOSED" : "OPEN" }], 1)
+                : second ? Page([Milestone("M2", "release", null)], 2)
+                    : Page([member], 2, true, "next") });
+        } };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        var snapshot = GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new());
+        var grouped = snapshot.Baseline.Milestones.Single(m => m.Title == "Release");
+        Assert.That((grouped.DueDate, grouped.ConflictingDates, grouped.Closed), Is.EqualTo((DateOnly.Parse(expected), conflicting, otherClosed)));
+        Assert.That(snapshot.Baseline.Milestones.Length, Is.EqualTo(2), "Title grouping is case sensitive and empty milestones remain.");
+        Assert.That(snapshot.Baseline.Rows.Select(r => r.MilestoneTitle), Is.EqualTo(new string?[] { "Release", null }));
+        boundary.AssertQueriesOnly();
+    }
+
+    [TestCase("missing-member"), TestCase("invalid-due"), TestCase("invalid-state"), TestCase("catalog-count"), TestCase("catalog-cursor"), TestCase("catalog-mismatch")]
+    public async Task IncompleteMilestoneDataNeverProducesAnAdoptableSnapshot(string fault)
+    {
+        var member = new { id = "M1", title = "Release", dueOn = "2026-11-13T00:00:00Z", state = "OPEN" };
+        var issue = JsonSerializer.SerializeToNode(Issue())!;
+        issue["milestone"] = JsonSerializer.SerializeToNode(member);
+        if (fault == "missing-member") issue.AsObject().Remove("milestone");
+        if (fault == "invalid-due") issue["milestone"]!["dueOn"] = "tomorrow";
+        if (fault == "invalid-state") issue["milestone"]!["state"] = "UNKNOWN";
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([Item("P1", content: issue)], 1)))
+            : query.Contains("ProjectMilestones") ? Response(new { __typename = "Repository", id = "R1", milestones =
+                fault == "catalog-mismatch" ? Page([], 0) : Page([member], fault == "catalog-count" || fault == "catalog-cursor" ? 2 : 1, fault == "catalog-cursor") }) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
+        Assert.That(result.Project!.Milestones, Is.Empty);
+        Assert.Throws<InvalidOperationException>(() => GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new()));
+        boundary.AssertQueriesOnly();
+    }
+
     [TestCase("CLOSED", "2026-10-05T18:00:00Z", ValueAvailability.Present, "2026-10-06")]
     [TestCase("OPEN", null, ValueAvailability.Empty, null)]
     public async Task CloseTimestampIsReadAndConvertedAtSnapshotBoundary(string state, string? timestamp, ValueAvailability availability, string? date)
@@ -573,6 +627,8 @@ internal sealed class ProjectReaderTests
                 var custom = Override?.Invoke(query, variables);
                 if (custom is not null) return custom;
                 var id = variables.GetProperty("id").GetString()!;
+                if (query.Contains("ProjectMilestones"))
+                    return Response(new { __typename = "Repository", id, milestones = Page([], 0) });
                 if (query.Contains("ProjectFields"))
                     return Response(Project(id, "fields", Page([Field(id, id + "-status")], 1)));
                 if (query.Contains("ProjectItems"))
@@ -612,7 +668,7 @@ internal sealed class ProjectReaderTests
         => new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = id ?? project + "-value-" + field,
             optionId = option, field = new { id = field, project = new { id = project } } };
     internal static object Issue(string id = "I1", int number = 1, string state = "OPEN", string? closedAt = null) => new { __typename = "Issue", id, number,
-        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt,
+        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt, milestone = (object?)null,
         assignees = Page([], 0), blockedBy = Page([], 0), parent = (object?)null,
         repository = new { id = "R1", nameWithOwner = "example/repository", owner = new { id = "RO1" } } };
     internal static object Item(string project, string? id = null, object? values = null, object? content = null,
