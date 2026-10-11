@@ -30,6 +30,7 @@ internal sealed partial class PlanSheetHostedTests
         string? failure = null;
         ScrollViewer vertical = null!, horizontal = null!;
         double verticalExtent = 0, horizontalExtent = 0, scale = 0, clientWidth = 0, clientHeight = 0;
+        object? finalPosition = null;
         var timer = new Stopwatch();
         var previous = 0d;
         TaskCompletionSource? nextFrame = null;
@@ -91,6 +92,10 @@ internal sealed partial class PlanSheetHostedTests
         {
             Assert.That(session.Document.State.Rows.Length, Is.EqualTo(1040));
             await Ui.Run(() => Ui.Window.AppWindow.Resize(new(1920, 1080)));
+            // Window resize is asynchronous; the sheet preserves dates while its width settles.
+            // Reset offsets only after that layout, outside the measured round trip.
+            await Ui.Until(() => Ui.Root.ActualWidth * sheet.XamlRoot.RasterizationScale > 1850);
+            await SheetNativeInput.Rendered();
             await Ui.Run(() => {
                 vertical = ScrollMeasurementViewport();
                 horizontal = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
@@ -123,7 +128,13 @@ internal sealed partial class PlanSheetHostedTests
         finally
         {
             try {
-                await Ui.Run(() => { CompositionTarget.Rendered -= Rendered; timer.Stop(); return Task.CompletedTask; }, check: false);
+                await Ui.Run(() => {
+                    CompositionTarget.Rendered -= Rendered; timer.Stop();
+                    finalPosition = new { vertical = vertical?.VerticalOffset, horizontal = horizontal?.HorizontalOffset,
+                        verticalExtent = vertical?.ScrollableHeight, horizontalExtent = horizontal?.ScrollableWidth,
+                        viewportHeight = vertical?.ViewportHeight, clientWidth = Ui.Root.ActualWidth };
+                    return Task.CompletedTask;
+                }, check: false);
             } catch (Exception ex) {
                 outcome = "incomplete"; failure = (failure is null ? "" : failure + "\n") + "Cleanup: " + ex;
                 throw;
@@ -134,7 +145,7 @@ internal sealed partial class PlanSheetHostedTests
                     schemaVersion = 2, outcome, failure, version = EvaluationFixture.DefaultVersion,
                     rows = session.Document.State.Rows.Length, statusDate = session.Document.State.Settings.StatusDate,
                     windowPixels = new { width = 1920, height = 1080 }, clientWidth, clientHeight, scale,
-                    verticalStep, horizontalStep, verticalExtent, horizontalExtent,
+                    verticalStep, horizontalStep, verticalExtent, horizontalExtent, finalPosition,
                     environment = new { os = Environment.OSVersion.ToString(), runtime = Environment.Version.ToString(),
                         processors = Environment.ProcessorCount, architecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString() },
                     longFrameThresholdMs = 50, frameCount = samples.Length,
