@@ -23,12 +23,31 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open("Late");
     }
 
+    private async Task ReadyMilestone(string id)
+    {
+        await Ui.Ready<Button>(id);
+        await Ui.Until(() => {
+            var marker = Ui.Find<Button>(id);
+            return marker.IsLoaded && marker.IsEnabled && marker.ActualWidth > 0 && marker.ActualHeight > 0;
+        });
+        await Ui.Run(() => {
+            var marker = Ui.Find<Button>(id);
+            var header = Ui.Find<Canvas>("PlanGanttHeader");
+            var bounds = marker.TransformToVisual(header).TransformBounds(new Windows.Foundation.Rect(0, 0, marker.ActualWidth, marker.ActualHeight));
+            Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Right, Is.LessThanOrEqualTo(header.ActualWidth));
+            Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+            Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(header.ActualHeight));
+        });
+    }
+
     [TestCase(1), TestCase(3)]
     public async Task MilestoneDateCoordinateAndInvocationUseExactLateSetWithoutEditing(int scale)
     {
         await MilestonePlan();
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = scale);
         await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0");
         var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
         var unpublished = workspace.Session.Changes(readDay).TaskCount;
         await Ui.Run(() => {
@@ -52,6 +71,10 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(((SolidColorBrush)marker.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("SystemFillColorCriticalBrush")).Color));
             Assert.That(marker.Focus(FocusState.Keyboard), Is.True);
             if (scale == 3) Assert.That(sheet.X(readDay.AddDays(40)), Is.InRange(0, sheet.ChartViewport));
+        });
+        await ReadyMilestone("PlanMilestone_0");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("PlanMilestone_0").FocusState, Is.EqualTo(FocusState.Keyboard));
             Ui.Click("PlanMilestone_0");
         });
         await Ui.Idle();
@@ -68,13 +91,20 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SameDateMilestonesOfferEachKeyboardReachableSelection(int index, string title, string row, string difference)
     {
         await MilestonePlan(sameDate: true);
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = 3);
+        await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0");
         var session = workspace.Session!; var before = PlanJson.Text(session.Document);
         var undo = session.UndoCount; var unpublished = session.Changes(readDay).TaskCount;
         await Ui.Run(() => {
             var markers = Ui.Tree(view).OfType<Button>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("PlanMilestone_")).ToArray();
             Assert.That(markers, Has.Length.EqualTo(1));
             Assert.That(markers[0].Focus(FocusState.Keyboard), Is.True);
-            Ui.Click(AutomationProperties.GetAutomationId(markers[0]));
+        });
+        await ReadyMilestone("PlanMilestone_0");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("PlanMilestone_0").FocusState, Is.EqualTo(FocusState.Keyboard));
+            Ui.Click("PlanMilestone_0");
         });
         await Ui.Ready<MenuFlyoutItem>("PlanMilestoneChoice_" + index);
         await Ui.Run(() => {
@@ -114,7 +144,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await MilestonePlan();
         await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = 3); await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0");
         await Ui.Run(() => Ui.Click("PlanMilestone_0")); await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_1");
         await Ui.Run(() => Ui.Click("PlanMilestone_1")); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Where(i => i.Length > 0), Is.EqualTo(new[] { "I1" }));
@@ -151,6 +183,6 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("SummaryMilestone_0");
         });
         await Ui.Ready<Button>("SummaryFilter");
-        await Ui.Run(() => Assert.That(Ui.Find<Button>("SummaryFilter").Content, Is.EqualTo("この 1 タスクで計画を絞り込む")));
+        await Ui.Run(() => Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryFilter")), Is.EqualTo("この 1 タスクで計画を絞り込む")));
     }
 }

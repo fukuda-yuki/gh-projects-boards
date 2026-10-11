@@ -180,6 +180,18 @@ internal sealed class PlanSummaryView : UserControl
             }
             table.Children.Add(Wide(rows)); Cell(phases, table, 0); Cell(phases, Timeline(), 1); body.Children.Add(phases);
         }
+        Heading(body, "担当者 × 工程");
+        var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var toggle = Id(new ComboBox { ItemsSource = new[] { "工程別", "月別" }, SelectedIndex = mode, Width = 110 }, "SummaryMode");
+        var measures = Id(new ComboBox { ItemsSource = Measures, SelectedIndex = measure, Width = 150, IsEnabled = mode == 0 }, "SummaryMeasure");
+        AutomationProperties.SetName(toggle, "集計の表示期間"); AutomationProperties.SetName(measures, "工程の集計指標");
+        toggle.SelectionChanged += (_, _) => { mode = toggle.SelectedIndex; measures.IsEnabled = mode == 0;
+            if (selectedCell is not null && cells.TryGetValue(selectedCell, out var previous)) Highlight(previous, false);
+            selectedCell = null; detail.Children.Clear(); RenderMatrix(); };
+        measures.SelectionChanged += (_, _) => { measure = measures.SelectedIndex; RenderMatrix(); };
+        controls.Children.Add(toggle); controls.Children.Add(measures); body.Children.Add(controls);
+        body.Children.Add(Text("稼働可能 = 稼働率 × 残り稼働日 × 8h（上限工数がある場合は 上限工数 − 実績 まで）"));
+        body.Children.Add(matrixScroll); RenderMatrix();
         if (report.Milestones.Count > 0) {
             var table = Id(new StackPanel(), "SummaryMilestoneTable"); Heading(table, "マイルストーン");
             double[] widths = [200, 108, 108, 72, 112, 88];
@@ -200,18 +212,7 @@ internal sealed class PlanSummaryView : UserControl
             }
             body.Children.Add(Wide(table));
         }
-        Heading(body, "担当者 × 工程");
-        var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        var toggle = Id(new ComboBox { ItemsSource = new[] { "工程別", "月別" }, SelectedIndex = mode, Width = 110 }, "SummaryMode");
-        var measures = Id(new ComboBox { ItemsSource = Measures, SelectedIndex = measure, Width = 150, IsEnabled = mode == 0 }, "SummaryMeasure");
-        AutomationProperties.SetName(toggle, "集計の表示期間"); AutomationProperties.SetName(measures, "工程の集計指標");
-        toggle.SelectionChanged += (_, _) => { mode = toggle.SelectedIndex; measures.IsEnabled = mode == 0;
-            if (selectedCell is not null && cells.TryGetValue(selectedCell, out var previous)) Highlight(previous, false);
-            selectedCell = null; detail.Children.Clear(); RenderMatrix(); };
-        measures.SelectionChanged += (_, _) => { measure = measures.SelectedIndex; RenderMatrix(); };
-        controls.Children.Add(toggle); controls.Children.Add(measures); body.Children.Add(controls);
-        body.Children.Add(Text("稼働可能 = 稼働率 × 残り稼働日 × 8h（上限工数がある場合は 上限工数 − 実績 まで）"));
-        body.Children.Add(matrixScroll); RenderMatrix(); body.Children.Add(detail);
+        body.Children.Add(detail);
     }
     private FrameworkElement Timeline()
     {
