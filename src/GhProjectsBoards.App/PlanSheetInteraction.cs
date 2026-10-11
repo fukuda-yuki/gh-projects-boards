@@ -188,10 +188,11 @@ internal sealed partial class PlanSheetView
     private void TryRestoreFocus()
     {
         if (requestedFocus is not { } target || disposed) return;
-        // A container from a replaced item source can still be loaded with the same task.
-        // Focus placed there falls to the next tab stop when the list discards it.
+        // A native container can remain loaded while it is being rebound. Only the
+        // current task's owned row may consume a pending focus request.
         var row = (List.ContainerFromItem(target.Identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
-        var cell = row?.SelectionTarget(target.Field);
+        if (row is null || row.Identity != target.Identity || !ReferenceEquals(row.Owner, this)) return;
+        var cell = row.SelectionTarget(target.Field);
         if (cell is not { IsLoaded: true, ActualWidth: > 0 } || !cell.Focus(FocusState.Keyboard)) return;
         requestedFocus = null;
         List.LayoutUpdated -= FocusAfterLayout;

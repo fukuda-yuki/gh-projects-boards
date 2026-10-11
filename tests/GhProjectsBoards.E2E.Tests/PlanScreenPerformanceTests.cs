@@ -167,7 +167,16 @@ public sealed class PlanScreenPerformanceTests
                 Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
                 var recordingName = pauseMs == 200 ? "filter-fast" : "filter-slow";
                 RecordPixels(Path.Combine(root, recordingName), filterRegion, mark => {
-                    foreach (var character in "PS-00") { mark("key:" + character); Keyboard.Type(character.ToString()); Thread.Sleep(pauseMs); }
+                    var cadence = Stopwatch.StartNew();
+                    var index = 0;
+                    foreach (var character in "PS-00") {
+                        // FlaUI includes input-processing time. Schedule key starts
+                        // absolutely so that overhead does not lengthen each pause.
+                        var remaining = TimeSpan.FromMilliseconds(index++ * pauseMs) - cadence.Elapsed;
+                        if (remaining > TimeSpan.Zero) Thread.Sleep(remaining);
+                        mark("key:" + character);
+                        Keyboard.Type(character.ToString());
+                    }
                 }, TimeSpan.FromSeconds(2));
                 var count = Find("PlanSheetFilterCount").Properties.Name.ValueOrDefault;
                 filterResults.Add(new { pauseMs, recordingName, text = filter.Text, count });
@@ -256,10 +265,19 @@ public sealed class PlanScreenPerformanceTests
                 var trigger = PrepareCommand();
                 var triggerBounds = trigger.BoundingRectangle;
                 var point = trigger.GetClickablePoint();
+                File.WriteAllText(Path.Combine(root, name + "-input.json"), JsonSerializer.Serialize(new {
+                    commandId, markerId, popupBounds, region, triggerBounds, point, preparedUtc = DateTime.UtcNow,
+                    input = "FlaUI native SendInput down/up at the prepared point; no UIA calls during capture."
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                Assert.That(SetCursorPos(point.X, point.Y), Is.True);
+                FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                 var opened = RecordPixels(Path.Combine(root, name + "-open"), region, mark => {
-                    Assert.That(SetCursorPos(point.X, point.Y), Is.True);
                     mark(name + " click");
-                    MouseEvent(0x0002, 0, 0, 0, 0); MouseEvent(0x0004, 0, 0, 0, 0);
+                    Mouse.Down(); Mouse.Up();
+                    // Match the successful probe's native input boundary. Moving the
+                    // cursor away before queued press/release is processed can leave
+                    // only hover feedback instead of invoking the menu item.
+                    FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                     Assert.That(SetCursorPos(1850, 1030), Is.True);
                 }, TimeSpan.FromSeconds(2));
                 process.Refresh();

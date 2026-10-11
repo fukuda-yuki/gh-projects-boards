@@ -91,15 +91,18 @@ public sealed class PlanSheetRow : Grid
             var identity = Identity;
             await owner.Run(() => owner.SetFold(identity, !owner.IsFolded(identity)), "Fold requirement");
         };
-        Loaded += (_, _) => {
-            for (DependencyObject? parent = this; parent is not null; parent = VisualTreeHelper.GetParent(parent))
-                if (parent is PlanSheetView owner) { Owner = owner; owner.Realized.Add(this); break; }
-            Refresh(); Owner?.UpdateInputProblem();
-        };
-        // Detached rows are outside the automation tree. Clear presentation only
-        // on rebinding, never during native input teardown or a later callback.
-        Unloaded += (_, _) => { var owner = Owner; owner?.Realized.Remove(this); Owner = null; owner?.UpdateInputProblem(); };
         DataContextChanged += (_, _) => { ClearIds(); Refresh(); Owner?.UpdateInputProblem(); };
+    }
+    internal void SetOwner(PlanSheetView? owner)
+    {
+        if (ReferenceEquals(Owner, owner)) return;
+        // A recycled container can stay loaded while its task and visual parent change.
+        // The ListView's content/recycle notification owns this lifetime.
+        var previous = Owner;
+        previous?.Realized.Remove(this);
+        Owner = owner;
+        if (owner is not null) { owner.Realized.Add(this); Refresh(); }
+        previous?.UpdateInputProblem(); owner?.UpdateInputProblem();
     }
     private void ClearIds()
     {

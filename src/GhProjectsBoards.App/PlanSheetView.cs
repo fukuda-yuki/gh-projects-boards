@@ -220,6 +220,7 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(headers); SetRow(headers, 3);
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
+        List.ContainerContentChanging += RowContentChanging;
         List.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(Control.BorderThicknessProperty, new Thickness(0)),
             new Setter(FrameworkElement.MinHeightProperty, 0d),
@@ -631,6 +632,13 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);
+    private void RowContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
+            row.SetOwner(args.InRecycleQueue ? null : this);
+        else if (!args.InRecycleQueue && args.Phase == 0)
+            args.RegisterUpdateCallback(1, RowContentChanging);
+    }
     internal void RefreshRealized()
     {
         var rows = Realized.ToArray();

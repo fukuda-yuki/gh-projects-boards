@@ -82,10 +82,13 @@ internal sealed partial class PlanSheetHostedTests
         });
         await Ui.Until(() => sheet.List.Items.Count == 101);
         await Ui.Ready<TextBox>("PlanCell1_Title");
+        for (var number = 2; number <= 9; number++) await Ui.Ready<TextBox>($"PlanCell{number}_Title");
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title"), Is.SameAs(original));
             Assert.That(original.Text, Is.EqualTo("Task 1"));
+            for (var number = 2; number <= 9; number++)
+                Assert.That(Ui.Find<TextBox>($"PlanCell{number}_Title").Text, Is.EqualTo($"Task {number}"), "Restored rows must display their current task rather than a recycled row's content.");
             Assert.That(SelectProvider("PlanCell1_Title").IsSelected, Is.True);
             Assert.That(session.UndoCount, Is.Zero);
         });
