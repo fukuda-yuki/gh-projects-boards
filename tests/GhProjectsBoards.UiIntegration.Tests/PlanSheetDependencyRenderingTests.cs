@@ -26,9 +26,22 @@ internal sealed partial class PlanSheetHostedTests
     private async Task ShowDependencyRow(int number)
     {
         await Ui.Run(() => sheet.List.ScrollIntoView("I" + number));
+        await Ui.Until(() => CurrentDependencyRow("I" + number) is not null);
         await Ui.Ready<TextBox>($"PlanCell{number}_Title");
         await Select(number, PlanField.Title);
     }
+    private PlanSheetRow? CurrentDependencyRow(string identity)
+    {
+        var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+        return row is { IsLoaded: true, DataContext: string current } && current == identity && row.Owner == sheet ? row : null;
+    }
+    private Task WaitForDependencyPresentation(int from, int to, int number) => Ui.Until(() => {
+        if (CurrentDependencyRow("I" + number) is not { } row) return false;
+        var shapes = Ui.Tree(row).OfType<Shape>().Where(shape => shape.IsLoaded && shape.ActualWidth > 0)
+            .Select(AutomationProperties.GetAutomationId).ToHashSet();
+        return shapes.Contains("PlanBar" + number) && shapes.Contains($"PlanArrow{from}_{to}_{number}")
+            && shapes.Contains($"PlanArrowHead{from}_{to}_{number}");
+    });
 
     [Test]
     public async Task LongCrossingDependenciesKeepTheirCurrentRowIdentityThroughBothScrollDirections()
@@ -58,9 +71,11 @@ internal sealed partial class PlanSheetHostedTests
 
     private void AssertDependencyEntersBar(int from, int to, int number, bool down)
     {
-        var bar = Ui.Find<Shape>("PlanBar" + number);
-        var head = Ui.Find<Polygon>($"PlanArrowHead{from}_{to}_{number}");
-        var route = Ui.Find<Polyline>($"PlanArrow{from}_{to}_{number}");
+        var row = CurrentDependencyRow("I" + number);
+        Assert.That(row, Is.Not.Null, "Geometry must belong to the currently bound task container.");
+        var bar = Ui.Find<Shape>("PlanBar" + number, row!);
+        var head = Ui.Find<Polygon>($"PlanArrowHead{from}_{to}_{number}", row!);
+        var route = Ui.Find<Polyline>($"PlanArrow{from}_{to}_{number}", row!);
         var tip = head.TransformToVisual(sheet).TransformPoint(new(3, down ? 6 : 0));
         var barBounds = bar.TransformToVisual(sheet).TransformBounds(new(0, 0, bar.ActualWidth, bar.ActualHeight));
         Assert.That(tip.X, Is.InRange(barBounds.Left, barBounds.Right));
@@ -79,26 +94,29 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Ui.Find<ScrollViewer>("PlanGanttHorizontal").ChangeView(120, null, null, true));
         await Ui.Until(() => sheet.ChartOffset == 120);
         await SheetNativeInput.Rendered();
+        await WaitForDependencyPresentation(1, 90, 90);
         double originalStart = 0;
         await Ui.Run(() => {
             AssertDependencyEntersBar(1, 90, 90, true);
-            originalStart = Ui.Find<Shape>("PlanBar90").TransformToVisual(sheet).TransformPoint(new()).X;
+            originalStart = Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X;
         });
         await ShowDependencyRow(1);
         await Edit(1, PlanField.Remaining, "16");
         await ShowDependencyRow(90);
         await SheetNativeInput.Rendered();
+        await WaitForDependencyPresentation(1, 90, 90);
         await Ui.Run(() => {
             AssertDependencyEntersBar(1, 90, 90, true);
-            Assert.That(Ui.Find<Shape>("PlanBar90").TransformToVisual(sheet).TransformPoint(new()).X,
+            Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(originalStart + 24).Within(1));
         });
         await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
         await Ui.Idle();
         await SheetNativeInput.Rendered();
+        await WaitForDependencyPresentation(1, 90, 90);
         await Ui.Run(() => {
             AssertDependencyEntersBar(1, 90, 90, true);
-            Assert.That(Ui.Find<Shape>("PlanBar90").TransformToVisual(sheet).TransformPoint(new()).X,
+            Assert.That(Ui.Find<Shape>("PlanBar90", CurrentDependencyRow("I90")!).TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(originalStart).Within(1));
         });
     }
@@ -119,6 +137,11 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => sheet.List.Items.Count == 5);
         await Ui.Ready<TextBox>("PlanCell95_Title");
         await SheetNativeInput.Rendered();
+        // Native placeholders may still hold a null DataContext after a rendered
+        // frame. In particular, Identity's empty fallback is not the bound append row.
+        await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
+        await WaitForDependencyPresentation(1, 3, 90);
+        await WaitForDependencyPresentation(4, 2, 3);
         await Ui.Run(() => {
             string[] expectedArrows = [
                 "PlanArrow1_3_1", "PlanArrow1_3_3", "PlanArrow1_3_90",
@@ -128,7 +151,7 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(row, Is.Not.Null, $"Current filtered row {identity}");
                 Assert.That(row!.IsLoaded, Is.True);
                 Assert.That(row.Owner, Is.SameAs(sheet));
-                Assert.That(row.Identity, Is.EqualTo(identity));
+                Assert.That(row.DataContext, Is.EqualTo(identity));
                 return row;
             }).ToArray();
             Assert.That(currentRows.SelectMany(row => Ui.Tree(row).OfType<Polyline>()).Select(AutomationProperties.GetAutomationId),
