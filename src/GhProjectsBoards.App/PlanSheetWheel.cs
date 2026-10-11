@@ -17,7 +17,7 @@ internal sealed partial class PlanSheetView
         if (remoteBusy || wheel.MouseWheelDelta == 0) return;
         // Respect the Windows wheel amount, retaining fractional/high-resolution deltas.
         // Horizontal wheels count characters; Shift+wheel retains the vertical setting.
-        if (!SystemParametersInfo(horizontal ? 0x006C : 0x0068, 0, out var amount, 0)) amount = 3;
+        if (!SystemParametersInfo(horizontal ? 0x006Cu : 0x0068u, 0, out var amount, 0)) amount = 3;
         var distance = amount == uint.MaxValue ? ChartViewport : amount * (horizontal ? 16 : RowHeight);
         var pixels = wheel.MouseWheelDelta / 120d * distance * (horizontal ? 1 : -1);
         chartHorizontal.ChangeView(Math.Clamp(chartHorizontal.HorizontalOffset + pixels, 0, chartHorizontal.ScrollableWidth), null, null, true);
