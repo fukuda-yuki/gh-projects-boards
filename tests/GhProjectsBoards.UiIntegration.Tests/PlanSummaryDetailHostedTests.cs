@@ -25,12 +25,22 @@ internal sealed partial class PlanWorkspaceHostedTests
                     var cell = Ui.Find<TextBlock>(column == 0 ? "SummaryTaskId_" + identity : column == 7 ? "SummaryTask_" + identity : $"SummaryTaskValue_{identity}_{column}");
                     var headerX = header.TransformToVisual(summary).TransformPoint(new()).X;
                     var cellX = cell.TransformToVisual(summary).TransformPoint(new()).X;
-                    Assert.That(cell.ActualWidth, Is.GreaterThan(0));
-                    Assert.That(cellX, Is.EqualTo(headerX).Within(1), $"{identity}, {header.Text}: left");
-                    Assert.That(cellX + cell.ActualWidth, Is.EqualTo(headerX + header.ActualWidth).Within(1), $"{identity}, {header.Text}: right");
-                    if (column == 0 || column is >= 2 and <= 6) {
+                    var headerBox = (FrameworkElement)VisualTreeHelper.GetParent(header);
+                    var cellBox = (FrameworkElement)VisualTreeHelper.GetParent(cell);
+                    var headerBounds = headerBox.TransformToVisual(summary).TransformBounds(new(0, 0, headerBox.ActualWidth, headerBox.ActualHeight));
+                    var cellBounds = cellBox.TransformToVisual(summary).TransformBounds(new(0, 0, cellBox.ActualWidth, cellBox.ActualHeight));
+                    if (cell.Text.Length > 0) Assert.That(cell.ActualWidth, Is.GreaterThan(0));
+                    Assert.That(cellBounds.Width, Is.GreaterThan(0));
+                    Assert.That(cellBounds.Left, Is.EqualTo(headerBounds.Left).Within(1), $"{identity}, {header.Text}: column left");
+                    Assert.That(cellBounds.Right, Is.EqualTo(headerBounds.Right).Within(1), $"{identity}, {header.Text}: column right");
+                    if (column is >= 2 and <= 6) {
                         Assert.That(header.TextAlignment, Is.EqualTo(TextAlignment.Right));
                         Assert.That(cell.TextAlignment, Is.EqualTo(TextAlignment.Right));
+                        Assert.That(cellX + cell.ActualWidth, Is.EqualTo(headerX + header.ActualWidth).Within(1), $"{identity}, {header.Text}: numeric text right");
+                    } else {
+                        Assert.That(header.TextAlignment, Is.EqualTo(TextAlignment.Left));
+                        Assert.That(cell.TextAlignment, Is.EqualTo(TextAlignment.Left));
+                        Assert.That(cellX, Is.EqualTo(headerX).Within(1), $"{identity}, {header.Text}: text left");
                     }
                 }
             }

@@ -72,6 +72,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly PlanInputProblem settingsInputProblem = new("SettingsInputProblem");
     private TextBox? invalidSetting;
     private string? invalidSettingMessage;
+    private string? invalidSettingText;
     private bool revealingSetting;
     private int settingsGeneration;
     private bool rendering, closing;
@@ -206,7 +207,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
         settingsScroll.ViewChanged += async (_, args) => {
             if (rendering || args.IsIntermediate || currentPage != "settings") return;
-            if (invalidSetting is not null) { RevealSettingsInput(); return; }
+            if (invalidSetting is { } invalid && invalid.Text == invalidSettingText) { RevealSettingsInput(); return; }
             var focused = FocusManager.GetFocusedElement(XamlRoot);
             var pending = settingsTextInputs.FirstOrDefault(p => ReferenceEquals(p.Input, focused) && p.Dirty());
             if (pending.Input is not null && !SettingIsVisible(pending.Input)) await Run(pending.Commit, commitPending: false);
@@ -711,24 +712,30 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ClearSettingsInputProblem()
     {
+        var input = invalidSetting; var message = invalidSettingMessage;
+        // Invalidate recovery before closing the popup can cause focus/layout callbacks.
+        invalidSetting = null; invalidSettingMessage = null; invalidSettingText = null;
+        if (input is not null) AutomationProperties.SetHelpText(input, "");
+        if (message is not null && error.Text == message) error.Text = "";
         settingsInputProblem.Close();
-        if (invalidSetting is not null) AutomationProperties.SetHelpText(invalidSetting, "");
-        invalidSetting = null; invalidSettingMessage = null;
     }
     private void RevealSettingsInput()
     {
-        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || invalidSettingMessage is not { } message) return;
+        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || input.Text != invalidSettingText || invalidSettingMessage is not { } message) return;
+        var rejectedText = invalidSettingText;
         revealingSetting = true;
         input.Focus(FocusState.Programmatic);
         PositionProblem();
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             revealingSetting = false;
-            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded) {
+            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded && input.Text == rejectedText) {
                 input.Focus(FocusState.Programmatic); PositionProblem();
             }
         });
         void PositionProblem()
         {
+            if (!ReferenceEquals(invalidSetting, input) || invalidSettingMessage != message
+                || input.Text != rejectedText || currentPage != "settings") return;
             // Target the settings viewport explicitly; a TextBox has its own internal scroll viewer.
             // Focus and the error surface can also change layout before the next ViewChanged.
             if (!SettingIsVisible(input)) {
@@ -747,14 +754,18 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var composing = false; var endedThisTurn = false;
         async Task Commit()
         {
-            if (generation != settingsGeneration || input.Text == accepted) return;
+            if (generation != settingsGeneration) return;
             if (composing) { input.Focus(FocusState.Programmatic); throw new InvalidOperationException("入力中の変換を確定してください。"); }
+            if (input.Text == accepted) {
+                if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
+                return;
+            }
             var text = input.Text;
             try { await apply(text); }
             catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
                 var name = AutomationProperties.GetName(input);
                 var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
-                invalidSetting = input; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
+                invalidSetting = input; invalidSettingText = text; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
                 AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
                 throw new InvalidOperationException(invalidSettingMessage, ex);
             }
@@ -762,7 +773,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
-        settingsTextInputs.Add((input, Commit, () => input.Text != accepted && !composing && !endedThisTurn));
+        settingsTextInputs.Add((input, Commit, () => (input.Text != accepted || ReferenceEquals(invalidSetting, input)) && !composing && !endedThisTurn));
         input.TextCompositionStarted += (_, _) => composing = true;
         input.TextCompositionEnded += (_, _) => {
             composing = false; endedThisTurn = true;
@@ -778,7 +789,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
         };
         input.LostFocus += async (_, _) => {
-            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration && input.Text != accepted) await Run(Commit, commitPending: false);
+            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration
+                && (input.Text != accepted || ReferenceEquals(invalidSetting, input))) await Run(Commit, commitPending: false);
         };
         return input;
     }
