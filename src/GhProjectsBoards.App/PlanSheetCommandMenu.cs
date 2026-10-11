@@ -65,7 +65,7 @@ internal sealed partial class PlanSheetView
             var item = Id(new MenuFlyoutItem { Text = button.Label, IsEnabled = button.IsEnabled,
                 KeyboardAcceleratorTextOverride = button.KeyboardAcceleratorTextOverride, Icon = button.Icon switch {
                     SymbolIcon icon => new SymbolIcon(icon.Symbol),
-                    PathIcon icon => new PathIcon { Data = icon.Data },
+                    PathIcon { Tag: string path } => CommandIcon(path),
                     _ => null
                 } }, AutomationProperties.GetAutomationId(button));
             AutomationProperties.SetName(item, button.Label);

@@ -69,7 +69,7 @@ public sealed class PlanScreenPerformanceTests
         if (changedAnimation) Assert.That(SetSystemParameter(0x1043, 0, new nint(1), 0), Is.True);
         try
         {
-            window = app.GetMainWindow(automation, TimeSpan.FromSeconds(30));
+            window = AttachMainWindow(app, automation, process, root);
             Assert.That(window, Is.Not.Null);
             WinUiProcess.AssertRuntime(process);
             window!.Patterns.Transform.Pattern.Move(0, 0);
@@ -146,7 +146,8 @@ public sealed class PlanScreenPerformanceTests
                 var valid = before != after && unchangedBounds && recording.ScreenChanged && recording.FinalStateStable;
                 samples.Add(new { sample = index + 1, row = 144, title = Find("PlanCell144_Title").AsTextBox().Text,
                     remaining = editor.Text, before, after, unchangedBounds, valid,
-                    recording.FirstFinalPixelsMs, recording.PreviousFrameMs, recording.MaxCaptureIntervalMs,
+                    recording.FirstFinalPixelsMs, recording.FirstFinalFrameStartMs, recording.PreviousFrameMs,
+                    recording.PreviousFrameStartMs, recording.MaxCaptureIntervalMs,
                     within200Ms = valid && recording.FirstFinalPixelsMs <= 200 });
                 WriteSummary();
                 Assert.That(valid, Is.True, "A timing sample needs changed dates, unchanged screen coordinates and stable changed pixels; raw frames are preserved.");
@@ -188,9 +189,18 @@ public sealed class PlanScreenPerformanceTests
                 Math.Min(1920, (int)menuBounds.Right + 300), Math.Min(1080, (int)menuBounds.Bottom + 550));
             var menuOpen = RecordPixels(Path.Combine(root, "menu-open"), menuRegion,
                 mark => { mark("More click"); more.Click(); }, TimeSpan.FromSeconds(2));
+            process.Refresh();
+            Assert.That(process.HasExited, Is.False,
+                process.HasExited ? $"The app exited while opening the menu: 0x{process.ExitCode:X8}. Desktop pixels are not an opened menu." : "");
+            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.True,
+                "The captured state must contain the application's opened command menu.");
             Assert.That(menuOpen.ScreenChanged && menuOpen.FinalStateStable, Is.True, "The opened menu must appear in the recorded pixels.");
             var menuClose = RecordPixels(Path.Combine(root, "menu-close"), menuRegion,
                 mark => { mark("Escape"); Keyboard.Type(VirtualKeyShort.ESCAPE); }, TimeSpan.FromSeconds(2));
+            process.Refresh();
+            Assert.That(process.HasExited, Is.False,
+                process.HasExited ? $"The app exited while closing the menu: 0x{process.ExitCode:X8}." : "");
+            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
             Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
             window.Close();
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
@@ -213,12 +223,54 @@ public sealed class PlanScreenPerformanceTests
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
             schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, wheelRecordings, samples,
-            targetMs = 200, boundary = "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. Capture interval brackets each result; CI runner timings are reported, not asserted as PMO hardware acceptance."
+            processExited = process.HasExited, processExitCode = process.HasExited ? (int?)process.ExitCode : null,
+            targetMs = 200, boundary = "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. The observed upper bound is final-copy end; the conservative lower bound is previous-copy start. CI runner timings are reported, not asserted as PMO hardware acceptance."
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
 
     private sealed record PixelFrame(double StartMs, double EndMs, string Hash);
-    private sealed record PixelResult(bool ScreenChanged, bool FinalStateStable, double? FirstFinalPixelsMs, double? PreviousFrameMs, double MaxCaptureIntervalMs);
+    private sealed record PixelResult(bool ScreenChanged, bool FinalStateStable, double? FirstFinalPixelsMs,
+        double? FirstFinalFrameStartMs, double? PreviousFrameMs, double? PreviousFrameStartMs, double MaxCaptureIntervalMs);
+
+    private static Window AttachMainWindow(Application app, UIA3Automation automation, Process process, string evidence)
+    {
+        const int uiaTimeout = unchecked((int)0x80131505);
+        var timer = Stopwatch.StartNew();
+        var attempts = new List<object>();
+        Exception? lastTimeout = null;
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            process.Refresh();
+            if (process.HasExited) throw new InvalidOperationException($"The ordinary app exited during startup: 0x{process.ExitCode:X8}.");
+            try
+            {
+                var window = app.GetMainWindow(automation, TimeSpan.FromSeconds(10));
+                Record(attempt, window is null ? "window-not-ready" : "attached", null);
+                if (window is not null) return window;
+            }
+            // UIA can time out while the just-created HWND is registering its provider. Retry only
+            // that attachment failure; product crashes and other UIA errors remain failures.
+            catch (TimeoutException ex) when (ex.InnerException is COMException { HResult: uiaTimeout })
+            {
+                lastTimeout = ex; Record(attempt, "transient-uia-timeout", ex);
+            }
+            catch (COMException ex) when (ex.HResult == uiaTimeout)
+            {
+                lastTimeout = ex; Record(attempt, "transient-uia-timeout", ex);
+            }
+            catch (Exception ex) { Record(attempt, "failed", ex); throw; }
+            if (attempt < 3) Thread.Sleep(250);
+        }
+        throw new TimeoutException("The ordinary app's window could not be attached in three bounded startup attempts; see startup-attachment.json.", lastTimeout);
+
+        void Record(int attempt, string outcome, Exception? error)
+        {
+            attempts.Add(new { attempt, elapsedMs = timer.Elapsed.TotalMilliseconds, outcome, error = error?.ToString() });
+            File.WriteAllText(Path.Combine(evidence, "startup-attachment.json"), JsonSerializer.Serialize(new {
+                processId = process.Id, maxAttempts = 3, windowWaitPerAttemptSeconds = 10, attempts
+            }, new JsonSerializerOptions { WriteIndented = true }));
+        }
+    }
 
     private static PixelResult RecordPixels(string directory, Rectangle region, Action<Action<string>> input, TimeSpan settle)
     {
@@ -285,7 +337,9 @@ public sealed class PlanScreenPerformanceTests
         var first = frames.FindIndex(frame => frame.StartMs >= inputStart && frame.Hash == finalHash);
         var intervals = frames.Zip(frames.Skip(1), (a, b) => b.EndMs - a.EndMs).ToArray();
         return new(changed, stable, first < 0 ? null : frames[first].EndMs - inputStart,
-            first <= 0 ? null : frames[first - 1].EndMs - inputStart, intervals.Length == 0 ? 0 : intervals.Max());
+            first < 0 ? null : frames[first].StartMs - inputStart,
+            first <= 0 ? null : frames[first - 1].EndMs - inputStart,
+            first <= 0 ? null : frames[first - 1].StartMs - inputStart, intervals.Length == 0 ? 0 : intervals.Max());
     }
 
     private static void RemoveCredentials(ProcessStartInfo start)

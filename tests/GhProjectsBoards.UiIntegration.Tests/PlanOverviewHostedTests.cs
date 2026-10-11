@@ -245,7 +245,8 @@ internal sealed class PlanOverviewHostedTests
             foreach (var id in new[] { 1, 4 }) {
                 var late = Ui.Find<Shape>("PlanLate" + id);
                 // Slip starts after the inclusive published end, including the intervening weekend.
-                Assert.That(Canvas.GetLeft(late), Is.EqualTo(sheet.X(new(2026, 10, 3))).Within(.1));
+                Assert.That(late.TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport,
+                    Is.EqualTo(sheet.X(new(2026, 10, 3))).Within(.1));
                 Assert.That(late.StrokeDashArray, Is.EqualTo(new double[] { 3, 2 }));
                 if (id == 1) Assert.That(Ui.Find<TextBlock>("PlanLateLabel" + id).Text, Is.EqualTo("+2日"));
             }

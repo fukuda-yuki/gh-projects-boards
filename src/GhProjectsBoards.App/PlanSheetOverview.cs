@@ -100,7 +100,7 @@ internal sealed partial class PlanSheetView
     {
         // ChangeView clamps against the arranged native extent, not the new content width alone.
         chartHorizontal.UpdateLayout();
-        chartHorizontal.ChangeView(acceptedZoom == 3 ? 0 : AnchorOffset(TimelineAnchor, FirstDay, DayWidth, ChartViewport), null, null, true);
+        ChangeTimelineOffset(acceptedZoom == 3 ? 0 : AnchorOffset(TimelineAnchor, FirstDay, DayWidth, ChartViewport));
     }
 
     private DateOnly? SelectedDate() => Schedule.TryGetValue(selected, out var task) ? task.Start.Value ?? task.End.Value : null;
@@ -112,7 +112,7 @@ internal sealed partial class PlanSheetView
         var offset = Math.Max(0, (day.DayNumber - FirstDay.DayNumber - 1) * DayWidth);
         // A just-changed scale must update the native extent before ChangeView clamps the offset.
         chartHorizontal.UpdateLayout();
-        chartHorizontal.ChangeView(offset, null, null, true);
+        ChangeTimelineOffset(offset);
     }
 
     private sealed record PredecessorChoice(string Identity, string Label, string Search);

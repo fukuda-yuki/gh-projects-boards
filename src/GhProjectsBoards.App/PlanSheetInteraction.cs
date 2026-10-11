@@ -53,11 +53,15 @@ internal sealed partial class PlanSheetView
         if (!RowIds.Contains(anchor)) anchor = selected;
         if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault();
         if (!Fields.Contains(anchorField)) anchorField = selectedField;
-        var indexes = RowIds.Select((id, i) => (id, i)).ToDictionary(p => p.id, p => p.i);
+        RefreshEdges();
+        if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
+    }
+    private void RefreshEdges()
+    {
+        var indexes = RowIndexes;
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
-        if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
     }
     internal bool IsSelected(string identity, PlanField field)
     {

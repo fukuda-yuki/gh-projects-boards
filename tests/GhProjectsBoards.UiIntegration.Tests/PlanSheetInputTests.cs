@@ -102,12 +102,13 @@ internal sealed partial class PlanSheetHostedTests
     {
         ScrollViewer horizontal = null!;
         FrameworkElement row = null!;
-        double x = 0, start = 0, step = 0;
+        double x = 0, start = 0, step = 0, sheetOffset = 0;
         await Ui.Run(() => {
             horizontal = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
             row = sheet.Realized.Single(r => r.Identity == "I1");
             x = (sheet.SheetViewport + sheet.ChartViewport / 2) / row.ActualWidth;
             start = sheet.ChartOffset;
+            sheetOffset = sheet.SheetOffset;
         });
         SheetNativeInput.Move(await SheetNativeInput.PointFor(row, x));
         await SheetNativeInput.ScrollWheel(shift ? -120 : 120, horizontal: !shift, shift: shift);
@@ -122,7 +123,41 @@ internal sealed partial class PlanSheetHostedTests
         try { for (var i = 0; i < 8; i++) SheetNativeInput.Wheel(shift ? -120 : 120, horizontal: !shift); }
         finally { if (shift) SheetNativeInput.Key(VirtualKey.Shift, false); }
         await Ui.Until(() => Math.Abs(sheet.ChartOffset - (start + step * 8)) < 1);
-        await Ui.Run(() => Assert.That(ScrollMeasurementViewport().VerticalOffset, Is.Zero));
+        // The scroll strip and app navigation may replace the wheel's last target.
+        // The next gesture must continue from that observed viewport.
+        await Ui.Run(() => horizontal.ChangeView(start + step * 2, null, null, true));
+        await Ui.Until(() => Math.Abs(sheet.ChartOffset - (start + step * 2)) < 1);
+        await SheetNativeInput.ScrollWheel(shift ? -120 : 120, horizontal: !shift, shift: shift);
+        await Ui.Until(() => Math.Abs(sheet.ChartOffset - (start + step * 3)) < 1);
+        double nearEnd = 0;
+        await Ui.Run(() => {
+            nearEnd = horizontal.ScrollableWidth - step;
+            horizontal.ChangeView(nearEnd, null, null, true);
+        });
+        await Ui.Until(() => Math.Abs(sheet.ChartOffset - nearEnd) < 1);
+        var delivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var wheelUnits = 0;
+        Microsoft.UI.Xaml.Input.PointerEventHandler observe = (_, args) => {
+            wheelUnits += Math.Abs(args.GetCurrentPoint(sheet).Properties.MouseWheelDelta);
+            if (wheelUnits >= 5 * 120) delivered.TrySetResult();
+        };
+        await Ui.Run(() => Ui.Root.AddHandler(UIElement.PointerWheelChangedEvent, observe, true));
+        try {
+            if (shift) SheetNativeInput.Key(VirtualKey.Shift, true);
+            try {
+                for (var i = 0; i < 4; i++) SheetNativeInput.Wheel(shift ? -120 : 120, horizontal: !shift);
+                SheetNativeInput.Wheel(shift ? 120 : -120, horizontal: !shift);
+            }
+            finally { if (shift) SheetNativeInput.Key(VirtualKey.Shift, false); }
+            await delivered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { await Ui.Run(() => Ui.Root.RemoveHandler(UIElement.PointerWheelChangedEvent, observe)); }
+        await SheetNativeInput.Rendered();
+        await Ui.Until(() => Math.Abs(sheet.ChartOffset - nearEnd) < 1);
+        await Ui.Run(() => {
+            Assert.That(ScrollMeasurementViewport().VerticalOffset, Is.Zero);
+            Assert.That(sheet.SheetOffset, Is.EqualTo(sheetOffset));
+        });
     }
 
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]

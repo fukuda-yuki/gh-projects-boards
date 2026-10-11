@@ -66,6 +66,7 @@ jobs:
         id: baseline-build
         run: dotnet build "$env:PLAN_BASELINE/GhProjectsBoards.sln" -c Release
       - name: Measure baseline serially
+        id: baseline-measure
         if: steps.baseline-build.outcome == 'success'
         continue-on-error: true
         run: '& "$env:PLAN_BASELINE/scripts/Test-PlanPerformance.ps1" -NoBuild'
@@ -96,12 +97,19 @@ jobs:
             TestResults/ui-integration
             TestResults/e2e
           if-no-files-found: warn
-      - name: Check affected hosted behavior after measurement
-        if: always() && steps.candidate-build.outcome == 'success'
-        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview) and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
       - name: Check synthesized wheel and menu keyboard routes on the isolated desktop
         if: always() && steps.candidate-build.outcome == 'success'
         run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|HorizontalWheelAtTimelineEdges|VerticalWheelOverGantt|OverflowKeyboard|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
+      - name: Upload native input evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-native
+          path: TestResults/ui-integration
+          if-no-files-found: warn
+      - name: Check affected hosted behavior after measurement
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview) and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
       - name: Upload hosted regression evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -109,3 +117,6 @@ jobs:
           name: plan-regressions
           path: TestResults/ui-integration
           if-no-files-found: warn
+      - name: Require completed baseline measurement
+        if: always() && steps.baseline-measure.outcome != 'success'
+        run: throw 'Baseline measurement failed; its retained partial evidence is not a completed comparison.'

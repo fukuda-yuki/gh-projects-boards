@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -24,7 +25,7 @@ internal sealed partial class PlanSheetView : Grid
     }
 
     internal readonly HashSet<PlanSheetRow> Realized = [];
-    internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanTasks");
+    internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0), ShowsScrollingPlaceholders = false }, "PlanTasks");
     internal sealed record Input(string Text, long Generation, string OriginalText);
     private long inputGeneration;
     internal readonly Dictionary<(string Identity, PlanField Field), Input> Pending = [];
@@ -34,6 +35,7 @@ internal sealed partial class PlanSheetView : Grid
     internal long Generation(string identity, PlanField field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
     internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
+    private ObservableCollection<string> rowItems = [];
     internal Dictionary<string, int> RowIndexes { get; private set; } = [];
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
     internal ImmutableArray<PlanConflict> BlockingConflicts { get; private set; } = [];
@@ -241,7 +243,10 @@ internal sealed partial class PlanSheetView : Grid
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
         Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
         sheetHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: true, chart: false);
-        chartHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: false, chart: true);
+        chartHorizontal.ViewChanged += (_, args) => {
+            if (!args.IsIntermediate) pendingWheelOffset = null;
+            RefreshScrolledRows(sheet: false, chart: true);
+        };
         SizeChanged += (_, _) => RefreshLayout();
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
@@ -279,7 +284,7 @@ internal sealed partial class PlanSheetView : Grid
             args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; CancelPendingFilter();
+        Unloaded += (_, _) => { disposed = true; pendingWheelOffset = null; CancelPendingFilter();
             inputProblem.Close(); predecessorFlyout?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             if (!initialChartPositioned) {
@@ -338,8 +343,15 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
-    private static PathIcon CommandIcon(string data) => (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-        $"<PathIcon xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='{data}'/>");
+    private static PathIcon CommandIcon(string data)
+    {
+        var icon = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            $"<PathIcon xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='{data}'/>");
+        // Geometry has one XAML parent. Retain its source so an overflow item can
+        // create its own geometry instead of reparenting the toolbar icon's Data.
+        icon.Tag = data;
+        return icon;
+    }
     private AppBarButton AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
     {
         var button = Id(new AppBarButton { Label = label, Icon = new SymbolIcon(icon) }, id);
@@ -543,13 +555,30 @@ internal sealed partial class PlanSheetView : Grid
         filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (!RowIds.SequenceEqual(next))
         {
-            // Recycling the focused cell can synchronously select a new container.
-            // Reconcile the user's task selection after the source has been replaced.
+            // Collection notifications can synchronously refresh or focus containers.
+            // Publish a coherent row topology before notifying, then restore selection.
             var priorSelection = (selected, anchor, selectedField, anchorField);
             RowIds = next;
             RowIndexes = next.Select((identity, index) => (identity, index)).ToDictionary(p => p.identity, p => p.index);
-            List.ItemsSource = next;
+            RefreshEdges();
+            if (List.ItemsSource is null) List.ItemsSource = rowItems = new(next);
+            else ReconcileRowItems(next);
             (selected, anchor, selectedField, anchorField) = priorSelection;
+        }
+    }
+    private void ReconcileRowItems(IReadOnlyList<string> next)
+    {
+        // Filtering keeps canonical document order. Removing only absent rows retains
+        // native editors for matching identities instead of resetting every container.
+        var wanted = next.ToHashSet();
+        for (var i = rowItems.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(rowItems[i])) rowItems.RemoveAt(i);
+        var retained = rowItems.ToHashSet();
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (i < rowItems.Count && rowItems[i] == next[i]) continue;
+            if (retained.Contains(next[i])) rowItems.Move(rowItems.IndexOf(next[i]), i);
+            else rowItems.Insert(i, next[i]);
         }
     }
     internal string Header(Column column) => column.Label;
@@ -606,7 +635,9 @@ internal sealed partial class PlanSheetView : Grid
     {
         var rows = Realized.ToArray();
         metrics.Count("realizedRows", rows.Length); metrics.Mark("rows-start");
-        foreach (var row in rows) row.Refresh();
+        var started = metrics.MeasureStart();
+        try { foreach (var row in rows) row.Refresh(); }
+        finally { metrics.AddDuration("rowRefresh", started); }
         metrics.Mark("rows"); UpdateInputProblem();
     }
     internal void UpdateInputProblem()
@@ -627,7 +658,9 @@ internal sealed partial class PlanSheetView : Grid
         var minimumChartWidth = dividerWidth.HasValue ? 230 : 320;
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
         ChartViewport = width - SheetViewport;
+        metrics.Mark("timeline-range-start");
         var offsetShift = UpdateTimelineRange();
+        metrics.Mark("timeline-range");
         if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
@@ -641,12 +674,17 @@ internal sealed partial class PlanSheetView : Grid
         ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
         ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth + 2 * ChartDateInset;
         sheetHorizontal.Width = SheetViewport; chartHorizontal.Width = ChartViewport;
+        metrics.Mark("layout-properties");
         if (initialChartPositioned && preserveDateViewport && acceptedZoom != 3 && offsetShift != 0) {
             // Native extent changes can clamp the old offset; restore the date using the pre-layout offset.
+            metrics.Mark("forced-layout-start");
             chartHorizontal.UpdateLayout();
-            chartHorizontal.ChangeView(Math.Clamp(previousOffset + offsetShift, 0, chartHorizontal.ScrollableWidth), null, null, true);
+            metrics.Mark("forced-layout");
+            ChangeTimelineOffset(Math.Clamp(previousOffset + offsetShift, 0, chartHorizontal.ScrollableWidth));
         }
-        RefreshHeaders(); RenderTimelineHeader(); RefreshRealized();
+        RefreshHeaders(); RenderTimelineHeader();
+        metrics.Mark("headers");
+        RefreshRealized();
     }
     private void RefreshHeaders()
     {

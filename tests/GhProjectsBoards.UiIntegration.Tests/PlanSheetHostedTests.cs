@@ -1131,7 +1131,12 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text == "クリップボードを使用できません。もう一度お試しください。");
             await Ui.Run(() => Assert.That(SelectProvider("PlanCell1_Remaining").IsSelected, Is.True));
         }
-        finally { release.Set(); await ended.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
+        finally {
+            release.Set();
+            // A command failure before entering the clipboard must remain the test's
+            // failure, rather than being replaced by a cleanup timeout.
+            if (started.Task.IsCompleted) await ended.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
         await Ui.Idle();
         Assert.That(session.Document.State, Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.EqualTo(undo));
@@ -1823,7 +1828,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<FrameworkElement>("PlanCell2_Remaining"), Is.Not.InstanceOf<TextBox>());
         });
         await Ui.ClickCommand("PlanSheetOutdent");
-        await Ui.Idle();
+        await Ui.Until(() => session.Document.State.Rows[2].Parent is null);
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.False));
         await Edit(2, PlanField.Remaining, "16");
