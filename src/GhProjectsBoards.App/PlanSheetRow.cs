@@ -25,6 +25,7 @@ public sealed class PlanSheetRow : Grid
     private readonly TranslateTransform chartTranslation = new();
     private readonly Border chartSeparator = new() { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false };
     private readonly Canvas chart = new() { Height = 28 };
+    private readonly Canvas dependencyChart = new(), taskChart = new();
     private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(4, 3, 8, 0) };
     private readonly Grid idCell = new();
     private readonly Border selectionAccent = new() { Width = 3, Height = 16, CornerRadius = new(1.5),
@@ -41,19 +42,30 @@ public sealed class PlanSheetRow : Grid
         ? display : Cells.FirstOrDefault(c => c.Field == field);
     private string boundIdentity = "";
     private double chartOffset = double.NaN;
-    private double chartOriginOffset;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
         bool Summary, bool Milestone, decimal? CompleteFraction, PlanTaskLateness? Lateness, DateOnly? PublishedEnd,
         bool ShowLabels, DateOnly FirstDay, double DateInset, double DayWidth, double Viewport, double Height, ElementTheme Theme, Brush ThemeBrush);
-    private sealed record ChartDependency(PlanSheetView.Edge Edge, DateOnly? PredecessorStart, bool PredecessorMilestone,
-        DateOnly? SuccessorEnd, bool SuccessorMilestone, bool SuccessorSummary);
+    private sealed class DependencyVisual
+    {
+        internal readonly Polyline Line = new() { StrokeThickness = 1 };
+        internal Polygon? Head;
+        internal Brush? Brush;
+        internal Point[] Points = [];
+        internal bool HeadDown;
+        internal string LineId = "", HeadId = "", RowIdentity = "";
+    }
+    private readonly Dictionary<(string From, string To), DependencyVisual> dependencyVisuals = [];
     private ChartPresentation? chartPresentation;
-    private ChartDependency[] chartDependencies = [];
+    internal long DependencyShapesCreated { get; private set; }
+    internal long DependencyShapesReused { get; private set; }
+    internal long DependencyShapesReusedAcrossBindings { get; private set; }
+    internal long DependencyPointsUpdated { get; private set; }
     public PlanSheetRow()
     {
         Height = 28; HorizontalAlignment = HorizontalAlignment.Left; ColumnDefinitions.Add(new()); ColumnDefinitions.Add(new());
         line.RenderTransform = lineTranslation;
         chart.RenderTransform = chartTranslation;
+        chart.Children.Add(dependencyChart); chart.Children.Add(taskChart);
         sheetClip.Clip = sheetGeometry; chartClip.Clip = chartGeometry;
         sheetClip.Children.Add(line);
         sheetClip.Children.Add(new Border { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false });
@@ -97,8 +109,15 @@ public sealed class PlanSheetRow : Grid
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
         foreach (var handle in handles) if (handle is not null) AutomationProperties.SetAutomationId(handle, "");
         AutomationProperties.SetAutomationId(fold, "");
-        chart.Children.Clear();
-        chartPresentation = null; chartDependencies = [];
+        // A recycled row keeps native dependency geometry, but none of the old
+        // task's paint or automation identity may escape before rebinding finishes.
+        chart.Opacity = 0;
+        taskChart.Children.Clear(); chartPresentation = null;
+        foreach (var visual in dependencyVisuals.Values) {
+            AutomationProperties.SetAutomationId(visual.Line, ""); visual.LineId = "";
+            if (visual.Head is { } head) AutomationProperties.SetAutomationId(head, "");
+            visual.HeadId = "";
+        }
     }
     internal void Refresh()
     {
@@ -278,48 +297,62 @@ public sealed class PlanSheetRow : Grid
     {
         chartOffset = owner.ChartOffset;
         // Scroll in composition without reallocating every bar and dependency shape.
-        chartTranslation.X = chartOriginOffset - chartOffset;
+        chartTranslation.X = -chartOffset;
     }
+    private static double ChartX(PlanSheetView owner, DateOnly day) =>
+        owner.ChartDateInset + (day.DayNumber - owner.FirstDay.DayNumber) * owner.DayWidth;
     private void DrawChart()
     {
         AutomationProperties.SetAutomationId(chartSeparator, Owner is { } view ? "PlanChartSeparator" + view.PlanIds.GetValueOrDefault(Identity) : "");
+        // Native recycling can unbind before supplying the next identity. Keep
+        // that row's bounded geometry hidden through the intermediate state.
+        if (DataContext is not string) { chart.Opacity = 0; return; }
         if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) {
-            if (chart.Children.Count > 0) chart.Children.Clear();
-            chartPresentation = null; chartDependencies = [];
+            dependencyChart.Children.Clear(); dependencyVisuals.Clear(); taskChart.Children.Clear();
+            chartPresentation = null; chart.Opacity = 1;
             return;
         }
         var number = owner.PlanIds[Identity];
         var rowIndex = owner.RowIndexes.GetValueOrDefault(Identity, -1);
+        RefreshChartOffset(owner);
+        chart.Width = dependencyChart.Width = taskChart.Width = owner.ChartViewport;
+        dependencyChart.Height = taskChart.Height = owner.RowHeight;
+        DrawDependencies(owner, number, rowIndex);
         decimal? completeFraction = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         var presentation = new ChartPresentation(Identity, number, rowIndex, task.Start.Value, task.End.Value,
             task.IsSummary, task.IsMilestone, completeFraction, owner.LatenessOf(Identity), owner.PublishedEnd(Identity),
             owner.ShowLatenessLabels, owner.FirstDay, owner.ChartDateInset, owner.DayWidth, owner.ChartViewport, owner.RowHeight,
             ActualTheme, PlanSheetView.Brush("GanttTaskBrush"));
-        var dependencies = owner.Edges.Where(edge => rowIndex >= Math.Min(edge.From, edge.To) && rowIndex <= Math.Max(edge.From, edge.To))
-            .Select(edge => {
-                var predecessor = owner.Schedule[owner.RowIds[edge.From]];
-                var successor = owner.Schedule[owner.RowIds[edge.To]];
-                return new ChartDependency(edge, predecessor.Start.Value, predecessor.IsMilestone,
-                    successor.End.Value, successor.IsMilestone, successor.IsSummary);
-            }).ToArray();
-        if (presentation == chartPresentation && dependencies.SequenceEqual(chartDependencies)) {
-            RefreshChartOffset(owner);
-            return;
+        if (presentation != chartPresentation) {
+            chartPresentation = presentation;
+            taskChart.Children.Clear(); DrawTask(owner, number, task);
         }
-        chartPresentation = presentation; chartDependencies = dependencies;
-        chartOriginOffset = owner.ChartOffset; RefreshChartOffset(owner);
-        chart.Children.Clear();
-        chart.Width = owner.ChartViewport;
-        foreach (var dependency in dependencies)
+        chart.Opacity = 1;
+    }
+    private void DrawDependencies(PlanSheetView owner, int number, int rowIndex)
+    {
+        var current = new HashSet<(string From, string To)>();
+        var brush = PlanSheetView.Brush("GanttArrowBrush");
+        foreach (var edge in owner.Edges)
         {
-            var edge = dependency.Edge;
+            if (rowIndex < Math.Min(edge.From, edge.To) || rowIndex > Math.Max(edge.From, edge.To)) continue;
+            var key = (owner.RowIds[edge.From], owner.RowIds[edge.To]);
+            current.Add(key);
+            if (!dependencyVisuals.TryGetValue(key, out var visual)) {
+                visual = new DependencyVisual(); dependencyVisuals.Add(key, visual);
+                dependencyChart.Children.Add(visual.Line); DependencyShapesCreated++;
+            } else {
+                DependencyShapesReused++;
+                if (visual.RowIdentity != Identity) DependencyShapesReusedAcrossBindings++;
+            }
+            visual.RowIdentity = Identity;
             var successor = owner.Schedule[owner.RowIds[edge.To]];
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
             var predecessorMilestone = predecessor.IsMilestone && predecessor.Start.Value == predecessor.End.Value;
             var predecessorStart = predecessor.Start.Value ?? edge.End;
             var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (edge.End.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
-            var x1 = owner.X(predecessorStart) + predecessorWidth; var x2 = owner.X(edge.Start);
+            var x1 = ChartX(owner, predecessorStart) + predecessorWidth; var x2 = ChartX(owner, edge.Start);
             var successorWidth = successorMilestone ? 10 : Math.Max(2, ((successor.End.Value ?? edge.Start).DayNumber - edge.Start.DayNumber + 1) * owner.DayWidth);
             var inset = Math.Min(3, successorWidth / 2);
             // Clamp locally: adding a large date coordinate can invert equal bounds through rounding.
@@ -338,15 +371,43 @@ public sealed class PlanSheetRow : Grid
             // Parent clipping does not bound the native shape's rasterization surface.
             // These orthogonal segments need only the row slice, with a guard for the stroke.
             for (var i = 0; i < points.Length; i++) points[i] = new(points[i].X, Math.Clamp(points[i].Y, -2, owner.RowHeight + 2));
-            var arrow = new Polyline { Stroke = PlanSheetView.Brush("GanttArrowBrush"), StrokeThickness = 1, Points = [.. points] };
-            AutomationProperties.SetAutomationId(arrow, $"PlanArrow{edge.From + 1}_{edge.To + 1}_{number}"); chart.Children.Add(arrow);
+            // Most long dependencies have the same bounded middle slice in a
+            // recycled row. Preserve its native geometry when those points agree.
+            if (!visual.Points.SequenceEqual(points)) {
+                visual.Line.Points = [.. points]; visual.Points = points; DependencyPointsUpdated++;
+            }
+            var brushChanged = !ReferenceEquals(visual.Brush, brush);
+            if (brushChanged) { visual.Line.Stroke = brush; visual.Brush = brush; }
+            var lineId = $"PlanArrow{edge.From + 1}_{edge.To + 1}_{number}";
+            if (visual.LineId != lineId) { AutomationProperties.SetAutomationId(visual.Line, lineId); visual.LineId = lineId; }
             if (rowIndex == edge.To) {
-                var head = PlanSheetView.Id(new Polygon { Width = 6, Height = 6,
-                    Points = down ? [new(0, 0), new(6, 0), new(3, 6)] : [new(0, 6), new(6, 6), new(3, 0)],
-                    Fill = PlanSheetView.Brush("GanttArrowBrush") }, $"PlanArrowHead{edge.From + 1}_{edge.To + 1}_{number}");
-                Canvas.SetLeft(head, entry - 3); Canvas.SetTop(head, down ? tip - 6 : tip); chart.Children.Add(head);
+                if (visual.Head is null) {
+                    visual.Head = new Polygon { Width = 6, Height = 6, Fill = brush };
+                    dependencyChart.Children.Add(visual.Head); DependencyShapesCreated++;
+                    visual.HeadDown = !down;
+                } else if (brushChanged) visual.Head.Fill = brush;
+                var head = visual.Head;
+                if (visual.HeadDown != down) {
+                    head.Points = down ? [new(0, 0), new(6, 0), new(3, 6)] : [new(0, 6), new(6, 6), new(3, 0)];
+                    visual.HeadDown = down;
+                }
+                var headId = $"PlanArrowHead{edge.From + 1}_{edge.To + 1}_{number}";
+                if (visual.HeadId != headId) { AutomationProperties.SetAutomationId(head, headId); visual.HeadId = headId; }
+                Canvas.SetLeft(head, entry - 3); Canvas.SetTop(head, down ? tip - 6 : tip);
+            } else if (visual.Head is { } head) {
+                dependencyChart.Children.Remove(head); visual.Head = null; visual.HeadId = "";
             }
         }
+        // Retain only this row's current edges, never the union of its scroll history.
+        foreach (var key in dependencyVisuals.Keys.Where(key => !current.Contains(key)).ToArray()) {
+            var visual = dependencyVisuals[key];
+            dependencyChart.Children.Remove(visual.Line);
+            if (visual.Head is { } head) dependencyChart.Children.Remove(head);
+            dependencyVisuals.Remove(key);
+        }
+    }
+    private void DrawTask(PlanSheetView owner, int number, ScheduledTask task)
+    {
         if (task.Start.Value is not { } start || task.End.Value is not { } end)
         {
             if ((task.Start.Value ?? task.End.Value) is { } known)
@@ -354,15 +415,15 @@ public sealed class PlanSheetRow : Grid
                 var endpoint = new Polygon { Width = 8, Height = 10,
                     Points = [new(0, 0), new(8, 5), new(0, 10)],
                     Fill = PlanSheetView.Brush("TextFillColorSecondaryBrush") };
-                Canvas.SetLeft(endpoint, owner.X(known)); Canvas.SetTop(endpoint, (owner.RowHeight - 10) / 2);
+                Canvas.SetLeft(endpoint, ChartX(owner, known)); Canvas.SetTop(endpoint, (owner.RowHeight - 10) / 2);
                 AutomationProperties.SetAutomationId(endpoint, "PlanEndpoint" + number);
                 AutomationProperties.SetName(endpoint, $"ID {number} {(task.Start.Value is not null ? "開始" : "終了")} {known:yyyy-MM-dd}");
-                chart.Children.Add(endpoint);
+                taskChart.Children.Add(endpoint);
             }
             return;
         }
         if (end < start) return;
-        var x = owner.X(start); var width = Math.Max(2, (end.DayNumber - start.DayNumber + 1) * owner.DayWidth);
+        var x = ChartX(owner, start); var width = Math.Max(2, (end.DayNumber - start.DayNumber + 1) * owner.DayWidth);
         var milestone = task.IsMilestone && start == end;
         decimal? share = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         Shape bar;
@@ -382,14 +443,14 @@ public sealed class PlanSheetRow : Grid
         AutomationProperties.SetName(bar, $"ID {number} {start:yyyy-MM-dd} – {end:yyyy-MM-dd}" + (task.IsSummary ? " 集計" : milestone ? " マイルストーン" : "")
             + (share is { } percent ? $" 完了 {percent * 100:0}%" : "") + (late is { } days ? $" {(overdue ? "期限超過" : "予定より遅れ")} +{days} 日" : ""));
         ToolTipService.SetToolTip(bar, AutomationProperties.GetName(bar));
-        chart.Children.Add(bar);
+        taskChart.Children.Add(bar);
         if (!task.IsSummary && !milestone && share is > 0) {
             var progress = PlanSheetView.Id(new Rectangle { IsHitTestVisible = false, Width = width * (double)share.Value, Height = 14, RadiusX = 3, RadiusY = 3,
                 Fill = PlanSheetView.Brush("GanttTaskBrush") }, "PlanProgress" + number);
-            Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); chart.Children.Add(progress);
+            Canvas.SetLeft(progress, x); Canvas.SetTop(progress, (owner.RowHeight - 14) / 2); taskChart.Children.Add(progress);
         }
         if (!milestone && late is { } count && owner.PublishedEnd(Identity) is { } published) {
-            var lateX = Math.Max(x, owner.X(published) + owner.DayWidth);
+            var lateX = Math.Max(x, ChartX(owner, published) + owner.DayWidth);
             var lateWidth = x + width - lateX;
             if (lateWidth <= 0) return;
             Shape segment = task.IsSummary
@@ -399,11 +460,11 @@ public sealed class PlanSheetRow : Grid
             segment.Fill = overdue ? PlanSheetView.Brush("GanttLateTintBrush") : null; segment.Stroke = PlanSheetView.Brush("GanttLateBrush");
             segment.StrokeThickness = 1; segment.StrokeDashArray = [3, 2];
             AutomationProperties.SetAutomationId(segment, "PlanLate" + number);
-            Canvas.SetLeft(segment, lateX); Canvas.SetTop(segment, task.IsSummary ? Canvas.GetTop(bar) : (owner.RowHeight - 14) / 2); chart.Children.Add(segment);
+            Canvas.SetLeft(segment, lateX); Canvas.SetTop(segment, task.IsSummary ? Canvas.GetTop(bar) : (owner.RowHeight - 14) / 2); taskChart.Children.Add(segment);
             if (!overdue || !owner.ShowLatenessLabels) return;
             var label = PlanSheetView.Id(new TextBlock { Text = $"+{count}日", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Foreground = PlanSheetView.Brush("GanttLateBrush") }, "PlanLateLabel" + number);
-            Canvas.SetLeft(label, x + width + 6); Canvas.SetTop(label, (owner.RowHeight - 16) / 2); chart.Children.Add(label);
+            Canvas.SetLeft(label, x + width + 6); Canvas.SetTop(label, (owner.RowHeight - 16) / 2); taskChart.Children.Add(label);
         }
     }
 }

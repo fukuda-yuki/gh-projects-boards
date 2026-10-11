@@ -16,7 +16,7 @@ internal sealed partial class PlanSheetHostedTests
         .Single(scroll => scroll.Content is ItemsPresenter);
 
     private sealed record ScrollFrame(double ElapsedMs, double IntervalMs, string Phase, double RequestedOffset,
-        double VerticalOffset, double HorizontalOffset, double VerticalExtent, double HorizontalExtent,
+        double VerticalOffset, double HorizontalOffset, double VerticalExtent, double HorizontalExtent, double ViewportHeight,
         int RealizedRows, int[] UnpopulatedRows);
 
     [Test, Category("PlanSheetPerformance")]
@@ -32,6 +32,7 @@ internal sealed partial class PlanSheetHostedTests
         ScrollViewer vertical = null!, horizontal = null!;
         double verticalExtent = 0, horizontalExtent = 0, scale = 0, clientWidth = 0, clientHeight = 0;
         object? finalPosition = null;
+        object? dependencyDiagnostics = null;
         var timer = new Stopwatch();
         var previous = 0d;
         TaskCompletionSource? nextFrame = null;
@@ -59,7 +60,7 @@ internal sealed partial class PlanSheetHostedTests
                     missing.Add(index + 1);
             }
             lock (frames) frames.Add(new(elapsed, elapsed - previous, phase, requestedOffset,
-                vertical.VerticalOffset, horizontal.HorizontalOffset, vertical.ScrollableHeight, horizontal.ScrollableWidth,
+                vertical.VerticalOffset, horizontal.HorizontalOffset, vertical.ScrollableHeight, horizontal.ScrollableWidth, vertical.ViewportHeight,
                 sheet.Realized.Count, missing.ToArray()));
             previous = elapsed;
             nextFrame?.TrySetResult();
@@ -137,6 +138,21 @@ internal sealed partial class PlanSheetHostedTests
                     finalPosition = new { vertical = vertical?.VerticalOffset, horizontal = horizontal?.HorizontalOffset,
                         verticalExtent = vertical?.ScrollableHeight, horizontalExtent = horizontal?.ScrollableWidth,
                         viewportHeight = vertical?.ViewportHeight, clientWidth = Ui.Root.ActualWidth };
+                    // The identical harness also runs against production revisions
+                    // without these optional diagnostics; absence is not zero work.
+                    long? ReadCounter(PlanSheetRow row, string name) => typeof(PlanSheetRow)
+                        .GetProperty(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        ?.GetValue(row) as long?;
+                    dependencyDiagnostics = new {
+                        boundary = "Lifetime counters of the realized row containers surviving at the final position; not global round-trip totals",
+                        rows = sheet.Realized.Select(row => new {
+                            row.Identity,
+                            created = ReadCounter(row, "DependencyShapesCreated"),
+                            reused = ReadCounter(row, "DependencyShapesReused"),
+                            reusedAcrossBindings = ReadCounter(row, "DependencyShapesReusedAcrossBindings"),
+                            pointsUpdated = ReadCounter(row, "DependencyPointsUpdated")
+                        }).ToArray()
+                    };
                     return Task.CompletedTask;
                 }, check: false);
             } catch (Exception ex) {
@@ -146,10 +162,10 @@ internal sealed partial class PlanSheetHostedTests
                 ScrollFrame[] samples;
                 lock (frames) samples = frames.ToArray();
                 var result = new {
-                    schemaVersion = 3, outcome, failure, version = EvaluationFixture.DefaultVersion,
+                    schemaVersion = 4, outcome, failure, version = EvaluationFixture.DefaultVersion,
                     rows = session.Document.State.Rows.Length, statusDate = session.Document.State.Settings.StatusDate,
                     windowPixels = new { width = 1920, height = 1080 }, clientWidth, clientHeight, scale,
-                    verticalStep, horizontalStep, verticalExtent, horizontalExtent, finalPosition,
+                    verticalStep, horizontalStep, verticalExtent, horizontalExtent, finalPosition, dependencyDiagnostics,
                     environment = new { os = Environment.OSVersion.ToString(), runtime = Environment.Version.ToString(),
                         processors = Environment.ProcessorCount, architecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString() },
                     longFrameThresholdMs = 50, frameCount = samples.Length,

@@ -60,6 +60,7 @@ public sealed class PlanScreenPerformanceTests
         Window? window = null;
         var samples = new List<object>();
         var wheelRecordings = new List<object>();
+        var flyoutRecordings = new List<object>();
         string outcome = "incomplete";
         string? failure = null;
         object? environment = null;
@@ -133,16 +134,18 @@ public sealed class PlanScreenPerformanceTests
                 editor.Focus();
                 Wait(() => editor.Properties.HasKeyboardFocus.ValueOrDefault);
                 editor.Text = index % 2 == 0 ? (remaining + 24).ToString(System.Globalization.CultureInfo.CurrentCulture) : original;
-                var before = Find("PlanCell144_End").AsTextBox().Text;
-                var bounds = Find("PlanCell144_End").BoundingRectangle;
+                var endCell = Find("PlanCell144_End").AsTextBox();
+                var before = endCell.Text;
+                var bounds = endCell.BoundingRectangle;
                 // Exclude selection borders/changed markers. The date text is read independently through UIA.
                 var region = Rectangle.Inflate(Rectangle.Round(bounds), -5, -5);
                 Assert.That(region.Width > 20 && region.Height > 5, Is.True, "The date must be on screen.");
                 Thread.Sleep(200);
                 var recording = RecordPixels(Path.Combine(root, $"edit-{index + 1}"), region,
                     mark => { mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN); }, TimeSpan.FromSeconds(3));
-                var after = Find("PlanCell144_End").AsTextBox().Text;
-                var unchangedBounds = Find("PlanCell144_End").BoundingRectangle == bounds;
+                var finalEndCell = Find("PlanCell144_End").AsTextBox();
+                var after = finalEndCell.Text;
+                var unchangedBounds = finalEndCell.BoundingRectangle == bounds;
                 var valid = before != after && unchangedBounds && recording.ScreenChanged && recording.FinalStateStable;
                 samples.Add(new { sample = index + 1, row = 144, title = Find("PlanCell144_Title").AsTextBox().Text,
                     remaining = editor.Text, before, after, unchangedBounds, valid,
@@ -202,10 +205,85 @@ public sealed class PlanScreenPerformanceTests
                 process.HasExited ? $"The app exited while closing the menu: 0x{process.ExitCode:X8}." : "");
             Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
             Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
+            RecordFlyout("columns", "PlanSheetColumns", "PlanColumnRemaining", [
+                "PlanColumnId", "PlanColumnIndicator", "PlanColumnTitle", "PlanColumnAssignees", "PlanColumnEstimate",
+                "PlanColumnRemaining", "PlanColumnActual", "PlanColumnStart", "PlanColumnEnd", "PlanColumnPredecessors",
+                "PlanColumnStartNoEarlierThan", "PlanColumnFixed", "PlanColumnStatus"]);
+            RecordFlyout("predecessor", "PlanSheetPredecessorAdd", "PlanPredecessorSearch",
+                ["PlanPredecessorSearch", "PlanPredecessorCandidates", "PlanPredecessorConfirm", "PlanPredecessorCancel"]);
+            RecordFlyout("project", "PlanProjectPicker", "PlanChooseProject",
+                ["RegisteredProjects", "PlanChooseProject", "PlanConnection"]);
             window.Close();
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
             Assert.That(process.ExitCode, Is.Zero);
             outcome = "completed";
+
+            void RecordFlyout(string name, string commandId, string markerId, string[] contentIds)
+            {
+                AutomationElement? Visible(string id) => window.FindAllDescendants(c => c.ByAutomationId(id)).FirstOrDefault(item => !item.IsOffscreen);
+                AutomationElement PrepareCommand()
+                {
+                    if (Visible(commandId) is { } command) return command;
+                    more.Click();
+                    Wait(() => Visible(commandId) is not null);
+                    // The baseline uses CommandBar's animated native overflow. Finish
+                    // that prerequisite outside the measured child-flyout opening.
+                    Thread.Sleep(350);
+                    return Visible(commandId)!;
+                }
+                void CloseProbe()
+                {
+                    Keyboard.Type(VirtualKeyShort.ESCAPE);
+                    Wait(() => Visible(markerId) is null);
+                    // The baseline can leave its parent CommandBar overflow open.
+                    if (Visible("PlanSheetCopy") is not null) {
+                        Keyboard.Type(VirtualKeyShort.ESCAPE);
+                        Wait(() => Visible("PlanSheetCopy") is null);
+                        Thread.Sleep(350);
+                    }
+                }
+
+                // Discover the actual popup's content bounds before recording; do not
+                // poll UIA or retain full-window bitmaps during the measured transition.
+                PrepareCommand().Click();
+                Wait(() => Visible(markerId) is not null);
+                Thread.Sleep(350);
+                var popupBounds = contentIds.Select(id => Rectangle.Round(Visible(id)!.BoundingRectangle)).Aggregate(Rectangle.Union);
+                var region = Rectangle.Intersect(Rectangle.Inflate(popupBounds, 24, 24), Rectangle.Round(window.BoundingRectangle));
+                Assert.That(region.Width > 100 && region.Height > 50 && region.Width * region.Height <= 900 * 700, Is.True,
+                    "Flyout capture must have bounded, on-screen content bounds.");
+                CloseProbe();
+                var trigger = PrepareCommand();
+                var triggerBounds = trigger.BoundingRectangle;
+                var point = trigger.GetClickablePoint();
+                var opened = RecordPixels(Path.Combine(root, name + "-open"), region, mark => {
+                    Assert.That(SetCursorPos(point.X, point.Y), Is.True);
+                    mark(name + " click");
+                    MouseEvent(0x0002, 0, 0, 0, 0); MouseEvent(0x0004, 0, 0, 0, 0);
+                    Assert.That(SetCursorPos(1850, 1030), Is.True);
+                }, TimeSpan.FromSeconds(2));
+                process.Refresh();
+                Assert.That(process.HasExited, Is.False, name + " opening must leave the app running.");
+                Assert.That(Visible(markerId), Is.Not.Null, name + " content must be present in the recorded state.");
+                Assert.That(opened.ScreenChanged, Is.True, name + " must appear in changed pixels.");
+                // The search owns a focused native caret. Preserve its full frames and
+                // stability measurement, but do not confuse a blink with flyout motion.
+                if (name != "predecessor") Assert.That(opened.FinalStateStable, Is.True, name + " must finish in stable pixels.");
+                var closed = RecordPixels(Path.Combine(root, name + "-close"), region,
+                    mark => { mark("Escape"); Keyboard.Type(VirtualKeyShort.ESCAPE); }, TimeSpan.FromSeconds(2));
+                process.Refresh();
+                Assert.That(process.HasExited, Is.False, name + " closing must leave the app running.");
+                Assert.That(Visible(markerId), Is.Null, name + " content must be dismissed by Escape.");
+                Assert.That(closed.ScreenChanged && closed.FinalStateStable, Is.True, name + " must disappear from the recorded pixels.");
+                flyoutRecordings.Add(new { name, commandId, markerId, popupBounds, region, triggerBounds, opened, closed,
+                    boundary = "Ordinary-app native click/Escape with Windows animations enabled. Raw frames and copy timestamps define the observation cadence; inspect complete popup content separately from native caret/hover feedback. No physical one-frame assertion is inferred from sampling." });
+                WriteSummary();
+                if (Visible("PlanSheetCopy") is not null) {
+                    Keyboard.Type(VirtualKeyShort.ESCAPE);
+                    Wait(() => Visible("PlanSheetCopy") is null);
+                    Thread.Sleep(350);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -222,7 +300,7 @@ public sealed class PlanScreenPerformanceTests
             if (changedAnimation) SetSystemParameter(0x1043, 0, nint.Zero, 0);
         }
         void WriteSummary() => File.WriteAllText(Path.Combine(root, "plan-screen.json"), JsonSerializer.Serialize(new {
-            schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, wheelRecordings, samples,
+            schemaVersion = 1, outcome, failure, rows = 1040, version = "2027.04", environment, wheelRecordings, flyoutRecordings, samples,
             processExited = process.HasExited, processExitCode = process.HasExited ? (int?)process.ExitCode : null,
             targetMs = 200, boundary = "Native Enter injection start to first desktop copy matching the final stable changed End-date pixels. CopyFromScreen is desktop-compositor evidence, not monitor photon latency. The observed upper bound is final-copy end; the conservative lower bound is previous-copy start. CI runner timings are reported, not asserted as PMO hardware acceptance."
         }, new JsonSerializerOptions { WriteIndented = true }));
