@@ -247,7 +247,23 @@ internal sealed partial class PlanSheetHostedTests
         await SheetNativeInput.Rendered();
         // Native placeholders may still hold a null DataContext after a rendered
         // frame. In particular, Identity's empty fallback is not the bound append row.
-        await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
+        try {
+            await Ui.Until(() => sheet.List.Items.Cast<string>().All(identity => CurrentDependencyRow(identity) is not null));
+        } catch (TimeoutException) {
+            await Ui.Run(() => {
+                static string Value(object? value) => value is null ? "<null>" : $"{value.GetType().Name}:'{value}'";
+                foreach (var identity in sheet.List.Items.Cast<string>()) {
+                    var container = sheet.List.ContainerFromItem(identity) as ListViewItem;
+                    var row = container?.ContentTemplateRoot as PlanSheetRow;
+                    var ids = row is null ? "" : string.Join(",", Ui.Tree(row).Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0));
+                    TestContext.Out.WriteLine($"Filtered dependency binding: item={Value(identity)}; container={container is not null}; "
+                        + $"container-content={Value(container?.Content)}; container-context={Value(container?.DataContext)}; "
+                        + $"row-context={Value(row?.DataContext)}; row-loaded={row?.IsLoaded}; owner={row?.Owner == sheet}; "
+                        + $"realized={row is not null && sheet.Realized.Contains(row)}; row-size={row?.ActualWidth}x{row?.ActualHeight}; IDs=[{ids}]");
+                }
+            });
+            throw;
+        }
         await WaitForDependencyPresentation(1, 3, 90);
         await WaitForDependencyPresentation(4, 2, 3);
         await Ui.Run(() => {

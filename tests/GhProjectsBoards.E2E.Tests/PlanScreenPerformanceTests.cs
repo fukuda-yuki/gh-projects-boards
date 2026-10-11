@@ -285,6 +285,23 @@ public sealed class PlanScreenPerformanceTests
                 Assert.That(region.Width > 100 && region.Height > 50 && region.Width * region.Height <= 900 * 700, Is.True,
                     "Flyout capture must have bounded, on-screen content bounds.");
                 CloseProbe();
+                // Verify repeated native activation separately from the pixel sampler.
+                // Resolve a fresh external UIA peer after the parent menu is rebuilt.
+                var repeatedProbe = PrepareCommand();
+                var repeatedProbeDetails = DescribeTrigger(repeatedProbe);
+                var probeEvidence = Path.Combine(root, name + "-native-probes.json");
+                File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
+                    phase = "before repeated native click", probeTriggerDetails, repeatedProbeDetails,
+                    firstOpeningObserved = true, utc = DateTime.UtcNow
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                repeatedProbe.Click();
+                Wait(() => Visible(markerId) is not null);
+                File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
+                    phase = "repeated opening observed", probeTriggerDetails, repeatedProbeDetails,
+                    firstOpeningObserved = true, repeatedOpeningObserved = true, utc = DateTime.UtcNow,
+                    boundary = "Two native AutomationElement.Click activations from freshly resolved external UIA screen bounds; no concurrent pixel capture. Escape dismisses each opening."
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                CloseProbe();
                 var trigger = PrepareCommand();
                 var triggerBounds = trigger.BoundingRectangle;
                 var point = trigger.GetClickablePoint();
@@ -293,7 +310,7 @@ public sealed class PlanScreenPerformanceTests
                 File.WriteAllText(Path.Combine(root, name + "-input.json"), JsonSerializer.Serialize(new {
                     commandId, markerId, popupBounds, region, triggerBounds, point, preparedUtc = DateTime.UtcNow,
                     probeTriggerDetails, triggerDetails,
-                    input = "Pre-resolved UIA Invoke opens the flyout while an independent thread captures desktop pixels. No UIA search or polling during capture. The earlier native-click probe verifies its first opening, not repeated native activation."
+                    input = "Pre-resolved UIA Invoke opens the flyout while an independent thread captures desktop pixels. No UIA search or polling during capture. Separate native-click probes verify first and repeated openings without pixel capture."
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 Assert.That(SetCursorPos(1850, 1030), Is.True);
                 FlaUI.Core.Input.Wait.UntilInputIsProcessed();

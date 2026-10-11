@@ -1608,8 +1608,26 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task BottomEmptyRowCreatesOneTaskInTheDefaultRepositoryAndUndoRemovesIt()
     {
-        await Ui.Run(() => Ui.Find<ListView>("PlanTasks").ScrollIntoView(""));
-        await Ui.Ready<TextBox>("PlanCell0_Title");
+        var emptyBindings = new List<string>();
+        Windows.Foundation.TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs> observer = (_, args) => {
+            if (args.Item is string { Length: > 0 } || emptyBindings.Count >= 16) return;
+            var row = args.ItemContainer.ContentTemplateRoot as PlanSheetRow;
+            emptyBindings.Add($"itemNull={args.Item is null}, itemString={args.Item is string}, phase={args.Phase}, recycle={args.InRecycleQueue}, root={row is not null}, contextNull={row?.DataContext is null}, contextString={row?.DataContext is string}, owner={ReferenceEquals(row?.Owner, sheet)}");
+        };
+        await Ui.Run(() => { sheet.List.ContainerContentChanging += observer; sheet.List.ScrollIntoView(""); });
+        try { await Ui.Ready<TextBox>("PlanCell0_Title"); }
+        catch {
+            await Ui.Run(() => {
+                var container = sheet.List.ContainerFromItem("") as ListViewItem;
+                var row = container?.ContentTemplateRoot as PlanSheetRow;
+                var title = row?.Cells.Single(cell => cell.Field == PlanField.Title);
+                Ui.Trace($"[APPEND] items={sheet.List.Items.Count}, tail=[{string.Join(",", sheet.List.Items.Cast<string>().TakeLast(3))}], container={container is not null}, contentNull={container?.Content is null}, contentString={container?.Content is string}, row={row is not null}, contextNull={row?.DataContext is null}, contextString={row?.DataContext is string}, identity={row?.Identity}, owner={ReferenceEquals(row?.Owner, sheet)}, rowLoaded={row?.IsLoaded}, titleLoaded={title?.IsLoaded}, titleId={(title is null ? "" : AutomationProperties.GetAutomationId(title))}, {sheet.WorkDescription}");
+                foreach (var state in emptyBindings) Ui.Trace("[APPEND BIND] " + state);
+                foreach (var scroll in Ui.Tree(sheet.List).OfType<ScrollViewer>().Where(scroll => scroll.ScrollableHeight > 0).Take(4))
+                    Ui.Trace($"[APPEND SCROLL] offset={scroll.VerticalOffset}, extent={scroll.ExtentHeight}, viewport={scroll.ViewportHeight}, loaded={scroll.IsLoaded}");
+            });
+            throw;
+        } finally { await Ui.Run(() => sheet.List.ContainerContentChanging -= observer); }
         await Edit(0, PlanField.Title, "New task");
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[^1].Title, Is.EqualTo("New task"));
@@ -1939,9 +1957,35 @@ internal sealed partial class PlanSheetHostedTests
             var list = Ui.Find<ListView>("PlanTasks"); list.ScrollIntoView(list.Items[74]);
         });
         await Ui.Ready<TextBox>("PlanCell75_Title");
+        PlanSheetRow? CurrentRow()
+        {
+            var row = (sheet.List.ContainerFromItem("I75") as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+            return row is { IsLoaded: true, DataContext: "I75" } && row.Owner == sheet ? row : null;
+        }
+        void WriteRowLayout(string phase)
+        {
+            var row = CurrentRow();
+            var cell = row is null ? null : Ui.Tree(row).OfType<TextBox>().SingleOrDefault(cell => AutomationProperties.GetAutomationId(cell) == "PlanCell75_Title");
+            var bar = row is null ? null : Ui.Tree(row).OfType<Rectangle>().SingleOrDefault(bar => AutomationProperties.GetAutomationId(bar) == "PlanBar75");
+            TestContext.Out.WriteLine($"Zoom row layout ({zoom}, {phase}): current-row={row is not null}; "
+                + $"row-height={row?.ActualHeight}; cell-height={cell?.ActualHeight}; cell-y={cell?.TransformToVisual(sheet).TransformPoint(new()).Y}; "
+                + $"bar-height={bar?.ActualHeight}; bar-y={bar?.TransformToVisual(sheet).TransformPoint(new()).Y}");
+        }
+        await Ui.Run(() => WriteRowLayout("loaded"));
+        try {
+            // Loaded does not imply that a newly realized native editor has been
+            // arranged. Compare the current row only after both parts have layout.
+            await Ui.Until(() => CurrentRow() is { } row
+                && Ui.Tree(row).OfType<TextBox>().Any(cell => AutomationProperties.GetAutomationId(cell) == "PlanCell75_Title" && cell.ActualHeight > 0)
+                && Ui.Tree(row).OfType<Rectangle>().Any(bar => AutomationProperties.GetAutomationId(bar) == "PlanBar75" && bar.ActualHeight > 0));
+        } catch (TimeoutException) {
+            await Ui.Run(() => WriteRowLayout("layout timeout"));
+            throw;
+        }
         await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PlanCell75_Title");
-            var bar = Ui.Find<Rectangle>("PlanBar75");
+            WriteRowLayout("arranged");
+            var cell = Ui.Find<TextBox>("PlanCell75_Title", CurrentRow()!);
+            var bar = Ui.Find<Rectangle>("PlanBar75", CurrentRow()!);
             var y = cell.TransformToVisual(sheet).TransformPoint(new()).Y + cell.ActualHeight / 2;
             var barY = bar.TransformToVisual(sheet).TransformPoint(new()).Y + bar.ActualHeight / 2;
             Assert.That(barY, Is.EqualTo(y).Within(1));

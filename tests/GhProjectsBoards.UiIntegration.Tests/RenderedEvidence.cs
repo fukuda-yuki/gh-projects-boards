@@ -1,5 +1,4 @@
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using NUnit.Framework;
 using Windows.Graphics.Imaging;
@@ -20,14 +19,10 @@ internal static class RenderedEvidence
         // Let native item entrance animations settle before pixel evidence is captured.
         // This delay is not used to establish behavior; tests assert their state separately.
         await Task.Delay(1000, deadline.Token);
-        var rendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var frames = 0;
-        EventHandler<object> rendering = (_, _) => { if (++frames >= 2) rendered.TrySetResult(); };
-        CompositionTarget.Rendering += rendering;
-        try { await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5), deadline.Token); }
-        finally { CompositionTarget.Rendering -= rendering; }
         deadline.Token.ThrowIfCancellationRequested();
         if (!view.IsLoaded || view.XamlRoot is null) throw new InvalidOperationException($"Capture target unloaded: {name}");
+        // RenderAsync requests and awaits this bitmap's native render. Unrelated
+        // global Rendering callbacks are not a prerequisite for capturing the view.
         var bitmap = new RenderTargetBitmap();
         Ui.Trace($"[CAPTURE render] {name} milliseconds={timer.Elapsed.TotalMilliseconds:F1}");
         await bitmap.RenderAsync(view).AsTask(deadline.Token);

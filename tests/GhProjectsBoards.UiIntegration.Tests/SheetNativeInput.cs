@@ -19,11 +19,22 @@ internal static class SheetNativeInput
             var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
             var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
             Assert.That(GetCursorPos(out var cursor), Is.True);
+            var windowAtCursor = WindowFromPoint(cursor);
             state = $"hwnd={hwnd:X} foreground={GetForegroundWindow():X} cursor={cursor.X},{cursor.Y} "
-                + $"windowAtCursor={WindowFromPoint(cursor):X} clientOrigin={origin.X},{origin.Y} "
-                + $"windowPosition={Ui.Window.AppWindow.Position} scale={Ui.Root.XamlRoot.RasterizationScale}";
+                + $"clientOrigin={origin.X},{origin.Y} scale={Ui.Root.XamlRoot.RasterizationScale} "
+                + $"host=[{DescribeWindow(hwnd)}] cursorWindow=[{DescribeWindow(windowAtCursor)}]";
         });
         return state;
+
+        static string DescribeWindow(nint hwnd)
+        {
+            var name = new System.Text.StringBuilder(256);
+            GetClassName(hwnd, name, name.Capacity);
+            GetWindowRect(hwnd, out var bounds);
+            GetWindowThreadProcessId(hwnd, out var processId);
+            return $"hwnd={hwnd:X} class={name} rect={bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom} "
+                + $"owner={GetWindow(hwnd, 4):X} parent={GetParent(hwnd):X} root={GetAncestor(hwnd, 2):X} process={processId}";
+        }
     }
     internal static Task ActivateWindow() => Ui.Run(() => {
         var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
@@ -141,6 +152,7 @@ internal static class SheetNativeInput
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct KeyInput { public ushort VirtualKey, ScanCode; public uint Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRectangle { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] private static extern uint SendInput(uint count, Input[] inputs, int size);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
@@ -148,5 +160,11 @@ internal static class SheetNativeInput
     [DllImport("user32.dll")] private static extern bool ClientToScreen(nint hwnd, ref NativePoint point);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
     [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
+    [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode)] private static extern int GetClassName(nint hwnd, System.Text.StringBuilder text, int count);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(nint hwnd, out NativeRectangle bounds);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+    [DllImport("user32.dll")] private static extern nint GetWindow(nint hwnd, uint command);
+    [DllImport("user32.dll")] private static extern nint GetParent(nint hwnd);
+    [DllImport("user32.dll")] private static extern nint GetAncestor(nint hwnd, uint flags);
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] private static extern bool SystemParametersInfo(uint action, uint parameter, out uint value, uint flags);
 }
