@@ -545,7 +545,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             foreach (var role in PlanColumnMatching.Roles)
             {
                 var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type)).ToArray();
-                var combo = Id(new ComboBox { Header = role.Name, ItemsSource = choices, DisplayMemberPath = "Name", Width = 280 }, "PlanMap" + role.Role);
+                var combo = Id(new ComboBox { Header = PlanSheetView.FullName(PlanSheetView.Columns.Single(c => c.Field == role.Role)), ItemsSource = choices, DisplayMemberPath = "Name", Width = 280 }, "PlanMap" + role.Role);
+                AutomationProperties.SetName(combo, (string)combo.Header);
                 combo.SelectedItem = choices.FirstOrDefault(c => c.Id == value.Columns.SingleOrDefault(m => m.Role == role.Role)?.FieldId) ?? choices[0];
                 combo.SelectionChanged += async (_, _) => {
                     if (rendering || generation != settingsGeneration || combo.SelectedItem is not PlanColumnDefinition selected) return;

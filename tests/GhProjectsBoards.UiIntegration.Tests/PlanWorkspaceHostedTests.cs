@@ -1031,13 +1031,21 @@ internal sealed class PlanWorkspaceHostedTests
     [Test]
     public async Task PeopleHeadersShowConsistentUnitsWithoutClippingAt1920()
     {
+        readDay = new(2027, 1, 13);
         await Open();
         await Ui.Run(() => { ResizeWorkspace(1920, 1080); Ui.Click("PlanShowPeople"); });
         await Ui.Ready<TextBlock>("PeopleTotal_U1_3");
         await Ui.Run(() => {
             view.UpdateLayout();
-            string[] captions = ["担当者", "負荷率", "上限工数 h", "見積工数 h", "実績工数 h",
+            string[] captions = ["担当者", "稼働率 %", "上限工数 h", "見積工数 h", "実績工数 h",
                 "見込み残存工数 h", "見込工数 h", "余力 h"];
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text), Does.Contain("2027/1/13 – 1/19"));
+            var rate = Ui.Find<TextBox>("PeopleRate_U1");
+            Assert.That(AutomationProperties.GetName(rate), Does.EndWith(" 稼働率 (%)"));
+            Assert.That(ToolTipService.GetToolTip(rate), Is.EqualTo(AutomationProperties.GetName(rate)));
+            var load = Ui.Find<Button>("PeopleLoadOpen_U1_0");
+            Assert.That(AutomationProperties.GetName(load), Does.Contain("負荷率").And.Not.Contain("稼働率"));
+            Assert.That(ToolTipService.GetToolTip(load), Is.EqualTo(AutomationProperties.GetName(load)));
             var forecast = Ui.Tree(view).OfType<TextBlock>().Single(t => t.Text == "見込工数 h");
             var headerRow = VisualTreeHelper.GetParent(forecast);
             foreach (var caption in captions) {
@@ -1047,6 +1055,10 @@ internal sealed class PlanWorkspaceHostedTests
                 var bounds = header.TransformToVisual(view).TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight));
                 Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0), caption);
                 Assert.That(bounds.Right, Is.LessThanOrEqualTo(view.ActualWidth), caption);
+                if (caption == "稼働率 %") {
+                    Assert.That(AutomationProperties.GetName(header), Is.EqualTo("稼働率 (%)"));
+                    Assert.That(ToolTipService.GetToolTip(header), Is.EqualTo("稼働率 (%)"));
+                }
                 if (caption == "見込工数 h") {
                     const string explanation = "見込工数 (実績工数 + 見込み残存工数) h";
                     Assert.That(AutomationProperties.GetName(header), Is.EqualTo(explanation));
@@ -2118,6 +2130,26 @@ internal sealed class PlanWorkspaceHostedTests
         await Open(); await Settings();
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外: ドラフト 2 件・プルリクエスト 1 件・参照できない項目 2 件")));
         Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task SettingsMappingHeadersUseJapaneseConceptsAndKeepGitHubFieldNames()
+    {
+        await Open(); await Settings();
+        await Ui.Run(() => {
+            foreach (var (field, caption) in new[] {
+                (PlanField.Estimate, "見積工数"), (PlanField.Remaining, "見込み残存工数"),
+                (PlanField.Actual, "実績工数"), (PlanField.Start, "開始日"), (PlanField.End, "終了日"),
+                (PlanField.StartNoEarlierThan, "開始日指定"), (PlanField.Fixed, "日程固定") }) {
+                var combo = Ui.Find<ComboBox>("PlanMap" + field);
+                Assert.That(combo.Header, Is.EqualTo(caption));
+                Assert.That(AutomationProperties.GetName(combo), Is.EqualTo(caption));
+            }
+            var estimate = Ui.Find<ComboBox>("PlanMapEstimate");
+            Assert.That(((PlanColumnDefinition)estimate.SelectedItem).Name, Is.EqualTo("Estimate"));
+            Assert.That(estimate.Items.Cast<PlanColumnDefinition>().Select(c => c.Name), Does.Contain("Remaining"));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test]

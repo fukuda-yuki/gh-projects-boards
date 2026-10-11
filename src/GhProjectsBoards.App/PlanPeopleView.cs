@@ -45,7 +45,7 @@ internal sealed class PlanPeopleView : UserControl
     private IReadOnlyDictionary<string, ScheduledTask> scheduled = null!;
     private double[] periodWidths = [];
     private static DateOnly Today => PlanClock.Today;
-    private static readonly double[] Widths = [144, 64, 88, 88, 88, 136, 144, 112];
+    private static readonly double[] Widths = [144, 80, 88, 88, 88, 136, 144, 112];
     internal PlanPeopleView(PlanSession session)
     {
         Session = session; anchor = session.Document.State.Settings.StatusDate ?? Today;
@@ -224,12 +224,12 @@ internal sealed class PlanPeopleView : UserControl
             return width;
         }).ToArray();
         table.Width = Widths.Sum() + periodWidths.Sum();
-        range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}  h";
+        range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}";
         Columns(header);
-        var names = new[] { "担当者", "負荷率", "上限工数 h", "見積工数 h", "実績工数 h", "見込み残存工数 h", "見込工数 h", "余力 h" };
+        var names = new[] { "担当者", "稼働率 %", "上限工数 h", "見積工数 h", "実績工数 h", "見込み残存工数 h", "見込工数 h", "余力 h" };
         for (var i = 0; i < names.Length; i++) {
             var label = Text(names[i]);
-            var fullName = i == 6 ? "見込工数 (実績工数 + 見込み残存工数) h" : names[i];
+            var fullName = i == 1 ? "稼働率 (%)" : i == 6 ? "見込工数 (実績工数 + 見込み残存工数) h" : names[i];
             AutomationProperties.SetName(label, fullName); ToolTipService.SetToolTip(label, fullName);
             Add(header, label, i);
         }
@@ -248,7 +248,7 @@ internal sealed class PlanPeopleView : UserControl
             AutomationProperties.SetName(expand, person.Name + "のタスクを展開 " + string.Join("、", person.Missing));
             Add(line, expand, 0);
             if (person.Rate is not null) {
-                Add(line, Input(() => Number(Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Rate ?? person.Rate), "PeopleRate_" + person.Identity, person.Name + " 稼働率", text => ResourceCommand(person, text, true), person.Identity), 1);
+                Add(line, Input(() => Number(Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Rate ?? person.Rate), "PeopleRate_" + person.Identity, person.Name + " 稼働率 (%)", text => ResourceCommand(person, text, true), person.Identity), 1);
                 Add(line, Input(() => Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", "PeopleAllowance_" + person.Identity, person.Name + " 上限工数 h", text => ResourceCommand(person, text, false), person.Identity), 2);
             } else { Add(line, Text("—"), 1); Add(line, Text("—"), 2); }
             var totals = new[] { person.Estimate, person.Actual, person.Remaining, person.Forecast, person.Difference };
@@ -266,7 +266,8 @@ internal sealed class PlanPeopleView : UserControl
                 if (load.Overloaded || load.DailyOverloads.Count > 0) label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
                 var button = Button("", $"PeopleLoadOpen_{person.Identity}_{i}", () => { periodIndex = index; overloadDay.Remove(person.Identity); expanded.Add(person.Identity); Refresh(); return Task.CompletedTask; });
                 button.Content = label; button.HorizontalAlignment = HorizontalAlignment.Stretch;
-                var description = $"{person.Name} {report.Periods[i].Start:M/d}–{report.Periods[i].End:M/d} 計画 {Number(load.Planned)}h / 稼働可能 {Number(load.Capacity)}h {label.Text}";
+                var description = $"{person.Name} {report.Periods[i].Start:M/d}–{report.Periods[i].End:M/d} 計画 {Number(load.Planned)}h / 稼働可能 {Number(load.Capacity)}h 負荷率{(load.Percent is null ? "は計算できません ·" : "")} {label.Text}";
+                AutomationProperties.SetName(label, description); ToolTipService.SetToolTip(label, description);
                 AutomationProperties.SetName(button, description); ToolTipService.SetToolTip(button, description); Add(line, button, i + 8);
             }
             group.Children.Add(line);
