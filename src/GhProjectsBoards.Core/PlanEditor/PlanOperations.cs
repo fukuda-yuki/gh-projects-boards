@@ -314,10 +314,38 @@ internal static class PlanOperations
     };
     internal static bool IsUnmappedCalculation(ScheduledTask task, PlanField field, ProjectPlanSettings settings)
         => IsRecalculatedField(task, field) && !settings.Columns.Any(c => c.Role == field);
-    internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent)
-        => document.Sync.NativeOrders.GetValueOrDefault(parent,
-            document.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToImmutableArray())
-            .Where(id => document.State.Rows.Any(r => r.Identity == id)).ToImmutableArray();
+    // A parent's children as the plan shows them. Rows the last read could not deliver keep their
+    // displayed position in the state but are appended to the baseline, so they are excluded here.
+    internal static ImmutableArray<string> PlanChildren(PlanDocument document, string parent)
+        => document.State.Rows.Where(r => r.Parent == parent && !document.Sync.Unavailable.Contains(r.Identity))
+            .Select(r => r.Identity).ToImmutableArray();
+    // The child order the plan read for that parent: the Project item order it adopted.
+    internal static ImmutableArray<string> ReadChildOrder(PlanDocument document, string parent)
+        => document.Baseline.Rows.Where(r => r.Parent == parent && !document.Sync.Unavailable.Contains(r.Identity))
+            .Select(r => r.Identity).Where(id => document.State.Rows.Any(r => r.Identity == id)).ToImmutableArray();
+    // The native sub-issue order the plan last read. An absent entry compares against the read order
+    // rather than inventing an empty order.
+    internal static ImmutableArray<string> NativeChildOrder(PlanDocument document, string parent)
+    {
+        if (!document.Sync.NativeOrders.TryGetValue(parent, out var order)) return ReadChildOrder(document, parent);
+        var current = document.State.Rows.Where(r => !document.Sync.Unavailable.Contains(r.Identity)).Select(r => r.Identity).ToHashSet();
+        return order.Where(current.Contains).ToImmutableArray();
+    }
+    internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent) => NativeChildOrder(document, parent);
+    // A child-order change is the PMO's edit: the plan's order differs from both orders GitHub showed
+    // for that parent. A pre-existing difference between those GitHub orders is therefore not a change
+    // and is never written back. A reorder whose write failed stays pending while the plan still asks
+    // for the same order, so an explicit publish retries it.
+    internal static PlanSiblingOrderChange? SiblingOrderChange(PlanDocument document, string parent)
+    {
+        var children = PlanChildren(document, parent);
+        if (children.Length < 2) return null;
+        var native = NativeChildOrder(document, parent);
+        if (!children.SequenceEqual(ReadChildOrder(document, parent)) && !children.SequenceEqual(native)) return new(native, children);
+        var attempted = PlanJson.Text(children);
+        return document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder && f.Value == attempted &&
+            children.Contains(f.Identity) && !children.SequenceEqual(native)) ? new(native, children) : null;
+    }
     internal static PlanUnpublished Changes(PlanDocument d, DateOnly today, IReadOnlyList<ScheduledTask>? schedule = null)
     {
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
@@ -326,9 +354,6 @@ internal static class PlanOperations
         var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
         var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
         var moved = order.Where((id, i) => id != oldOrder[i]).ToHashSet();
-        var childrenByParent = d.State.Rows.Where(r => r.Parent is not null).ToLookup(r => r.Parent!, r => r.Identity);
-        var baselineChildrenByParent = d.Baseline.Rows.Where(r => r.Parent is not null).ToLookup(r => r.Parent!, r => r.Identity);
-        var currentIds = d.State.Rows.Select(r => r.Identity).ToHashSet();
         foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];
@@ -347,10 +372,7 @@ internal static class PlanOperations
             foreach (var field in fields.Where(field => d.Dates.Held is null && IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
-            var children = childrenByParent[r.Identity];
-            var previousChildren = d.Sync.NativeOrders.TryGetValue(r.Identity, out var nativeOrder)
-                ? nativeOrder : baselineChildrenByParent[r.Identity];
-            if (children.Skip(1).Any() && !previousChildren.Where(currentIds.Contains).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
+            if (SiblingOrderChange(d, r.Identity) is not null) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
         return new(result.ToImmutable()) { RecalculatedFields = recalculated.ToImmutable() };

@@ -72,7 +72,7 @@ internal sealed class PlanPublisherTests
     {
         await Start(3, state => state with {
             Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
-            SubOrders = state.SubOrders.Add("I1", ["I2", "I3"])
+            SubOrders = state.SubOrders.Add("I1", ["I3", "I2"])
         });
         Assert.That((await publisher.ResetAsync(session, Today)).Succeeded, Is.True);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
@@ -84,7 +84,7 @@ internal sealed class PlanPublisherTests
         Assert.That((await publisher.ResetAsync(session, day)).Succeeded, Is.True);
         Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
         Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3" }));
-        Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(new[] { "I2", "I3" }));
+        Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
         Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").End.Value, Is.Null);
         Assert.That(session.Changes(day).TaskCount, Is.Zero);
         Assert.That((await publisher.ResetAsync(session, day.AddDays(1))).Succeeded, Is.True);
@@ -268,16 +268,54 @@ internal sealed class PlanPublisherTests
     }
 
     [Test]
-    public async Task RefreshReadsPagedNativeSiblingOrderAndCountsTheParentDifference()
+    public async Task RefreshReadsPagedNativeSiblingOrderWithoutCountingTheGitHubSideDifference()
     {
         await Start(103, state => state with {
             Issues = state.Issues.Select((i, n) => n == 0 ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
             SubOrders = state.SubOrders.Add("I1", Enumerable.Range(2, 102).Reverse().Select(n => "I" + n).ToImmutableArray()) });
         Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(Enumerable.Range(2, 102).Reverse().Select(n => "I" + n)));
-        Assert.That(session.Changes(Today).Fields["I1"], Does.Contain(PlanField.SubIssueOrder));
+        // Issue #167: the Project item order and the native order differ, but the PMO changed nothing.
+        Assert.That(session.Changes(Today).Fields.Any(f => f.Value.Contains(PlanField.SubIssueOrder)), Is.False);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         var result = await publisher.RefreshAsync(session, Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
         Assert.That(session.Document.Sync.NativeOrders["I1"], Has.Length.EqualTo(102));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task PublishingWithoutMovingRowsSendsNoSiblingReorder()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I3", "I2"])
+        });
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Title, "Renamed")]), Today);
+        Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(1), "Only the edited task is unpublished.");
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(File.ReadAllText(Path.Combine(root, "plan-mutations.jsonl")), Does.Not.Contain("reprioritizeSubIssue"));
+    }
+
+    [Test]
+    public async Task FailedSiblingReorderIsRetriedByTheNextPublish()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3"])
+        });
+        await session.Execute(new MovePlanRows(["I3"], "I2"), Today);
+        Scenario("sibling-denied");
+        var failed = await publisher.PublishAsync(session, Today);
+        Assert.That(failed.Succeeded, Is.False);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I2", "I3" }));
+        Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder), Is.True);
+        Scenario();
+        var retried = await publisher.PublishAsync(session, Today);
+        Assert.That(retried.Succeeded, Is.True, retried.Error);
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I2" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 
     [Test]
@@ -288,11 +326,11 @@ internal sealed class PlanPublisherTests
             Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
             SubOrders = state.SubOrders.Add("I1", ["I5", "I4", "I3", "I2"])
         });
-        await session.Execute(new MovePlanRows(["I2", "I3", "I4", "I5"], null), Today);
+        await session.Execute(new MovePlanRows(["I2"], "I5"), Today);
         Scenario("sibling-resource");
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
-        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I2", "I3", "I4", "I5" }));
+        Assert.That(FakePlanEditor.Load(root).SubOrders["I1"], Is.EqualTo(new[] { "I3", "I4", "I2", "I5" }));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 

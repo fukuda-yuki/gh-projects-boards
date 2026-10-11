@@ -194,6 +194,8 @@ internal static class FakePlanEditor
                     { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure" })); data[alias] = null; }
                     continue;
                 }
+                if (fault == "sibling-denied" && mutation == "reprioritizeSubIssue")
+                { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic sibling failure" })); data[alias] = null; continue; }
                 if (fault == "sibling-resource" && mutation == "reprioritizeSubIssue" && matches.Count > 1 && input.GetProperty("subIssueId").GetString() == "I4")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic sibling move limit" })); data[alias] = null; continue; }
                 if (fault == "resource-always" && mutation.Contains("ItemFieldValue") || fault == "parent-denied" && mutation == "addSubIssue" && input.GetProperty("subIssueId").GetString() == "I2" || fault == "mixed-resource" && query.Contains("ItemFieldValue") && matches.Count > 3 && alias != "w0" || fault == "field-denied" && mutation.Contains("ItemFieldValue") || fault == "forbid-mutation" || fault is "partial" or "resource" && state.MutationBatches == faultBatch && alias == "w1")

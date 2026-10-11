@@ -5,7 +5,12 @@ using System.Text.Json.Nodes;
 namespace GhProjectsBoards.Core.PlanEditor;
 
 internal sealed record PlanConflict(string Identity, PlanField Field, string? Baseline, string? Local, string? Remote);
-internal sealed record PlanPublishFailure(string Identity, PlanField Field, string Reason);
+internal sealed record PlanPublishFailure(string Identity, PlanField Field, string Reason)
+{
+    // The child order a failed sub-issue reorder asked for, so the retry can tell whether the plan
+    // still wants that order.
+    public string? Value { get; init; }
+}
 internal sealed record PlanIssueLink(string Caption, string Url);
 internal sealed record PlanSync
 {
@@ -65,14 +70,22 @@ internal static class PlanMerge
     {
         var conflicts = merged.Sync.Conflicts.ToBuilder(); var state = merged.State;
         var members = state.Rows.Select(r => r.Identity).ToHashSet();
+        var unavailable = original.Sync.Unavailable;
         remote = remote.Where(pair => members.Contains(pair.Key)).ToImmutableDictionary();
         foreach (var (parent, remoteIds) in remote)
         {
             var prior = original.Sync.Conflicts.FirstOrDefault(c => c.Identity == parent && c.Field == PlanField.SubIssueOrder);
-            var baselineIds = original.Sync.NativeOrders.GetValueOrDefault(parent, remoteIds);
-            string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(members.Contains));
-            var b = Text(baselineIds); var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity)); var r = Text(remoteIds);
-            if (l != r && (prior is not null || l != b && r != b)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
+            var readIds = original.Sync.NativeOrders.GetValueOrDefault(parent, remoteIds);
+            // Rows the read could not deliver are appended to the baseline, so they carry no displayed order.
+            string Text(IEnumerable<string> ids) => JsonSerializer.Serialize(ids.Where(id => members.Contains(id) && !unavailable.Contains(id)));
+            var b = Text(readIds);
+            var p = Text(original.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var l = Text(original.State.Rows.Where(r => r.Parent == parent).Select(r => r.Identity));
+            var r = Text(remoteIds);
+            // "Local" means the plan's child order moved away from the order the plan read. A difference
+            // that already exists between the two GitHub orders is not a local change.
+            var localChange = l != p; var remoteChange = r != b;
+            if (l != r && (prior is not null || localChange && remoteChange)) conflicts.Add(new(parent, PlanField.SubIssueOrder, prior?.Baseline ?? b, l, r));
             else if (l == b && r != b) state = SiblingOrder(state, parent, remoteIds);
         }
         return merged with { State = state, Sync = merged.Sync with { NativeOrders = remote, Conflicts = conflicts.ToImmutable() } };

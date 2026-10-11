@@ -150,16 +150,16 @@ internal static class PlanPublishPlan
         foreach (var parent in rows.Where(r => r.Parent is not null).Select(r => r.Parent!).Distinct())
         {
             if (!rows.Any(r => r.Identity == parent)) continue;
-            var children = rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToArray();
-            var previous = remote.SubIssueOrders.GetValueOrDefault(parent, []).Where(id => rows.Any(r => r.Identity == id)).ToImmutableArray();
-            if (children.Length < 2 || previous.SequenceEqual(children)) continue;
-            changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children)));
+            // The same comparison decides the unpublished count, the review line and these writes.
+            if (PlanOperations.SiblingOrderChange(document, parent) is not { } sibling) continue;
+            var children = sibling.After;
+            changes.Add(new(parent, PlanField.SubIssueOrder, PlanJson.Text(sibling.Before), PlanJson.Text(children)));
             for (var i = 0; i < children.Length; i++)
             {
                 var input = new Dictionary<string, object?> { ["issueId"] = parent, ["subIssueId"] = children[i] };
                 if (i > 0) input["afterId"] = children[i - 1];
-                else if (children.Length > 1) input["beforeId"] = children[1];
-                if (input.Count > 2) Add(children[i], PlanPublishStage.Hierarchy, "reprioritizeSubIssue", "ReprioritizeSubIssueInput", input, "issue { id }");
+                else input["beforeId"] = children[1];
+                Add(children[i], PlanPublishStage.Hierarchy, "reprioritizeSubIssue", "ReprioritizeSubIssueInput", input, "issue { id }");
             }
         }
         for (var i = 0; i < rows.Length; i++)

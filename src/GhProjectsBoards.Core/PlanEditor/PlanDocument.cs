@@ -90,6 +90,7 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
+internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
 {

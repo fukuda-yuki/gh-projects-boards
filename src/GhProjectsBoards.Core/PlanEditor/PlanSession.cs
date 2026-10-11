@@ -88,7 +88,7 @@ internal sealed class PlanSession
             var publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state);
             var undo = checkpoint.Undo.Add(patch);
             if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order or PlanField.SubIssueOrder || PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
             return QueueSave();
         }
     }
@@ -388,8 +388,16 @@ internal sealed class PlanSession
                 (w.State == PlanWriteState.Dispatched || w.ResultId is not null && !remote.Items.ContainsKey(w.ResultId))) ||
                 writes.Any(w => w.Stage == PlanPublishStage.Add && w.State != PlanWriteState.Succeeded && created.Contains(w.Identity));
             var remaining = unresolvedCreation ? progress with { Writes = writes } : null;
-            var failures = writes.Where(w => w.State != PlanWriteState.Succeeded).Select(w => new PlanPublishFailure(Id(w.Identity),
-                PlanVerification.Field(w, document.State.Settings), w.Error ?? "NotDispatched")).DistinctBy(f => (f.Identity, f.Field)).ToImmutableArray();
+            var failures = writes.Where(w => w.State != PlanWriteState.Succeeded).Select(w =>
+            {
+                var field = PlanVerification.Field(w, document.State.Settings);
+                return new PlanPublishFailure(Id(w.Identity), field, w.Error ?? "NotDispatched")
+                { Value = field == PlanField.SubIssueOrder ? AttemptedOrder(Id(w.Identity)) : null };
+            }).DistinctBy(f => (f.Identity, f.Field)).ToImmutableArray();
+            // A failed reorder records the child order it asked for; the retry needs it to tell whether
+            // the plan still wants that order.
+            string? AttemptedOrder(string child) => state.Rows.FirstOrDefault(r => r.Identity == child)?.Parent is { } parent
+                ? PlanJson.Text(state.Rows.Where(r => r.Parent == parent).Select(r => r.Identity)) : null;
             // A failed add keeps its local identity. Once promoted, a remaining write must use the Issue identity on resume.
             if (remaining is not null && promoted.Count > 0)
             {
