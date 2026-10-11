@@ -10,7 +10,10 @@ internal sealed record SummaryTasks(IReadOnlyList<string> Identities, int Closed
     public decimal? VarianceEstimate { get; init; }
     public decimal? VarianceForecast { get; init; }
 }
-internal sealed record SummaryPhase(string? Phase, SummaryTasks Tasks, bool IsTotal = false);
+internal sealed record SummaryPhase(string? Phase, SummaryTasks Tasks, bool IsTotal = false)
+{ public DateOnly? Target { get; init; } public int? Difference { get; init; } }
+internal sealed record SummaryMilestone(PlanMilestone Milestone, IReadOnlyList<string> Tasks, int Closed, DateOnly? Forecast,
+    int? Difference, IReadOnlyList<string> LateTasks);
 internal sealed record SummaryPerson(string Identity, string Name, IReadOnlyList<SummaryPhase> Phases,
     SummaryTasks Tasks, decimal? Capacity, decimal? RequiredLoad);
 internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnlyList<string> OverEstimate,
@@ -19,17 +22,19 @@ internal sealed record SummaryAttention(IReadOnlyList<string> Overdue, IReadOnly
 internal sealed record SummaryPlan(int? WorkingDays, int? ElapsedDays, int? RemainingDays,
     DateOnly? ForecastFinish, int? FinishDifference, SummaryTasks Total, decimal? Capacity, decimal? RequiredLoad,
     IReadOnlyList<SummaryPhase> Phases, IReadOnlyList<SummaryPerson> People, SummaryPerson PeopleTotal,
-    PeoplePlan? Months, SummaryAttention Attention);
+    PeoplePlan? Months, SummaryAttention Attention)
+{ public IReadOnlyList<SummaryMilestone> Milestones { get; init; } = []; }
 
 internal static class PlanSummary
 {
-    internal static SummaryPlan Calculate(PlanDocument document, IReadOnlyList<ScheduledTask> scheduled, DateOnly statusDate)
+    private static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value : task.End.Value;
+    private static int? Difference(DateOnly? target, DateOnly? forecast, Func<int, int, int> days) => target is { } t && forecast is { } f
+        ? f >= t ? days(t.DayNumber + 1, f.DayNumber) : -days(f.DayNumber + 1, t.DayNumber) : null;
+    private static Func<int, int, int> WorkingDays(PlanCalendar calendar)
     {
-        var settings = document.State.Settings;
-        var calendar = new PlanCalendar { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() };
         var holidays = calendar.Holidays.Dates.Select(h => h.Date).Concat(calendar.ImportedHolidays?.Dates.Select(h => h.Date) ?? [])
             .Concat(calendar.CompanyDaysOff).ToHashSet();
-        int Days(int first, int last)
+        return (first, last) =>
         {
             var count = 0;
             for (var n = first; n <= last; n++)
@@ -38,14 +43,39 @@ internal static class PlanSummary
                 if (date.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !holidays.Contains(date)) count++;
             }
             return count;
-        }
-        int? working = settings.ProjectStart is { } start && settings.ProjectEnd is { } end ? Days(start.DayNumber, end.DayNumber) : null;
-        int? elapsed = settings.ProjectStart is { } from ? Days(from.DayNumber, statusDate.DayNumber - 1) : null;
-        int? remaining = settings.ProjectEnd is { } until ? Days(statusDate.DayNumber, until.DayNumber) : null;
+        };
+    }
+    internal static IReadOnlyList<SummaryMilestone> CalculateMilestones(PlanDocument document, IReadOnlyList<ScheduledTask> scheduled)
+    {
+        var settings = document.State.Settings;
+        return CalculateMilestones(document, scheduled, WorkingDays(new PlanCalendar {
+            CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() }));
+    }
+    private static SummaryMilestone[] CalculateMilestones(PlanDocument document, IReadOnlyList<ScheduledTask> scheduled, Func<int, int, int> days)
+    {
+        var baselineRows = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        var groups = scheduled.Where(t => !t.IsSummary).ToLookup(t => baselineRows.GetValueOrDefault(t.Input.Identity)?.MilestoneTitle);
+        return document.Baseline.Milestones.OrderBy(m => m.DueDate is null).ThenBy(m => m.DueDate).ThenBy(m => m.Title, StringComparer.Ordinal)
+            .Select(m => {
+                var members = groups[m.Title].ToArray();
+                var finish = members.Any(t => Finish(t) is null) ? null : members.Max(Finish);
+                return new SummaryMilestone(m, members.Select(t => t.Input.Identity).ToArray(), members.Count(t => t.Input.Closed),
+                    finish, Difference(m.DueDate, finish, days),
+                    members.Where(t => m.DueDate is { } due && Finish(t) > due).Select(t => t.Input.Identity).ToArray());
+            }).ToArray();
+    }
+
+    internal static SummaryPlan Calculate(PlanDocument document, IReadOnlyList<ScheduledTask> scheduled, DateOnly statusDate)
+    {
+        var settings = document.State.Settings;
+        var calendar = new PlanCalendar { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() };
+        var days = WorkingDays(calendar);
+        int? working = settings.ProjectStart is { } start && settings.ProjectEnd is { } end ? days(start.DayNumber, end.DayNumber) : null;
+        int? elapsed = settings.ProjectStart is { } from ? days(from.DayNumber, statusDate.DayNumber - 1) : null;
+        int? remaining = settings.ProjectEnd is { } until ? days(statusDate.DayNumber, until.DayNumber) : null;
         var tasks = scheduled.Where(t => !t.IsSummary).ToArray();
         var lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, statusDate);
         bool Overdue(ScheduledTask task) => lateness.Tasks[task.Input.Identity].Level == PlanLatenessLevel.Overdue;
-        static DateOnly? Finish(ScheduledTask task) => task.Input.Closed ? task.Input.CloseDate ?? task.End.Value : task.End.Value;
         SummaryTasks Sum(IReadOnlyList<ScheduledTask> source)
         {
             SummaryValue Total(Func<ScheduledTask, decimal?> select)
@@ -69,9 +99,8 @@ internal static class PlanSummary
         }
         var total = Sum(tasks);
         var finish = total.Finish;
-        int? difference = settings.ProjectEnd is { } target && finish is { } forecastFinish
-            ? forecastFinish >= target ? Days(target.DayNumber + 1, forecastFinish.DayNumber)
-                : -Days(forecastFinish.DayNumber + 1, target.DayNumber) : null;
+        var difference = Difference(settings.ProjectEnd, finish, days);
+        var milestones = CalculateMilestones(document, tasks, days);
         var mapping = settings.Columns.SingleOrDefault(c => c.Role == PlanField.Phase);
         var options = document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping?.FieldId)?.Options ?? [];
         var rows = document.State.Rows.ToDictionary(r => r.Identity);
@@ -82,7 +111,12 @@ internal static class PlanSummary
         var personGroups = tasks.ToLookup(Owner);
         var cells = tasks.ToLookup(t => (Owner(t), Phase(t)));
         var phases = options.Concat(phaseGroups.Contains("") ? new[] { "" } : []).ToArray();
-        SummaryPhase PhaseRow(string phase, IReadOnlyList<ScheduledTask> source) => new(phase.Length == 0 ? null : phase, Sum(source));
+        SummaryPhase PhaseRow(string phase, IReadOnlyList<ScheduledTask> source)
+        {
+            var sum = Sum(source);
+            var target = milestones.SingleOrDefault(m => m.Milestone.Title == settings.PhaseMilestones.GetValueOrDefault(phase))?.Milestone.DueDate;
+            return new(phase.Length == 0 ? null : phase, sum) { Target = target, Difference = Difference(target, sum.Finish, days) };
+        }
         var phaseTotals = phases.Select(p => PhaseRow(p, phaseGroups[p].ToArray())).ToArray();
         var people = new List<SummaryPerson>();
         var identities = settings.People.Select(p => p.Identity)
@@ -115,6 +149,6 @@ internal static class PlanSummary
         return new(working, elapsed, remaining, finish, difference, total, projectCapacity, load,
             phaseTotals.Append(new("全体", total, true)).ToArray(), people, new("total", "合計", phaseTotals, total, projectCapacity, load), months,
             new(Ids(Overdue), Ids(t => t.IsOverEstimate), Ids(t => t.IsZeroRemainingOpen), unassigned.Identities, unassigned.Remaining,
-                Ids(t => t.Remaining is null || t.Forecast is null)));
+                Ids(t => t.Remaining is null || t.Forecast is null))) { Milestones = milestones };
     }
 }

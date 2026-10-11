@@ -79,7 +79,7 @@ internal sealed partial class PlanSheetView
         var previousFirst = FirstDay;
         var dates = Schedule.Values.SelectMany(task => new[] { task.Start.Value, task.End.Value })
             .Where(day => day is not null).Select(day => day!.Value).ToArray();
-        dates = dates.Append(StatusDate).ToArray();
+        dates = dates.Append(StatusDate).Concat(Session.Document.Baseline.Milestones.Where(m => m.DueDate.HasValue).Select(m => m.DueDate!.Value)).ToArray();
         // Any task can become the zoom anchor without selection changing the date coordinate system.
         // Full-period fixed marks use pixel gutters in the fitted scale, not extra calendar days.
         var lead = acceptedZoom == 3 ? 0 : (int)Math.Ceiling(ChartViewport / (4 * DayWidth));

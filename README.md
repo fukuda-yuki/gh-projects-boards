@@ -4,6 +4,8 @@ A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 
 
 The ordinary app opens the Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. **サマリー** compares phase and person × phase status against the Project end, with remaining capacity, forecast and monthly overload drill-down. Planning edits stay in 計画. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry.
 
+GitHub milestone targets are read with the Project and shown on the Gantt and summary. Settings can associate each 工程 with a milestone; targets and Issue membership remain managed on GitHub and never change task scheduling.
+
 ## Build and run
 
 Use Windows x64, PowerShell 7, .NET 10 SDK and Windows SDK 10.0.26100.0. Restore dependencies once in a network-enabled development environment. Run these commands from the selected checkout:

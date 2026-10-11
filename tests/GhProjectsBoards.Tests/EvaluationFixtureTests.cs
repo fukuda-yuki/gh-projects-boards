@@ -18,7 +18,17 @@ internal sealed class EvaluationFixtureTests
     public void BaselineRunsPhasesAsWindowsThatMeetTheirMilestones(string version)
     {
         var plan = EvaluationFixture.ReadPlan(version);
-        var baseline = EvaluationFixture.Measures(plan, EvaluationFixture.Simulate(plan, [plan.ProjectStart]).Single());
+        var snapshot = EvaluationFixture.Simulate(plan, [plan.ProjectStart]).Single();
+        var baseline = EvaluationFixture.Measures(plan, snapshot);
+        var report = PlanSummary.Calculate(snapshot.Document, PlanOperations.Schedule(snapshot.Document, snapshot.StatusDate), snapshot.StatusDate);
+        Assert.That(report.Milestones.Count, Is.EqualTo(plan.Milestones.Length));
+        foreach (var milestone in plan.Milestones) {
+            var actual = report.Milestones.Single(m => m.Milestone.Title == milestone.Title);
+            var phase = baseline.Phases.Single(p => p.Phase == milestone.Phase);
+            Assert.That(actual.Tasks, Is.EquivalentTo(snapshot.Rows.Where(r => r.Parent is not null && r.Phase == milestone.Phase).Select(r => r.Identity)));
+            Assert.That(actual.Forecast, Is.EqualTo(phase.Forecast));
+            Assert.That(report.Phases.Single(p => p.Phase == milestone.Phase).Target, Is.EqualTo(milestone.Due));
+        }
         Report(baseline);
         Assert.That(baseline.Phases.Where(p => p.LateWorkingDays > 0).Select(p => p.Phase), Is.Empty, "The plan meets every milestone when the project starts.");
         Assert.That(baseline.Forecast, Is.LessThanOrEqualTo(plan.ProjectEnd));

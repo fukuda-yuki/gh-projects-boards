@@ -170,9 +170,18 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Tree(summary).OfType<Button>().Count(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryPhase_")), Is.EqualTo(9));
             Assert.That(summary.ActualWidth, Is.LessThanOrEqualTo(width));
             if (width == 1920) {
-                foreach (var element in new Microsoft.UI.Xaml.FrameworkElement[] { Ui.Find<Button>("SummaryPhaseTotal"), Ui.Find<ComboBox>("SummaryMeasure"), Ui.Tree(summary).OfType<Button>().First(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")) })
+                foreach (var element in new Microsoft.UI.Xaml.FrameworkElement[] { band, Ui.Find<FrameworkElement>("SummaryPhaseTable"), Ui.Find<Button>("SummaryPhaseTotal"), Ui.Find<ComboBox>("SummaryMeasure"), Ui.Tree(summary).OfType<Button>().First(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")) })
                     Assert.That(element.TransformToVisual(summary).TransformPoint(new()).Y + element.ActualHeight, Is.LessThan(summary.ActualHeight));
             }
+            var personCells = Ui.Tree(summary).OfType<Button>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("SummaryCell_")).ToArray();
+            if (width == 1920) {
+                var firstRows = personCells.Where(b => AutomationProperties.GetAutomationId(b).EndsWith("_0")).Take(2).ToArray();
+                Assert.That(firstRows, Has.Length.EqualTo(2));
+                foreach (var cell in firstRows)
+                    Assert.That(cell.TransformToVisual(summary).TransformPoint(new()).Y + cell.ActualHeight, Is.LessThan(summary.ActualHeight));
+            }
+            var personBottom = personCells.Max(b => b.TransformToVisual(summary).TransformPoint(new()).Y + b.ActualHeight);
+            Assert.That(Ui.Find<FrameworkElement>("SummaryMilestoneTable").TransformToVisual(summary).TransformPoint(new()).Y, Is.GreaterThan(personBottom));
             await RenderedEvidence.Capture(view, $"summary-{width}x{height}");
         });
     }

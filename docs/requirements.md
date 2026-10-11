@@ -44,3 +44,5 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 ## Explicit exclusions
 
 Generic Issue administration, Kanban, Gantt drag editing, critical path, MS Project import, task creation by pasting from Excel, automatic resource leveling, personal days off, minute-precision schedules, realtime synchronization, cross-Project publish and organization-wide load. Mass creation and agreed-plan comparison are unscheduled conveniences. CSV import remains available but is not required for the ordinary planning job. Project-wide totals belong to the summary view; weekly reports, additional backup and logging are not planned unless version-scale use demonstrates a need. GHEC + EMU uses the appropriate gh authentication; it is not a separate product track.
+
+GitHub milestones provide read-only target dates on the Gantt and summary. The PMO compares forecasts with targets, drills into late member Issues, and optionally maps phases to milestone targets without changing scheduling.

@@ -20,6 +20,8 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private readonly HashSet<string> valueIds = new(StringComparer.Ordinal);
         private ProjectReadModel? project;
         private bool fieldsComplete, itemsComplete, stopped;
+        private bool milestonesComplete = true;
+        private readonly Dictionary<ScopedId, MilestoneReadModel> milestones = [];
         private int undeliveredItems;
         private ApiOutcome? interruption;
 
@@ -56,13 +58,26 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     itemsComplete = await WalkAsync("items", lease is null ? ProjectQueries.Items : ProjectQueries.Items.Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}"), projectId.NodeId,
                         node => { MatchNode(node, projectId.NodeId, "ProjectV2"); return Property(node, "items"); },
                         AddItemAsync);
+                foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
+                {
+                    if (stopped) { milestonesComplete = false; break; }
+                    milestonesComplete &= await WalkAsync("milestones", ProjectQueries.Milestones, repository.NodeId,
+                        node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "milestones"); },
+                        node => { var milestone = ReadMilestone(node, repository);
+                            if (!milestones.TryAdd(milestone.Id, milestone)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+                            return Task.CompletedTask; });
+                }
+                if (milestonesComplete && !stopped)
+                    foreach (var issue in issues.Values)
+                        if (issue.Milestone.Value is { } member && (!milestones.TryGetValue(member.Id, out var catalog) || member != catalog))
+                        { milestonesComplete = false; problems.Add(new(ReadProblemKind.ConcurrentChange, "milestones")); }
             }
             catch (OperationCanceledException)
             {
                 interruption = ApiOutcome.Cancelled;
                 problems.Add(new(ReadProblemKind.Api, "read", FailureKind.Cancelled, ApiOutcome.Cancelled));
             }
-            var complete = fieldsComplete && itemsComplete && items.Values.All(item => item.Complete) && problems.Count == 0;
+            var complete = fieldsComplete && itemsComplete && milestonesComplete && items.Values.All(item => item.Complete) && problems.Count == 0;
             var outcome = interruption switch
             {
                 ApiOutcome.Cancelled => ProjectReadOutcome.Cancelled,
@@ -75,7 +90,8 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     Fields = fields.Values.ToArray(),
                     Issues = new ReadOnlyDictionary<ScopedId, IssueReadModel>(issues),
                     Items = items.Values.Select(item => BuildItem(item, complete)).ToArray(),
-                    FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems
+                    FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems,
+                    MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
                 };
             return new(outcome, project, problems.ToArray());
         }
@@ -151,7 +167,9 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var repository = Property(content, "repository");
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
-                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content) };
+                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
+                            Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
+                                : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                     if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present
                         || issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null))
@@ -170,6 +188,22 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             item.Complete = await WalkAsync("values", ProjectQueries.ItemValues, id.NodeId,
                 value => { MatchNode(value, id.NodeId, "ProjectV2Item"); MatchProject(value); return Property(value, "fieldValues"); },
                 value => { AddValue(item, value); return Task.CompletedTask; }, Optional(node, "fieldValues"));
+        }
+
+        private MilestoneReadModel ReadMilestone(JsonElement node, ScopedId repository)
+        {
+            var due = Property(node, "dueOn");
+            DateOnly? date = null;
+            if (due.ValueKind != JsonValueKind.Null)
+            {
+                if (due.ValueKind != JsonValueKind.String || !DateTimeOffset.TryParse(due.GetString(),
+                    System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var timestamp))
+                    throw new ReadException(ReadProblemKind.InvalidResponse);
+                date = DateOnly.FromDateTime(timestamp.UtcDateTime);
+            }
+            var state = Text(node, "state");
+            if (state is not ("OPEN" or "CLOSED")) throw new ReadException(ReadProblemKind.InvalidResponse);
+            return new(Id(node), repository, Text(node, "title"), date, state == "CLOSED");
         }
 
         private async Task<IssuePlanningObservation> ReadNativeAsync(JsonElement issue)

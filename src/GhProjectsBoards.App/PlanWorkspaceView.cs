@@ -639,17 +639,48 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
             settings.Children.Add(Label("工程"));
             var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
+            var phaseTargets = new StackPanel { Spacing = 4 };
             void ShowPhases()
             {
+                phaseTargets.Children.Clear();
                 var mapping = session.Document.State.Settings.Columns.SingleOrDefault(c => c.Role == PlanField.Phase);
                 var field = session.Document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping?.FieldId);
                 if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。プロジェクトの単一選択フィールドを 工程 に割り当てると、サマリーで工程別に集計します。"; return; }
                 var parents = session.Document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
                 var counts = session.Document.State.Rows.Where(r => !parents.Contains(r.Identity)).ToLookup(r => r.Phase ?? "");
-                phaseDetails.Text = field.Name + "\n" + string.Join("\n", field.Options.Select(o => $"{o}  {counts[o].Count()} タスク"))
-                    + $"\n工程なし  {counts[""].Count()} タスク";
+                phaseDetails.Text = field.Name + $" · 工程なし {counts[""].Count()} タスク";
+                Grid PhaseRow(string option, string count, FrameworkElement target) {
+                    var row = new Grid { ColumnSpacing = 12 };
+                    foreach (var width in new[] { 100d, 100d, 320d }) row.ColumnDefinitions.Add(new() { Width = new(width) });
+                    row.Children.Add(new TextBlock { Text = option, VerticalAlignment = VerticalAlignment.Center });
+                    var tasks = Id(new TextBlock { Text = count, VerticalAlignment = VerticalAlignment.Center }, "PlanPhaseCount_" + option);
+                    AutomationProperties.SetName(tasks, option + " " + count + " タスク");
+                    row.Children.Add(tasks); Grid.SetColumn(tasks, 1); row.Children.Add(target); Grid.SetColumn(target, 2);
+                    return row;
+                }
+                phaseTargets.Children.Add(PhaseRow("工程", "タスク", Label("マイルストーン（任意）")));
+                var milestones = session.Document.Baseline.Milestones.OrderBy(m => m.Title, StringComparer.Ordinal).ToArray();
+                var labels = new[] { "なし" }.Concat(milestones.Select(m => m.Title + " · " + (m.DueDate?.ToString("M/d") ?? "期日なし"))).ToArray();
+                foreach (var option in field.Options) {
+                    int Accepted() => Array.FindIndex(milestones, m => m.Title == session.Document.State.Settings.PhaseMilestones.GetValueOrDefault(option)) + 1;
+                    var combo = Id(new ComboBox { ItemsSource = labels, HorizontalAlignment = HorizontalAlignment.Stretch,
+                        SelectedIndex = Accepted() }, "PlanPhaseMilestone_" + option);
+                    AutomationProperties.SetName(combo, option + " マイルストーン（任意）");
+                    combo.SelectionChanged += async (_, _) => {
+                        if (rendering || generation != settingsGeneration) return;
+                        var selected = combo.SelectedIndex;
+                        if (selected == Accepted()) return;
+                        await Run(() => ChangeSettings(s => s with { PhaseMilestones = selected <= 0 ? s.PhaseMilestones.Remove(option)
+                            : s.PhaseMilestones.SetItem(option, milestones[selected - 1].Title) }));
+                        rendering = true;
+                        try { combo.SelectedIndex = Accepted(); }
+                        finally { rendering = false; }
+                    };
+                    phaseTargets.Children.Add(PhaseRow(option, $"{counts[option].Count():N0}", combo));
+                }
             }
-            ShowPhases(); settings.Children.Add(phaseDetails);
+            ShowPhases(); settings.Children.Add(phaseDetails); settings.Children.Add(phaseTargets);
+            settings.Children.Add(new TextBlock { Text = "GitHub のマイルストーンを工程に対応させると、その期日を目標日としてサマリーに完了見込との差を出します。期日は GitHub で管理し、ここでは入力しません。", TextWrapping = TextWrapping.Wrap });
             foreach (var phaseMap in settings.Children.OfType<ComboBox>().Where(c => AutomationProperties.GetAutomationId(c) == "PlanMapPhase"))
                 phaseMap.SelectionChanged += async (_, _) => { await operation; if (generation == settingsGeneration) ShowPhases(); };
             settings.Children.Add(TextSetting("新規 Issue の作成先", "PlanDefaultRepository", value.DefaultRepository ?? "",

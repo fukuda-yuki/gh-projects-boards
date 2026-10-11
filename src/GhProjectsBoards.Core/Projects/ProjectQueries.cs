@@ -3,6 +3,7 @@ namespace GhProjectsBoards.Core.Projects;
 internal static class ProjectQueries
 {
     private const string PageInfo = "totalCount pageInfo { hasNextPage endCursor }";
+    public static readonly string Milestones = "query ProjectMilestones($id:ID!,$after:String){node(id:$id){__typename ... on Repository{id milestones(first:100,after:$after,states:[OPEN,CLOSED]){" + PageInfo + " nodes{id title dueOn state}}}}}";
     private const string Native = "assignees(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id login } } blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id } } parent { id }";
     public static readonly string Assignees = "query PlanningAssignees($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id assignees(first:100, after:$after) { " + PageInfo + " nodes { id login } } } } }";
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
@@ -56,7 +57,7 @@ internal static class ProjectQueries
                     __typename
                     ... on Node { id }
                     ... on Issue {
-                      number url title state closedAt viewerCanUpdate NATIVE
+                      number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
                       repository { id nameWithOwner owner { id } }
                     }
                   }

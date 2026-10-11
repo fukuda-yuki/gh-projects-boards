@@ -20,7 +20,9 @@ internal sealed record RepositoryReadModel(ScopedId Id, ScopedId OwnerId, string
 internal sealed record IssueReadModel(ScopedId Id, RepositoryReadModel Repository, int Number, string Url,
     ReadValue<string> Title, ReadValue<IssueState?> State, CapabilityObservation? Capability = null,
     IssuePlanningObservation? Native = null)
-{ public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded); }
+{ public ReadValue<MilestoneReadModel> Milestone { get; init; } = new(ValueAvailability.NotLoaded);
+  public ReadValue<DateTimeOffset?> ClosedAt { get; init; } = new(ValueAvailability.NotLoaded); }
+internal sealed record MilestoneReadModel(ScopedId Id, ScopedId RepositoryId, string Title, DateOnly? DueDate, bool Closed);
 internal sealed record NativePerson(ScopedId Id, string Login);
 internal sealed record IssuePlanningObservation(NativePerson[] Assignees, ScopedId[] Predecessors,
     ReadValue<ScopedId> Parent, bool Complete) { public ScopedId[] SubIssues { get; init; } = []; }
@@ -37,7 +39,9 @@ internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string Ow
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
     bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null)
-{ public int UndeliveredItemCount { get; init; } }
+{ public IReadOnlyList<MilestoneReadModel> Milestones { get; init; } = [];
+  public bool MilestonesComplete { get; init; }
+  public int UndeliveredItemCount { get; init; } }
 internal sealed record ReadProblem(ReadProblemKind Kind, string Stage, FailureKind Failure = FailureKind.None,
     ApiOutcome? ApiOutcome = null, int? HttpStatus = null, TimeSpan? RetryAfter = null);
 internal sealed record ProjectReadResult(ProjectReadOutcome Outcome, ProjectReadModel? Project,

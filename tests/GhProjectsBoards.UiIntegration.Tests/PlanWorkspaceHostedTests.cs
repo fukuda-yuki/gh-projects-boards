@@ -1904,7 +1904,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open(); await Settings();
         await Ui.Run(() => {
             Assert.That(((PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Id, Is.EqualTo("F-Phase"));
-            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程\nSA  1 タスク\nUI  0 タスク\n工程なし  0 タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程 · 工程なし 0 タスク"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_SA").Text, Is.EqualTo("1"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseCount_UI").Text, Is.EqualTo("0"));
+            Assert.That(Ui.Find<ComboBox>("PlanPhaseMilestone_SA").Items.Cast<string>(), Is.EqualTo(new[] { "なし" }));
             Ui.Find<ComboBox>("PlanMapPhase").SelectedIndex = 0;
         });
         await Ui.Idle();

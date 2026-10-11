@@ -740,10 +740,6 @@ internal sealed partial class PlanSheetView : Grid
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
         sheetClip.Width = SheetViewport;
-        var bounds = new Rect(0, 0, SheetViewport, 48);
-        if (sheetClip.Clip is RectangleGeometry geometry) {
-            if (geometry.Rect != bounds) geometry.Rect = bounds;
-        } else sheetClip.Clip = new RectangleGeometry { Rect = bounds };
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions[0].Width = new(SheetViewport); grid.ColumnDefinitions[1].Width = new(ChartViewport); }
         ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
@@ -777,14 +773,102 @@ internal sealed partial class PlanSheetView : Grid
         }
         sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
     }
+    private PlanDocument? milestoneDocument;
+    private DateOnly milestoneDay;
+    private IReadOnlyList<SummaryMilestone> milestones = [];
+    private static string MilestoneDescription(SummaryMilestone item)
+    {
+        var m = item.Milestone;
+        var culture = CultureInfo.GetCultureInfo("ja-JP");
+        return $"{m.Title} 期日 {m.DueDate?.ToString("M/d (ddd)", culture) ?? "—"} · 完了見込 {item.Forecast?.ToString("M/d (ddd)", culture) ?? "—"}"
+            + (item.Forecast > m.DueDate ? $" · +{item.Difference}日" : "") + (m.Closed ? " · クローズ" : "")
+            + (m.ConflictingDates ? " · 期日がリポジトリで異なります" : "");
+    }
+    private Task SelectMilestone(string title) => Run(async () => {
+        await CommitPending();
+        var current = milestones.SingleOrDefault(value => value.Milestone.Title == title);
+        if (current is null) return;
+        if (current.LateTasks.Count > 0) FilterTasks(current.LateTasks.ToHashSet(), title);
+        else {
+            emptyHint.Visibility = Visibility.Collapsed;
+            reason.Text = title + " · 期日を過ぎるタスクはありません";
+            AutomationProperties.SetName(reason, reason.Text); ToolTipService.SetToolTip(reason, reason.Text);
+        }
+    }, "Milestone");
+    private void RenderMilestones(double height)
+    {
+        var labelRight = 0d;
+        var groups = milestones.Select((item, index) => (Item: item, Index: index))
+            .Where(value => value.Item.Milestone.DueDate.HasValue).GroupBy(value => value.Item.Milestone.DueDate!.Value).ToArray();
+        for (var g = 0; g < groups.Length; g++) {
+            var group = groups[g]; var due = group.Key;
+            var first = group.First(); var i = first.Index;
+            var x = X(due);
+            if (x < 0 || x > ChartViewport) continue;
+            var late = group.Any(value => value.Item.Forecast > due);
+            var closed = group.All(value => value.Item.Milestone.Closed);
+            var brush = Brush(closed ? "TextFillColorDisabledBrush" : late ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush");
+            var description = string.Join("\n", group.Select(value => MilestoneDescription(value.Item)));
+            chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = x, X2 = x, Y1 = 0, Y2 = height,
+                Stroke = brush, StrokeThickness = 1, StrokeDashArray = new DoubleCollection { 3, 2 } }, "PlanMilestoneLine_" + i));
+            var marker = Id(new Button { Content = "◆", Width = 20, Height = 22, MinWidth = 0, MinHeight = 0, Padding = new(0),
+                Background = Brush("WorkspaceCardBrush"), BorderThickness = new(0), Foreground = brush }, "PlanMilestone_" + i);
+            AutomationProperties.SetName(marker, description); ToolTipService.SetToolTip(marker, description);
+            if (group.Count() == 1) marker.Click += async (_, _) => await SelectMilestone(first.Item.Milestone.Title);
+            else {
+                var menu = new MenuFlyout();
+                foreach (var value in group) {
+                    var choice = Id(new MenuFlyoutItem { Text = MilestoneDescription(value.Item) }, "PlanMilestoneChoice_" + value.Index);
+                    AutomationProperties.SetName(choice, choice.Text);
+                    choice.Click += async (_, _) => await SelectMilestone(value.Item.Milestone.Title);
+                    menu.Items.Add(choice);
+                }
+                marker.Flyout = menu;
+            }
+            Canvas.SetLeft(marker, x - 10); Canvas.SetTop(marker, 48); chartHead.Children.Add(marker);
+            var next = g + 1 < groups.Length ? X(groups[g + 1].Key) : ChartViewport;
+            var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
+            var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
+            var label = Id(new TextBlock { Text = (late ? difference + " " : "") + title, FontSize = 11, Foreground = brush,
+                TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
+            // Measure in the header's inherited text context, then constrain the rendered extent.
+            chartHead.Children.Add(label);
+            var left = Math.Max(x + 12, labelRight);
+            var available = Math.Max(0, Math.Min(next - 12, ChartViewport) - left);
+            label.Measure(new Size(double.PositiveInfinity, 22));
+            if (label.DesiredSize.Width > available) {
+                label.Text = difference;
+                label.Measure(new Size(double.PositiveInfinity, 22));
+            }
+            var width = label.DesiredSize.Width;
+            if (label.Text.Length == 0 || width <= 0 || width > available) {
+                chartHead.Children.Remove(label);
+                continue;
+            }
+            label.Width = width;
+            Canvas.SetLeft(label, left); Canvas.SetTop(label, 51);
+            labelRight = left + width + 4;
+        }
+    }
     private void RenderTimelineHeader()
     {
+        if (!ReferenceEquals(milestoneDocument, Session.Document) || milestoneDay != StatusDate) {
+            milestoneDocument = Session.Document; milestoneDay = StatusDate;
+            milestones = Session.Document.Baseline.Milestones.IsEmpty ? [] : PlanSummary.CalculateMilestones(Session.Document, Schedule.Values.ToArray());
+            timelineKey = null;
+        }
         var height = List.ActualHeight;
         var key = $"{FirstDay}:{DayCount}:{DayWidth}:{ChartViewport}:{ChartOffset}:{StatusDate}:{height}:{acceptedZoom}";
+        chartHead.Height = milestones.Any(m => m.Milestone.DueDate.HasValue) ? 70 : 48;
+        sheetClip.Height = chartHead.Height;
+        var headerBounds = new Rect(0, 0, SheetViewport, sheetClip.Height);
+        if (sheetClip.Clip is RectangleGeometry geometry) {
+            if (geometry.Rect != headerBounds) geometry.Rect = headerBounds;
+        } else sheetClip.Clip = new RectangleGeometry { Rect = headerBounds };
         if (timelineKey == key) return;
         timelineKey = key;
         chartHead.Children.Clear(); chartHead.Width = ChartViewport;
-        chartHead.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, 48) };
+        chartHead.Clip = new RectangleGeometry { Rect = new(0, 0, ChartViewport, chartHead.Height) };
         foreach (var layer in new[] { chartBackground, chartStatus }) {
             layer.Children.Clear(); layer.Width = ChartViewport;
             layer.Margin = new(SheetViewport, 0, 0, 0);
@@ -848,6 +932,7 @@ internal sealed partial class PlanSheetView : Grid
                 date = date.AddDays(1);
             }
         }
+        RenderMilestones(height);
         var statusX = X(StatusDate);
         chartStatus.Children.Add(Id(new Microsoft.UI.Xaml.Shapes.Line { X1 = statusX, X2 = statusX, Y1 = 0, Y2 = height,
             Stroke = Brush("SystemControlHighlightAccentBrush"), StrokeThickness = 2 }, "PlanStatusLine"));

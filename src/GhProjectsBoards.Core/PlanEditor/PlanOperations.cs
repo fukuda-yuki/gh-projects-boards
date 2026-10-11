@@ -70,6 +70,7 @@ internal static class PlanOperations
     {
         Require(s is not null, "計画設定がありません。");
         Require(!(s!.ProjectEnd < s.ProjectStart), "終了日は開始日以降にしてください。");
+        Require(s.PhaseMilestones is not null && s.PhaseMilestones.All(p => !string.IsNullOrWhiteSpace(p.Key) && !string.IsNullOrWhiteSpace(p.Value)), "工程とマイルストーンの対応が不正です。");
         Unique(s.CompanyDaysOff); Unique(s.People.Select(p => p.Identity).ToImmutableArray());
         Unique(s.Columns.Select(c => c.Role).ToImmutableArray()); Unique(s.Columns.Select(c => c.FieldId).ToImmutableArray());
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
@@ -98,6 +99,8 @@ internal static class PlanOperations
             Uri.CheckHostName(d.Project.Scope.Host) != UriHostNameType.Unknown && d.Project.Scope.Host == d.Project.Scope.Host.ToLowerInvariant(), "プロジェクトの識別情報が不正です。");
         ValidateSettings(d.State.Settings);
         ValidateRows(d.Baseline.Rows); ValidateRows(d.State.Rows);
+        Unique(d.Baseline.Milestones.Select(m => m.Title).ToImmutableArray());
+        Require(d.Baseline.Milestones.All(m => !string.IsNullOrWhiteSpace(m.Title)), "マイルストーンの名前が不正です。");
         Unique(d.Baseline.Columns.Select(c => c.Id).ToImmutableArray());
         Require(d.Baseline.Columns.All(c => !string.IsNullOrWhiteSpace(c.Id) && !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.DataType)), "列定義が不正です。");
         var currentIds = d.State.Rows.Select(r => r.Identity).ToHashSet();

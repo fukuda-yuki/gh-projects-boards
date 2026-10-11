@@ -20,6 +20,7 @@ internal sealed record PlanHolidayData(string Version, string Source, string Sou
 }
 internal sealed record ProjectPlanSettings
 {
+    public ImmutableDictionary<string, string> PhaseMilestones { get; init; } = ImmutableDictionary<string, string>.Empty;
     public ImmutableArray<PlanColumnMapping> Columns { get; init; } = [];
     public ImmutableArray<DateOnly> CompanyDaysOff { get; init; } = [];
     public PlanHolidayData? ImportedHolidays { get; init; }
@@ -31,6 +32,7 @@ internal sealed record ProjectPlanSettings
 }
 internal sealed record PlanRow(string Identity, string Title, string Repository)
 {
+    public string? MilestoneTitle { get; init; }
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public string? Phase { get; init; }
@@ -48,7 +50,9 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public bool Fixed { get; init; }
     public static PlanRow New(string title, string repository = "") => new("local:" + Guid.NewGuid().ToString("N"), title, repository);
 }
-internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns);
+internal sealed record PlanMilestone(string Title, DateOnly? DueDate, bool Closed, bool ConflictingDates);
+internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns)
+{ public ImmutableArray<PlanMilestone> Milestones { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
 internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
 internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
