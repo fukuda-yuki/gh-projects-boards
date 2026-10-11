@@ -45,7 +45,7 @@ internal sealed class PlanPeopleView : UserControl
     private IReadOnlyDictionary<string, ScheduledTask> scheduled = null!;
     private double[] periodWidths = [];
     private static DateOnly Today => PlanClock.Today;
-    private static readonly double[] Widths = [144, 48, 64, 64, 64, 64, 64, 112];
+    private static readonly double[] Widths = [144, 64, 88, 88, 88, 136, 144, 112];
     internal PlanPeopleView(PlanSession session)
     {
         Session = session; anchor = session.Document.State.Settings.StatusDate ?? Today;
@@ -82,9 +82,9 @@ internal sealed class PlanPeopleView : UserControl
     }
     private static T Id<T>(T item, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(item, id); return item; }
     private static string Number(decimal? value) => value?.ToString("0.##", CultureInfo.CurrentCulture) ?? "未入力";
-    private string LoadText(PersonPeriod load)
+    private string LoadText(PersonPeriod load, IReadOnlyList<string> reasons)
     {
-        var text = load.Planned is null ? "未算定" : load.Capacity is null ? Number(load.Planned) + "h" : load.Capacity == 0 ? "稼働日なし" : Number(load.Percent) + "%";
+        var text = load.Planned is null ? "計算できません: " + string.Join("、", reasons) : load.Capacity is null ? Number(load.Planned) + "h" : load.Capacity == 0 ? "稼働日なし" : Number(load.Percent) + "%";
         if (load.Overloaded) text += " 超過";
         if (scale != PlanPeriodScale.Day && load.DailyOverloads.Count > 0) {
             var peak = load.DailyOverloads.Max(d => d.Percent);
@@ -147,7 +147,7 @@ internal sealed class PlanPeopleView : UserControl
         if (input.Dirty) text = input.Box.Text;
         else input.Accepted = original;
         var box = Id(new TextBox { Text = text, MinHeight = 0, Height = 24, Padding = new(3, 0, 3, 0), VerticalContentAlignment = VerticalAlignment.Center }, id);
-        AutomationProperties.SetName(box, name);
+        AutomationProperties.SetName(box, name); ToolTipService.SetToolTip(box, name);
         input.Box = box; var current = generation;
         box.Loaded += (_, _) => UpdateInputProblem();
         box.GotFocus += (_, _) => {
@@ -216,18 +216,23 @@ internal sealed class PlanPeopleView : UserControl
         report = PlanPeople.Calculate(Session.Document, Today, anchor, scale, scale == PlanPeriodScale.Day ? 7 : 6);
         periodWidths = Enumerable.Range(0, report.Periods.Count).Select(i => {
             var width = 104d;
-            if (scale != PlanPeriodScale.Day) foreach (var person in report.People.Where(p => p.Periods[i].DailyOverloads.Count > 0)) {
-                var measured = Text(LoadText(person.Periods[i]));
+            foreach (var person in report.People.Where(p => p.Periods[i].Planned is null || scale != PlanPeriodScale.Day && p.Periods[i].DailyOverloads.Count > 0)) {
+                var measured = Text(LoadText(person.Periods[i], person.Missing));
                 measured.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
                 width = Math.Max(width, Math.Ceiling(measured.DesiredSize.Width) + 12);
             }
             return width;
         }).ToArray();
         table.Width = Widths.Sum() + periodWidths.Sum();
-        range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}  人時";
+        range.Text = $"{report.Periods[0].Start:yyyy/M/d} – {report.Periods[^1].End:M/d}  h";
         Columns(header);
-        var names = new[] { "担当者", "稼働%", "許容量", "見積", "実績", "残", "予測", "差分" };
-        for (var i = 0; i < names.Length; i++) Add(header, Text(names[i]), i);
+        var names = new[] { "担当者", "負荷率", "上限工数 h", "見積工数 h", "実績工数 h", "見込み残存工数 h", "見込工数 h", "余力 h" };
+        for (var i = 0; i < names.Length; i++) {
+            var label = Text(names[i]);
+            var fullName = i == 6 ? "見込工数 (実績工数 + 見込み残存工数) h" : names[i];
+            AutomationProperties.SetName(label, fullName); ToolTipService.SetToolTip(label, fullName);
+            Add(header, label, i);
+        }
         for (var i = 0; i < report.Periods.Count; i++) {
             var index = i; var period = report.Periods[i];
             var caption = scale switch { PlanPeriodScale.Week => $"{period.Start:M/d} 週", PlanPeriodScale.Month => $"{period.Start:yyyy/M}", _ => $"{period.Start:M/d (ddd)}" };
@@ -244,20 +249,20 @@ internal sealed class PlanPeopleView : UserControl
             Add(line, expand, 0);
             if (person.Rate is not null) {
                 Add(line, Input(() => Number(Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Rate ?? person.Rate), "PeopleRate_" + person.Identity, person.Name + " 稼働率", text => ResourceCommand(person, text, true), person.Identity), 1);
-                Add(line, Input(() => Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", "PeopleAllowance_" + person.Identity, person.Name + " 許容量 人時", text => ResourceCommand(person, text, false), person.Identity), 2);
+                Add(line, Input(() => Session.Document.State.Settings.People.FirstOrDefault(p => p.Identity == person.Identity)?.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", "PeopleAllowance_" + person.Identity, person.Name + " 上限工数 h", text => ResourceCommand(person, text, false), person.Identity), 2);
             } else { Add(line, Text("—"), 1); Add(line, Text("—"), 2); }
             var totals = new[] { person.Estimate, person.Actual, person.Remaining, person.Forecast, person.Difference };
             for (var i = 0; i < totals.Length; i++) {
                 var groupDifference = i == 4 && person.Rate is null;
-                var label = Id(Text(groupDifference ? "—" : Number(totals[i])), $"PeopleTotal_{person.Identity}_{i}");
+                var label = Id(Text(groupDifference ? "—" : Number(totals[i]) + (totals[i] is null ? "" : "h")), $"PeopleTotal_{person.Identity}_{i}");
                 if (i == 4 && person.Difference < 0) { label.Text += " 超過"; label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"]; }
-                AutomationProperties.SetName(label, person.Name + " " + names[i + 3] + " " + label.Text);
-                ToolTipService.SetToolTip(label, label.Text + (!groupDifference && person.Missing.Count > 0 ? " — " + string.Join("、", person.Missing) : ""));
+                AutomationProperties.SetName(label, person.Name + " " + (i == 3 ? "見込工数" : names[i + 3].Replace(" h", "")) + " " + label.Text);
+                ToolTipService.SetToolTip(label, AutomationProperties.GetName(label) + (!groupDifference && person.Missing.Count > 0 ? " — " + string.Join("、", person.Missing) : ""));
                 Add(line, label, i + 3);
             }
             for (var i = 0; i < report.Periods.Count; i++) {
                 var index = i; var load = person.Periods[i];
-                var label = Id(Text(LoadText(load)), $"PeopleLoad_{person.Identity}_{i}");
+                var label = Id(Text(LoadText(load, person.Missing)), $"PeopleLoad_{person.Identity}_{i}");
                 if (load.Overloaded || load.DailyOverloads.Count > 0) label.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
                 var button = Button("", $"PeopleLoadOpen_{person.Identity}_{i}", () => { periodIndex = index; overloadDay.Remove(person.Identity); expanded.Add(person.Identity); Refresh(); return Task.CompletedTask; });
                 button.Content = label; button.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -296,7 +301,7 @@ internal sealed class PlanPeopleView : UserControl
     private PlanCommand ResourceCommand(PersonLoad person, string text, bool rate)
     {
         decimal? value = text.Length == 0 ? null : decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number) ? number : throw new ArgumentException("数値を入力してください。");
-        if (rate && (value is null || value <= 0 || value > 100) || !rate && value < 0) throw new ArgumentException(rate ? "稼働率は0より大きく100以下にしてください。" : "許容量は0以上の人時で入力してください。");
+        if (rate && (value is null || value <= 0 || value > 100) || !rate && value < 0) throw new ArgumentException(rate ? "稼働率は0より大きく100以下にしてください。" : "上限工数は0以上の数値で入力してください（単位: h）。");
         var settings = Session.Document.State.Settings;
         var resource = settings.People.FirstOrDefault(p => p.Identity == person.Identity) ?? new(person.Identity, person.Name, 100, null);
         resource = rate ? resource with { Rate = value!.Value } : resource with { Allowance = value };
@@ -325,7 +330,7 @@ internal sealed class PlanPeopleView : UserControl
             if (selected is not null) panel.Children.Add(Text($"{selected.Date:M/d} の超過に関係するタスク"));
         }
         var headings = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var (name, width) in new[] { ("タスク", 250d), ("担当者", 160d), ("残", 90d), ("実績", 90d), ("日程固定", 90d) }) {
+        foreach (var (name, width) in new[] { ("タスク", 250d), ("担当者", 160d), ("見込み残存工数 h", 120d), ("実績工数 h", 90d), ("日程固定", 90d) }) {
             var text = Text(name); text.Width = width - 8; headings.Children.Add(text);
         }
         panel.Children.Add(headings);
@@ -333,7 +338,7 @@ internal sealed class PlanPeopleView : UserControl
         var ids = (selected?.Tasks ?? load.Tasks).Concat(selected is null ? person.Unallocated : []).Concat(retained).ToHashSet();
         foreach (var row in Session.Document.State.Rows.Where(r => ids.Contains(r.Identity))) {
             var line = new StackPanel { Orientation = Orientation.Horizontal };
-            var title = Text($"{Session.Document.State.Rows.IndexOf(row) + 1} {row.Title}" + (person.Unallocated.Contains(row.Identity) ? "（未配分）" : ""));
+            var title = Text($"{Session.Document.State.Rows.IndexOf(row) + 1} {row.Title}" + (person.Unallocated.Contains(row.Identity) ? "（日付未定）" : ""));
             title.Width = 242; ToolTipService.SetToolTip(title, title.Text); line.Children.Add(title);
             line.Children.Add(AssigneeChoice(row));
             foreach (var field in new[] { PlanField.Remaining, PlanField.Actual }) {
@@ -342,15 +347,15 @@ internal sealed class PlanPeopleView : UserControl
                     return (field == PlanField.Remaining ? scheduled[row.Identity].Remaining : current.Actual)?.ToString(CultureInfo.CurrentCulture) ?? "";
                 }
                 var id = $"PeopleTask_{row.Identity}_{field}";
-                var name = row.Title + " " + (field == PlanField.Remaining ? "残" : "実績");
+                var name = row.Title + " " + (field == PlanField.Remaining ? "見込み残存工数" : "実績工数");
                 if (PlanOperations.ReadOnlyReason(row, false, field) is { } reason) {
                     inputs.Remove(id);
-                    var value = Id(Text(Committed()), id);
-                    value.Width = 82;
+                    var value = Id(Text(Committed() + "h"), id);
+                    value.Width = field == PlanField.Remaining ? 112 : 82;
                     value.Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
                     AutomationProperties.SetName(value, name + " " + value.Text);
                     AutomationProperties.SetHelpText(value, reason);
-                    ToolTipService.SetToolTip(value, reason);
+                    ToolTipService.SetToolTip(value, name + " · " + reason);
                     line.Children.Add(value);
                     continue;
                 }
@@ -360,7 +365,7 @@ internal sealed class PlanPeopleView : UserControl
                 input.Foreground = (Brush)Application.Current.Resources[field == PlanField.Remaining
                     && (row.Closed || row.Remaining is null && scheduled[row.Identity].Remaining is not null)
                     ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush"];
-                input.Width = 90; line.Children.Add(input);
+                input.Width = field == PlanField.Remaining ? 120 : 90; line.Children.Add(input);
             }
             var fixedBox = Id(new CheckBox { Content = "固定", IsChecked = row.Fixed, MinHeight = 24 }, "PeopleTask_" + row.Identity + "_Fixed");
             AutomationProperties.SetName(fixedBox, row.Title + " 日程固定");

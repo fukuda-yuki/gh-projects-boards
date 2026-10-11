@@ -60,7 +60,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanError");
     private readonly TextBox executable = Id(new TextBox { Header = "gh.exe", Text = ConnectionViewModel.FindGh(), MinWidth = 400 }, "PlanGhPath");
     private readonly TextBox host = Id(new TextBox { Header = "接続先", Text = "github.com" }, "PlanHost");
-    private readonly TextBox url = Id(new TextBox { Header = "Project URL" }, "PlanProjectUrl");
+    private readonly TextBox url = Id(new TextBox { Header = "プロジェクト URL" }, "PlanProjectUrl");
     private readonly Grid toolbar = new() { Height = 36, Margin = new(12, 0, 12, 0) };
     private readonly Border statusDateHost = new();
     private readonly StackPanel commandButtons = new() { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
@@ -110,7 +110,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var projects = new StackPanel { Spacing = 8, Width = 340 };
         projects.Children.Add(registered);
         projects.Children.Add(new Border { Height = 1, Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush") });
-        projects.Children.Add(Command("Project を開く…", "PlanChooseProject", Symbol.OpenFile, () => { Show("chooser"); return Task.CompletedTask; }));
+        projects.Children.Add(Command("プロジェクトを開く…", "PlanChooseProject", Symbol.OpenFile, () => { Show("chooser"); return Task.CompletedTask; }));
         projects.Children.Add(Command("接続…", "PlanConnection", Symbol.Link, () => { Show("connection"); return Task.CompletedTask; }));
         projectFlyout.Content = projects;
         projectFlyout.Opened += (_, _) => RefreshProjectChecks();
@@ -120,7 +120,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectCaption.Children.Add(title); projectCaption.Children.Add(projectMetadata);
         projectCaption.Children.Add(new FontIcon { Glyph = "\uE70D", FontSize = 12 });
         projectPicker.Content = projectCaption;
-        AutomationProperties.SetName(projectPicker, "Project を選択");
+        AutomationProperties.SetName(projectPicker, "プロジェクトを選択");
         WorkspaceTitleBar.Subtitle = "計画エディタ";
         // Give the vector finite bounds: this SDK's IconSource Viewbox measures a PathIcon unbounded.
         var appGlyph = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
@@ -150,7 +150,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await Run(() => { if (selected == peopleTab) RenderPeople(); Show(selected == peopleTab ? "people" : "tasks"); return Task.CompletedTask; }); }
             finally { if (--pendingViewSelections == 0) SyncTabs(); }
         };
-        commandButtons.Children.Add(new TextBlock { Text = "状況日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
+        commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
         commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
@@ -190,7 +190,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (workspace.DiscoveryWarning is { } warning) error.Text = warning;
             Show(workspace.Session is null ? "chooser" : "tasks");
         }));
-        chooser.Children.Add(Label("Projectを選択"));
+        chooser.Children.Add(Label("プロジェクトを選択"));
         chooser.Children.Add(available);
         var address = new Expander { Header = "URLで開く", HorizontalAlignment = HorizontalAlignment.Stretch };
         var addressPanel = new StackPanel { Spacing = 8 }; addressPanel.Children.Add(url);
@@ -213,9 +213,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         statusContent.Children.Add(statusCounts);
         foreach (var (caption, fill, stroke, dashed) in new[] {
-            ("実績", "GanttTaskBrush", "GanttTaskBrush", false),
-            ("残り", "GanttTaskTintBrush", "GanttTaskBrush", false),
-            ("発行済みからの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
+            ("実績工数", "GanttTaskBrush", "GanttTaskBrush", false),
+            ("見込み残存工数", "GanttTaskTintBrush", "GanttTaskBrush", false),
+            ("発行済みの終了日からの遅れ", "GanttLateTintBrush", "GanttLateBrush", true),
             ("非稼働日", "GanttNonWorkingBrush", "WorkspaceCardStrokeBrush", false) }) {
             var item = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
             var swatch = new Microsoft.UI.Xaml.Shapes.Rectangle { Width = 16, Height = 10, RadiusX = 2, RadiusY = 2, VerticalAlignment = VerticalAlignment.Center,
@@ -341,7 +341,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 RefreshLists();
                 if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
-                error.Text = ex is DiscoveryException ? "Projectを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
             }
             finally { operationCancellation = null; }
         }
@@ -463,7 +463,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectPicker.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
         settingsButton.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
         statusBar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
-        projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · Project {project.Number}" : "";
+        projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · プロジェクト {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
     }
     private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); RefreshLists(); RenderTasks(); Show("tasks"); }
@@ -540,7 +540,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 Show(settingsReturnPage); return Task.CompletedTask;
             }));
             var value = session.Document.State.Settings;
-            settings.Children.Add(Label("GitHub列"));
+            settings.Children.Add(Label("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)
             {
                 var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type)).ToArray();
@@ -558,7 +558,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
             if (!session.Document.Baseline.Columns.Any(c => c.Name == "開始日指定" && c.DataType == "DATE") ||
                 !session.Document.Baseline.Columns.Any(c => c.Name == "日程固定" && c.DataType == "SINGLE_SELECT"))
-                settings.Children.Add(Button("不足する日程列を追加", "PlanAddFields", async () => {
+                settings.Children.Add(Button("「開始日指定」「日程固定」を GitHub に作成", "PlanAddFields", async () => {
                 var result = await new PlanPublisher(workspace.Service!, workspace.Context!).AddSchedulingFieldsAsync(session, Today, OperationToken);
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
@@ -606,9 +606,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 line.Children.Add(rate);
                 settings.Children.Add(line);
             }
-            settings.Children.Add(TextSetting("Project開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
+            settings.Children.Add(TextSetting("プロジェクト開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
-            settings.Children.Add(TextSetting("既定リポジトリ", "PlanDefaultRepository", value.DefaultRepository ?? "",
+            settings.Children.Add(TextSetting("新規 Issue の作成先", "PlanDefaultRepository", value.DefaultRepository ?? "",
                 text => ChangeSettings(s => s with { DefaultRepository = string.IsNullOrWhiteSpace(text) ? null : text.Trim() })));
             var files = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             files.Children.Add(Button("設定を書き出す", "PlanExportSettings", async () => { if (await SelectFile("export") is { } path) await session.ExportSettingsAsync(path); }));
@@ -620,7 +620,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Warnings.IsEmpty) error.Text = string.Join("\n", result.Warnings);
             }));
             settings.Children.Add(files);
-            settings.Children.Add(Id(Label($"計画対象外  Draft {session.Document.Sync.DraftCount} / Pull request {session.Document.Sync.PullRequestCount} / 参照できない項目 {session.Document.Sync.InaccessibleCount}"), "PlanExcludedCounts"));
+            settings.Children.Add(Id(Label($"計画対象外: ドラフト {session.Document.Sync.DraftCount} 件・プルリクエスト {session.Document.Sync.PullRequestCount} 件・参照できない項目 {session.Document.Sync.InaccessibleCount} 件"), "PlanExcludedCounts"));
         }
         finally { rendering = false; }
     }

@@ -64,7 +64,7 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(result[1].StartReason, Is.EqualTo("1 の終了後"));
     }
 
-    [TestCase("2026-10-01", null, "2026-10-05", "状況日")]
+    [TestCase("2026-10-01", null, "2026-10-05", "基準日")]
     [TestCase("2026-10-06", null, "2026-10-06", "プロジェクト開始日")]
     [TestCase("2026-10-06", "2026-10-07", "2026-10-07", "開始日指定 10/7")]
     [TestCase("2026-10-05", "2026-10-05", "2026-10-05", "開始日指定 10/5")]
@@ -86,7 +86,7 @@ internal sealed class PlanEditorSchedulingTests
 
     [TestCase("2026-10-01", "2026-10-01", "2026-10-05", "開始日を維持")]
     [TestCase("2026-10-07", "2026-10-07", "2026-10-07", "開始日を維持")]
-    [TestCase(null, "2026-10-05", "2026-10-05", "状況日")]
+    [TestCase(null, "2026-10-05", "2026-10-05", "基準日")]
     public void ProgressRetainsStartAndSchedulesRemainingFromStatusOrStart(string? start, string expectedStart, string expectedEnd, string reason)
     {
         var result = Run(Task() with { Actual = 4, Remaining = 4, Start = start is null ? null : D(start) });
@@ -393,7 +393,7 @@ internal sealed class PlanEditorSchedulingTests
         Dates(result, closed ? "2026-10-01" : "2026-10-05", closed ? "2026-10-02" : "2026-10-05");
         Assert.That(result.IsZeroRemainingOpen, Is.EqualTo(!closed && !milestone));
         Assert.That(result.IsMilestone, Is.EqualTo(milestone));
-        Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "状況日"));
+        Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "基準日"));
         Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Calculated));
     }
 

@@ -80,10 +80,10 @@ internal sealed class PlanPeopleOverloadHostedTests
         await Ui.Ready<TextBlock>("PeopleTask_I1_Remaining");
         await Ui.Run(() => {
             var value = Ui.Find<TextBlock>("PeopleTask_I1_Remaining");
-            Assert.That(value.Text, Is.EqualTo("0"));
+            Assert.That(value.Text, Is.EqualTo("0h"));
             const string reason = "完了したタスクは Issue のクローズで確定します（編集不可）";
             Assert.That(PlanOperations.ReadOnlyReason(closed, false, PlanField.Remaining), Is.EqualTo(reason));
-            Assert.That(ToolTipService.GetToolTip(value), Is.EqualTo(reason));
+            Assert.That(ToolTipService.GetToolTip(value), Is.EqualTo("作業1 見込み残存工数 · " + reason));
             Assert.That(AutomationProperties.GetHelpText(value), Is.EqualTo(reason));
             Assert.That(AutomationProperties.GetName(value), Does.Contain("残").And.Contain("0"));
             Assert.That(Ui.Tree(view).OfType<TextBox>().Select(AutomationProperties.GetAutomationId),

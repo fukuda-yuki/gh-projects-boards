@@ -46,7 +46,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
     public static PlanWorkspace ForUser(Func<DateOnly> today) => new(PlanStore.ForUser(), today);
     public async Task<PlanCsvPreview> PreviewCsv(PlanCsvFile file, CancellationToken token = default)
     {
-        var session = Session ?? throw new InvalidOperationException("Projectを開いてください。");
+        var session = Session ?? throw new InvalidOperationException("プロジェクトを開いてください。");
         if (Service is null || Context is null || session.Document.Project.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
         if (!file.Errors.IsEmpty) return new(file.Errors, null, false);
         using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
@@ -83,7 +83,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
             } while (true);
         }
         token.ThrowIfCancellationRequested();
-        if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("Projectが変更されました。CSVを選び直してください。");
+        if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("プロジェクトが変更されました。CSVを選び直してください。");
         return PlanCsvImport.Prepare(session.Document, file, repositories, today());
     }
     public async Task Connect(GhProjectsBoards.App.GitHub.GhConnectionService service, CancellationToken token = default)
@@ -100,7 +100,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
             catalog = PlanJson.Read<PlanWorkspaceCatalog>(await File.ReadAllBytesAsync(path, token));
             if (catalog.Version != 1 || catalog.Projects.IsDefault || catalog.Projects.Any(p => p.Id.Scope.ViewerId <= 0)
                 || catalog.Projects.Select(p => p.Id).Distinct().Count() != catalog.Projects.Length)
-                throw new InvalidOperationException("Project一覧を読み込めません。");
+                throw new InvalidOperationException("プロジェクト一覧を読み込めません。");
         }
         var discovery = new ProjectDiscovery(service);
         var available = new List<ProjectChoice>();
@@ -108,7 +108,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         foreach (var owner in await discovery.OwnersAsync(Context, token))
         {
             try { available.AddRange(await discovery.ProjectsAsync(Context, owner.Login, null, "", token)); }
-            catch (DiscoveryException) { token.ThrowIfCancellationRequested(); DiscoveryWarning = owner.Login + " のProjectを取得できません。再接続してください。"; }
+            catch (DiscoveryException) { token.ThrowIfCancellationRequested(); DiscoveryWarning = owner.Login + " のプロジェクトを取得できません。再接続してください。"; }
         }
         token.ThrowIfCancellationRequested();
         Available = available.DistinctBy(p => p.Id).ToArray();
@@ -133,7 +133,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
                 var read = await PlanSnapshot.ReadConsistentAsync(Service, lease, Context, choice.Id, token, progress);
                 token.ThrowIfCancellationRequested();
-                if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("Projectを取得できません。");
+                if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("プロジェクトを取得できません。");
                 var project = read.Project;
                 var fields = project.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.Availability == ValueAvailability.Present)
                     .Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType));
@@ -249,7 +249,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
             var latest = PlanJson.Read<PlanWorkspaceCatalog>(await File.ReadAllBytesAsync(path));
             if (latest.Version != 1 || latest.Projects.IsDefault || latest.Projects.Any(p => p.Id.Scope.ViewerId <= 0)
                 || latest.Projects.Select(p => p.Id).Distinct().Count() != latest.Projects.Length)
-                throw new IOException("Project一覧を読み込めません。");
+                throw new IOException("プロジェクト一覧を読み込めません。");
             candidate = candidate with { Projects = latest.Projects.Where(p => candidate.Projects.All(c => c.Id != p.Id))
                 .Concat(candidate.Projects).ToImmutableArray() };
         }
