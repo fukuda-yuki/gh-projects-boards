@@ -11,6 +11,25 @@ namespace GhProjectsBoards.Tests;
 [Parallelizable(ParallelScope.All)]
 internal sealed class PlanPublisherTests
 {
+    [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
+    public async Task MilestoneStateFixtureReadsBothRepositoriesCompletely(bool closed, bool conflict)
+    {
+        Scenario();
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "First", "acme/repo") { MilestoneTitle = "Release" }, "", true),
+            new(new("I2", "Second", "acme/other") { MilestoneTitle = "Release" }, "", true)], 3) {
+            Milestones = [new("M1", "acme/repo", "Release", Today, closed), new("M2", "acme/other", "Release", conflict ? Today.AddDays(1) : Today, closed)] });
+        runner = new(new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+        var service = new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner);
+        var result = await new ProjectReader(service).ReadAsync(new("github.com", 42, "fixture-user", GhProcessTests.FakeExecutable), Project);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete), string.Join(", ", result.Problems));
+        var snapshot = PlanSnapshot.From(result, Settings);
+        Assert.That(snapshot.Baseline.Rows.Select(r => (r.Title, r.Repository, r.MilestoneTitle)), Is.EqualTo(new[] {
+            ("First", "acme/repo", "Release"), ("Second", "acme/other", "Release") }));
+        Assert.That(snapshot.Baseline.Milestones, Is.EqualTo(new[] { new PlanMilestone("Release", conflict ? Today.AddDays(1) : Today, closed, conflict) }));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [Test]
     public async Task MilestoneCatalogPagesGroupsAndRefreshResetAndPublishNeverWriteMembership()
     {

@@ -152,9 +152,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         readDay = new(2026, 10, 5);
         FakePlanEditor.Save(root, new([
-            new(new("I1", "First", "acme/one") { MilestoneTitle = "Release" }, "", true),
-            new(new("I2", "Second", "acme/two") { MilestoneTitle = "Release" }, "", true)], 3) {
-            Milestones = [new("M1", "acme/one", "Release", readDay, closed), new("M2", "acme/two", "Release", conflict ? readDay.AddDays(1) : readDay, closed)] });
+            new(new("I1", "First", "acme/repo") { MilestoneTitle = "Release" }, "", true),
+            new(new("I2", "Second", "acme/other") { MilestoneTitle = "Release" }, "", true)], 3) {
+            Milestones = [new("M1", "acme/repo", "Release", readDay, closed), new("M2", "acme/other", "Release", conflict ? readDay.AddDays(1) : readDay, closed)] });
         await Open("First");
         await Ui.Run(() => Ui.Click("PlanShowSummary"));
         await Ui.Ready<TextBlock>("SummaryMilestoneState_0"); await Ui.Idle();
