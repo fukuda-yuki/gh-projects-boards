@@ -12,6 +12,50 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // are called by this driver; coordinates come from currently rendered controls.
 internal static class SheetNativeInput
 {
+    internal static async Task CaptureDesktop(string name)
+    {
+        // GDI captures the actual composed popup HWNDs; RenderTargetBitmap can omit
+        // native popup islands. This bounded diagnostic runs only after failure.
+        var left = GetSystemMetrics(76); var top = GetSystemMetrics(77);
+        var width = GetSystemMetrics(78); var height = GetSystemMetrics(79);
+        Assert.That(width > 0 && height > 0 && (long)width * height <= 16000000, Is.True);
+        var screen = GetDC(nint.Zero);
+        Assert.That(screen, Is.Not.EqualTo(nint.Zero));
+        var memory = CreateCompatibleDC(screen);
+        nint bitmap = nint.Zero, previous = nint.Zero;
+        var pixels = new byte[checked(width * height * 4)];
+        try {
+            Assert.That(memory, Is.Not.EqualTo(nint.Zero));
+            var header = new BitmapHeader { Size = (uint)Marshal.SizeOf<BitmapHeader>(), Width = width,
+                Height = -height, Planes = 1, BitCount = 32 };
+            bitmap = CreateDIBSection(screen, ref header, 0, out var bits, nint.Zero, 0);
+            Assert.That(bitmap, Is.Not.EqualTo(nint.Zero));
+            previous = SelectObject(memory, bitmap);
+            Assert.That(previous != nint.Zero && previous != new nint(-1), Is.True);
+            Assert.That(BitBlt(memory, 0, 0, width, height, screen, left, top, 0x40CC0020), Is.True);
+            Assert.That(GdiFlush(), Is.True);
+            Marshal.Copy(bits, pixels, 0, pixels.Length);
+        }
+        finally {
+            if (previous != nint.Zero && previous != new nint(-1)) SelectObject(memory, previous);
+            if (bitmap != nint.Zero) DeleteObject(bitmap);
+            if (memory != nint.Zero) DeleteDC(memory);
+            ReleaseDC(nint.Zero, screen);
+        }
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var folder = Path.Combine(TestContext.CurrentContext.WorkDirectory, "screenshots",
+            TestContext.CurrentContext.Test.ID + "-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var destination = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(folder).AsTask(deadline.Token);
+        var file = await destination.CreateFileAsync(name + ".png").AsTask(deadline.Token);
+        using var stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite).AsTask(deadline.Token);
+        var encoder = await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(
+            Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId, stream).AsTask(deadline.Token);
+        encoder.SetPixelData(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Ignore,
+            (uint)width, (uint)height, 96, 96, pixels);
+        await encoder.FlushAsync().AsTask(deadline.Token);
+        TestContext.Out.WriteLine($"Native desktop evidence: {file.Path}; origin={left},{top}; size={width}x{height}");
+    }
     internal static async Task<string> DesktopState()
     {
         var state = "";
@@ -52,8 +96,7 @@ internal static class SheetNativeInput
         await Ui.Run(() => result = ScreenPoint(find(), x, y));
         return result;
     }
-    // Call on the UI thread. This also supports popup controls without reactivating
-    // their already-active owner while the popup is open.
+    // Call on the UI thread for controls in the host's main visual tree.
     internal static Point ScreenPoint(FrameworkElement control, double x = .5, double y = .5)
     {
         Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
@@ -153,6 +196,11 @@ internal static class SheetNativeInput
     [StructLayout(LayoutKind.Sequential)] private struct KeyInput { public ushort VirtualKey, ScanCode; public uint Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] private struct NativeRectangle { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct BitmapHeader
+    {
+        public uint Size; public int Width, Height; public ushort Planes, BitCount;
+        public uint Compression, SizeImage; public int XPelsPerMeter, YPelsPerMeter; public uint ClrUsed, ClrImportant;
+    }
     [DllImport("user32.dll")] private static extern uint SendInput(uint count, Input[] inputs, int size);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
@@ -166,5 +214,14 @@ internal static class SheetNativeInput
     [DllImport("user32.dll")] private static extern nint GetWindow(nint hwnd, uint command);
     [DllImport("user32.dll")] private static extern nint GetParent(nint hwnd);
     [DllImport("user32.dll")] private static extern nint GetAncestor(nint hwnd, uint flags);
+    [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
+    [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint dc);
+    [DllImport("gdi32.dll")] private static extern nint CreateCompatibleDC(nint dc);
+    [DllImport("gdi32.dll")] private static extern nint CreateDIBSection(nint dc, ref BitmapHeader info, uint usage, out nint bits, nint section, uint offset);
+    [DllImport("gdi32.dll")] private static extern nint SelectObject(nint dc, nint value);
+    [DllImport("gdi32.dll")] private static extern bool BitBlt(nint destination, int x, int y, int width, int height, nint source, int sourceX, int sourceY, uint operation);
+    [DllImport("gdi32.dll")] private static extern bool DeleteObject(nint value);
+    [DllImport("gdi32.dll")] private static extern bool DeleteDC(nint dc);
+    [DllImport("gdi32.dll")] private static extern bool GdiFlush();
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] private static extern bool SystemParametersInfo(uint action, uint parameter, out uint value, uint flags);
 }

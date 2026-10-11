@@ -327,12 +327,12 @@ internal sealed partial class PlanSheetHostedTests
                 await SheetNativeInput.Rendered();
                 await Ui.Run(() => {
                     item = Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!;
-                    // The in-process peer returns rasterized client coordinates;
-                    // external UIA adds the screen origin. Native input uses the
-                    // same root-to-screen conversion as the other pointer tests.
+                    // Retain both coordinate descriptions. Native popup islands use
+                    // a distinct HWND; do not assume their peer's coordinates need
+                    // the main host's client origin added a second time.
                     var bounds = FrameworkElementAutomationPeer.CreatePeerForElement(item).GetBoundingRectangle();
                     Assert.That(bounds.Width > 0 && bounds.Height > 0, Is.True);
-                    point = SheetNativeInput.ScreenPoint(item);
+                    point = new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
                     var local = item.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, item.ActualWidth, item.ActualHeight));
                     trace.Add($"opening={opening} peerMenu={bounds} rootMenu={local} click={point}");
                     presenter = (FrameworkElement)VisualTreeHelper.GetOpenPopupsForXamlRoot(Ui.Root.XamlRoot)
@@ -358,10 +358,7 @@ internal sealed partial class PlanSheetHostedTests
                     trace.Add($"opening={opening} failure {await SheetNativeInput.DesktopState()}");
                     await Ui.Diagnose("Columns native activation", sheetHost);
                     try {
-                        await Ui.Run(async () => {
-                            await RenderedEvidence.Capture(Ui.Root, "columns-pointer-failure-root");
-                            if (presenter.IsLoaded) await RenderedEvidence.Capture(presenter, "columns-pointer-failure-popup");
-                        });
+                        await SheetNativeInput.CaptureDesktop("columns-pointer-failure");
                     }
                     catch (Exception error) { trace.Add("Failure screenshot: " + error); }
                     throw;
