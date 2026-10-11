@@ -88,7 +88,10 @@ internal sealed class PlanSession
             var publish = CurrentCreationInputs(checkpoint.Document.Sync.Publish, state);
             var undo = checkpoint.Undo.Add(patch);
             if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
-            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
+            // A sub-issue order failure stays recorded while the plan still asks for the order it names
+            // (only adding or removing its row drops it); like NewTask and Order, its field is not a row
+            // value, so it must not be compared through PlanValues.
+            checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || f.Field != PlanField.SubIssueOrder && PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
             return QueueSave();
         }
     }

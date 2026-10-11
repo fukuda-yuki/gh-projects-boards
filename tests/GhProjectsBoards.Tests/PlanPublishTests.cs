@@ -137,6 +137,33 @@ internal sealed class PlanPublishTests
         => new(document.Baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0) { SubIssueOrders = document.Sync.NativeOrders };
 
     [Test]
+    public async Task EditingRowsKeepsARecordedReorderFailureAndDropsResolvedRowFailures()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-failure-" + Guid.NewGuid().ToString("N"));
+        var project = new ScopedId(new("github.com", 42), "P1");
+        var parent = new PlanRow("I1", "Parent", "acme/repo");
+        PlanRow Child(string id) => new(id, id, "acme/repo") { Parent = "I1" };
+        var rows = new[] { parent, Child("I2"), Child("I3") }.ToImmutableArray();
+        var session = await PlanSession.CreateAsync(new(root), new(project, new(rows, []), new(rows, new())), Day);
+        try
+        {
+            await session.SaveSync(session.Document.Sync with { Failures = [
+                new("I3", PlanField.SubIssueOrder, "Forbidden") { Value = PlanJson.Text(new[] { "I3", "I2" }) },
+                new("I2", PlanField.Actual, "Forbidden")] });
+            // Editing a child that carries the reorder failure must not retire the retry anchor.
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Actual, 4m), new("I2", PlanField.Actual, 4m)]), Day);
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.SubIssueOrder), Is.True,
+                    "Only the plan's own child order may retire a reorder failure.");
+                Assert.That(session.Document.Sync.Failures.Any(f => f.Field == PlanField.Actual), Is.False,
+                    "A row failure is dropped once that row is edited.");
+            });
+        }
+        finally { await session.FlushAsync(); Directory.Delete(root, true); }
+    }
+
+    [Test]
     public void NativeSiblingOrderIgnoresChildrenOutsideTheCurrentPlanWhenCountingChanges()
     {
         ImmutableArray<PlanRow> rows = [new("P", "Parent", "acme/repo"),
