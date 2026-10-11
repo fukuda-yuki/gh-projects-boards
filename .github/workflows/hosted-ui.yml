@@ -24,11 +24,11 @@ jobs:
         shell: pwsh
         run: |
           git worktree add --detach ../base HEAD
-          $xaml = '../base/src/GhProjectsBoards.App/App.xaml'
-          $text = Get-Content -Raw $xaml
+          $xaml = (Resolve-Path '../base/src/GhProjectsBoards.App/App.xaml').Path
+          $text = [IO.File]::ReadAllText($xaml)
           $line = '<Setter Property="ShowsScrollingPlaceholders" Value="False"/>'
           if (-not $text.Contains($line)) { throw 'setter not found' }
-          Set-Content -NoNewline $xaml ($text.Replace($line, ''))
+          [IO.File]::WriteAllText($xaml, $text.Replace($line, ''))
           git -C ../base diff --stat
           New-Item -ItemType Directory -Force measure-out | Out-Null
       - name: Build candidate and variant
