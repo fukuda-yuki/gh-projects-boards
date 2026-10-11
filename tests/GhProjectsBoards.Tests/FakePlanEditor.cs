@@ -226,7 +226,12 @@ internal static class FakePlanEditor
                         if (role == PlanField.Status && !mutation.StartsWith("clear"))
                             json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString() switch {
                                 "done" => "Done", "progress" => "In progress", "backlog" => "Backlog", _ => throw new InvalidOperationException("Unknown Status option ID") });
-                        if (fault != "mismatch") row = PlanValues.Set(row, role, json);
+                        if (role == PlanField.Phase && !mutation.StartsWith("clear"))
+                            json = JsonSerializer.Serialize(state.Phases.Single(p => "phase-" + p == input.GetProperty("value").GetProperty("singleSelectOptionId").GetString()));
+                        if (fault != "mismatch") {
+                            row = PlanValues.Set(row, role, json);
+                            if (role == PlanField.Phase) issue = issue with { Phase = row.Phase };
+                        }
                         selection = "projectV2Item";
                     }
                     else if (mutation == "updateProjectV2ItemPosition")

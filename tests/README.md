@@ -99,7 +99,7 @@ dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Releas
 ./scripts/Test-E2E.ps1 -Configuration Release
 ```
 
-The default UI selection excludes the infrastructure, native-input and performance categories; see the [host guide](GhProjectsBoards.UiIntegration.Tests/README.md). The default E2E selection runs the workspace, publish and people journeys through fake gh, without IME. A long checkout path can cause MSB3030 during app-local packaging; use a shorter checkout or a verified junction to it.
+The default UI selection excludes the infrastructure, native-input and performance categories; see the [host guide](GhProjectsBoards.UiIntegration.Tests/README.md). The default E2E selection runs the workspace, publish and summary journeys through fake gh, without IME. A long checkout path can cause MSB3030 during app-local packaging; use a shorter checkout or a verified junction to it.
 
 ## Opt-in runs
 

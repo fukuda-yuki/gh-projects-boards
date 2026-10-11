@@ -16,7 +16,7 @@ using NUnit.Framework;
 
 namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
-internal sealed class PlanWorkspaceHostedTests
+internal sealed partial class PlanWorkspaceHostedTests
 {
     private static void OpenRefreshMenu()
     {
@@ -222,7 +222,7 @@ internal sealed class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
-    [TestCase("PlanShowPeople"), TestCase("PlanShowSettings")]
+    [TestCase("PlanShowSummary"), TestCase("PlanShowSettings")]
     public async Task LeavingPlanCancelsUnacceptedFilterWithoutUnloadingTheSheet(string command)
     {
         await OpenWithAcceptedFilter();
@@ -388,7 +388,7 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task GanttLegendOnlyAppearsOnPlanWhileProjectCountsRemain()
     {
         await Open();
-        foreach (var command in new[] { "PlanShowTasks", "PlanShowPeople", "PlanShowSettings", "PlanShowTasks", "PlanPublish" }) {
+        foreach (var command in new[] { "PlanShowTasks", "PlanShowSummary", "PlanShowSettings", "PlanShowTasks", "PlanPublish" }) {
             await Ui.Run(() => Ui.Click(command)); await Ui.Idle();
             await Ui.Run(() => {
                 Assert.That(Ui.Find<StackPanel>("PlanGanttLegend").Visibility,
@@ -502,10 +502,10 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task ShellStatusDateResolvesTheActiveViewsInputAndCreatesOneSettingsUndo(bool people)
     {
         await Open();
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1"); }
+        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         var before = workspace.Session!.Document.State.Settings.StatusDate;
         var undo = workspace.Session.UndoCount;
-        var inputId = people ? "PeopleAllowance_U1" : "PlanCell1_Remaining";
+        var inputId = people ? "PlanAllowanceU1" : "PlanCell1_Remaining";
         await Ui.Run(() => {
             var picker = Ui.Find<CalendarDatePicker>("PlanStatusDate");
             Assert.That(Ui.Tree(Ui.Tree(view).OfType<PlanSheetView>().Single()).Contains(picker), Is.False);
@@ -548,14 +548,14 @@ internal sealed class PlanWorkspaceHostedTests
         try {
             await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
             await Ui.Run(() => {
-                Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsEnabled, Is.False);
+                Assert.That(Ui.Find<SelectorBarItem>("PlanShowSummary").IsEnabled, Is.False);
                 Assert.That(Ui.Find<SelectorBarItem>("PlanShowTasks").IsEnabled, Is.False);
             });
         } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected, Is.True);
-            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.False);
+            Assert.That(Ui.Find<SelectorBarItem>("PlanShowSummary").IsSelected, Is.False);
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.True);
         });
     }
@@ -566,13 +566,13 @@ internal sealed class PlanWorkspaceHostedTests
         await Open();
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>("PlanCell1_Remaining"); input.Focus(FocusState.Programmatic); input.Text = "invalid";
-            Ui.Click("PlanShowPeople");
+            Ui.Click("PlanShowSummary");
         });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected, Is.True);
-            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.False);
+            Assert.That(Ui.Find<SelectorBarItem>("PlanShowSummary").IsSelected, Is.False);
             var input = Ui.Find<TextBox>("PlanCell1_Remaining");
             Assert.That(input.Text, Is.EqualTo("invalid"));
             Assert.That(input.Focus(FocusState.Programmatic), Is.True);
@@ -581,27 +581,27 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [TestCase(false), TestCase(true), Category("WorkspaceShell")]
-    public async Task SettingsBackRestoresTheSelectedPlanningView(bool people)
+    public async Task SettingsBackRestoresTheSelectedPlanningView(bool summary)
     {
         await Open();
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1"); }
+        if (summary) { await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<TextBlock>("SummaryStatusDate"); }
         await Settings();
         await Ui.Run(() => {
             Assert.That(Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected, Is.False);
-            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.False);
+            Assert.That(Ui.Find<SelectorBarItem>("PlanShowSummary").IsSelected, Is.False);
             Ui.Click("PlanSettingsBack");
         });
-        await Ui.Ready<TextBox>(people ? "PeopleAllowance_U1" : "PlanCell1_Title");
-        await Ui.Run(() => Assert.That(Ui.Find<SelectorBarItem>(people ? "PlanShowPeople" : "PlanShowTasks").IsSelected, Is.True));
+        await Ui.Ready<FrameworkElement>(summary ? "SummaryStatusDate" : "PlanCell1_Title");
+        await Ui.Run(() => Assert.That(Ui.Find<SelectorBarItem>(summary ? "PlanShowSummary" : "PlanShowTasks").IsSelected, Is.True));
     }
 
     [TestCase(false), TestCase(true), Category("WorkspaceShell")]
     public async Task WorkspaceHistoryCommitsThenReversesAndReappliesOneOperation(bool people)
     {
         await Open();
-        if (people) { await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1"); }
+        if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         await Ui.Run(() => {
-            var input = Ui.Find<TextBox>(people ? "PeopleAllowance_U1" : "PlanCell1_Title");
+            var input = Ui.Find<TextBox>(people ? "PlanAllowanceU1" : "PlanCell1_Title");
             input.Focus(FocusState.Programmatic); input.Text = people ? "80" : "変更した設計";
             Ui.Click("PlanUndo");
         });
@@ -612,9 +612,9 @@ internal sealed class PlanWorkspaceHostedTests
             Ui.Click("PlanRedo");
         });
         await Ui.Idle();
-        await Ui.Ready<TextBox>(people ? "PeopleAllowance_U1" : "PlanCell1_Title");
+        await Ui.Ready<TextBox>(people ? "PlanAllowanceU1" : "PlanCell1_Title");
         await Ui.Run(() => {
-            if (people) Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.EqualTo("80"));
+            if (people) Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("80"));
             else Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("変更した設計"));
         });
     }
@@ -859,329 +859,106 @@ internal sealed class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
-    [Test]
-    public async Task PeoplePendingInputSurvivesLeavingTheDrillDown()
+    [Test, Category("WorkspaceShell")]
+    public async Task SettingsAllowanceRetainsAcceptedValueAfterSaveRetry()
     {
-        await PreparePeoplePendingExit();
-        await Ui.Run(() => {
-            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "PeopleTask_I1_Actual"), Is.True,
-                "Completing Remaining must not remove another pending editor.");
-            Ui.Click("PlanShowTasks");
-        });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
-        await Ui.Until(() => Ui.Find<TextBox>("PeopleTask_I1_Actual").FocusState != FocusState.Unfocused);
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PeopleTask_I1_Actual");
-            Assert.That(cell.Text, Is.EqualTo("invalid"));
-            var problem = Ui.Popup<Border>("PeopleInputProblem");
-            Assert.That(problem, Is.Not.Null);
-            Assert.That(((TextBlock)problem!.Child).Text, Is.Not.Empty);
-            Assert.That(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(cell.XamlRoot).Single(p => p.Child == problem).PlacementTarget, Is.SameAs(cell));
-        });
-        await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Popup<Border>("PeopleInputProblem")!, "people-validation"));
-        await Ui.Run(() => { Ui.Find<TextBox>("PeopleTask_I1_Actual").Text = "0"; Ui.Click("PlanShowTasks"); });
-        await Ui.Ready<TextBox>("PlanCell1_Title");
-        Assert.That(workspace.Session!.Document.State.Rows[0].Actual, Is.Zero);
-    }
-
-    private async Task PreparePeoplePendingExit()
-    {
-        await OpenPeopleTasks("PeopleTask_I1_Actual");
-        await Ui.Run(() => {
-            var actual = Ui.Find<TextBox>("PeopleTask_I1_Actual"); actual.Focus(FocusState.Programmatic); actual.Text = "invalid";
-            var remaining = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); remaining.Focus(FocusState.Programmatic); remaining.Text = "0";
-            Ui.Find<ComboBox>("PeopleScale").Focus(FocusState.Programmatic);
-        });
-        await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Remaining == 0); await Ui.Idle();
-        await Ui.Ready<Grid>("PeopleRow_U1");
-    }
-
-    // The drill-down lists the work in the first displayed day. Without a status date that day is
-    // today, which has no work on a weekend or holiday, so pin it to a working day.
-    private async Task OpenPeopleTasks(string input)
-    {
-        await Open();
-        var monday = new DateOnly(2026, 10, 5);
-        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = monday }), monday);
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>(input);
-    }
-
-    [TestCase("fixed"), TestCase("assignee"), TestCase("zoom")]
-    public async Task PeopleRefusedControlsReflectTheDocument(string control)
-    {
-        await OpenPeopleTasks("PeopleTask_I1_Remaining");
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PeopleTask_I1_Remaining"); cell.Focus(FocusState.Programmatic); cell.Text = "invalid";
-            if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
-            else Ui.Find<ComboBox>(control == "assignee" ? "PeopleTask_I1_Assignees" : "PeopleScale").SelectedIndex = control == "assignee" ? 0 : 1;
-        });
-        await Ui.Until(() => Ui.Find<TextBlock>("PeopleError").Text.Length > 0); await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<CheckBox>("PeopleTask_I1_Fixed").IsChecked, Is.EqualTo(workspace.Session!.Document.State.Rows[0].Fixed));
-            Assert.That(((ComboBoxItem)Ui.Find<ComboBox>("PeopleTask_I1_Assignees").SelectedItem).Tag, Is.EqualTo("U1"));
-            Assert.That(Ui.Find<ComboBox>("PeopleScale").SelectedIndex, Is.Zero);
-            Assert.That(Ui.Find<TextBox>("PeopleTask_I1_Remaining").FocusState, Is.Not.EqualTo(FocusState.Unfocused));
-            Ui.Find<TextBox>("PeopleTask_I1_Remaining").Text = "8"; Ui.Click("PeopleNext");
-        });
-        await Ui.Idle();
-    }
-
-    [Test, Category("PeopleRefresh")]
-    public async Task PeopleRefreshAfterRetriedSaveKeepsTheAcceptedInputAndFocus()
-    {
-        await PreparePeopleRetriedSave();
+        await Open(); await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         var undo = workspace.Session!.UndoCount;
-        await Ui.Run(() => {
-            Ui.Find<TextBox>("PeopleAllowance_U1").Focus(FocusState.Programmatic);
-            Ui.Tree(view).OfType<PlanPeopleView>().Single().Refresh();
-        });
-        await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PeopleAllowance_U1");
-            Assert.That(cell.Text, Is.EqualTo("80"));
-            Assert.That(cell.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
-            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.True);
-        });
-        Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
-        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
-    }
-
-    private async Task PreparePeopleRetriedSave()
-    {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
-            await Ui.Run(() => { var cell = Ui.Find<TextBox>("PeopleAllowance_U1"); cell.Focus(FocusState.Programmatic); cell.Text = "80"; Ui.Click("PeopleNext"); });
-            await Ui.Until(() => Ui.Find<TextBlock>("PeopleError").Text.Length > 0);
+        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
+            await Ui.Run(() => { var cell = Ui.Find<TextBox>("PlanAllowanceU1"); cell.Focus(FocusState.Programmatic); cell.Text = "80"; Ui.Click("PlanSettingsBack"); });
+            await Ui.Ready<Button>("PlanRetrySave");
         }
-        await workspace.RetrySave();
-    }
-
-    [Test, Category("PlanSheetNative")]
-    public async Task PeopleEscapeRestoresTheCurrentDocumentAfterFailedSave()
-    {
-        await PreparePeopleRetriedSave(); var undo = workspace.Session!.UndoCount;
-        await SheetNativeInput.Click("PeopleAllowance_U1");
-        await Ui.Run(() => Ui.Find<TextBox>("PeopleAllowance_U1").Text = "90");
-        await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
-        // KeyUp proves key delivery, but refreshed ListView containers load during layout.
-        await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        await Ui.Run(() => {
-            var cell = Ui.Find<TextBox>("PeopleAllowance_U1");
-            Assert.That(cell.Text, Is.EqualTo("80"));
-            Assert.That(cell.FocusState, Is.Not.EqualTo(FocusState.Unfocused));
-            Assert.That(Ui.Find<SelectorBarItem>("PlanShowPeople").IsSelected, Is.True);
-            Assert.That(Ui.Find<TextBlock>("PeopleError").Text, Is.Empty);
-            Assert.That(Ui.Popup<Border>("PeopleInputProblem"), Is.Null);
-        });
+        await Ui.Run(() => Ui.Click("PlanRetrySave")); await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.EqualTo(80));
-        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
-    }
-
-    [TestCase("fixed"), TestCase("assignee")]
-    public async Task PeopleFailedSaveControlsReflectTheAcceptedDocument(string control)
-    {
-        await OpenPeopleTasks("PeopleTask_I1_Remaining");
-        using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
-            await Ui.Run(() => {
-                if (control == "fixed") Ui.Toggle(Ui.Find<CheckBox>("PeopleTask_I1_Fixed"));
-                else Ui.Find<ComboBox>("PeopleTask_I1_Assignees").SelectedIndex = 0;
-            });
-            await Ui.Until(() => Ui.Find<TextBlock>("PeopleError").Text.Length > 0); await Ui.Idle();
-            await Ui.Run(() => {
-                var row = workspace.Session.Document.State.Rows[0];
-                if (control == "fixed") { Assert.That(row.Fixed, Is.True); Assert.That(Ui.Find<CheckBox>("PeopleTask_I1_Fixed").IsChecked, Is.True); }
-                else { Assert.That(row.Assignees, Is.Empty); Assert.That(Ui.Find<ComboBox>("PeopleTask_I1_Assignees").SelectedIndex, Is.Zero); }
-            });
-        }
-        await workspace.RetrySave();
-    }
-
-    [Test, Category("PlanSheetNative")]
-    public async Task PeopleEscapeDiscardsRetainedInput()
-    {
-        await PreparePeoplePendingExit();
-        var undo = workspace.Session!.UndoCount;
-        await SheetNativeInput.Click("PeopleTask_I1_Actual");
-        await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
-        await Ui.Until(() => !Ui.Tree(view).OfType<TextBox>().Any(b => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(b) == "PeopleTask_I1_Actual"));
-        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
-        Assert.That(workspace.Session.Document.State.Rows[0].Actual, Is.Null);
-        await Ui.Run(() => Ui.Click("PlanShowTasks")); await Ui.Ready<TextBox>("PlanCell1_Title");
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle(); await Settings();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("80")));
     }
 
     [Test]
-    public async Task PeopleAllowancesStayWithTheSelectedProject()
+    public async Task SettingsAllowancesStayWithTheSelectedProject()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        await Ui.Run(() => { var input = Ui.Find<TextBox>("PeopleAllowance_U1"); input.Focus(FocusState.Programmatic); input.Text = "80"; });
+        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80"; });
         await PickerCommand("PlanChooseProject");
         await Ui.Until(() => workspace.Session!.Document.State.Settings.People.Any(p => p.Allowance == 80));
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P2");
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.Empty);
+            Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.Empty);
         });
         await SelectRegistered("P1");
         await Ui.Until(() => workspace.Session!.Document.Project.NodeId == "P1");
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.EqualTo("80")));
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("80")));
     }
 
     [Test]
-    public async Task PeopleHeadersShowConsistentUnitsWithoutClippingAt1920()
-    {
-        readDay = new(2027, 1, 13);
-        await Open();
-        await Ui.Run(() => { ResizeWorkspace(1920, 1080); Ui.Click("PlanShowPeople"); });
-        await Ui.Ready<TextBlock>("PeopleTotal_U1_3");
-        await Ui.Run(() => {
-            view.UpdateLayout();
-            string[] captions = ["担当者", "稼働率 %", "上限工数 h", "見積工数 h", "実績工数 h",
-                "見込み残存工数 h", "見込工数 h", "余力 h"];
-            Assert.That(Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text), Does.Contain("2027/1/13 – 1/19"));
-            var rate = Ui.Find<TextBox>("PeopleRate_U1");
-            Assert.That(AutomationProperties.GetName(rate), Does.EndWith(" 稼働率 (%)"));
-            Assert.That(ToolTipService.GetToolTip(rate), Is.EqualTo(AutomationProperties.GetName(rate)));
-            var load = Ui.Find<Button>("PeopleLoadOpen_U1_0");
-            Assert.That(AutomationProperties.GetName(load), Does.Contain("負荷率").And.Not.Contain("稼働率"));
-            Assert.That(ToolTipService.GetToolTip(load), Is.EqualTo(AutomationProperties.GetName(load)));
-            var forecast = Ui.Tree(view).OfType<TextBlock>().Single(t => t.Text == "見込工数 h");
-            var headerRow = VisualTreeHelper.GetParent(forecast);
-            foreach (var caption in captions) {
-                var header = Ui.Tree(headerRow).OfType<TextBlock>().Single(t => t.Text == caption);
-                Assert.That(header.ActualWidth, Is.GreaterThan(0), caption);
-                Assert.That(header.IsTextTrimmed, Is.False, caption);
-                var bounds = header.TransformToVisual(view).TransformBounds(new Rect(0, 0, header.ActualWidth, header.ActualHeight));
-                Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0), caption);
-                Assert.That(bounds.Right, Is.LessThanOrEqualTo(view.ActualWidth), caption);
-                if (caption == "稼働率 %") {
-                    Assert.That(AutomationProperties.GetName(header), Is.EqualTo("稼働率 (%)"));
-                    Assert.That(ToolTipService.GetToolTip(header), Is.EqualTo("稼働率 (%)"));
-                }
-                if (caption == "見込工数 h") {
-                    const string explanation = "見込工数 (実績工数 + 見込み残存工数) h";
-                    Assert.That(AutomationProperties.GetName(header), Is.EqualTo(explanation));
-                    Assert.That(ToolTipService.GetToolTip(header), Is.EqualTo(explanation));
-                }
-            }
-        });
-    }
-
-    [TestCase(228, "-108h 超過")]
-    [TestCase(1120, "-1000h 超過")]
-    public async Task PeopleOverAllowanceDifferenceShowsTheWholeWarning(int forecast, string expected)
-    {
-        var state = FakePlanEditor.Load(root);
-        FakePlanEditor.Save(root, state with { Issues = [state.Issues[0] with {
-            Row = state.Issues[0].Row with { Estimate = forecast, Remaining = forecast } }] });
-        await Open();
-        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            People = [new("U1", "alice", 100, 120)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => { ResizeWorkspace(1280, 720); Ui.Click("PlanShowPeople"); });
-        await Ui.Ready<TextBlock>("PeopleTotal_U1_4");
-        await Ui.Run(() => {
-            view.UpdateLayout();
-            var difference = Ui.Find<TextBlock>("PeopleTotal_U1_4");
-            Assert.That(difference.ActualWidth, Is.GreaterThan(0));
-            using (Assert.EnterMultipleScope()) {
-                Assert.That(difference.Text, Is.EqualTo(expected));
-                Assert.That(difference.IsTextTrimmed, Is.False, "The amount and warning must both fit after layout.");
-                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(difference), Does.EndWith(expected));
-            }
-        });
-    }
-
-    [Test]
-    public async Task PeopleGroupDifferenceIsNotApplicableWhilePersonAllowanceIsMissing()
-    {
-        await Open();
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.Empty);
-            var person = Ui.Find<TextBlock>("PeopleTotal_U1_4");
-            Assert.That(person.Text, Is.EqualTo("未入力"));
-            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(person), Does.EndWith(" 余力 未入力"));
-            foreach (var (identity, name) in new[] { (PlanPeople.Unassigned, "担当者なし"), (PlanPeople.Multiple, "担当者が複数") }) {
-                var difference = Ui.Find<TextBlock>($"PeopleTotal_{identity}_4");
-                Assert.That(difference.Text, Is.EqualTo("—"), name);
-                Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(difference), Is.EqualTo(name + " 余力 —"));
-                Assert.That(ToolTipService.GetToolTip(difference), Is.EqualTo(name + " 余力 —"));
-            }
-        });
-    }
-
-    [Test]
-    public async Task PeopleAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
+    public async Task SettingsAllowanceEntryKeepsTheNextCellFocusedAcrossRecalculation()
     {
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U2");
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU2");
         await Ui.Run(() => {
-            var first = Ui.Find<TextBox>("PeopleAllowance_U1"); first.Focus(FocusState.Programmatic); first.Text = "80";
-            var second = Ui.Find<TextBox>("PeopleAllowance_U2"); second.Focus(FocusState.Programmatic); second.Text = "7";
+            var first = Ui.Find<TextBox>("PlanAllowanceU1"); first.Focus(FocusState.Programmatic); first.Text = "80";
+            var second = Ui.Find<TextBox>("PlanAllowanceU2"); second.Focus(FocusState.Programmatic); second.Text = "7";
         });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People[0].Allowance == 80);
         await Ui.Idle();
-        await Ui.Ready<TextBox>("PeopleAllowance_U2");
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PeopleTotal_U1_1").Text, Is.EqualTo("0h"));
-            Assert.That(Ui.Find<TextBlock>("PeopleTotal_U1_3").Text, Is.EqualTo("8h"));
-            Assert.That(Ui.Find<TextBlock>("PeopleTotal_U1_4").Text, Is.EqualTo("72h"));
-        });
+        await Ui.Ready<TextBox>("PlanAllowanceU2");
         Assert.That(workspace.Session.Document.State.Settings.People[1].Allowance, Is.Null, "Typing in the next cell must not be committed by the previous cell's focus loss.");
-        await Ui.Run(() => Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PeopleAllowance_U2"))));
-        await Ui.Run(() => { Assert.That(Ui.Find<TextBox>("PeopleAllowance_U2").Text, Is.EqualTo("7")); Ui.Find<TextBox>("PeopleAllowance_U2").Text = "75"; Ui.Click("PeopleNext"); });
+        await Ui.Run(() => Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PlanAllowanceU2"))));
+        await Ui.Run(() => { Assert.That(Ui.Find<TextBox>("PlanAllowanceU2").Text, Is.EqualTo("7")); Ui.Find<TextBox>("PlanAllowanceU2").Text = "75"; Ui.Click("PlanSettingsBack"); });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People[1].Allowance == 75);
     }
 
     [Test]
-    public async Task PeopleQueuedEditsAndInvalidTextSurviveOtherCellsSaving()
+    public async Task SettingsQueuedEditsAndInvalidTextSurviveOtherCellsSaving()
     {
         await Open();
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             People = [new("U1", "alice", 100, null), new("U2", "bob", 100, null), new("U3", "carol", 100, null)] }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U3");
+        await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU3");
         await Ui.Run(() => {
             foreach (var (id, text) in new[] { ("U1", "80"), ("U2", "75"), ("U3", "7") }) {
-                var box = Ui.Find<TextBox>("PeopleAllowance_" + id); box.Focus(FocusState.Programmatic); box.Text = text;
+                var box = Ui.Find<TextBox>("PlanAllowance" + id); box.Focus(FocusState.Programmatic); box.Text = text;
             }
         });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People[0].Allowance == 80);
         await Ui.Idle();
-        await Ui.Ready<TextBox>("PeopleAllowance_U3");
+        await Ui.Ready<TextBox>("PlanAllowanceU3");
         await Ui.Run(() => {
             Assert.That(workspace.Session.Document.State.Settings.People[1].Allowance, Is.EqualTo(75), "The queued second edit must survive the first redraw.");
-            Assert.That(Ui.Find<TextBox>("PeopleAllowance_U3").Text, Is.EqualTo("7"));
+            Assert.That(Ui.Find<TextBox>("PlanAllowanceU3").Text, Is.EqualTo("7"));
             Assert.That(workspace.Session.Document.State.Settings.People[2].Allowance, Is.Null);
-            var first = Ui.Find<TextBox>("PeopleAllowance_U1"); first.Focus(FocusState.Programmatic); first.Text = "bad";
-            var second = Ui.Find<TextBox>("PeopleAllowance_U2"); second.Focus(FocusState.Programmatic); second.Text = "70";
-            Ui.Find<TextBox>("PeopleAllowance_U3").Focus(FocusState.Programmatic);
+            var first = Ui.Find<TextBox>("PlanAllowanceU1"); first.Focus(FocusState.Programmatic); first.Text = "bad";
+            var second = Ui.Find<TextBox>("PlanAllowanceU2"); second.Focus(FocusState.Programmatic); second.Text = "70";
+            Ui.Find<TextBox>("PlanAllowanceU3").Focus(FocusState.Programmatic);
         });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People[1].Allowance == 70);
         await Ui.Idle();
-        await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Ui.Ready<TextBox>("PlanAllowanceU1");
         await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").Text, Is.EqualTo("bad"));
+            Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").Text, Is.EqualTo("bad"));
             Ui.Click("PlanShowTasks");
         });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
-        await Ui.Run(() => { Ui.Find<TextBox>("PeopleAllowance_U1").Text = "85"; Ui.Click("PeopleNext"); });
+        await Ui.Run(() => { Ui.Find<TextBox>("PlanAllowanceU1").Text = "85"; Ui.Click("PlanSettingsBack"); });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People[0].Allowance == 85);
     }
 
     [Test]
-    public async Task PeopleAllowancePersistsAndInvalidInputBlocksNavigationUntilCorrected()
+    public async Task SettingsAllowancePersistsAndInvalidInputBlocksNavigationUntilCorrected()
     {
-        await Open(); await Ui.Run(() => Ui.Click("PlanShowPeople"));
-        await Ui.Ready<TextBox>("PeopleAllowance_U1");
+        await Open(); await Ui.Run(() => Ui.Click("PlanShowSettings"));
+        await Ui.Ready<TextBox>("PlanAllowanceU1");
         var undo = workspace.Session!.UndoCount;
-        await Ui.Run(() => { var input = Ui.Find<TextBox>("PeopleAllowance_U1"); input.Focus(FocusState.Programmatic); input.Text = "-1"; Ui.Click("PlanShowTasks"); });
+        await Ui.Run(() => { var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "-1"; Ui.Click("PlanShowTasks"); });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
-        await Ui.Run(() => { Assert.That(Ui.Find<TextBox>("PeopleAllowance_U1").IsLoaded, Is.True); Ui.Find<TextBox>("PeopleAllowance_U1").Text = "80"; Ui.Click("PlanShowTasks"); });
+        await Ui.Run(() => { Assert.That(Ui.Find<TextBox>("PlanAllowanceU1").IsLoaded, Is.True); Ui.Find<TextBox>("PlanAllowanceU1").Text = "80"; Ui.Click("PlanShowTasks"); });
         await Ui.Until(() => workspace.Session.Document.State.Settings.People.Any(p => p.Identity == "U1" && p.Allowance == 80));
         await workspace.Session.FlushAsync();
         var loaded = await PlanSession.OpenAsync(new(root), workspace.Session.Document.Project, DateOnly.FromDateTime(DateTime.Today));
@@ -1189,107 +966,6 @@ internal sealed class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session.Document.State.Settings.People.SingleOrDefault(p => p.Identity == "U1")?.Allowance is null);
-    }
-
-    [TestCase(PlanField.Actual, "56")]
-    [TestCase(PlanField.Assignees, "person-U2")]
-    [TestCase(PlanField.Assignees, "担当者なし")]
-    [TestCase(PlanField.Fixed, "固定")]
-    public async Task PeopleTaskEditsShareTheSheetOperationAndUndo(PlanField field, string value)
-    {
-        await Open();
-        var day = new DateOnly(2026, 10, 5);
-        await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Start, day), new("I1", PlanField.End, day)]), day);
-        await workspace.Session.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = day,
-            People = [new("U1", "alice", 100, 80), new("U2", "bob", 100, 80)] }), day);
-        if (field == PlanField.Fixed) await workspace.Session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", field, false)]), day);
-        var before = workspace.Session.Document.State;
-        var undo = workspace.Session.UndoCount;
-        await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<Button>("PeopleExpand_U1");
-        await Ui.Run(() => Ui.Click("PeopleExpand_U1")); await Ui.Ready<TextBox>("PeopleTask_I1_Actual");
-        await Ui.Run(() => {
-            if (field == PlanField.Fixed) {
-                var box = Ui.Find<CheckBox>("PeopleTask_I1_Fixed");
-                var peer = new Microsoft.UI.Xaml.Automation.Peers.CheckBoxAutomationPeer(box);
-                ((Microsoft.UI.Xaml.Automation.Provider.IToggleProvider)peer.GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Toggle)).Toggle();
-            } else if (field == PlanField.Assignees) {
-                var box = Ui.Find<ComboBox>("PeopleTask_I1_Assignees");
-                Assert.That(box.Items.OfType<ComboBoxItem>().Select(i => i.Content), Does.Contain("担当者なし").And.Contain("person-U2"));
-                box.SelectedItem = box.Items.OfType<ComboBoxItem>().Single(i => i.Content.ToString() == value);
-            } else { var box = Ui.Find<TextBox>("PeopleTask_I1_" + field); box.Focus(FocusState.Programmatic); box.Text = value; Ui.Click("PeoplePeriod_0"); }
-        });
-        await Ui.Until(() => workspace.Session.UndoCount == undo + 1);
-        var changed = workspace.Session.Document.State.Rows[0];
-        if (field == PlanField.Assignees) Assert.That(changed.Assignees, Is.EqualTo(value == "person-U2" ? new[] { "U2" } : Array.Empty<string>()));
-        else Assert.That(PlanValues.Get(changed, field), Is.EqualTo(field == PlanField.Actual ? "56" : "true"));
-        await Ui.Run(() => Ui.Click("PlanUndo"));
-        await Ui.Until(() => workspace.Session.UndoCount == undo);
-        Assert.That(PlanJson.Text(workspace.Session.Document.State), Is.EqualTo(PlanJson.Text(before)));
-    }
-
-    [Test]
-    public async Task PeopleViewRendersOverloadAndTaskEditsRecalculateWithOneStepUndo()
-    {
-        var state = FakePlanEditor.Load(root);
-        FakePlanEditor.Save(root, state with { Issues = [
-            new(new("I1", "設計", "acme/repo") { Estimate = 4, Remaining = 4, Actual = 0, Assignees = ["U1"] }, "", true),
-            new(new("I2", "検証", "acme/repo") { Estimate = 4, Remaining = 4, Actual = 0, Assignees = ["U1"] }, "", true)], NextId = 3 });
-        await Open();
-        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            StatusDate = new(2026, 10, 5), People = [new("U1", "alice", 50, 80)] }), new(2026, 10, 5));
-        await Ui.Run(() => Ui.Click("PlanShowPeople"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("200% 超過")));
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PeopleLoad_U1_0").Foreground, Is.EqualTo(Application.Current.Resources["SystemFillColorCriticalBrush"]));
-            Ui.Click("PeopleExpand_U1");
-        });
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t) == "PeopleTask_I2_Remaining"));
-        var undo = workspace.Session.UndoCount;
-        await Ui.Run(() => { var box = Ui.Find<TextBox>("PeopleTask_I2_Remaining"); box.Focus(FocusState.Programmatic); box.Text = "0"; Ui.Click("PeopleNext"); });
-        await Ui.Until(() => workspace.Session.Document.State.Rows[1].Remaining == 0);
-        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
-        await Ui.Run(() => Ui.Click("PlanUndo"));
-        await Ui.Until(() => workspace.Session.Document.State.Rows[1].Remaining == 4);
-        await Ui.Run(() => Ui.Click("PeoplePrevious"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(t) == "PeopleLoad_U1_0" && t.Text.Contains("200% 超過")));
-        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-    }
-
-    [Test]
-    public async Task PeopleViewFitsTwentyPeopleAndAssignmentGroupsAt1280By720()
-    {
-        var state = FakePlanEditor.Load(root);
-        FakePlanEditor.Save(root, state with { Issues = [
-            new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] }, "", true),
-            new(new("I2", "検証", "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Assignees = ["U1"] }, "", true)], NextId = 3 });
-        await Open();
-        await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
-            StatusDate = new(2026, 10, 5),
-            People = Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-" + i, 100, 80)).ToImmutableArray() }), DateOnly.FromDateTime(DateTime.Today));
-        await Ui.Run(() => { ResizeWorkspace(1280, 720); Ui.Click("PlanShowPeople"); });
-        for (var scale = 0; scale < 3; scale++) {
-        await Ui.Run(() => Ui.Find<ComboBox>("PeopleScale").SelectedIndex = scale);
-        await Ui.Idle();
-        await Ui.Until(() => Ui.Tree(view).OfType<FrameworkElement>().Any(e => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(e) == "PeopleRow_multiple"));
-        await Ui.Run(async () => await RenderedEvidence.Capture(view, $"people-{scale}-1280x720"));
-        await Ui.Run(() => {
-            var list = Ui.Find<ListView>("PeopleRows");
-            Assert.That(list.Items.Count, Is.EqualTo(22));
-            foreach (var person in workspace.Session.Document.State.Settings.People.Select(p => p.Identity).Concat(["unassigned", "multiple"])) {
-                var row = Ui.Find<Grid>("PeopleRow_" + person);
-                var bounds = row.TransformToVisual(list).TransformBounds(new Rect(0, 0, row.ActualWidth, row.ActualHeight));
-                Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(-0.5), person);
-                Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(list.ActualHeight + 0.5), person);
-                Assert.That(row.ActualHeight, Is.GreaterThanOrEqualTo(24), person);
-            }
-            if (scale > 0) {
-                var load = Ui.Find<TextBlock>("PeopleLoad_U1_0");
-                Assert.That(load.Text, Does.Contain("日超過1日").And.Contain("最大200%"));
-                Assert.That(load.IsTextTrimmed, Is.False);
-                Assert.That(load.ActualHeight, Is.LessThanOrEqualTo(24));
-            }
-        });
-        }
     }
 
     [Test]
@@ -1976,7 +1652,7 @@ internal sealed class PlanWorkspaceHostedTests
         await OpenProjectPicker();
         await Ui.Run(() => Ui.Find<ListView>("RegisteredProjects").SelectedItem = workspace.Registered.Single(p => p.Id.NodeId == project));
     }
-    private async Task Open()
+    private async Task Open(string firstTitle = "設計")
     {
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => workspace.Available.Count == 2 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
@@ -1985,7 +1661,7 @@ internal sealed class PlanWorkspaceHostedTests
             Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0;
         });
         await Ui.Until(() => workspace.Session is not null);
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "設計"));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == firstTitle));
         await Ui.Idle();
     }
     private async Task Settings()
@@ -2141,7 +1817,7 @@ internal sealed class PlanWorkspaceHostedTests
             foreach (var (field, caption) in new[] {
                 (PlanField.Estimate, "見積工数"), (PlanField.Remaining, "見込み残存工数"),
                 (PlanField.Actual, "実績工数"), (PlanField.Start, "開始日"), (PlanField.End, "終了日"),
-                (PlanField.StartNoEarlierThan, "開始日指定"), (PlanField.Fixed, "日程固定") }) {
+                (PlanField.StartNoEarlierThan, "開始日指定"), (PlanField.Fixed, "日程固定"), (PlanField.Phase, "工程") }) {
                 var combo = Ui.Find<ComboBox>("PlanMap" + field);
                 Assert.That(combo.Header, Is.EqualTo(caption));
                 Assert.That(AutomationProperties.GetName(combo), Is.EqualTo(caption));
@@ -2150,6 +1826,42 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(((PlanColumnDefinition)estimate.SelectedItem).Name, Is.EqualTo("Estimate"));
             Assert.That(estimate.Items.Cast<PlanColumnDefinition>().Select(c => c.Name), Does.Contain("Remaining"));
         });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test]
+    public async Task SettingsPeriodRejectsReversedEndAndUndoRestoresAcceptedEnd()
+    {
+        await Open(); await Settings();
+        await CommitText("PlanProjectStart", "2026-10-05");
+        var undo = workspace.Session!.UndoCount;
+        await CommitText("PlanProjectEnd", "2026-10-04");
+        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2026-10-04"));
+            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Does.Contain("終了日は開始日以降"));
+        });
+        await CommitText("PlanProjectEnd", "2027-04-30");
+        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
+        await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
+        Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
+    }
+
+    [Test]
+    public async Task SettingsPhaseUsesTheColumnMappingAndListsOptionsAndLeafCounts()
+    {
+        var fake = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, fake with { Phases = ["SA", "UI"], Issues = fake.Issues.Select(i => i with { Phase = "SA" }).ToImmutableArray() });
+        await Open(); await Settings();
+        await Ui.Run(() => {
+            Assert.That(((PlanColumnDefinition)Ui.Find<ComboBox>("PlanMapPhase").SelectedItem).Id, Is.EqualTo("F-Phase"));
+            Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Is.EqualTo("工程\nSA  1 タスク\nUI  0 タスク\n工程なし  0 タスク"));
+            Ui.Find<ComboBox>("PlanMapPhase").SelectedIndex = 0;
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPhaseOptions").Text, Does.StartWith("工程のフィールドが未設定です。")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -2247,10 +1959,10 @@ internal sealed class PlanWorkspaceHostedTests
             });
         }
         if (fromPeople) {
-            await Ui.Run(() => Ui.Click("PlanShowPeople")); await Ui.Ready<TextBox>("PeopleAllowance_U1");
+            await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
             await Ui.Run(() => {
-                var input = Ui.Find<TextBox>("PeopleAllowance_U1"); input.Focus(FocusState.Programmatic); input.Text = "80";
-                Ui.Click("PeopleNext");
+                var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80";
+                Ui.Click("PlanSettingsBack");
             });
             await Ui.Idle();
         } else await AddDay("PlanCompanyDaysOff", secondDay);

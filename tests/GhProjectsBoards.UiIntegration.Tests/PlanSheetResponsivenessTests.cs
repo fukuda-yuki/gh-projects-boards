@@ -437,15 +437,9 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
-    public async Task SheetAndPeopleListsDoNotAnimateItems()
+    public async Task SheetListDoesNotAnimateItems()
     {
         await Ui.Run(() => AssertQuietList(sheet.List));
-        PlanPeopleView people = null!;
-        await Ui.Run(() => people = new(session));
-        await Ui.Unmount(sheetHost);
-        await Ui.Mount(people);
-        try { await Ui.Run(() => AssertQuietList(Ui.Find<ListView>("PeopleRows"))); }
-        finally { await Ui.Unmount(people); await Ui.Mount(sheetHost); }
     }
 
     [Test]

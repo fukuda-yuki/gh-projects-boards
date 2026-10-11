@@ -49,11 +49,11 @@ internal static class PlanVerification
                 if (write.Mutation.StartsWith("clear", StringComparison.Ordinal)) return PlanValues.Get(row, role) == (role == PlanField.Fixed ? "false" : "null");
                 var value = input["value"]!.AsObject().Single();
                 if (role == PlanField.Fixed) return row.Fixed;
-                if (role == PlanField.Status)
+                if (role is PlanField.Status or PlanField.Phase)
                 {
-                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && f.Name == "Status" && f.DataType == "SINGLE_SELECT");
+                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && (role == PlanField.Phase || f.Name == "Status") && f.DataType == "SINGLE_SELECT");
                     var option = definition?.Options.SingleOrDefault(o => o.Id == value.Value?.GetValue<string>());
-                    return option is not null && row.Status == option.Name;
+                    return option is not null && (role == PlanField.Phase ? row.Phase : row.Status) == option.Name;
                 }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, role)), value.Value);
             default: return false;

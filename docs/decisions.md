@@ -7,7 +7,7 @@ Record accepted choices and their rationale. Keep task progress and experimental
 Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). The product replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. GitHub Projects has no way to build a schedule from effort, assignees and predecessors, so the app provides that job and leaves general Issue work to GitHub.
 
 - **Local editing with explicit publish.** The PMO edits a local copy and publishes adopted changes, as with MS Project and the TFS Office integration. This avoids a request per edit during weekly adjustment. Ordinary screens show changed-cell markers and the unpublished count; conflicts are resolved before publishing.
-- **One central screen.** A plan sheet with a row-aligned Gantt, modeled on the MS Project Gantt Chart view, plus a people view modeled on Resource Usage and a single settings page. Project commands are **最新の情報に更新** and **発行**, the names used by the TFS Office integration. Column headers use standard Japanese labels and name the mapped GitHub field in their tooltip; the owner accepted this in [#109](https://github.com/fukuda-yuki/gh-projects-boards/issues/109), replacing raw GitHub field names, which mixed English and Japanese in one header row.
+- **One central screen.** A plan sheet with a row-aligned Gantt, modeled on the MS Project Gantt Chart view, plus a read-only waterfall summary by phase and person and a single settings page. Project commands are **最新の情報に更新** and **発行**, the names used by the TFS Office integration. Column headers use standard Japanese labels and name the mapped GitHub field in their tooltip; the owner accepted this in [#109](https://github.com/fukuda-yuki/gh-projects-boards/issues/109), replacing raw GitHub field names, which mixed English and Japanese in one header row.
 - **Person-hours and TFS work fields.** Effort is entered and shown in person-hours (h); one working day is eight hours. Estimate is the original estimate and is not changed when a task runs over; Remaining is the current estimate of what is left, raised on re-estimation, and drives scheduling; Actual is cumulative and counts for the task's current assignee. Progress is Actual ÷ (Actual + Remaining). A task is complete when its Issue is closed, and closing sets Remaining to 0 ([#131](https://github.com/fukuda-yuki/gh-projects-boards/issues/131), owner 2026-10-11).
 - **A bounded subset of MS Project auto-scheduling.** Effort, the assignee's Project rate, the calendar and finish-to-start predecessors determine dates. A typed start date is kept as **開始日指定** (start no earlier than); **日程固定** keeps typed start and end. No per-task mode selection, lag, other link or constraint types, critical path, leveling or cost. Parity with MS Project is not a goal.
 - **Inputs are persisted, dates are derived.** Open tasks with work that are not 日程固定 are calculated from their inputs; completed tasks end on their close date; 日程固定 tasks and tasks without effort keep their GitHub dates. A calculated date that differs from GitHub is an unpublished change. The schedule is shown by day, so minute endpoints are not stored. Exact rules: [#78](https://github.com/fukuda-yuki/gh-projects-boards/issues/78).
@@ -122,7 +122,7 @@ Use one versioned JSON planning checkpoint per host/stable viewer/Project with e
 | Workspace shell, Project switching, settings and column mapping | #81 |
 | Plan sheet, scheduling rules and status date | #78 |
 | Refresh, publish, conflicts and creation guard | #79 |
-| People view and allowance | #80 |
+| Summary view and settings allowances | #127 |
 | CSV import of new tasks | #82 |
 | Distribution, notices, signing and company-environment validation | Deferred under #76 (previous findings in closed #13) |
 
@@ -190,3 +190,7 @@ The offline state is a waterfall version in mid-flight (#126, owner 2026-10-10):
 ## Inaccessible Project membership (#79 / #81)
 
 Project item totalCount can include items that are not returned to the viewer. A valid cursor chain ending at hasNextPage false completes item traversal; the nonnegative difference from delivered unique items counts as inaccessible, together with returned REDACTED items. Do not create placeholder tasks or infer clears from these observations. Other connection completeness checks and item identity/cursor/error validation remain strict. Settings and live-proof read evidence expose the inaccessible count.
+
+## Waterfall summary (#127)
+
+Use the same scheduled result as the sheet and compare it with the optional Project end, which is not a scheduling constraint. Show required load beside the forecast because scheduling does not level resources. Known effort remains useful when some tasks are unestimated: sum known contributors with explicit exclusion counts, using matching sets for progress and variance. Do not compare effort progress with time elapsed. Phase is an existing mapped Project single-select field; never create it on refresh. Rates and allowances belong in settings, while summary drill-down is read-only and returns exact task sets to the plan.
