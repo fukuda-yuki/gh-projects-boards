@@ -273,6 +273,18 @@ public sealed class PlanScreenPerformanceTests
                 // Settle row realization outside the next typing recording.
                 Thread.Sleep(1000);
             }
+            filter.Focus();
+            Wait(() => filter.Properties.HasKeyboardFocus.ValueOrDefault);
+            var enterRecording = RecordPixels(Path.Combine(root, "filter-enter"), filterRegion, mark => {
+                mark("type:ST-002"); Keyboard.Type("ST-002");
+                mark("Enter"); Keyboard.Type(VirtualKeyShort.RETURN);
+            }, TimeSpan.FromSeconds(3));
+            File.WriteAllText(Path.Combine(root, "filter-enter-result.json"), JsonSerializer.Serialize(new {
+                text = filter.Text, count = countElement!.Properties.Name.ValueOrDefault, enterRecording,
+                boundary = "Native Enter starts filter application without the debounce delay; screen frames bound visible result timing."
+            }));
+            Assert.That(filter.Text, Is.EqualTo("ST-002"));
+            Assert.That(countElement!.Properties.Name.ValueOrDefault, Is.EqualTo("40 件"));
             window.Close();
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
             Assert.That(process.ExitCode, Is.Zero);
@@ -355,7 +367,7 @@ public sealed class PlanScreenPerformanceTests
                 File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
                     phase = "repeated opening observed", probeTriggerDetails, repeatedProbeDetails,
                     firstOpeningObserved = true, repeatedOpeningObserved = true, utc = DateTime.UtcNow,
-                    boundary = "Two native pointer moves followed by mouse clicks at freshly resolved external UIA screen points; FlaUI waits for move input processing before press/release. No concurrent pixel capture. Escape dismisses each opening."
+                    boundary = "Two native pointer moves followed by 100 ms mouse presses at freshly resolved external UIA screen points; FlaUI waits for move input processing before press/release. No concurrent pixel capture. Escape dismisses each opening."
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 CloseProbe();
                 var trigger = PrepareCommand();
@@ -424,10 +436,14 @@ public sealed class PlanScreenPerformanceTests
                         phase, stage = "after MoveTo, before press/release", utc = DateTime.UtcNow, point,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
                     }) + Environment.NewLine);
-                    Mouse.Click();
+                    var pressTimer = Stopwatch.StartNew();
+                    Mouse.Down();
+                    try { Thread.Sleep(100); }
+                    finally { Mouse.Up(); }
+                    var pressDurationMs = pressTimer.Elapsed.TotalMilliseconds;
                     FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                     File.AppendAllText(trace, JsonSerializer.Serialize(new {
-                        phase, stage = "after Click", utc = DateTime.UtcNow, point,
+                        phase, stage = "after Click", utc = DateTime.UtcNow, point, pressDurationMs,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
                     }) + Environment.NewLine);
                 }
