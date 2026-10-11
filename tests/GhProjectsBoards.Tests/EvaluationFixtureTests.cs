@@ -66,6 +66,23 @@ internal sealed class EvaluationFixtureTests
         Assert.That(measures.People.Count(p => p.OverloadedDaysNext20 > 0), Is.LessThanOrEqualTo(3), "Overload is an exception, not the plan.");
     }
 
+    [Test]
+    public void StatusDatePredecessorWarningsMatchEarlierScheduledStartDays()
+    {
+        var plan = EvaluationFixture.ReadPlan("2027.04");
+        Assert.That(plan.StatusDate, Is.EqualTo(new DateOnly(2027, 1, 13)));
+        var snapshot = EvaluationFixture.Simulate(plan, plan.StatusDates).Single(s => s.StatusDate == plan.StatusDate);
+        var scheduled = PlanOperations.Schedule(snapshot.Document, snapshot.StatusDate);
+        var byId = scheduled.ToDictionary(row => row.Input.Identity);
+        var expected = scheduled.Where(row => !row.Input.Closed && row.Start.Value is { } start &&
+            row.Input.Predecessors.Any(id => byId[id].End.Value is { } end && start < end))
+            .Select(row => row.Input.Identity).ToArray();
+        var warned = scheduled.Where(row => row.Warnings.Contains("先行タスクより前に開始"))
+            .Select(row => row.Input.Identity).ToArray();
+        TestContext.Out.WriteLine($"2027.04 {snapshot.StatusDate:yyyy-MM-dd}: predecessor warning rows = {warned.Length}; earlier-start rows = {expected.Length}");
+        Assert.That(warned, Is.EquivalentTo(expected), "Only open tasks starting before a predecessor's end day warn; same-day handoffs do not.");
+    }
+
     [TestCase("2027.04"), TestCase("2027.10")]
     public async Task FreshEvaluationOpensAndRefreshesInTheMiddleOfTheProjectWithNoUnpublishedTasks(string version)
     {
