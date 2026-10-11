@@ -31,6 +31,21 @@ internal sealed class PlanMergeTests
         Assert.That(result.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P" }.Concat(expected.Split(','))));
         Assert.That(result.Sync.Conflicts.Any(c => c.Field == PlanField.SubIssueOrder), Is.EqualTo(conflict));
     }
+    [Test]
+    public void DivergentGitHubOrdersDoNotConflictOrAdoptARemoteOnlyReorder()
+    {
+        // The plan read A,B,C while GitHub's native order was already B,A,C: a later native reorder is
+        // neither a local change nor a conflict, and it does not move the plan's rows.
+        var rows = new[] { "P", "A", "B", "C" }.Select(id => new PlanRow(id, id, "acme/repo") { Parent = id == "P" ? null : "P" }).ToImmutableArray();
+        var baseline = new PlanBaseline(rows, []);
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), baseline, new(rows, new()))
+            { Sync = new() { NativeOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["B", "A", "C"]) } };
+        var result = PlanMerge.NativeOrder(document, PlanMerge.Merge(document, baseline),
+            ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["C", "A", "B"]));
+        Assert.That(result.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "P", "A", "B", "C" }));
+        Assert.That(result.Sync.NativeOrders["P"], Is.EqualTo(new[] { "C", "A", "B" }));
+        Assert.That(result.Sync.Conflicts.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
+    }
     [TestCase("B", "B", "R", "R", false)]
     [TestCase("B", "L", "B", "L", false)]
     [TestCase("B", "L", "L", "L", false)]

@@ -38,6 +38,34 @@ internal sealed class PlanWorkspaceTests
     }
 
     [Test]
+    public async Task FirstTakeInOfADivergentNativeChildOrderLeavesNothingUnpublished()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-sibling-intake-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([
+                new(new("I1", "Summary", "acme/repo"), "", true),
+                new(new("I2", "Task A", "acme/repo") { Parent = "I1" }, "", true),
+                new(new("I3", "Task B", "acme/repo") { Parent = "I1" }, "", true)
+            ], 4) { SubOrders = System.Collections.Immutable.ImmutableDictionary<string, System.Collections.Immutable.ImmutableArray<string>>.Empty.Add("I1", ["I3", "I2"]) });
+            var day = new DateOnly(2026, 10, 6);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var session = workspace.Session!;
+            Assert.Multiple(() =>
+            {
+                Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3" }));
+                Assert.That(session.Changes(day).TaskCount, Is.Zero);
+                Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+            });
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
     public async Task FirstTakeInKeepsGitHubDatesAndZeroUnpublishedAcrossLaterReopen()
     {
         var root = Path.Combine(Path.GetTempPath(), "ghpb-held-dates-" + Guid.NewGuid().ToString("N"));

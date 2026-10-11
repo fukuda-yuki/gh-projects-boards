@@ -436,7 +436,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 await ReconcileCreations(session, lease, token).ConfigureAwait(false);
                 remote = await ReadMemberships(session, lease, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
-                if (!creating || session.Document.Sync.Publish is not null || !session.Document.Sync.Failures.IsEmpty)
+                if (!creating || session.Document.Sync.Publish is not null || session.Document.Sync.Failures.Any(f => f.Field == PlanField.NewTask))
                     return await CompletePublication(session, today, review).ConfigureAwait(false);
             }
         }

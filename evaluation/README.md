@@ -26,7 +26,7 @@ Deviations:
 - U15 and U16 finish the SA, UI and SS tasks with a quarter of the estimate unused.
 - R09 SS-003 is open with 残 0.
 
-`evaluation.json` in the data root records, for each recorded status date, the measures from the real scheduler: 見積, 実績, 残, 見込, 差異, progress (実績 ÷ 見込), closed tasks, open overruns and open tasks with 残 0, in total, per phase (window, forecast finish against the milestone in working days) and per person (overloaded days in the next 20 working days). Milestones are recorded there; the app does not read them yet (#133).
+`evaluation.json` in the data root records, for each recorded status date, the measures from the real scheduler: 見積, 実績, 残, 見込, 差異, progress (実績 ÷ 見込), closed tasks, open overruns and open tasks with 残 0, in total, per phase (window, forecast finish against the milestone in working days) and per person (overloaded days in the next 20 working days). The fake gh serves repository milestones and assigns each task to its phase milestone; the app reads their targets and membership.
 
 ## Offline day simulation
 

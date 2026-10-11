@@ -20,6 +20,7 @@ internal sealed record PlanHolidayData(string Version, string Source, string Sou
 }
 internal sealed record ProjectPlanSettings
 {
+    public ImmutableDictionary<string, string> PhaseMilestones { get; init; } = ImmutableDictionary<string, string>.Empty;
     public ImmutableArray<PlanColumnMapping> Columns { get; init; } = [];
     public ImmutableArray<DateOnly> CompanyDaysOff { get; init; } = [];
     public PlanHolidayData? ImportedHolidays { get; init; }
@@ -31,6 +32,7 @@ internal sealed record ProjectPlanSettings
 }
 internal sealed record PlanRow(string Identity, string Title, string Repository)
 {
+    public string? MilestoneTitle { get; init; }
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public string? Phase { get; init; }
@@ -48,7 +50,9 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public bool Fixed { get; init; }
     public static PlanRow New(string title, string repository = "") => new("local:" + Guid.NewGuid().ToString("N"), title, repository);
 }
-internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns);
+internal sealed record PlanMilestone(string Title, DateOnly? DueDate, bool Closed, bool ConflictingDates);
+internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns)
+{ public ImmutableArray<PlanMilestone> Milestones { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
 internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
 internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
@@ -80,6 +84,8 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     public ImmutableArray<PlanRow> DiscardedRows { get; init; } = [];
     public ImmutableArray<string>? BeforeUnavailable { get; init; }
     public ImmutableArray<string>? AfterUnavailable { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? BeforeLocalOrderChoices { get; init; }
+    public ImmutableDictionary<string, ImmutableArray<string>>? AfterLocalOrderChoices { get; init; }
     public ImmutableArray<PlanConflict>? BeforeConflicts { get; init; }
     public ImmutableArray<PlanConflict>? AfterConflicts { get; init; }
 }
@@ -93,6 +99,7 @@ internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, s
 internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);
 internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Session, string? Error);
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
+internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }
 internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
 {

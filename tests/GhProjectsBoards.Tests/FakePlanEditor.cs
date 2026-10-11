@@ -7,7 +7,8 @@ using GhProjectsBoards.Core.PlanEditor;
 namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; } }
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -73,12 +74,15 @@ internal static class FakePlanEditor
             return (issue.Phase is null ? values : values.Append(new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = issue.Row.Identity + "-Phase",
                 field = new { id = "F-Phase", project = new { id = projectId } }, optionId = "phase-" + issue.Phase })).ToArray();
         }
+        object Milestone(PlanFakeMilestone m) => new { id = m.Id, title = m.Title,
+            dueOn = m.DueDate.HasValue ? m.DueDate.Value.ToString("yyyy-MM-dd") + "T00:00:00Z" : null, state = m.Closed ? "CLOSED" : "OPEN" };
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
             return new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
+                    milestone = state.Milestones.SingleOrDefault(m => m.Repository == row.Repository && m.Title == row.MilestoneTitle) is { } member ? Milestone(member) : null,
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
                         TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null, viewerCanUpdate = true, repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
                     assignees = Page(row.Assignees.Select(id => (object)new { id, login = workspace ? "person-" + id : id }), row.Assignees.Length),
@@ -141,6 +145,15 @@ internal static class FakePlanEditor
             var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!) : 0;
             node = new { __typename = "Issue", id, subIssues = Children(id, offset) };
         }
+        else if (query.Contains("ProjectMilestones"))
+        {
+            var id = variables.GetProperty("id").GetString()!;
+            var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!) : 0;
+            var all = state.Milestones.Where(m => m.Repository == (id == "R2" ? "acme/other" : "acme/repo")).ToArray();
+            node = new { __typename = "Repository", id, milestones = Page(all.Skip(offset).Take(100).Select(Milestone),
+                all.Length + (fault == "milestones-incomplete" ? 1 : 0), offset + 100 < all.Length,
+                offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+        }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
                 owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1)) };
@@ -194,6 +207,8 @@ internal static class FakePlanEditor
                     { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure" })); data[alias] = null; }
                     continue;
                 }
+                if (fault == "sibling-denied" && mutation == "reprioritizeSubIssue")
+                { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "FORBIDDEN", message = "Synthetic sibling failure" })); data[alias] = null; continue; }
                 if (fault == "sibling-resource" && mutation == "reprioritizeSubIssue" && matches.Count > 1 && input.GetProperty("subIssueId").GetString() == "I4")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic sibling move limit" })); data[alias] = null; continue; }
                 if (fault == "resource-always" && mutation.Contains("ItemFieldValue") || fault == "parent-denied" && mutation == "addSubIssue" && input.GetProperty("subIssueId").GetString() == "I2" || fault == "mixed-resource" && query.Contains("ItemFieldValue") && matches.Count > 3 && alias != "w0" || fault == "field-denied" && mutation.Contains("ItemFieldValue") || fault == "forbid-mutation" || fault is "partial" or "resource" && state.MutationBatches == faultBatch && alias == "w1")
