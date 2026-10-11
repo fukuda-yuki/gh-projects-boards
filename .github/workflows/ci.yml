@@ -15,15 +15,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
-    # Temporary acceptance experiment for #152; removed after choosing the worker cap.
-    strategy:
-      fail-fast: false
-      matrix:
-        workers: [0, 2, 4]
-        repetition: [1, 2]
     runs-on: windows-latest
-    # The Core suite is about 23 minutes of this job; cap a hang instead of allowing the
-    # 360-minute default.
+    # Bound build/test hangs instead of allowing the 360-minute default.
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,12 +42,12 @@ jobs:
         # --blame-hang writes a sequence file and a test host dump when the host stops
         # responding, which is the known risk with the fake gh subprocesses; its one-hour
         # default would outlast this job. The TRX carries the per-case result and duration.
-        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger 'trx;LogFileName=core.trx' --results-directory TestResults/ci --blame-hang --blame-hang-timeout 10m -- NUnit.NumberOfTestWorkers=${{ matrix.workers }}
+        run: dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj --configuration Release --no-build --filter 'TestCategory!=LiveGitHub' --logger 'trx;LogFileName=core.trx' --results-directory TestResults/ci --blame-hang --blame-hang-timeout 10m
       - name: Upload test results and blame evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: core-test-results-${{ matrix.workers }}-${{ matrix.repetition }}
+          name: core-test-results
           path: TestResults/ci
           if-no-files-found: warn
       - name: Report failed cases
