@@ -55,7 +55,10 @@ internal static class Program
                     // them after it unloads. Closing the window with those stale regions fail-fasts in Microsoft.UI.Input.
                     Ui.Trace("[CLOSE] regions");
                     InputNonClientPointerSource.GetForWindowId(Ui.Window.AppWindow.Id).ClearAllRegionRects();
-                    Ui.Trace("[CLOSE] window"); Ui.Window.Close(); Exit();
+                    // Closing the host's only window ends the application; do not request exit again during that close.
+                    Ui.Trace("[CLOSE] window");
+                    Ui.Window.Close();
+                    Ui.Trace("[CLOSE] window returned");
                 })) Environment.Exit(2);
             });
         }
