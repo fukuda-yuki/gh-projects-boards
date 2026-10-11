@@ -1,0 +1,122 @@
+name: plan-responsiveness
+on:
+  pull_request:
+    paths:
+      - 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetScrollPerformanceTests.cs'
+      - 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetRenderingTests.cs'
+      - 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetFilterPerformanceTests.cs'
+      - 'tests/GhProjectsBoards.E2E.Tests/PlanScreenPerformanceTests.cs'
+      - 'scripts/Test-PlanPerformance.ps1'
+      - 'scripts/Test-E2E.ps1'
+      - '.github/workflows/plan-responsiveness.yml'
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Baseline revision (default main); only measurement files are overlaid
+        default: main
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: plan-responsiveness-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  comparison:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - name: Set display size
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Prepare unchanged main baseline with identical measurement harness
+        shell: pwsh
+        env:
+          BASELINE_REF: ${{ github.event.pull_request.base.sha || inputs.baseline || 'main' }}
+        run: |
+          $baseline = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) 'plan-baseline'
+          git worktree add --detach $baseline $env:BASELINE_REF
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline checkout failed.' }
+          $files = @('scripts/Test-PlanPerformance.ps1', 'scripts/Test-E2E.ps1', 'tests/GhProjectsBoards.E2E.Tests/PlanScreenPerformanceTests.cs', 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetScrollPerformanceTests.cs', 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetRenderingTests.cs', 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetFilterPerformanceTests.cs')
+          foreach ($file in $files) {
+            Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $file) -Destination (Join-Path $baseline $file)
+          }
+          $fixture = Join-Path $baseline 'tests/GhProjectsBoards.UiIntegration.Tests/PlanSheetHostedTests.cs'
+          $text = Get-Content -LiteralPath $fixture -Raw
+          $old = 'if (TestContext.CurrentContext.Test.MethodName == nameof(VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation))'
+          $new = 'if (TestContext.CurrentContext.Test.MethodName is nameof(VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation) or nameof(VersionRowsCommitToRenderedDatesAndBarsRecordsTwentySamples) or nameof(VersionRowsFilterApplicationRecordsPauseAndFrameTimings))'
+          if ($text.Contains($old)) { $text.Replace($old, $new) | Set-Content -LiteralPath $fixture -Encoding utf8 -NoNewline }
+          elseif (-not $text.Contains('or nameof(VersionRowsCommitToRenderedDatesAndBarsRecordsTwentySamples)')) { throw 'Baseline fixture overlay needs review; its version setup is unknown.' }
+          $productChanges = @(git -C $baseline diff --name-only -- src)
+          if ($productChanges.Count -gt 0) { throw 'Baseline product must remain unchanged.' }
+          New-Item -ItemType Directory -Path "$baseline/TestResults/plan-performance" -Force | Out-Null
+          @{ baseline = (git -C $baseline rev-parse HEAD); candidate = (git rev-parse HEAD)
+             files = @($files | ForEach-Object { @{ path = $_; candidateSha256 = (Get-FileHash (Join-Path $env:GITHUB_WORKSPACE $_)).Hash; baselineSha256 = (Get-FileHash (Join-Path $baseline $_)).Hash } })
+             baselineFixtureSha256 = (Get-FileHash $fixture).Hash
+          } | ConvertTo-Json -Depth 5 | Set-Content "$baseline/TestResults/plan-performance/harness-manifest.json"
+          git -C $baseline diff --binary --output="$baseline/TestResults/plan-performance/harness-overlay.patch"
+          "PLAN_BASELINE=$baseline" | Add-Content $env:GITHUB_ENV
+      - name: Build baseline
+        id: baseline-build
+        run: dotnet build "$env:PLAN_BASELINE/GhProjectsBoards.sln" -c Release
+      - name: Measure baseline serially
+        id: baseline-measure
+        if: steps.baseline-build.outcome == 'success'
+        continue-on-error: true
+        run: '& "$env:PLAN_BASELINE/scripts/Test-PlanPerformance.ps1" -NoBuild'
+      - name: Upload baseline evidence including failed attempts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-baseline
+          path: |
+            ${{ env.PLAN_BASELINE }}/TestResults/plan-performance
+            ${{ env.PLAN_BASELINE }}/TestResults/ui-integration
+            ${{ env.PLAN_BASELINE }}/TestResults/e2e
+          if-no-files-found: warn
+      - name: Build candidate
+        id: candidate-build
+        if: always()
+        run: dotnet build GhProjectsBoards.sln -c Release
+      - name: Measure candidate serially
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-PlanPerformance.ps1 -NoBuild
+      - name: Upload candidate evidence including failed attempts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-candidate
+          path: |
+            TestResults/plan-performance
+            TestResults/ui-integration
+            TestResults/e2e
+          if-no-files-found: warn
+      - name: Check synthesized wheel and menu keyboard routes on the isolated desktop
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'method =~ "HorizontalWheelOverGantt|HorizontalWheelAtTimelineEdges|VerticalWheelOverGantt|OverflowKeyboard|OverflowPointer|RapidHorizontalWheel|HorizontalWheelBelow"' -TimeoutSeconds 300
+      - name: Upload native input evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-native
+          path: TestResults/ui-integration
+          if-no-files-found: warn
+      - name: Check affected hosted behavior after measurement
+        if: always() && steps.candidate-build.outcome == 'success'
+        run: ./scripts/Test-UiIntegration.ps1 -NoBuild -Where '(class == GhProjectsBoards.UiIntegration.Tests.PlanSheetHostedTests or cat == PlanOverview or method =~ "ResetConfirmationCancelBusyResultAndUndoUseTheRealView|RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared") and cat != PlanSheetPerformance and cat != PlanSheetNative' -TimeoutSeconds 1800
+      - name: Upload hosted regression evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plan-regressions
+          path: TestResults/ui-integration
+          if-no-files-found: warn
+      - name: Require completed baseline measurement
+        if: always() && steps.baseline-measure.outcome != 'success'
+        run: throw 'Baseline measurement failed; its retained partial evidence is not a completed comparison.'

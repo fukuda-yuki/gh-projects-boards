@@ -2,7 +2,8 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
-    [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance'
+    [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance',
+    [switch]$NoBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,14 +29,16 @@ try {
         configuration = $Configuration; startedAt = (Get-Date).ToUniversalTime().ToString('o')
         os = [Environment]::OSVersion.VersionString; architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
         dotnetSdk = (dotnet --version | Out-String).Trim(); powershell = $PSVersionTable.PSVersion.ToString()
-        buildCommand = "dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore"
+        buildCommand = $(if ($NoBuild) { 'Existing build; binary hashes recorded below' } else { "dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore" })
         testArguments = @('test', $testProject, '--configuration', $Configuration, '--no-build', '--filter', $Filter,
             '--logger', 'trx;LogFileName=e2e.trx', '--results-directory', $results, '--', 'NUnit.NumberOfTestWorkers=0', 'RunConfiguration.TestSessionTimeout=600000')
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $results 'source-environment.json') -Encoding utf8
     dotnet --info | Set-Content -LiteralPath (Join-Path $results 'dotnet-info.txt') -Encoding utf8
     git diff --binary HEAD --output="$results/source.patch"
-    dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore 2>&1 | Tee-Object -FilePath (Join-Path $results 'build.log')
-    if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE. E2E was not run." }
+    if (-not $NoBuild) {
+        dotnet build GhProjectsBoards.sln --configuration $Configuration --no-restore 2>&1 | Tee-Object -FilePath (Join-Path $results 'build.log')
+        if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE. E2E was not run." }
+    }
     $env:GHPB_RUN_E2E = '1'
     $env:GHPB_DATA_ROOT = Join-Path $results 'isolated-default-data'
     $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe"

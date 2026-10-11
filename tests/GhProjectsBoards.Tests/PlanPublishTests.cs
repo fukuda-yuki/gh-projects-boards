@@ -60,6 +60,20 @@ internal sealed class PlanPublishTests
         Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.EqualTo(reverse));
     }
 
+    [Test]
+    public void NativeSiblingOrderIgnoresChildrenOutsideTheCurrentPlanWhenCountingChanges()
+    {
+        ImmutableArray<PlanRow> rows = [new("P", "Parent", "acme/repo"),
+            new("A", "First", "acme/repo") { Parent = "P" }, new("B", "Second", "acme/repo") { Parent = "P" }];
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new(rows, []), new(rows, new())) {
+            Sync = new() { NativeOrders = ImmutableDictionary<string, ImmutableArray<string>>.Empty.Add("P", ["outside", "A", "B"]) }
+        };
+
+        var today = new DateOnly(2026, 10, 5);
+        var schedule = PlanOperations.Schedule(document, today);
+        Assert.That(PlanOperations.Changes(document, today, schedule).Fields, Is.Empty);
+    }
+
     [TestCase("Done"), TestCase(null)]
     public void StatusReviewUsesOptionIdentityAndVerifiesObservedName(string? status)
     {
