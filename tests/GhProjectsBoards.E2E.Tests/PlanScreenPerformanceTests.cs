@@ -27,6 +27,21 @@ public sealed class PlanScreenPerformanceTests
     private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll", EntryPoint = "mouse_event")]
     private static extern void MouseEvent(uint flags, uint x, uint y, uint data, nuint extraInfo);
+    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(nint hwnd, out NativeRectangle bounds);
+    [DllImport("user32.dll")] private static extern nint GetWindow(nint hwnd, uint command);
+    [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode)] private static extern int GetClassName(nint hwnd, System.Text.StringBuilder text, int count);
+    [DllImport("user32.dll")] private static extern bool GetGUIThreadInfo(uint threadId, ref NativeGuiThreadInfo info);
+    [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRectangle { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeGuiThreadInfo
+    {
+        public uint Size, Flags;
+        public nint Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+        public NativeRectangle CaretRectangle;
+    }
 
     [Test]
     public void VersionEditsRecordNativeEnterToChangedDatePixelsInTheOrdinaryApp()
@@ -283,7 +298,7 @@ public sealed class PlanScreenPerformanceTests
                 // poll UIA or retain full-window bitmaps during the measured transition.
                 var probeTrigger = PrepareCommand();
                 var probeTriggerDetails = DescribeTrigger(probeTrigger);
-                probeTrigger.Click();
+                NativeProbeClick(probeTrigger, "first");
                 Wait(() => Visible(markerId) is not null);
                 Thread.Sleep(350);
                 var popupBounds = contentIds.Select(id => Rectangle.Round(Visible(id)!.BoundingRectangle)).Aggregate(Rectangle.Union);
@@ -300,7 +315,7 @@ public sealed class PlanScreenPerformanceTests
                     phase = "before repeated native click", probeTriggerDetails, repeatedProbeDetails,
                     firstOpeningObserved = true, utc = DateTime.UtcNow
                 }, new JsonSerializerOptions { WriteIndented = true }));
-                repeatedProbe.Click();
+                NativeProbeClick(repeatedProbe, "repeated");
                 Wait(() => Visible(markerId) is not null);
                 File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
                     phase = "repeated opening observed", probeTriggerDetails, repeatedProbeDetails,
@@ -354,8 +369,24 @@ public sealed class PlanScreenPerformanceTests
                     name = element.Properties.Name.ValueOrDefault,
                     isOffscreen = element.IsOffscreen,
                     isEnabled = element.IsEnabled,
-                    bounds = element.BoundingRectangle
+                    bounds = element.BoundingRectangle,
+                    clickablePoint = element.GetClickablePoint()
                 };
+
+                void NativeProbeClick(AutomationElement element, string phase)
+                {
+                    var point = element.GetClickablePoint();
+                    var trace = Path.Combine(root, name + "-native-input.jsonl");
+                    File.AppendAllText(trace, JsonSerializer.Serialize(new {
+                        phase, stage = "before Click", utc = DateTime.UtcNow, point,
+                        desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
+                    }) + Environment.NewLine);
+                    element.Click();
+                    File.AppendAllText(trace, JsonSerializer.Serialize(new {
+                        phase, stage = "after Click", utc = DateTime.UtcNow, point,
+                        desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
+                    }) + Environment.NewLine);
+                }
             }
         }
         catch (Exception ex)
@@ -382,6 +413,31 @@ public sealed class PlanScreenPerformanceTests
     private sealed record PixelFrame(double StartMs, double EndMs, string Hash);
     private sealed record PixelResult(bool ScreenChanged, bool FinalStateStable, double? FirstFinalPixelsMs,
         double? FirstFinalFrameStartMs, double? PreviousFrameMs, double? PreviousFrameStartMs, double MaxCaptureIntervalMs);
+
+    private static object DescribeDesktopInput(nint host, Point target)
+    {
+        var cursor = Mouse.Position;
+        var thread = GetWindowThreadProcessId(host, out var process);
+        var info = new NativeGuiThreadInfo { Size = (uint)Marshal.SizeOf<NativeGuiThreadInfo>() };
+        var readGui = GetGUIThreadInfo(thread, ref info);
+        return new {
+            cursor, foreground = GetForegroundWindow().ToString("X"), host = DescribeWindow(host), thread, process,
+            atTarget = DescribeWindow(WindowFromPoint(new() { X = target.X, Y = target.Y })),
+            atCursor = DescribeWindow(WindowFromPoint(new() { X = cursor.X, Y = cursor.Y })),
+            gui = new { readGui, info.Flags, active = info.Active.ToString("X"), focus = info.Focus.ToString("X"),
+                capture = info.Capture.ToString("X"), menuOwner = info.MenuOwner.ToString("X") }
+        };
+
+        static object DescribeWindow(nint hwnd)
+        {
+            var name = new System.Text.StringBuilder(256);
+            GetClassName(hwnd, name, name.Capacity);
+            GetWindowRect(hwnd, out var bounds);
+            GetWindowThreadProcessId(hwnd, out var processId);
+            return new { hwnd = hwnd.ToString("X"), className = name.ToString(), processId, owner = GetWindow(hwnd, 4).ToString("X"),
+                bounds = new { bounds.Left, bounds.Top, bounds.Right, bounds.Bottom } };
+        }
+    }
 
     private static Window AttachMainWindow(Application app, UIA3Automation automation, Process process, string evidence)
     {
