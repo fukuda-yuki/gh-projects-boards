@@ -71,18 +71,30 @@ internal sealed class PlanPublishReviewHostedTests
     {
         readDay = new(2026, 10, 6);
         await Open(1);
+        Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(readDay));
+        Assert.That(workspace.Session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         await Ui.Run(() => {
             var title = Ui.Find<TextBox>("PlanCell1_Title");
             title.Focus(FocusState.Programmatic); title.Text = "Edited";
             Ui.Click("PlanPublish");
         });
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
+        // This persistent TextBlock is Loaded even while the review is hidden.
+        // Invoke and the pending title commit complete after the calling UI turn.
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.Length > 0);
+        await Ui.Idle();
+        Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("Edited"));
+        Assert.That(workspace.Session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         if (refresh)
         {
+            var beforeRefresh = "";
+            await Ui.Run(() => beforeRefresh = Ui.Find<TextBlock>("PlanPublishStatusDate").Text);
             await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
             await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
             await Ui.Run(() => Ui.Click("PlanPublish"));
             await Ui.Ready<TextBlock>("PlanPublishStatusDate");
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text != beforeRefresh);
+            await Ui.Idle();
         }
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
             Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。" + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));

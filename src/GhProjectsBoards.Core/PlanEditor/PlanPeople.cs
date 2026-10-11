@@ -12,6 +12,7 @@ internal sealed record PersonPeriod(decimal? Planned, decimal? Capacity, IReadOn
     public decimal? Percent => Capacity > 0 ? Planned / Capacity * 100 : null;
     public bool Overloaded => Planned > Capacity;
     public IReadOnlyList<PersonDayOverload> DailyOverloads { get; init; } = [];
+    public decimal? MaxDailyPercent { get; init; }
 }
 internal sealed record PersonLoad(string Identity, string Name, decimal? Rate, decimal? Allowance,
     decimal? Estimate, decimal? Actual, decimal? Remaining, IReadOnlyList<string> Missing,
@@ -25,6 +26,9 @@ internal static class PlanPeople
 {
     internal const string Unassigned = "unassigned", Multiple = "multiple";
     internal static PeoplePlan Calculate(PlanDocument document, DateOnly today, DateOnly anchor, PlanPeriodScale scale, int count)
+        => Calculate(document, PlanOperations.Schedule(document, today), anchor, scale, count);
+
+    internal static PeoplePlan Calculate(PlanDocument document, IReadOnlyList<ScheduledTask> schedule, DateOnly anchor, PlanPeriodScale scale, int count)
     {
         if (count is < 1 or > 366) throw new ArgumentOutOfRangeException(nameof(count));
         var settings = document.State.Settings;
@@ -42,8 +46,9 @@ internal static class PlanPeople
         static IEnumerable<DateOnly> Days(DateOnly from, DateOnly to) {
             for (var n = from.DayNumber; n <= to.DayNumber; n++) yield return DateOnly.FromDayNumber(n);
         }
-        var scheduled = PlanOperations.Schedule(document, today).Where(s => !s.IsSummary).ToArray();
+        var scheduled = schedule.Where(s => !s.IsSummary).ToArray();
         string Owner(ScheduledTask task) => task.Input.Assignees.Length switch { 0 => Unassigned, 1 => task.Input.Assignees[0], _ => Multiple };
+        var byOwner = scheduled.ToLookup(Owner);
         var ids = settings.People.Select(p => p.Identity).Concat(scheduled.SelectMany(s => s.Input.Assignees)).Distinct().ToArray();
         var output = new List<PersonLoad>();
         foreach (var id in ids.Concat([Unassigned, Multiple]))
@@ -51,7 +56,7 @@ internal static class PlanPeople
             var ambiguous = id is Unassigned or Multiple;
             var person = ambiguous ? null : settings.People.FirstOrDefault(p => p.Identity == id) ??
                 new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null);
-            var tasks = scheduled.Where(s => Owner(s) == id).ToArray();
+            var tasks = byOwner[id].ToArray();
             var missing = new HashSet<string>(); var unallocated = new List<string>();
             decimal? Total(Func<ScheduledTask, decimal?> value, string label) {
                 if (tasks.Any(t => value(t) is null)) { missing.Add(label + "が未入力"); return null; }
@@ -78,20 +83,23 @@ internal static class PlanPeople
                 }
                 if (reason is not null) { missing.Add(reason); unallocated.Add(task.Input.Identity); }
             }
-            var dailyOverloads = person is null ? [] : allocations
+            var dailyLoads = person is null ? [] : allocations
                 .SelectMany(a => a.Value.Where(d => d.Value > 0).Select(d => (Date: d.Key, Hours: d.Value, Task: a.Key)))
                 .GroupBy(d => d.Date)
                 .Select(g => new PersonDayOverload(g.Key, g.Sum(d => d.Hours), Working(g.Key) ? 8m * person.Rate / 100m : 0,
                     g.Select(d => d.Task).ToArray()))
-                .Where(d => d.Planned > d.Capacity).OrderBy(d => d.Date).ToArray();
+                .OrderBy(d => d.Date).ToArray();
             var loads = periods.Select(period => {
                 var contributing = allocations.Where(a => a.Value.Any(d => d.Key >= period.Start && d.Key <= period.End && d.Value > 0)).ToArray();
                 var unknown = tasks.Any(t => unallocated.Contains(t.Input.Identity) &&
                     (t.Start.Value is null || t.End.Value is null || t.Start.Value <= period.End && t.End.Value >= period.Start));
                 decimal? load = unknown ? null : contributing.Sum(a => a.Value.Where(d => d.Key >= period.Start && d.Key <= period.End).Sum(d => d.Value));
                 decimal? capacity = person is null ? null : Days(period.Start, period.End).Count(Working) * 8m * person.Rate / 100m;
+                var daily = dailyLoads.Where(d => d.Date >= period.Start && d.Date <= period.End).ToArray();
                 return new PersonPeriod(load, capacity, contributing.Select(a => a.Key).ToArray()) {
-                    DailyOverloads = dailyOverloads.Where(d => d.Date >= period.Start && d.Date <= period.End).ToArray()
+                    DailyOverloads = daily.Where(d => d.Planned > d.Capacity).ToArray(),
+                    MaxDailyPercent = unknown || capacity is null or 0 || daily.Any(d => d.Capacity == 0) ? null
+                        : daily.Length == 0 ? 0 : daily.Max(d => d.Percent)
                 };
             }).ToArray();
             output.Add(new(id, id == Unassigned ? "担当者なし" : id == Multiple ? "担当者が複数" : document.Sync.PeopleNames.GetValueOrDefault(id, person!.Name),

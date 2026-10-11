@@ -16,6 +16,17 @@ internal static class PlanSheetEditing
 
     internal static object? Parse(PlanDocument document, PlanField field, string text, DateOnly today)
     {
+        if (field == PlanField.Phase)
+        {
+            var mapping = document.State.Settings.Columns.SingleOrDefault(c => c.Role == field)
+                ?? throw new ArgumentException("工程のフィールドが未設定です。");
+            var options = document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping.FieldId)?.Options ?? [];
+            var value = text.Trim();
+            if (value.Length == 0) return null;
+            var matches = options.Where(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (matches.Length == 1) return matches[0];
+            throw new ArgumentException($"工程は {string.Join(", ", options)} のどれかを入力してください。");
+        }
         if (text.Length == 0) return null;
         switch (field)
         {

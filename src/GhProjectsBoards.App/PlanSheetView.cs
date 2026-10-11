@@ -50,13 +50,13 @@ internal sealed partial class PlanSheetView : Grid
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
     internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
-        new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 272), new(PlanField.Assignees, "担当者", 80),
+        new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
     internal readonly HashSet<PlanField?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
-    internal Column[] VisibleColumns { get; private set; } = Columns.Take(10).ToArray();
+    internal Column[] VisibleColumns { get; private set; } = Columns.Take(11).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
     private PlanSheetDivider divider = null!;
@@ -320,10 +320,11 @@ internal sealed partial class PlanSheetView : Grid
         try { filter.Text = acceptedFilter; }
         finally { rendering = wasRendering; }
     }
-    internal void FilterChangedTasks(IReadOnlySet<string> identities)
+    internal void FilterChangedTasks(IReadOnlySet<string> identities) => FilterTasks(identities, "日程変更");
+    internal void FilterTasks(IReadOnlySet<string> identities, string label)
     {
         CancelPendingFilter();
-        acceptedFilter = "日程変更";
+        acceptedFilter = label;
         filterPredicate = row => identities.Contains(row.Identity) && !SummaryIds.Contains(row.Identity);
         rendering = true;
         try { filter.Text = acceptedFilter; }
@@ -656,6 +657,7 @@ internal sealed partial class PlanSheetView : Grid
             PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
             PlanField.Fixed => row.Fixed ? "固定" : "",
+            PlanField.Phase => Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? row.Phase ?? "" : "",
             PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(p => PlanIds.TryGetValue(p, out var id) ? id.ToString() : "計画外")),
             PlanField.Assignees => row.Assignees.Length == 0 ? "" : AssigneeName(row.Assignees[0])
                 + (row.Assignees.Length > 1 ? $" +{row.Assignees.Length - 1}" : ""),
@@ -668,7 +670,8 @@ internal sealed partial class PlanSheetView : Grid
         || field == PlanField.Remaining && (result.Input.Closed || result.Input.Remaining is null && result.Remaining is not null)
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
     internal string? ReadOnlyReason(string identity, PlanField field) => Rows.TryGetValue(identity, out var row)
-        ? PlanOperations.ReadOnlyReason(row, Schedule.GetValueOrDefault(identity)?.IsSummary == true, field) : null;
+        ? field == PlanField.Phase && !Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? "工程のフィールドが未設定です。"
+            : PlanOperations.ReadOnlyReason(row, Schedule.GetValueOrDefault(identity)?.IsSummary == true, field) : null;
     internal bool ReadOnly(string identity, PlanField field) => remoteBusy || ReadOnlyReason(identity, field) is not null;
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&

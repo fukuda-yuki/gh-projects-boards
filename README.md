@@ -2,7 +2,7 @@
 
 A Windows planning editor for GitHub Projects, built with C#, .NET 10 and WinUI 3. [Requirements](docs/requirements.md), [specification](docs/spec.md) and [decisions](docs/decisions.md) define the product under [Epic #88](https://github.com/fukuda-yuki/gh-projects-boards/issues/88).
 
-The ordinary app opens the Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. **担当者** compares daily, weekly and monthly load, whole-Project allowances and forecasts; expanding a person allows task corrections with the same Undo history. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry.
+The ordinary app opens the Project workspace and settings page. It shows refreshed tasks with automatically mapped columns. The Project surface is an editable plan sheet with a row-aligned native Gantt. **サマリー** compares phase and person × phase status against the Project end, with remaining capacity, forecast and monthly overload drill-down. Planning edits stay in 計画. The **発行** review shows field changes and conflict choices before explicit confirmation; publication reports stages and retains failures for retry.
 
 ## Build and run
 
@@ -33,7 +33,7 @@ The evaluation launcher defaults to Release. Use `-Configuration Debug` to build
 ./scripts/Start-Evaluation.ps1 -NoBuild -Resume -DataRoot '<absolute printed path>'
 ```
 
-`-NoBuild` skips the build of the selected configuration (`--no-restore`). The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then the version. No network or real account is used. The ordinary app starts at **未発行 0 タスク** in the middle of a waterfall version: 40 requirements, 1,000 tasks, 20 people, with progress replayed up to the 基準日 (default 2027-01-13 for 第2027.04版 and 2027-03-24 for 第2027.10版). Detailed design (PS) runs late after re-estimates, one person is overloaded and one open task has 残 0. `evaluation.json` records the summary measures for three status dates. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
+`-NoBuild` skips the build of the selected configuration (`--no-restore`). The launcher prints its isolated root, prefills the fake gh path and strips token environment overrides from the child. Select **接続**, then the version. No network or real account is used. The ordinary app starts at **未発行 0 タスク** in the middle of a waterfall version: 40 requirements, 1,000 tasks, 20 people, with progress replayed up to the 基準日 (default 2027-01-13 for 第2027.04版 and 2027-03-24 for 第2027.10版). Detailed design (PS) runs late after re-estimates, one person is overloaded and one open task has 残 0. `evaluation.json` records the summary measures for three status dates. Open **サマリー** for the phase totals and person × phase/month load. Select a cell to inspect its tasks; **この N タスクで計画を絞り込む** opens that exact set in the plan. Attention counts apply the filter directly. Editing and publishing affect only the local fake endpoint. `-PrepareOnly` prepares the files without opening a window. A fresh run refuses an occupied root; `-Resume` preserves edits.
 
 The data and the sandbox commands are described in [version evaluation](evaluation/README.md). Live evaluation uses a **different**, fresh data root and real gh against Project 3. Live assignment evidence uses actual sandbox users; 20-person workload evaluation uses the offline fixture.
 
@@ -45,7 +45,7 @@ For the authorized sandbox, connect to github.com with C:\Program Files\GitHub C
 
 **CSVから追加** imports new tasks with predecessors and parents as one local Undo operation. Use the Excel-friendly [template](templates/new-tasks.csv), also shipped in `templates/` beside the app. UTF-8 and Shift-JIS are accepted; errors reject the whole file. **発行** creates the Issues later. The [sandbox evaluation file](docs/evaluation/sandbox-plan.csv) contains 24 tasks for Project 3.
 
-**設定** contains column mappings, calendar, holidays and company days off, assignee rates, optional Project start, default repository and settings export/import. Accepted changes autosave and recalculate; **元に戻す** reverses one operation. The [Japanese user manual](docs/user-manual.md) describes these flows.
+**設定** contains column mappings, calendar, holidays and company days off, assignee rates and allowances, optional Project start and end, phase mapping and option counts, default repository and settings export/import. Accepted changes autosave and recalculate; **元に戻す** reverses one operation. The [Japanese user manual](docs/user-manual.md) describes these flows.
 
 ## Validation
 

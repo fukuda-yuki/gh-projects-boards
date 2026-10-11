@@ -35,7 +35,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Border statusBar = new() { Height = 28 };
     private readonly TextBlock statusCounts = Id(new TextBlock { Margin = new(20, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }, "PlanStatusCounts");
     private readonly SelectorBarItem tasksTab = Id(new SelectorBarItem { Text = "計画" }, "PlanShowTasks");
-    private readonly SelectorBarItem peopleTab = Id(new SelectorBarItem { Text = "担当者" }, "PlanShowPeople");
+    private readonly SelectorBarItem summaryTab = Id(new SelectorBarItem { Text = "サマリー" }, "PlanShowSummary");
     private readonly SelectorBar tabs = new();
     private bool syncingTabs;
     private int pendingViewSelections;
@@ -50,8 +50,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Dictionary<ScopedId, PlanSheetView> sheets = [];
     private PlanSheetView? sheet;
     private readonly Grid taskArea = new();
-    private readonly Grid peopleArea = new();
-    private PlanPeopleView? peopleView;
+    private readonly Grid summaryArea = new();
+    private PlanSummaryView? summaryView;
     private readonly Button retrySave;
     private readonly TextBlock title = Id(new TextBlock { FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "OpenProjectName");
     private readonly Border unpublishedBadge = new() { CornerRadius = new(10), MinWidth = 20, Padding = new(6, 2, 6, 2), Background = PlanSheetView.Brush("SheetChangedMarkBrush") };
@@ -68,6 +68,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private CancellationTokenSource? operationCancellation;
     private CancellationToken OperationToken => operationCancellation?.Token ?? CancellationToken.None;
     private readonly List<Func<Task>> pendingSettings = [];
+    private readonly List<(TextBox Input, Func<Task> Commit, Func<bool> Dirty)> settingsTextInputs = [];
+    private readonly PlanInputProblem settingsInputProblem = new("SettingsInputProblem");
+    private TextBox? invalidSetting;
+    private string? invalidSettingMessage;
+    private string? invalidSettingText;
+    private bool revealingSetting;
     private int settingsGeneration;
     private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
@@ -78,7 +84,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         RequestedTheme = ElementTheme.Light;
         FontSize = 14;
-        // Keep the existing 22-row people overview within a 720-DIP client area.
         WorkspaceTitleBar.Resources["TitleBarExpandedHeight"] = 32d;
         WorkspaceTitleBar.Resources["TitleBarCompactHeight"] = 32d;
         // The stretch content column remains draggable between the picker and settings.
@@ -90,7 +95,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         WorkspaceTitleBar.SizeChanged += (_, _) => AlignCaptionInset();
         ActualThemeChanged += (_, _) => ApplyCaptionColors();
         tabs.Padding = new(0);
-        tasksTab.Padding = peopleTab.Padding = new Thickness(12, 5, 12, 3);
+        tasksTab.Padding = summaryTab.Padding = new Thickness(12, 5, 12, 3);
         projectPicker.MinHeight = 0; projectPicker.Height = 32;
         projectPicker.Padding = new(8, 0, 8, 0);
         projectPicker.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
@@ -140,14 +145,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         toolbar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        tabs.Items.Add(tasksTab); tabs.Items.Add(peopleTab); toolbar.Children.Add(tabs);
+        tabs.Items.Add(tasksTab); tabs.Items.Add(summaryTab); toolbar.Children.Add(tabs);
         toolbar.Children.Add(commandButtons); Grid.SetColumn(commandButtons, 1);
         tabs.SelectionChanged += async (_, _) => {
             if (syncingTabs) return;
             var selected = tabs.SelectedItem;
             if (selected is null) return;
             pendingViewSelections++;
-            try { await Run(() => { if (selected == peopleTab) RenderPeople(); Show(selected == peopleTab ? "people" : "tasks"); return Task.CompletedTask; }); }
+            try { await Run(() => { if (selected == summaryTab) RenderSummary(); Show(selected == summaryTab ? "summary" : "tasks"); return Task.CompletedTask; }); }
             finally { if (--pendingViewSelections == 0) SyncTabs(); }
         };
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
@@ -200,7 +205,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(() => OpenProject(choice)); } };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(() => OpenProject(choice)); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, peopleArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
+        settingsScroll.ViewChanged += async (_, args) => {
+            if (rendering || args.IsIntermediate || currentPage != "settings") return;
+            if (invalidSetting is { } invalid && invalid.Text == invalidSettingText) { RevealSettingsInput(); return; }
+            var focused = FocusManager.GetFocusedElement(XamlRoot);
+            var pending = settingsTextInputs.FirstOrDefault(p => ReferenceEquals(p.Input, focused) && p.Dirty());
+            if (pending.Input is not null && !SettingIsVisible(pending.Input)) await Run(pending.Commit, commitPending: false);
+        };
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, summaryArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
         var cardContent = new Grid();
         cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
         cardContent.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -236,7 +248,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
-            if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
+            if (projectFlyout.IsOpen) projectFlyout.Hide(); ClearSettingsInputProblem(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
         };
         Content = root;
         Show("connection");
@@ -273,7 +285,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // Keep the requested selection until queued switches finish, so another selection still raises an event.
         if (pendingViewSelections != 0) return;
         syncingTabs = true;
-        try { tabs.SelectedItem = currentPage == "tasks" ? tasksTab : currentPage == "people" ? peopleTab : null; }
+        try { tabs.SelectedItem = currentPage == "tasks" ? tasksTab : currentPage == "summary" ? summaryTab : null; }
         finally { syncingTabs = false; }
     }
     private void UpdateStatus()
@@ -424,13 +436,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshButton.IsEnabled = !busy;
         UpdateResetAvailability();
         projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
-        tasksTab.IsEnabled = peopleTab.IsEnabled = !busy;
+        tasksTab.IsEnabled = summaryTab.IsEnabled = !busy;
         surfaceHost.IsEnabled = !busy;
         statusDateHost.IsHitTestVisible = !busy;
         if (sheet is not null) sheet.statusDate.IsEnabled = !busy;
         if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
-        if (peopleView is not null) peopleView.IsEnabled = !busy;
+        if (summaryView is not null) summaryView.IsEnabled = !busy;
         settingsScroll.IsEnabled = !busy;
         foreach (var bar in new[] { refreshFailure, publishFailure, saveFailure, sheet?.SaveFailure })
             if (bar?.ActionButton is Button retry) retry.IsEnabled = !busy;
@@ -454,7 +466,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (page != "tasks") sheet?.CancelPendingFilter();
         currentPage = page; SyncTabs();
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
-        peopleArea.Visibility = page == "people" ? Visibility.Visible : Visibility.Collapsed;
+        summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
@@ -467,7 +479,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · プロジェクト {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
     }
-    private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); RefreshLists(); RenderTasks(); Show("tasks"); }
+    private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); RefreshLists(); RenderTasks(); Show("tasks"); }
     private void RefreshLists()
     {
         rendering = true;
@@ -506,16 +518,20 @@ internal sealed partial class PlanWorkspaceView : UserControl
         sheet.Refresh();
         UpdateStatus();
         if (!publishing && publishReview.Visibility == Visibility.Visible) RenderReview();
-        if (peopleArea.Visibility == Visibility.Visible) RenderPeople();
+        if (summaryArea.Visibility == Visibility.Visible) RenderSummary();
     }
-    private void RenderPeople()
+    private void RenderSummary()
     {
-        if (workspace.Session is not { } session) return;
-        if (peopleView?.Session != session) {
-            peopleView = new(session);
-            peopleView.Changed += save => { sheet?.Refresh(); UpdateStatus(); if (save.Succeeded) Check(save); };
-            peopleArea.Children.Clear(); peopleArea.Children.Add(peopleView);
-        } else peopleView.Refresh();
+        if (workspace.Session is not { } session || sheet is null) return;
+        sheet.Refresh();
+        if (summaryView?.Session != session) {
+            summaryView = new(session, ids => {
+                sheet.FilterTasks(ids, "サマリーのタスク"); Show("tasks");
+                if (sheet.RowIds.Count > 0) sheet.SelectAndFocus(sheet.RowIds[0], PlanField.Title, false);
+            }, () => { settingsReturnPage = "summary"; RenderSettings(); Show("settings"); SyncTabs(); });
+            summaryArea.Children.Clear(); summaryArea.Children.Add(summaryView);
+        }
+        summaryView.Refresh(sheet.Schedule, sheet.StatusDate);
     }
     private async Task ChangeSettings(Func<ProjectPlanSettings, ProjectPlanSettings> change)
     {
@@ -534,9 +550,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
         rendering = true;
         try
         {
-            var generation = ++settingsGeneration; pendingSettings.Clear(); settings.Children.Clear();
+            var generation = ++settingsGeneration; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); settings.Children.Clear();
             settings.Children.Add(Button("戻る", "PlanSettingsBack", () => {
-                if (settingsReturnPage == "people") RenderPeople();
+                if (settingsReturnPage == "summary") RenderSummary();
                 if (settingsReturnPage == "publish") RenderReview();
                 Show(settingsReturnPage); return Task.CompletedTask;
             }));
@@ -606,10 +622,36 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     finally { rendering = false; }
                 });
                 line.Children.Add(rate);
+                var allowance = TextSetting("上限工数 h", "PlanAllowance" + person.Identity, person.Allowance?.ToString(CultureInfo.CurrentCulture) ?? "", async text => {
+                    decimal? hours = string.IsNullOrWhiteSpace(text) ? null : decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number) && number >= 0
+                        ? number : throw new ArgumentException("上限工数は0以上の数値で入力してください（単位: h）。");
+                    await ChangePerson(person, p => p with { Allowance = hours });
+                });
+                allowance.MinWidth = 150; allowance.Width = 150;
+                AutomationProperties.SetName(allowance, person.Name + " 上限工数 h");
+                line.Children.Add(allowance);
                 settings.Children.Add(line);
             }
-            settings.Children.Add(TextSetting("プロジェクト開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
+            settings.Children.Add(Label("期間"));
+            settings.Children.Add(TextSetting("開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+            settings.Children.Add(TextSetting("終了日", "PlanProjectEnd", value.ProjectEnd?.ToString("yyyy-MM-dd") ?? "",
+                text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+            settings.Children.Add(Label("工程"));
+            var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
+            void ShowPhases()
+            {
+                var mapping = session.Document.State.Settings.Columns.SingleOrDefault(c => c.Role == PlanField.Phase);
+                var field = session.Document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping?.FieldId);
+                if (field is null) { phaseDetails.Text = "工程のフィールドが未設定です。プロジェクトの単一選択フィールドを 工程 に割り当てると、サマリーで工程別に集計します。"; return; }
+                var parents = session.Document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
+                var counts = session.Document.State.Rows.Where(r => !parents.Contains(r.Identity)).ToLookup(r => r.Phase ?? "");
+                phaseDetails.Text = field.Name + "\n" + string.Join("\n", field.Options.Select(o => $"{o}  {counts[o].Count()} タスク"))
+                    + $"\n工程なし  {counts[""].Count()} タスク";
+            }
+            ShowPhases(); settings.Children.Add(phaseDetails);
+            foreach (var phaseMap in settings.Children.OfType<ComboBox>().Where(c => AutomationProperties.GetAutomationId(c) == "PlanMapPhase"))
+                phaseMap.SelectionChanged += async (_, _) => { await operation; if (generation == settingsGeneration) ShowPhases(); };
             settings.Children.Add(TextSetting("新規 Issue の作成先", "PlanDefaultRepository", value.DefaultRepository ?? "",
                 text => ChangeSettings(s => s with { DefaultRepository = string.IsNullOrWhiteSpace(text) ? null : text.Trim() })));
             var files = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -629,30 +671,101 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private Task ChangePerson(PlanResource fallback, Func<PlanResource, PlanResource> change) => ChangeSettings(s =>
     {
         var person = s.People.SingleOrDefault(p => p.Identity == fallback.Identity) ?? fallback;
-        return s with { People = s.People.Where(p => p.Identity != person.Identity).Append(change(person)).ToImmutableArray() };
+        return s with { People = s.People.Any(p => p.Identity == person.Identity) ? s.People.Select(p => p.Identity == person.Identity ? change(person) : p).ToImmutableArray() : s.People.Add(change(person)) };
     });
+    private bool SettingIsVisible(TextBox input)
+    {
+        if (!input.IsLoaded || currentPage != "settings") return false;
+        var top = input.TransformToVisual(settingsScroll).TransformPoint(new()).Y;
+        return top >= 0 && top + input.ActualHeight <= settingsScroll.ActualHeight;
+    }
+    private void ClearSettingsInputProblem()
+    {
+        var input = invalidSetting; var message = invalidSettingMessage;
+        // Invalidate recovery before closing the popup can cause focus/layout callbacks.
+        invalidSetting = null; invalidSettingMessage = null; invalidSettingText = null;
+        if (input is not null) AutomationProperties.SetHelpText(input, "");
+        if (message is not null && error.Text == message) error.Text = "";
+        settingsInputProblem.Close();
+    }
+    private void RevealSettingsInput()
+    {
+        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || input.Text != invalidSettingText || invalidSettingMessage is not { } message) return;
+        var rejectedText = invalidSettingText;
+        revealingSetting = true;
+        input.Focus(FocusState.Programmatic);
+        PositionProblem();
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+            revealingSetting = false;
+            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded && input.Text == rejectedText) {
+                input.Focus(FocusState.Programmatic); PositionProblem();
+            }
+        });
+        void PositionProblem()
+        {
+            if (!ReferenceEquals(invalidSetting, input) || invalidSettingMessage != message
+                || input.Text != rejectedText || currentPage != "settings") return;
+            // Target the settings viewport explicitly; a TextBox has its own internal scroll viewer.
+            // Focus and the error surface can also change layout before the next ViewChanged.
+            if (!SettingIsVisible(input)) {
+                settingsInputProblem.Close();
+                var top = input.TransformToVisual(settingsScroll).TransformPoint(new()).Y;
+                var offset = settingsScroll.VerticalOffset + top - Math.Max(0, (settingsScroll.ActualHeight - input.ActualHeight) / 2);
+                settingsScroll.ChangeView(null, Math.Clamp(offset, 0, settingsScroll.ScrollableHeight), null, true);
+            } else settingsInputProblem.Show(input, message);
+        }
+    }
     private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply)
     {
         var input = Id(new TextBox { Header = label, Text = value, MinWidth = 280 }, id);
         var accepted = value;
         var generation = settingsGeneration;
+        var composing = false; var endedThisTurn = false;
         async Task Commit()
         {
-            if (generation != settingsGeneration || input.Text == accepted) return;
+            if (generation != settingsGeneration) return;
+            if (composing) { input.Focus(FocusState.Programmatic); throw new InvalidOperationException("入力中の変換を確定してください。"); }
+            if (input.Text == accepted) {
+                if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
+                return;
+            }
             var text = input.Text;
-            await apply(text);
-            accepted = text;
+            try { await apply(text); }
+            catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
+                var name = AutomationProperties.GetName(input);
+                var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                invalidSetting = input; invalidSettingText = text; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
+                AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
+                throw new InvalidOperationException(invalidSettingMessage, ex);
+            }
+            accepted = text; AutomationProperties.SetHelpText(input, "");
+            if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
+        settingsTextInputs.Add((input, Commit, () => (input.Text != accepted || ReferenceEquals(invalidSetting, input)) && !composing && !endedThisTurn));
+        input.TextCompositionStarted += (_, _) => composing = true;
+        input.TextCompositionEnded += (_, _) => {
+            composing = false; endedThisTurn = true;
+            // IME confirmation can precede the routed Enter/Escape in this dispatcher turn.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => endedThisTurn = false);
+        };
+        input.KeyDown += async (_, args) => {
+            if (composing || endedThisTurn) return;
+            if (args.Key == Windows.System.VirtualKey.Enter) { args.Handled = true; await Run(Commit, commitPending: false); }
+            else if (args.Key == Windows.System.VirtualKey.Escape) {
+                args.Handled = true; input.Text = accepted; AutomationProperties.SetHelpText(input, "");
+                if (ReferenceEquals(invalidSetting, input)) { ClearSettingsInputProblem(); error.Text = ""; }
+            }
+        };
         input.LostFocus += async (_, _) => {
-            if (!rendering && generation == settingsGeneration && input.Text != accepted) await Run(Commit);
+            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration
+                && (input.Text != accepted || ReferenceEquals(invalidSetting, input))) await Run(Commit, commitPending: false);
         };
         return input;
     }
     private async Task CommitPending()
     {
         if (sheet is not null) await sheet.FlushInput();
-        if (peopleView is not null) await peopleView.FlushInput();
         foreach (var commit in pendingSettings.ToArray()) await commit();
     }
     private FrameworkElement DateListSetting(string label, string id, Func<ImmutableArray<DateOnly>> current, Func<ImmutableArray<DateOnly>, Task> apply)

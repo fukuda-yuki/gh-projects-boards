@@ -31,7 +31,8 @@ internal static class PlanOperations
             Predecessors = baseline.GetValueOrDefault(r.Identity)?.Predecessors ?? [],
             StartNoEarlierThan = baseline.GetValueOrDefault(r.Identity)?.StartNoEarlierThan,
             Fixed = baseline.GetValueOrDefault(r.Identity)?.Fixed ?? false,
-            Status = baseline.GetValueOrDefault(r.Identity)?.Status
+            Status = baseline.GetValueOrDefault(r.Identity)?.Status,
+            Phase = baseline.GetValueOrDefault(r.Identity)?.Phase
         }).ToImmutableArray();
     }
     internal static ImmutableArray<PlanConflict> BlockingConflicts(PlanDocument document)
@@ -68,7 +69,8 @@ internal static class PlanOperations
     internal static void ValidateSettings(ProjectPlanSettings s)
     {
         Require(s is not null, "計画設定がありません。");
-        Unique(s!.CompanyDaysOff); Unique(s.People.Select(p => p.Identity).ToImmutableArray());
+        Require(!(s!.ProjectEnd < s.ProjectStart), "終了日は開始日以降にしてください。");
+        Unique(s.CompanyDaysOff); Unique(s.People.Select(p => p.Identity).ToImmutableArray());
         Unique(s.Columns.Select(c => c.Role).ToImmutableArray()); Unique(s.Columns.Select(c => c.FieldId).ToImmutableArray());
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
         foreach (var p in s.People)
@@ -78,7 +80,7 @@ internal static class PlanOperations
         foreach (var c in s.Columns)
         {
             var type = c.Role switch { PlanField.Estimate or PlanField.Remaining or PlanField.Actual => "NUMBER",
-                PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => "DATE", PlanField.Fixed => "SINGLE_SELECT", _ => null };
+                PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => "DATE", PlanField.Fixed or PlanField.Phase => "SINGLE_SELECT", _ => null };
             Require(type is not null && c.DataType == type && !string.IsNullOrWhiteSpace(c.FieldId) && !string.IsNullOrWhiteSpace(c.Name), "列の役割、識別子または型が不正です。");
         }
         if (s.ImportedHolidays is { } h)
@@ -141,7 +143,8 @@ internal static class PlanOperations
                     Require(byId.ContainsKey(c.Identity), "編集先の行がありません。");
                     if (ReadOnlyReason(byId[c.Identity], summaries.Contains(c.Identity), c.Field) is { } reason)
                         throw new ArgumentException(reason);
-                    byId[c.Identity] = Edit(byId[c.Identity], c.Field, c.Value);
+                    var value = c.Field == PlanField.Phase ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today) : c.Value;
+                    byId[c.Identity] = Edit(byId[c.Identity], c.Field, value);
                 }
                 foreach (var group in edit.Cells.GroupBy(c => c.Identity))
                 {
@@ -218,7 +221,7 @@ internal static class PlanOperations
     }
     internal static object? Value(PlanRow r, PlanField f) => f switch
     {
-        PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Closed => r.Closed,
+        PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Phase => r.Phase, PlanField.Closed => r.Closed,
         PlanField.Assignees => r.Assignees, PlanField.Predecessors => r.Predecessors, PlanField.Parent => r.Parent,
         PlanField.Estimate => r.Estimate, PlanField.Remaining => r.Remaining, PlanField.Actual => r.Actual,
         PlanField.Start => r.Start, PlanField.End => r.End, PlanField.StartNoEarlierThan => r.StartNoEarlierThan, PlanField.Fixed => r.Fixed,
@@ -241,6 +244,7 @@ internal static class PlanOperations
             case PlanField.Title: return r with { Title = String(value) ?? "" };
             case PlanField.Repository: return r with { Repository = String(value) ?? "" };
             case PlanField.Status: return r with { Status = String(value) };
+            case PlanField.Phase: return r with { Phase = String(value) };
             case PlanField.Parent: return r with { Parent = String(value) };
             case PlanField.Assignees: return r with { Assignees = Ids(value) };
             case PlanField.Predecessors: return r with { Predecessors = Ids(value) };
@@ -292,7 +296,7 @@ internal static class PlanOperations
         ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません";
     internal static bool IsSummaryPublishExcluded(bool summary, PlanField field) => summary && field is
         PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Assignees or PlanField.Predecessors
-        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status;
+        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase;
     internal static string? ReadOnlyReason(PlanRow row, bool summary, PlanField field)
     {
         if (summary && field is not (PlanField.Title or PlanField.Repository or PlanField.Parent))
@@ -335,7 +339,7 @@ internal static class PlanOperations
             if (d.Dates.Held is null && r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
             var fields = ImmutableArray.CreateBuilder<PlanField>();
-            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Closed, PlanField.Parent,
+            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.Closed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
                 if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);

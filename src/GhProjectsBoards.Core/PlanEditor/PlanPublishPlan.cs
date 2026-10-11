@@ -136,6 +136,7 @@ internal static class PlanPublishPlan
                             PlanField.Estimate => new { number = row.Estimate }, PlanField.Remaining => new { number = row.Remaining }, PlanField.Actual => new { number = row.Actual },
                             PlanField.Start => new { date = row.Start!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) }, PlanField.End => new { date = row.End!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
                             PlanField.StartNoEarlierThan => new { date = row.StartNoEarlierThan!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) },
+                            PlanField.Phase => new { singleSelectOptionId = definition.Options.Single(o => o.Name == row.Phase).Id },
                             PlanField.Fixed => (object)new { singleSelectOptionId = definition.Options.Single(o => o.Name == "固定").Id },
                             _ => throw new InvalidOperationException("未対応の列です。")
                         };
