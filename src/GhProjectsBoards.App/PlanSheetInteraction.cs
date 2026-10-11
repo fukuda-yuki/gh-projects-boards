@@ -22,7 +22,18 @@ internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
     private PlanField selectedField = PlanField.Title, anchorField = PlanField.Title;
-    private PlanField[] Fields => VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!.Value).ToArray();
+    private Column[]? fieldColumns;
+    private PlanField[] visibleFields = [];
+    private PlanField[] Fields
+    {
+        get {
+            if (!ReferenceEquals(fieldColumns, VisibleColumns)) {
+                fieldColumns = VisibleColumns;
+                visibleFields = VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!.Value).ToArray();
+            }
+            return visibleFields;
+        }
+    }
     internal sealed record Edge(int From, int To, DateOnly End, DateOnly Start);
     internal IReadOnlyList<Edge> Edges { get; private set; } = [];
     internal static bool Down(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
@@ -30,7 +41,7 @@ internal sealed partial class PlanSheetView
     {
         get
         {
-            var a = Math.Max(0, RowIds.IndexOf(anchor)); var b = Math.Max(0, RowIds.IndexOf(selected));
+            var a = Math.Max(0, RowIndexes.GetValueOrDefault(anchor, -1)); var b = Math.Max(0, RowIndexes.GetValueOrDefault(selected, -1));
             var c = Math.Max(0, Array.IndexOf(Fields, anchorField)); var d = Math.Max(0, Array.IndexOf(Fields, selectedField));
             return new(Math.Min(a, b), Math.Min(c, d), Math.Abs(a - b) + 1, Math.Abs(c - d) + 1);
         }
@@ -42,15 +53,19 @@ internal sealed partial class PlanSheetView
         if (!RowIds.Contains(anchor)) anchor = selected;
         if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault();
         if (!Fields.Contains(anchorField)) anchorField = selectedField;
-        var indexes = RowIds.Select((id, i) => (id, i)).ToDictionary(p => p.id, p => p.i);
+        RefreshEdges();
+        if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
+    }
+    private void RefreshEdges()
+    {
+        var indexes = RowIndexes;
         Edges = RowIds.Where(Rows.ContainsKey).SelectMany(id => Rows[id].Predecessors
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
-        if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
     }
     internal bool IsSelected(string identity, PlanField field)
     {
-        var range = Range; var row = RowIds.IndexOf(identity); var column = Array.IndexOf(Fields, field);
+        var range = Range; var row = RowIndexes.GetValueOrDefault(identity, -1); var column = Array.IndexOf(Fields, field);
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;
@@ -58,6 +73,7 @@ internal sealed partial class PlanSheetView
     internal void Select(string identity, PlanField field, bool extend)
     {
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
+        var previousRange = Range;
         selected = identity; selectedField = field;
         if (!extend) { anchor = identity; anchorField = field; }
         EnsureColumnVisible(field);
@@ -65,7 +81,7 @@ internal sealed partial class PlanSheetView
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             if (!disposed && IsLoaded && selectedField == field) EnsureColumnVisible(field);
         });
-        UpdateReason(); RefreshOverviewCommands(); RefreshRealized();
+        UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previousRange);
     }
     // Selection that leaves keyboard focus on another cell lets that cell reclaim it
     // through GotFocus, so typing or a command would act on the previous task.
@@ -173,10 +189,11 @@ internal sealed partial class PlanSheetView
     private void TryRestoreFocus()
     {
         if (requestedFocus is not { } target || disposed) return;
-        // A container from a replaced item source can still be loaded with the same task.
-        // Focus placed there falls to the next tab stop when the list discards it.
+        // A native container can remain loaded while it is being rebound. Only the
+        // current task's owned row may consume a pending focus request.
         var row = (List.ContainerFromItem(target.Identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
-        var cell = row?.SelectionTarget(target.Field);
+        if (row is null || row.Identity != target.Identity || !ReferenceEquals(row.Owner, this)) return;
+        var cell = row.SelectionTarget(target.Field);
         if (cell is not { IsLoaded: true, ActualWidth: > 0 } || !cell.Focus(FocusState.Keyboard)) return;
         requestedFocus = null;
         List.LayoutUpdated -= FocusAfterLayout;

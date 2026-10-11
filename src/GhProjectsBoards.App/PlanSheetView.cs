@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Core.Projects;
@@ -14,17 +15,17 @@ internal sealed partial class PlanSheetView : Grid
 {
     internal readonly PlanSession Session;
     private bool remoteBusy;
-    private CommandBar commandBar = null!;
+    private SheetCommandBar commandBar = null!;
     internal void SetRemoteBusy(bool value)
     {
-        if (value) CancelPendingFilter();
+        if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
-        commandBar.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
         RefreshRealized();
     }
 
     internal readonly HashSet<PlanSheetRow> Realized = [];
-    internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanTasks");
+    internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0), ShowsScrollingPlaceholders = false }, "PlanTasks");
     internal sealed record Input(string Text, long Generation, string OriginalText);
     private long inputGeneration;
     internal readonly Dictionary<(string Identity, PlanField Field), Input> Pending = [];
@@ -34,10 +35,14 @@ internal sealed partial class PlanSheetView : Grid
     internal long Generation(string identity, PlanField field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
     internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
+    private ObservableCollection<string> rowItems = [];
+    internal Dictionary<string, int> RowIndexes { get; private set; } = [];
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
     internal ImmutableArray<PlanConflict> BlockingConflicts { get; private set; } = [];
     internal Dictionary<string, PlanRow> Rows { get; private set; } = [];
     internal Dictionary<string, ScheduledTask> Schedule { get; private set; } = [];
+    private PlanDocument? presentedDocument;
+    private DateOnly presentedToday;
     private PlanLatenessResult lateness = new(ImmutableDictionary<string, PlanTaskLateness>.Empty, 0, 0);
     internal int OverdueTasks => lateness.OverdueTasks;
     internal int LaterTasks => lateness.LaterTasks;
@@ -66,9 +71,10 @@ internal sealed partial class PlanSheetView : Grid
     internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? PlanClock.Today;
     internal static DateOnly Today => PlanClock.Today;
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
+    private ScrollViewer? rowScroll;
     private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
     private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
-    private readonly Canvas chartHead = new() { Height = 48 };
+    private readonly Canvas chartHead = Id(new Canvas { Height = 48, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) }, "PlanGanttHeader");
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
     internal readonly InfoBar SaveFailure = Id(new InfoBar { Title = "保存できませんでした", Severity = InfoBarSeverity.Error, IsClosable = false }, "PlanSheetSaveFailure");
@@ -84,7 +90,7 @@ internal sealed partial class PlanSheetView : Grid
     private bool initialChartPositioned;
     internal bool ShowLatenessLabels => acceptedZoom is 0 or 1;
     // Reserve the widest fixed mark (10 px) plus 2 px clearance, independent of the date span.
-    private double ChartDateInset => acceptedZoom == 3 ? 12 : 0;
+    internal double ChartDateInset => acceptedZoom == 3 ? 12 : 0;
     private readonly Canvas chartBackground = Id(new Canvas { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left }, "PlanChartBackground");
     private readonly Canvas chartStatus = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left };
     private HashSet<DateOnly> nonWorkingDates = [];
@@ -135,7 +141,8 @@ internal sealed partial class PlanSheetView : Grid
         controls.Children.Add(scales); SetColumn(scales, 1);
         AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
-        var commands = commandBar = Id(new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
+        var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
+            OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
         AddCommand(commands, "行を挿入", "PlanSheetInsert", Symbol.Add, Insert);
         AddCommand(commands, "インデント", "PlanSheetIndent", Symbol.Forward, () => Indent(false)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M2,5 L5,8 L2,11 L1,10 L3,8 L1,6 Z");
         AddCommand(commands, "アウトデント", "PlanSheetOutdent", Symbol.Back, () => Indent(true)).Icon = CommandIcon("M2,2 H14 V3 H2 Z M7,6 H14 V7 H7 Z M7,10 H14 V11 H7 Z M2,14 H14 V15 H2 Z M4,5 L1,8 L4,11 L5,10 L3,8 L5,6 Z");
@@ -177,7 +184,7 @@ internal sealed partial class PlanSheetView : Grid
             choices.Children.Add(toggle);
         }
         columns.Flyout = new Flyout { Content = choices, AreOpenCloseAnimationsEnabled = false }; commands.SecondaryCommands.Add(columns);
-        controls.Children.Add(commands);
+        controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
         for (var i = 0; i < 4; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
@@ -211,18 +218,35 @@ internal sealed partial class PlanSheetView : Grid
         sheetClip.Children.Add(new Border { BorderThickness = new(0, 0, 0, 1), BorderBrush = Brush("WorkspaceCardStrokeBrush"), IsHitTestVisible = false });
         headers.Children.Add(sheetClip); headers.Children.Add(chartHead); SetColumn(chartHead, 1);
         chartHead.Clip = new RectangleGeometry();
+        chartHead.PointerWheelChanged += (_, args) => ScrollTimeline(args);
         Children.Add(headers); SetRow(headers, 3);
         List.ItemsPanel = (ItemsPanelTemplate)Application.Current.Resources["PlanSheetRowsPanel"];
         List.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanSheetRowTemplate"];
+        List.ContainerContentChanging += RowContentChanging;
         List.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(Control.BorderThicknessProperty, new Thickness(0)),
             new Setter(FrameworkElement.MinHeightProperty, 0d),
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         ScrollViewer.SetHorizontalScrollMode(List, ScrollMode.Disabled); ScrollViewer.SetHorizontalScrollBarVisibility(List, ScrollBarVisibility.Disabled);
+        List.PointerWheelChanged += (_, args) => {
+            var point = args.GetCurrentPoint(List).Position;
+            if (point.X >= SheetViewport && point.X < SheetViewport + ChartViewport) ScrollTimeline(args);
+        };
         Children.Add(chartBackground); SetRow(chartBackground, 4);
         Children.Add(List); SetRow(List, 4);
         Children.Add(chartStatus); SetRow(chartStatus, 4);
-        List.SizeChanged += (_, _) => RenderTimelineHeader();
+        List.SizeChanged += (_, _) => { RenderTimelineHeader(); if (Problems.Count > 0) UpdateInputProblem(); };
+        List.Loaded += (_, _) => {
+            var current = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
+            if (ReferenceEquals(rowScroll, current)) return;
+            if (rowScroll is not null) rowScroll.ViewChanged -= RowViewportChanged;
+            rowScroll = current;
+            if (rowScroll is not null) rowScroll.ViewChanged += RowViewportChanged;
+        };
+        List.Unloaded += (_, _) => {
+            if (rowScroll is not null) rowScroll.ViewChanged -= RowViewportChanged;
+            rowScroll = null;
+        };
         sheetHorizontal.Content = new Border { Height = 1 }; chartHorizontal.Content = new Border { Height = 1 };
         scrollbars.Children.Add(sheetHorizontal); scrollbars.Children.Add(chartHorizontal); SetColumn(chartHorizontal, 1);
         Children.Add(scrollbars); SetRow(scrollbars, 5);
@@ -233,7 +257,10 @@ internal sealed partial class PlanSheetView : Grid
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
         Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
         sheetHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: true, chart: false);
-        chartHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: false, chart: true);
+        chartHorizontal.ViewChanged += (_, args) => {
+            if (!args.IsIntermediate) pendingWheelOffset = null;
+            RefreshScrolledRows(sheet: false, chart: true);
+        };
         SizeChanged += (_, _) => RefreshLayout();
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
@@ -272,8 +299,8 @@ internal sealed partial class PlanSheetView : Grid
             args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; CancelPendingFilter();
-            inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
+        Unloaded += (_, _) => { disposed = true; pendingWheelOffset = null; CancelPendingFilter();
+            inputProblem.Close(); predecessorFlyout?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             if (!initialChartPositioned) {
                 PositionTimelineAnchor();
@@ -331,7 +358,12 @@ internal sealed partial class PlanSheetView : Grid
                 throw;
             }
             if (generation != filterGeneration || filter.Text != proposed || disposed) return;
-            acceptedFilter = proposed; filterPredicate = null; Refresh();
+            pendingFrame = metrics.Begin(Session.Document.State.Rows.Length, "filter");
+            acceptedFilter = proposed; filterPredicate = null;
+            metrics.Mark("accepted");
+            Refresh();
+            metrics.Mark("presented");
+            CompositionTarget.Rendered -= FrameRendered; CompositionTarget.Rendered += FrameRendered; frameSubscribed = true;
         }, "Filter");
     }
     private void RefreshScrolledRows(bool sheet, bool chart)
@@ -348,13 +380,20 @@ internal sealed partial class PlanSheetView : Grid
         IsTabStop = false, Height = 18 }, id);
     internal static T Id<T>(T value, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(value, id); return value; }
     internal static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
-    private static PathIcon CommandIcon(string data) => (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-        $"<PathIcon xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='{data}'/>");
+    private static PathIcon CommandIcon(string data)
+    {
+        var icon = (PathIcon)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            $"<PathIcon xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='{data}'/>");
+        // Geometry has one XAML parent. Retain its source so an overflow item can
+        // create its own geometry instead of reparenting the toolbar icon's Data.
+        icon.Tag = data;
+        return icon;
+    }
     private AppBarButton AddCommand(CommandBar bar, string label, string id, Symbol icon, Func<Task> action, bool queueInSheet = true)
     {
         var button = Id(new AppBarButton { Label = label, Icon = new SymbolIcon(icon) }, id);
         AutomationProperties.SetName(button, label); ToolTipService.SetToolTip(button, label);
-        button.Click += async (_, _) => {
+        commandActions[button] = async () => {
             // Workspace commands own cancellation and flush this sheet's queue.
             // Nesting them inside that same queue would wait on themselves.
             if (!queueInSheet) { await action(); return; }
@@ -363,6 +402,7 @@ internal sealed partial class PlanSheetView : Grid
                 await action();
             }, id);
         };
+        button.Click += async (_, _) => await commandActions[button]();
         bar.PrimaryCommands.Add(button);
         return button;
     }
@@ -503,38 +543,80 @@ internal sealed partial class PlanSheetView : Grid
         if (disposed) return;
         var document = Session.Document;
         var today = Today;
-        BlockingConflicts = PlanOperations.BlockingConflicts(document);
-        Rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
-        peopleNames = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
-        PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
-        Schedule = Session.Schedule(today).ToDictionary(r => r.Input.Identity);
-        publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
-        var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
-        nonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
-        timelineKey = null;
-        lateness = PlanLateness.Classify(Schedule.Values.ToArray(), document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
-        Unpublished = Session.Changes(today);
-        var pendingRows = Pending.Keys.Select(k => k.Identity)
-            .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
-        SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
-        folded.IntersectWith(SummaryIds);
-        var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) ||
-            (acceptedFilter.Length > 0 ? MatchesFilter(r) : !HiddenByFold(r)))
-            .Select(r => r.Identity).Append("").ToArray();
-        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{document.State.Rows.Count(MatchesFilter):N0} 件";
-        filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        if (!RowIds.SequenceEqual(next))
+        metrics.Mark("derived-start");
+        // A filter or fold only changes presentation. Document identity also invalidates
+        // baseline and sync-derived values, including changes that leave local rows intact.
+        if (!ReferenceEquals(presentedDocument, document) || presentedToday != today)
         {
-            // Recycling the focused cell can synchronously select a new container.
-            // Reconcile the user's task selection after the source has been replaced.
-            var priorSelection = (selected, anchor, selectedField, anchorField);
-            RowIds = next; List.ItemsSource = next;
-            (selected, anchor, selectedField, anchorField) = priorSelection;
+            BlockingConflicts = PlanOperations.BlockingConflicts(document);
+            Rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
+            peopleNames = document.State.Settings.People.ToDictionary(p => p.Identity, p => p.Name);
+            PlanIds = document.State.Rows.Select((r, i) => (r.Identity, Id: i + 1)).ToDictionary(p => p.Identity, p => p.Id);
+            var scheduled = PlanOperations.Schedule(document, today);
+            Schedule = scheduled.ToDictionary(r => r.Input.Identity);
+            publishedEnds = document.Baseline.Rows.ToDictionary(r => r.Identity, r => r.End);
+            var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
+            var nextNonWorkingDates = calendar.Holidays.Dates.Select(d => d.Date).Concat(calendar.ImportedHolidays?.Dates.Select(d => d.Date) ?? []).Concat(calendar.CompanyDaysOff).ToHashSet();
+            if (!nonWorkingDates.SetEquals(nextNonWorkingDates)) timelineKey = null;
+            nonWorkingDates = nextNonWorkingDates;
+            lateness = PlanLateness.Classify(scheduled, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
+            Unpublished = PlanOperations.Changes(document, today, scheduled);
+            SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
+            folded.IntersectWith(SummaryIds);
+            presentedDocument = document; presentedToday = today;
         }
+        metrics.Mark("derived");
+        RefreshVisibleRows(document);
+        metrics.Mark("visible-rows");
         rendering = true;
         try { statusDate.Date = new DateTimeOffset(StatusDate.ToDateTime(TimeOnly.MinValue)); }
         finally { rendering = false; }
-        ReconcileSelection(); RefreshLayout(); UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+        ReconcileSelection(); RefreshLayout();
+        metrics.Mark("layout");
+        UpdateReason(); RefreshOverviewCommands(); Changed?.Invoke();
+    }
+    private void RefreshVisibleRows(PlanDocument document)
+    {
+        var pendingRows = Pending.Keys.Select(k => k.Identity)
+            .Concat(Realized.Where(r => r.Cells.Any(c => c.Composing)).Select(r => r.Identity)).ToHashSet();
+        var next = new List<string>(document.State.Rows.Length + 1);
+        var matches = 0;
+        foreach (var row in document.State.Rows)
+        {
+            var matchesFilter = acceptedFilter.Length > 0 && MatchesFilter(row);
+            if (matchesFilter) matches++;
+            if (pendingRows.Contains(row.Identity) || (acceptedFilter.Length > 0 ? matchesFilter : !HiddenByFold(row))) next.Add(row.Identity);
+        }
+        next.Add("");
+        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{matches:N0} 件";
+        filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        if (!RowIds.SequenceEqual(next))
+        {
+            // Collection notifications can synchronously refresh or focus containers.
+            // Publish a coherent row topology before notifying, then restore selection.
+            var priorSelection = (selected, anchor, selectedField, anchorField);
+            RowIds = next;
+            RowIndexes = next.Select((identity, index) => (identity, index)).ToDictionary(p => p.identity, p => p.index);
+            RefreshEdges();
+            if (List.ItemsSource is null) List.ItemsSource = rowItems = new(next);
+            else ReconcileRowItems(next);
+            (selected, anchor, selectedField, anchorField) = priorSelection;
+        }
+    }
+    private void ReconcileRowItems(IReadOnlyList<string> next)
+    {
+        // Filtering keeps canonical document order. Removing only absent rows retains
+        // native editors for matching identities instead of resetting every container.
+        var wanted = next.ToHashSet();
+        for (var i = rowItems.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(rowItems[i])) rowItems.RemoveAt(i);
+        var retained = rowItems.ToHashSet();
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (i < rowItems.Count && rowItems[i] == next[i]) continue;
+            if (retained.Contains(next[i])) rowItems.Move(rowItems.IndexOf(next[i]), i);
+            else rowItems.Insert(i, next[i]);
+        }
     }
     internal string Header(Column column) => column.Label;
     internal static string FullName(Column column) => column.Field switch {
@@ -591,16 +673,54 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);
-    internal void RefreshRealized() { foreach (var row in Realized.ToArray()) row.Refresh(); UpdateInputProblem(); }
+    private void RowContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        // This template is populated from Item, with no DataContext bindings.
+        if (args.Phase == 0) args.Handled = true;
+        if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
+            row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item);
+        else if (!args.InRecycleQueue && args.Phase == 0)
+            args.RegisterUpdateCallback(1, RowContentChanging);
+    }
+    internal void RefreshRealized(CellRange? previousSelection = null)
+    {
+        var rows = Realized.ToArray();
+        metrics.Count("realizedRows", rows.Length);
+        if (previousSelection is { } previous) {
+            var current = Range;
+            rows = rows.Where(row => {
+                var index = RowIndexes.GetValueOrDefault(row.Identity, -1);
+                return index >= previous.Row && index < previous.Row + previous.RowCount
+                    || index >= current.Row && index < current.Row + current.RowCount;
+            }).ToArray();
+        }
+        metrics.Count("refreshedRows", rows.Length); metrics.Mark("rows-start");
+        var started = metrics.MeasureStart();
+        try { foreach (var row in rows) row.Refresh(); }
+        finally { metrics.AddDuration("rowRefresh", started); }
+        metrics.Mark("rows"); UpdateInputProblem();
+    }
     internal void UpdateInputProblem()
     {
         if (disposed || !IsLoaded || Problems.Count == 0) { inputProblem.Close(); return; }
         var cells = Realized.Where(r => r.IsLoaded && ReferenceEquals(r.Owner, this))
-            .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)))
+            .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)) && InputProblemCellIsVisible(c))
             .Select(c => (Cell: c, Problem: Problems[(r.Identity, c.Field)]))).ToArray();
         var target = cells.OrderByDescending(c => c.Cell.FocusState != FocusState.Unfocused).FirstOrDefault();
         if (target.Cell is null) { inputProblem.Close(); return; }
         inputProblem.Show(target.Cell, target.Problem);
+    }
+    private void RowViewportChanged(object? sender, ScrollViewerViewChangedEventArgs args)
+    {
+        if (Problems.Count > 0) UpdateInputProblem();
+    }
+    private bool InputProblemCellIsVisible(PlanSheetCell cell)
+    {
+        if (cell.Visibility != Visibility.Visible || cell.ActualWidth <= 0 || cell.ActualHeight <= 0) return false;
+        // A native popup anchor can keep its editor prepared outside the viewport.
+        // Loaded/owned alone must not leave that task's error over other rows.
+        var bounds = cell.TransformToVisual(List).TransformBounds(new(0, 0, cell.ActualWidth, cell.ActualHeight));
+        return bounds.Bottom > 0 && bounds.Top < List.ActualHeight && bounds.Right > 0 && bounds.Left < SheetViewport;
     }
     private void RefreshLayout(bool preserveDateViewport = true)
     {
@@ -610,23 +730,33 @@ internal sealed partial class PlanSheetView : Grid
         var minimumChartWidth = dividerWidth.HasValue ? 230 : 320;
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
         ChartViewport = width - SheetViewport;
+        metrics.Mark("timeline-range-start");
         var offsetShift = UpdateTimelineRange();
+        metrics.Mark("timeline-range");
         if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
         RowHeight = 28;
         sheetClip.Width = SheetViewport;
-        sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, SheetViewport, 48) };
+        var bounds = new Rect(0, 0, SheetViewport, 48);
+        if (sheetClip.Clip is RectangleGeometry geometry) {
+            if (geometry.Rect != bounds) geometry.Rect = bounds;
+        } else sheetClip.Clip = new RectangleGeometry { Rect = bounds };
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions[0].Width = new(SheetViewport); grid.ColumnDefinitions[1].Width = new(ChartViewport); }
         ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
         ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth + 2 * ChartDateInset;
         sheetHorizontal.Width = SheetViewport; chartHorizontal.Width = ChartViewport;
+        metrics.Mark("layout-properties");
         if (initialChartPositioned && preserveDateViewport && acceptedZoom != 3 && offsetShift != 0) {
             // Native extent changes can clamp the old offset; restore the date using the pre-layout offset.
+            metrics.Mark("forced-layout-start");
             chartHorizontal.UpdateLayout();
-            chartHorizontal.ChangeView(Math.Clamp(previousOffset + offsetShift, 0, chartHorizontal.ScrollableWidth), null, null, true);
+            metrics.Mark("forced-layout");
+            ChangeTimelineOffset(Math.Clamp(previousOffset + offsetShift, 0, chartHorizontal.ScrollableWidth));
         }
-        RefreshHeaders(); RenderTimelineHeader(); RefreshRealized();
+        RefreshHeaders(); RenderTimelineHeader();
+        metrics.Mark("headers");
+        RefreshRealized();
     }
     private void RefreshHeaders()
     {

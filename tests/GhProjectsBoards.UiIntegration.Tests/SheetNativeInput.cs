@@ -12,6 +12,74 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // are called by this driver; coordinates come from currently rendered controls.
 internal static class SheetNativeInput
 {
+    internal static async Task CaptureDesktop(string name)
+    {
+        // GDI captures the actual composed popup HWNDs; RenderTargetBitmap can omit
+        // native popup islands. This bounded diagnostic runs only after failure.
+        var left = GetSystemMetrics(76); var top = GetSystemMetrics(77);
+        var width = GetSystemMetrics(78); var height = GetSystemMetrics(79);
+        Assert.That(width > 0 && height > 0 && (long)width * height <= 16000000, Is.True);
+        var screen = GetDC(nint.Zero);
+        Assert.That(screen, Is.Not.EqualTo(nint.Zero));
+        var memory = CreateCompatibleDC(screen);
+        nint bitmap = nint.Zero, previous = nint.Zero;
+        var pixels = new byte[checked(width * height * 4)];
+        try {
+            Assert.That(memory, Is.Not.EqualTo(nint.Zero));
+            var header = new BitmapHeader { Size = (uint)Marshal.SizeOf<BitmapHeader>(), Width = width,
+                Height = -height, Planes = 1, BitCount = 32 };
+            bitmap = CreateDIBSection(screen, ref header, 0, out var bits, nint.Zero, 0);
+            Assert.That(bitmap, Is.Not.EqualTo(nint.Zero));
+            previous = SelectObject(memory, bitmap);
+            Assert.That(previous != nint.Zero && previous != new nint(-1), Is.True);
+            Assert.That(BitBlt(memory, 0, 0, width, height, screen, left, top, 0x40CC0020), Is.True);
+            Assert.That(GdiFlush(), Is.True);
+            Marshal.Copy(bits, pixels, 0, pixels.Length);
+        }
+        finally {
+            if (previous != nint.Zero && previous != new nint(-1)) SelectObject(memory, previous);
+            if (bitmap != nint.Zero) DeleteObject(bitmap);
+            if (memory != nint.Zero) DeleteDC(memory);
+            ReleaseDC(nint.Zero, screen);
+        }
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var folder = Path.Combine(TestContext.CurrentContext.WorkDirectory, "screenshots",
+            TestContext.CurrentContext.Test.ID + "-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var destination = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(folder).AsTask(deadline.Token);
+        var file = await destination.CreateFileAsync(name + ".png").AsTask(deadline.Token);
+        using var stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite).AsTask(deadline.Token);
+        var encoder = await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(
+            Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId, stream).AsTask(deadline.Token);
+        encoder.SetPixelData(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Ignore,
+            (uint)width, (uint)height, 96, 96, pixels);
+        await encoder.FlushAsync().AsTask(deadline.Token);
+        TestContext.Out.WriteLine($"Native desktop evidence: {file.Path}; origin={left},{top}; size={width}x{height}");
+    }
+    internal static async Task<string> DesktopState()
+    {
+        var state = "";
+        await Ui.Run(() => {
+            var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
+            var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
+            Assert.That(GetCursorPos(out var cursor), Is.True);
+            var windowAtCursor = WindowFromPoint(cursor);
+            state = $"hwnd={hwnd:X} foreground={GetForegroundWindow():X} cursor={cursor.X},{cursor.Y} "
+                + $"clientOrigin={origin.X},{origin.Y} scale={Ui.Root.XamlRoot.RasterizationScale} "
+                + $"host=[{DescribeWindow(hwnd)}] cursorWindow=[{DescribeWindow(windowAtCursor)}]";
+        });
+        return state;
+
+        static string DescribeWindow(nint hwnd)
+        {
+            var name = new System.Text.StringBuilder(256);
+            GetClassName(hwnd, name, name.Capacity);
+            GetWindowRect(hwnd, out var bounds);
+            GetWindowThreadProcessId(hwnd, out var processId);
+            return $"hwnd={hwnd:X} class={name} rect={bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom} "
+                + $"owner={GetWindow(hwnd, 4):X} parent={GetParent(hwnd):X} root={GetAncestor(hwnd, 2):X} process={processId}";
+        }
+    }
     internal static Task ActivateWindow() => Ui.Run(() => {
         var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
         Ui.Window.Activate();
@@ -25,17 +93,19 @@ internal static class SheetNativeInput
         await Rendered();
         await ActivateWindow();
         Point result = default;
-        await Ui.Run(() => {
-            var control = find();
-            Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
-            var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
-            var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
-            Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
-            var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
-            var scale = Ui.Root.XamlRoot.RasterizationScale;
-            result = new(origin.X + (bounds.X + bounds.Width * x) * scale, origin.Y + (bounds.Y + bounds.Height * y) * scale);
-        });
+        await Ui.Run(() => result = ScreenPoint(find(), x, y));
         return result;
+    }
+    // Call on the UI thread to convert XAML root coordinates to physical screen coordinates.
+    internal static Point ScreenPoint(FrameworkElement control, double x = .5, double y = .5)
+    {
+        Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
+        var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
+        var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
+        Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
+        var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
+        var scale = Ui.Root.XamlRoot.RasterizationScale;
+        return new(origin.X + (bounds.X + bounds.Width * x) * scale, origin.Y + (bounds.Y + bounds.Height * y) * scale);
     }
     internal static Task Rendered() => Ui.Run(async () => {
             var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -45,11 +115,17 @@ internal static class SheetNativeInput
             try { await settled.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
             finally { Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= rendered; }
         });
-    internal static void Move(Point point) => Send(new() { Mouse = new() {
+    internal static void Move(Point point, bool noCoalesce = false) => Send(new() { Mouse = new() {
         X = (int)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1)),
-        Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)), Flags = 0x0001 | 0x4000 | 0x8000 } });
+        Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)), Flags = 0x0001u | 0x4000 | 0x8000 | (noCoalesce ? 0x2000u : 0u) } });
     internal static void Button(bool down) => Send(new() { Mouse = new() { Flags = down ? 0x0002u : 0x0004u } });
-    internal static void Wheel(int delta) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = 0x0800 } });
+    internal static void Wheel(int delta, bool horizontal = false) => Send(new() { Mouse = new() { Data = unchecked((uint)delta), Flags = horizontal ? 0x1000u : 0x0800u } });
+    internal static async Task ScrollWheel(int delta, bool horizontal = false, bool shift = false)
+    {
+        if (shift) Key(VirtualKey.Shift, true);
+        try { await PointerStep(UIElement.PointerWheelChangedEvent, () => Wheel(delta, horizontal)); }
+        finally { if (shift) Key(VirtualKey.Shift, false); }
+    }
     internal static uint WheelLines()
     {
         Assert.That(SystemParametersInfo(0x0068, 0, out var lines, 0), Is.True);
@@ -119,10 +195,33 @@ internal static class SheetNativeInput
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct KeyInput { public ushort VirtualKey, ScanCode; public uint Flags, Time; public nuint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRectangle { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct BitmapHeader
+    {
+        public uint Size; public int Width, Height; public ushort Planes, BitCount;
+        public uint Compression, SizeImage; public int XPelsPerMeter, YPelsPerMeter; public uint ClrUsed, ClrImportant;
+    }
     [DllImport("user32.dll")] private static extern uint SendInput(uint count, Input[] inputs, int size);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(nint hwnd, ref NativePoint point);
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
+    [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
+    [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode)] private static extern int GetClassName(nint hwnd, System.Text.StringBuilder text, int count);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(nint hwnd, out NativeRectangle bounds);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+    [DllImport("user32.dll")] private static extern nint GetWindow(nint hwnd, uint command);
+    [DllImport("user32.dll")] private static extern nint GetParent(nint hwnd);
+    [DllImport("user32.dll")] private static extern nint GetAncestor(nint hwnd, uint flags);
+    [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
+    [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint dc);
+    [DllImport("gdi32.dll")] private static extern nint CreateCompatibleDC(nint dc);
+    [DllImport("gdi32.dll")] private static extern nint CreateDIBSection(nint dc, ref BitmapHeader info, uint usage, out nint bits, nint section, uint offset);
+    [DllImport("gdi32.dll")] private static extern nint SelectObject(nint dc, nint value);
+    [DllImport("gdi32.dll")] private static extern bool BitBlt(nint destination, int x, int y, int width, int height, nint source, int sourceX, int sourceY, uint operation);
+    [DllImport("gdi32.dll")] private static extern bool DeleteObject(nint value);
+    [DllImport("gdi32.dll")] private static extern bool DeleteDC(nint dc);
+    [DllImport("gdi32.dll")] private static extern bool GdiFlush();
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] private static extern bool SystemParametersInfo(uint action, uint parameter, out uint value, uint flags);
 }

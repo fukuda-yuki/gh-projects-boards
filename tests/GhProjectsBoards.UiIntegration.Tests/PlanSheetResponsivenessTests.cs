@@ -15,6 +15,42 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanSheetHostedTests
 {
     [Test]
+    public async Task MovingAndContractingSelectionClearsOldBordersAndFillHandles()
+    {
+        var before = PlanJson.Text(session.Document.State);
+        async Task CheckSelection(int first, int last, PlanField[] fields, int active, PlanField end)
+        {
+            await Ui.Run(() => {
+                for (var number = 1; number <= 6; number++) {
+                    Assert.That(Ui.Find<Border>($"PlanSelectionAccent{number}").Visibility,
+                        Is.EqualTo(number == active ? Visibility.Visible : Visibility.Collapsed));
+                    foreach (var field in new[] { PlanField.Estimate, PlanField.Remaining }) {
+                        var selected = number >= first && number <= last && fields.Contains(field);
+                        var id = $"PlanCell{number}_{field}";
+                        Assert.That(SelectProvider(id).IsSelected, Is.EqualTo(selected));
+                        var cell = Ui.Find<TextBox>(id);
+                        var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell));
+                        Assert.That(frame.BorderThickness.Left, Is.EqualTo(selected ? 2 : 0));
+                        Assert.That(cell.Text, Is.EqualTo("8h"));
+                    }
+                }
+                var handles = Ui.Tree(sheet).OfType<Button>().Where(button => button.Visibility == Visibility.Visible
+                    && AutomationProperties.GetAutomationId(button).StartsWith("PlanFillHandle", StringComparison.Ordinal));
+                Assert.That(handles.Select(AutomationProperties.GetAutomationId), Is.EqualTo(new[] { $"PlanFillHandle{active}_{end}" }));
+            });
+        }
+        await Select(1, PlanField.Estimate);
+        await Select(4, PlanField.Remaining, true);
+        await CheckSelection(1, 4, [PlanField.Estimate, PlanField.Remaining], 4, PlanField.Remaining);
+        await Select(2, PlanField.Estimate, true);
+        await CheckSelection(1, 2, [PlanField.Estimate], 2, PlanField.Estimate);
+        await Select(6, PlanField.Remaining);
+        await CheckSelection(6, 6, [PlanField.Remaining], 6, PlanField.Remaining);
+        Assert.That(PlanJson.Text(session.Document.State), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [Test]
     public async Task ScrollMeasurementTargetsRowsDespiteNestedEditorScrollViewers()
     {
         ScrollViewer vertical = null!;
@@ -62,19 +98,127 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
+    public async Task NarrowingAndClearingFilterRetainsTheMatchingNativeEditorAndSelection()
+    {
+        await Select(1, PlanField.Title);
+        TextBox original = null!;
+        await Ui.Run(() => {
+            original = Ui.Find<TextBox>("PlanCell1_Title");
+            Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic);
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 1";
+        });
+        await Ui.Until(() => sheet.List.Items.Count == 13);
+        await Ui.Ready<TextBox>("PlanCell1_Title");
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Title"), Is.SameAs(original), "A matching row keeps its native editor when other rows disappear.");
+            Assert.That(original.Text, Is.EqualTo("Task 1"));
+            Assert.That(SelectProvider("PlanCell1_Title").IsSelected, Is.True);
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "";
+        });
+        await Ui.Until(() => sheet.List.Items.Count == 101);
+        await Ui.Ready<TextBox>("PlanCell1_Title");
+        for (var number = 2; number <= 9; number++) await Ui.Ready<TextBox>($"PlanCell{number}_Title");
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Title"), Is.SameAs(original));
+            Assert.That(original.Text, Is.EqualTo("Task 1"));
+            for (var number = 2; number <= 9; number++)
+                Assert.That(Ui.Find<TextBox>($"PlanCell{number}_Title").Text, Is.EqualTo($"Task {number}"), "Restored rows must display their current task rather than a recycled row's content.");
+            Assert.That(SelectProvider("PlanCell1_Title").IsSelected, Is.True);
+            Assert.That(session.UndoCount, Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task DeepFilteredDependencyRemainsCoherentWhenClearedFoldedAndUndone()
+    {
+        var before = PlanJson.Text(session.Document.State);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+            [new("I100", PlanField.Parent, "I99"), new("I100", PlanField.Predecessors, System.Collections.Immutable.ImmutableArray.Create("I1"))]), Today);
+        await Ui.Run(() => { sheet.Refresh(); sheet.List.ScrollIntoView("I100"); });
+        await Ui.Ready<TextBox>("PlanCell100_Title");
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic);
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 100";
+        });
+        await Ui.Until(() => sheet.List.Items.Count == 2);
+        await Ui.Ready<TextBox>("PlanCell100_End");
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            Assert.That(sheet.List.Items.Cast<string>(), Is.EqualTo(new[] { "I100", "" }));
+            Assert.That(Ui.Find<TextBox>("PlanCell100_End").Text, Is.EqualTo("10/6 (火)"));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件"));
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "";
+        });
+        await Ui.Until(() => sheet.List.Items.Count == 101);
+        await Ui.Run(() => sheet.List.ScrollIntoView("I99"));
+        await Ui.Ready<Button>("PlanFold99");
+        await Ui.Run(() => Ui.Click("PlanFold99"));
+        await Ui.Until(() => !sheet.List.Items.Contains("I100"));
+        await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
+        await Ui.Until(() => sheet.List.Items.Count == 101);
+        Assert.That(PlanJson.Text(session.Document.State), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task FilterAfterCalendarChangeAndUndoKeepsCurrentDatesAndCalendarShading()
+    {
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedItem = "日");
+        await Ui.Idle();
+        bool Shaded() => Ui.Tree(sheet).OfType<FrameworkElement>().Any(element =>
+            AutomationProperties.GetAutomationId(element) == "PlanNonWorking20261005");
+        await Ui.Run(() => Assert.That(Shaded(), Is.False));
+
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { CompanyDaysOff = [Today] }), Today);
+        await Ui.Run(() => { sheet.Refresh(); Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 1"; });
+        await Ui.Until(() => sheet.List.Items.Count == 13);
+        await Ui.Ready<TextBox>("PlanCell1_Start");
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/6 (火)"));
+            Assert.That(Shaded(), Is.True);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
+            Assert.That(session.UndoCount, Is.EqualTo(1), "Filtering adds no operation to Undo.");
+        });
+
+        await Ui.Run(() => sheet.KeyboardCommand(VirtualKey.Z));
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Start").Text, Is.EqualTo("10/5 (月)"));
+            Assert.That(Shaded(), Is.False, "Undo must also refresh a calendar whose date range did not change.");
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
+            Assert.That(session.UndoCount, Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task EmptyFilterCancelsPendingTextAndRestoresRowsWithoutWaitingForPause()
     {
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "no match");
         await Ui.Until(() => sheet.List.Items.Count == 1);
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("0 件")));
-        var elapsed = Stopwatch.StartNew();
-        await Ui.Run(() => {
-            var filter = Ui.Find<TextBox>("PlanSheetFilter");
-            filter.Text = "Task 20";
-            filter.Text = "";
-        });
-        await Ui.Until(() => sheet.List.Items.Count == 101);
-        Assert.That(elapsed.ElapsedMilliseconds, Is.LessThan(300), "Clear must bypass the debounce.");
+        var elapsed = new Stopwatch();
+        var applied = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Windows.Foundation.Collections.VectorChangedEventHandler<object> observer = (_, args) => {
+            if (elapsed.IsRunning && args.CollectionChange == Windows.Foundation.Collections.CollectionChange.ItemInserted)
+                applied.TrySetResult(elapsed.Elapsed.TotalMilliseconds);
+        };
+        await Ui.Run(() => sheet.List.Items.VectorChanged += observer);
+        try {
+            await Ui.Run(() => {
+                var filter = Ui.Find<TextBox>("PlanSheetFilter");
+                filter.Text = "Task 20";
+                elapsed.Restart();
+                filter.Text = "";
+            });
+            var clearToRows = await applied.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            TestContext.Out.WriteLine($"Clear to first restored row: {clearToRows:F3} ms");
+            Assert.That(clearToRows, Is.LessThan(300), "Clear must start restoring rows without the debounce; full layout has a separate performance measurement.");
+            await Ui.Until(() => sheet.List.Items.Count == 101);
+        } finally {
+            await Ui.Run(() => sheet.List.Items.VectorChanged -= observer);
+        }
         await Task.Delay(350);
         await Ui.Run(() => {
             Assert.That(sheet.List.Items.Count, Is.EqualTo(101));
@@ -89,7 +233,10 @@ internal sealed partial class PlanSheetHostedTests
         TextBox filter = null!;
         var elapsed = new Stopwatch();
         var applied = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
-        long observer = 0;
+        Windows.Foundation.Collections.VectorChangedEventHandler<object> observer = (_, _) => {
+            if (sheet.List.Items.Cast<string>().SequenceEqual(new[] { "I20", "" }))
+                applied.TrySetResult(elapsed.Elapsed.TotalMilliseconds);
+        };
         Microsoft.UI.Xaml.Input.KeyEventHandler pressed = (_, args) => {
             if (args.OriginalKey != VirtualKey.Enter) return;
             // Supply fresh text at native key delivery, after activation/focus and input-driver setup.
@@ -104,10 +251,7 @@ internal sealed partial class PlanSheetHostedTests
         await SheetNativeInput.Rendered();
         await Ui.Run(() => {
             filter.AddHandler(UIElement.PreviewKeyDownEvent, pressed, true);
-            observer = sheet.List.RegisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, (_, _) => {
-                if (((IEnumerable<string>)sheet.List.ItemsSource).SequenceEqual(new[] { "I20", "" }))
-                    applied.TrySetResult(elapsed.Elapsed.TotalMilliseconds);
-            });
+            sheet.List.Items.VectorChanged += observer;
         });
         try {
             await SheetNativeInput.Press(VirtualKey.Enter);
@@ -119,7 +263,7 @@ internal sealed partial class PlanSheetHostedTests
         } finally {
             await Ui.Run(() => {
                 filter.RemoveHandler(UIElement.PreviewKeyDownEvent, pressed);
-                sheet.List.UnregisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, observer);
+                sheet.List.Items.VectorChanged -= observer;
             });
         }
     }
@@ -188,11 +332,11 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.ClickCommand("PlanSheetPaste");
         await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
         var staleResultShown = false;
-        long observer = 0;
-        await Ui.Run(() => observer = sheet.List.RegisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, (_, _) => {
-            var rows = (IEnumerable<string>)sheet.List.ItemsSource;
+        EventHandler<RenderedEventArgs> observer = (_, _) => {
+            var rows = sheet.List.Items.Cast<string>();
             if (rows.Contains("I1") && !rows.Contains("I2")) staleResultShown = true;
-        }));
+        };
+        await Ui.Run(() => CompositionTarget.Rendered += observer);
         try {
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task 1");
             await Task.Delay(350);
@@ -209,7 +353,7 @@ internal sealed partial class PlanSheetHostedTests
             });
         } finally {
             content.TrySetResult(new("", null));
-            await Ui.Run(() => sheet.List.UnregisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, observer));
+            await Ui.Run(() => CompositionTarget.Rendered -= observer);
         }
         Assert.That(session.Document.State, Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.EqualTo(undo));
@@ -239,7 +383,7 @@ internal sealed partial class PlanSheetHostedTests
             selection = Ui.Find<TextBlock>("PlanSheetSelection").Text;
             scroll = Ui.Find<ScrollViewer>(gantt ? "PlanGanttHorizontal" : "PlanSheetHorizontal");
             cellX = cell.TransformToVisual(sheet).TransformPoint(new()).X;
-            barX = Canvas.GetLeft(Ui.Find<FrameworkElement>("PlanBar1"));
+            barX = Ui.Find<FrameworkElement>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X;
             offset = scroll.HorizontalOffset;
             target = offset + 120 <= scroll.ScrollableWidth ? offset + 120 : Math.Max(0, offset - 120);
             Assert.That(target, Is.Not.EqualTo(offset));
@@ -256,7 +400,7 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetSelection").Text, Is.EqualTo(selection));
             Assert.That(cell.TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(cellX - (gantt ? 0 : target - offset)).Within(1));
-            Assert.That(Canvas.GetLeft(Ui.Find<FrameworkElement>("PlanBar1")),
+            Assert.That(Ui.Find<FrameworkElement>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X,
                 Is.EqualTo(barX - (gantt ? target - offset : 0)).Within(1));
         });
         Assert.That(session.Document.State, Is.EqualTo(before));
@@ -311,7 +455,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.ClickCommand("PlanSheetColumns");
         await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is { IsLoaded: true });
         await Ui.Run(() => {
-            var flyout = Ui.Find<AppBarButton>("PlanSheetColumns").Flyout;
+            var flyout = Ui.CommandButton("PlanSheetColumns").Flyout;
             Assert.That(flyout.AreOpenCloseAnimationsEnabled, Is.False);
             AssertQuietPresenter();
             flyout.Hide();

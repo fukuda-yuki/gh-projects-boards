@@ -45,6 +45,7 @@ internal sealed class PlanWorkspaceHostedTests
         readDay = PlanClock.Today;
         var dateText = readDay.ToString("M/d (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
         await Open();
+        await Ui.Run(() => Assert.That(Ui.Find<SplitButton>("PlanRefresh").Flyout.AreOpenCloseAnimationsEnabled, Is.False));
         await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local edit")]), readDay);
         await workspace.Session.Execute(new InsertPlanRows([PlanRow.New("New task", "acme/repo")]), readDay);
         var before = PlanJson.Text(workspace.Session.Document);

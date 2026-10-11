@@ -318,7 +318,7 @@ internal static class PlanOperations
         => document.Sync.NativeOrders.GetValueOrDefault(parent,
             document.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToImmutableArray())
             .Where(id => document.State.Rows.Any(r => r.Identity == id)).ToImmutableArray();
-    internal static PlanUnpublished Changes(PlanDocument d, DateOnly today)
+    internal static PlanUnpublished Changes(PlanDocument d, DateOnly today, IReadOnlyList<ScheduledTask>? schedule = null)
     {
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
         var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, PlanField Field)>();
@@ -326,7 +326,10 @@ internal static class PlanOperations
         var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
         var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
         var moved = order.Where((id, i) => id != oldOrder[i]).ToHashSet();
-        foreach (var calculated in Schedule(d, today))
+        var childrenByParent = d.State.Rows.Where(r => r.Parent is not null).ToLookup(r => r.Parent!, r => r.Identity);
+        var baselineChildrenByParent = d.Baseline.Rows.Where(r => r.Parent is not null).ToLookup(r => r.Parent!, r => r.Identity);
+        var currentIds = d.State.Rows.Select(r => r.Identity).ToHashSet();
+        foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];
             if (d.Dates.Held is null && r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
@@ -344,8 +347,10 @@ internal static class PlanOperations
             foreach (var field in fields.Where(field => d.Dates.Held is null && IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
-            var children = d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity).ToArray();
-            if (children.Length > 1 && !PreviousSiblingOrder(d, r.Identity).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
+            var children = childrenByParent[r.Identity];
+            var previousChildren = d.Sync.NativeOrders.TryGetValue(r.Identity, out var nativeOrder)
+                ? nativeOrder : baselineChildrenByParent[r.Identity];
+            if (children.Skip(1).Any() && !previousChildren.Where(currentIds.Contains).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
         return new(result.ToImmutable()) { RecalculatedFields = recalculated.ToImmutable() };
