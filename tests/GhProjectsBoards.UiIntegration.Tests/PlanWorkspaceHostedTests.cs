@@ -1838,9 +1838,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanProjectEnd", "2026-10-04");
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true });
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2026-10-04"));
-            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Does.Contain("終了日は開始日以降"));
+            Assert.That(((TextBlock)Ui.Popup<Border>("SettingsInputProblem")!.Child).Text, Does.Contain("終了日は開始日以降"));
         });
         await CommitText("PlanProjectEnd", "2027-04-30");
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
@@ -1959,7 +1960,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             });
         }
         if (fromPeople) {
-            await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1");
+            // The settings page is already open; rebuilding it would invalidate its controls.
+            await Ui.Ready<TextBox>("PlanAllowanceU1"); await Ui.Ready<Button>("PlanSettingsBack");
             await Ui.Run(() => {
                 var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "80";
                 Ui.Click("PlanSettingsBack");

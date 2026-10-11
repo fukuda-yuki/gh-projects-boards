@@ -28,7 +28,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                     Assert.That(cell.ActualWidth, Is.GreaterThan(0));
                     Assert.That(cellX, Is.EqualTo(headerX).Within(1), $"{identity}, {header.Text}: left");
                     Assert.That(cellX + cell.ActualWidth, Is.EqualTo(headerX + header.ActualWidth).Within(1), $"{identity}, {header.Text}: right");
-                    if (column is >= 2 and <= 6) {
+                    if (column == 0 || column is >= 2 and <= 6) {
                         Assert.That(header.TextAlignment, Is.EqualTo(TextAlignment.Right));
                         Assert.That(cell.TextAlignment, Is.EqualTo(TextAlignment.Right));
                     }

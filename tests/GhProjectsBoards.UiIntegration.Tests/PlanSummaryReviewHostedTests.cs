@@ -129,15 +129,36 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await SummaryPlan(); await Settings(); await Ui.Ready<TextBox>("PlanAllowanceU1");
         var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
+        if (navigation == "scroll") {
+            await Ui.Run(() => {
+                var input = Ui.Find<TextBox>("PlanAllowanceU1"); var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+                var top = input.TransformToVisual(scroll).TransformPoint(new()).Y;
+                scroll.ChangeView(null, scroll.VerticalOffset + top - 100, null, true);
+            });
+            await Ui.Until(() => {
+                var input = Ui.Find<TextBox>("PlanAllowanceU1"); var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+                var top = input.TransformToVisual(scroll).TransformPoint(new()).Y;
+                return top >= 0 && top + input.ActualHeight <= scroll.ActualHeight;
+            });
+        }
         await Ui.Run(() => {
-            var input = Ui.Find<TextBox>("PlanAllowanceU1"); input.Focus(FocusState.Programmatic); input.Text = "invalid";
+            var input = Ui.Find<TextBox>("PlanAllowanceU1"); Assert.That(input.Focus(FocusState.Programmatic), Is.True); input.Text = "invalid";
         });
         if (navigation == "close") await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
         else await Ui.Run(() => {
             if (navigation == "tab") Ui.Click("PlanShowSummary");
-            else { var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll"); scroll.ChangeView(null, scroll.ScrollableHeight, null, true); }
+            else {
+                var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+                var input = Ui.Find<TextBox>("PlanAllowanceU1");
+                Assert.That(scroll.VerticalOffset + input.TransformToVisual(scroll).TransformPoint(new()).Y, Is.GreaterThan(scroll.ActualHeight), "Scrolling to the top must move this field outside the viewport.");
+                Assert.That(scroll.ChangeView(null, 0, null, true), Is.True);
+            }
         });
-        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }); await Ui.Idle();
+        await Ui.Until(() => {
+            var input = Ui.Find<TextBox>("PlanAllowanceU1"); var scroll = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+            var top = input.TransformToVisual(scroll).TransformPoint(new()).Y;
+            return Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true } && top >= 0 && top + input.ActualHeight <= scroll.ActualHeight;
+        }); await Ui.Idle();
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>("PlanAllowanceU1");
             Assert.That(input.Text, Is.EqualTo("invalid")); Assert.That(input.FocusState, Is.Not.EqualTo(FocusState.Unfocused));

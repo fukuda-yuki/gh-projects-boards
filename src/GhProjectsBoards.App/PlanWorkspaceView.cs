@@ -686,17 +686,27 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void RevealSettingsInput()
     {
-        if (revealingSetting || invalidSetting is not { IsLoaded: true } input || invalidSettingMessage is not { } message) return;
+        if (revealingSetting || currentPage != "settings" || invalidSetting is not { IsLoaded: true } input || invalidSettingMessage is not { } message) return;
         revealingSetting = true;
-        if (!SettingIsVisible(input)) input.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = .5 });
         input.Focus(FocusState.Programmatic);
-        settingsInputProblem.Show(input, message);
+        PositionProblem();
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             revealingSetting = false;
             if (ReferenceEquals(invalidSetting, input) && input.IsLoaded) {
-                input.Focus(FocusState.Programmatic); settingsInputProblem.Show(input, message);
+                input.Focus(FocusState.Programmatic); PositionProblem();
             }
         });
+        void PositionProblem()
+        {
+            // Target the settings viewport explicitly; a TextBox has its own internal scroll viewer.
+            // Focus and the error surface can also change layout before the next ViewChanged.
+            if (!SettingIsVisible(input)) {
+                settingsInputProblem.Close();
+                var top = input.TransformToVisual(settingsScroll).TransformPoint(new()).Y;
+                var offset = settingsScroll.VerticalOffset + top - Math.Max(0, (settingsScroll.ActualHeight - input.ActualHeight) / 2);
+                settingsScroll.ChangeView(null, Math.Clamp(offset, 0, settingsScroll.ScrollableHeight), null, true);
+            } else settingsInputProblem.Show(input, message);
+        }
     }
     private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply)
     {

@@ -5,6 +5,7 @@ using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanWorkspaceHostedTests
@@ -33,7 +34,17 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryPhase_0")), Does.Contain("SA"));
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryPhaseTotal")), Does.Contain("全体"));
             var summary = Ui.Find<PlanSummaryView>("PlanSummary");
-            Assert.That(Ui.Tree(summary).OfType<TextBox>(), Is.Empty);
+            Assert.That(Ui.Tree(summary).OfType<ComboBox>().All(c => !c.IsEditable), Is.True);
+            foreach (var input in Ui.Tree(summary).OfType<TextBox>()) {
+                // WinUI's non-editable ComboBox can realize its collapsed EditableText part.
+                Assert.That(input.Name, Is.EqualTo("EditableText"));
+                DependencyObject? owner = VisualTreeHelper.GetParent(input);
+                while (owner is not null && owner is not ComboBox) owner = VisualTreeHelper.GetParent(owner);
+                Assert.That(owner, Is.TypeOf<ComboBox>());
+                Assert.That(((ComboBox)owner!).IsEditable, Is.False);
+                Assert.That(input.Visibility, Is.EqualTo(Visibility.Collapsed));
+                Assert.That(input.Focus(FocusState.Keyboard), Is.False, "No summary TextBox may accept keyboard focus.");
+            }
             Assert.That(Ui.Tree(summary).OfType<NumberBox>(), Is.Empty);
             Assert.That(Ui.Tree(summary).OfType<CalendarDatePicker>(), Is.Empty);
         });
@@ -46,11 +57,15 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U1_0")), Does.Contain("24"));
             Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 1;
+        });
+        await Ui.Ready<Button>("SummaryCell_U1_0");
+        await Ui.Run(() => {
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U1_0")), Does.Contain("28"));
             Ui.Click("SummaryCell_U1_0");
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
-            Ui.Click("SummaryFilter");
         });
+        await Ui.Ready<Button>("SummaryFilter");
+        await Ui.Run(() => Ui.Click("SummaryFilter"));
         await Ui.Idle();
         await Ui.Run(() => {
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
@@ -67,8 +82,9 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task SummaryMonthShowsDailyOverloadAndItsContributors()
     {
         await SummaryPlan();
+        await Ui.Run(() => Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1);
+        await Ui.Ready<Button>("SummaryMonth_U1_0");
         await Ui.Run(() => {
-            Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1;
             var cell = Ui.Find<Button>("SummaryMonth_U1_0");
             Assert.That(AutomationProperties.GetName(cell), Does.Contain("日超過"));
             Ui.Click("SummaryMonth_U1_0");
@@ -113,8 +129,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             StatusDate = readDay, ProjectStart = readDay, ProjectEnd = new(2026, 10, 30) }), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<ComboBox>("SummaryMode");
+        await Ui.Run(() => Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1);
+        await Ui.Ready<Button>("SummaryMonth_U1_0");
         await Ui.Run(() => {
-            Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1; Ui.Click("SummaryMonth_U1_0");
+            Ui.Click("SummaryMonth_U1_0");
             Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
         await Ui.Ready<TextBlock>("SummaryTask_I2");
