@@ -11,6 +11,32 @@ internal sealed class ProjectReaderTests
 {
     private static readonly ConnectionScope Scope = new("github.com", 42);
 
+    [TestCase("CLOSED", "2026-10-05T18:00:00Z", ValueAvailability.Present, "2026-10-06")]
+    [TestCase("OPEN", null, ValueAvailability.Empty, null)]
+    public async Task CloseTimestampIsReadAndConvertedAtSnapshotBoundary(string state, string? timestamp, ValueAvailability availability, string? date)
+    {
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([Item("P1", content: Issue(state: state, closedAt: timestamp))], 1))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(result.Project!.Issues.Values.Single().ClosedAt.Availability, Is.EqualTo(availability));
+        var tokyo = TimeZoneInfo.CreateCustomTimeZone("Tokyo", TimeSpan.FromHours(9), "Tokyo", "Tokyo");
+        var snapshot = GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new(), tokyo);
+        Assert.That(snapshot.Baseline.Rows.Single().CloseDate, Is.EqualTo(date is null ? null : (DateOnly?)DateOnly.Parse(date)));
+        Assert.That(snapshot.Baseline.Rows.Single().Closed, Is.EqualTo(state == "CLOSED"));
+    }
+
+    [TestCase(null)]
+    [TestCase("not-a-timestamp")]
+    public async Task ClosedIssueWithoutReadableCloseTimestampCannotReplacePlan(string? timestamp)
+    {
+        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
+            ? Response(Project("P1", "items", Page([Item("P1", content: Issue(state: "CLOSED", closedAt: timestamp))], 1))) : null };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
+        Assert.Throws<InvalidOperationException>(() => GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new()));
+    }
+
     [Test]
     public async Task CursorCompleteProjectPagesCountUndeliveredAndRedactedItemsAsInaccessible()
     {
@@ -568,8 +594,8 @@ internal sealed class ProjectReaderTests
     internal static object Value(string project, string field, string? option = "todo", string? id = null)
         => new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = id ?? project + "-value-" + field,
             optionId = option, field = new { id = field, project = new { id = project } } };
-    internal static object Issue(string id = "I1", int number = 1) => new { __typename = "Issue", id, number,
-        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state = "OPEN",
+    internal static object Issue(string id = "I1", int number = 1, string state = "OPEN", string? closedAt = null) => new { __typename = "Issue", id, number,
+        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt,
         assignees = Page([], 0), blockedBy = Page([], 0), parent = (object?)null,
         repository = new { id = "R1", nameWithOwner = "example/repository", owner = new { id = "RO1" } } };
     internal static object Item(string project, string? id = null, object? values = null, object? content = null,

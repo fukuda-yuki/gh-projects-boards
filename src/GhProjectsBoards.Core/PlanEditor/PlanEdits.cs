@@ -5,7 +5,7 @@ internal static class PlanEdits
     public static PlanTask Estimate(PlanTask task, decimal? value)
     {
         ValidateEffort(value);
-        return task with { Estimate = value, Remaining = task.Remaining ?? value };
+        return task with { Estimate = value };
     }
     public static PlanTask Remaining(PlanTask task, decimal? value)
     {

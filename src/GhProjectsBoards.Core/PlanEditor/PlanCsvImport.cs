@@ -120,7 +120,7 @@ internal static class PlanCsvImport
             var predecessors = Split(source.Predecessors).Select(Resolve).Where(id => id is not null).Cast<string>().Distinct().ToImmutableArray();
             var parent = Resolve(source.Parent);
             if (keys.TryGetValue(source.Key, out var identity)) additions.Add(new(identity, source.Title, catalog?.Name ?? repository)
-            { Estimate = estimate, Remaining = estimate, StartNoEarlierThan = start, Assignees = assignees.Distinct().ToImmutableArray(),
+            { Estimate = estimate, StartNoEarlierThan = start, Assignees = assignees.Distinct().ToImmutableArray(),
                 Parent = parent, Predecessors = predecessors, CsvSourceHash = file.Hash });
         }
         if (errors.Count > 0) return Invalid();

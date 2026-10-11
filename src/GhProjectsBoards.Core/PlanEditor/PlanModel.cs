@@ -16,13 +16,17 @@ internal sealed record PlanTask(string Identity, int RowId)
     public decimal? Remaining { get; init; }
     public decimal? Actual { get; init; }
     public bool Closed { get; init; }
+    public DateOnly? CloseDate { get; init; }
     public bool Fixed { get; init; }
     public DateOnly? Start { get; init; }
     public DateOnly? End { get; init; }
     public DateOnly? GitHubStart { get; init; }
     public DateOnly? GitHubEnd { get; init; }
     public DateOnly? StartNoEarlierThan { get; init; }
-    public bool IsComplete => Closed || Remaining == 0 && (Estimate > 0 || Actual > 0);
+    public bool IsComplete => Closed;
+    public decimal? EffectiveRemaining => Closed ? 0 : Remaining ?? (Estimate is >= 0 && Actual is null or >= 0 ? Math.Max(Estimate.Value - (Actual ?? 0), 0) : null);
+    public (DateOnly? Start, DateOnly? End) KeptDates => Closed && CloseDate is { } close
+        ? (Start > close ? close : Start, close) : (Start, End);
     public bool KeepsDates => IsComplete || Fixed || Estimate is null && Remaining is null;
 }
 internal sealed record PlanPerson(string Identity, decimal Rate = 100m)
@@ -48,5 +52,23 @@ internal sealed record ScheduledTask(PlanTask Input, PlanDate Start, PlanDate En
     decimal? Estimate, decimal? Remaining, decimal? Actual, bool IsSummary,
     string StartReason, IReadOnlyList<string> Warnings)
 {
+    public decimal? Forecast => Remaining is >= 0 && (Actual ?? 0) >= 0 && (Actual ?? 0) <= decimal.MaxValue - Remaining.Value
+        ? (Actual ?? 0) + Remaining.Value : null;
+    public decimal? Variance => Forecast - Estimate;
+    public bool IsOverEstimate => !IsSummary && !Input.Closed && Estimate is >= 0 && Remaining is >= 0 && (Actual ?? 0) >= 0
+        && ((Actual ?? 0) > Estimate || Remaining > Estimate - (Actual ?? 0));
+    public bool IsZeroRemainingOpen => !IsSummary && !Input.Closed && Remaining == 0 && (Estimate > 0 || Actual > 0);
+    public bool IsMilestone => !IsSummary && !Input.Closed && Remaining == 0 && !(Estimate > 0 || Actual > 0);
+    public decimal? WorkCompleteFraction
+    {
+        get
+        {
+            if (Actual is not >= 0 || Remaining is not >= 0 || Actual == 0 && Remaining == 0) return null;
+            // Scale before adding so accepted decimal efforts cannot overflow the ratio.
+            var scale = Math.Max(Actual.Value, Remaining.Value);
+            var actual = Actual.Value / scale;
+            return actual / (actual + Remaining.Value / scale);
+        }
+    }
     public IReadOnlyDictionary<DateOnly, decimal>? PlannedHours { get; init; }
 }

@@ -90,6 +90,8 @@ internal sealed class PlanDocumentTests
             var rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Parent = "issue:1" });
             initial = initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } };
         }
+        if (kind is PlanOperationKind.Fill or PlanOperationKind.CtrlD)
+            initial = initial with { State = initial.State with { Rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Estimate = 16 }) } };
         var session = await Create(initial);
         var before = Text(session.Document);
         PlanCommand command = kind switch
@@ -116,7 +118,7 @@ internal sealed class PlanDocumentTests
         {
             case PlanOperationKind.Cell: Assert.That(rowsNow[0].Title, Is.EqualTo("Changed")); break;
             case PlanOperationKind.Paste: Assert.That((rowsNow[0].Estimate, rowsNow[0].Remaining, rowsNow[1].Title), Is.EqualTo((12m, 4m, "Pasted"))); break;
-            case PlanOperationKind.Fill: case PlanOperationKind.CtrlD: Assert.That(rowsNow.Skip(1).Select(r => r.Remaining), Is.All.EqualTo(8)); break;
+            case PlanOperationKind.Fill: case PlanOperationKind.CtrlD: Assert.That(rowsNow.Skip(1).Select(r => r.Estimate), Is.All.EqualTo(8)); break;
             case PlanOperationKind.Clear: Assert.That(rowsNow.Skip(1).Select(r => r.Estimate), Is.All.Null); break;
             case PlanOperationKind.Insert: Assert.That(rowsNow[1].Identity, Does.StartWith("local:")); Assert.That(rowsNow[1].Repository, Is.EqualTo("acme/work")); break;
             case PlanOperationKind.CsvImport: Assert.That(rowsNow.Length, Is.EqualTo(5)); break;
@@ -139,7 +141,7 @@ internal sealed class PlanDocumentTests
         var session = await Create();
         await session.Execute(Edit(field, field == PlanField.Estimate ? 12m : Today.AddDays(1)), Today);
         var row = session.Document.State.Rows[0];
-        if (field == PlanField.Estimate) Assert.That(row.Remaining, Is.EqualTo(12));
+        if (field == PlanField.Estimate) Assert.That(row.Remaining, Is.Null);
         if (field == PlanField.Start) Assert.That(row.StartNoEarlierThan, Is.EqualTo(Today.AddDays(1)));
         if (field == PlanField.End) Assert.That(row.Fixed, Is.True);
     }
@@ -216,11 +218,14 @@ internal sealed class PlanDocumentTests
     [Test]
     public async Task MarkersCountTasksAndCalculatedDatesWithoutCountingLocalSettingsOrInsertedRowShifts()
     {
-        var session = await Create(); Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var initial = Initial();
+        initial = initial with { State = initial.State with { Settings = initial.State.Settings with {
+            Columns = initial.State.Settings.Columns.Add(new(PlanField.Start, "S", "Start", "DATE")).Add(new(PlanField.End, "E", "End", "DATE")) } } };
+        var session = await Create(initial); Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         await session.Execute(Edit(PlanField.Estimate, 12m), Today);
         var changes = session.Changes(Today);
         Assert.That(changes.TaskCount, Is.EqualTo(1));
-        Assert.That(changes.Fields["issue:1"], Is.EquivalentTo(new[] { PlanField.Estimate, PlanField.Remaining, PlanField.End }));
+        Assert.That(changes.Fields["issue:1"], Is.EquivalentTo(new[] { PlanField.Estimate, PlanField.End }));
         await session.Undo(Today);
         await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { People = [new("p1", "Alice", 100, 80, [])] }), Today);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
@@ -402,6 +407,49 @@ internal sealed class PlanDocumentTests
         Assert.That(session.Schedule(Today)[0].Warnings, Is.Not.Empty);
         await session.Undo(Today);
         Assert.That(Text(session.Document.State.Rows), Is.EqualTo(Text(rows)));
+    }
+
+    [TestCase(PlanField.Title), TestCase(PlanField.Estimate), TestCase(PlanField.Actual), TestCase(PlanField.Start)]
+    public async Task ClosedOtherFieldsRemainEditableAndDatesStayValid(PlanField field)
+    {
+        var initial = Initial();
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });
+        var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
+        object value = field == PlanField.Title ? "Updated" : field == PlanField.Start ? Today.AddDays(7) : 12m;
+        await session.Execute(Edit(field, value), Today);
+        Assert.That(PlanOperations.Value(session.Document.State.Rows[0], field), Is.EqualTo(value));
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        var scheduled = PlanOperations.Schedule(session.Document, Today)[0];
+        Assert.That(scheduled.Start.Value <= scheduled.End.Value, Is.True);
+        Assert.That(scheduled.Warnings, Does.Not.Contain("開始日が終了日より後"));
+    }
+
+    [TestCase(PlanField.Remaining, "edit"), TestCase(PlanField.End, "edit")]
+    [TestCase(PlanField.Remaining, "paste"), TestCase(PlanField.End, "paste")]
+    [TestCase(PlanField.Remaining, "fill"), TestCase(PlanField.End, "fill")]
+    [TestCase(PlanField.Remaining, "clear"), TestCase(PlanField.End, "clear")]
+    public async Task ClosedFinalFieldsRejectWholeOperationWithoutDocumentOrHistoryChanges(PlanField field, string operation)
+    {
+        var initial = Initial();
+        var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });
+        var session = await Create(initial with { Baseline = initial.Baseline with { Rows = rows }, State = initial.State with { Rows = rows } });
+        await session.Execute(Edit(PlanField.Title, "Editable"), Today);
+        await session.Undo(Today);
+        var before = Text(session.Document);
+        var savedPath = new PlanStore(root).FileFor(Project);
+        var bytes = await File.ReadAllBytesAsync(savedPath);
+        var undo = session.UndoCount; var redo = session.RedoCount;
+        PlanCommand command = operation switch {
+            "fill" => new FillPlanCells(PlanOperationKind.Fill, "issue:2", ["issue:1"], [field]),
+            "clear" => new ClearPlanCells(["issue:1"], [field]),
+            _ => new EditPlanCells(operation == "paste" ? PlanOperationKind.Paste : PlanOperationKind.Cell,
+                [new("issue:2", PlanField.Title, "Must not survive"), new("issue:1", field, field == PlanField.Remaining ? 4m : Today.AddDays(1))])
+        };
+        var error = Assert.Catch<ArgumentException>(() => session.Execute(command, Today));
+        Assert.That(error!.Message, Is.EqualTo("完了したタスクは Issue のクローズで確定します（編集不可）"));
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+        Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((undo, redo)));
+        Assert.That(await File.ReadAllBytesAsync(savedPath), Is.EqualTo(bytes));
     }
 
     [TestCase("summary"), TestCase("closed"), TestCase("foreign identity"), TestCase("duplicate identity"), TestCase("date pair")]

@@ -141,6 +141,7 @@ public sealed class PlanSheetRow : Grid
             markers[i].Foreground = PlanSheetView.Brush(conflict || outcome ? "SystemFillColorCriticalBrush" : "TextFillColorPrimaryBrush");
             corners[i].Visibility = conflict || changed ? Visibility.Visible : Visibility.Collapsed;
             corners[i].Fill = PlanSheetView.Brush(conflict ? "SystemFillColorCriticalBrush" : "SheetChangedMarkBrush");
+            cell.IsReadOnly = owner.ReadOnly(Identity, field);
             handles[i].Visibility = owner.IsRangeEnd(Identity, field) && !cell.Editing && !cell.IsReadOnly && owner.Display(Identity, field).Length > 0 && !owner.Pending.ContainsKey((Identity, field)) ? Visibility.Visible : Visibility.Collapsed;
             handles[i].Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
             AutomationProperties.SetAutomationId(handles[i], $"PlanFillHandle{number}_{field}");
@@ -149,7 +150,6 @@ public sealed class PlanSheetRow : Grid
                 && owner.CellDate(Identity, field) > owner.PublishedEnd(Identity) ? "SystemFillColorCriticalBrush"
                 : owner.IsCalculated(Identity, field) ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
             cell.FontWeight = owner.Schedule.GetValueOrDefault(Identity)?.IsSummary == true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-            cell.IsReadOnly = owner.ReadOnly(Identity, field);
             cell.MinHeight = cell.Height = owner.RowHeight - (selected || conflict ? 4 : 1);
             cell.Padding = field == PlanField.Title ? new(24 + depth * 12, 1, 4, 1) : new(4, 1, 4, 1);
             var problem = owner.Problems.GetValueOrDefault((Identity, field)) ?? (remoteProblem.Length > 0 ? remoteProblem : null);
@@ -165,13 +165,14 @@ public sealed class PlanSheetRow : Grid
         }
         var states = new List<string>();
         var taskRow = owner.Rows.GetValueOrDefault(Identity);
-        var done = taskRow?.Remaining == 0 && taskRow.Actual > 0;
+        var done = taskRow?.Closed == true;
+        var effort = owner.Schedule.GetValueOrDefault(Identity);
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
         if (remoteProblem.Length > 0) states.Add(remoteProblem);
         if (late?.MissedPublishedDate is { } missed) {
             var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
-            var remaining = owner.Schedule.GetValueOrDefault(Identity)?.Remaining ?? taskRow?.Remaining ?? taskRow?.Estimate;
+            var remaining = effort?.Remaining;
             var remainingText = remaining is { } work
                 ? $"（残 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
             states.Add(late.OverdueKind == PlanOverdueKind.Finish
@@ -186,11 +187,14 @@ public sealed class PlanSheetRow : Grid
             if (late.LaterDescendantTasks > 0) descendants.Add($"予定より遅れ {late.LaterDescendantTasks}");
             if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
         }
+        if (effort?.IsOverEstimate == true)
+            states.Add(effort.Forecast is null ? "見積超過: 見込・差異が数値の範囲外です" : $"見積超過: 見込 {effort.Forecast:0.############################}h（見積 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
+        if (effort?.IsZeroRemainingOpen == true) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
         if (done) states.Add("完了");
         if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
         if (unpublished) states.Add("未発行の変更あり");
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : late?.Level == PlanLatenessLevel.Overdue ? "\uE814"
-            : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
+            : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
         indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || late?.Level is PlanLatenessLevel.Overdue or PlanLatenessLevel.Later ? "SystemFillColorCriticalBrush" : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
@@ -213,9 +217,9 @@ public sealed class PlanSheetRow : Grid
         {
             if (rowIndex < Math.Min(edge.From, edge.To) || rowIndex > Math.Max(edge.From, edge.To)) continue;
             var successor = owner.Schedule[owner.RowIds[edge.To]];
-            var successorMilestone = !successor.IsSummary && successor.Remaining == 0 && (successor.Estimate ?? 0) == 0 && successor.Start.Value == successor.End.Value;
+            var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
-            var predecessorMilestone = !predecessor.IsSummary && predecessor.Remaining == 0 && (predecessor.Estimate ?? 0) == 0 && predecessor.Start.Value == predecessor.End.Value;
+            var predecessorMilestone = predecessor.IsMilestone && predecessor.Start.Value == predecessor.End.Value;
             var predecessorStart = predecessor.Start.Value ?? edge.End;
             var predecessorWidth = predecessor.Start.Value is null ? 8 : predecessorMilestone ? 10 : Math.Max(2, (edge.End.DayNumber - predecessorStart.DayNumber + 1) * owner.DayWidth);
             var x1 = owner.X(predecessorStart) + predecessorWidth; var x2 = owner.X(edge.Start);
@@ -259,15 +263,8 @@ public sealed class PlanSheetRow : Grid
         }
         if (end < start) return;
         var x = owner.X(start); var width = Math.Max(2, (end.DayNumber - start.DayNumber + 1) * owner.DayWidth);
-        var milestone = !task.IsSummary && task.Remaining == 0 && (task.Estimate ?? 0) == 0 && start == end;
-        decimal? share = null;
-        if (!task.IsSummary && task.Input.IsComplete) share = 1m;
-        else if (task.Actual is { } actual && task.Remaining is { } remaining && (actual > 0 || remaining > 0)) {
-            // Normalize before addition: two accepted decimal efforts can exceed decimal.MaxValue together.
-            var scale = Math.Max(actual, remaining);
-            var scaledActual = actual / scale;
-            share = scaledActual / (scaledActual + remaining / scale);
-        }
+        var milestone = task.IsMilestone && start == end;
+        decimal? share = !task.IsSummary && task.Input.IsComplete ? 1m : task.WorkCompleteFraction;
         Shape bar;
         if (task.IsSummary)
             bar = new Polygon { Points = [new(0, 0), new(width, 0), new(width, 10), new(Math.Max(0, width - 4), 6), new(Math.Min(4, width), 6), new(0, 10)],
@@ -368,13 +365,25 @@ internal sealed class PlanSheetCell : TextBox
             button.IsHitTestVisible = false;
         }
     }
-    private string EditOriginal() => row.Owner is { } owner && Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees
-        && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
+    private string EditOriginal()
+    {
+        if (row.Owner is not { } owner) return shownText;
+        var text = Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees
+            && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
+        return PlanSheetEditing.EditBaseline(owner.Rows.GetValueOrDefault(row.Identity), Field, text);
+    }
     internal void BeginEditing() {
+        if (IsReadOnly) return;
         if (!Editing) {
             editingFrom = EditOriginal();
             // TextChanging can synchronously reenter presentation while Text is assigned.
-            Editing = true; Refresh(editingFrom);
+            Editing = true;
+            var owner = row.Owner;
+            var editText = owner?.Pending.GetValueOrDefault((row.Identity, Field))?.Text
+                ?? owner?.EditForm(row.Identity, Field) ?? editingFrom;
+            Refresh(editText);
+            if (owner is not null && editText != editingFrom && !owner.Pending.ContainsKey((row.Identity, Field)))
+                owner.SetInput(row.Identity, Field, editText, editingFrom);
         }
         SelectAll();
     }
@@ -440,7 +449,7 @@ internal sealed class PlanSheetCell : TextBox
         // arguments or call the native base handler after a persistence await.
         committing = true;
         var input = owner.Pending.GetValueOrDefault((identity, Field));
-        // An untouched F2 edit has no pending generation to finish in Commit.
+        // An unchanged input may have no pending generation to finish in Commit.
         // Other edits end only when accepted; rejection must retain text-edit behavior.
         if (input is null) EndEditing();
         try { await owner.Run(async () => {

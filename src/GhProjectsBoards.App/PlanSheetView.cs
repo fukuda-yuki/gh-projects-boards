@@ -396,7 +396,7 @@ internal sealed partial class PlanSheetView : Grid
                 if (Session.Document.State.Settings.DefaultRepository is not { Length: > 0 } repository)
                     throw new ArgumentException("設定で既定リポジトリを選んでください。");
                 var row = PlanRow.New("", repository);
-                // Use the same typed edit semantics (Estimate -> Remaining, End -> Fixed) for a new row.
+                // Use the same typed edit semantics (End -> Fixed) for a new row.
                 var temporary = Session.Document with { State = Session.Document.State with { Rows = Session.Document.State.Rows.Add(row) } };
                 var edited = PlanOperations.Apply(temporary, new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, field, value)]), Today).State.Rows[^1];
                 command = new InsertPlanRows([edited]);
@@ -505,9 +505,11 @@ internal sealed partial class PlanSheetView : Grid
     internal bool IsCalculated(string identity, PlanField field) => Schedule.TryGetValue(identity, out var result) &&
         (field == PlanField.Start && result.Start.Origin == DateOrigin.Calculated
         || field == PlanField.End && result.End.Origin == DateOrigin.Calculated
+        || field == PlanField.Remaining && (result.Input.Closed || result.Input.Remaining is null && result.Remaining is not null)
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
-    internal bool ReadOnly(string identity, PlanField field) => remoteBusy || Schedule.TryGetValue(identity, out var result) && result.IsSummary &&
-        field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed;
+    internal string? ReadOnlyReason(string identity, PlanField field) => Rows.TryGetValue(identity, out var row)
+        ? PlanOperations.ReadOnlyReason(row, Schedule.GetValueOrDefault(identity)?.IsSummary == true, field) : null;
+    internal bool ReadOnly(string identity, PlanField field) => remoteBusy || ReadOnlyReason(identity, field) is not null;
     internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);

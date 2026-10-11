@@ -11,6 +11,9 @@ internal sealed record CellRange(int Row, int Column, int RowCount = 1, int Colu
 // Text/range adaptation only; PlanSession validates and applies the complete operation.
 internal static class PlanSheetEditing
 {
+    internal static string EditBaseline(PlanRow? row, PlanField field, string editText)
+        => field == PlanField.Remaining ? row?.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "" : editText;
+
     internal static object? Parse(PlanDocument document, PlanField field, string text)
     {
         if (text.Length == 0) return null;

@@ -99,22 +99,21 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [TestCase(true, null, 8, "完了")]
-    [TestCase(false, 0, 8, "完了")]
     [TestCase(false, null, null, "工数なし")]
     public void CompleteAndNoEffortKeepDates(bool closed, int? remaining, int? estimate, string reason)
     {
-        var result = Run(Task(work: estimate) with { Closed = closed, Remaining = remaining, Start = D("2026-10-01"), End = D("2026-10-02") });
+        var result = Run(Task(work: estimate) with { Closed = closed, CloseDate = closed ? D("2026-10-02") : null, Remaining = remaining, Start = D("2026-10-01"), End = D("2026-10-02") });
         Dates(result, "2026-10-01", "2026-10-02");
         Assert.That(result.StartReason, Is.EqualTo(reason));
         Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Kept));
-        Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Kept));
+        Assert.That(result.End.Origin, Is.EqualTo(closed ? DateOrigin.Calculated : DateOrigin.Kept));
     }
 
     [TestCase(null, "2026-10-05", true)]
     [TestCase("2026-10-06", "2026-10-07", false)]
     public void CompleteEndConstrainsSuccessorOnlyWhenPresent(string? end, string successor, bool warning)
     {
-        var results = Calculate([Task() with { Closed = true, End = end is null ? null : D(end) }, Task(2) with { Predecessors = ["issue:1"] }], Settings);
+        var results = Calculate([Task() with { Closed = true, CloseDate = end is null ? null : D(end) }, Task(2) with { Predecessors = ["issue:1"] }], Settings);
         Dates(results[1], successor, successor);
         Assert.That(results[0].Warnings.Contains("完了タスクの終了日なし"), Is.EqualTo(warning));
     }
@@ -128,13 +127,13 @@ internal sealed class PlanEditorSchedulingTests
     }
 
     [Test]
-    public void EstimateEntryFillsOnlyMissingRemainingAndDoesNotMutateOriginal()
+    public void EstimateEntryLeavesRemainingUntouchedAndDoesNotMutateOriginal()
     {
         var task = Task(work: null);
         var filled = PlanEdits.Estimate(task, 12);
-        Assert.That((filled.Estimate, filled.Remaining), Is.EqualTo((12m, 12m)));
-        Assert.That(PlanEdits.Estimate(filled, 20).Remaining, Is.EqualTo(12));
-        Assert.That(PlanEdits.Estimate(filled, null).Remaining, Is.EqualTo(12));
+        Assert.That((filled.Estimate, filled.Remaining), Is.EqualTo((12m, (decimal?)null)));
+        Assert.That(PlanEdits.Estimate(filled, 20).Remaining, Is.Null);
+        Assert.That(PlanEdits.Estimate(filled, null).Remaining, Is.Null);
         Assert.That(task.Estimate, Is.Null);
         Assert.Throws<ArgumentException>(() => PlanEdits.Estimate(task, -1));
     }
@@ -374,7 +373,7 @@ internal sealed class PlanEditorSchedulingTests
     {
         var input = PlanEdits.Estimate(Task(2, null) with { Predecessors = ["issue:1"] }, 0);
         var result = Calculate([Task(work: 16), input], Settings)[1];
-        Assert.That(input.Remaining, Is.Zero);
+        Assert.That(input.Remaining, Is.Null);
         Dates(result, "2026-10-06", "2026-10-06");
         Assert.That(result.StartReason, Is.EqualTo("1 の終了後"));
         Assert.That(result.Start.Origin, Is.EqualTo(DateOrigin.Calculated));
@@ -388,13 +387,15 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase(0, 0, 3, false, false)]
     [TestCase(0, 0, null, true, false)]
     [TestCase(null, null, null, true, false)]
-    public void ZeroPlannedWorkIsMilestoneButFinishedWorkOrClosedIssueIsComplete(int? estimate, int? remaining, int? actual, bool closed, bool milestone)
+    public void ZeroWorkIsCompleteOnlyWhenClosed(int? estimate, int? remaining, int? actual, bool closed, bool milestone)
     {
-        var input = Task(work: estimate) with { Remaining = remaining, Actual = actual, Closed = closed, Start = Monday.AddDays(-4), End = Monday.AddDays(-3) };
+        var input = Task(work: estimate) with { Remaining = remaining, Actual = actual, Closed = closed, CloseDate = closed ? Monday.AddDays(-3) : null, Start = Monday.AddDays(-4), End = Monday.AddDays(-3) };
         var result = Run(input);
-        Dates(result, milestone ? "2026-10-05" : "2026-10-01", milestone ? "2026-10-05" : "2026-10-02");
-        Assert.That(result.StartReason, Is.EqualTo(milestone ? "状況日" : "完了"));
-        Assert.That(result.End.Origin, Is.EqualTo(milestone ? DateOrigin.Calculated : DateOrigin.Kept));
+        Dates(result, closed ? "2026-10-01" : "2026-10-05", closed ? "2026-10-02" : "2026-10-05");
+        Assert.That(result.IsZeroRemainingOpen, Is.EqualTo(!closed && !milestone));
+        Assert.That(result.IsMilestone, Is.EqualTo(milestone));
+        Assert.That(result.StartReason, Is.EqualTo(closed ? "完了" : "状況日"));
+        Assert.That(result.End.Origin, Is.EqualTo(DateOrigin.Calculated));
     }
 
     [TestCase("Estimate", "工数が負の値")]
@@ -402,7 +403,6 @@ internal sealed class PlanEditorSchedulingTests
     [TestCase("Actual", "工数が負の値")]
     [TestCase("Fixed dates", "開始日が終了日より後")]
     [TestCase("Overflow", "日程が日付の範囲外")]
-    [TestCase("Unknown remaining", "残が未入力")]
     public void BadRefreshedRowKeepsGitHubDatesAndCannotMoveSuccessors(string defect, string warning)
     {
         var input = Task() with { GitHubStart = Monday.AddDays(10), GitHubEnd = Monday.AddDays(11), Start = Monday, End = Monday };
@@ -412,7 +412,6 @@ internal sealed class PlanEditorSchedulingTests
             "Remaining" => input with { Remaining = -1 },
             "Actual" => input with { Actual = -1 },
             "Fixed dates" => input with { Fixed = true, Start = Monday.AddDays(1) },
-            "Unknown remaining" => input with { Actual = 3, Estimate = 0 },
             _ => input with { Estimate = decimal.MaxValue }
         };
         var result = Calculate([input, Task(2) with { Predecessors = [input.Identity] }, Task(3)], Settings);

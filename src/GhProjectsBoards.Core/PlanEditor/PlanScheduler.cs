@@ -187,12 +187,10 @@ internal static class PlanScheduler
             var summary = children[id].Count > 0;
             var values = children[id].Select(child => results[child]).ToArray();
             var invalid = false;
-            if (task.Estimate < 0 || task.Remaining < 0 || task.Actual < 0)
+            if (task.Estimate < 0 || !task.Closed && task.Remaining < 0 || task.Actual < 0)
             { warnings.Add("工数が負の値"); invalid = true; }
-            if (task.KeepsDates && task.Start > task.End)
+            if (task.KeepsDates && task.KeptDates.Start > task.KeptDates.End)
             { warnings.Add("開始日が終了日より後"); invalid = true; }
-            if (!task.Closed && !task.Fixed && task.Actual > 0 && task.Estimate == 0 && task.Remaining is null)
-            { warnings.Add("残が未入力"); invalid = true; }
             if (values.Any(value => !value.Valid))
             { warnings.Add("子タスクに入力エラー"); invalid = true; }
             Result result;
@@ -260,16 +258,20 @@ internal static class PlanScheduler
             var complete = task.IsComplete;
             if (task.KeepsDates)
             {
+                if (complete) {
+                    end = task.CloseDate is { } closed ? new Point(closed.DayNumber, 18) : null;
+                    start = task.KeptDates.Start is { } keptStart ? Point.Morning(keptStart) : null;
+                }
                 if (complete && end is null) warnings.Add("完了タスクの終了日なし");
                 if (!complete && task.Fixed)
                 {
                     if (start is null || end is null) warnings.Add("日程固定の日付不足");
                     WarnConflict(start);
                 }
-                return Create(task, start, end, DateOrigin.Kept, DateOrigin.Kept,
+                return Create(task, start, end, task.KeptDates.Start != task.Start ? DateOrigin.Calculated : DateOrigin.Kept, complete ? DateOrigin.Calculated : DateOrigin.Kept,
                     complete ? "完了" : task.Fixed ? "日程固定" : "工数なし", warnings);
             }
-            var work = (task.Remaining ?? task.Estimate)!.Value;
+            var work = task.EffectiveRemaining!.Value;
             var person = task.Assignees.Distinct(StringComparer.Ordinal).ToArray() is [var single] && people.TryGetValue(single, out var p) ? p : null;
             Hours rate = (Hours)(person?.Rate ?? 100m) / 100;
             if (work == 0)
@@ -359,7 +361,7 @@ internal static class PlanScheduler
             var row = new ScheduledTask(task,
                 new(start?.Date, startOrigin, start?.Date != task.GitHubStart),
                 new(end?.Date, endOrigin, end?.Date != task.GitHubEnd),
-                summary ? estimate : task.Estimate, summary ? remaining : task.Remaining, summary ? actual : task.Actual,
+                summary ? estimate : task.Estimate, summary ? remaining : task.EffectiveRemaining, summary ? actual : task.Actual,
                 summary, reason, warnings.Order(StringComparer.Ordinal).ToArray());
             return new(row, start, end);
         }

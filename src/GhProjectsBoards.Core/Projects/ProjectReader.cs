@@ -151,9 +151,10 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var repository = Property(content, "repository");
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
-                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content));
+                        ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content) };
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
-                    if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present)
+                    if (issue.Title.Availability != ValueAvailability.Present || issue.State.Availability != ValueAvailability.Present
+                        || issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null))
                         problems.Add(new(ReadProblemKind.IncompleteTraversal, "issue"));
                 }
             }
@@ -382,6 +383,18 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             return value.ValueKind switch
             {
                 JsonValueKind.String => new(ValueAvailability.Present, value.GetString()),
+                JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
+                _ => new(ValueAvailability.Unavailable)
+            };
+        }
+        private static ReadValue<DateTimeOffset?> ReadClosedAt(JsonElement node)
+        {
+            var value = Optional(node, "closedAt");
+            return value.ValueKind switch
+            {
+                JsonValueKind.Null => new(ValueAvailability.Empty),
+                JsonValueKind.String when DateTimeOffset.TryParse(value.GetString(), System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var timestamp) => new(ValueAvailability.Present, timestamp),
                 JsonValueKind.Undefined => new(ValueAvailability.NotLoaded),
                 _ => new(ValueAvailability.Unavailable)
             };

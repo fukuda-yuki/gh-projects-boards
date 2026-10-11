@@ -54,7 +54,7 @@ internal sealed class PlanPeopleTests
     [Test]
     public void MissingInputsAndAmbiguousAssignmentsAreNotZeroOrDuplicated()
     {
-        var d = Document([Row("I1", null), Row("I2") with { Assignees = [] }, Row("I3") with { Assignees = ["U1", "U2"] }, Row("I4") with { Actual = null }]);
+        var d = Document([Row("I1", null) with { Estimate = null }, Row("I2") with { Assignees = [] }, Row("I3") with { Assignees = ["U1", "U2"] }, Row("I4") with { Actual = null }]);
         var report = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Week, 1);
         var p = report.People.Single(p => p.Identity == "U1");
         Assert.That(p.Remaining, Is.Null); Assert.That(p.Actual, Is.Zero); Assert.That(p.Forecast, Is.Null);
@@ -131,7 +131,7 @@ internal sealed class PlanPeopleTests
     {
         var d = Document([Row("I0") with { Estimate = 999, Remaining = 999 }, Row("I1", 12) with { Parent = "I0", Fixed = true, Start = Day, End = Day.AddDays(1) }, Row("I2", 4) with { Closed = true, Start = Day, End = Day }]);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 2).People.Single(p => p.Identity == "U1");
-        Assert.That(p.Remaining, Is.EqualTo(16));
+        Assert.That(p.Remaining, Is.EqualTo(12));
         Assert.That(p.Periods.Select(p => p.Planned), Is.EqualTo(new[] { 6m, 6m }));
         Assert.That(p.Periods[0].Tasks, Is.EqualTo(new[] { "I1" }));
     }
@@ -140,7 +140,7 @@ internal sealed class PlanPeopleTests
     [TestCase(PlanPeriodScale.Week, true)]
     public void PeriodRetainsKnownOverloadDateAndCausesEvenWhenAverageOrOtherWorkIsUnknown(PlanPeriodScale scale, bool missing)
     {
-        var d = Document(missing ? [Row("I1"), Row("I2"), Row("I3", null)] : [Row("I1"), Row("I2")]);
+        var d = Document(missing ? [Row("I1"), Row("I2"), Row("I3", null) with { Estimate = null }] : [Row("I1"), Row("I2")]);
         var before = PlanJson.Text(d);
         var load = PlanPeople.Calculate(d, Day, Day, scale, 1).People.Single(p => p.Identity == "U1").Periods[0];
         Assert.That(load.Overloaded, Is.False);

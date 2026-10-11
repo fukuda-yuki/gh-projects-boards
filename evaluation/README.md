@@ -17,7 +17,7 @@ Regenerate both with `python scripts/evaluation/generate_version.py`; `--check` 
 
 ## Simulated progress
 
-The fixture replays the team's work day by day from the project start with the real scheduler. Each day tasks are processed in scheduled dependency order; work is recorded only after every predecessor has finished its work, including same-day handoffs. Hours blocked by a predecessor's re-estimate are not worked. The team records 実績 and keeps 残 as its current estimate (#131). A task's Issue is closed on the day its work is done, with 残 0 and 終了日 on that day. Each status date is a plan the PMO has just published, so a fresh evaluation opens at 未発行 0.
+The fixture replays the team's work day by day from the project start with the real scheduler. Each day tasks are processed in scheduled dependency order; work is recorded only after every predecessor has finished its work, including same-day handoffs. Hours blocked by a predecessor's re-estimate are not worked. The team records 実績 and keeps 残 as its current estimate (#131). A task's Issue is closed on the day its work is done, with 残 0 and 終了日 on that day; closedAt is an explicit UTC timestamp whose local date is the replayed close day. An open zero-remaining task is still incomplete and moves to the status-date boundary; successors that already worked retain their historical starts. Each status date is a plan the PMO has just published, so a fresh evaluation opens at 未発行 0.
 
 Deviations:
 

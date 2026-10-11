@@ -10,6 +10,20 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanPublisherTests
 {
     [Test]
+    public async Task ClosedIssuePublishesRemainingAndCloseDayAndRefreshClearsTheirDifferences()
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with {
+            Row = i.Row with { Closed = true, CloseDate = Today, Remaining = 8, End = Today.AddDays(2) }
+        }).ToImmutableArray() });
+        Assert.That(session.Changes(Today).Fields["I1"], Is.EquivalentTo(new[] { PlanField.Remaining, PlanField.End }));
+        var published = await publisher.PublishAsync(session, Today);
+        Assert.That(published.Succeeded, Is.True, published.Error);
+        var row = FakePlanEditor.Load(root).Issues.Single().Row;
+        Assert.That((row.Remaining, row.End, row.CloseDate), Is.EqualTo((0m, Today, Today)));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
     public async Task RedactedProjectMembershipDoesNotBlockRefreshOrPublishVerification()
     {
         await Start(2, state => state with { Redacted = 1, HiddenItems = 1 });
@@ -167,11 +181,15 @@ internal sealed class PlanPublisherTests
     {
         using var stream = typeof(PlanPublisherTests).Assembly.GetManifestResourceStream("GhProjectsBoards.Tests.Fixtures.Phase9Snapshot2.json")!;
         var document = (await JsonSerializer.DeserializeAsync<PlanDocument>(stream, PlanJson.Options))!;
+        var today = new DateOnly(2026, 10, 7);
+        // The captured fixture predates closedAt; this is a synthetic observation for the fake endpoint.
+        PlanRow WithCloseDate(PlanRow row) => row.Closed ? row with { CloseDate = today } : row;
+        document = document with { Baseline = document.Baseline with { Rows = document.Baseline.Rows.Select(WithCloseDate).ToImmutableArray() },
+            State = document.State with { Rows = document.State.Rows.Select(WithCloseDate).ToImmutableArray() } };
         Scenario("mixed-resource");
         FakePlanEditor.Save(root, new(document.Baseline.Rows.Select(r => new PlanFakeIssue(r, "", true)).ToImmutableArray(), 30));
         runner = new(new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
         publisher = new(new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner), new("github.com", 42, "fixture-user", GhProcessTests.FakeExecutable));
-        var today = new DateOnly(2026, 10, 7);
         session = await PlanSession.CreateAsync(new(root), document, today);
         // The old checkpoint has no creation provenance. This is the explicit PMO recovery correction,
         // justified by the original CSV hash, whose schema has no Status column.
@@ -887,15 +905,17 @@ internal sealed class PlanPublisherTests
     [TestCase(false, "Done")]
     public async Task CopyingUnavailableTasksResetsReadOnlyIssueStateAndPublishes(bool closed, string? status)
     {
-        await Start(1, initial => initial with { Issues = [initial.Issues[0] with { Row = initial.Issues[0].Row with { Closed = closed, Status = status } }] });
+        await Start(1, initial => initial with { Issues = [initial.Issues[0] with { Row = initial.Issues[0].Row with { Closed = closed, CloseDate = closed ? Today : null, Status = status } }] });
         var source = FakePlanEditor.Load(root);
         FakePlanEditor.Save(root, source with { Issues = [source.Issues[0] with { Added = false }] });
         Assert.That((await publisher.RefreshAsync(session, Today)).Succeeded, Is.True);
         await session.ResolveUnavailable("I1", true, Today);
         await session.Undo(Today);
         Assert.That(session.Document.State.Rows[0].Closed, Is.EqualTo(closed));
+        Assert.That(session.Document.State.Rows[0].CloseDate, Is.EqualTo(closed ? Today : (DateOnly?)null));
         Assert.That(session.Document.State.Rows[0].Status, Is.EqualTo(status));
         await session.Redo(Today);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity.StartsWith("local:")).CloseDate, Is.Null);
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
         var copy = FakePlanEditor.Load(root).Issues.Single(i => i.Added).Row;

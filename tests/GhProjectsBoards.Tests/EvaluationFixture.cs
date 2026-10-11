@@ -80,9 +80,9 @@ internal static class EvaluationFixture
                 var remaining = actual == work ? 0 : work <= estimate || actual * 2 < estimate ? estimate - actual : work - actual;
                 var done = remaining == 0;
                 updated[identity] = row with { Actual = actual, Remaining = remaining, Start = row.Start ?? day, End = done ? day : row.End,
-                    Closed = done && !task.OpenAtZero, Status = done && !task.OpenAtZero ? "Done" : "In progress" };
+                    Closed = done && !task.OpenAtZero, CloseDate = done && !task.OpenAtZero ? day : null, Status = done && !task.OpenAtZero ? "Done" : "In progress" };
             }
-            rows = rows.Select(row => row.Parent is null && rows.Where(c => c.Parent == row.Identity).All(c => c.Closed) ? row with { Closed = true, Status = "Done" } : row).ToImmutableArray();
+            rows = rows.Select(row => row.Parent is null && rows.Where(c => c.Parent == row.Identity).All(c => c.Closed) ? row with { Closed = true, CloseDate = row.CloseDate ?? day, Status = "Done" } : row).ToImmutableArray();
         }
         return snapshots;
 

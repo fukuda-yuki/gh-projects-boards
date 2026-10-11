@@ -48,7 +48,8 @@ internal sealed class PlanSheetHostedTests
         session = await PlanSession.CreateAsync(new(root), new(new(new("github.com", 1), "P1"), new(rows, []),
             new(rows, new() { StatusDate = Today, DefaultRepository = "acme/repo",
                 People = performance ? Enumerable.Range(1, 20).Select(i => new PlanResource("U" + i, "person-U" + i, 100, null, [])).ToImmutableArray() : [new("U1", "alice", 100, null, [])],
-                Columns = [new(PlanField.Start, "start", "Start date", "DATE")] })), Today);
+                Columns = [new(PlanField.Start, "start", "Start date", "DATE"), new(PlanField.End, "end", "End date", "DATE"),
+                    new(PlanField.Remaining, "remaining", "Remaining", "NUMBER")] })), Today);
         await Ui.Run(() => sheet = new(session, () => clipboardReader is { } read ? read() : Task.FromResult(clipboard), value => { if (clipboardWriter is { } write) write(value); else clipboard = value; }));
         await Ui.Run(() => {
             var host = sheetHost = new Grid(); host.RowDefinitions.Add(new() { Height = GridLength.Auto }); host.RowDefinitions.Add(new());
@@ -158,6 +159,99 @@ internal sealed class PlanSheetHostedTests
             await RenderedEvidence.Capture(sheetHost, "followup-selected-band");
         });
     }
+    [Test]
+    public async Task CalculatedRemainingIsEditableSecondaryTextAndEnteredEffortShowsMarkers()
+    {
+        await Edit(1, PlanField.Remaining, "");
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("8"));
+            Assert.That(cell.IsReadOnly, Is.False);
+            Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+        });
+        Assert.That(session.Document.State.Rows[0].Remaining, Is.Null);
+        await Edit(1, PlanField.Remaining, "16");
+        await Ui.Run(() => {
+            Assert.That(((SolidColorBrush)Ui.Find<TextBox>("PlanCell1_Remaining").Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorPrimaryBrush")).Color));
+            var indicator = Ui.Find<FontIcon>("PlanIndicator1");
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("見積超過: 見込 16h（見積 8h、差異 +8h）"));
+            Assert.That(ToolTipService.GetToolTip(indicator), Is.EqualTo(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator)));
+            Assert.That(indicator.Glyph, Is.Not.Empty);
+        });
+        await Edit(1, PlanField.Actual, "16");
+        await Edit(1, PlanField.Remaining, "0");
+        await Ui.Run(() => {
+            var indicator = Ui.Find<FontIcon>("PlanIndicator1");
+            Assert.That(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(indicator), Does.Contain("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません").And.Contain("見積超過"));
+            Assert.That(indicator.Glyph, Is.Not.Empty);
+        });
+    }
+
+    [TestCase("Enter", true), TestCase("Tab", true), TestCase("Leave", true)]
+    [TestCase("Escape", false), TestCase("Select", false)]
+    [Category("PlanSheetNative")]
+    public async Task CalculatedRemainingEditSessionCommitsExplicitValueOrCancels(string exit, bool explicitValue)
+    {
+        var row = new PlanRow("I1", "Work", "acme/repo") { Estimate = 40, Actual = 8 };
+        await MountPresentation([row], [row]);
+        await Select(1, PlanField.Remaining);
+        await SheetNativeInput.Click("PlanCell1_Remaining");
+        if (exit != "Select") await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await Ui.Run(() => Assert.That(Ui.Find<PlanSheetCell>("PlanCell1_Remaining").Text, Is.EqualTo("32")));
+        if (exit is "Leave" or "Select")
+            await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        else await SheetNativeInput.Press(exit == "Enter" ? Windows.System.VirtualKey.Enter
+            : exit == "Tab" ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Escape);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(explicitValue ? 32m : (decimal?)null));
+            Assert.That(session.UndoCount, Is.EqualTo(explicitValue ? 1 : 0));
+            Assert.That(sheet.Pending, Is.Empty);
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Remaining");
+            Assert.That(cell.Editing, Is.False);
+            Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush(
+                explicitValue ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush")).Color));
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task ClosedRemainingCannotEnterEditingAndSelectionExplainsWhy()
+    {
+        var row = new PlanRow("I1", "Closed task", "acme/repo") { Closed = true, CloseDate = Today,
+            Estimate = 40, Remaining = 8, Start = Today, End = Today };
+        await MountPresentation([row], [row]);
+        await Select(1, PlanField.Remaining);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Remaining");
+            Assert.That(cell.IsReadOnly, Is.True);
+            cell.BeginEditing();
+            Assert.That(cell.Editing, Is.False);
+            Assert.That(Ui.Find<FrameworkElement>("PlanFillHandle1_Remaining").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(Ui.Find<TextBlock>("PlanStartReason").Text, Does.Contain("完了したタスクは Issue のクローズで確定します（編集不可）"));
+            Assert.That(Ui.Find<PlanSheetCell>("PlanCell1_Estimate").IsReadOnly, Is.False);
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task ClosedRemainingAndEndShowCalculatedCornersWithoutEnteredTint()
+    {
+        var row = new PlanRow("I1", "Closed task", "acme/repo") { Closed = true, CloseDate = Today,
+            Estimate = 40, Actual = 40, Remaining = 8, Start = Today.AddDays(-7), End = Today.AddDays(2) };
+        await MountPresentation([row], [row]);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("0"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_End").Text, Is.EqualTo("10/5 (月)"));
+            foreach (var field in new[] { PlanField.Remaining, PlanField.End }) {
+                var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
+                var grid = (Grid)VisualTreeHelper.GetParent(cell);
+                var frame = (Border)VisualTreeHelper.GetParent(grid);
+                Assert.That(((SolidColorBrush)cell.Foreground).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("TextFillColorSecondaryBrush")).Color));
+                Assert.That(grid.Children.OfType<Microsoft.UI.Xaml.Shapes.Polygon>().Single().Visibility, Is.EqualTo(Visibility.Visible));
+                Assert.That(((SolidColorBrush)frame.Background).Color, Is.EqualTo(((SolidColorBrush)PlanSheetView.Brush("LayerFillColorDefaultBrush")).Color));
+            }
+        });
+    }
+
     [TestCase("completed", "完了", "\uE73E")]
     [TestCase("late", "期限超過: 完了予定 10/2 を過ぎて未完了（残 8h）", "\uE814")]
     [TestCase("typed", "開始日を指定", "\uE718")]
@@ -171,7 +265,7 @@ internal sealed class PlanSheetHostedTests
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var row = new PlanRow("I1", "R05 顧客データの外部連携", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
-        if (state is "completed" or "failed" or "unverified") row = row with { Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
+        if (state is "completed" or "failed" or "unverified") row = row with { Closed = true, CloseDate = Today, Remaining = 0, Actual = 8, Start = Today, End = Today, StartNoEarlierThan = Today };
         if (state is "typed" or "late") row = row with { StartNoEarlierThan = Today };
         if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
         var baseline = row with { End = state is "late" or "failed" or "unverified" ? new(2026, 10, 2) : state == "summary" ? new(2026, 10, 1) : row.End };
@@ -224,7 +318,7 @@ internal sealed class PlanSheetHostedTests
         var row = new PlanRow("I1", "Task", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         if (state == "started") row = row with { Actual = 4 };
         if (state == "fixed") row = row with { Fixed = true, Start = Today, End = Today };
-        if (state == "complete") row = row with { Actual = 8, Remaining = 0 };
+        if (state == "complete") row = row with { Closed = true, CloseDate = Today, Actual = 8, Remaining = 0 };
         var rows = ImmutableArray.Create(row);
         if (state == "summary") rows = rows.Add(row with { Identity = "I2", Parent = "I1" });
         await MountPresentation(rows, rows); await Select(1, PlanField.Title);

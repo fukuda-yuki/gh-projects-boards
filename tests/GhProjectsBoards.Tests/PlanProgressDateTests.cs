@@ -29,14 +29,15 @@ internal sealed class PlanProgressDateTests
         ImmutableArray<PlanRow> baseline = [parent, task, next];
         return new(new(new("github.com", 42), "P1"), new(baseline, []),
             new(baseline.Select(r => r with { Start = null, End = null }).ToImmutableArray(),
-                new() { StatusDate = Start, People = [new("U1", "alice", 100, null, [])] }));
+                new() { StatusDate = Start, People = [new("U1", "alice", 100, null, [])],
+                    Columns = [new(PlanField.Start, "S", "Start", "DATE"), new(PlanField.End, "E", "End", "DATE")] }));
     }
     private static PlanRemoteSnapshot Remote(PlanBaseline baseline) => new(baseline,
         baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "item-" + r.Identity), [], 0, 0);
     private static PlanBaseline Progress(PlanDocument document, string progress) => document.Baseline with {
         Rows = document.Baseline.Rows.Select(r => r.Identity == "A" ? r with {
             Actual = progress == "closed" ? 0 : 8,
-            Remaining = progress == "closed" ? 16 : progress == "complete" ? 0 : 8, Closed = progress == "closed"
+            Remaining = progress == "closed" ? 16 : progress == "complete" ? 0 : 8, Closed = progress == "closed", CloseDate = progress == "closed" ? End : null
         } : r).ToImmutableArray()
     };
 
@@ -80,19 +81,20 @@ internal sealed class PlanProgressDateTests
 
         void AssertRetained()
         {
-            var complete = progress != "in-progress";
+            var complete = progress == "closed";
+            var zeroOpen = progress == "complete";
             var row = session!.Document.State.Rows.Single(r => r.Identity == "A");
             Assert.That(row.Start, Is.EqualTo(Start));
             Assert.That(row.End, Is.EqualTo(complete ? End : (DateOnly?)null));
             Assert.That(row.Fixed, Is.False);
             Assert.That(row.StartNoEarlierThan, Is.Null);
             var schedule = session.Schedule(Status).ToDictionary(t => t.Input.Identity);
-            Assert.That((schedule["A"].Start.Value, schedule["A"].End.Value), Is.EqualTo((Start, complete ? End : Status)));
-            Assert.That((schedule["P"].Start.Value, schedule["P"].End.Value), Is.EqualTo((Start, complete ? End : Status)));
-            Assert.That(schedule["B"].Start.Value, Is.EqualTo(complete ? Status : Status.AddDays(1)));
+            Assert.That((schedule["A"].Start.Value, schedule["A"].End.Value), Is.EqualTo((zeroOpen ? Status : Start, complete ? End : Status)));
+            Assert.That((schedule["P"].Start.Value, schedule["P"].End.Value), Is.EqualTo((zeroOpen ? Status : Start, complete ? End : Status)));
+            Assert.That(schedule["B"].Start.Value, Is.EqualTo(complete || zeroOpen ? Status : Status.AddDays(1)));
             Assert.That(schedule["A"].Warnings, Does.Not.Contain("完了タスクの終了日なし").And.Not.Contain("進行中タスクの開始日なし"));
             var fields = session.Changes(Status).Fields.GetValueOrDefault("A");
-            Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.Start), Is.True);
+            Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.Start), Is.EqualTo(!zeroOpen));
             if (complete) Assert.That(fields.IsDefaultOrEmpty || !fields.Contains(PlanField.End), Is.True);
         }
     }
@@ -133,7 +135,7 @@ internal sealed class PlanProgressDateTests
         var document = initial with { State = initial.State with {
             Rows = initial.State.Rows.Select(r => r.Identity == "A" ? r with { Start = End, StartNoEarlierThan = End } : r).ToImmutableArray()
         } };
-        var remote = Progress(initial, "complete");
+        var remote = Progress(initial, "closed");
         if (remoteDateChanged) remote = remote with { Rows = remote.Rows.Select(r => r.Identity == "A" ? r with { Start = End.AddDays(1), End = End.AddDays(2) } : r).ToImmutableArray() };
         var merged = PlanMerge.Merge(document, remote);
         var result = merged.State.Rows.Single(r => r.Identity == "A");
@@ -157,8 +159,8 @@ internal sealed class PlanProgressDateTests
     public void RefreshDoesNotInventMissingCompletedDates()
     {
         var initial = Initial();
-        var remote = Progress(initial, "complete");
-        remote = remote with { Rows = remote.Rows.Select(r => r.Identity == "A" ? r with { Start = null, End = null } : r).ToImmutableArray() };
+        var remote = Progress(initial, "closed");
+        remote = remote with { Rows = remote.Rows.Select(r => r.Identity == "A" ? r with { Start = null, End = null, CloseDate = null } : r).ToImmutableArray() };
         var merged = PlanMerge.Merge(initial, remote);
         var task = PlanOperations.Schedule(merged, Status).Single(t => t.Input.Identity == "A");
         Assert.That((task.Start.Value, task.End.Value), Is.EqualTo(((DateOnly?)null, (DateOnly?)null)));

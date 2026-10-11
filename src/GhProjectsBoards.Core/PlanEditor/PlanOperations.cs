@@ -9,7 +9,7 @@ internal static class PlanOperations
     internal static PlanTask TaskInput(PlanRow r, int index = 0) => new(r.Identity, index + 1)
     {
         Parent = r.Parent, Predecessors = r.Predecessors.ToArray(), Assignees = r.Assignees.ToArray(),
-        Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed,
+        Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed, CloseDate = r.CloseDate,
         Start = r.Start, End = r.End, StartNoEarlierThan = r.StartNoEarlierThan, Fixed = r.Fixed
     };
     internal static bool NeedsProgressDate(PlanRow before, PlanRow current, PlanField field)
@@ -113,7 +113,8 @@ internal static class PlanOperations
                 foreach (var c in edit.Cells)
                 {
                     Require(byId.ContainsKey(c.Identity), "編集先の行がありません。");
-                    Require(!summaries.Contains(c.Identity) || c.Field is not (PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed), "集計行の工数と日付は子タスクから計算します。");
+                    if (ReadOnlyReason(byId[c.Identity], summaries.Contains(c.Identity), c.Field) is { } reason)
+                        throw new ArgumentException(reason);
                     byId[c.Identity] = Edit(byId[c.Identity], c.Field, c.Value);
                 }
                 foreach (var group in edit.Cells.GroupBy(c => c.Identity))
@@ -129,7 +130,7 @@ internal static class PlanOperations
                     var task = TaskInput(byId[group.Key]);
                     var previous = TaskInput(priorRow);
                     var validatePair = group.Any(c => c.Field is PlanField.Start or PlanField.End or PlanField.Fixed) || !previous.KeepsDates && task.KeepsDates;
-                    Require(!validatePair || !task.KeepsDates || !(task.Start > task.End), "終了日は開始日以降にしてください。");
+                    Require(!validatePair || !task.KeepsDates || !(task.KeptDates.Start > task.KeptDates.End), "終了日は開始日以降にしてください。");
                 }
                 rows = rows.Select(r => byId[r.Identity]).ToList();
                 break;
@@ -144,7 +145,7 @@ internal static class PlanOperations
                 var index = insert.Before is null ? rows.Count : rows.FindIndex(r => r.Identity == insert.Before);
                 Require(index >= 0, "挿入先がありません。");
                 var additions = insert.Rows.Select(r => r with { Repository = r.Repository.Length == 0 ? state.Settings.DefaultRepository ?? "" : r.Repository }).ToArray();
-                Require(additions.All(r => IsLocal(r.Identity) && !(r.Estimate < 0 || r.Remaining < 0 || r.Actual < 0) && (!TaskInput(r).KeepsDates || !(r.Start > r.End))), "新規行の識別子、工数または日付が不正です。");
+                Require(additions.All(r => IsLocal(r.Identity) && !(r.Estimate < 0 || r.Remaining < 0 || r.Actual < 0) && (!TaskInput(r).KeepsDates || !(TaskInput(r).KeptDates.Start > TaskInput(r).KeptDates.End))), "新規行の識別子、工数または日付が不正です。");
                 rows.InsertRange(index, additions);
                 break;
             case IndentPlanRows indent:
@@ -205,7 +206,7 @@ internal static class PlanOperations
         var task = TaskInput(r);
         switch (field)
         {
-            case PlanField.Estimate: task = PlanEdits.Estimate(task, Optional<decimal>(value)); return r with { Estimate = task.Estimate, Remaining = task.Remaining };
+            case PlanField.Estimate: task = PlanEdits.Estimate(task, Optional<decimal>(value)); return r with { Estimate = task.Estimate };
             case PlanField.Remaining: return r with { Remaining = PlanEdits.Remaining(task, Optional<decimal>(value)).Remaining };
             case PlanField.Actual: return r with { Actual = PlanEdits.Actual(task, Optional<decimal>(value)).Actual };
             // Validate the final pair after the entire paste, not between its endpoint cells.
@@ -261,9 +262,28 @@ internal static class PlanOperations
         return baseline with { Rows = forward ? baseline.Rows.Where(r => !discarded.Contains(r.Identity)).ToImmutableArray()
             : baseline.Rows.AddRange(patch.DiscardedRows.Where(r => !baseline.Rows.Any(current => current.Identity == r.Identity))) };
     }
+    internal static string? ReadOnlyReason(PlanRow row, bool summary, PlanField field)
+    {
+        if (row.Closed && field is PlanField.Remaining or PlanField.End)
+            return "完了したタスクは Issue のクローズで確定します（編集不可）";
+        return summary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Fixed
+            ? "集計行の工数と日付は子タスクから計算します。" : null;
+    }
     internal static bool IsSummaryEffort(bool summary, PlanField field) => summary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual;
     internal static bool IsLocalConstraint(PlanField field, ProjectPlanSettings settings)
         => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
+    internal static bool IsRecalculatedField(ScheduledTask task, PlanField field) => field switch
+    {
+        PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start
+            || task.Input.StartNoEarlierThan is { } constraint && task.Start.Value == constraint
+                && task.StartReason == "開始日指定 " + constraint.ToString("M/d", CultureInfo.InvariantCulture)),
+        PlanField.End => task.IsSummary || task.End.Origin != DateOrigin.Kept || task.End.Value != task.Input.End,
+        PlanField.Remaining => task.IsSummary || task.Input.Closed,
+        PlanField.Estimate or PlanField.Actual => task.IsSummary,
+        _ => false
+    };
+    internal static bool IsUnmappedCalculation(ScheduledTask task, PlanField field, ProjectPlanSettings settings)
+        => IsRecalculatedField(task, field) && !settings.Columns.Any(c => c.Role == field);
     internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent)
         => document.Sync.NativeOrders.GetValueOrDefault(parent,
             document.Baseline.Rows.Where(r => r.Parent == parent).Select(r => r.Identity).ToImmutableArray())
@@ -279,34 +299,26 @@ internal static class PlanOperations
         foreach (var calculated in Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];
+            if (r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
             var fields = ImmutableArray.CreateBuilder<PlanField>();
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Closed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
-                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryEffort(calculated.IsSummary, field) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
+                if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryEffort(calculated.IsSummary, field)
+                    && !IsUnmappedCalculation(calculated, field, d.State.Settings) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
-            // Historical inputs survive publication; automatic dates can coincidentally match them.
-            // Entered dates need a kept origin or an explicit start constraint that actually won.
-            if (calculated.Start.Value != old.Start)
-            {
+            if (calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))
                 fields.Add(PlanField.Start);
-                var kept = calculated.Start.Origin == DateOrigin.Kept && calculated.Start.Value == r.Start;
-                var specified = r.StartNoEarlierThan is { } constraint && calculated.Start.Value == constraint
-                    && calculated.StartReason == "開始日指定 " + constraint.ToString("M/d", CultureInfo.InvariantCulture);
-                if (calculated.IsSummary || !(kept || specified)) recalculated.Add((r.Identity, PlanField.Start));
-            }
-            if (calculated.End.Value != old.End)
-            {
+            if (calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
-                if (calculated.IsSummary || calculated.End.Origin != DateOrigin.Kept || calculated.End.Value != r.End)
-                    recalculated.Add((r.Identity, PlanField.End));
-            }
+            foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
+                recalculated.Add((r.Identity, field));
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
             var children = d.State.Rows.Where(child => child.Parent == r.Identity).Select(child => child.Identity).ToArray();
             if (children.Length > 1 && !PreviousSiblingOrder(d, r.Identity).SequenceEqual(children)) fields.Add(PlanField.SubIssueOrder);
             if (fields.Count > 0) result[r.Identity] = fields.ToImmutable();
         }
-        return new(result.ToImmutable()) { RecalculatedDates = recalculated.ToImmutable() };
+        return new(result.ToImmutable()) { RecalculatedFields = recalculated.ToImmutable() };
     }
 }

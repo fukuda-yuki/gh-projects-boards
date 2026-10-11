@@ -87,7 +87,7 @@ internal static class PlanMerge
         foreach (var r in remote.Rows)
         {
             if (!baseline.TryGetValue(r.Identity, out var b)) { local[r.Identity] = r; continue; }
-            var l = local[r.Identity]; var merged = l;
+            var l = local[r.Identity]; var merged = l with { Closed = r.Closed, CloseDate = r.CloseDate };
             // Date adoption needs the merged progress state, regardless of enum declaration order.
             foreach (var field in PlanValues.RowFields.OrderBy(field => field is PlanField.Start or PlanField.End))
             {

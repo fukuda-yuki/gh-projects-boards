@@ -64,7 +64,8 @@ internal static class PlanPublishPlan
         var rows = document.State.Rows;
         foreach (var scheduled in PlanOperations.Schedule(document, today))
         {
-            var row = rows[scheduled.Input.RowId - 1] with { Start = scheduled.Start.Value, End = scheduled.End.Value };
+            var row = rows[scheduled.Input.RowId - 1] with { Start = scheduled.Start.Value, End = scheduled.End.Value,
+                Remaining = scheduled.Input.Closed && !scheduled.IsSummary ? 0 : scheduled.Input.Remaining };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew)
@@ -80,7 +81,8 @@ internal static class PlanPublishPlan
             }
             foreach (var field in PlanValues.RowFields)
             {
-                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryEffort(scheduled.IsSummary, field)) continue;
+                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryEffort(scheduled.IsSummary, field)
+                    || PlanOperations.IsUnmappedCalculation(scheduled, field, document.State.Settings)) continue;
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;
                 if (isNew && field is PlanField.Repository or PlanField.Title) continue;

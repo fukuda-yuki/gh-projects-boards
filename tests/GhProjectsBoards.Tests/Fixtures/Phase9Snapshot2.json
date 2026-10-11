@@ -15,6 +15,7 @@
         "csvSourceHash": null,
         "status": "Done",
         "closed": true,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -33,6 +34,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -55,6 +57,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -77,6 +80,7 @@
         "csvSourceHash": null,
         "status": "Done",
         "closed": true,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -97,6 +101,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -117,6 +122,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -135,6 +141,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -155,6 +162,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -173,6 +181,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -191,6 +200,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -209,6 +219,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -229,6 +240,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -249,6 +261,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -267,6 +280,7 @@
         "csvSourceHash": null,
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -287,6 +301,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -305,6 +320,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -323,6 +339,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -341,6 +358,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -359,6 +377,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -377,6 +396,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -395,6 +415,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -413,6 +434,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -431,6 +453,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -449,6 +472,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -467,6 +491,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -485,6 +510,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -503,6 +529,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -521,6 +548,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -539,6 +567,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -673,6 +702,7 @@
         "csvSourceHash": null,
         "status": "Done",
         "closed": true,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -691,6 +721,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -713,6 +744,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -735,6 +767,7 @@
         "csvSourceHash": null,
         "status": "Done",
         "closed": true,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -755,6 +788,7 @@
         "csvSourceHash": null,
         "status": "Backlog",
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -775,6 +809,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -793,6 +828,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -813,6 +849,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [
           "I7"
@@ -833,6 +870,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -855,6 +893,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -877,6 +916,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -899,6 +939,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -917,6 +958,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -939,6 +981,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [
           "I13"
@@ -959,6 +1002,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -981,6 +1025,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1003,6 +1048,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1025,6 +1071,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -1043,6 +1090,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1065,6 +1113,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [
           "I19"
@@ -1085,6 +1134,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1107,6 +1157,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1129,6 +1180,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1151,6 +1203,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [],
         "parent": null,
@@ -1169,6 +1222,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1191,6 +1245,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [],
         "predecessors": [
           "I25"
@@ -1211,6 +1266,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1233,6 +1289,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
@@ -1255,6 +1312,7 @@
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
         "closed": false,
+        "closeDate": null,
         "assignees": [
           "U1"
         ],
