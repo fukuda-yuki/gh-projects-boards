@@ -313,6 +313,7 @@ internal sealed partial class PlanSheetHostedTests
                 await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
                 MenuFlyoutItem item = null!;
                 Windows.Foundation.Point point = default;
+                var pressed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 Microsoft.UI.Xaml.Input.PointerEventHandler onRootPressed = (_, args) =>
                     trace.Add($"opening={opening} ROOT pressed source={args.OriginalSource.GetType().Name}/{AutomationProperties.GetAutomationId((DependencyObject)args.OriginalSource)} point={args.GetCurrentPoint(Ui.Root).Position} handled={args.Handled}");
                 Microsoft.UI.Xaml.Input.PointerEventHandler onPopupPressed = (_, args) =>
@@ -320,6 +321,7 @@ internal sealed partial class PlanSheetHostedTests
                 FrameworkElement presenter = null!;
                 Microsoft.UI.Xaml.Input.PointerEventHandler onPressed = (_, args) => {
                     trace.Add($"opening={opening} pressed source={args.OriginalSource.GetType().Name} handled={args.Handled}");
+                    pressed.TrySetResult();
                 };
                 Microsoft.UI.Xaml.Input.PointerEventHandler onReleased = (_, args) => {
                     trace.Add($"opening={opening} released source={args.OriginalSource.GetType().Name} handled={args.Handled}");
@@ -346,8 +348,13 @@ internal sealed partial class PlanSheetHostedTests
                 try {
                     SheetNativeInput.Move(point);
                     trace.Add($"opening={opening} beforePress {await SheetNativeInput.DesktopState()}");
+                    var pressTimer = System.Diagnostics.Stopwatch.StartNew();
                     SheetNativeInput.Button(true); held = true;
+                    await pressed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                    var remainingPress = TimeSpan.FromMilliseconds(100) - pressTimer.Elapsed;
+                    if (remainingPress > TimeSpan.Zero) await Task.Delay(remainingPress);
                     SheetNativeInput.Button(false); held = false;
+                    trace.Add($"opening={opening} released after {pressTimer.Elapsed.TotalMilliseconds:F1}ms physical press");
                     // The acceptance boundary is the user's visible result. Retain
                     // routed-event observations as diagnostics without requiring a
                     // particular managed route through a native popup input island.
@@ -392,7 +399,7 @@ internal sealed partial class PlanSheetHostedTests
                 finally { await Ui.Run(() => flyout.Closed -= onClosed); }
                 await Ui.Run(() => {
                     Assert.That(SelectProvider("PlanCell2_Remaining").IsSelected, Is.True);
-                    Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").Text, Is.EqualTo("8"));
+                    Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").Text, Is.EqualTo("8h"));
                     Assert.That(session.Document.State, Is.EqualTo(before));
                     Assert.That(session.UndoCount, Is.EqualTo(undo));
                 });
