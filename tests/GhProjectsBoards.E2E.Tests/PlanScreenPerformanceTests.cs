@@ -94,30 +94,36 @@ public sealed class PlanScreenPerformanceTests
             Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
             var rowBounds = Rectangle.Round(list.BoundingRectangle);
             var rowRegion = new Rectangle(rowBounds.Left + 2, rowBounds.Top + 2,
-                Math.Min(600, rowBounds.Width - 4), Math.Min(650, rowBounds.Height - 4));
+                Math.Min(600, rowBounds.Width - 4), rowBounds.Height - 4);
             Assert.That(rowRegion.Width > 100 && rowRegion.Height > 100, Is.True);
             Assert.That(SetCursorPos(rowRegion.Left + 200, rowRegion.Top + 100), Is.True);
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-scroll.png"));
-            foreach (var down in new[] { true, false })
+            foreach (var burst in new[] { (Name: "short", Notches: 5, IntervalMs: 150), (Name: "stress", Notches: 40, IntervalMs: 50) })
             {
-                var direction = down ? "down" : "up";
-                var beforeOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
-                var recording = RecordPixels(Path.Combine(root, "scroll-" + direction), rowRegion, mark => {
-                    for (var notch = 1; notch <= 40; notch++) {
-                        mark($"wheel-{direction}:{notch}");
-                        MouseEvent(0x0800, 0, 0, unchecked((uint)(down ? -120 : 120)), 0);
-                        Thread.Sleep(50);
-                    }
-                }, TimeSpan.FromSeconds(1));
-                var afterOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
-                wheelRecordings.Add(new { direction, notches = 40, requestedIntervalMs = 50,
-                    beforeVerticalPercent = beforeOffset, afterVerticalPercent = afterOffset, region = rowRegion,
-                    recording.ScreenChanged, recording.FinalStateStable, recording.MaxCaptureIntervalMs,
-                    boundary = "Native wheel input and raw desktop pixels over the visible row IDs/titles; inspect images for stale/blank content. Hash changes do not classify population or physical display flicker." });
-                WriteSummary();
-                using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-scroll-" + direction + ".png"));
-                Assert.That(down ? afterOffset > beforeOffset : afterOffset < beforeOffset, Is.True,
-                    "The ordinary app must receive the recorded wheel input.");
+                list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
+                Wait(() => list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value == 0);
+                foreach (var down in new[] { true, false })
+                {
+                    var direction = down ? "down" : "up";
+                    var name = burst.Name == "stress" ? "scroll-" + direction : "scroll-short-" + direction;
+                    var beforeOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
+                    var recording = RecordPixels(Path.Combine(root, name), rowRegion, mark => {
+                        for (var notch = 1; notch <= burst.Notches; notch++) {
+                            mark($"wheel-{direction}:{notch}");
+                            MouseEvent(0x0800, 0, 0, unchecked((uint)(down ? -120 : 120)), 0);
+                            Thread.Sleep(burst.IntervalMs);
+                        }
+                    }, TimeSpan.FromSeconds(3));
+                    var afterOffset = list.Patterns.Scroll.Pattern.VerticalScrollPercent.Value;
+                    wheelRecordings.Add(new { burst = burst.Name, direction, notches = burst.Notches, requestedIntervalMs = burst.IntervalMs,
+                        tailSeconds = 3, beforeVerticalPercent = beforeOffset, afterVerticalPercent = afterOffset, region = rowRegion,
+                        recording.ScreenChanged, recording.FinalStateStable, recording.MaxCaptureIntervalMs,
+                        boundary = "Native wheel input and raw desktop pixels over the full visible row-title height; inspect images for stale/blank content and post-input recovery. Hash changes do not classify population or physical display flicker." });
+                    WriteSummary();
+                    using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-" + name + ".png"));
+                    Assert.That(down ? afterOffset > beforeOffset : afterOffset < beforeOffset, Is.True,
+                        "The ordinary app must receive the recorded wheel input.");
+                }
             }
             // Record the native return position above, then reset outside the edit measurement.
             list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
