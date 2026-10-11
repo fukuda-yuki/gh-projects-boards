@@ -13,13 +13,13 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanWorkspaceHostedTests
 {
-    private async Task MilestonePlan(bool sameDate = false)
+    private async Task MilestonePlan(bool sameDate = false, bool weekApart = false)
     {
         readDay = new(2026, 10, 5);
         FakePlanEditor.Save(root, new([
             new(new("I1", "Late", "acme/repo") { MilestoneTitle = "Design", Phase = "SA", Start = readDay, End = readDay.AddDays(4) }, "", true) { Phase = "SA" },
-            new(new("I2", "On time", "acme/repo") { MilestoneTitle = sameDate ? "Review" : "Design", Phase = "SA", Start = readDay, End = sameDate ? readDay.AddDays(3) : readDay }, "", true) { Phase = "SA" }], 3) {
-                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(1)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", sameDate ? readDay.AddDays(1) : readDay.AddDays(40))] });
+            new(new("I2", "On time", "acme/repo") { MilestoneTitle = sameDate ? "Review" : "Design", Phase = "SA", Start = readDay, End = weekApart ? readDay.AddDays(11) : sameDate ? readDay.AddDays(3) : readDay }, "", true) { Phase = "SA" }], 3) {
+                Phases = ["SA"], Milestones = [new("M1", "acme/repo", "Design", readDay.AddDays(1)), new("M2", "acme/repo", sameDate ? "Review" : "Empty", weekApart ? readDay.AddDays(8) : sameDate ? readDay.AddDays(1) : readDay.AddDays(40))] });
         await Open("Late");
     }
 
@@ -118,6 +118,53 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.EqualTo(undo));
         Assert.That(session.Changes(readDay).TaskCount, Is.EqualTo(unpublished));
+    }
+
+    [TestCase(1), TestCase(2), TestCase(3)]
+    public async Task WeekApartMilestoneLabelsNeverIntersectLabelsOrMarkers(int scale)
+    {
+        await MilestonePlan(sameDate: true, weekApart: true);
+        await Ui.Run(() => Ui.Find<ComboBox>("PlanGanttZoom").SelectedIndex = scale);
+        await Ui.Idle();
+        await ReadyMilestone("PlanMilestone_0"); await ReadyMilestone("PlanMilestone_1");
+        await Ui.Run(() => {
+            var header = Ui.Find<Canvas>("PlanGanttHeader");
+            var labels = Ui.Tree(header).OfType<TextBlock>().Where(t => AutomationProperties.GetAutomationId(t).StartsWith("PlanMilestoneLabel_")).ToArray();
+            var markers = Ui.Tree(header).OfType<Button>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("PlanMilestone_")).ToArray();
+            Assert.That(labels, Is.Not.Empty);
+            Assert.That(markers, Has.Length.EqualTo(2));
+            Windows.Foundation.Rect Bounds(FrameworkElement e) => e.TransformToVisual(header).TransformBounds(new(0, 0, e.ActualWidth, e.ActualHeight));
+            foreach (var label in labels) {
+                Assert.That(label.ActualWidth, Is.GreaterThan(0));
+                foreach (var other in labels.Cast<FrameworkElement>().Concat(markers).Where(e => e != label)) {
+                    var a = Bounds(label); var b = Bounds(other);
+                    Assert.That(a.Right <= b.Left || a.Left >= b.Right || a.Bottom <= b.Top || a.Top >= b.Bottom, Is.True,
+                        $"{AutomationProperties.GetAutomationId(label)} overlaps {AutomationProperties.GetAutomationId(other)}");
+                }
+            }
+            foreach (var marker in markers) Assert.That(AutomationProperties.GetName(marker), Does.Contain("期日").And.Contain("完了見込").And.Contain("+"));
+        });
+    }
+
+    [TestCase(false, false, ""), TestCase(true, false, "クローズ")]
+    [TestCase(false, true, "期日がリポジトリで異なります"), TestCase(true, true, "クローズ · 期日がリポジトリで異なります")]
+    public async Task MilestoneStateOnlyShowsClosedAndDateConflictWithCountSeparation(bool closed, bool conflict, string expected)
+    {
+        readDay = new(2026, 10, 5);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "First", "acme/one") { MilestoneTitle = "Release" }, "", true),
+            new(new("I2", "Second", "acme/two") { MilestoneTitle = "Release" }, "", true)], 3) {
+            Milestones = [new("M1", "acme/one", "Release", readDay, closed), new("M2", "acme/two", "Release", conflict ? readDay.AddDays(1) : readDay, closed)] });
+        await Open("First");
+        await Ui.Run(() => Ui.Click("PlanShowSummary"));
+        await Ui.Ready<TextBlock>("SummaryMilestoneState_0"); await Ui.Idle();
+        await Ui.Run(() => {
+            var state = Ui.Find<TextBlock>("SummaryMilestoneState_0");
+            Assert.That(state.Text, Is.EqualTo(expected));
+            var count = Ui.Find<TextBlock>("SummaryMilestoneCount_0");
+            Assert.That(count.Text, Is.EqualTo("0 / 2"));
+            Assert.That(state.TransformToVisual(count).TransformPoint(new()).X - count.ActualWidth, Is.GreaterThanOrEqualTo(12));
+        });
     }
 
     [Test]

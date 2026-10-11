@@ -194,10 +194,14 @@ internal sealed class PlanSummaryView : UserControl
         body.Children.Add(matrixScroll); RenderMatrix();
         if (report.Milestones.Count > 0) {
             var table = Id(new StackPanel(), "SummaryMilestoneTable"); Heading(table, "マイルストーン");
-            double[] widths = [200, 108, 108, 72, 112, 88];
+            double[] widths = [200, 108, 108, 72, 112, 300];
             var header = Row(widths); header.Height = 32;
             string[] names = ["名前", "期日", "完了見込", "差", "完了 / タスク", "状態"];
-            for (var i = 0; i < names.Length; i++) Cell(header, TableText(names[i], numeric: i is > 0 and < 5), i);
+            for (var i = 0; i < names.Length; i++) {
+                var text = TableText(names[i], numeric: i is > 0 and < 5);
+                if (i == 5) text.Margin = new(16, 2, 4, 2);
+                Cell(header, text, i);
+            }
             table.Children.Add(header);
             for (var n = 0; n < report.Milestones.Count; n++) {
                 var milestone = report.Milestones[n]; var m = milestone.Milestone;
@@ -206,8 +210,12 @@ internal sealed class PlanSummaryView : UserControl
                 var description = m.Title + (m.ConflictingDates ? " · 期日がリポジトリで異なります" : "");
                 ToolTipService.SetToolTip(title, description); AutomationProperties.SetName(title, description);
                 Cell(row, title, 0);
-                string[] values = [Date(m.DueDate), Date(milestone.Forecast), Days(milestone.Difference), $"{milestone.Closed:N0} / {milestone.Tasks.Count:N0}", m.Closed ? "クローズ" : "オープン"];
-                for (var i = 0; i < values.Length; i++) Cell(row, TableText(values[i], numeric: i < 4), i + 1);
+                string[] values = [Date(m.DueDate), Date(milestone.Forecast), Days(milestone.Difference), $"{milestone.Closed:N0} / {milestone.Tasks.Count:N0}", string.Join(" · ", new[] { m.Closed ? "クローズ" : "", m.ConflictingDates ? "期日がリポジトリで異なります" : "" }.Where(value => value.Length > 0))];
+                for (var i = 0; i < values.Length; i++) {
+                    var text = TableText(values[i], i == 4 ? "SummaryMilestoneState_" + n : i == 3 ? "SummaryMilestoneCount_" + n : "", numeric: i < 4);
+                    if (i == 4) text.Margin = new(16, 2, 4, 2);
+                    Cell(row, text, i + 1);
+                }
                 table.Children.Add(row);
             }
             body.Children.Add(Wide(table));

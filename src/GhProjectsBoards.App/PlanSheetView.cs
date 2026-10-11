@@ -830,16 +830,24 @@ internal sealed partial class PlanSheetView : Grid
             var difference = late ? $"+{group.Max(value => value.Item.Difference)}日" : "";
             var title = string.Join(" / ", group.Select(value => value.Item.Milestone.Title));
             var label = Id(new TextBlock { Text = (late ? difference + " " : "") + title, FontSize = 11, Foreground = brush,
-                IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
+                TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false }, "PlanMilestoneLabel_" + i);
+            // Measure in the header's inherited text context, then constrain the rendered extent.
+            chartHead.Children.Add(label);
+            var left = Math.Max(x + 12, labelRight);
+            var available = Math.Max(0, Math.Min(next - 12, ChartViewport) - left);
             label.Measure(new Size(double.PositiveInfinity, 22));
-            if (x + 12 + label.DesiredSize.Width > next - 12) label.Text = difference;
-            label.Measure(new Size(double.PositiveInfinity, 22));
-            var left = x + 12;
-            if (left + label.DesiredSize.Width > Math.Min(next - 12, ChartViewport)) left = x - 12 - label.DesiredSize.Width;
-            if (label.Text.Length > 0 && left >= labelRight && left >= 0) {
-                Canvas.SetLeft(label, left); Canvas.SetTop(label, 51); chartHead.Children.Add(label);
-                labelRight = left + label.DesiredSize.Width + 4;
+            if (label.DesiredSize.Width > available) {
+                label.Text = difference;
+                label.Measure(new Size(double.PositiveInfinity, 22));
             }
+            var width = label.DesiredSize.Width;
+            if (label.Text.Length == 0 || width <= 0 || width > available) {
+                chartHead.Children.Remove(label);
+                continue;
+            }
+            label.Width = width;
+            Canvas.SetLeft(label, left); Canvas.SetTop(label, 51);
+            labelRight = left + width + 4;
         }
     }
     private void RenderTimelineHeader()
