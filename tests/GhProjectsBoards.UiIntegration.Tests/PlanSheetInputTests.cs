@@ -313,7 +313,13 @@ internal sealed partial class PlanSheetHostedTests
                 await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
                 MenuFlyoutItem item = null!;
                 Windows.Foundation.Point point = default;
-                var pressed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                Windows.Foundation.Point outside = default;
+                var enteredWithoutButton = false;
+                Microsoft.UI.Xaml.Input.PointerEventHandler onEntered = (_, args) => {
+                    var left = args.GetCurrentPoint(item).Properties.IsLeftButtonPressed;
+                    enteredWithoutButton |= !left;
+                    trace.Add($"opening={opening} entered leftPressed={left} source={args.OriginalSource.GetType().Name}");
+                };
                 Microsoft.UI.Xaml.Input.PointerEventHandler onRootPressed = (_, args) =>
                     trace.Add($"opening={opening} ROOT pressed source={args.OriginalSource.GetType().Name}/{AutomationProperties.GetAutomationId((DependencyObject)args.OriginalSource)} point={args.GetCurrentPoint(Ui.Root).Position} handled={args.Handled}");
                 Microsoft.UI.Xaml.Input.PointerEventHandler onPopupPressed = (_, args) =>
@@ -321,7 +327,6 @@ internal sealed partial class PlanSheetHostedTests
                 FrameworkElement presenter = null!;
                 Microsoft.UI.Xaml.Input.PointerEventHandler onPressed = (_, args) => {
                     trace.Add($"opening={opening} pressed source={args.OriginalSource.GetType().Name} handled={args.Handled}");
-                    pressed.TrySetResult();
                 };
                 Microsoft.UI.Xaml.Input.PointerEventHandler onReleased = (_, args) => {
                     trace.Add($"opening={opening} released source={args.OriginalSource.GetType().Name} handled={args.Handled}");
@@ -335,6 +340,7 @@ internal sealed partial class PlanSheetHostedTests
                     var bounds = FrameworkElementAutomationPeer.CreatePeerForElement(item).GetBoundingRectangle();
                     Assert.That(bounds.Width > 0 && bounds.Height > 0, Is.True);
                     point = SheetNativeInput.ScreenPoint(item);
+                    outside = SheetNativeInput.ScreenPoint(Ui.Find<AppBarButton>("PlanSheetMore"));
                     var local = item.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, item.ActualWidth, item.ActualHeight));
                     trace.Add($"opening={opening} peerMenu={bounds} rootMenu={local} click={point}");
                     presenter = (FrameworkElement)VisualTreeHelper.GetOpenPopupsForXamlRoot(Ui.Root.XamlRoot)
@@ -343,16 +349,19 @@ internal sealed partial class PlanSheetHostedTests
                     presenter.AddHandler(UIElement.PointerPressedEvent, onPopupPressed, true);
                     item.AddHandler(UIElement.PointerPressedEvent, onPressed, true);
                     item.AddHandler(UIElement.PointerReleasedEvent, onReleased, true);
+                    item.AddHandler(UIElement.PointerEnteredEvent, onEntered, true);
                 });
                 var held = false;
                 try {
-                    SheetNativeInput.Move(point);
+                    SheetNativeInput.Move(outside, noCoalesce: true);
+                    await Task.Delay(100);
+                    SheetNativeInput.Move(point, noCoalesce: true);
+                    await Task.Delay(100);
                     trace.Add($"opening={opening} beforePress {await SheetNativeInput.DesktopState()}");
+                    trace.Add($"opening={opening} pre-press Entered without button={enteredWithoutButton}");
                     var pressTimer = System.Diagnostics.Stopwatch.StartNew();
                     SheetNativeInput.Button(true); held = true;
-                    await pressed.Task.WaitAsync(TimeSpan.FromSeconds(5));
-                    var remainingPress = TimeSpan.FromMilliseconds(100) - pressTimer.Elapsed;
-                    if (remainingPress > TimeSpan.Zero) await Task.Delay(remainingPress);
+                    await Task.Delay(100);
                     SheetNativeInput.Button(false); held = false;
                     trace.Add($"opening={opening} released after {pressTimer.Elapsed.TotalMilliseconds:F1}ms physical press");
                     // The acceptance boundary is the user's visible result. Retain
@@ -375,6 +384,7 @@ internal sealed partial class PlanSheetHostedTests
                     await Ui.Run(() => {
                         item.RemoveHandler(UIElement.PointerPressedEvent, onPressed);
                         item.RemoveHandler(UIElement.PointerReleasedEvent, onReleased);
+                        item.RemoveHandler(UIElement.PointerEnteredEvent, onEntered);
                         Ui.Root.RemoveHandler(UIElement.PointerPressedEvent, onRootPressed);
                         presenter.RemoveHandler(UIElement.PointerPressedEvent, onPopupPressed);
                     });
