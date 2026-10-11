@@ -317,7 +317,7 @@ internal static class PlanScheduler
 
             void WarnConflict(Point? value)
             {
-                if (value is { } at && dependencies.Any(d => d.Result.End is { } finish && at.CompareTo(finish) < 0))
+                if (value is { } at && dependencies.Any(d => d.Result.End is { } finish && at.Day < finish.Day))
                     warnings.Add("先行タスクより前に開始");
             }
         }

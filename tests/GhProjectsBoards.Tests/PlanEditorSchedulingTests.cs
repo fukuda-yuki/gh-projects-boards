@@ -154,6 +154,26 @@ internal sealed class PlanEditorSchedulingTests
         Assert.That(end.GitHubEnd, Is.EqualTo(Monday));
     }
 
+    [TestCase(false, "2026-10-06", false)]
+    [TestCase(true, "2026-10-06", false)]
+    [TestCase(false, "2026-10-05", true)]
+    [TestCase(true, "2026-10-05", true)]
+    public void KeptStartWarnsOnlyBeforePredecessorEndDayWithoutMovingDates(bool fixedDates, string start, bool warning)
+    {
+        var predecessor = Task() with { Closed = true, Start = Monday, CloseDate = Monday.AddDays(1) };
+        var successor = Task(2) with
+        {
+            Fixed = fixedDates, Actual = fixedDates ? 0 : 4, Remaining = 4,
+            Start = D(start), End = Monday.AddDays(2), Predecessors = [predecessor.Identity]
+        };
+        var results = Calculate([predecessor, successor], Settings with { StatusDate = Monday.AddDays(2) });
+        Dates(results[0], "2026-10-05", "2026-10-06");
+        Dates(results[1], start, "2026-10-07");
+        Assert.That(results[1].Start.Origin, Is.EqualTo(DateOrigin.Kept));
+        Assert.That(results[1].End.Origin, Is.EqualTo(fixedDates ? DateOrigin.Kept : DateOrigin.Calculated));
+        Assert.That(results[1].Warnings.Contains("先行タスクより前に開始"), Is.EqualTo(warning));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public void FixedDatesWarnAboutConflictOrMissingDatesWithoutMoving(bool missing)
@@ -337,7 +357,7 @@ internal sealed class PlanEditorSchedulingTests
     [Test]
     public void InheritedPredecessorsWarnFixedDescendantsWithoutMovingThem()
     {
-        var result = Calculate([Task(), Task(2) with { Predecessors = ["issue:1"] }, Task(3) with { Parent = "issue:2", Fixed = true, Start = Monday, End = Monday }], Settings);
+        var result = Calculate([Task(work: 16), Task(2) with { Predecessors = ["issue:1"] }, Task(3) with { Parent = "issue:2", Fixed = true, Start = Monday, End = Monday }], Settings);
         Dates(result[2], "2026-10-05", "2026-10-05");
         Assert.That(result[2].Warnings, Does.Contain("先行タスクより前に開始"));
     }
