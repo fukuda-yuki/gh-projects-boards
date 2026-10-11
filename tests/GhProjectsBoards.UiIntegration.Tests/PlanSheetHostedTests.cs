@@ -1013,7 +1013,28 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<TextBox>("PlanCell91_Title");
         await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
+        try {
+            // Focus can return while native ScrollIntoView is still arranging its
+            // viewport. The command is visibly complete when that editor's callout returns.
+            await Ui.Until(() => {
+                var row = (sheet.List.ContainerFromItem("I1") as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+                var cell = row?.Cells.Single(cell => cell.Field == PlanField.Remaining);
+                var problem = Ui.Popup<Border>("SheetInputProblem");
+                return row?.Owner == sheet && row.Identity == "I1" && cell is { IsLoaded: true, FocusState: not FocusState.Unfocused }
+                    && problem is { IsLoaded: true }
+                    && VisualTreeHelper.GetOpenPopupsForXamlRoot(cell.XamlRoot).Any(p => p.Child == problem && p.PlacementTarget == cell);
+            });
+        } catch (TimeoutException) {
+            await Ui.Run(() => {
+                var row = (sheet.List.ContainerFromItem("I1") as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
+                var cell = row?.Cells.Single(cell => cell.Field == PlanField.Remaining);
+                var bounds = cell?.TransformToVisual(sheet.List).TransformBounds(new(0, 0, cell.ActualWidth, cell.ActualHeight));
+                Ui.Trace($"[VALIDATION RETURN] identity={row?.Identity}, owner={row?.Owner == sheet}, loaded={cell?.IsLoaded}, "
+                    + $"focus={cell?.FocusState}, bounds={bounds}, viewport={sheet.SheetViewport}x{sheet.List.ActualHeight}, "
+                    + $"popup={Ui.Popup<Border>("SheetInputProblem") is not null}, problem={sheet.Problems.ContainsKey(("I1", PlanField.Remaining))}");
+            });
+            throw;
+        }
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
             Assert.That(cell.Text, Is.EqualTo("invalid"));
