@@ -666,7 +666,11 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
     {
         await Open();
+        // Release the first-take-in date hold before measuring the CSV's additional changes.
+        await CommitText("PlanCell1_Title", "設計の変更");
+        await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "設計の変更");
         var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;
+        var undoBeforeCsv = workspace.Session.UndoCount;
         var path = Path.Combine(root, "tasks.csv");
         await File.WriteAllTextAsync(path, "キー,タイトル,見積,担当者,先行タスク,親\na,,8,,,\nb,確認,4,,missing,\n");
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "設計");
@@ -701,6 +705,12 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Tree(view).OfType<PlanSheetView>().Single(), "csv-imported-plan"));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Length == 1);
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(undoBeforeCsv));
+            Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("設計の変更"));
+            Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(unpublishedBeforeCsv));
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == unpublishedBeforeCsv.ToString());
         await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); });
         await Ui.ClickCommand("PlanSheetCsv");
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
@@ -1173,6 +1183,7 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task RemoteWorkShowsBlockingPanelAndLocksCellsUntilCompletion(bool publish)
     {
         await Open();
+        if (publish) await CommitText("PlanCell1_Title", "発行予定");
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
             planEditor = true, workspace = true, holdQuery = publish ? "mutation PlanPublish(" : "ProjectFields"
         }));
@@ -1463,9 +1474,10 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task FailedSaveWhileClosingPublicationKeepsRetryAndEditingReachable()
     {
         await Open();
+        await CommitText("PlanCell1_Title", "発行予定");
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "mutation PlanPublish(" }));
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("未入力 →")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
         bool stopped = true;
@@ -1490,8 +1502,9 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task PublishSaveFailureOffersRetryBeforeAnyWrite()
     {
         await Open();
+        await CommitText("PlanCell1_Title", "発行予定");
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("開始日")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
