@@ -269,7 +269,7 @@ internal sealed partial class PlanSheetHostedTests
                 .TransformToVisual(sheet).TransformPoint(new(3, 0)).X;
             foreach (var row in currentRows)
                 AssertCrossingGeometry(row, row.Identity switch { "I3" => [forwardX], "I90" => [reverseX], _ => [] });
-            var allPaths = Ui.Tree(sheet).OfType<NativePath>().ToArray();
+            var allPaths = Ui.Tree(sheet).OfType<PlanSheetRow>().SelectMany(row => Ui.Tree(row).OfType<NativePath>()).ToArray();
             Assert.That(allPaths.Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0),
                 Is.EquivalentTo(currentRows.SelectMany(row => Ui.Tree(row).OfType<NativePath>())
                     .Select(AutomationProperties.GetAutomationId).Where(id => id.Length > 0)),

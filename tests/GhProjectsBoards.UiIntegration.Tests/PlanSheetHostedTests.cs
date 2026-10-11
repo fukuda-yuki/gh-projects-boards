@@ -1000,6 +1000,18 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(Ui.Popup<Border>("SheetInputProblem"), Is.Null,
                 "An offscreen problem must not label the task now occupying its recycled editor.");
         });
+        await Ui.Run(() => sheet.List.ScrollIntoView("I1"));
+        await Ui.Ready<TextBox>("PlanCell1_Remaining");
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is not null);
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Remaining");
+            Assert.That(cell.Text, Is.EqualTo("invalid"));
+            Assert.That(VisualTreeHelper.GetOpenPopupsForXamlRoot(cell.XamlRoot)
+                .Single(p => p.Child == Ui.Popup<Border>("SheetInputProblem")).PlacementTarget, Is.SameAs(cell));
+            sheet.List.ScrollIntoView("I91");
+        });
+        await Ui.Ready<TextBox>("PlanCell91_Title");
+        await Ui.Until(() => Ui.Popup<Border>("SheetInputProblem") is null);
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
         await Ui.Run(() => {

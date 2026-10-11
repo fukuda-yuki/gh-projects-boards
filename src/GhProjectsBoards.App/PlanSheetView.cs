@@ -71,6 +71,7 @@ internal sealed partial class PlanSheetView : Grid
     internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
     internal static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
+    private ScrollViewer? rowScroll;
     private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
     private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
     private readonly Canvas chartHead = Id(new Canvas { Height = 48, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) }, "PlanGanttHeader");
@@ -233,7 +234,18 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(chartBackground); SetRow(chartBackground, 4);
         Children.Add(List); SetRow(List, 4);
         Children.Add(chartStatus); SetRow(chartStatus, 4);
-        List.SizeChanged += (_, _) => RenderTimelineHeader();
+        List.SizeChanged += (_, _) => { RenderTimelineHeader(); if (Problems.Count > 0) UpdateInputProblem(); };
+        List.Loaded += (_, _) => {
+            var current = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
+            if (ReferenceEquals(rowScroll, current)) return;
+            if (rowScroll is not null) rowScroll.ViewChanged -= RowViewportChanged;
+            rowScroll = current;
+            if (rowScroll is not null) rowScroll.ViewChanged += RowViewportChanged;
+        };
+        List.Unloaded += (_, _) => {
+            if (rowScroll is not null) rowScroll.ViewChanged -= RowViewportChanged;
+            rowScroll = null;
+        };
         sheetHorizontal.Content = new Border { Height = 1 }; chartHorizontal.Content = new Border { Height = 1 };
         scrollbars.Children.Add(sheetHorizontal); scrollbars.Children.Add(chartHorizontal); SetColumn(chartHorizontal, 1);
         Children.Add(scrollbars); SetRow(scrollbars, 5);
@@ -663,11 +675,23 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (disposed || !IsLoaded || Problems.Count == 0) { inputProblem.Close(); return; }
         var cells = Realized.Where(r => r.IsLoaded && ReferenceEquals(r.Owner, this))
-            .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)))
+            .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)) && InputProblemCellIsVisible(c))
             .Select(c => (Cell: c, Problem: Problems[(r.Identity, c.Field)]))).ToArray();
         var target = cells.OrderByDescending(c => c.Cell.FocusState != FocusState.Unfocused).FirstOrDefault();
         if (target.Cell is null) { inputProblem.Close(); return; }
         inputProblem.Show(target.Cell, target.Problem);
+    }
+    private void RowViewportChanged(object? sender, ScrollViewerViewChangedEventArgs args)
+    {
+        if (Problems.Count > 0) UpdateInputProblem();
+    }
+    private bool InputProblemCellIsVisible(PlanSheetCell cell)
+    {
+        if (cell.Visibility != Visibility.Visible || cell.ActualWidth <= 0 || cell.ActualHeight <= 0) return false;
+        // A native popup anchor can keep its editor prepared outside the viewport.
+        // Loaded/owned alone must not leave that task's error over other rows.
+        var bounds = cell.TransformToVisual(List).TransformBounds(new(0, 0, cell.ActualWidth, cell.ActualHeight));
+        return bounds.Bottom > 0 && bounds.Top < List.ActualHeight && bounds.Right > 0 && bounds.Left < SheetViewport;
     }
     private void RefreshLayout(bool preserveDateViewport = true)
     {
