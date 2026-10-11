@@ -506,7 +506,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true);
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.ChangeView(null, 0, null, true); return Task.CompletedTask; }));
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 next.SaveFeedbackChanged += () => { if (ReferenceEquals(sheet, next)) { saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
@@ -557,6 +557,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 Show(settingsReturnPage); return Task.CompletedTask;
             }));
             var value = session.Document.State.Settings;
+            RenderColumnSettings(session, generation);
             settings.Children.Add(Label("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)
             {
@@ -698,6 +699,61 @@ internal sealed partial class PlanWorkspaceView : UserControl
             settings.Children.Add(Id(Label($"計画対象外: ドラフト {session.Document.Sync.DraftCount} 件・プルリクエスト {session.Document.Sync.PullRequestCount} 件・参照できない項目 {session.Document.Sync.InaccessibleCount} 件"), "PlanExcludedCounts"));
         }
         finally { rendering = false; }
+    }
+    private void RenderColumnSettings(PlanSession session, int generation)
+    {
+        settings.Children.Add(Id(Label("表示列"), "PlanColumnSettings"));
+        settings.Children.Add(new TextBlock { Text = "表示する列と名前、順序をこのプロジェクトで設定します。GitHub のフィールド名は変更しません。", TextWrapping = TextWrapping.Wrap });
+        var columns = PlanSheetColumns.All(session.Document);
+        var headings = new Grid { ColumnSpacing = 8 };
+        var captions = new[] { "表示", "表示名", "GitHub", "入力", "順序", "" };
+        var widths = new[] { 76d, 220, 200, 120, 72, 72 };
+        for (var i = 0; i < widths.Length; i++) { headings.ColumnDefinitions.Add(new() { Width = new(widths[i]) }); var heading = Label(captions[i]); headings.Children.Add(heading); Grid.SetColumn(heading,i); }
+        settings.Children.Add(headings);
+        var list = Id(new ListView { CanDragItems = true, AllowDrop = true, CanReorderItems = true, SelectionMode = ListViewSelectionMode.Single,
+            MaxHeight = 420 }, "PlanColumnList");
+        AutomationProperties.SetName(list, "表示列の順序");
+        foreach (var column in columns)
+        {
+            var line = new Grid { ColumnSpacing = 8, Tag = column.Key, Margin = new(0,4,0,4) };
+            foreach (var width in new[] { 76d, 220, 200, 120, 72, 72 }) line.ColumnDefinitions.Add(new() { Width = new(width) });
+            if (!column.Required)
+            {
+                var toggle = Id(new CheckBox { Content = "表示", IsChecked = column.Visible }, "PlanColumn" + column.Key);
+                AutomationProperties.SetName(toggle, column.Name + "を表示");
+                async void Changed(object sender, RoutedEventArgs args) {
+                    if (rendering || generation != settingsGeneration) return;
+                    var visible = toggle.IsChecked == true;
+                    await Run(async () => { await ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, visible)); RenderSettings(); });
+                    if (generation == settingsGeneration) { rendering = true; try { toggle.IsChecked = PlanSheetColumns.All(session.Document).Single(c => c.Key == column.Key).Visible; } finally { rendering = false; } }
+                }
+                toggle.Checked += Changed; toggle.Unchecked += Changed; line.Children.Add(toggle);
+            }
+            var name = TextSetting("表示名", "PlanColumnName" + column.Key, column.DisplayName ?? "",
+                text => ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, name: text, rename: true)));
+            name.PlaceholderText = column.DefaultName; AutomationProperties.SetName(name, column.DefaultName + "の表示名");
+            line.Children.Add(name); Grid.SetColumn(name, 1);
+            var source = new TextBlock { Text = column.GitHub, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+            ToolTipService.SetToolTip(source, column.GitHub); line.Children.Add(source); Grid.SetColumn(source, 2);
+            var kind = Label(column.Editability); line.Children.Add(kind); Grid.SetColumn(kind, 3);
+            var index = columns.IndexOf(column);
+            async Task Move(int target) { if (generation != settingsGeneration) return; await ChangeSettings(_ => PlanSheetColumns.Move(session.Document, column.Key, target)); RenderSettings(); }
+            var up = Button("上へ", "PlanColumnUp" + column.Key, () => Move(index - 1)); up.IsEnabled = index > 0; line.Children.Add(up); Grid.SetColumn(up,4);
+            AutomationProperties.SetName(up, column.Name + "を上へ");
+            var down = Button("下へ", "PlanColumnDown" + column.Key, () => Move(index + 1)); down.IsEnabled = index + 1 < columns.Length; line.Children.Add(down); Grid.SetColumn(down,5); AutomationProperties.SetName(down, column.Name + "を下へ");
+            list.Items.Add(line);
+        }
+        list.DragItemsCompleted += async (_, _) => {
+            if (rendering || generation != settingsGeneration) return;
+            var order = list.Items.Cast<Grid>().Select(g => (string)g.Tag).ToArray();
+            await Run(async () => {
+                await ChangeSettings(s => s with { SheetColumns = order.Select(key => { var c = PlanSheetColumns.All(session.Document).Single(c => c.Key == key); return new PlanSheetColumnChoice(key, c.Visible, c.DisplayName); }).ToImmutableArray() });
+                RenderSettings();
+            });
+        };
+        settings.Children.Add(list);
+        settings.Children.Add(Button("既定に戻す", "PlanColumnReset", async () => { await ChangeSettings(s => s with { SheetColumns = [] }); RenderSettings(); }));
+        settings.Children.Add(new TextBlock { Text = "追加列は GitHub の既存フィールドと Issue の情報です。列を非表示にしても未発行の編集は残ります。", TextWrapping = TextWrapping.Wrap });
     }
     private Task ChangePerson(PlanResource fallback, Func<PlanResource, PlanResource> change) => ChangeSettings(s =>
     {

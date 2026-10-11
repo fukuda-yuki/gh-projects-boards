@@ -4,8 +4,8 @@ using System.Text.Json.Nodes;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal sealed record PlanConflict(string Identity, PlanField Field, string? Baseline, string? Local, string? Remote);
-internal sealed record PlanPublishFailure(string Identity, PlanField Field, string Reason);
+internal sealed record PlanConflict(string Identity, string Field, string? Baseline, string? Local, string? Remote);
+internal sealed record PlanPublishFailure(string Identity, string Field, string Reason);
 internal sealed record PlanIssueLink(string Caption, string Url);
 internal sealed record PlanSync
 {
@@ -25,16 +25,19 @@ internal sealed record PlanSync
 }
 internal static class PlanValues
 {
-    internal static readonly PlanField[] RowFields = Enum.GetValues<PlanField>().Where(f => f is not (PlanField.Order or PlanField.NewTask or PlanField.SubIssueOrder)).ToArray();
-    internal static string Get(PlanRow row, PlanField field)
+    internal static readonly string[] RowFields = PlanField.All.Where(f => f is not (PlanField.Order or PlanField.NewTask or PlanField.SubIssueOrder)).ToArray();
+    internal static IEnumerable<string> Fields(params PlanRow[] rows) => RowFields.Concat(rows.SelectMany(r => r.ExtraValues.Keys)).Distinct();
+    internal static string Get(PlanRow row, string field)
     {
+        if (PlanSheetColumns.IsExtra(field)) return row.ExtraValues.GetValueOrDefault(field)?.Json ?? "null";
         var property = typeof(PlanRow).GetProperty(field.ToString()) ?? throw new ArgumentException("Unknown row field.");
         var value = property.GetValue(row);
-        if (field is PlanField.Assignees or PlanField.Predecessors) value = ((ImmutableArray<string>)value!).Order(StringComparer.Ordinal).ToArray();
+        if (field is PlanField.Assignees or PlanField.Predecessors or PlanField.Labels) value = ((ImmutableArray<string>)value!).Order(StringComparer.Ordinal).ToArray();
         return JsonSerializer.Serialize(value, PlanJson.Options);
     }
-    internal static PlanRow Set(PlanRow row, PlanField field, string json)
+    internal static PlanRow Set(PlanRow row, string field, string json)
     {
+        if (PlanSheetColumns.IsExtra(field)) return row with { ExtraValues = row.ExtraValues.SetItem(field, new(json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present, json)) };
         var node = JsonNode.Parse(PlanJson.Text(row))!.AsObject();
         var name = JsonNamingPolicy.CamelCase.ConvertName(field.ToString());
         node[name] = JsonNode.Parse(json);
@@ -87,11 +90,11 @@ internal static class PlanMerge
         foreach (var r in remote.Rows)
         {
             if (!baseline.TryGetValue(r.Identity, out var b)) { local[r.Identity] = r; continue; }
-            var l = local[r.Identity]; var merged = l with { Closed = r.Closed, CloseDate = r.CloseDate, MilestoneTitle = r.MilestoneTitle };
+            var l = local[r.Identity]; var merged = l with { Closed = r.Closed, CloseDate = r.CloseDate };
             // Date adoption needs the merged progress state, regardless of enum declaration order.
-            foreach (var field in PlanValues.RowFields.OrderBy(field => field is PlanField.Start or PlanField.End))
+            foreach (var field in PlanValues.Fields(b, l, r).OrderBy(field => field is PlanField.Start or PlanField.End))
             {
-                if (PlanOperations.IsLocalConstraint(field, document.State.Settings)) continue;
+                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanSheetColumns.IsExtra(field) && !r.ExtraValues.ContainsKey(field)) continue;
                 var bv = PlanValues.Get(b, field); var lv = PlanValues.Get(l, field); var rv = PlanValues.Get(r, field);
                 var prior = document.Sync.Conflicts.FirstOrDefault(c => c.Identity == r.Identity && c.Field == field);
                 if (prior is not null && lv != rv)

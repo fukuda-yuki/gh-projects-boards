@@ -11,11 +11,23 @@ internal sealed record CellRange(int Row, int Column, int RowCount = 1, int Colu
 // Text/range adaptation only; PlanSession validates and applies the complete operation.
 internal static class PlanSheetEditing
 {
-    internal static string EditBaseline(PlanRow? row, PlanField field, string editText)
+    internal static string EditBaseline(PlanRow? row, string field, string editText)
         => field == PlanField.Remaining ? row?.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "" : editText;
 
-    internal static object? Parse(PlanDocument document, PlanField field, string text, DateOnly today)
+    internal static object? Parse(PlanDocument document, string field, string text, DateOnly today, string? identity = null)
     {
+        if (field is PlanField.Labels or PlanField.MilestoneTitle)
+        {
+            var repository = document.State.Rows.SingleOrDefault(r => r.Identity == identity)?.Repository
+                ?? document.State.Rows.Select(r => r.Repository).Distinct().SingleOrDefault()
+                ?? throw new ArgumentException("編集する Issue を選択してください。");
+            var options = (field == PlanField.Labels ? document.Baseline.RepositoryLabels : document.Baseline.RepositoryMilestones)
+                .Where(o => o.Repository == repository).Select(o => o.Name).ToArray();
+            if (field == PlanField.MilestoneTitle) return PlanExtraEditing.Select("マイルストーン", options, text);
+            return text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(label => PlanExtraEditing.Select("ラベル", options, label)!).Distinct().Order(StringComparer.Ordinal).ToImmutableArray();
+        }
+        if (PlanSheetColumns.IsExtra(field)) return PlanExtraEditing.Parse(document, field, text, today);
         if (field == PlanField.Phase)
         {
             var mapping = document.State.Settings.Columns.SingleOrDefault(c => c.Role == field)
@@ -67,7 +79,7 @@ internal static class PlanSheetEditing
     }
     private static string[] Split(string text) => text.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     internal static EditPlanCells Paste(PlanDocument document, IReadOnlyList<string> rows,
-        IReadOnlyList<PlanField> columns, CellRange selection, string text, DateOnly today)
+        IReadOnlyList<string> columns, CellRange selection, string text, DateOnly today)
     {
         var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         if (lines.Length > 1 && lines[^1] == "") lines = lines[..^1];
@@ -83,7 +95,7 @@ internal static class PlanSheetEditing
                 var value = matrix[expand ? 0 : r][expand ? 0 : c];
                 if (value.Length == 0) continue;
                 var field = columns[target.Column + c];
-                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value, today)));
+                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value, today, rows[target.Row + r])));
             }
         return new(PlanOperationKind.Paste, changes.ToImmutable());
     }

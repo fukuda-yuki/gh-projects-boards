@@ -12,7 +12,7 @@ internal static class PlanOperations
         Estimate = r.Estimate, Remaining = r.Remaining, Actual = r.Actual, Closed = r.Closed, CloseDate = r.CloseDate,
         Start = r.Start, End = r.End, StartNoEarlierThan = r.StartNoEarlierThan, Fixed = r.Fixed
     };
-    internal static bool NeedsProgressDate(PlanRow before, PlanRow current, PlanField field)
+    internal static bool NeedsProgressDate(PlanRow before, PlanRow current, string field)
     {
         if (field is not (PlanField.Start or PlanField.End) || TaskInput(before).KeepsDates) return false;
         var complete = TaskInput(current).IsComplete;
@@ -32,6 +32,9 @@ internal static class PlanOperations
             StartNoEarlierThan = baseline.GetValueOrDefault(r.Identity)?.StartNoEarlierThan,
             Fixed = baseline.GetValueOrDefault(r.Identity)?.Fixed ?? false,
             Status = baseline.GetValueOrDefault(r.Identity)?.Status,
+            ExtraValues = baseline.GetValueOrDefault(r.Identity)?.ExtraValues ?? ImmutableDictionary<string, PlanExtraValue>.Empty,
+            Labels = baseline.GetValueOrDefault(r.Identity)?.Labels ?? [],
+            MilestoneTitle = baseline.GetValueOrDefault(r.Identity)?.MilestoneTitle,
             Phase = baseline.GetValueOrDefault(r.Identity)?.Phase
         }).ToImmutableArray();
     }
@@ -59,7 +62,8 @@ internal static class PlanOperations
             .Select(t => t.Input.Identity).ToImmutableHashSet();
     }
     internal static bool RowEqual(PlanRow? a, PlanRow? b) => ReferenceEquals(a, b) || a is not null && b is not null &&
-        a with { Assignees = b.Assignees, Predecessors = b.Predecessors } == b &&
+        a with { Assignees = b.Assignees, Predecessors = b.Predecessors, Labels = b.Labels, ExtraValues = b.ExtraValues } == b &&
+        a.Labels.SequenceEqual(b.Labels) && a.ExtraValues.Count == b.ExtraValues.Count && a.ExtraValues.All(p => b.ExtraValues.TryGetValue(p.Key, out var v) && v == p.Value) &&
         a.Assignees.SequenceEqual(b.Assignees) && a.Predecessors.SequenceEqual(b.Predecessors);
     internal static bool SettingsEqual(ProjectPlanSettings a, ProjectPlanSettings b) => ReferenceEquals(a, b) || PlanJson.Text(a) == PlanJson.Text(b);
     internal static void Require(bool condition, string message) { if (!condition) throw new ArgumentException(message); }
@@ -71,6 +75,7 @@ internal static class PlanOperations
         Require(s is not null, "計画設定がありません。");
         Require(!(s!.ProjectEnd < s.ProjectStart), "終了日は開始日以降にしてください。");
         Require(s.PhaseMilestones is not null && s.PhaseMilestones.All(p => !string.IsNullOrWhiteSpace(p.Key) && !string.IsNullOrWhiteSpace(p.Value)), "工程とマイルストーンの対応が不正です。");
+        PlanSheetColumns.Validate(s.SheetColumns);
         Unique(s.CompanyDaysOff); Unique(s.People.Select(p => p.Identity).ToImmutableArray());
         Unique(s.Columns.Select(c => c.Role).ToImmutableArray()); Unique(s.Columns.Select(c => c.FieldId).ToImmutableArray());
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
@@ -115,7 +120,12 @@ internal static class PlanOperations
         foreach (var r in rows)
         {
             Require(!string.IsNullOrWhiteSpace(r.Identity) && r.Title is not null && Repository(r.Repository), "行の識別子、タイトルまたはリポジトリが不正です。");
-            Unique(r.Assignees); Unique(r.Predecessors);
+            Unique(r.Assignees); Unique(r.Predecessors); Unique(r.Labels);
+            Require(r.ExtraValues is not null && r.ExtraValues.All(p => PlanSheetColumns.IsExtra(p.Key) && p.Value is not null && Enum.IsDefined(p.Value.Availability)), "追加列の値が不正です。");
+            foreach (var value in r.ExtraValues!.Values) {
+                Require(value.Availability == ValueAvailability.Present ? value.Json is not null && value.Json != "null" : value.Availability != ValueAvailability.Empty || value.Json == "null", "追加列の空値が不正です。");
+                if (value.Json is not null) { using var json = System.Text.Json.JsonDocument.Parse(value.Json); Require(json.RootElement.ValueKind is System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.String or System.Text.Json.JsonValueKind.Number, "追加列の型が不正です。"); }
+            }
             Require(r.CsvSourceHash is null || System.Text.RegularExpressions.Regex.IsMatch(r.CsvSourceHash, "^[a-f0-9]{64}$"), "CSVの識別情報が不正です。");
             Require(r.Assignees.Concat(r.Predecessors).All(x => !string.IsNullOrWhiteSpace(x)) && (r.Parent is null || !string.IsNullOrWhiteSpace(r.Parent)), "関係の識別子が不正です。");
         }
@@ -146,8 +156,12 @@ internal static class PlanOperations
                     Require(byId.ContainsKey(c.Identity), "編集先の行がありません。");
                     if (ReadOnlyReason(byId[c.Identity], summaries.Contains(c.Identity), c.Field) is { } reason)
                         throw new ArgumentException(reason);
-                    var value = c.Field == PlanField.Phase ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today) : c.Value;
-                    byId[c.Identity] = Edit(byId[c.Identity], c.Field, value);
+                    if (PlanSheetColumns.IsExtra(c.Field) && PlanExtraEditing.ReadOnlyReason(d, byId[c.Identity], c.Field) is { } unavailable) throw new ArgumentException(unavailable);
+                    var value = c.Field is PlanField.Phase or PlanField.MilestoneTitle ? PlanSheetEditing.Parse(d, c.Field, String(c.Value) ?? "", today, c.Identity)
+                        : c.Field == PlanField.Labels ? PlanSheetEditing.Parse(d, c.Field, string.Join(",", Ids(c.Value)), today, c.Identity) : c.Value;
+                    byId[c.Identity] = PlanSheetColumns.IsExtra(c.Field)
+                        ? PlanValues.Set(byId[c.Identity], c.Field, PlanJson.Text(PlanExtraEditing.Validate(d, c.Field, c.Value)))
+                        : Edit(byId[c.Identity], c.Field, value);
                 }
                 foreach (var group in edit.Cells.GroupBy(c => c.Identity))
                 {
@@ -222,8 +236,9 @@ internal static class PlanOperations
         Unique(ids); var set = ids.ToHashSet(); var result = rows.Where(r => set.Contains(r.Identity)).ToList();
         Require(result.Count == ids.Length, "選択行がありません。"); return result;
     }
-    internal static object? Value(PlanRow r, PlanField f) => f switch
+    internal static object? Value(PlanRow r, string f) => PlanSheetColumns.IsExtra(f) ? PlanExtraEditing.Value(r, f) : f switch
     {
+        PlanField.Labels => r.Labels, PlanField.MilestoneTitle => r.MilestoneTitle,
         PlanField.Title => r.Title, PlanField.Repository => r.Repository, PlanField.Status => r.Status, PlanField.Phase => r.Phase, PlanField.Closed => r.Closed,
         PlanField.Assignees => r.Assignees, PlanField.Predecessors => r.Predecessors, PlanField.Parent => r.Parent,
         PlanField.Estimate => r.Estimate, PlanField.Remaining => r.Remaining, PlanField.Actual => r.Actual,
@@ -233,7 +248,7 @@ internal static class PlanOperations
     private static T? Optional<T>(object? value) where T : struct => value is null ? null : value is T typed ? typed : throw new ArgumentException("セルの値の型が不正です。");
     private static string? String(object? value) => value is null ? null : value as string ?? throw new ArgumentException("文字列を指定してください。");
     private static ImmutableArray<string> Ids(object? value) => value is null ? [] : value is IEnumerable<string> ids ? ids.ToImmutableArray() : throw new ArgumentException("識別子一覧を指定してください。");
-    private static PlanRow Edit(PlanRow r, PlanField field, object? value)
+    private static PlanRow Edit(PlanRow r, string field, object? value)
     {
         var task = TaskInput(r);
         switch (field)
@@ -244,6 +259,8 @@ internal static class PlanOperations
             // Validate the final pair after the entire paste, not between its endpoint cells.
             case PlanField.Start: task = PlanEdits.Start(task with { End = null }, Optional<DateOnly>(value)); return r with { Start = task.Start, StartNoEarlierThan = task.StartNoEarlierThan };
             case PlanField.End: task = PlanEdits.End(task with { Start = null }, Optional<DateOnly>(value)); return r with { End = task.End, Fixed = task.Fixed };
+            case PlanField.Labels: return r with { Labels = Ids(value) };
+            case PlanField.MilestoneTitle: return r with { MilestoneTitle = String(value) };
             case PlanField.Title: return r with { Title = String(value) ?? "" };
             case PlanField.Repository: return r with { Repository = String(value) ?? "" };
             case PlanField.Status: return r with { Status = String(value) };
@@ -295,21 +312,22 @@ internal static class PlanOperations
         return baseline with { Rows = forward ? baseline.Rows.Where(r => !discarded.Contains(r.Identity)).ToImmutableArray()
             : baseline.Rows.AddRange(patch.DiscardedRows.Where(r => !baseline.Rows.Any(current => current.Identity == r.Identity))) };
     }
-    internal static string SummaryReadOnlyReason(PlanField field) => field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
+    internal static string SummaryReadOnlyReason(string field) => field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Start or PlanField.End
         ? "子タスクから集計（編集不可）" : "要求事項の行では編集できません";
-    internal static bool IsSummaryPublishExcluded(bool summary, PlanField field) => summary && field is
+    internal static bool IsSummaryPublishExcluded(bool summary, string field) => summary && field is
         PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Assignees or PlanField.Predecessors
-        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase;
-    internal static string? ReadOnlyReason(PlanRow row, bool summary, PlanField field)
+        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase or PlanField.Labels or PlanField.MilestoneTitle || summary && PlanSheetColumns.IsExtra(field);
+    internal static string? ReadOnlyReason(PlanRow row, bool summary, string field)
     {
+        if (field == PlanField.Repository) return "この列は読み取り専用です。";
         if (summary && field is not (PlanField.Title or PlanField.Repository or PlanField.Parent))
             return SummaryReadOnlyReason(field);
         return row.Closed && field is PlanField.Remaining or PlanField.End
             ? "完了したタスクは Issue のクローズで確定します（編集不可）" : null;
     }
-    internal static bool IsLocalConstraint(PlanField field, ProjectPlanSettings settings)
+    internal static bool IsLocalConstraint(string field, ProjectPlanSettings settings)
         => field is (PlanField.StartNoEarlierThan or PlanField.Fixed) && !settings.Columns.Any(c => c.Role == field);
-    internal static bool IsRecalculatedField(ScheduledTask task, PlanField field) => field switch
+    internal static bool IsRecalculatedField(ScheduledTask task, string field) => field switch
     {
         PlanField.Start => task.IsSummary || !(task.Start.Origin == DateOrigin.Kept && task.Start.Value == task.Input.Start
             || task.Input.StartNoEarlierThan is { } constraint && task.Start.Value == constraint
@@ -319,7 +337,7 @@ internal static class PlanOperations
         PlanField.Estimate or PlanField.Actual => task.IsSummary,
         _ => false
     };
-    internal static bool IsUnmappedCalculation(ScheduledTask task, PlanField field, ProjectPlanSettings settings)
+    internal static bool IsUnmappedCalculation(ScheduledTask task, string field, ProjectPlanSettings settings)
         => IsRecalculatedField(task, field) && !settings.Columns.Any(c => c.Role == field);
     internal static ImmutableArray<string> PreviousSiblingOrder(PlanDocument document, string parent)
         => document.Sync.NativeOrders.GetValueOrDefault(parent,
@@ -327,8 +345,8 @@ internal static class PlanOperations
             .Where(id => document.State.Rows.Any(r => r.Identity == id)).ToImmutableArray();
     internal static PlanUnpublished Changes(PlanDocument d, DateOnly today, IReadOnlyList<ScheduledTask>? schedule = null)
     {
-        var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PlanField>>();
-        var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, PlanField Field)>();
+        var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string>>();
+        var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, string Field)>();
         var baseline = d.Baseline.Rows.ToDictionary(r => r.Identity);
         var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
         var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
@@ -341,10 +359,14 @@ internal static class PlanOperations
             var r = d.State.Rows[calculated.Input.RowId - 1];
             if (d.Dates.Held is null && r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
-            var fields = ImmutableArray.CreateBuilder<PlanField>();
-            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.Closed, PlanField.Parent,
+            var fields = ImmutableArray.CreateBuilder<string>();
+            foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Phase, PlanField.MilestoneTitle, PlanField.Closed, PlanField.Parent,
                 PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.StartNoEarlierThan, PlanField.Fixed })
                 if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
+            if (!calculated.IsSummary)
+                foreach (var extra in r.ExtraValues.Keys.Union(old.ExtraValues.Keys))
+                    if (PlanValues.Get(r, extra) != PlanValues.Get(old, extra)) fields.Add(extra);
+            if (!calculated.IsSummary && !r.Labels.ToHashSet().SetEquals(old.Labels)) fields.Add(PlanField.Labels);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);
             if (calculated.Start.Value != old.Start && !IsUnmappedCalculation(calculated, PlanField.Start, d.State.Settings))

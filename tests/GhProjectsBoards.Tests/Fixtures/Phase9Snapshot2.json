@@ -28,7 +28,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I2",
@@ -53,7 +55,9 @@
         "start": "2026-10-13",
         "end": "2026-10-13",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I3",
@@ -78,7 +82,9 @@
         "start": "2026-10-14",
         "end": "2026-10-14",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I4",
@@ -101,7 +107,9 @@
         "start": "2026-10-05",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I5",
@@ -124,7 +132,9 @@
         "start": "2026-10-07",
         "end": "2026-10-07",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I8",
@@ -145,7 +155,9 @@
         "start": "2026-10-15",
         "end": "2026-10-15",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I7",
@@ -168,7 +180,9 @@
         "start": "2026-10-13",
         "end": "2026-10-14",
         "startNoEarlierThan": "2026-10-13",
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I6",
@@ -189,7 +203,9 @@
         "start": "2026-10-13",
         "end": "2026-10-16",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I12",
@@ -210,7 +226,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I13",
@@ -231,7 +249,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I9",
@@ -254,7 +274,9 @@
         "start": "2026-10-15",
         "end": "2026-10-15",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I11",
@@ -277,7 +299,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I14",
@@ -298,7 +322,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I10",
@@ -321,7 +347,9 @@
         "start": "2026-10-16",
         "end": "2026-10-16",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I15",
@@ -342,7 +370,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I16",
@@ -363,7 +393,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I18",
@@ -384,7 +416,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I20",
@@ -405,7 +439,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I17",
@@ -426,7 +462,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I19",
@@ -447,7 +485,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I21",
@@ -468,7 +508,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I22",
@@ -489,7 +531,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I24",
@@ -510,7 +554,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I23",
@@ -531,7 +577,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I25",
@@ -552,7 +600,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I28",
@@ -573,7 +623,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I27",
@@ -594,7 +646,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I29",
@@ -615,7 +669,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I26",
@@ -636,7 +692,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       }
     ],
     "columns": [
@@ -772,7 +830,9 @@
         "dataType": "SINGLE_SELECT",
         "options": []
       }
-    ]
+    ],
+    "repositoryLabels": [],
+    "repositoryMilestones": []
   },
   "state": {
     "rows": [
@@ -795,7 +855,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I2",
@@ -820,7 +882,9 @@
         "start": "2026-10-13",
         "end": "2026-10-13",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I3",
@@ -845,7 +909,9 @@
         "start": "2026-10-14",
         "end": "2026-10-14",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I4",
@@ -868,7 +934,9 @@
         "start": "2026-10-05",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I5",
@@ -891,7 +959,9 @@
         "start": "2026-10-06",
         "end": "2026-10-06",
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I6",
@@ -912,7 +982,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I7",
@@ -935,7 +1007,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-13",
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I8",
@@ -958,7 +1032,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I9",
@@ -983,7 +1059,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I10",
@@ -1008,7 +1086,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I11",
@@ -1033,7 +1113,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I12",
@@ -1054,7 +1136,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I13",
@@ -1079,7 +1163,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-19",
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I14",
@@ -1102,7 +1188,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I15",
@@ -1127,7 +1215,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I16",
@@ -1152,7 +1242,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I17",
@@ -1177,7 +1269,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I18",
@@ -1198,7 +1292,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I19",
@@ -1223,7 +1319,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-10-26",
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I20",
@@ -1246,7 +1344,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I21",
@@ -1271,7 +1371,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I22",
@@ -1296,7 +1398,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I23",
@@ -1321,7 +1425,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I24",
@@ -1342,7 +1448,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I25",
@@ -1367,7 +1475,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": "2026-11-02",
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I26",
@@ -1390,7 +1500,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I27",
@@ -1415,7 +1527,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I28",
@@ -1440,7 +1554,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       },
       {
         "identity": "I29",
@@ -1465,7 +1581,9 @@
         "start": null,
         "end": null,
         "startNoEarlierThan": null,
-        "fixed": false
+        "fixed": false,
+        "labels": [],
+        "extraValues": {}
       }
     ],
     "settings": {
@@ -1527,7 +1645,8 @@
       "projectStart": null,
       "projectEnd": null,
       "defaultRepository": "acme/repo",
-      "statusDate": null
+      "statusDate": null,
+      "sheetColumns": []
     }
   },
   "sync": {
@@ -2451,5 +2570,8 @@
     "conflicts": [],
     "unavailable": []
   },
-  "dates": { "held": null, "recalculated": null }
+  "dates": {
+    "held": null,
+    "recalculated": null
+  }
 }

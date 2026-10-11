@@ -3,7 +3,7 @@ using GhProjectsBoards.Core.Projects;
 namespace GhProjectsBoards.Core.PlanEditor;
 internal static class PlanColumnMatching
 {
-    internal static readonly (PlanField Role, string Name, string Type)[] Roles = [
+    internal static readonly (string Role, string Name, string Type)[] Roles = [
         (PlanField.Estimate, "Estimate", "NUMBER"), (PlanField.Remaining, "Remaining", "NUMBER"),
         (PlanField.Actual, "Actual", "NUMBER"), (PlanField.Start, "Start date", "DATE"),
         (PlanField.End, "Target date", "DATE"), (PlanField.StartNoEarlierThan, "開始日指定", "DATE"),

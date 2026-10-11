@@ -9,7 +9,7 @@ namespace GhProjectsBoards.Tests;
 [TestFixture, Category("Integration")]
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [Parallelizable(ParallelScope.All)]
-internal sealed class PlanPublisherTests
+internal sealed partial class PlanPublisherTests
 {
     [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
     public async Task MilestoneStateFixtureReadsBothRepositoriesCompletely(bool closed, bool conflict)
@@ -1198,7 +1198,7 @@ internal sealed class PlanPublisherTests
     [TestCase(PlanField.Parent, 51)]
     [TestCase(PlanField.Predecessors, 1)]
     [TestCase(PlanField.Predecessors, 51)]
-    public async Task RelationshipReversalsStayAcyclicAcrossRowsBatchesAndHistory(PlanField relationship, int pairs)
+    public async Task RelationshipReversalsStayAcyclicAcrossRowsBatchesAndHistory(string relationship, int pairs)
     {
         await Start(pairs * 2, state => state with { Issues = state.Issues.Select((issue, i) => i % 2 == 0 ? issue : issue with
             { Row = relationship == PlanField.Parent ? issue.Row with { Parent = "I" + i } : issue.Row with { Predecessors = ["I" + i] } }).ToImmutableArray() });
@@ -1690,11 +1690,13 @@ internal sealed class PlanPublisherTests
         private int active;
         public int MaximumConcurrent { get; private set; }
         public int Count { get; private set; }
+        public List<string> Queries { get; } = [];
         public List<DateTimeOffset> Started { get; } = [];
         public Action? RateLimitObserved { get; set; }
         public async Task<GhProcessResult> RunAsync(GhCommand command, CancellationToken cancellationToken = default)
         {
             Count++; Started.Add(DateTimeOffset.UtcNow);
+            if (command.Arguments.Contains("graphql") && command.StandardInput is { } input) { using var json = JsonDocument.Parse(input); Queries.Add(json.RootElement.GetProperty("query").GetString()!); }
             MaximumConcurrent = Math.Max(MaximumConcurrent, Interlocked.Increment(ref active));
             try
             {

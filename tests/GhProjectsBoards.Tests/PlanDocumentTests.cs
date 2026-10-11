@@ -144,7 +144,7 @@ internal sealed class PlanDocumentTests
         sessions.Add(opened.Session!);
         return opened.Session!;
     }
-    private static EditPlanCells Edit(PlanField field, object? value, string id = "issue:1") => new(PlanOperationKind.Cell, [new(id, field, value)]);
+    private static EditPlanCells Edit(string field, object? value, string id = "issue:1") => new(PlanOperationKind.Cell, [new(id, field, value)]);
 
     [TestCase(PlanOperationKind.Cell), TestCase(PlanOperationKind.Paste), TestCase(PlanOperationKind.Fill), TestCase(PlanOperationKind.CtrlD)]
     [TestCase(PlanOperationKind.Clear), TestCase(PlanOperationKind.Insert), TestCase(PlanOperationKind.CsvImport)]
@@ -203,7 +203,7 @@ internal sealed class PlanDocumentTests
     }
 
     [TestCase(PlanField.Estimate), TestCase(PlanField.Start), TestCase(PlanField.End)]
-    public async Task CellCommandsApplySchedulingInputTransformations(PlanField field)
+    public async Task CellCommandsApplySchedulingInputTransformations(string field)
     {
         var session = await Create();
         await session.Execute(Edit(field, field == PlanField.Estimate ? 12m : Today.AddDays(1)), Today);
@@ -466,7 +466,7 @@ internal sealed class PlanDocumentTests
     }
 
     [TestCase(PlanField.Title), TestCase(PlanField.Estimate)]
-    public async Task UnrelatedEditPreservesInvalidRefreshedDatesAndTheirWarnings(PlanField field)
+    public async Task UnrelatedEditPreservesInvalidRefreshedDatesAndTheirWarnings(string field)
     {
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Fixed = true, Start = Today.AddDays(2), Estimate = -1 });
@@ -487,7 +487,7 @@ internal sealed class PlanDocumentTests
                 yield return new(field, kind);
     }
     [TestCaseSource(nameof(SummaryEdits))]
-    public async Task SummaryNonTitleOperationRejectsAllTargetsWithoutSideEffects(PlanField field, PlanOperationKind kind)
+    public async Task SummaryNonTitleOperationRejectsAllTargetsWithoutSideEffects(string field, PlanOperationKind kind)
     {
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(1, initial.State.Rows[1] with { Parent = "issue:1" });
@@ -529,7 +529,7 @@ internal sealed class PlanDocumentTests
     }
 
     [TestCase(PlanField.Title), TestCase(PlanField.Estimate), TestCase(PlanField.Actual), TestCase(PlanField.Start)]
-    public async Task ClosedOtherFieldsRemainEditableAndDatesStayValid(PlanField field)
+    public async Task ClosedOtherFieldsRemainEditableAndDatesStayValid(string field)
     {
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });
@@ -547,7 +547,7 @@ internal sealed class PlanDocumentTests
     [TestCase(PlanField.Remaining, "paste"), TestCase(PlanField.End, "paste")]
     [TestCase(PlanField.Remaining, "fill"), TestCase(PlanField.End, "fill")]
     [TestCase(PlanField.Remaining, "clear"), TestCase(PlanField.End, "clear")]
-    public async Task ClosedFinalFieldsRejectWholeOperationWithoutDocumentOrHistoryChanges(PlanField field, string operation)
+    public async Task ClosedFinalFieldsRejectWholeOperationWithoutDocumentOrHistoryChanges(string field, string operation)
     {
         var initial = Initial();
         var rows = initial.State.Rows.SetItem(0, initial.State.Rows[0] with { Closed = true, CloseDate = Today });

@@ -93,9 +93,12 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     {
         var document = session.Document;
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
-        var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter).ConfigureAwait(false);
+        var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter, PlanSnapshot.SelectedColumns(document)).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return PlanSnapshot.From(read, document.State.Settings);
+        var snapshot = PlanSnapshot.From(read, document.State.Settings);
+        if (snapshot.Baseline.Rows.Any(r => r.ExtraValues.Any(v => v.Value.Availability is Projects.ValueAvailability.Unavailable or Projects.ValueAvailability.NotLoaded)))
+            throw new InvalidOperationException("選択した追加列を読み取れません。計画は変更していません。");
+        return PlanSnapshot.PreserveUnread(snapshot, document, PlanSnapshot.SelectedColumns(document));
     }
     private static bool Expected(Exception ex) => ex is InvalidOperationException or ArgumentException or IOException or OperationCanceledException or JsonException or KeyNotFoundException or FormatException or OverflowException;
     private async Task<PlanRemoteSnapshot> ReadMemberships(PlanSession session, GhConnectionService.OperationLease lease, CancellationToken token)

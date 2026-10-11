@@ -267,7 +267,7 @@ internal sealed class ProjectReaderTests
         boundary.Override = (query, _) =>
         {
             if (query.Contains("ProjectFields"))
-                return Response(Project("P1", "fields", Page([Field("P1", "empty"), Field("P1", "text", type: "TEXT"),
+                return Response(Project("P1", "fields", Page([Field("P1", "empty"), Field("P1", "text", type: "MULTI_SELECT"),
                     Field("P1", "unknown-option"), Field("P1", "unloaded")], 4)));
             if (query.Contains("ProjectItems"))
                 return Response(Project("P1", "items", Page([Item("P1", values: Page([

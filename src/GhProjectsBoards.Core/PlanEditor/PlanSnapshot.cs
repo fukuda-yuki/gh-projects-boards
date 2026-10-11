@@ -13,14 +13,38 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class PlanSnapshot
 {
+    internal static IReadOnlySet<string> SelectedColumns(PlanDocument document)
+    {
+        var selected = document.State.Settings.SheetColumns.Where(c => c.Visible).Select(c => c.Key).ToHashSet();
+        selected.UnionWith(document.State.Settings.Columns.Select(c => "Field:" + c.FieldId));
+        var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        foreach (var row in document.State.Rows)
+        {
+            var before = baseline.GetValueOrDefault(row.Identity);
+            foreach (var key in row.ExtraValues.Keys)
+                if (before is null || PlanValues.Get(before,key) != PlanValues.Get(row,key)) selected.Add(key);
+            if (before is null ? row.Labels.Length > 0 : !row.Labels.ToHashSet().SetEquals(before.Labels)) selected.Add(PlanField.Labels);
+        }
+        return selected;
+    }
+    internal static PlanRemoteSnapshot PreserveUnread(PlanRemoteSnapshot snapshot, PlanDocument document, IReadOnlySet<string> selected)
+    {
+        var old = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        return snapshot with { Baseline = snapshot.Baseline with {
+            Rows = snapshot.Baseline.Rows.Select(r => !old.TryGetValue(r.Identity, out var b) ? r : r with {
+                ExtraValues = b.ExtraValues.SetItems(r.ExtraValues), Labels = selected.Contains(PlanField.Labels) ? r.Labels : b.Labels
+            }).ToImmutableArray(),
+            RepositoryLabels = selected.Contains(PlanField.Labels) ? snapshot.Baseline.RepositoryLabels : document.Baseline.RepositoryLabels
+        } };
+    }
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
         result.Problems.Select(p => $"{p.Stage}/{p.Kind}/{p.Failure}/{p.ApiOutcome}/{p.HttpStatus}"));
     internal static async Task<ProjectReadResult> ReadConsistentAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
-        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null)
+        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null, IReadOnlySet<string>? selectedColumns = null)
     {
         for (var attempt = 1; ; attempt++)
         {
-            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token, progress).ConfigureAwait(false);
+            var result = await new ProjectReader(service, lease, selectedColumns ?? PlanColumnMatching.Roles.Select(r => "Name:" + r.Name.ToUpperInvariant()).ToHashSet()).ReadAsync(context, project, token, progress).ConfigureAwait(false);
             if (result.Outcome == ProjectReadOutcome.Complete || attempt == 3 || result.Outcome != ProjectReadOutcome.Partial ||
                 result.Problems.Count == 0 || result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange)) return result;
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
@@ -43,6 +67,7 @@ internal static class PlanSnapshot
             var row = new PlanRow(issue.Id.NodeId, issue.Title.Value!, issue.Repository.NameWithOwner)
             {
                 MilestoneTitle = issue.Milestone.Value?.Title,
+                Labels = (issue.Labels.Value ?? []).Select(l => l.Name).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Closed = issue.State.Value == IssueState.Closed,
                 CloseDate = issue.State.Value == IssueState.Closed && issue.ClosedAt.Value is { } closedAt
                     ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(closedAt, timeZone ?? TimeZoneInfo.Local).DateTime) : null,
@@ -82,9 +107,39 @@ internal static class PlanSnapshot
                 };
                 row = PlanValues.Set(row, mapping.Role, json);
             }
+            foreach (var key in p.SelectedColumns.Where(PlanSheetColumns.IsExtra))
+            {
+                var definition = p.Fields.SingleOrDefault(f => f.Id.NodeId == key[8..]);
+                var value = item.Values.SingleOrDefault(v => v.FieldId?.NodeId == key[8..]);
+                var availability = value?.Availability ?? ValueAvailability.Unavailable;
+                string? json = null;
+                if (availability == ValueAvailability.Empty) json = "null";
+                else if (availability == ValueAvailability.Present && definition is not null)
+                {
+                    if (definition.DataType == "SINGLE_SELECT")
+                    {
+                        var option = definition.Options.SingleOrDefault(o => o.Id == value?.OptionId);
+                        if (option is null) availability = ValueAvailability.Unavailable; else json = PlanJson.Text(option.Name);
+                    }
+                    else if (definition.DataType == "NUMBER")
+                    {
+                        if (decimal.TryParse(value?.Scalar, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)) json = PlanJson.Text(number);
+                        else availability = ValueAvailability.Unavailable;
+                    }
+                    else if (definition.DataType == "DATE")
+                    {
+                        if (DateOnly.TryParseExact(value?.Scalar,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out var day)) json = PlanJson.Text(day);
+                        else availability = ValueAvailability.Unavailable;
+                    }
+                    else json = PlanJson.Text(value?.Scalar);
+                }
+                row = row with { ExtraValues = row.ExtraValues.SetItem(key, new(availability,json)) };
+            }
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
         }
         return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()) {
+                RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == m.RepositoryId).Repository.NameWithOwner, m.Id.NodeId, m.Title)).ToImmutableArray(),
+                RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == l.RepositoryId).Repository.NameWithOwner, l.Id, l.Name)).ToImmutableArray(),
                 Milestones = p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
                     g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray() },
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))

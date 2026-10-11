@@ -8,7 +8,7 @@ namespace GhProjectsBoards.Tests;
 
 internal sealed record PlanFakeIssue(PlanRow Row, string Body, bool Added) { public bool Archived { get; init; } public string? Phase { get; init; } }
 internal sealed record PlanFakeMilestone(string Id, string Repository, string Title, DateOnly? DueDate, bool Closed = false);
-internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
+internal sealed record PlanFakeState(ImmutableArray<PlanFakeIssue> Issues, int NextId, int MutationBatches = 0) { public ImmutableArray<PlanColumnDefinition> ExtraFields { get; init; } = []; public ImmutableArray<PlanRepositoryOption> Labels { get; init; } = []; public ImmutableArray<PlanFakeMilestone> Milestones { get; init; } = []; public int HiddenItems { get; init; } public int Redacted { get; init; } public int Drafts { get; init; } public int PullRequests { get; init; } public int ReadAttempts { get; init; } public ImmutableArray<string> AddedFields { get; init; } = []; public ImmutableArray<string> Phases { get; init; } = []; public ImmutableDictionary<string, ImmutableArray<string>> SubOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class FakePlanEditor
 {
     internal static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -49,9 +49,9 @@ internal static class FakePlanEditor
         }
         var projectId = workspace && variables.TryGetProperty("id", out var projectNode) && projectNode.GetString() == "P2" ? "P2" : "P1";
         var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status };
-        string Type(PlanField role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Fixed or PlanField.Status ? "SINGLE_SELECT" : "DATE";
-        object Field(PlanField role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } } : new[] { new { id = "fixed", name = "固定" } } };
-        object Value(PlanRow row, PlanField role)
+        string Type(string role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Fixed or PlanField.Status ? "SINGLE_SELECT" : "DATE";
+        object Field(string role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } } : new[] { new { id = "fixed", name = "固定" } } };
+        object Value(PlanRow row, string role)
         {
             var scalar = JsonNode.Parse(PlanValues.Get(row, role));
             var value = new JsonObject { ["__typename"] = role is PlanField.Fixed or PlanField.Status ? "ProjectV2ItemFieldSingleSelectValue" : Type(role) == "NUMBER" ? "ProjectV2ItemFieldNumberValue" : "ProjectV2ItemFieldDateValue",
@@ -79,9 +79,10 @@ internal static class FakePlanEditor
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
-            return new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
+            var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
+                    labels = Page(state.Labels.Where(l => l.Repository == row.Repository && row.Labels.Contains(l.Name)).Take(100).Select(l => (object)new { id = l.Id, name = l.Name }), row.Labels.Length, row.Labels.Length>100, row.Labels.Length>100 ? "100" : null),
                     milestone = state.Milestones.SingleOrDefault(m => m.Repository == row.Repository && m.Title == row.MilestoneTitle) is { } member ? Milestone(member) : null,
                     closedAt = row.Closed && row.CloseDate is { } closeDate ? new DateTimeOffset(closeDate.ToDateTime(new TimeOnly(12, 0)),
                         TimeZoneInfo.Local.GetUtcOffset(closeDate.ToDateTime(new TimeOnly(12, 0)))).ToUniversalTime().ToString("O") : null, viewerCanUpdate = true, repository = new { id = row.Repository == "acme/other" ? "R2" : "R1", nameWithOwner = row.Repository, owner = new { id = "O1" } },
@@ -89,7 +90,44 @@ internal static class FakePlanEditor
                     blockedBy = Page(row.Predecessors.Select(id => (object)new { id }), row.Predecessors.Length),
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
                     parent = row.Parent is null ? null : new { id = row.Parent } },
-                fieldValues = Page(Values(issue), Values(issue).Length) };
+                fieldValues = Page(Values(issue), Values(issue).Length) })!.AsObject();
+            foreach (Match match in Regex.Matches(query, @"(extra\d+):fieldValueByName\(name:(""(?:\\.|[^""\\])*"")\)"))
+            {
+                var fieldName = JsonSerializer.Deserialize<string>(match.Groups[2].Value)!;
+                var definition = state.ExtraFields.SingleOrDefault(f => f.Name == fieldName);
+                if (definition is null)
+                {
+                    var role = fieldRoles.SingleOrDefault(f => JsonSerializer.SerializeToElement(Field(f)).GetProperty("name").GetString() == fieldName);
+                    if (role is null && fieldName == "工程") role = PlanField.Phase;
+                    if (role is null) throw new InvalidOperationException("Unknown selected field.");
+                    var raw = role == PlanField.Phase ? JsonSerializer.SerializeToNode(issue.Phase) : JsonNode.Parse(PlanValues.Get(row,role));
+                    if (raw is null || role == PlanField.Fixed && !row.Fixed) { item[match.Groups[1].Value]=null; continue; }
+                    var kind = role == PlanField.Phase ? "SINGLE_SELECT" : Type(role);
+                    var key = kind == "NUMBER" ? "number" : kind == "DATE" ? "date" : "optionId";
+                    item[match.Groups[1].Value] = new JsonObject { ["__typename"] = "ProjectV2ItemFieldValue", [key] = key == "optionId" ? JsonValue.Create(role == PlanField.Fixed ? "fixed" : role == PlanField.Phase ? "phase-" + issue.Phase : row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : raw };
+                }
+                else
+                {
+                    var json = row.ExtraValues.GetValueOrDefault("Project:" + definition.Id)?.Json;
+                    if (json is null or "null") { item[match.Groups[1].Value] = null; continue; }
+                    var key = definition.DataType switch { "TEXT" => "text", "NUMBER" => "number", "DATE" => "date", "ITERATION" => "title", _ => "optionId" };
+                    item[match.Groups[1].Value] = new JsonObject { ["__typename"] = "ProjectV2ItemFieldValue", [key] = key == "optionId" ? JsonValue.Create("extra-" + JsonSerializer.Deserialize<string>(json)) : JsonNode.Parse(json) };
+                }
+            }
+            return item;
+        }
+        if (query.Contains("ProjectIssueLabels"))
+        {
+            var data=new JsonObject { ["viewer"]=new JsonObject { ["databaseId"]=42 } };
+            foreach(var variable in variables.EnumerateObject().Where(p=>p.Name.StartsWith("id",StringComparison.Ordinal)))
+            {
+                var index=variable.Name[2..]; var id=variable.Value.GetString()!;
+                var row=state.Issues.Single(i=>i.Row.Identity==id).Row;
+                var offset=int.Parse(variables.GetProperty("after"+index).GetString()!);
+                var all=state.Labels.Where(l=>l.Repository==row.Repository && row.Labels.Contains(l.Name)).ToArray();
+                data["l"+index]=JsonSerializer.SerializeToNode(new { __typename="Issue", id, labels=Page(all.Skip(offset).Take(100).Select(l=>(object)new{id=l.Id,name=l.Name}),all.Length,offset+100<all.Length,offset+100<all.Length?(offset+100).ToString():null) });
+            }
+            Write(new JsonObject { ["data"]=data }); return 0;
         }
         object? node = null;
         if (query.Contains("PlanAddField"))
@@ -145,6 +183,13 @@ internal static class FakePlanEditor
             var offset = variables.TryGetProperty("after", out var after) && after.ValueKind == JsonValueKind.String ? int.Parse(after.GetString()!) : 0;
             node = new { __typename = "Issue", id, subIssues = Children(id, offset) };
         }
+        else if (query.Contains("ProjectLabels"))
+        {
+            var id = variables.GetProperty("id").GetString()!;
+            var offset = variables.TryGetProperty("after",out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!) : 0;
+            var all = state.Labels.Where(l => l.Repository == (id == "R2" ? "acme/other" : "acme/repo")).ToArray();
+            node = new { __typename = "Repository", id, labels = Page(all.Skip(offset).Take(100).Select(l => (object)new { id = l.Id, name = l.Name }), all.Length, offset + 100 < all.Length, offset + 100 < all.Length ? (offset + 100).ToString() : null) };
+        }
         else if (query.Contains("ProjectMilestones"))
         {
             var id = variables.GetProperty("id").GetString()!;
@@ -156,7 +201,7 @@ internal static class FakePlanEditor
         }
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
-                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1)) };
+                owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]).Concat(state.ExtraFields.Select(f => (object)new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : f.DataType == "ITERATION" ? "ProjectV2IterationField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = false, project = new { id = projectId }, options = f.Options.Select(o => new { id = "extra-" + o, name = o }).ToArray() })), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1) + state.ExtraFields.Length) };
         else if (query.Contains("ProjectItems"))
         {
             var all = state.Issues.Where(i => i.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4 && state.ReadAttempts < 2 && int.Parse(i.Row.Identity[1..]) % 2 == 0)).ToArray();
@@ -229,13 +274,21 @@ internal static class FakePlanEditor
                 else
                 {
                     var identity = input.TryGetProperty("itemId", out var itemId) ? itemId.GetString()![2..] :
-                        input.TryGetProperty("id", out var issueId) ? issueId.GetString()! : input.TryGetProperty("assignableId", out var assignable) ? assignable.GetString()! : input.GetProperty("issueId").GetString()!;
+                        input.TryGetProperty("labelableId", out var labelable) ? labelable.GetString()! : input.TryGetProperty("id", out var issueId) ? issueId.GetString()! : input.TryGetProperty("assignableId", out var assignable) ? assignable.GetString()! : input.GetProperty("issueId").GetString()!;
                     var index = issues.FindIndex(i => i.Row.Identity == identity); var issue = issues[index]; var row = issue.Row;
-                    if (mutation == "updateIssue") row = row with { Title = input.GetProperty("title").GetString()! };
+                    if (mutation == "updateIssue") row = input.TryGetProperty("milestoneId", out var milestone) ? row with { MilestoneTitle = milestone.ValueKind == JsonValueKind.Null ? null : state.Milestones.Single(m => m.Id == milestone.GetString() && m.Repository == row.Repository).Title } : row with { Title = input.GetProperty("title").GetString()! };
+                    else if (mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable")
+                    {
+                        var names = input.GetProperty("labelIds").EnumerateArray().Select(n => state.Labels.Single(l => l.Repository == row.Repository && l.Id == n.GetString()).Name).ToArray();
+                        row = row with { Labels = (mutation == "addLabelsToLabelable" ? row.Labels.Union(names) : row.Labels.Except(names)).Order(StringComparer.Ordinal).ToImmutableArray() }; selection = "labelable";
+                    }
                     else if (mutation.Contains("ItemFieldValue"))
                     {
-                        var role = Enum.Parse<PlanField>(input.GetProperty("fieldId").GetString()![2..]);
+                        var fieldId = input.GetProperty("fieldId").GetString()!;
+                        var extra = state.ExtraFields.SingleOrDefault(f => f.Id == fieldId);
+                        var role = extra is null ? fieldId[2..] : "Project:" + fieldId;
                         var json = mutation.StartsWith("clear") ? role == PlanField.Fixed ? "false" : "null" : role == PlanField.Fixed ? "true" : input.GetProperty("value").EnumerateObject().Single().Value.GetRawText();
+                        if (extra?.DataType == "SINGLE_SELECT" && !mutation.StartsWith("clear")) json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString()![6..]);
                         if (role == PlanField.Status && !mutation.StartsWith("clear"))
                             json = JsonSerializer.Serialize(input.GetProperty("value").GetProperty("singleSelectOptionId").GetString() switch {
                                 "done" => "Done", "progress" => "In progress", "backlog" => "Backlog", _ => throw new InvalidOperationException("Unknown Status option ID") });

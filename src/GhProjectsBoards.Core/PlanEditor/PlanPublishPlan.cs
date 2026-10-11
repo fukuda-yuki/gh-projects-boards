@@ -3,10 +3,10 @@ using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
 internal enum PlanPublishStage { Create, Add, Fields, Hierarchy, Dependencies, Order }
 internal enum PlanWriteState { Pending, Dispatched, Succeeded, Failed }
-internal sealed record PlanReviewChange(string Identity, PlanField Field, string? Before, string? After);
+internal sealed record PlanReviewChange(string Identity, string Field, string? Before, string? After);
 internal sealed record PlanWrite(string Key, string Identity, PlanPublishStage Stage, string Mutation, string InputType, string Input, string Selection)
 {
-    public PlanField? Field { get; init; }
+    public string? Field { get; init; }
     public PlanWriteState State { get; init; }
     public string? Error { get; init; }
     public string? ResultId { get; init; }
@@ -16,7 +16,7 @@ internal sealed record PlanPublishProgress(string RunId, ImmutableArray<PlanWrit
 internal sealed record PlanPublishReview(ImmutableArray<PlanReviewChange> Changes, ImmutableArray<PlanWrite> Writes);
 internal static class PlanPublishPlan
 {
-    internal static bool IsIdentifierField(string key) => key is "id" or "repositoryId" or "projectId" or "itemId" or "contentId" or "issueId" or "subIssueId" or "blockingIssueId" or "assignableId" or "assigneeIds" or "afterId" or "beforeId";
+    internal static bool IsIdentifierField(string key) => key is "id" or "repositoryId" or "projectId" or "itemId" or "contentId" or "issueId" or "subIssueId" or "blockingIssueId" or "assignableId" or "assigneeIds" or "labelableId" or "labelIds" or "milestoneId" or "afterId" or "beforeId";
     internal static void Validate(PlanPublishProgress progress, PlanDocument document)
     {
         PlanOperations.Require(Guid.TryParseExact(progress.RunId, "N", out _) && !progress.Writes.IsDefault &&
@@ -30,6 +30,7 @@ internal static class PlanPublishPlan
                 "updateIssue" => (PlanPublishStage.Fields, "issue { id }"),
                 "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue" => (PlanPublishStage.Fields, "projectV2Item { id }"),
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => (PlanPublishStage.Fields, "assignable { __typename }"),
+                "addLabelsToLabelable" or "removeLabelsFromLabelable" => (PlanPublishStage.Fields, "labelable { __typename }"),
                 "addSubIssue" or "removeSubIssue" or "reprioritizeSubIssue" => (PlanPublishStage.Hierarchy, "issue { id }"),
                 "addBlockedBy" or "removeBlockedBy" => (PlanPublishStage.Dependencies, "issue { id }"),
                 "updateProjectV2ItemPosition" => (PlanPublishStage.Order, "items { totalCount }"),
@@ -38,11 +39,16 @@ internal static class PlanPublishPlan
             PlanOperations.Require(Enum.IsDefined(write.State) && !(write.Stage == PlanPublishStage.Create && write.ResultId is not null && write.State != PlanWriteState.Succeeded) && write.Stage == contract.Item1 && write.Selection == contract.Item2 &&
                 write.InputType == char.ToUpperInvariant(write.Mutation[0]) + write.Mutation[1..] + "Input" &&
                 document.State.Rows.Any(r => r.Identity == write.Identity), "発行操作の対象または形式が不正です。");
-            PlanOperations.Require(write.Field is null || write.Field == PlanField.Status && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue", "発行列の指定が不正です。");
+            PlanOperations.Require(write.Field is null || write.Field == PlanField.MilestoneTitle && write.Mutation == "updateIssue"
+                || write.Field == PlanField.Labels && write.Mutation is "addLabelsToLabelable" or "removeLabelsFromLabelable"
+                || (write.Field == PlanField.Status || PlanSheetColumns.IsExtra(write.Field)) && write.Mutation is "updateProjectV2ItemFieldValue" or "clearProjectV2ItemFieldValue", "発行列の指定が不正です。");
             using var input = System.Text.Json.JsonDocument.Parse(write.Input);
             PlanOperations.Require(input.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object, "発行入力が不正です。");
+            if (write.Field == PlanField.MilestoneTitle) PlanOperations.Require(input.RootElement.TryGetProperty("milestoneId",out _) && !input.RootElement.TryGetProperty("title",out _),"マイルストーンの発行入力が不正です。");
+            if (write.Field is not null && PlanSheetColumns.IsExtra(write.Field)) PlanOperations.Require(input.RootElement.GetProperty("fieldId").GetString() == write.Field[8..],"追加列の発行先が一致しません。");
             var target = write.Mutation switch
             {
+                "addLabelsToLabelable" or "removeLabelsFromLabelable" => "labelableId",
                 "updateIssue" => "id", "addProjectV2ItemById" => "contentId",
                 "addAssigneesToAssignable" or "removeAssigneesFromAssignable" => "assignableId",
                 "addBlockedBy" or "removeBlockedBy" => "issueId",
@@ -79,7 +85,7 @@ internal static class PlanPublishPlan
                 Add(row.Identity, PlanPublishStage.Add, "addProjectV2ItemById", "AddProjectV2ItemByIdInput",
                     new { projectId = document.Project.NodeId, contentId = row.Identity }, "item { id }");
             }
-            foreach (var field in PlanValues.RowFields)
+            foreach (var field in PlanValues.Fields(before, row))
             {
                 if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
                     || PlanOperations.IsUnmappedCalculation(scheduled, field, document.State.Settings)) continue;
@@ -87,8 +93,42 @@ internal static class PlanPublishPlan
                 if (bv == av) continue;
                 if (isNew && field is PlanField.Repository or PlanField.Title) continue;
                 changes.Add(new(row.Identity, field, isNew ? null : bv, av));
+                if (PlanSheetColumns.IsExtra(field))
+                {
+                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == field[8..])
+                        ?? throw new InvalidOperationException("追加列を読み取れません。");
+                    if (definition.DataType is not ("TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT")) throw new InvalidOperationException("この列は読み取り専用です。");
+                    if (row.ExtraValues.GetValueOrDefault(field)?.Availability is not (Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty)
+                        || before.ExtraValues.GetValueOrDefault(field)?.Availability is Projects.ValueAvailability.Unavailable or Projects.ValueAvailability.Unsupported)
+                        throw new InvalidOperationException("追加列の値を読み取れません。最新の情報に更新してください。");
+                    var input = new Dictionary<string,object?> { ["projectId"] = document.Project.NodeId, ["itemId"] = "item:" + row.Identity, ["fieldId"] = definition.Id.NodeId };
+                    var value = PlanExtraEditing.Value(row,field);
+                    if (value is not null) input["value"] = definition.DataType switch {
+                        "TEXT" => new { text = (string)value }, "NUMBER" => (object)new { number = (decimal)value },
+                        "DATE" => new { date = (string)value },
+                        "SINGLE_SELECT" => new { singleSelectOptionId = definition.Options.Single(o => o.Name == (string)value).Id }, _ => throw new InvalidOperationException() };
+                    Add(row.Identity, PlanPublishStage.Fields, value is null ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue",
+                        value is null ? "ClearProjectV2ItemFieldValueInput" : "UpdateProjectV2ItemFieldValueInput", input, "projectV2Item { id }");
+                    writes[^1] = writes[^1] with { Field = field };
+                    continue;
+                }
                 switch (field)
                 {
+                    case PlanField.MilestoneTitle:
+                        var milestone = row.MilestoneTitle is null ? null : remote.Baseline.RepositoryMilestones.SingleOrDefault(m => m.Repository == row.Repository && m.Name == row.MilestoneTitle)?.Id
+                            ?? throw new InvalidOperationException("マイルストーンを確認してください。");
+                        Add(row.Identity, PlanPublishStage.Fields, "updateIssue", "UpdateIssueInput", new { id = row.Identity, milestoneId = milestone }, "issue { id }");
+                        writes[^1] = writes[^1] with { Field = field };
+                        break;
+                    case PlanField.Labels:
+                        foreach (var (mutation, names) in new[] { ("removeLabelsFromLabelable", before.Labels.Except(row.Labels)), ("addLabelsToLabelable", row.Labels.Except(before.Labels)) })
+                        {
+                            var ids = names.Select(name => remote.Baseline.RepositoryLabels.SingleOrDefault(l => l.Repository == row.Repository && l.Name == name)?.Id ?? throw new InvalidOperationException("ラベルを確認してください。")).ToArray();
+                            if (ids.Length == 0) continue;
+                            Add(row.Identity, PlanPublishStage.Fields, mutation, char.ToUpperInvariant(mutation[0]) + mutation[1..] + "Input", new { labelableId = row.Identity, labelIds = ids }, "labelable { __typename }");
+                            writes[^1] = writes[^1] with { Field = field };
+                        }
+                        break;
                     case PlanField.Repository: case PlanField.Closed:
                         throw new InvalidOperationException("この変更は発行できません: " + field);
                     case PlanField.Status:

@@ -71,7 +71,7 @@ internal sealed partial class PlanWorkspaceView
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew) Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}"));
-            foreach (var field in PlanValues.RowFields)
+            foreach (var field in PlanValues.Fields(before, current))
             {
                 var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
@@ -143,12 +143,14 @@ internal sealed partial class PlanWorkspaceView
         reviewLines.Focus(FocusState.Programmatic);
         reviewLines.ScrollIntoView(item, ScrollIntoViewAlignment.Leading);
     }
-    private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
+    private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, string field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
         var label = PlanSheetView.Columns.FirstOrDefault(c => c.Field == field) is { } column ? PlanSheetView.FullName(column) : field switch {
             PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
+        var configured = PlanSheetColumns.All(document).FirstOrDefault(c => c.Key == field);
+        if (configured is not null && (configured.DisplayName is not null || PlanSheetColumns.IsExtra(field) || field is PlanField.Labels or PlanField.MilestoneTitle or PlanField.Repository)) label = configured.Name;
         var line = new PlanPublishReviewLine(isNew ? $"{label}  {ReviewValue(document, field, after)}" : $"{label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}");
         if (field is PlanField.Parent or PlanField.Predecessors &&
             new[] { before, after, conflict?.Remote }.Any(json => ReviewValue(document, field, json).Contains("未取得")))
@@ -176,12 +178,12 @@ internal sealed partial class PlanWorkspaceView
         return index >= 0 ? $"{index + 1} {document.State.Rows[index].Title}" : identity == document.Project.NodeId ? "プロジェクト" :
             document.Sync.IssueLinks.GetValueOrDefault(identity)?.Caption ?? "計画外Issue（未取得）";
     }
-    internal static string ReviewValue(PlanDocument document, PlanField field, string? json)
+    internal static string ReviewValue(PlanDocument document, string field, string? json)
     {
         if (json is null or "null") return "未入力";
         using var value = JsonDocument.Parse(json);
         var element = value.RootElement;
-        string Identity(string id) => field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
+        string Identity(string id) => field == PlanField.Labels ? id : field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
             document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）") : Caption(document, id);
         if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day)) return day.ToString("yyyy/M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
         if (field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining && element.ValueKind == JsonValueKind.Number) return element.ToString() + "h";

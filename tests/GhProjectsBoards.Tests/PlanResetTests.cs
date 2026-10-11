@@ -10,7 +10,7 @@ internal sealed class PlanResetTests
     [Test]
     public void ConfirmationCountsClassifyEachTaskOnceAndNewTasksAsEntered()
     {
-        var changes = new PlanUnpublished(new Dictionary<string, ImmutableArray<PlanField>> {
+        var changes = new PlanUnpublished(new Dictionary<string, ImmutableArray<string>> {
             ["entered"] = [PlanField.Title, PlanField.Start, PlanField.End],
             ["calculated"] = [PlanField.Start, PlanField.End],
             ["new"] = [PlanField.NewTask],
@@ -18,7 +18,7 @@ internal sealed class PlanResetTests
         }.ToImmutableDictionary()) { RecalculatedFields = [("entered", PlanField.Start), ("entered", PlanField.End),
             ("calculated", PlanField.Start), ("calculated", PlanField.End), ("closed", PlanField.Remaining)] };
         Assert.That((changes.TaskCount, changes.EnteredTaskCount, changes.RecalculatedTaskCount, changes.NewTaskCount), Is.EqualTo((4, 2, 2, 1)));
-        var empty = new PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
+        var empty = new PlanUnpublished(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
         Assert.That((empty.TaskCount, empty.EnteredTaskCount, empty.RecalculatedTaskCount, empty.NewTaskCount), Is.EqualTo((0, 0, 0, 0)));
     }
 }

@@ -830,7 +830,7 @@ internal sealed class PlanOverviewHostedTests
         await Ui.Until(() => VisibleRows().SequenceEqual(visible));
         await Ui.Idle();
     }
-    private static async Task SelectCell(int number, PlanField field, bool extend = false)
+    private static async Task SelectCell(int number, string field, bool extend = false)
     {
         var id = $"PlanCell{number}_{field}";
         await Ui.Ready<FrameworkElement>(id);

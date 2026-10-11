@@ -21,15 +21,15 @@ internal sealed record PlanClipboardContent(string Text, string? Metadata);
 internal sealed partial class PlanSheetView
 {
     private string selected = "", anchor = "";
-    private PlanField selectedField = PlanField.Title, anchorField = PlanField.Title;
+    private string selectedField = PlanField.Title, anchorField = PlanField.Title;
     private Column[]? fieldColumns;
-    private PlanField[] visibleFields = [];
-    private PlanField[] Fields
+    private string[] visibleFields = [];
+    private string[] Fields
     {
         get {
             if (!ReferenceEquals(fieldColumns, VisibleColumns)) {
                 fieldColumns = VisibleColumns;
-                visibleFields = VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!.Value).ToArray();
+                visibleFields = VisibleColumns.Where(c => c.Field is not null).Select(c => c.Field!).ToArray();
             }
             return visibleFields;
         }
@@ -51,7 +51,7 @@ internal sealed partial class PlanSheetView
         var previous = selected;
         if (!RowIds.Contains(selected)) selected = VisibleAncestor(selected) ?? RowIds.FirstOrDefault() ?? "";
         if (!RowIds.Contains(anchor)) anchor = selected;
-        if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault();
+        if (!Fields.Contains(selectedField)) selectedField = Fields.FirstOrDefault() ?? PlanField.Title;
         if (!Fields.Contains(anchorField)) anchorField = selectedField;
         RefreshEdges();
         if (previous.Length > 0 && previous != selected && filter.FocusState == FocusState.Unfocused) FocusSelected();
@@ -63,14 +63,14 @@ internal sealed partial class PlanSheetView
             .Where(p => indexes.ContainsKey(p) && Schedule.GetValueOrDefault(p)?.End.Value is not null && Schedule[id].Start.Value is not null)
             .Select(p => new Edge(indexes[p], indexes[id], Schedule[p].End.Value!.Value, Schedule[id].Start.Value!.Value))).ToArray();
     }
-    internal bool IsSelected(string identity, PlanField field)
+    internal bool IsSelected(string identity, string field)
     {
         var range = Range; var row = RowIndexes.GetValueOrDefault(identity, -1); var column = Array.IndexOf(Fields, field);
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;
-    internal bool IsRangeEnd(string identity, PlanField field) => identity == selected && field == selectedField;
-    internal void Select(string identity, PlanField field, bool extend)
+    internal bool IsRangeEnd(string identity, string field) => identity == selected && field == selectedField;
+    internal void Select(string identity, string field, bool extend)
     {
         if (!RowIds.Contains(identity) || !Fields.Contains(field)) return;
         var previousRange = Range;
@@ -85,11 +85,11 @@ internal sealed partial class PlanSheetView
     }
     // Selection that leaves keyboard focus on another cell lets that cell reclaim it
     // through GotFocus, so typing or a command would act on the previous task.
-    internal void SelectAndFocus(string identity, PlanField field, bool extend)
+    internal void SelectAndFocus(string identity, string field, bool extend)
     {
         Select(identity, field, extend); FocusSelected();
     }
-    private void EnsureColumnVisible(PlanField field)
+    private void EnsureColumnVisible(string field)
     {
         var left = 0d;
         foreach (var column in VisibleColumns)
@@ -176,7 +176,7 @@ internal sealed partial class PlanSheetView
         Select(RowIds[Math.Clamp(row, 0, RowIds.Count - 1)], Fields[Math.Clamp(column, 0, Fields.Length - 1)], extend);
         FocusSelected();
     }
-    private (string Identity, PlanField Field)? requestedFocus;
+    private (string Identity, string Field)? requestedFocus;
     private void FocusSelected()
     {
         requestedFocus = (selected, selectedField);
@@ -203,13 +203,13 @@ internal sealed partial class PlanSheetView
         requestedFocus = null;
         List.LayoutUpdated -= FocusAfterLayout;
     }
-    internal async Task CommitCellAndNavigate(string identity, PlanField field, string text, long generation, string originalText, bool across, bool reverse)
+    internal async Task CommitCellAndNavigate(string identity, string field, string text, long generation, string originalText, bool across, bool reverse)
     {
         await Commit(identity, field, text, generation, originalText);
         if (Pending.ContainsKey((identity, field)) || disposed) return;
         NavigateCell(field, across, reverse);
     }
-    internal void NavigateCell(PlanField field, bool across, bool reverse)
+    internal void NavigateCell(string field, bool across, bool reverse)
     {
         var row = RowIds.IndexOf(selected); var column = Array.IndexOf(Fields, field);
         if (across)
@@ -240,7 +240,7 @@ internal sealed partial class PlanSheetView
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         return rows;
     }
-    private void RequireNoPending(IEnumerable<string> rows, IEnumerable<PlanField> fields)
+    private void RequireNoPending(IEnumerable<string> rows, IEnumerable<string> fields)
     {
         var ids = rows.ToHashSet(); var columns = fields.ToHashSet();
         if (Pending.Keys.Any(k => ids.Contains(k.Identity) && columns.Contains(k.Field)))
@@ -266,7 +266,7 @@ internal sealed partial class PlanSheetView
         Clipboard.Flush();
     }
     private const string ClipboardFormat = "GhProjectsBoards.PlanCells.v1";
-    private sealed record SheetCopy(ScopedId Project, PlanField[] Fields, string[] Identities, string[][] Values);
+    private sealed record SheetCopy(ScopedId Project, string[] Fields, string[] Identities, string[][] Values);
     // One process-owned worker keeps synchronous delayed-rendering calls away from
     // the window. A blocked owner cannot cause an unbounded number of worker threads.
     private static readonly Lazy<DispatcherQueueController> clipboardQueue = new(DispatcherQueueController.CreateOnDedicatedThread);
@@ -349,9 +349,10 @@ internal sealed partial class PlanSheetView
                 {
                     var sr = single ? 0 : r; var sc = single ? 0 : c;
                     var field = columns[target.Column + c]; var source = copied.Fields[sc];
-                    string Kind(PlanField f) => f is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "number"
+                    string Kind(string f) => PlanSheetColumns.IsExtra(f) ? PlanExtraEditing.Definition(Session.Document,f).DataType.ToLowerInvariant()
+                        : f == PlanField.Title ? "text" : f is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "number"
                         : f is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan ? "date" : f.ToString();
-                    if (!Enum.IsDefined(source) || Kind(source) != Kind(field)) throw new ArgumentException("コピー元と対象の列の型が一致しません。");
+                    if (!PlanField.IsDefined(source) || Kind(source) != Kind(field)) throw new ArgumentException("コピー元と対象の列の型が一致しません。");
                     if (matrix[sr][sc].Length == 0) continue;
                     var identity = visible[target.Row + r];
                     var parsed = PlanValues.Set(Rows[identity], field, copied.Values[sr][sc]);
@@ -363,10 +364,10 @@ internal sealed partial class PlanSheetView
         foreach (var change in command.Cells) RequireNoPending([change.Identity], [change.Field]);
         Check(await Session.Execute(command, Today)); Refresh();
     }
-    private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
+    private object? CopyValue(string identity, string field) => field is PlanField.Assignees or PlanField.Predecessors
         or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase
-        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field), Today);
-    private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
+        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field), Today, identity);
+    private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, string field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
     internal async Task Fill(PlanOperationKind kind)
     {
@@ -402,7 +403,7 @@ internal sealed partial class PlanSheetView
     {
         var rows = RangeRows(Range); Check(await Session.Execute(new IndentPlanRows(rows.ToImmutableArray(), outdent), Today)); Refresh();
     }
-    private sealed record Drag(bool Fill, string Source, PlanField Field, uint PointerId, PlanState State)
+    private sealed record Drag(bool Fill, string Source, string Field, uint PointerId, PlanState State)
     {
         internal Point Position;
         internal string End = Source;
@@ -436,7 +437,7 @@ internal sealed partial class PlanSheetView
             foreach (var descendant in Descendants(child)) yield return descendant;
         }
     }
-    internal void BeginRange(string identity, PlanField field, UIElement target, PointerRoutedEventArgs args)
+    internal void BeginRange(string identity, string field, UIElement target, PointerRoutedEventArgs args)
     {
         if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         Select(identity, field, (args.KeyModifiers & VirtualKeyModifiers.Shift) != 0);
@@ -444,7 +445,7 @@ internal sealed partial class PlanSheetView
         if (target is TextBox cell) cell.SelectAll();
         StartDrag(false, identity, field, target, args);
     }
-    internal void BeginFill(string identity, PlanField field, UIElement target, PointerRoutedEventArgs args)
+    internal void BeginFill(string identity, string field, UIElement target, PointerRoutedEventArgs args)
     {
         if (!args.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         if (!Rows.ContainsKey(identity) || Display(identity, field).Length == 0 || ReadOnly(identity, field)) return;
@@ -452,7 +453,7 @@ internal sealed partial class PlanSheetView
         catch (InvalidOperationException ex) { error.Text = ex.Message; return; }
         StartDrag(true, identity, field, target, args);
     }
-    private void StartDrag(bool fill, string identity, PlanField field, UIElement target, PointerRoutedEventArgs args)
+    private void StartDrag(bool fill, string identity, string field, UIElement target, PointerRoutedEventArgs args)
     {
         CancelDrag();
         if (!target.CapturePointer(args.Pointer)) return;
@@ -482,10 +483,12 @@ internal sealed partial class PlanSheetView
     }
     internal void ExtendRangeTo(string identity, Point point)
     {
-        var x = point.X + SheetOffset - VisibleColumns.TakeWhile(c => c.Field is null).Sum(c => c.Width);
-        var column = 0; var widths = VisibleColumns.Where(c => c.Field is not null).ToArray();
-        while (column < widths.Length - 1 && x >= widths[column].Width) { x -= widths[column].Width; column++; }
-        if (widths.Length > 0) Select(identity, widths[column].Field!.Value, true);
+        var x = point.X + SheetOffset;
+        var column = 0;
+        while (column < VisibleColumns.Length - 1 && x >= VisibleColumns[column].Width) { x -= VisibleColumns[column].Width; column++; }
+        var field = VisibleColumns[column].Field ?? VisibleColumns.Skip(column).Select(c => c.Field).FirstOrDefault(f => f is not null)
+            ?? VisibleColumns.Take(column).Reverse().Select(c => c.Field).FirstOrDefault(f => f is not null);
+        if (field is not null) Select(identity, field, true);
     }
     internal async void EndDrag(object sender, PointerRoutedEventArgs args)
     {

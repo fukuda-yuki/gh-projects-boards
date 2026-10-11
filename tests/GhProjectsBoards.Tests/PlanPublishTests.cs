@@ -158,7 +158,7 @@ internal sealed class PlanPublishTests
     [TestCase(PlanField.Estimate)]
     [TestCase(PlanField.Remaining)]
     [TestCase(PlanField.Actual)]
-    public void SummaryOwnEffortIsNeverAnUnpublishedDifference(PlanField field)
+    public void SummaryOwnEffortIsNeverAnUnpublishedDifference(string field)
     {
         var day = new DateOnly(2026, 10, 5);
         var parent = new PlanRow("P", "Parent", "acme/repo"); var child = new PlanRow("C", "Child", "acme/repo") { Parent = "P" };

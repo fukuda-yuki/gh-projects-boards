@@ -116,7 +116,7 @@ internal sealed class PlanProgressDateTests
 
     [TestCase(PlanField.Start)]
     [TestCase(PlanField.End)]
-    public async Task CompletingAndExplicitlyClearingADateInOneEditKeepsThatClear(PlanField field)
+    public async Task CompletingAndExplicitlyClearingADateInOneEditKeepsThatClear(string field)
     {
         session = await PlanSession.CreateAsync(new(root), Initial(), Start);
         var result = await session.Execute(new EditPlanCells(PlanOperationKind.Paste,

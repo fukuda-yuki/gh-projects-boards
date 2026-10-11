@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 namespace GhProjectsBoards.Core.PlanEditor;
 internal static class PlanVerification
 {
-    internal static PlanField Field(PlanWrite write, ProjectPlanSettings settings) => write.Field ?? (write.Mutation switch
+    internal static string Field(PlanWrite write, ProjectPlanSettings settings) => write.Field ?? (write.Mutation switch
     {
         "createIssue" or "addProjectV2ItemById" => PlanField.NewTask,
         "updateIssue" => PlanField.Title,
@@ -27,7 +27,14 @@ internal static class PlanVerification
         string? Text(string key) => input[key]?.GetValue<string>();
         switch (write.Mutation)
         {
-            case "updateIssue": return row.Title == Text("title");
+            case "updateIssue": return input.AsObject().ContainsKey("milestoneId")
+                ? Text("milestoneId") is { } milestoneId ? remote.Baseline.RepositoryMilestones.Any(m => m.Repository == row.Repository && m.Id == milestoneId && m.Name == row.MilestoneTitle) : row.MilestoneTitle is null
+                : row.Title == Text("title");
+            case "addLabelsToLabelable": case "removeLabelsFromLabelable":
+                return input["labelIds"]!.AsArray().All(n => {
+                    var label = remote.Baseline.RepositoryLabels.SingleOrDefault(l => l.Repository == row.Repository && l.Id == n!.GetValue<string>());
+                    return label is not null && row.Labels.Contains(label.Name) == (write.Mutation == "addLabelsToLabelable");
+                });
             case "addAssigneesToAssignable": return input["assigneeIds"]!.AsArray().All(n => row.Assignees.Contains(n!.GetValue<string>()));
             case "removeAssigneesFromAssignable": return input["assigneeIds"]!.AsArray().All(n => !row.Assignees.Contains(n!.GetValue<string>()));
             case "addSubIssue": return row.Parent == Id(Text("issueId"));
@@ -49,11 +56,11 @@ internal static class PlanVerification
                 if (write.Mutation.StartsWith("clear", StringComparison.Ordinal)) return PlanValues.Get(row, role) == (role == PlanField.Fixed ? "false" : "null");
                 var value = input["value"]!.AsObject().Single();
                 if (role == PlanField.Fixed) return row.Fixed;
-                if (role is PlanField.Status or PlanField.Phase)
+                if (role is PlanField.Status or PlanField.Phase || PlanSheetColumns.IsExtra(role) && value.Key == "singleSelectOptionId")
                 {
-                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && (role == PlanField.Phase || f.Name == "Status") && f.DataType == "SINGLE_SELECT");
+                    var definition = remote.Fields.SingleOrDefault(f => f.Id.NodeId == Text("fieldId") && (role != PlanField.Status || f.Name == "Status") && f.DataType == "SINGLE_SELECT");
                     var option = definition?.Options.SingleOrDefault(o => o.Id == value.Value?.GetValue<string>());
-                    return option is not null && (role == PlanField.Phase ? row.Phase : row.Status) == option.Name;
+                    return option is not null && (PlanSheetColumns.IsExtra(role) ? PlanExtraEditing.Value(row, role) as string : role == PlanField.Phase ? row.Phase : row.Status) == option.Name;
                 }
                 return JsonNode.DeepEquals(JsonNode.Parse(PlanValues.Get(row, role)), value.Value);
             default: return false;

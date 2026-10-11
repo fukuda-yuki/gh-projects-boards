@@ -18,7 +18,7 @@ public sealed class PlanSheetRow : Grid
 {
     internal PlanSheetView? Owner { get; private set; }
     internal string Identity => boundIdentity ?? "";
-    internal PlanSheetCell[] Cells { get; }
+    internal PlanSheetCell[] Cells { get; private set; } = [];
     private readonly Grid sheetClip = new(), chartClip = new();
     private readonly RectangleGeometry sheetGeometry = new(), chartGeometry = new();
     private readonly StackPanel line = new() { Orientation = Orientation.Horizontal };
@@ -38,8 +38,8 @@ public sealed class PlanSheetRow : Grid
     private readonly List<Button?> handles = [];
     private readonly Button fold = new() { Width = 20, MinWidth = 0, MinHeight = 0, Padding = new(0),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
-    private readonly Dictionary<PlanField, PlanSummaryCell> summaryCells = [];
-    internal Control? SelectionTarget(PlanField field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
+    private readonly Dictionary<string, PlanSummaryCell> summaryCells = [];
+    internal Control? SelectionTarget(string field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
         ? display : Cells.FirstOrDefault(c => c.Field == field);
     private string? boundIdentity;
     private double chartOffset = double.NaN;
@@ -83,20 +83,31 @@ public sealed class PlanSheetRow : Grid
         idCell.Children.Add(id); idCell.Children.Add(selectionAccent);
         line.Children.Add(idCell); line.Children.Add(indicator);
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(id, FontNumeralAlignment.Tabular);
-        Cells = PlanSheetView.Columns.Where(c => c.Field is not null).Select(c => new PlanSheetCell(this, c.Field!.Value)).ToArray();
-        foreach (var cell in Cells)
+        fold.Click += async (_, _) => {
+            if (Owner is not { } owner) return;
+            var identity = Identity;
+            await owner.Run(() => owner.SetFold(identity, !owner.IsFolded(identity)), "Fold requirement");
+        };
+    }
+    private PlanSheetView.Column[]? presentedColumns;
+    private void EnsureColumns(PlanSheetView owner)
+    {
+        if (ReferenceEquals(presentedColumns,owner.VisibleColumns)) return;
+        presentedColumns = owner.VisibleColumns;
+        foreach (var column in owner.VisibleColumns.Where(c => c.Field is not null && !Cells.Any(cell => cell.Field == c.Field)))
         {
+            var cell = new PlanSheetCell(this, column.Field!);
+            Cells = [.. Cells, cell];
             var grid = new Grid(); grid.Children.Add(cell);
             if (cell.TitleDisplay is { } display) grid.Children.Add(display);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
             line.Children.Add(frame); frames.Add(frame); markers.Add(null); corners.Add(null); handles.Add(null);
         }
-        fold.Click += async (_, _) => {
-            if (Owner is not { } owner) return;
-            var identity = Identity;
-            await owner.Run(() => owner.SetFold(identity, !owner.IsFolded(identity)), "Fold requirement");
-        };
+        var order = owner.ConfiguredColumns.Select(c => c.Indicator ? (UIElement)indicator : c.Field is null ? idCell
+            : Cells.Select((cell, index) => (cell, index)).Where(x => x.cell.Field == c.Field).Select(x => (UIElement)frames[x.index]).FirstOrDefault()).OfType<UIElement>().ToArray();
+        for (var i = 0; i < order.Length; i++)
+            if (line.Children.IndexOf(order[i]) != i) { line.Children.Remove(order[i]); line.Children.Insert(i, order[i]); }
     }
     internal void SetOwner(PlanSheetView? owner, string? identity)
     {
@@ -143,6 +154,7 @@ public sealed class PlanSheetRow : Grid
     internal void Refresh()
     {
         if (Owner is not { } owner || boundIdentity is null) return;
+        EnsureColumns(owner);
         Height = chart.Height = owner.RowHeight;
         var number = owner.PlanIds.GetValueOrDefault(Identity);
         ColumnDefinitions[0].Width = new(owner.SheetViewport); ColumnDefinitions[1].Width = new(owner.ChartViewport);
@@ -179,8 +191,8 @@ public sealed class PlanSheetRow : Grid
         ToolTipService.SetToolTip(fold, foldName);
         for (var i = 0; i < Cells.Length; i++)
         {
-            var cell = Cells[i]; var column = PlanSheetView.Columns[i + 2]; var field = cell.Field;
-            var visible = owner.Hidden.Contains(field) ? Visibility.Collapsed : Visibility.Visible;
+            var cell = Cells[i]; var field = cell.Field; var column = owner.ConfiguredColumns.FirstOrDefault(c => c.Field == field) ?? new(field, field, 140);
+            var visible = !owner.VisibleColumns.Any(c => c.Field == field) ? Visibility.Collapsed : Visibility.Visible;
             frames[i].Width = column.Width; frames[i].Visibility = visible;
             cell.Visibility = summary && field != PlanField.Title ? Visibility.Collapsed : visible;
             var selected = owner.IsSelected(Identity, field);
@@ -542,13 +554,13 @@ public sealed class PlanSheetRow : Grid
 internal sealed class PlanSheetCell : TextBox
 {
     private readonly PlanSheetRow row;
-    internal PlanField Field { get; }
+    internal string Field { get; }
     internal bool Composing { get; private set; }
     internal bool Editing { get; private set; }
     internal TextBlock? TitleDisplay { get; }
     private bool refreshing, endedThisTurn, committing;
     private string shownText = "", editingFrom = "";
-    internal PlanSheetCell(PlanSheetRow row, PlanField field)
+    internal PlanSheetCell(PlanSheetRow row, string field)
     {
         this.row = row; Field = field;
         if (field == PlanField.Title) {
@@ -704,9 +716,9 @@ internal sealed class PlanSheetCell : TextBox
 internal sealed class PlanSummaryCell : ContentControl
 {
     private readonly PlanSheetRow row;
-    private readonly PlanField field;
+    private readonly string field;
     internal TextBlock Text { get; }
-    internal PlanSummaryCell(PlanSheetRow row, PlanField field)
+    internal PlanSummaryCell(PlanSheetRow row, string field)
     {
         this.row = row; this.field = field;
         IsTabStop = true; HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -758,7 +770,7 @@ internal sealed class PlanSummaryCell : ContentControl
         public void Select() => cell.row.Owner?.SelectAndFocus(cell.row.Identity, cell.field, false);
     }
 }
-internal sealed class PlanFillHandle(PlanSheetRow row, PlanField field) : Button
+internal sealed class PlanFillHandle(PlanSheetRow row, string field) : Button
 {
     protected override void OnPointerPressed(PointerRoutedEventArgs args)
     {

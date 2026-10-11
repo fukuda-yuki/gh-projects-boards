@@ -18,7 +18,7 @@ internal sealed partial class PlanSheetHostedTests
     public async Task MovingAndContractingSelectionClearsOldBordersAndFillHandles()
     {
         var before = PlanJson.Text(session.Document.State);
-        async Task CheckSelection(int first, int last, PlanField[] fields, int active, PlanField end)
+        async Task CheckSelection(int first, int last, string[] fields, int active, string end)
         {
             await Ui.Run(() => {
                 for (var number = 1; number <= 6; number++) {
@@ -446,15 +446,6 @@ internal sealed partial class PlanSheetHostedTests
     public async Task SheetFlyoutsAndPredecessorCandidatesHaveNoTransitions()
     {
         await Select(2, PlanField.Title);
-        await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is { IsLoaded: true });
-        await Ui.Run(() => {
-            var flyout = Ui.CommandButton("PlanSheetColumns").Flyout;
-            Assert.That(flyout.AreOpenCloseAnimationsEnabled, Is.False);
-            AssertQuietPresenter();
-            flyout.Hide();
-        });
-        await Ui.Idle();
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Until(() => Ui.Popup<ListView>("PlanPredecessorCandidates")?.ContainerFromIndex(0) is ListViewItem { IsLoaded: true });
         await Ui.Run(() => {
