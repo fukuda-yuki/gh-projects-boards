@@ -681,9 +681,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void ClearSettingsInputProblem()
     {
-        settingsInputProblem.Close();
-        if (invalidSetting is not null) AutomationProperties.SetHelpText(invalidSetting, "");
+        var input = invalidSetting; var message = invalidSettingMessage;
+        // Invalidate recovery before closing the popup can cause focus/layout callbacks.
         invalidSetting = null; invalidSettingMessage = null; invalidSettingText = null;
+        if (input is not null) AutomationProperties.SetHelpText(input, "");
+        if (message is not null && error.Text == message) error.Text = "";
+        settingsInputProblem.Close();
     }
     private void RevealSettingsInput()
     {
@@ -700,6 +703,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         });
         void PositionProblem()
         {
+            if (!ReferenceEquals(invalidSetting, input) || invalidSettingMessage != message
+                || input.Text != rejectedText || currentPage != "settings") return;
             // Target the settings viewport explicitly; a TextBox has its own internal scroll viewer.
             // Focus and the error surface can also change layout before the next ViewChanged.
             if (!SettingIsVisible(input)) {
@@ -718,8 +723,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var composing = false; var endedThisTurn = false;
         async Task Commit()
         {
-            if (generation != settingsGeneration || input.Text == accepted) return;
+            if (generation != settingsGeneration) return;
             if (composing) { input.Focus(FocusState.Programmatic); throw new InvalidOperationException("入力中の変換を確定してください。"); }
+            if (input.Text == accepted) {
+                if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
+                return;
+            }
             var text = input.Text;
             try { await apply(text); }
             catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
@@ -733,7 +742,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
-        settingsTextInputs.Add((input, Commit, () => input.Text != accepted && !composing && !endedThisTurn));
+        settingsTextInputs.Add((input, Commit, () => (input.Text != accepted || ReferenceEquals(invalidSetting, input)) && !composing && !endedThisTurn));
         input.TextCompositionStarted += (_, _) => composing = true;
         input.TextCompositionEnded += (_, _) => {
             composing = false; endedThisTurn = true;
@@ -749,7 +758,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
         };
         input.LostFocus += async (_, _) => {
-            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration && input.Text != accepted) await Run(Commit, commitPending: false);
+            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration
+                && (input.Text != accepted || ReferenceEquals(invalidSetting, input))) await Run(Commit, commitPending: false);
         };
         return input;
     }

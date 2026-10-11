@@ -76,8 +76,11 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("2 件"));
             Ui.Find<TextBox>("PlanSheetFilter").Text = "";
         });
-        await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Count(id => id.Length > 0), Is.EqualTo(3)));
+        await Ui.Until(() => Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Count(id => id.Length > 0) == 3);
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1", "I2", "I3" }));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.Empty);
+        });
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
     }

@@ -1846,9 +1846,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanProjectEnd", "2027-04-30");
         // The settings commit is queued behind the focus change and saves asynchronously.
         await Ui.Until(() => workspace.Session.Document.State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
+        await SettingsErrorCleared("PlanProjectEnd"); await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
             Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null, "Correction must dismiss the old validation message.");
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Is.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
             Assert.That(Ui.Find<TextBox>("PlanProjectEnd").FocusState, Is.EqualTo(FocusState.Unfocused), "Stale recovery must not steal focus after correction.");
         });
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.EqualTo(new DateOnly(2027, 4, 30)));
@@ -1856,6 +1859,39 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
     }
+
+    [Test]
+    public async Task SettingsPeriodCorrectionBackToAcceptedValueClearsAllFeedbackWithoutAnEdit()
+    {
+        await Open(); await Settings();
+        await CommitText("PlanProjectStart", "2026-10-05");
+        await CommitText("PlanProjectEnd", "2027-04-30");
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
+        await Ui.Idle();
+        var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
+        await CommitText("PlanProjectEnd", "2026-10-04");
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
+            && Ui.Find<TextBlock>("PlanError").Text.Contains("終了日は開始日以降"));
+        await Ui.Run(() => Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Does.Contain("終了日は開始日以降")));
+        await CommitText("PlanProjectEnd", "2027-04-30");
+        await SettingsErrorCleared("PlanProjectEnd"); await Ui.Idle();
+        await Ui.Run(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").ChangeView(null, 0, null, true));
+        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset == 0);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
+            Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null);
+            Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanProjectEnd")), Is.Empty);
+            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+        });
+        Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+    }
+
+    private Task SettingsErrorCleared(string id) => Ui.Until(() =>
+        Ui.Popup<Border>("SettingsInputProblem") is null
+        && AutomationProperties.GetHelpText(Ui.Find<TextBox>(id)).Length == 0
+        && Ui.Find<TextBlock>("PlanError").Text.Length == 0
+        && Ui.Find<TextBox>(id).FocusState == FocusState.Unfocused);
 
     [Test]
     public async Task SettingsPhaseUsesTheColumnMappingAndListsOptionsAndLeafCounts()
