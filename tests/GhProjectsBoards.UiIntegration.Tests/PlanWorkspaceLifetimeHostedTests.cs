@@ -31,6 +31,7 @@ internal sealed class PlanWorkspaceLifetimeHostedTests
             try { Directory.Delete(root, true); }
             finally { Ui.EndTest(); }
         }
+        Ui.Check();
     }
 
     [Test]
