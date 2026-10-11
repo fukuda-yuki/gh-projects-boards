@@ -31,7 +31,7 @@ internal sealed partial class PlanSheetHostedTests
                         var cell = Ui.Find<TextBox>(id);
                         var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell));
                         Assert.That(frame.BorderThickness.Left, Is.EqualTo(selected ? 2 : 0));
-                        Assert.That(cell.Text, Is.EqualTo("8"));
+                        Assert.That(cell.Text, Is.EqualTo("8h"));
                     }
                 }
                 var handles = Ui.Tree(sheet).OfType<Button>().Where(button => button.Visibility == Visibility.Visible

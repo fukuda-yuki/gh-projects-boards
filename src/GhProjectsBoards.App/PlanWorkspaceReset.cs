@@ -16,7 +16,7 @@ internal sealed partial class PlanWorkspaceView
         refreshButton.Content = content;
         AutomationProperties.SetName(refreshButton, "最新の情報に更新");
         refreshButton.Click += async (_, _) => { if (refreshButton.IsLoaded) await Run(RefreshRemote); };
-        var menu = new MenuFlyout();
+        var menu = new MenuFlyout { AreOpenCloseAnimationsEnabled = false };
         menu.Items.Add(resetItem);
         menu.Opening += (_, _) => UpdateResetAvailability();
         resetItem.Click += async (_, _) => await Run(ConfirmReset);
