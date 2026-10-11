@@ -1844,6 +1844,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(((TextBlock)Ui.Popup<Border>("SettingsInputProblem")!.Child).Text, Does.Contain("終了日は開始日以降"));
         });
         await CommitText("PlanProjectEnd", "2027-04-30");
+        // The settings commit is queued behind the focus change and saves asynchronously.
+        await Ui.Until(() => workspace.Session.Document.State.Settings.ProjectEnd == new DateOnly(2027, 4, 30));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanProjectEnd").Text, Is.EqualTo("2027-04-30"));
             Assert.That(Ui.Popup<Border>("SettingsInputProblem"), Is.Null, "Correction must dismiss the old validation message.");
