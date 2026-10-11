@@ -22,6 +22,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly Grid surfaces = new();
     private readonly StackPanel failures = new();
     private readonly Border sheetFailureHost = new();
+    private readonly InfoBar refreshResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanRefreshResult");
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
@@ -69,7 +70,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
     internal Func<string, Task<string?>>? PickFile { get; set; }
-    private DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly Today => PlanClock.Today;
 
     internal PlanWorkspaceView(PlanWorkspace workspace, Func<string, string, GhConnectionService>? factory = null)
     {
@@ -174,6 +175,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
         saveFailure.ActionButton = retrySave;
         refreshFailure.ActionButton = Button("再試行", "PlanRetryRefresh", RefreshRemote);
         publishFailure.ActionButton = Button("再試行", "PlanRetryPublish", () => { RenderReview(); Show("publish"); return Task.CompletedTask; });
+        refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
+        AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        failures.Children.Add(refreshResult);
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
@@ -359,7 +363,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var reporter = BeginBusy("refresh", "最新の情報を取得しています");
         var outcome = "更新を中止しました";
         try {
-            await workspace.Refresh(OperationToken, reporter);
+            var result = await workspace.Refresh(OperationToken, reporter);
+            if (result is not null) ShowRefreshResult(result);
             outcome = "最新の情報に更新しました";
             refreshFailure.IsOpen = false; ClearSaveFailures();
             if (workspace.Session is { } session && session.Document.Sync.Failures.IsEmpty && session.Document.Sync.Unverified.IsEmpty)
@@ -376,6 +381,30 @@ internal sealed partial class PlanWorkspaceView : UserControl
             EndBusy(outcome);
             RenderTasks(); RenderSettings();
         }
+    }
+    private void ShowRefreshResult(PlanRefreshResult result)
+    {
+        var culture = CultureInfo.GetCultureInfo("ja-JP");
+        string Date(DateOnly date) => date.ToString("M/d (ddd)", culture);
+        var moved = result.PreviousStatusDate != result.StatusDate;
+        refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
+        refreshResult.Message = moved
+            ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に進めて日程を再計算しました。"
+            : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
+        refreshResult.ActionButton = null;
+        if (result.ChangedTasks.Count > 0)
+        {
+            refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
+            refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
+                Show("tasks"); sheet?.FilterChangedTasks(result.ChangedTasks); return Task.CompletedTask;
+            });
+        }
+        refreshResult.IsOpen = true;
+    }
+    private void CloseRefreshResult()
+    {
+        refreshResult.IsOpen = false;
+        sheet?.ClearChangedTasksFilter();
     }
     private void SetRemotePresentation()
     {

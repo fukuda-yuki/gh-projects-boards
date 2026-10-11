@@ -14,7 +14,7 @@ internal static class PlanSheetEditing
     internal static string EditBaseline(PlanRow? row, PlanField field, string editText)
         => field == PlanField.Remaining ? row?.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "" : editText;
 
-    internal static object? Parse(PlanDocument document, PlanField field, string text)
+    internal static object? Parse(PlanDocument document, PlanField field, string text, DateOnly today)
     {
         if (text.Length == 0) return null;
         switch (field)
@@ -24,7 +24,7 @@ internal static class PlanSheetEditing
                 throw new ArgumentException("工数は0以上の数値で入力してください。");
             case PlanField.Start: case PlanField.End: case PlanField.StartNoEarlierThan:
                 if (DateOnly.TryParseExact(text, ["yyyy-MM-dd", "yyyy/M/d"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) return day;
-                var status = document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
+                var status = document.State.Settings.StatusDate ?? today;
                 var candidates = Enumerable.Range(Math.Max(1, status.Year - 4), Math.Min(9999, status.Year + 4) - Math.Max(1, status.Year - 4) + 1)
                     .Select(year => DateOnly.TryParseExact($"{year:D4}/{text}", "yyyy/M/d", CultureInfo.InvariantCulture, DateTimeStyles.None, out var candidate) ? candidate : (DateOnly?)null)
                     .Where(candidate => candidate.HasValue).Select(candidate => candidate!.Value)
@@ -56,7 +56,7 @@ internal static class PlanSheetEditing
     }
     private static string[] Split(string text) => text.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     internal static EditPlanCells Paste(PlanDocument document, IReadOnlyList<string> rows,
-        IReadOnlyList<PlanField> columns, CellRange selection, string text)
+        IReadOnlyList<PlanField> columns, CellRange selection, string text, DateOnly today)
     {
         var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         if (lines.Length > 1 && lines[^1] == "") lines = lines[..^1];
@@ -72,7 +72,7 @@ internal static class PlanSheetEditing
                 var value = matrix[expand ? 0 : r][expand ? 0 : c];
                 if (value.Length == 0) continue;
                 var field = columns[target.Column + c];
-                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value)));
+                changes.Add(new(rows[target.Row + r], field, Parse(document, field, value, today)));
             }
         return new(PlanOperationKind.Paste, changes.ToImmutable());
     }

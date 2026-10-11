@@ -18,6 +18,65 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [TestCase(false, true), TestCase(true, true), TestCase(false, false), Category("PlanReadDate")]
+    public async Task RefreshResultNamesDateAndChangedTasksAndFilterCanBeCleared(bool closeBar, bool advanceDate)
+    {
+        readDay = new(2026, 10, 6);
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo"), "", true),
+            new(new("I2", "Moving task", "acme/repo") { Parent = "I1", Remaining = 16, Start = new(2026, 10, 5), End = new(2026, 10, 6) }, "", true),
+            new(new("I3", "Unchanged task", "acme/repo"), "", true)
+        ], 4));
+        await Open();
+        if (advanceDate) readDay = new(2026, 10, 7);
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<Button>("PlanRefresh").IsEnabled);
+        await Ui.Ready<Button>("PlanRefreshChangedFilter");
+        await Ui.Run(() => {
+            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
+            Assert.That(bar.Severity, Is.EqualTo(InfoBarSeverity.Informational));
+            Assert.That(bar.IsClosable, Is.True);
+            Assert.That(bar.Title, Does.StartWith("最新の情報に更新しました（"));
+            Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日を 10/6 (火) から 10/7 (水) に進めて日程を再計算しました。日程が変わったタスク 1" : "基準日 10/6 (火) で日程を再計算しました。日程が変わったタスク 1"));
+            Ui.Click("PlanRefreshChangedFilter");
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-refresh-filter-" + closeBar + "-" + advanceDate));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I2", "" }));
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件"));
+            if (closeBar) Ui.Find<InfoBar>("PlanRefreshResult").IsOpen = false;
+            else Ui.Find<TextBox>("PlanSheetFilter").Text = "";
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 4);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Ui.Click("PlanRefresh");
+        });
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<Button>("PlanRefresh").IsEnabled);
+        await Ui.Run(() => {
+            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
+            Assert.That(bar.Message, Is.EqualTo(advanceDate ? "基準日 10/7 (水) で日程を再計算しました。" : "基準日 10/6 (火) で日程を再計算しました。"));
+            Assert.That(bar.ActionButton, Is.Null);
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReadDate")]
+    public async Task ClearingStatusDateRestoresAcceptedValueWithoutOperation()
+    {
+        readDay = new(2026, 10, 6);
+        await Open();
+        var before = workspace.Session!.Document;
+        var undo = workspace.Session.UndoCount;
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = null);
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date,
+            Is.EqualTo(new DateTime(2026, 10, 6))));
+        Assert.That(workspace.Session.Document, Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+    }
+
     [Test]
     public async Task RemoteRefreshCancelsUnacceptedFilterAndKeepsTextRowsAndCountTogether()
     {
@@ -550,6 +609,7 @@ internal sealed class PlanWorkspaceHostedTests
                 "tests", "GhProjectsBoards.Tests", "bin", "Release", "net10.0-windows", "GhProjectsBoards.Tests.exe");
         }
     }
+    private DateOnly readDay;
     private string root = null!;
     private PlanWorkspace workspace = null!;
     private PlanWorkspaceView view = null!;
@@ -558,11 +618,12 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task Setup()
     {
         await Ui.BeginTest();
+        readDay = PlanClock.Today;
         root = Path.Combine(Path.GetTempPath(), "ghpb-workspace-ui-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
         FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)], 2) { Drafts = 2, PullRequests = 1, Redacted = 1, HiddenItems = 1 });
-        workspace = new(new(root));
+        workspace = new(new(root), () => readDay);
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
         if (TestContext.CurrentContext.Test.MethodName == nameof(TitleBarUsesGanttGlyphAndPlacesGearBesideNativeCaptions))
@@ -605,7 +666,11 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task CsvPickerValidatesWholeFileThenImportsAndUndoesOneOperation()
     {
         await Open();
+        // Release the first-take-in date hold before measuring the CSV's additional changes.
+        await CommitText("PlanCell1_Title", "設計の変更");
+        await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "設計の変更");
         var unpublishedBeforeCsv = workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount;
+        var undoBeforeCsv = workspace.Session.UndoCount;
         var path = Path.Combine(root, "tasks.csv");
         await File.WriteAllTextAsync(path, "キー,タイトル,見積,担当者,先行タスク,親\na,,8,,,\nb,確認,4,,missing,\n");
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "設計");
@@ -640,6 +705,12 @@ internal sealed class PlanWorkspaceHostedTests
         await Ui.Run(async () => await RenderedEvidence.Capture(Ui.Tree(view).OfType<PlanSheetView>().Single(), "csv-imported-plan"));
         await Ui.Run(() => Ui.Click("PlanUndo"));
         await Ui.Until(() => workspace.Session!.Document.State.Rows.Length == 1);
+        await Ui.Run(() => {
+            Assert.That(workspace.Session!.UndoCount, Is.EqualTo(undoBeforeCsv));
+            Assert.That(workspace.Session.Document.State.Rows[0].Title, Is.EqualTo("設計の変更"));
+            Assert.That(workspace.Session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.EqualTo(unpublishedBeforeCsv));
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == unpublishedBeforeCsv.ToString());
         await Ui.Run(() => { view.PickFile = _ => Task.FromResult<string?>(null); });
         await Ui.ClickCommand("PlanSheetCsv");
         await Ui.Run(async () => await Ui.Tree(view).OfType<PlanSheetView>().Single().FlushInput());
@@ -1112,6 +1183,7 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task RemoteWorkShowsBlockingPanelAndLocksCellsUntilCompletion(bool publish)
     {
         await Open();
+        if (publish) await CommitText("PlanCell1_Title", "発行予定");
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
             planEditor = true, workspace = true, holdQuery = publish ? "mutation PlanPublish(" : "ProjectFields"
         }));
@@ -1402,9 +1474,10 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task FailedSaveWhileClosingPublicationKeepsRetryAndEditingReachable()
     {
         await Open();
+        await CommitText("PlanCell1_Title", "発行予定");
         File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, workspace = true, holdQuery = "mutation PlanPublish(" }));
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("未入力 →")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
         bool stopped = true;
@@ -1429,8 +1502,9 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task PublishSaveFailureOffersRetryBeforeAnyWrite()
     {
         await Open();
+        await CommitText("PlanCell1_Title", "発行予定");
         await Ui.Run(() => Ui.Click("PlanPublish"));
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("開始日")));
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("設計 → 発行予定")));
         using (var writer = new FileStream(new PlanStore(root).FileFor(workspace.Session!.Document.Project) + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
         {
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
@@ -1775,8 +1849,9 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task SwitchingPreservesEachProjectsUnpublishedWorkAndRestartsTheSelectedProject()
     {
         await Open();
-        await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell,
-            [new("I1", PlanField.Title, "未発行の設計")]), new(2026, 10, 5)));
+        // Edit through the sheet: its cached unpublished count is what the badge shows after switching back.
+        await CommitText("PlanCell1_Title", "未発行の設計");
+        await Ui.Until(() => workspace.Session!.Document.State.Rows.Single().Title == "未発行の設計");
         await PickerCommand("PlanChooseProject");
         await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2");
@@ -1787,7 +1862,7 @@ internal sealed class PlanWorkspaceHostedTests
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
             Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("1"));
         });
-        var restarted = new PlanWorkspace(new(root));
+        var restarted = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
         await restarted.Connect(new(FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
         Assert.That(restarted.Selected!.Id.NodeId, Is.EqualTo("P1"));
         Assert.That(restarted.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));

@@ -6,13 +6,21 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPublishReview? Review);
+internal sealed record PlanRefreshResult(DateOnly PreviousStatusDate, DateOnly StatusDate, ImmutableHashSet<string> ChangedTasks);
+internal sealed record PlanPublishResult(bool Succeeded, string? Error, PlanPublishReview? Review)
+{ public PlanRefreshResult? Refresh { get; init; } }
 internal sealed class PlanPublisher(GhConnectionService service, ConnectionContext context)
 {
     public List<int> EffectiveBatchSizes { get; } = [];
     public TimeSpan CreationWait { get; private set; }
     public DateTimeOffset? CreationPhaseStarted { get; private set; }
     private readonly SemaphoreSlim gate = new(1, 1);
+    private static async Task<PlanPublishResult> CompletePublication(PlanSession session, DateOnly today, PlanPublishReview? review)
+    {
+        var result = Result(session, today, review);
+        if (result.Succeeded) RequireSave(await session.CompletePublication().ConfigureAwait(false));
+        return result;
+    }
     public async Task<PlanPublishResult> RefreshAsync(PlanSession session, DateOnly today, CancellationToken token = default, IProgress<RemoteProgress>? progressReporter = null)
     {
         await gate.WaitAsync(token).ConfigureAwait(false);
@@ -20,8 +28,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
         {
             using var operation = session.BeginRemoteOperation();
             using var lease = await service.BeginOperationAsync(context, token, mutation: false).ConfigureAwait(false);
-            await Reconcile(session, lease, today, token, progressReporter).ConfigureAwait(false);
-            return new(true, null, null);
+            var before = session.Document;
+            await Reconcile(session, lease, today, token, progressReporter, refresh: true).ConfigureAwait(false);
+            return new(true, null, null) { Refresh = new(before.State.Settings.StatusDate ?? today, today, PlanOperations.ChangedTaskDates(before, session.Document, today)) };
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) when (Expected(ex)) { var saved = await RetainInterruptedAttempt(session).ConfigureAwait(false); return new(false, (session.Document.Sync.Unverified.IsEmpty ? "" : "発行結果は未検証です。再取得して確認してください。 ") + ex.Message + (saved is { Succeeded: false } ? " " + saved.Error : ""), null); }
@@ -215,13 +224,13 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
             RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
         }
     }
-    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null)
+    private async Task<PlanRemoteSnapshot> Reconcile(PlanSession session, GhConnectionService.OperationLease lease, DateOnly today, CancellationToken token, IProgress<RemoteProgress>? progressReporter = null, bool refresh = false)
     {
         await ReconcileCreations(session, lease, token).ConfigureAwait(false);
         var remote = await Read(session, lease, token, progressReporter).ConfigureAwait(false);
         progressReporter?.Report(new("日程を計算"));
         token.ThrowIfCancellationRequested();
-        RequireSave(await (session.Document.Sync.Publish is null ? session.AcceptRefresh(remote, today) : session.AcceptPublished(remote, today)).ConfigureAwait(false));
+        RequireSave(await (session.Document.Sync.Publish is null ? session.AcceptRefresh(remote, today, refresh: refresh) : session.AcceptPublished(remote, today, refresh)).ConfigureAwait(false));
         return remote;
     }
     private static async Task<PlanSaveResult?> RetainInterruptedAttempt(PlanSession session)
@@ -275,7 +284,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     if (writes.IsEmpty)
                     {
                         RequireSave(await session.SaveSync(session.Document.Sync with { Failures = [], Unverified = [], NotBefore = null }).ConfigureAwait(false));
-                        return Result(session, today, review);
+                        return await CompletePublication(session, today, review).ConfigureAwait(false);
                     }
                     progress = new(run, writes);
                     RequireSave(await session.SaveSync(session.Document.Sync with { Publish = progress }).ConfigureAwait(false));
@@ -417,7 +426,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                 remote = await ReadMemberships(session, lease, token).ConfigureAwait(false);
                 RequireSave(await session.AcceptPublished(remote, today).ConfigureAwait(false));
                 if (!creating || session.Document.Sync.Publish is not null || !session.Document.Sync.Failures.IsEmpty)
-                    return Result(session, today, review);
+                    return await CompletePublication(session, today, review).ConfigureAwait(false);
             }
         }
         catch (Exception ex) when (Expected(ex))

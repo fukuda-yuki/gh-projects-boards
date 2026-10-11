@@ -1,8 +1,9 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param([ValidateSet("Debug", "Release")][string]$Configuration = "Release", [ValidateSet("2027.04", "2027.10")][string]$Version = "2027.04",
-    [ValidatePattern('^\d{4}-\d{2}-\d{2}$')][string]$StatusDate, [string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
+    [ValidatePattern('^\d{4}-\d{2}-\d{2}$')][string]$StatusDate, [ValidatePattern('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')][string]$Today, [string]$DataRoot, [switch]$Resume, [switch]$NoBuild, [switch]$PrepareOnly)
 $ErrorActionPreference = 'Stop'
+if ($Today) { [void][DateOnly]::ParseExact($Today, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) }
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not $DataRoot) {
     if ($Resume) { throw '-Resume requires -DataRoot.' }
@@ -23,7 +24,7 @@ function IsolatedStart([string]$Executable) {
     $start.UseShellExecute = $false
     $start.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
     $start.WorkingDirectory = Split-Path $Executable -Parent
-    foreach ($name in @('GH_TOKEN','GITHUB_TOKEN','GH_ENTERPRISE_TOKEN','GITHUB_ENTERPRISE_TOKEN','GH_DEBUG','GH_HOST','GH_REPO','GHPB_PLAN_METRICS','GHPB_PUBLISH_METRICS')) { [void]$start.Environment.Remove($name) }
+    foreach ($name in @('GH_TOKEN','GITHUB_TOKEN','GH_ENTERPRISE_TOKEN','GITHUB_ENTERPRISE_TOKEN','GH_DEBUG','GH_HOST','GH_REPO','GHPB_PLAN_METRICS','GHPB_PUBLISH_METRICS','GHPB_TODAY')) { [void]$start.Environment.Remove($name) }
     return $start
 }
 $bin = Join-Path $DataRoot 'fake-gh/bin'
@@ -48,6 +49,7 @@ Write-Host "接続 → $($summary.title)。40要求事項・1,000タスク・20�
 Write-Host "Resume: & '$PSCommandPath' -NoBuild -Configuration $Configuration -Resume -DataRoot '$DataRoot'"
 if ($PrepareOnly) { return }
 $start = IsolatedStart $app
+$start.Environment['GHPB_TODAY'] = if ($Today) { $Today } else { [string]$summary.statusDate }
 $start.Environment['GHPB_DATA_ROOT'] = $DataRoot
 $start.Environment['GH_CONFIG_DIR'] = Join-Path $DataRoot 'fake-gh'
 $start.Environment['PATH'] = $bin + [IO.Path]::PathSeparator + $start.Environment['PATH']

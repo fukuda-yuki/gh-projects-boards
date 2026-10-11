@@ -430,12 +430,13 @@ internal sealed class PlanDocumentTests
         var text = await File.ReadAllTextAsync(exported);
         Assert.That(text, Does.Contain("\n").And.Not.Contain("viewerId").And.Not.Contain("Task 1"));
         var secondStore = new PlanStore(Path.Combine(root, "second")); var second = await Create(store: secondStore); var before = Text(second.Document);
+        var expected = settings with { StatusDate = second.Document.State.Settings.StatusDate };
         var result = await second.ImportSettingsAsync(exported, Today);
         Assert.That(result.Applied, Is.True, result.Error);
         Assert.That(result.Warnings, Is.EquivalentTo(new[] { "プロジェクトに未確認の担当者: Bob", "プロジェクトに未確認の列: Remaining" }));
-        Assert.That(Text(second.Document.State.Settings), Is.EqualTo(Text(settings)));
+        Assert.That(Text(second.Document.State.Settings), Is.EqualTo(Text(expected)));
         Assert.That(second.UndoCount, Is.EqualTo(1));
-        second = await Reopen(secondStore); Assert.That(Text(second.Document.State.Settings), Is.EqualTo(Text(settings)));
+        second = await Reopen(secondStore); Assert.That(Text(second.Document.State.Settings), Is.EqualTo(Text(expected)));
         await second.Undo(Today); Assert.That(Text(second.Document), Is.EqualTo(before));
     }
 

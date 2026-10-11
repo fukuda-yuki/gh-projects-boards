@@ -13,6 +13,7 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanPublishReview")]
 internal sealed class PlanPublishReviewHostedTests
 {
+    private DateOnly readDay;
     private string root = null!;
     private PlanWorkspace workspace = null!;
     private PlanWorkspaceView view = null!;
@@ -31,10 +32,11 @@ internal sealed class PlanPublishReviewHostedTests
     public async Task Setup()
     {
         await Ui.BeginTest();
+        readDay = PlanClock.Today;
         root = Path.Combine(Path.GetTempPath(), "ghpb-publish-review-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
-        workspace = new(new(root));
+        workspace = new(new(root), () => readDay);
         await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
         await Ui.Mount(view);
@@ -64,6 +66,30 @@ internal sealed class PlanPublishReviewHostedTests
         }
         finally { Ui.EndTest(); }
     }
+    [TestCase(false), TestCase(true), Category("PlanReadDate")]
+    public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh)
+    {
+        readDay = new(2026, 10, 6);
+        await Open(1);
+        await Ui.Run(() => {
+            var title = Ui.Find<TextBox>("PlanCell1_Title");
+            title.Focus(FocusState.Programmatic); title.Text = "Edited";
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Ready<TextBlock>("PlanPublishStatusDate");
+        if (refresh)
+        {
+            await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanRefresh"); });
+            await Ui.Until(() => Ui.Find<Button>("PlanRefresh").IsEnabled && workspace.Session!.Document.Dates.Recalculated is null);
+            await Ui.Run(() => Ui.Click("PlanPublish"));
+            await Ui.Ready<TextBlock>("PlanPublishStatusDate");
+        }
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
+            Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。" + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [Test, Category("PlanSheetFollowup")]
     public async Task ReviewDatesKeepTheYearInBeforeAfterAndGitHubValues()
     {

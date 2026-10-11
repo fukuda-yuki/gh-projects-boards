@@ -11,6 +11,52 @@ namespace GhProjectsBoards.Tests;
 [Parallelizable(ParallelScope.All)]
 internal sealed class PlanPublisherTests
 {
+    [TestCase(false), TestCase(true)]
+    public async Task RefreshFailureOrCancellationPreservesDatePlanAndHistory(bool cancel)
+    {
+        await Start(1);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = Today.AddDays(-3) }), Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local")]), Today);
+        var before = session.Document;
+        var bytes = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+        var undo = session.UndoCount;
+        if (cancel)
+        {
+            using var cancellation = new CancellationTokenSource();
+            var progress = new InlineProgress<RemoteProgress>(p => { if (p.Stage == "日程を計算") cancellation.Cancel(); });
+            Assert.ThrowsAsync<OperationCanceledException>(() => publisher.RefreshAsync(session, Today.AddDays(10), cancellation.Token, progress));
+        }
+        else
+        {
+            Scenario("readfailure");
+            Assert.That((await publisher.RefreshAsync(session, Today.AddDays(10))).Succeeded, Is.False);
+        }
+        Assert.That(session.Document, Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(bytes));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test]
+    public async Task RefreshReportsChangedDatesAndSupersedesPickedDateWhilePublishKeepsIt()
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with { Row = i.Row with { Remaining = 16 } }).ToImmutableArray() });
+        var picked = Today.AddDays(1);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = picked }), Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local")]), Today);
+        var published = await publisher.PublishAsync(session, Today.AddDays(10));
+        Assert.That(published.Succeeded, Is.True, published.Error);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(picked));
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.EqualTo(picked));
+        var refreshed = await publisher.RefreshAsync(session, Today.AddDays(3));
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Today.AddDays(3)));
+        Assert.That(refreshed.Refresh!.PreviousStatusDate, Is.EqualTo(picked));
+        Assert.That(refreshed.Refresh.StatusDate, Is.EqualTo(Today.AddDays(3)));
+        Assert.That(refreshed.Refresh.ChangedTasks, Is.EquivalentTo(new[] { "I1" }));
+        Assert.That((await publisher.RefreshAsync(session, Today.AddDays(3))).Refresh!.ChangedTasks, Is.Empty);
+    }
+
     [Test]
     public async Task LastChildOutdentReactivatesStoredAssigneeConflictBeforeAnyRemoteWrite()
     {

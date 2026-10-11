@@ -58,7 +58,7 @@ internal static class PlanJson
         if (document.Sync.Publish is { DispatchStarted: true } attempt)
             PlanOperations.Require(patch.BeforeSettings is null && attempt.Writes.All(w => state.Rows.Any(r => r.Identity == w.Identity)),
                 "送信済みの発行対象または設定を履歴から変更できません。");
-        var next = document with { State = state, Baseline = PlanOperations.ReplayBaseline(document.Baseline, patch, forward),
+        var next = document with { State = state, Dates = (forward ? patch.AfterDates : patch.BeforeDates) ?? document.Dates, Baseline = PlanOperations.ReplayBaseline(document.Baseline, patch, forward),
             Sync = document.Sync with { Conflicts = (forward ? patch.AfterConflicts : patch.BeforeConflicts) ?? document.Sync.Conflicts,
                 Unavailable = (forward ? patch.AfterUnavailable : patch.BeforeUnavailable) ?? document.Sync.Unavailable } };
         // A never-dispatched record is released on reopen before any user can travel through history.

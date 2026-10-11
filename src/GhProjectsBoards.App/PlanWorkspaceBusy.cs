@@ -48,6 +48,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private IProgress<RemoteProgress> BeginBusy(string kind, string heading, bool resolvingUrl = false)
     {
+        CloseRefreshResult();
         busyReturnFocus = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as Control;
         busyKind = kind; var generation = ++busyGeneration;
         completedBusySteps.Clear(); currentBusyProgress = null; busyStepRows.Clear(); busySteps.Children.Clear();

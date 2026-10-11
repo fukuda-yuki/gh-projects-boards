@@ -6,6 +6,85 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanWorkspaceTests
 {
+    [TestCase(false, false), TestCase(false, true), TestCase(true, false), TestCase(false, true, true)]
+    public async Task RecalculationOriginPersistsUntilSuccessfulRefreshOrPublish(bool refresh, bool noWrites, bool undoBeforePublish = false)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-origin-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            FakePlanEditor.Save(root, new([new(new("I1", "Task", "acme/repo"), "", true)], 2));
+            var day = new DateOnly(2026, 10, 6);
+            var workspace = new PlanWorkspace(new(root), () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var session = workspace.Session!;
+            if (noWrites) await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = day }), day);
+            else await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Edited")]), day);
+            session = (await PlanSession.OpenAsync(new(root), session.Document.Project, day.AddDays(1))).Session!;
+            Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            if (undoBeforePublish) await session.Undo(day);
+            var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
+            var result = await (refresh ? publisher.RefreshAsync(session, day.AddDays(2)) : publisher.PublishAsync(session, day.AddDays(2)));
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            Assert.That(session.Document.Dates.Recalculated, Is.Null);
+            Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(refresh ? day.AddDays(2) : day));
+            if (!undoBeforePublish) await session.Undo(day);
+            await session.Redo(day);
+            Assert.That(session.Document.Dates.Recalculated, Is.Null, "Publication or refresh must also clear stale origin notices in retained history.");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task FirstTakeInKeepsGitHubDatesAndZeroUnpublishedAcrossLaterReopen()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-held-dates-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            var start = new DateOnly(2026, 10, 5);
+            FakePlanEditor.Save(root, new([
+                new(new("I1", "Summary", "acme/repo") { Start = null, End = start }, "", true),
+                new(new("I2", "Task", "acme/repo") { Parent = "I1", Start = start, End = start, Remaining = 16 }, "", true),
+                new(new("I3", "Closed", "acme/repo") { Start = start, End = start, Closed = true, CloseDate = start.AddDays(1), Remaining = 8 }, "", true)
+            ], 4));
+            var store = new PlanStore(root);
+            var day = new DateOnly(2026, 10, 6);
+            var workspace = new PlanWorkspace(store, () => day);
+            await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
+            await workspace.Open(workspace.Available[0]);
+            var session = workspace.Session!;
+            Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
+            void AssertHeld(PlanSession plan, DateOnly today)
+            {
+                Assert.That(plan.Schedule(today).Select(t => (t.Start.Value, t.End.Value)),
+                    Is.EqualTo(plan.Document.Baseline.Rows.Select(r => (r.Start, r.End))));
+                Assert.That(plan.Changes(today).TaskCount, Is.Zero);
+            }
+            AssertHeld(session, day);
+            var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
+            var published = await publisher.PublishAsync(session, day.AddDays(5));
+            Assert.That(published.Succeeded, Is.True, published.Error);
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero, "A held plan with 未発行 0 must not publish the deferred closed Remaining calculation.");
+            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
+            var reopened = (await PlanSession.OpenAsync(store, session.Document.Project, day.AddDays(5))).Session!;
+            AssertHeld(reopened, day.AddDays(5));
+            Assert.That(reopened.Document.State.Settings.StatusDate, Is.EqualTo(day));
+            await reopened.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Title, "Edited")]), day.AddDays(5));
+            Assert.That(reopened.Schedule(day).Single(t => t.Input.Identity == "I3").End.Value, Is.EqualTo(start.AddDays(1)));
+            Assert.That(reopened.Changes(day).TaskCount, Is.GreaterThan(0));
+            Assert.That(reopened.UndoCount, Is.EqualTo(1));
+            await reopened.Undo(day);
+            AssertHeld(reopened, day);
+            await reopened.Redo(day);
+            Assert.That(reopened.Schedule(day).Single(t => t.Input.Identity == "I3").End.Value, Is.EqualTo(start.AddDays(1)));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Test]
     public async Task FreshUnassignedProjectResolvesLatePageAssigneeWithoutCreationPermissionOrEdits()
     {
@@ -15,7 +94,7 @@ internal sealed class PlanWorkspaceTests
         {
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"repository-denied\"}");
             FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
-            var workspace = new PlanWorkspace(new(root));
+            var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             var reports = new List<RemoteProgress>();
             await workspace.Open(workspace.Available[0], progress: new InlineProgress<RemoteProgress>(reports.Add));
@@ -26,7 +105,7 @@ internal sealed class PlanWorkspaceTests
             Assert.That(reports, Does.Contain(new RemoteProgress("プロジェクトの項目を取得", 1, 1)));
             Assert.That(reports.Last().Stage, Is.EqualTo("日程を計算"));
             var session = workspace.Session!;
-            Assert.That(PlanSheetEditing.Parse(session.Document, PlanField.Assignees, "late-user"), Is.EqualTo(new[] { "U101" }));
+            Assert.That(PlanSheetEditing.Parse(session.Document, PlanField.Assignees, "late-user", DateOnly.FromDateTime(DateTime.Today)), Is.EqualTo(new[] { "U101" }));
             Assert.That(workspace.People.Single(p => p.Identity == "U101").Rate, Is.EqualTo(100));
             Assert.That(session.Document.State.Rows.Single().Assignees, Is.Empty);
             Assert.That(session.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount, Is.Zero);
@@ -44,7 +123,7 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true), new(new("I2", "Second", "acme/repo"), "", true)], 3));
             var store = new PlanStore(root);
-            var workspace = new PlanWorkspace(store);
+            var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open(workspace.Available[0]);
             var original = workspace.Session!;
@@ -86,7 +165,7 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true)], 2));
             var store = new PlanStore(root);
-            var workspace = new PlanWorkspace(store);
+            var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             var choice = workspace.Available[0];
             using var cancellation = new CancellationTokenSource();
@@ -113,7 +192,7 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "Original", "acme/repo"), "", true)], 2));
             var store = new PlanStore(root);
-            var workspace = new PlanWorkspace(store);
+            var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open(workspace.Available[1]);
             var original = workspace.Session;
@@ -158,7 +237,7 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
             var store = new PlanStore(root);
-            var workspace = new PlanWorkspace(store);
+            var workspace = new PlanWorkspace(store, () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open(workspace.Available[0]);
             var original = workspace.Session;
@@ -181,7 +260,7 @@ internal sealed class PlanWorkspaceTests
         {
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "Existing", "acme/repo"), "", true)], 2));
-            var workspace = new PlanWorkspace(new(root));
+            var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open(workspace.Available[0]);
             var good = await workspace.PreviewCsv(PlanCsvImportTests.Read("a,A,8,alice;late-user,,,,"));
@@ -208,12 +287,12 @@ internal sealed class PlanWorkspaceTests
             FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo"), "", true)], 2));
             GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
                 new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
-            var first = new PlanWorkspace(new(root));
-            var second = new PlanWorkspace(new(root));
+            var first = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
+            var second = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await first.Connect(Service()); await second.Connect(Service());
             await first.Open(first.Available[0]);
             await second.Open(second.Available[1]);
-            var reopened = new PlanWorkspace(new(root));
+            var reopened = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await reopened.Connect(Service());
             Assert.That(reopened.Registered.Select(p => p.Id.NodeId), Is.EquivalentTo(new[] { "P1", "P2" }));
             Assert.That(reopened.Selected!.Id.NodeId, Is.EqualTo("P2"));
@@ -231,7 +310,7 @@ internal sealed class PlanWorkspaceTests
             FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Remaining = 8, Assignees = ["U1"] }, "", true)], 2) { Drafts = 2, PullRequests = 1 });
             GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
                 new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
-            var workspace = new PlanWorkspace(new(root));
+            var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(Service());
             Assert.That(workspace.Available.Count, Is.EqualTo(2));
             await workspace.Open(workspace.Available[0]);
@@ -244,7 +323,7 @@ internal sealed class PlanWorkspaceTests
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("設計"));
             await workspace.Open(workspace.Available[0]);
             Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
-            var restarted = new PlanWorkspace(new(root));
+            var restarted = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await restarted.Connect(Service());
             Assert.That(restarted.Session!.Document.State.Rows.Single().Title, Is.EqualTo("未発行の設計"));
         }
@@ -272,7 +351,7 @@ internal sealed class PlanWorkspaceTests
         {
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             FakePlanEditor.Save(root, new([new(new("I1", "設計", "acme/repo") { Assignees = ["U1"] }, "", true)], 2));
-            var workspace = new PlanWorkspace(new(root));
+            var workspace = new PlanWorkspace(new(root), () => DateOnly.FromDateTime(DateTime.Today));
             await workspace.Connect(new(GhProcessTests.FakeExecutable, "github.com", new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root })));
             await workspace.Open(workspace.Available[0]);
             var state = FakePlanEditor.Load(root);

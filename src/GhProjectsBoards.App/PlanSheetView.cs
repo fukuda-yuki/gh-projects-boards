@@ -63,8 +63,8 @@ internal sealed partial class PlanSheetView : Grid
     internal double DayWidth { get; private set; } = 8;
     internal DateOnly FirstDay { get; private set; }
     internal int DayCount { get; private set; } = 365;
-    internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
-    internal static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? PlanClock.Today;
+    internal static DateOnly Today => PlanClock.Today;
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
     private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
     private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
@@ -75,6 +75,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
+    private Func<PlanRow, bool>? filterPredicate;
     private long filterGeneration;
     private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
@@ -237,6 +238,7 @@ internal sealed partial class PlanSheetView : Grid
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
             var value = statusDate.Date is { } date ? DateOnly.FromDateTime(date.Date) : (DateOnly?)null;
+            if (value is null) { Refresh(); return; }
             if (changeStatusDate is not null) { await changeStatusDate(value); Refresh(); }
             else await Run(async () => { await CommitPending(); Check(await Session.Execute(new ReplacePlanSettings(Session.Document.State.Settings with { StatusDate = value }), Today)); Refresh(); }, "Status date");
         };
@@ -291,6 +293,28 @@ internal sealed partial class PlanSheetView : Grid
         try { filter.Text = acceptedFilter; }
         finally { rendering = wasRendering; }
     }
+    internal void FilterChangedTasks(IReadOnlySet<string> identities)
+    {
+        CancelPendingFilter();
+        acceptedFilter = "日程変更";
+        filterPredicate = row => identities.Contains(row.Identity) && !SummaryIds.Contains(row.Identity);
+        rendering = true;
+        try { filter.Text = acceptedFilter; }
+        finally { rendering = false; }
+        Refresh();
+    }
+    internal void ClearChangedTasksFilter()
+    {
+        if (filterPredicate is null) return;
+        CancelPendingFilter();
+        acceptedFilter = ""; filterPredicate = null;
+        rendering = true;
+        try { filter.Text = ""; }
+        finally { rendering = false; }
+        Refresh();
+    }
+    private bool MatchesFilter(PlanRow row) => filterPredicate?.Invoke(row)
+        ?? row.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase);
     private Task ApplyFilter()
     {
         filterDelay.Stop();
@@ -307,7 +331,7 @@ internal sealed partial class PlanSheetView : Grid
                 throw;
             }
             if (generation != filterGeneration || filter.Text != proposed || disposed) return;
-            acceptedFilter = proposed; Refresh();
+            acceptedFilter = proposed; filterPredicate = null; Refresh();
         }, "Filter");
     }
     private void RefreshScrolledRows(bool sheet, bool chart)
@@ -434,7 +458,7 @@ internal sealed partial class PlanSheetView : Grid
                 FinishInput();
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
-            var value = PlanSheetEditing.Parse(Session.Document, field, text);
+            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today);
             PlanCommand command;
             if (identity.Length == 0)
             {
@@ -495,9 +519,9 @@ internal sealed partial class PlanSheetView : Grid
         SummaryIds = Rows.Values.Where(r => r.Parent is not null && Rows.ContainsKey(r.Parent)).Select(r => r.Parent!).ToHashSet();
         folded.IntersectWith(SummaryIds);
         var next = document.State.Rows.Where(r => pendingRows.Contains(r.Identity) ||
-            (acceptedFilter.Length > 0 ? r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase) : !HiddenByFold(r)))
+            (acceptedFilter.Length > 0 ? MatchesFilter(r) : !HiddenByFold(r)))
             .Select(r => r.Identity).Append("").ToArray();
-        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{document.State.Rows.Count(r => r.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase)):N0} 件";
+        filterCount.Text = acceptedFilter.Length == 0 ? "" : $"{document.State.Rows.Count(MatchesFilter):N0} 件";
         filterCount.Visibility = acceptedFilter.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (!RowIds.SequenceEqual(next))
         {
