@@ -46,7 +46,7 @@ Write-Host "Data root: $DataRoot"
 Write-Host "Offline fake gh: $fake"
 $summary = Get-Content -LiteralPath (Join-Path $DataRoot 'evaluation.json') -Raw | ConvertFrom-Json
 Write-Host "プロジェクト期間: $($summary.projectStart) – $($summary.projectEnd)（工程は自動割り当て）"
-Write-Host "接続 → $($summary.title)。40要求事項・1,000タスク・20名。初期状態は 未発行 0 タスク。状況日は $($summary.statusDate)。"
+Write-Host "接続 → $($summary.title)。40要求事項・1,000タスク・20名。初期状態は 未発行 0 タスク。基準日は $($summary.statusDate)。"
 Write-Host "Resume: & '$PSCommandPath' -NoBuild -Configuration $Configuration -Resume -DataRoot '$DataRoot'"
 if ($PrepareOnly) { return }
 $start = IsolatedStart $app

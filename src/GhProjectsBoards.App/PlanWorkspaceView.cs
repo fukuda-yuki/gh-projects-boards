@@ -68,6 +68,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private CancellationTokenSource? operationCancellation;
     private CancellationToken OperationToken => operationCancellation?.Token ?? CancellationToken.None;
     private readonly List<Func<Task>> pendingSettings = [];
+    private readonly List<(TextBox Input, Func<Task> Commit, Func<bool> Dirty)> settingsTextInputs = [];
+    private readonly PlanInputProblem settingsInputProblem = new("SettingsInputProblem");
+    private TextBox? invalidSetting;
+    private string? invalidSettingMessage;
+    private bool revealingSetting;
     private int settingsGeneration;
     private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
@@ -199,6 +204,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(() => OpenProject(choice)); } };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(() => OpenProject(choice)); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
+        settingsScroll.ViewChanged += async (_, args) => {
+            if (rendering || args.IsIntermediate || currentPage != "settings") return;
+            if (invalidSetting is not null) { RevealSettingsInput(); return; }
+            var focused = FocusManager.GetFocusedElement(XamlRoot);
+            var pending = settingsTextInputs.FirstOrDefault(p => ReferenceEquals(p.Input, focused) && p.Dirty());
+            if (pending.Input is not null && !SettingIsVisible(pending.Input)) await Run(pending.Commit, commitPending: false);
+        };
         foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, summaryArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
         var cardContent = new Grid();
         cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -235,7 +247,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
-            if (projectFlyout.IsOpen) projectFlyout.Hide(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
+            if (projectFlyout.IsOpen) projectFlyout.Hide(); ClearSettingsInputProblem(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
         };
         Content = root;
         Show("connection");
@@ -466,7 +478,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · プロジェクト {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
     }
-    private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); RefreshLists(); RenderTasks(); Show("tasks"); }
+    private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); RefreshLists(); RenderTasks(); Show("tasks"); }
     private void RefreshLists()
     {
         rendering = true;
@@ -537,7 +549,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         rendering = true;
         try
         {
-            var generation = ++settingsGeneration; pendingSettings.Clear(); settings.Children.Clear();
+            var generation = ++settingsGeneration; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); settings.Children.Clear();
             settings.Children.Add(Button("戻る", "PlanSettingsBack", () => {
                 if (settingsReturnPage == "summary") RenderSummary();
                 if (settingsReturnPage == "publish") RenderReview();
@@ -660,25 +672,72 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var person = s.People.SingleOrDefault(p => p.Identity == fallback.Identity) ?? fallback;
         return s with { People = s.People.Any(p => p.Identity == person.Identity) ? s.People.Select(p => p.Identity == person.Identity ? change(person) : p).ToImmutableArray() : s.People.Add(change(person)) };
     });
+    private bool SettingIsVisible(TextBox input)
+    {
+        if (!input.IsLoaded || currentPage != "settings") return false;
+        var top = input.TransformToVisual(settingsScroll).TransformPoint(new()).Y;
+        return top >= 0 && top + input.ActualHeight <= settingsScroll.ActualHeight;
+    }
+    private void ClearSettingsInputProblem()
+    {
+        settingsInputProblem.Close();
+        if (invalidSetting is not null) AutomationProperties.SetHelpText(invalidSetting, "");
+        invalidSetting = null; invalidSettingMessage = null;
+    }
+    private void RevealSettingsInput()
+    {
+        if (revealingSetting || invalidSetting is not { IsLoaded: true } input || invalidSettingMessage is not { } message) return;
+        revealingSetting = true;
+        if (!SettingIsVisible(input)) input.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = .5 });
+        input.Focus(FocusState.Programmatic);
+        settingsInputProblem.Show(input, message);
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+            revealingSetting = false;
+            if (ReferenceEquals(invalidSetting, input) && input.IsLoaded) {
+                input.Focus(FocusState.Programmatic); settingsInputProblem.Show(input, message);
+            }
+        });
+    }
     private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply)
     {
         var input = Id(new TextBox { Header = label, Text = value, MinWidth = 280 }, id);
         var accepted = value;
         var generation = settingsGeneration;
+        var composing = false; var endedThisTurn = false;
         async Task Commit()
         {
             if (generation != settingsGeneration || input.Text == accepted) return;
+            if (composing) { input.Focus(FocusState.Programmatic); throw new InvalidOperationException("入力中の変換を確定してください。"); }
             var text = input.Text;
-            await apply(text);
-            accepted = text;
+            try { await apply(text); }
+            catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
+                var name = AutomationProperties.GetName(input);
+                var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                invalidSetting = input; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
+                AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
+                throw new InvalidOperationException(invalidSettingMessage, ex);
+            }
+            accepted = text; AutomationProperties.SetHelpText(input, "");
+            if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
+        settingsTextInputs.Add((input, Commit, () => input.Text != accepted && !composing && !endedThisTurn));
+        input.TextCompositionStarted += (_, _) => composing = true;
+        input.TextCompositionEnded += (_, _) => {
+            composing = false; endedThisTurn = true;
+            // IME confirmation can precede the routed Enter/Escape in this dispatcher turn.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => endedThisTurn = false);
+        };
         input.KeyDown += async (_, args) => {
+            if (composing || endedThisTurn) return;
             if (args.Key == Windows.System.VirtualKey.Enter) { args.Handled = true; await Run(Commit, commitPending: false); }
-            else if (args.Key == Windows.System.VirtualKey.Escape) { args.Handled = true; input.Text = accepted; }
+            else if (args.Key == Windows.System.VirtualKey.Escape) {
+                args.Handled = true; input.Text = accepted; AutomationProperties.SetHelpText(input, "");
+                if (ReferenceEquals(invalidSetting, input)) { ClearSettingsInputProblem(); error.Text = ""; }
+            }
         };
         input.LostFocus += async (_, _) => {
-            if (!rendering && generation == settingsGeneration && input.Text != accepted) await Run(Commit, commitPending: false);
+            if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration && input.Text != accepted) await Run(Commit, commitPending: false);
         };
         return input;
     }

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Tests;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using NUnit.Framework;
@@ -47,18 +48,18 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 1;
             Assert.That(AutomationProperties.GetName(Ui.Find<Button>("SummaryCell_U1_0")), Does.Contain("28"));
             Ui.Click("SummaryCell_U1_0");
-            Assert.That(Ui.Find<ListView>("SummaryTasks").Items.Count, Is.EqualTo(2));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
             Ui.Click("SummaryFilter");
         });
         await Ui.Idle();
         await Ui.Run(() => {
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
-            Assert.That(sheet.RowIds, Is.EqualTo(new[] { "I1", "I2" }));
+            Assert.That(sheet.RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1", "I2" }));
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("2 件"));
             Ui.Find<TextBox>("PlanSheetFilter").Text = "";
         });
         await Ui.Idle();
-        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Count, Is.EqualTo(3)));
+        await Ui.Run(() => Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Count(id => id.Length > 0), Is.EqualTo(3)));
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
     }
@@ -71,7 +72,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var cell = Ui.Find<Button>("SummaryMonth_U1_0");
             Assert.That(AutomationProperties.GetName(cell), Does.Contain("日超過"));
             Ui.Click("SummaryMonth_U1_0");
-            Assert.That(Ui.Find<ListView>("SummaryTasks").Items.Count, Is.EqualTo(2));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
     }
     [Test]
@@ -93,7 +94,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("SummaryOverEstimate")); await Ui.Idle();
         await Ui.Run(() => {
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
-            Assert.That(sheet.RowIds, Is.EqualTo(new[] { "I1" }));
+            Assert.That(sheet.RowIds.Where(id => id.Length > 0), Is.EqualTo(new[] { "I1" }));
             Assert.That(sheet.IsSelectedRow("I1"), Is.True);
             Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件"));
         });
@@ -114,7 +115,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<ComboBox>("SummaryMode");
         await Ui.Run(() => {
             Ui.Find<ComboBox>("SummaryMode").SelectedIndex = 1; Ui.Click("SummaryMonth_U1_0");
-            Assert.That(Ui.Find<ListView>("SummaryTasks").Items.Count, Is.EqualTo(2));
+            Assert.That(Ui.Tree(Ui.Find<FrameworkElement>("SummaryTasks")).OfType<TextBlock>().Count(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_")), Is.EqualTo(2));
         });
         await Ui.Ready<TextBlock>("SummaryTask_I2");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("SummaryTask_I2").Text, Does.Contain("未配分: 見込み残存工数が未入力")));
