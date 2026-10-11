@@ -150,8 +150,13 @@ public sealed class PlanScreenPerformanceTests
             Wait(() => Find("PlanCell144_Remaining").IsOffscreen == false);
             Thread.Sleep(500);
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "before-edits.png"));
-            var original = Find("PlanCell144_Remaining").AsTextBox().Text;
-            Assert.That(double.TryParse(original, out var remaining), Is.True, "ID 144 must be an editable version task.");
+            var firstEditor = Find("PlanCell144_Remaining").AsTextBox();
+            firstEditor.Focus();
+            Wait(() => firstEditor.Properties.HasKeyboardFocus.ValueOrDefault);
+            Keyboard.Type(VirtualKeyShort.F2);
+            Wait(() => double.TryParse(firstEditor.Text, out _));
+            var original = firstEditor.Text;
+            Assert.That(double.TryParse(original, out var remaining), Is.True, "ID 144 must expose numeric Remaining in edit mode.");
             for (var index = 0; index < 6; index++)
             {
                 var editor = Find("PlanCell144_Remaining").AsTextBox();
@@ -204,6 +209,7 @@ public sealed class PlanScreenPerformanceTests
                 process.HasExited ? $"The app exited while closing the menu: 0x{process.ExitCode:X8}." : "");
             Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
             Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
+            RecordRefreshMenu();
             RecordFlyout("columns", "PlanSheetColumns", "PlanColumnRemaining", [
                 "PlanColumnId", "PlanColumnIndicator", "PlanColumnTitle", "PlanColumnAssignees", "PlanColumnEstimate",
                 "PlanColumnRemaining", "PlanColumnActual", "PlanColumnStart", "PlanColumnEnd", "PlanColumnPredecessors",
@@ -271,6 +277,32 @@ public sealed class PlanScreenPerformanceTests
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
             Assert.That(process.ExitCode, Is.Zero);
             outcome = "completed";
+
+            void RecordRefreshMenu()
+            {
+                var expand = Find("PlanRefresh").Patterns.ExpandCollapse.Pattern;
+                AutomationElement? ResetItem() => window.FindAllDescendants(c => c.ByAutomationId("PlanReset")).FirstOrDefault(item => !item.IsOffscreen);
+                expand.Expand();
+                Wait(() => ResetItem() is not null);
+                Thread.Sleep(350);
+                var region = Rectangle.Intersect(Rectangle.Inflate(Rectangle.Round(ResetItem()!.BoundingRectangle), 24, 24), Rectangle.Round(window.BoundingRectangle));
+                Keyboard.Type(VirtualKeyShort.ESCAPE);
+                Wait(() => ResetItem() is null);
+                Thread.Sleep(350);
+                Assert.That(SetCursorPos(1850, 1030), Is.True);
+                FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+                var opened = RecordPixels(Path.Combine(root, "refresh-open"), region,
+                    mark => { mark("Refresh UIA Expand"); expand.Expand(); }, TimeSpan.FromSeconds(2));
+                Assert.That(ResetItem(), Is.Not.Null);
+                Assert.That(opened.ScreenChanged && opened.FinalStateStable, Is.True);
+                var closed = RecordPixels(Path.Combine(root, "refresh-close"), region,
+                    mark => { mark("Escape"); Keyboard.Type(VirtualKeyShort.ESCAPE); }, TimeSpan.FromSeconds(2));
+                Assert.That(ResetItem(), Is.Null);
+                Assert.That(closed.ScreenChanged && closed.FinalStateStable, Is.True);
+                flyoutRecordings.Add(new { name = "refresh", region, opened, closed,
+                    boundary = "Pre-resolved UIA Expand/native Escape and desktop pixels with Windows animations enabled. The reset command is never invoked; this records popup motion, not pointer activation." });
+                WriteSummary();
+            }
 
             void RecordFlyout(string name, string commandId, string markerId, string[] contentIds)
             {
