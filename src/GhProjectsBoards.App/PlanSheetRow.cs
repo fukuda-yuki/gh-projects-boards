@@ -270,13 +270,16 @@ public sealed class PlanSheetRow : Grid
             var center = (edge.To - rowIndex) * owner.RowHeight + owner.RowHeight / 2;
             var top = center - (successor.IsSummary ? 3 : successorMilestone ? 5 : 7);
             var tip = down ? top : top + (successor.IsSummary || successorMilestone ? 10 : 14);
-            var arrow = new Polyline { Stroke = PlanSheetView.Brush("GanttArrowBrush"), StrokeThickness = 1,
-                Points = [new(x1, y1), new(entry, y1), new(entry, tip + (down ? -6 : 6))] };
+            Point[] points = [new(x1, y1), new(entry, y1), new(entry, tip + (down ? -6 : 6))];
             if (entry < x1 + 5) {
                 // Fixed/overlapping dates still leave the predecessor to the right, then return in the row gap.
                 var gap = y1 + (down ? owner.RowHeight / 2 - 3 : -owner.RowHeight / 2 + 3);
-                arrow.Points = [new(x1, y1), new(x1 + 5, y1), new(x1 + 5, gap), new(entry, gap), new(entry, tip + (down ? -6 : 6))];
+                points = [new(x1, y1), new(x1 + 5, y1), new(x1 + 5, gap), new(entry, gap), new(entry, tip + (down ? -6 : 6))];
             }
+            // Parent clipping does not bound the native shape's rasterization surface.
+            // These orthogonal segments need only the row slice, with a guard for the stroke.
+            for (var i = 0; i < points.Length; i++) points[i] = new(points[i].X, Math.Clamp(points[i].Y, -2, owner.RowHeight + 2));
+            var arrow = new Polyline { Stroke = PlanSheetView.Brush("GanttArrowBrush"), StrokeThickness = 1, Points = [.. points] };
             AutomationProperties.SetAutomationId(arrow, $"PlanArrow{edge.From + 1}_{edge.To + 1}_{number}"); chart.Children.Add(arrow);
             if (rowIndex == edge.To) {
                 var head = PlanSheetView.Id(new Polygon { Width = 6, Height = 6,

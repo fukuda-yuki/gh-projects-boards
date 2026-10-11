@@ -45,7 +45,7 @@ $env:GHPB_PLAN_EVIDENCE = Join-Path (Get-Location) 'TestResults/plan-performance
 Remove-Item Env:\GHPB_PLAN_EVIDENCE
 ~~~
 
-`plan-scroll.json` is written beside `plan-measurement.json` when the full category runs. The case scrolls vertically top → bottom → top in 560-effective-pixel steps (20 rows), then across the Gantt and back in 240-effective-pixel steps, including each exact endpoint. Each request waits for a rendered frame and its requested offset, without waiting for row population to catch up. Rendering work, row-population inspection and dispatcher overhead are included equally on both builds. There is no agreed scroll threshold, so the case reports timing without asserting a performance target. Timeouts fail the case and retain partial samples and the exception.
+`plan-scroll.json` is written beside `plan-measurement.json` when the full category runs. The case scrolls vertically top → bottom → top in 560-effective-pixel steps (20 rows), then across the Gantt and back in 240-effective-pixel steps, including each exact endpoint. Each request waits for a rendered frame and its requested offset, clamped to the current native scrollable extent, without waiting for row population to catch up. Virtualization can correct its estimated extent at the last row; initial, per-frame and final extents remain in the evidence. Rendering work, row-population inspection and dispatcher overhead are included equally on both builds. There is no agreed scroll threshold, so the case reports timing without asserting a performance target. Timeouts fail the case and retain partial samples and the exception.
 
 | Field | Meaning |
 | --- | --- |
@@ -56,6 +56,7 @@ Remove-Item Env:\GHPB_PLAN_EVIDENCE
 | `frameCount`, `longFrameThresholdMs`, `longFrames`, `unpopulatedFrames`, `maxFrameMs` | Total sampled frames, strict >50 ms interval count, frames with missing/stale viewport rows, and maximum interval |
 | `frames[].ElapsedMs`, `IntervalMs` | Stopwatch time since sampling started and interval between `CompositionTarget.Rendered` callbacks (first interval starts at sampling start) |
 | `frames[].Phase`, `RequestedOffset`, `VerticalOffset`, `HorizontalOffset` | Round-trip phase and requested/observed scroll positions |
+| `frames[].VerticalExtent`, `HorizontalExtent`, `finalPosition` | Native extent corrections and the final observed position (schema version 3) |
 | `frames[].UnpopulatedRows` | One-based visible slots lacking a loaded row with the expected identity/title and viewport position (2 effective-pixel rounding tolerance); includes the append slot when visible |
 | `maxRealizedRows`, `frames[].RealizedRows` | Loaded row population, to distinguish bounded viewport caching from accumulation as the scroll moves deeper (schema version 2) |
 

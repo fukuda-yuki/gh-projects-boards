@@ -16,7 +16,8 @@ internal sealed partial class PlanSheetHostedTests
         .Single(scroll => scroll.Content is ItemsPresenter);
 
     private sealed record ScrollFrame(double ElapsedMs, double IntervalMs, string Phase, double RequestedOffset,
-        double VerticalOffset, double HorizontalOffset, int RealizedRows, int[] UnpopulatedRows);
+        double VerticalOffset, double HorizontalOffset, double VerticalExtent, double HorizontalExtent,
+        int RealizedRows, int[] UnpopulatedRows);
 
     [Test, Category("PlanSheetPerformance")]
     public async Task VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation()
@@ -58,7 +59,8 @@ internal sealed partial class PlanSheetHostedTests
                     missing.Add(index + 1);
             }
             lock (frames) frames.Add(new(elapsed, elapsed - previous, phase, requestedOffset,
-                vertical.VerticalOffset, horizontal.HorizontalOffset, sheet.Realized.Count, missing.ToArray()));
+                vertical.VerticalOffset, horizontal.HorizontalOffset, vertical.ScrollableHeight, horizontal.ScrollableWidth,
+                sheet.Realized.Count, missing.ToArray()));
             previous = elapsed;
             nextFrame?.TrySetResult();
         }
@@ -68,6 +70,7 @@ internal sealed partial class PlanSheetHostedTests
             var deadline = Stopwatch.StartNew();
             var moving = false;
             await Ui.Run(() => {
+                target = Math.Min(target, chart ? scroll.ScrollableWidth : scroll.ScrollableHeight);
                 moving = Math.Abs((chart ? scroll.HorizontalOffset : scroll.VerticalOffset) - target) >= 1;
                 if (!moving) return;
                 requestedOffset = target;
@@ -80,7 +83,8 @@ internal sealed partial class PlanSheetHostedTests
                 await nextFrame!.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 var reached = false;
                 await Ui.Run(() => {
-                    reached = Math.Abs((chart ? scroll.HorizontalOffset : scroll.VerticalOffset) - target) < 1;
+                    var endpoint = Math.Min(target, chart ? scroll.ScrollableWidth : scroll.ScrollableHeight);
+                    reached = Math.Abs((chart ? scroll.HorizontalOffset : scroll.VerticalOffset) - endpoint) < 1;
                     if (!reached) nextFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 });
                 if (reached) return;
@@ -142,7 +146,7 @@ internal sealed partial class PlanSheetHostedTests
                 ScrollFrame[] samples;
                 lock (frames) samples = frames.ToArray();
                 var result = new {
-                    schemaVersion = 2, outcome, failure, version = EvaluationFixture.DefaultVersion,
+                    schemaVersion = 3, outcome, failure, version = EvaluationFixture.DefaultVersion,
                     rows = session.Document.State.Rows.Length, statusDate = session.Document.State.Settings.StatusDate,
                     windowPixels = new { width = 1920, height = 1080 }, clientWidth, clientHeight, scale,
                     verticalStep, horizontalStep, verticalExtent, horizontalExtent, finalPosition,
