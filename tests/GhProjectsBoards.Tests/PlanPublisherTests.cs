@@ -7,6 +7,8 @@ using NUnit.Framework;
 
 namespace GhProjectsBoards.Tests;
 [TestFixture, Category("Integration")]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+[Parallelizable(ParallelScope.All)]
 internal sealed class PlanPublisherTests
 {
     [Test]
