@@ -163,6 +163,24 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanReadDate")]
+    public async Task RefreshResultSaysMovedBackWhenPmoSelectedALaterStatusDate()
+    {
+        readDay = new(2026, 10, 6);
+        await Open();
+        await Ui.Run(() => Ui.Find<CalendarDatePicker>("PlanStatusDate").Date = new DateTimeOffset(new DateTime(2026, 10, 7)));
+        await Ui.Until(() => workspace.Session!.Document.State.Settings.StatusDate == new DateOnly(2026, 10, 7));
+        await Ui.Idle();
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        await Ui.Run(() => {
+            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
+            Assert.That(bar.Message, Does.StartWith("基準日を 10/7 (水) から 10/6 (火) に戻して日程を再計算しました。").And.Not.Contain("進めて"));
+            Assert.That(Ui.Find<CalendarDatePicker>("PlanStatusDate").Date!.Value.Date, Is.EqualTo(new DateTime(2026, 10, 6)));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReadDate")]
     public async Task ClearingStatusDateRestoresAcceptedValueWithoutOperation()
     {
         readDay = new(2026, 10, 6);
@@ -2098,7 +2116,7 @@ internal sealed class PlanWorkspaceHostedTests
     public async Task SettingsCountsDraftsAndPullRequestsWhileThePlanOnlyShowsIssues()
     {
         await Open(); await Settings();
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外  Draft 2 / Pull request 1 / 参照できない項目 2")));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanExcludedCounts").Text, Is.EqualTo("計画対象外: ドラフト 2 件・プルリクエスト 1 件・参照できない項目 2 件")));
         Assert.That(workspace.Session!.Document.State.Rows.Length, Is.EqualTo(1));
     }
 

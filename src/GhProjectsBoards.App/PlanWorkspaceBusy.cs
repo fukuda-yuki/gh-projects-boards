@@ -55,7 +55,7 @@ internal sealed partial class PlanWorkspaceView
         busyHeading.Text = heading;
         busyExplanation.Text = kind == "publish"
             ? "GitHub に書き込んでいます。終わるまで計画は操作できません。"
-            : "GitHub から プロジェクトの内容を読み込んでいます。終わるまで計画は操作できません。";
+            : "GitHub からプロジェクトの内容を読み込んでいます。終わるまで計画は操作できません。";
         busyCancel.IsEnabled = true;
         busyCancel.Visibility = kind == "publish" ? Visibility.Collapsed : Visibility.Visible;
         busyNote.Text = kind == "publish"

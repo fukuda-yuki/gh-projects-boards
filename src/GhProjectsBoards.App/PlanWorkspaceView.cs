@@ -397,9 +397,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         string Date(DateOnly date) => date.ToString("M/d (ddd)", culture);
         var moved = result.PreviousStatusDate != result.StatusDate;
+        var direction = result.StatusDate > result.PreviousStatusDate ? "進めて" : "戻して";
         refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
         refreshResult.Message = moved
-            ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に進めて日程を再計算しました。"
+            ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に{direction}日程を再計算しました。"
             : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
         refreshResult.ActionButton = null;
         if (result.ChangedTasks.Count > 0)
