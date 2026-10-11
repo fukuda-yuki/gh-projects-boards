@@ -54,6 +54,42 @@
                     <SolidColorBrush x:Key="IndicatorTypedBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <Style TargetType="ListView">
+                <Setter Property="ItemContainerTransitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+                <Setter Property="ShowsScrollingPlaceholders" Value="False"/>
+            </Style>
+            <Style x:Key="PlanListViewItemStyle" TargetType="ListViewItem">
+                <Setter Property="ContentTransitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+            </Style>
+            <Style TargetType="ListViewItem" BasedOn="{StaticResource PlanListViewItemStyle}" />
+            <Style TargetType="ContentControl">
+                <Setter Property="ContentTransitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+            </Style>
+            <Style TargetType="Page">
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+            </Style>
+            <Style x:Key="PlanFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+                <Setter Property="ContentTransitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+            </Style>
+            <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource PlanFlyoutPresenterStyle}" />
+            <Style TargetType="MenuFlyoutPresenter">
+                <Setter Property="Transitions"><Setter.Value><TransitionCollection /></Setter.Value></Setter>
+            </Style>
+            <x:String x:Key="ControlNormalAnimationDuration">0</x:String>
+            <x:String x:Key="ControlFastAnimationDuration">0</x:String>
+            <x:String x:Key="ControlFastAnimationAfterDuration">0</x:String>
+            <x:String x:Key="ControlFasterAnimationDuration">0</x:String>
+            <x:String x:Key="ScrollBarExpandDuration">0</x:String>
+            <x:String x:Key="ScrollBarContractDuration">0</x:String>
+            <x:String x:Key="ScrollBarColorChangeDuration">0</x:String>
+            <x:String x:Key="ScrollBarOpacityChangeDuration">0</x:String>
+            <x:String x:Key="ScrollViewerSeparatorExpandDuration">0</x:String>
+            <x:String x:Key="ScrollViewerSeparatorContractDuration">0</x:String>
+            <x:String x:Key="ComboBoxItemScaleAnimationDuration">0</x:String>
             <ItemsPanelTemplate x:Key="PlanSheetRowsPanel"><ItemsStackPanel CacheLength="0"/></ItemsPanelTemplate>
             <DataTemplate x:Key="PlanSheetRowTemplate"><local:PlanSheetRow /></DataTemplate>
             <DataTemplate x:Key="PlanPublishGroupTemplate"><local:PlanPublishGroupView /></DataTemplate>

@@ -18,6 +18,101 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed class PlanWorkspaceHostedTests
 {
+    [Test]
+    public async Task RemoteRefreshCancelsUnacceptedFilterAndKeepsTextRowsAndCountTogether()
+    {
+        await OpenWithAcceptedFilter();
+        var before = workspace.Session!.Document.State;
+        var undo = workspace.Session.UndoCount;
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new {
+            planEditor = true, workspace = true, holdQuery = "ProjectFields"
+        }));
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "実装";
+            Ui.Click("PlanRefresh");
+        });
+        try {
+            await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+            await Task.Delay(350);
+            await Ui.Run(AssertAcceptedFilter);
+        } finally { File.WriteAllText(Path.Combine(root, "release-gh"), "release"); }
+        await Ui.Idle();
+        await Ui.Run(AssertAcceptedFilter);
+        Assert.That(workspace.Session.Document.State.Rows.Select(row => (row.Identity, row.Title)),
+            Is.EqualTo(before.Rows.Select(row => (row.Identity, row.Title))));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase("PlanShowPeople"), TestCase("PlanShowSettings")]
+    public async Task LeavingPlanCancelsUnacceptedFilterWithoutUnloadingTheSheet(string command)
+    {
+        await OpenWithAcceptedFilter();
+        var before = workspace.Session!.Document.State;
+        var undo = workspace.Session.UndoCount;
+        PlanSheetView localSheet = null!;
+        await Ui.Run(() => {
+            localSheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
+            Ui.Find<TextBox>("PlanSheetFilter").Text = "実装";
+            Ui.Click(command);
+        });
+        await Ui.Idle();
+        await Task.Delay(350);
+        await Ui.Run(() => {
+            Assert.That(localSheet.IsLoaded, Is.True, "Changing the visible surface keeps the sheet loaded.");
+            Assert.That(((FrameworkElement)localSheet.Parent).Visibility, Is.EqualTo(Visibility.Collapsed));
+            AssertAcceptedFilter();
+            Ui.Click("PlanShowTasks");
+        });
+        await Ui.Idle();
+        await Ui.Run(AssertAcceptedFilter);
+        Assert.That(workspace.Session.Document.State, Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    private async Task OpenWithAcceptedFilter()
+    {
+        var state = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, state with { NextId = 4, Issues = [state.Issues[0],
+            new(new("I2", "設計レビュー", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true),
+            new(new("I3", "実装", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true)] });
+        await Open();
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "設計");
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 3);
+        await Ui.Run(AssertAcceptedFilter);
+    }
+
+    private static void AssertAcceptedFilter()
+    {
+        Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.EqualTo("設計"));
+        Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("2 件"));
+        Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I1", "I2", "" }));
+    }
+
+    [Test]
+    public async Task ProjectAndReviewListsHaveNoTransitionsOrScrollingPlaceholders()
+    {
+        await Open();
+        await PickerCommand("PlanChooseProject");
+        await Ui.Ready<ListView>("AvailableProjects");
+        await Ui.Run(() => {
+            PlanSheetHostedTests.AssertQuietList(Ui.Find<ListView>("AvailableProjects"));
+            Assert.That(Ui.Find<Button>("PlanProjectPicker").Flyout.AreOpenCloseAnimationsEnabled, Is.False);
+        });
+        await OpenProjectPicker();
+        await Ui.Run(() => {
+            PlanSheetHostedTests.AssertQuietList(Ui.Popup<ListView>("RegisteredProjects")!);
+            Ui.Find<Button>("PlanProjectPicker").Flyout.Hide();
+        });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => PlanSheetHostedTests.AssertQuietList(Ui.Find<ListView>("PlanPublishLines")));
+    }
+
     [TestCase(1280, 800), TestCase(1920, 1032), TestCase(1000, 720), TestCase(900, 720)]
     [Category("PlanSheetReview")]
     public async Task DefaultDividerFitsColumnsOrKeepsMinimumGanttAtWorkspaceClientSize(int width, int height)

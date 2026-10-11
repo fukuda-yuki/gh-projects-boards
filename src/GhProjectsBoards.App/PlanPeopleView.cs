@@ -67,7 +67,7 @@ internal sealed class PlanPeopleView : UserControl
         table.RowDefinitions.Add(new() { Height = new(28) });
         table.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         table.Children.Add(header); table.Children.Add(rows); Grid.SetRow(rows, 1);
-        rows.ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
+        rows.ItemContainerStyle = new Style(typeof(ListViewItem)) { BasedOn = (Style)Application.Current.Resources["PlanListViewItemStyle"], Setters = {
             new Setter(Control.PaddingProperty, new Thickness(0)), new Setter(FrameworkElement.MinHeightProperty, 24d),
             new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } };
         ScrollViewer.SetHorizontalScrollMode(rows, ScrollMode.Disabled);

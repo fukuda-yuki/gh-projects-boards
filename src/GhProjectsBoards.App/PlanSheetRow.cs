@@ -20,6 +20,7 @@ public sealed class PlanSheetRow : Grid
     internal PlanSheetCell[] Cells { get; }
     private readonly Grid sheetClip = new(), chartClip = new();
     private readonly StackPanel line = new() { Orientation = Orientation.Horizontal };
+    private readonly TranslateTransform lineTranslation = new();
     private readonly Border chartSeparator = new() { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false };
     private readonly Canvas chart = new() { Height = 28 };
     private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(4, 3, 8, 0) };
@@ -37,9 +38,11 @@ public sealed class PlanSheetRow : Grid
     internal Control? SelectionTarget(PlanField field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
         ? display : Cells.FirstOrDefault(c => c.Field == field);
     private string boundIdentity = "";
+    private double chartOffset = double.NaN;
     public PlanSheetRow()
     {
         Height = 28; HorizontalAlignment = HorizontalAlignment.Left; ColumnDefinitions.Add(new()); ColumnDefinitions.Add(new());
+        line.RenderTransform = lineTranslation;
         sheetClip.Children.Add(line);
         sheetClip.Children.Add(new Border { BorderThickness = new(0, 0, 0, 1), BorderBrush = PlanSheetView.Brush("SheetSeparatorBrush"), IsHitTestVisible = false });
         chartClip.Children.Add(chartSeparator);
@@ -101,7 +104,7 @@ public sealed class PlanSheetRow : Grid
         Width = owner.SheetViewport + owner.ChartViewport;
         sheetClip.Clip = new RectangleGeometry { Rect = new(0, 0, owner.SheetViewport, owner.RowHeight) };
         chartClip.Clip = new RectangleGeometry { Rect = new(0, 0, owner.ChartViewport, owner.RowHeight) };
-        line.RenderTransform = new TranslateTransform { X = -owner.SheetOffset };
+        lineTranslation.X = -owner.SheetOffset;
         idCell.Width = PlanSheetView.Columns[0].Width; idCell.Visibility = owner.Hidden.Contains(null) ? Visibility.Collapsed : Visibility.Visible;
         selectionAccent.Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
         selectionAccent.Visibility = owner.IsSelectedRow(Identity) ? Visibility.Visible : Visibility.Collapsed;
@@ -229,8 +232,15 @@ public sealed class PlanSheetRow : Grid
         id.FontWeight = summary ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
         DrawChart();
     }
+    internal void RefreshHorizontal(bool sheet, bool gantt)
+    {
+        if (Owner is not { } owner) return;
+        if (sheet && lineTranslation.X != -owner.SheetOffset) lineTranslation.X = -owner.SheetOffset;
+        if (gantt && chartOffset != owner.ChartOffset) DrawChart();
+    }
     private void DrawChart()
     {
+        chartOffset = Owner?.ChartOffset ?? double.NaN;
         chart.Children.Clear();
         AutomationProperties.SetAutomationId(chartSeparator, Owner is { } view ? "PlanChartSeparator" + view.PlanIds.GetValueOrDefault(Identity) : "");
         if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) return;
