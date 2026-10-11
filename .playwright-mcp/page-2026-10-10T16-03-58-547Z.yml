@@ -1,0 +1,840 @@
+- generic [ref=f2e3]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e9]: 計画エディタ
+    - button "プロジェクトを切り替え" [ref=f2e10] [cursor=pointer]:
+      - text: 第2027.04版
+      - generic [ref=f2e11]: fukuda-yuki · Project 3
+    - button "設定" [ref=f2e14]
+    - button "最小化" [ref=f2e18]
+    - button "最大化" [ref=f2e20]
+    - button "閉じる" [ref=f2e23]
+  - generic [ref=f2e26]:
+    - tablist "ビュー" [ref=f2e27]:
+      - tab "計画" [ref=f2e28] [cursor=pointer]
+      - tab "サマリー" [selected] [ref=f2e29] [cursor=pointer]
+    - generic [ref=f2e31]:
+      - generic [ref=f2e32]: 基準日
+      - button "基準日" [ref=f2e33] [cursor=pointer]: 2027/01/15 (金)
+      - button "元に戻す" [ref=f2e38] [cursor=pointer]
+      - button "やり直し" [ref=f2e42] [cursor=pointer]
+      - generic [ref=f2e47]: 未発行 0 タスク
+      - generic [ref=f2e48]:
+        - button "最新の情報に更新" [ref=f2e49] [cursor=pointer]
+        - button "その他の GitHub 操作" [ref=f2e53] [cursor=pointer]
+      - button "発行…" [ref=f2e56] [cursor=pointer]
+  - generic [ref=f2e59]:
+    - generic [ref=f2e60]:
+      - generic [ref=f2e61]:
+        - generic [ref=f2e62]: 基準日 2027/01/15 (金) 時点の状況
+        - generic [ref=f2e63]: プロジェクト期間 2026/10/13 (火) – 2027/04/30 (金)
+        - generic [ref=f2e64]: GitHub から取得 1/15 9:42
+      - generic [ref=f2e65]:
+        - generic [ref=f2e66]:
+          - generic [ref=f2e67]: 残り稼働日
+          - generic [ref=f2e68]: 72 日
+          - generic [ref=f2e69]: 全 133 稼働日のうち 61 日が経過
+          - generic [ref=f2e70]: 基準日から終了日 4/30 (金) まで
+        - generic [ref=f2e71]:
+          - generic [ref=f2e72]: 完了見込
+          - generic [ref=f2e73]: 5/21 (金)
+          - generic [ref=f2e74]: 終了日より 12 稼働日遅れ
+          - generic [ref=f2e75]: 先行関係と残工数から計算（担当者の負荷は含まない）
+        - generic [ref=f2e76]:
+          - generic [ref=f2e77]: 終了日までに必要な稼働
+          - generic [ref=f2e78]: 116%
+          - generic [ref=f2e79]: 残 12,714h ÷ 稼働可能 10,944h
+          - generic [ref=f2e80]: 20 人の稼働率 × 残り 72 日。100% を超えると間に合わない
+        - generic [ref=f2e81]:
+          - generic [ref=f2e82]: 進捗
+          - generic [ref=f2e83]: 38%
+          - generic [ref=f2e84]: 実績 7,842h ÷ 見込 20,556h · 完了 396 / 1,000 タスク
+          - generic [ref=f2e85]: 見込 = 実績 + 残。見積 20,136h より +420h
+        - generic [ref=f2e86]:
+          - generic [ref=f2e87]: 要注意（選ぶと計画で絞り込み）
+          - button "期限超過 25 タスク" [ref=f2e88] [cursor=pointer]
+          - button "見積超過 5 タスク" [ref=f2e92] [cursor=pointer]
+          - button "残 0・未完了 3 タスク" [ref=f2e97] [cursor=pointer]
+          - button "担当者なし 残 960h" [ref=f2e102] [cursor=pointer]
+    - generic [ref=f2e107]:
+      - generic [ref=f2e108]:
+        - generic [ref=f2e109]:
+          - generic [ref=f2e110]: 工程別
+          - generic [ref=f2e111]: 工程は GitHub の単一選択フィールド「工程」。目標日は工程のマイルストーンの期日
+        - generic [ref=f2e112]:
+          - generic [ref=f2e113]: 工程
+          - generic [ref=f2e114]: 完了 / タスク
+          - generic [ref=f2e115]: 見積 h
+          - generic [ref=f2e116]: 実績 h
+          - generic [ref=f2e117]: 残 h
+          - generic "見込（実績 + 残）− 見積" [ref=f2e118]: 差異 h
+          - generic "実績 ÷ 見込" [ref=f2e119]: 進捗
+          - generic "工程のマイルストーンの期日" [ref=f2e120]: 目標日
+          - generic [ref=f2e121]: 完了見込
+          - generic [ref=f2e122]: 差
+          - generic [ref=f2e123]: 期限超過
+          - generic [ref=f2e124]: 見積超過
+        - generic [ref=f2e125]:
+          - generic [ref=f2e126]:
+            - generic [ref=f2e127]: SA
+            - generic [ref=f2e128]: 要件定義
+          - generic [ref=f2e129]: 120 / 120
+          - generic [ref=f2e130]: 1,896
+          - generic [ref=f2e131]: 1,952
+          - generic [ref=f2e132]: "0"
+          - generic [ref=f2e133]: "+56"
+          - generic [ref=f2e134]: 100%
+          - generic [ref=f2e138]: 11/13 (金)
+          - generic [ref=f2e139]: 11/12 (木)
+          - generic [ref=f2e140]: 完了
+          - generic [ref=f2e142]: –
+          - generic [ref=f2e144]: –
+        - generic [ref=f2e146]:
+          - generic [ref=f2e147]:
+            - generic [ref=f2e148]: UI
+            - generic [ref=f2e149]: 外部設計
+          - generic [ref=f2e150]: 120 / 120
+          - generic [ref=f2e151]: 2,240
+          - generic [ref=f2e152]: 2,334
+          - generic [ref=f2e153]: "0"
+          - generic [ref=f2e154]: "+94"
+          - generic [ref=f2e155]: 100%
+          - generic [ref=f2e159]: 12/4 (金)
+          - generic [ref=f2e160]: 12/10 (木)
+          - generic [ref=f2e161]: 完了
+          - generic [ref=f2e163]: –
+          - generic [ref=f2e165]: –
+        - generic [ref=f2e167]:
+          - generic [ref=f2e168]:
+            - generic [ref=f2e169]: SS
+            - generic [ref=f2e170]: 基本設計
+          - generic [ref=f2e171]: 104 / 120
+          - generic [ref=f2e172]: 2,240
+          - generic [ref=f2e173]: 2,136
+          - generic [ref=f2e174]: "254"
+          - generic [ref=f2e175]: "+150"
+          - generic [ref=f2e176]: 89%
+          - generic [ref=f2e180]: 12/11 (金)
+          - generic [ref=f2e181]: 1/22 (金)
+          - generic [ref=f2e183]: +25日
+          - generic [ref=f2e186]:
+            - img "期限超過" [ref=f2e187]
+            - text: "9"
+          - generic [ref=f2e190]:
+            - img "見積超過" [ref=f2e191]
+            - text: "3"
+        - generic [ref=f2e194]:
+          - generic [ref=f2e195]:
+            - generic [ref=f2e196]: PS
+            - generic [ref=f2e197]: 詳細設計
+          - generic [ref=f2e198]: 46 / 120
+          - generic [ref=f2e199]: 2,560
+          - generic [ref=f2e200]: 1,260
+          - generic [ref=f2e201]: 1,400
+          - generic [ref=f2e202]: "+100"
+          - generic [ref=f2e203]: 47%
+          - generic [ref=f2e207]: 1/15 (金)
+          - generic [ref=f2e208]: 2/12 (金)
+          - generic [ref=f2e210]: +19日
+          - generic [ref=f2e213]:
+            - img "期限超過" [ref=f2e214]
+            - text: "14"
+          - generic [ref=f2e217]:
+            - img "見積超過" [ref=f2e218]
+            - text: "2"
+        - generic [ref=f2e221]:
+          - generic [ref=f2e222]:
+            - generic [ref=f2e223]: PG
+            - generic [ref=f2e224]: 製造
+          - generic [ref=f2e225]: 6 / 160
+          - generic [ref=f2e226]: 4,160
+          - generic [ref=f2e227]: "160"
+          - generic [ref=f2e228]: 4,020
+          - generic [ref=f2e229]: "+20"
+          - generic [ref=f2e230]: 4%
+          - generic [ref=f2e234]: 2/19 (金)
+          - generic [ref=f2e235]: 3/19 (金)
+          - generic [ref=f2e237]: +19日
+          - generic [ref=f2e240]:
+            - img "期限超過" [ref=f2e241]
+            - text: "2"
+          - generic [ref=f2e243]: –
+        - generic [ref=f2e245]:
+          - generic [ref=f2e246]:
+            - generic [ref=f2e247]: PT
+            - generic [ref=f2e248]: 単体テスト
+          - generic [ref=f2e249]: 0 / 120
+          - generic [ref=f2e250]: 2,560
+          - generic [ref=f2e251]: "0"
+          - generic [ref=f2e252]: 2,560
+          - generic [ref=f2e253]: –
+          - generic [ref=f2e255]: 0%
+          - generic [ref=f2e258]: 2/26 (金)
+          - generic [ref=f2e259]: 3/26 (金)
+          - generic [ref=f2e261]: +19日
+          - generic [ref=f2e263]: –
+          - generic [ref=f2e265]: –
+        - generic [ref=f2e267]:
+          - generic [ref=f2e268]:
+            - generic [ref=f2e269]: IT
+            - generic [ref=f2e270]: 結合テスト
+          - generic [ref=f2e271]: 0 / 120
+          - generic [ref=f2e272]: 2,560
+          - generic [ref=f2e273]: "0"
+          - generic [ref=f2e274]: 2,560
+          - generic [ref=f2e275]: –
+          - generic [ref=f2e277]: 0%
+          - generic [ref=f2e280]: 3/19 (金)
+          - generic [ref=f2e281]: 4/16 (金)
+          - generic [ref=f2e283]: +19日
+          - generic [ref=f2e285]: –
+          - generic [ref=f2e287]: –
+        - generic [ref=f2e289]:
+          - generic [ref=f2e290]:
+            - generic [ref=f2e291]: ST
+            - generic [ref=f2e292]: 総合テスト
+          - generic [ref=f2e293]: 0 / 80
+          - generic [ref=f2e294]: 1,280
+          - generic [ref=f2e295]: "0"
+          - generic [ref=f2e296]: 1,280
+          - generic [ref=f2e297]: –
+          - generic [ref=f2e299]: 0%
+          - generic [ref=f2e302]: 4/9 (金)
+          - generic [ref=f2e303]: 5/7 (金)
+          - generic [ref=f2e305]: +16日
+          - generic [ref=f2e307]: –
+          - generic [ref=f2e309]: –
+        - generic [ref=f2e311]:
+          - generic [ref=f2e312]:
+            - generic [ref=f2e313]: OT
+            - generic [ref=f2e314]: 運用テスト
+          - generic [ref=f2e315]: 0 / 40
+          - generic [ref=f2e316]: "640"
+          - generic [ref=f2e317]: "0"
+          - generic [ref=f2e318]: "640"
+          - generic [ref=f2e319]: –
+          - generic [ref=f2e321]: 0%
+          - generic [ref=f2e324]: 4/30 (金)
+          - generic [ref=f2e325]: 5/21 (金)
+          - generic [ref=f2e327]: +12日
+          - generic [ref=f2e329]: –
+          - generic [ref=f2e331]: –
+        - generic [ref=f2e333]:
+          - generic [ref=f2e334]: 全体
+          - generic [ref=f2e335]: 396 / 1,000
+          - generic [ref=f2e336]: 20,136
+          - generic [ref=f2e337]: 7,842
+          - generic [ref=f2e338]: 12,714
+          - generic [ref=f2e339]: "+420"
+          - generic [ref=f2e340]: 38%
+          - generic [ref=f2e344]: 4/30 (金)
+          - generic [ref=f2e345]: 5/21 (金)
+          - generic [ref=f2e346]: +12日
+          - generic [ref=f2e348]:
+            - img "期限超過" [ref=f2e349]
+            - text: "25"
+          - generic [ref=f2e352]:
+            - img "見積超過" [ref=f2e353]
+            - text: "5"
+        - generic [ref=f2e356]:
+          - generic [ref=f2e357]: 工程の日程
+          - generic [ref=f2e358]: プロジェクト開始から終了日まで。◆ マイルストーンの目標日、破線は目標日より後ろの部分
+        - generic [ref=f2e359]:
+          - generic [ref=f2e360]:
+            - generic [ref=f2e361]:
+              - generic [ref=f2e362]: SA
+              - generic [ref=f2e363]: 要件定義
+            - generic [ref=f2e364]:
+              - generic [ref=f2e365]: UI
+              - generic [ref=f2e366]: 外部設計
+            - generic [ref=f2e367]:
+              - generic [ref=f2e368]: SS
+              - generic [ref=f2e369]: 基本設計
+            - generic [ref=f2e370]:
+              - generic [ref=f2e371]: PS
+              - generic [ref=f2e372]: 詳細設計
+            - generic [ref=f2e373]:
+              - generic [ref=f2e374]: PG
+              - generic [ref=f2e375]: 製造
+            - generic [ref=f2e376]:
+              - generic [ref=f2e377]: PT
+              - generic [ref=f2e378]: 単体テスト
+            - generic [ref=f2e379]:
+              - generic [ref=f2e380]: IT
+              - generic [ref=f2e381]: 結合テスト
+            - generic [ref=f2e382]:
+              - generic [ref=f2e383]: ST
+              - generic [ref=f2e384]: 総合テスト
+            - generic [ref=f2e385]:
+              - generic [ref=f2e386]: OT
+              - generic [ref=f2e387]: 運用テスト
+          - generic [ref=f2e388]:
+            - img "時間軸 月単位、2026年10月から2027年5月" [ref=f2e389]:
+              - generic [ref=f2e391]: 2026年10月
+              - generic [ref=f2e392]: 11月
+              - generic [ref=f2e393]: 12月
+              - generic [ref=f2e394]: 2027年1月
+              - generic [ref=f2e395]: 2月
+              - generic [ref=f2e396]: 3月
+              - generic [ref=f2e397]: 4月
+              - generic [ref=f2e398]: 5月
+              - generic [ref=f2e400]: 基準日 1/15
+              - generic [ref=f2e402]: 終了日 4/30
+            - img "工程別の日程。要件定義と外部設計は完了。基本設計は目標日 12/11 に対し完了見込 1/22 で 25 稼働日遅れ。運用テストの完了見込は 5/21 で終了日 4/30 より 12 稼働日遅れ" [ref=f2e403]:
+              - generic [ref=f2e416]: +25日
+              - generic [ref=f2e422]: +19日
+              - generic [ref=f2e428]: +19日
+              - generic [ref=f2e434]: +19日
+              - generic [ref=f2e439]: +19日
+              - generic [ref=f2e444]: +16日
+              - generic [ref=f2e449]: +12日
+      - generic [ref=f2e454]:
+        - generic [ref=f2e455]:
+          - generic [ref=f2e456]: 担当者 × 工程
+          - group "列の単位" [ref=f2e457]:
+            - button "工程別" [pressed] [ref=f2e458] [cursor=pointer]
+            - button "月別" [ref=f2e459] [cursor=pointer]
+          - button "表示する値" [ref=f2e460] [cursor=pointer]: 残工数 (h)
+          - generic [ref=f2e463]: 稼働可能 = 稼働率 × 残り 72 日 × 8h（上限工数がある人は、上限工数 − 実績 が小さければそちら）
+        - generic [ref=f2e464]:
+          - generic [ref=f2e465]: 担当者
+          - generic [ref=f2e466]: 稼働率
+          - generic [ref=f2e467]: SA ✓
+          - generic [ref=f2e468]: UI ✓
+          - generic [ref=f2e469]: SS
+          - generic [ref=f2e470]: PS
+          - generic [ref=f2e471]: PG
+          - generic [ref=f2e472]: PT
+          - generic [ref=f2e473]: IT
+          - generic [ref=f2e474]: ST
+          - generic [ref=f2e475]: OT
+          - generic [ref=f2e476]: 残 計
+          - generic [ref=f2e477]: 稼働可能
+          - generic [ref=f2e478]: 必要稼働率
+        - generic [ref=f2e479]:
+          - generic [ref=f2e480]: 佐藤
+          - generic [ref=f2e481]: 100%
+          - button "佐藤 SA 要件定義 残 0h" [ref=f2e482] [cursor=pointer]:
+            - generic [ref=f2e483]: –
+          - button "佐藤 UI 外部設計 残 0h" [ref=f2e484] [cursor=pointer]:
+            - generic [ref=f2e485]: –
+          - button "佐藤 SS 基本設計 残 38h" [ref=f2e486] [cursor=pointer]: "38"
+          - button "佐藤 PS 詳細設計 残 80h、期限超過 3、見積超過あり" [ref=f2e487] [cursor=pointer]:
+            - generic [ref=f2e488]:
+              - img "期限超過 3 タスク" [ref=f2e489]
+              - img "見積超過あり" [ref=f2e491]
+            - text: "80"
+          - button "佐藤 PG 製造 残 224h" [ref=f2e494] [cursor=pointer]: "224"
+          - button "佐藤 PT 単体テスト 残 152h" [ref=f2e495] [cursor=pointer]: "152"
+          - button "佐藤 IT 結合テスト 残 152h" [ref=f2e496] [cursor=pointer]: "152"
+          - button "佐藤 ST 総合テスト 残 80h" [ref=f2e497] [cursor=pointer]: "80"
+          - button "佐藤 OT 運用テスト 残 0h" [ref=f2e498] [cursor=pointer]:
+            - generic [ref=f2e499]: –
+          - generic [ref=f2e500]: "726"
+          - generic [ref=f2e501]: "576"
+          - generic [ref=f2e502]: 126%
+        - generic [ref=f2e507]:
+          - generic [ref=f2e508]: 鈴木
+          - generic [ref=f2e509]: 100%
+          - button "鈴木 SA 要件定義 残 0h" [ref=f2e510] [cursor=pointer]:
+            - generic [ref=f2e511]: –
+          - button "鈴木 UI 外部設計 残 0h" [ref=f2e512] [cursor=pointer]:
+            - generic [ref=f2e513]: –
+          - button "鈴木 SS 基本設計 残 50h、期限超過 3、見積超過あり" [ref=f2e514] [cursor=pointer]:
+            - generic [ref=f2e515]:
+              - img "期限超過 3 タスク" [ref=f2e516]
+              - img "見積超過あり" [ref=f2e518]
+            - text: "50"
+          - button "鈴木 PS 詳細設計 残 112h、期限超過 1、見積超過あり" [pressed] [ref=f2e521] [cursor=pointer]:
+            - generic [ref=f2e522]:
+              - img "期限超過 1 タスク" [ref=f2e523]
+              - img "見積超過あり" [ref=f2e525]
+            - text: "112"
+          - button "鈴木 PG 製造 残 292h、期限超過 2" [ref=f2e528] [cursor=pointer]:
+            - img "期限超過 2 タスク" [ref=f2e530]
+            - text: "292"
+          - button "鈴木 PT 単体テスト 残 200h" [ref=f2e532] [cursor=pointer]: "200"
+          - button "鈴木 IT 結合テスト 残 200h" [ref=f2e533] [cursor=pointer]: "200"
+          - button "鈴木 ST 総合テスト 残 120h" [ref=f2e534] [cursor=pointer]: "120"
+          - button "鈴木 OT 運用テスト 残 0h" [ref=f2e535] [cursor=pointer]:
+            - generic [ref=f2e536]: –
+          - generic [ref=f2e537]: "974"
+          - generic [ref=f2e538]: "576"
+          - generic [ref=f2e539]: 169%
+        - generic [ref=f2e544]:
+          - generic [ref=f2e545]: 高橋
+          - generic [ref=f2e546]: 100%
+          - button "高橋 SA 要件定義 残 0h" [ref=f2e547] [cursor=pointer]:
+            - generic [ref=f2e548]: –
+          - button "高橋 UI 外部設計 残 0h" [ref=f2e549] [cursor=pointer]:
+            - generic [ref=f2e550]: –
+          - button "高橋 SS 基本設計 残 0h" [ref=f2e551] [cursor=pointer]:
+            - generic [ref=f2e552]: –
+          - button "高橋 PS 詳細設計 残 72h" [ref=f2e553] [cursor=pointer]: "72"
+          - button "高橋 PG 製造 残 208h" [ref=f2e554] [cursor=pointer]: "208"
+          - button "高橋 PT 単体テスト 残 128h" [ref=f2e555] [cursor=pointer]: "128"
+          - button "高橋 IT 結合テスト 残 128h" [ref=f2e556] [cursor=pointer]: "128"
+          - button "高橋 ST 総合テスト 残 72h" [ref=f2e557] [cursor=pointer]: "72"
+          - button "高橋 OT 運用テスト 残 0h" [ref=f2e558] [cursor=pointer]:
+            - generic [ref=f2e559]: –
+          - generic [ref=f2e560]: "608"
+          - generic [ref=f2e561]: "576"
+          - generic [ref=f2e562]: 106%
+        - generic [ref=f2e567]:
+          - generic [ref=f2e568]: 田中
+          - generic [ref=f2e569]: 100%
+          - button "田中 SA 要件定義 残 0h" [ref=f2e570] [cursor=pointer]:
+            - generic [ref=f2e571]: –
+          - button "田中 UI 外部設計 残 0h" [ref=f2e572] [cursor=pointer]:
+            - generic [ref=f2e573]: –
+          - button "田中 SS 基本設計 残 48h、期限超過 2、見積超過あり" [ref=f2e574] [cursor=pointer]:
+            - generic [ref=f2e575]:
+              - img "期限超過 2 タスク" [ref=f2e576]
+              - img "見積超過あり" [ref=f2e578]
+            - text: "48"
+          - button "田中 PS 詳細設計 残 104h、期限超過 4" [ref=f2e581] [cursor=pointer]:
+            - img "期限超過 4 タスク" [ref=f2e583]
+            - text: "104"
+          - button "田中 PG 製造 残 280h" [ref=f2e585] [cursor=pointer]: "280"
+          - button "田中 PT 単体テスト 残 184h" [ref=f2e586] [cursor=pointer]: "184"
+          - button "田中 IT 結合テスト 残 184h" [ref=f2e587] [cursor=pointer]: "184"
+          - button "田中 ST 総合テスト 残 104h" [ref=f2e588] [cursor=pointer]: "104"
+          - button "田中 OT 運用テスト 残 0h" [ref=f2e589] [cursor=pointer]:
+            - generic [ref=f2e590]: –
+          - generic [ref=f2e591]: "904"
+          - generic [ref=f2e592]: "576"
+          - generic [ref=f2e593]: 157%
+        - generic [ref=f2e598]:
+          - generic [ref=f2e599]: 伊藤
+          - generic [ref=f2e600]: 100%
+          - button "伊藤 SA 要件定義 残 0h" [ref=f2e601] [cursor=pointer]:
+            - generic [ref=f2e602]: –
+          - button "伊藤 UI 外部設計 残 0h" [ref=f2e603] [cursor=pointer]:
+            - generic [ref=f2e604]: –
+          - button "伊藤 SS 基本設計 残 38h" [ref=f2e605] [cursor=pointer]: "38"
+          - button "伊藤 PS 詳細設計 残 80h、期限超過 3" [ref=f2e606] [cursor=pointer]:
+            - img "期限超過 3 タスク" [ref=f2e608]
+            - text: "80"
+          - button "伊藤 PG 製造 残 216h" [ref=f2e610] [cursor=pointer]: "216"
+          - button "伊藤 PT 単体テスト 残 144h" [ref=f2e611] [cursor=pointer]: "144"
+          - button "伊藤 IT 結合テスト 残 144h" [ref=f2e612] [cursor=pointer]: "144"
+          - button "伊藤 ST 総合テスト 残 80h" [ref=f2e613] [cursor=pointer]: "80"
+          - button "伊藤 OT 運用テスト 残 0h" [ref=f2e614] [cursor=pointer]:
+            - generic [ref=f2e615]: –
+          - generic [ref=f2e616]: "702"
+          - generic [ref=f2e617]: "576"
+          - generic [ref=f2e618]: 122%
+        - generic [ref=f2e623]:
+          - generic [ref=f2e624]: 渡辺
+          - generic [ref=f2e625]: 100%
+          - button "渡辺 SA 要件定義 残 0h" [ref=f2e626] [cursor=pointer]:
+            - generic [ref=f2e627]: –
+          - button "渡辺 UI 外部設計 残 0h" [ref=f2e628] [cursor=pointer]:
+            - generic [ref=f2e629]: –
+          - button "渡辺 SS 基本設計 残 44h、期限超過 2、見積超過あり" [ref=f2e630] [cursor=pointer]:
+            - generic [ref=f2e631]:
+              - img "期限超過 2 タスク" [ref=f2e632]
+              - img "見積超過あり" [ref=f2e634]
+            - text: "44"
+          - button "渡辺 PS 詳細設計 残 96h、期限超過 3" [ref=f2e637] [cursor=pointer]:
+            - img "期限超過 3 タスク" [ref=f2e639]
+            - text: "96"
+          - button "渡辺 PG 製造 残 256h" [ref=f2e641] [cursor=pointer]: "256"
+          - button "渡辺 PT 単体テスト 残 176h" [ref=f2e642] [cursor=pointer]: "176"
+          - button "渡辺 IT 結合テスト 残 176h" [ref=f2e643] [cursor=pointer]: "176"
+          - button "渡辺 ST 総合テスト 残 96h" [ref=f2e644] [cursor=pointer]: "96"
+          - button "渡辺 OT 運用テスト 残 0h" [ref=f2e645] [cursor=pointer]:
+            - generic [ref=f2e646]: –
+          - generic [ref=f2e647]: "844"
+          - generic [ref=f2e648]: "576"
+          - generic [ref=f2e649]: 147%
+        - generic [ref=f2e654]:
+          - generic [ref=f2e655]: 山本
+          - generic [ref=f2e656]: 100%
+          - button "山本 SA 要件定義 残 0h" [ref=f2e657] [cursor=pointer]:
+            - generic [ref=f2e658]: –
+          - button "山本 UI 外部設計 残 0h" [ref=f2e659] [cursor=pointer]:
+            - generic [ref=f2e660]: –
+          - button "山本 SS 基本設計 残 0h" [ref=f2e661] [cursor=pointer]:
+            - generic [ref=f2e662]: –
+          - button "山本 PS 詳細設計 残 72h" [ref=f2e663] [cursor=pointer]: "72"
+          - button "山本 PG 製造 残 208h" [ref=f2e664] [cursor=pointer]: "208"
+          - button "山本 PT 単体テスト 残 128h" [ref=f2e665] [cursor=pointer]: "128"
+          - button "山本 IT 結合テスト 残 128h" [ref=f2e666] [cursor=pointer]: "128"
+          - button "山本 ST 総合テスト 残 72h" [ref=f2e667] [cursor=pointer]: "72"
+          - button "山本 OT 運用テスト 残 0h" [ref=f2e668] [cursor=pointer]:
+            - generic [ref=f2e669]: –
+          - generic [ref=f2e670]: "608"
+          - generic [ref=f2e671]: "576"
+          - generic [ref=f2e672]: 106%
+        - generic [ref=f2e677]:
+          - generic [ref=f2e678]: 中村
+          - generic [ref=f2e679]: 100%
+          - button "中村 SA 要件定義 残 0h" [ref=f2e680] [cursor=pointer]:
+            - generic [ref=f2e681]: –
+          - button "中村 UI 外部設計 残 0h" [ref=f2e682] [cursor=pointer]:
+            - generic [ref=f2e683]: –
+          - button "中村 SS 基本設計 残 0h" [ref=f2e684] [cursor=pointer]:
+            - generic [ref=f2e685]: –
+          - button "中村 PS 詳細設計 残 72h" [ref=f2e686] [cursor=pointer]: "72"
+          - button "中村 PG 製造 残 208h" [ref=f2e687] [cursor=pointer]: "208"
+          - button "中村 PT 単体テスト 残 128h" [ref=f2e688] [cursor=pointer]: "128"
+          - button "中村 IT 結合テスト 残 128h" [ref=f2e689] [cursor=pointer]: "128"
+          - button "中村 ST 総合テスト 残 72h" [ref=f2e690] [cursor=pointer]: "72"
+          - button "中村 OT 運用テスト 残 0h" [ref=f2e691] [cursor=pointer]:
+            - generic [ref=f2e692]: –
+          - generic [ref=f2e693]: "608"
+          - generic [ref=f2e694]: "576"
+          - generic [ref=f2e695]: 106%
+        - generic [ref=f2e700]:
+          - generic [ref=f2e701]: 小林
+          - generic [ref=f2e702]: 100%
+          - button "小林 SA 要件定義 残 0h" [ref=f2e703] [cursor=pointer]:
+            - generic [ref=f2e704]: –
+          - button "小林 UI 外部設計 残 0h" [ref=f2e705] [cursor=pointer]:
+            - generic [ref=f2e706]: –
+          - button "小林 SS 基本設計 残 0h" [ref=f2e707] [cursor=pointer]:
+            - generic [ref=f2e708]: –
+          - button "小林 PS 詳細設計 残 72h" [ref=f2e709] [cursor=pointer]: "72"
+          - button "小林 PG 製造 残 208h" [ref=f2e710] [cursor=pointer]: "208"
+          - button "小林 PT 単体テスト 残 128h" [ref=f2e711] [cursor=pointer]: "128"
+          - button "小林 IT 結合テスト 残 128h" [ref=f2e712] [cursor=pointer]: "128"
+          - button "小林 ST 総合テスト 残 72h" [ref=f2e713] [cursor=pointer]: "72"
+          - button "小林 OT 運用テスト 残 0h" [ref=f2e714] [cursor=pointer]:
+            - generic [ref=f2e715]: –
+          - generic [ref=f2e716]: "608"
+          - generic [ref=f2e717]: "576"
+          - generic [ref=f2e718]: 106%
+        - generic [ref=f2e723]:
+          - generic [ref=f2e724]: 加藤
+          - generic [ref=f2e725]: 100%
+          - button "加藤 SA 要件定義 残 0h" [ref=f2e726] [cursor=pointer]:
+            - generic [ref=f2e727]: –
+          - button "加藤 UI 外部設計 残 0h" [ref=f2e728] [cursor=pointer]:
+            - generic [ref=f2e729]: –
+          - button "加藤 SS 基本設計 残 0h" [ref=f2e730] [cursor=pointer]:
+            - generic [ref=f2e731]: –
+          - button "加藤 PS 詳細設計 残 48h" [ref=f2e732] [cursor=pointer]: "48"
+          - button "加藤 PG 製造 残 128h" [ref=f2e733] [cursor=pointer]: "128"
+          - button "加藤 PT 単体テスト 残 80h" [ref=f2e734] [cursor=pointer]: "80"
+          - button "加藤 IT 結合テスト 残 80h" [ref=f2e735] [cursor=pointer]: "80"
+          - button "加藤 ST 総合テスト 残 48h" [ref=f2e736] [cursor=pointer]: "48"
+          - button "加藤 OT 運用テスト 残 0h" [ref=f2e737] [cursor=pointer]:
+            - generic [ref=f2e738]: –
+          - generic [ref=f2e739]: "384"
+          - generic [ref=f2e740]: "576"
+          - generic [ref=f2e741]: 67%
+        - generic [ref=f2e746]:
+          - generic [ref=f2e747]: 吉田
+          - generic [ref=f2e748]: 100%
+          - button "吉田 SA 要件定義 残 0h" [ref=f2e749] [cursor=pointer]:
+            - generic [ref=f2e750]: –
+          - button "吉田 UI 外部設計 残 0h" [ref=f2e751] [cursor=pointer]:
+            - generic [ref=f2e752]: –
+          - button "吉田 SS 基本設計 残 0h" [ref=f2e753] [cursor=pointer]:
+            - generic [ref=f2e754]: –
+          - button "吉田 PS 詳細設計 残 72h" [ref=f2e755] [cursor=pointer]: "72"
+          - button "吉田 PG 製造 残 208h" [ref=f2e756] [cursor=pointer]: "208"
+          - button "吉田 PT 単体テスト 残 128h" [ref=f2e757] [cursor=pointer]: "128"
+          - button "吉田 IT 結合テスト 残 128h" [ref=f2e758] [cursor=pointer]: "128"
+          - button "吉田 ST 総合テスト 残 72h" [ref=f2e759] [cursor=pointer]: "72"
+          - button "吉田 OT 運用テスト 残 0h" [ref=f2e760] [cursor=pointer]:
+            - generic [ref=f2e761]: –
+          - generic [ref=f2e762]: "608"
+          - generic [ref=f2e763]: "576"
+          - generic [ref=f2e764]: 106%
+        - generic [ref=f2e769]:
+          - generic [ref=f2e770]: 山田
+          - generic [ref=f2e771]: 100%
+          - button "山田 SA 要件定義 残 0h" [ref=f2e772] [cursor=pointer]:
+            - generic [ref=f2e773]: –
+          - button "山田 UI 外部設計 残 0h" [ref=f2e774] [cursor=pointer]:
+            - generic [ref=f2e775]: –
+          - button "山田 SS 基本設計 残 36h、期限超過 2" [ref=f2e776] [cursor=pointer]:
+            - img "期限超過 2 タスク" [ref=f2e778]
+            - text: "36"
+          - button "山田 PS 詳細設計 残 72h" [ref=f2e780] [cursor=pointer]: "72"
+          - button "山田 PG 製造 残 208h" [ref=f2e781] [cursor=pointer]: "208"
+          - button "山田 PT 単体テスト 残 128h" [ref=f2e782] [cursor=pointer]: "128"
+          - button "山田 IT 結合テスト 残 128h" [ref=f2e783] [cursor=pointer]: "128"
+          - button "山田 ST 総合テスト 残 72h" [ref=f2e784] [cursor=pointer]: "72"
+          - button "山田 OT 運用テスト 残 0h" [ref=f2e785] [cursor=pointer]:
+            - generic [ref=f2e786]: –
+          - generic [ref=f2e787]: "644"
+          - generic [ref=f2e788]: "576"
+          - generic [ref=f2e789]: 112%
+        - generic [ref=f2e794]:
+          - generic [ref=f2e795]: 佐々木
+          - generic [ref=f2e796]: 100%
+          - button "佐々木 SA 要件定義 残 0h" [ref=f2e797] [cursor=pointer]:
+            - generic [ref=f2e798]: –
+          - button "佐々木 UI 外部設計 残 0h" [ref=f2e799] [cursor=pointer]:
+            - generic [ref=f2e800]: –
+          - button "佐々木 SS 基本設計 残 0h" [ref=f2e801] [cursor=pointer]:
+            - generic [ref=f2e802]: –
+          - button "佐々木 PS 詳細設計 残 72h" [ref=f2e803] [cursor=pointer]: "72"
+          - button "佐々木 PG 製造 残 208h" [ref=f2e804] [cursor=pointer]: "208"
+          - button "佐々木 PT 単体テスト 残 128h" [ref=f2e805] [cursor=pointer]: "128"
+          - button "佐々木 IT 結合テスト 残 128h" [ref=f2e806] [cursor=pointer]: "128"
+          - button "佐々木 ST 総合テスト 残 0h" [ref=f2e807] [cursor=pointer]:
+            - generic [ref=f2e808]: –
+          - button "佐々木 OT 運用テスト 残 0h" [ref=f2e809] [cursor=pointer]:
+            - generic [ref=f2e810]: –
+          - generic [ref=f2e811]: "536"
+          - generic [ref=f2e812]: "576"
+          - generic [ref=f2e813]: 93%
+        - generic [ref=f2e818]:
+          - generic [ref=f2e819]: 山口
+          - generic [ref=f2e820]: 100%
+          - button "山口 SA 要件定義 残 0h" [ref=f2e821] [cursor=pointer]:
+            - generic [ref=f2e822]: –
+          - button "山口 UI 外部設計 残 0h" [ref=f2e823] [cursor=pointer]:
+            - generic [ref=f2e824]: –
+          - button "山口 SS 基本設計 残 0h" [ref=f2e825] [cursor=pointer]:
+            - generic [ref=f2e826]: –
+          - button "山口 PS 詳細設計 残 72h" [ref=f2e827] [cursor=pointer]: "72"
+          - button "山口 PG 製造 残 208h" [ref=f2e828] [cursor=pointer]: "208"
+          - button "山口 PT 単体テスト 残 128h" [ref=f2e829] [cursor=pointer]: "128"
+          - button "山口 IT 結合テスト 残 128h" [ref=f2e830] [cursor=pointer]: "128"
+          - button "山口 ST 総合テスト 残 0h" [ref=f2e831] [cursor=pointer]:
+            - generic [ref=f2e832]: –
+          - button "山口 OT 運用テスト 残 0h" [ref=f2e833] [cursor=pointer]:
+            - generic [ref=f2e834]: –
+          - generic [ref=f2e835]: "536"
+          - generic [ref=f2e836]: "576"
+          - generic [ref=f2e837]: 93%
+        - generic [ref=f2e842]:
+          - generic [ref=f2e843]: 松本
+          - generic [ref=f2e844]: 100%
+          - button "松本 SA 要件定義 残 0h" [ref=f2e845] [cursor=pointer]:
+            - generic [ref=f2e846]: –
+          - button "松本 UI 外部設計 残 0h" [ref=f2e847] [cursor=pointer]:
+            - generic [ref=f2e848]: –
+          - button "松本 SS 基本設計 残 0h" [ref=f2e849] [cursor=pointer]:
+            - generic [ref=f2e850]: –
+          - button "松本 PS 詳細設計 残 72h" [ref=f2e851] [cursor=pointer]: "72"
+          - button "松本 PG 製造 残 208h" [ref=f2e852] [cursor=pointer]: "208"
+          - button "松本 PT 単体テスト 残 128h" [ref=f2e853] [cursor=pointer]: "128"
+          - button "松本 IT 結合テスト 残 128h" [ref=f2e854] [cursor=pointer]: "128"
+          - button "松本 ST 総合テスト 残 0h" [ref=f2e855] [cursor=pointer]:
+            - generic [ref=f2e856]: –
+          - button "松本 OT 運用テスト 残 0h" [ref=f2e857] [cursor=pointer]:
+            - generic [ref=f2e858]: –
+          - generic [ref=f2e859]: "536"
+          - generic [ref=f2e860]: "576"
+          - generic [ref=f2e861]: 93%
+        - generic [ref=f2e866]:
+          - generic [ref=f2e867]: 井上
+          - generic [ref=f2e868]: 100%
+          - button "井上 SA 要件定義 残 0h" [ref=f2e869] [cursor=pointer]:
+            - generic [ref=f2e870]: –
+          - button "井上 UI 外部設計 残 0h" [ref=f2e871] [cursor=pointer]:
+            - generic [ref=f2e872]: –
+          - button "井上 SS 基本設計 残 0h" [ref=f2e873] [cursor=pointer]:
+            - generic [ref=f2e874]: –
+          - button "井上 PS 詳細設計 残 48h" [ref=f2e875] [cursor=pointer]: "48"
+          - button "井上 PG 製造 残 144h" [ref=f2e876] [cursor=pointer]: "144"
+          - button "井上 PT 単体テスト 残 96h" [ref=f2e877] [cursor=pointer]: "96"
+          - button "井上 IT 結合テスト 残 96h" [ref=f2e878] [cursor=pointer]: "96"
+          - button "井上 ST 総合テスト 残 0h" [ref=f2e879] [cursor=pointer]:
+            - generic [ref=f2e880]: –
+          - button "井上 OT 運用テスト 残 0h" [ref=f2e881] [cursor=pointer]:
+            - generic [ref=f2e882]: –
+          - generic [ref=f2e883]: "384"
+          - generic [ref=f2e884]: "576"
+          - generic [ref=f2e885]: 67%
+        - generic [ref=f2e890]:
+          - generic [ref=f2e891]: 木村
+          - generic [ref=f2e892]: 100%
+          - button "木村 SA 要件定義 残 0h" [ref=f2e893] [cursor=pointer]:
+            - generic [ref=f2e894]: –
+          - button "木村 UI 外部設計 残 0h" [ref=f2e895] [cursor=pointer]:
+            - generic [ref=f2e896]: –
+          - button "木村 SS 基本設計 残 0h" [ref=f2e897] [cursor=pointer]:
+            - generic [ref=f2e898]: –
+          - button "木村 PS 詳細設計 残 72h" [ref=f2e899] [cursor=pointer]: "72"
+          - button "木村 PG 製造 残 208h" [ref=f2e900] [cursor=pointer]: "208"
+          - button "木村 PT 単体テスト 残 128h" [ref=f2e901] [cursor=pointer]: "128"
+          - button "木村 IT 結合テスト 残 128h" [ref=f2e902] [cursor=pointer]: "128"
+          - button "木村 ST 総合テスト 残 0h" [ref=f2e903] [cursor=pointer]:
+            - generic [ref=f2e904]: –
+          - button "木村 OT 運用テスト 残 0h" [ref=f2e905] [cursor=pointer]:
+            - generic [ref=f2e906]: –
+          - generic [ref=f2e907]: "536"
+          - generic [ref=f2e908]: "576"
+          - generic [ref=f2e909]: 93%
+        - generic [ref=f2e914]:
+          - generic [ref=f2e915]: 林
+          - generic [ref=f2e916]: 50%
+          - button "林 SA 要件定義 残 0h" [ref=f2e917] [cursor=pointer]:
+            - generic [ref=f2e918]: –
+          - button "林 UI 外部設計 残 0h" [ref=f2e919] [cursor=pointer]:
+            - generic [ref=f2e920]: –
+          - button "林 SS 基本設計 残 0h" [ref=f2e921] [cursor=pointer]:
+            - generic [ref=f2e922]: –
+          - button "林 PS 詳細設計 残 40h" [ref=f2e923] [cursor=pointer]: "40"
+          - button "林 PG 製造 残 104h" [ref=f2e924] [cursor=pointer]: "104"
+          - button "林 PT 単体テスト 残 64h" [ref=f2e925] [cursor=pointer]: "64"
+          - button "林 IT 結合テスト 残 64h" [ref=f2e926] [cursor=pointer]: "64"
+          - button "林 ST 総合テスト 残 0h" [ref=f2e927] [cursor=pointer]:
+            - generic [ref=f2e928]: –
+          - button "林 OT 運用テスト 残 0h" [ref=f2e929] [cursor=pointer]:
+            - generic [ref=f2e930]: –
+          - generic [ref=f2e931]: "272"
+          - generic [ref=f2e932]: "288"
+          - generic [ref=f2e933]: 94%
+        - generic [ref=f2e938]:
+          - generic [ref=f2e939]: 清水
+          - generic [ref=f2e940]: 100%
+          - button "清水 SA 要件定義 残 0h" [ref=f2e941] [cursor=pointer]:
+            - generic [ref=f2e942]: –
+          - button "清水 UI 外部設計 残 0h" [ref=f2e943] [cursor=pointer]:
+            - generic [ref=f2e944]: –
+          - button "清水 SS 基本設計 残 0h" [ref=f2e945] [cursor=pointer]:
+            - generic [ref=f2e946]: –
+          - button "清水 PS 詳細設計 残 72h" [ref=f2e947] [cursor=pointer]: "72"
+          - button "清水 PG 製造 残 208h" [ref=f2e948] [cursor=pointer]: "208"
+          - button "清水 PT 単体テスト 残 128h" [ref=f2e949] [cursor=pointer]: "128"
+          - button "清水 IT 結合テスト 残 128h" [ref=f2e950] [cursor=pointer]: "128"
+          - button "清水 ST 総合テスト 残 0h" [ref=f2e951] [cursor=pointer]:
+            - generic [ref=f2e952]: –
+          - button "清水 OT 運用テスト 残 0h" [ref=f2e953] [cursor=pointer]:
+            - generic [ref=f2e954]: –
+          - generic [ref=f2e955]: "536"
+          - generic [ref=f2e956]: "576"
+          - generic [ref=f2e957]: 93%
+        - generic [ref=f2e962]:
+          - generic [ref=f2e963]: 森
+          - generic [ref=f2e964]: 50%
+          - button "森 SA 要件定義 残 0h" [ref=f2e965] [cursor=pointer]:
+            - generic [ref=f2e966]: –
+          - button "森 UI 外部設計 残 0h" [ref=f2e967] [cursor=pointer]:
+            - generic [ref=f2e968]: –
+          - button "森 SS 基本設計 残 0h" [ref=f2e969] [cursor=pointer]:
+            - generic [ref=f2e970]: –
+          - button "森 PS 詳細設計 残 0h" [ref=f2e971] [cursor=pointer]:
+            - generic [ref=f2e972]: –
+          - button "森 PG 製造 残 88h" [ref=f2e973] [cursor=pointer]: "88"
+          - button "森 PT 単体テスト 残 56h" [ref=f2e974] [cursor=pointer]: "56"
+          - button "森 IT 結合テスト 残 56h" [ref=f2e975] [cursor=pointer]: "56"
+          - button "森 ST 総合テスト 残 0h" [ref=f2e976] [cursor=pointer]:
+            - generic [ref=f2e977]: –
+          - button "森 OT 運用テスト 残 0h" [ref=f2e978] [cursor=pointer]:
+            - generic [ref=f2e979]: –
+          - generic [ref=f2e980]: "200"
+          - generic [ref=f2e981]: "288"
+          - generic [ref=f2e982]: 69%
+        - generic [ref=f2e987]:
+          - generic [ref=f2e988]: 担当者なし
+          - generic [ref=f2e990]: –
+          - generic [ref=f2e992]: –
+          - generic [ref=f2e994]: –
+          - generic [ref=f2e996]: –
+          - generic [ref=f2e998]: –
+          - generic [ref=f2e1000]: –
+          - generic [ref=f2e1002]: –
+          - generic [ref=f2e1004]: "320"
+          - generic [ref=f2e1005]: "640"
+          - generic [ref=f2e1006]: "960"
+          - generic [ref=f2e1007]: –
+          - generic [ref=f2e1008]: 割り当てが必要
+        - generic [ref=f2e1009]:
+          - generic [ref=f2e1010]: 合計
+          - generic [ref=f2e1012]: –
+          - generic [ref=f2e1014]: –
+          - generic [ref=f2e1016]: "254"
+          - generic [ref=f2e1017]: 1,400
+          - generic [ref=f2e1018]: 4,020
+          - generic [ref=f2e1019]: 2,560
+          - generic [ref=f2e1020]: 2,560
+          - generic [ref=f2e1021]: 1,280
+          - generic [ref=f2e1022]: "640"
+          - generic [ref=f2e1023]: 12,714
+          - generic [ref=f2e1024]: 10,944
+          - generic [ref=f2e1025]: 116%
+        - generic [ref=f2e1030]:
+          - generic [ref=f2e1031]:
+            - generic [ref=f2e1032]: 鈴木 · PS 詳細設計
+            - generic [ref=f2e1033]: 7 タスク · 残 112h · 期限超過 1 · 見積超過 1 · 残 0・未完了 1
+            - button "この 7 タスクで計画を絞り込む" [ref=f2e1034] [cursor=pointer]
+          - generic [ref=f2e1035]:
+            - generic [ref=f2e1036]: ID
+            - generic [ref=f2e1038]: タスク名
+            - generic [ref=f2e1039]: 見積 h
+            - generic [ref=f2e1040]: 実績 h
+            - generic [ref=f2e1041]: 残 h
+            - generic [ref=f2e1042]: 開始日
+            - generic [ref=f2e1043]: 終了日
+            - generic [ref=f2e1044]: 状態
+          - generic [ref=f2e1045]:
+            - generic [ref=f2e1046]: "193"
+            - 'img "期限超過: 完了予定 1/13 を過ぎて未完了（残 24h）" [ref=f2e1048]'
+            - generic [ref=f2e1050]: R08 PS-001 詳細設計 処理
+            - generic [ref=f2e1051]: "32"
+            - generic [ref=f2e1052]: "8"
+            - generic [ref=f2e1053]: "24"
+            - generic [ref=f2e1054]: 1/12 (火)
+            - generic [ref=f2e1055]: 1/19 (火)
+            - generic [ref=f2e1057]: "期限超過: 完了予定 1/13 を過ぎて未完了（残 24h）"
+          - generic [ref=f2e1058]:
+            - generic [ref=f2e1059]: "194"
+            - 'img "予定より遅れ: 発行済み 1/20 から +2 日" [ref=f2e1061]'
+            - generic [ref=f2e1063]: R08 PS-002 詳細設計 データ
+            - generic [ref=f2e1064]: "24"
+            - generic [ref=f2e1065]: "0"
+            - generic [ref=f2e1066]: "24"
+            - generic [ref=f2e1067]: 1/20 (水)
+            - generic [ref=f2e1068]: 1/22 (金)
+            - generic [ref=f2e1070]: "予定より遅れ: 発行済み 1/20 から +2 日"
+          - generic [ref=f2e1071]:
+            - generic [ref=f2e1072]: "195"
+            - 'img "予定より遅れ: 発行済み 1/21 から +2 日" [ref=f2e1074]'
+            - generic [ref=f2e1076]: R08 PS-003 詳細設計書のレビュー
+            - generic [ref=f2e1077]: "8"
+            - generic [ref=f2e1078]: "0"
+            - generic [ref=f2e1079]: "8"
+            - generic [ref=f2e1080]: 1/25 (月)
+            - generic [ref=f2e1081]: 1/25 (月)
+            - generic [ref=f2e1083]: "予定より遅れ: 発行済み 1/21 から +2 日"
+          - generic [ref=f2e1084]:
+            - generic [ref=f2e1085]: "219"
+            - 'img "残 0・未完了: 残は 0 だが Issue が開いている（見込 36h、見積より +4h）。終わったらクローズ、作業が残るなら残を入力" [ref=f2e1087]'
+            - generic [ref=f2e1090]: R09 PS-001 詳細設計 処理
+            - generic [ref=f2e1091]: "32"
+            - generic [ref=f2e1092]: "36"
+            - generic [ref=f2e1093]: "0"
+            - generic [ref=f2e1094]: 1/6 (水)
+            - generic [ref=f2e1095]: 1/15 (金)
+            - generic [ref=f2e1097]: "残 0・未完了: 残は 0 だが Issue が開いている（見込 36h、見積より +4h）。終わったらクローズ、作業が残るなら残を入力"
+          - generic [ref=f2e1098]:
+            - generic [ref=f2e1099]: "220"
+            - generic [ref=f2e1101]: R09 PS-002 詳細設計 データ
+            - generic [ref=f2e1102]: "24"
+            - generic [ref=f2e1103]: "0"
+            - generic [ref=f2e1104]: "24"
+            - generic [ref=f2e1105]: 1/15 (金)
+            - generic [ref=f2e1106]: 1/19 (火)
+          - generic [ref=f2e1109]:
+            - generic [ref=f2e1110]: "221"
+            - generic [ref=f2e1112]: R09 PS-003 詳細設計書のレビュー
+            - generic [ref=f2e1113]: "8"
+            - generic [ref=f2e1114]: "0"
+            - generic [ref=f2e1115]: "8"
+            - generic [ref=f2e1116]: 1/20 (水)
+            - generic [ref=f2e1117]: 1/20 (水)
+          - generic [ref=f2e1120]:
+            - generic [ref=f2e1121]: "246"
+            - generic [ref=f2e1123]: R10 PS-002 詳細設計 データ
+            - generic [ref=f2e1124]: "24"
+            - generic [ref=f2e1125]: "0"
+            - generic [ref=f2e1126]: "24"
+            - generic [ref=f2e1127]: 1/25 (月)
+            - generic [ref=f2e1128]: 1/27 (水)
+  - generic [ref=f2e1131]:
+    - generic [ref=f2e1132]: 要求事項 40 · タスク 1,000 · 期限超過 25 · 見積超過 5 · 残 0・未完了 3
+    - generic [ref=f2e1133]: 完了
+    - generic [ref=f2e1135]: 残り
+    - generic [ref=f2e1137]: 目標日より後ろ
+    - generic [ref=f2e1139]: マイルストーン（目標日）
+    - generic [ref=f2e1142]: 期限超過
+    - generic [ref=f2e1145]: 見積超過
+    - generic [ref=f2e1149]: 残 0・未完了

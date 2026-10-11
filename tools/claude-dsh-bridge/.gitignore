@@ -1,0 +1,5 @@
+# Scratch space for the bridge's own runs. The end-to-end check keeps its
+# evidence JSON (the execution record of a verified cycle); the per-run bridge
+# homes under test/artifacts/home-* are throwaway.
+demo/.work/
+test/artifacts/home-*/

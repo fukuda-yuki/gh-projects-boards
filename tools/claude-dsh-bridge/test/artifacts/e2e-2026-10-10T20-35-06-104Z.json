@@ -1,0 +1,14 @@
+{
+  "started_at": "2026-10-10T20:35:06.113Z",
+  "home": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tools\\claude-dsh-bridge\\test\\artifacts\\home-2026-10-10T20-35-06-104Z",
+  "workspace": "C:\\Users\\mwam0\\.copilot\\repos\\gh-projects-boards\\tools\\claude-dsh-bridge\\demo\\.work",
+  "steps": {},
+  "finished_at": "2026-10-10T20:35:06.165Z",
+  "checks": [],
+  "server_stderr_tail": [
+    "[dsh-flash-bridge] ready (profile=headless, dsh=C:\\Users\\mwam0\\AppData\\Local\\Programs\\DeepSeek Harness)",
+    ""
+  ],
+  "calc_js": "\"use strict\";\n\n// Delegation target for the bridge's end-to-end check. `add` is complete;\n// `multiply` is the small change a delegated DSH run is asked to implement.\n// The end-to-end test copies this file into a scratch folder, so this reference\n// copy stays unimplemented.\nfunction add(a, b) {\n  return a + b;\n}\n\nfunction multiply(a, b) {\n  throw new Error(\"multiply is not implemented\");\n}\n\nmodule.exports = { add, multiply };\n",
+  "check_js": "\"use strict\";\n\n// Verification the delegated run must make pass with `node demo/check.js`.\n// Exit code 0 means every case passed; 1 prints the failing case and exits.\nconst { add, multiply } = require(\"./calc.js\");\n\nconst cases = [\n  [\"add keeps working\", () => add(2, 3) === 5],\n  [\"multiply(6, 7) === 42\", () => multiply(6, 7) === 42],\n  [\"multiply(-3, 4) === -12\", () => multiply(-3, 4) === -12],\n];\n\nlet failed = 0;\nfor (const [name, run] of cases) {\n  let ok = false;\n  let detail = \"\";\n  try {\n    ok = run() === true;\n  } catch (error) {\n    detail = ` (${error.message})`;\n  }\n  if (!ok) failed += 1;\n  console.log(`${ok ? \"PASS\" : \"FAIL\"} ${name}${detail}`);\n}\n\nif (failed > 0) {\n  console.log(`FAILED ${failed}/${cases.length}`);\n  process.exit(1);\n}\nconsole.log(`PASSED ${cases.length}/${cases.length}`);\n"
+}

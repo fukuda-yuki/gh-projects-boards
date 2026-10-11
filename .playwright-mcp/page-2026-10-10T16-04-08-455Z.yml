@@ -1,0 +1,184 @@
+- generic [ref=f3e3]:
+  - generic [ref=f3e4]:
+    - generic [ref=f3e9]: 計画エディタ
+    - button "プロジェクトを切り替え" [ref=f3e10] [cursor=pointer]:
+      - text: 第2027.04版
+      - generic [ref=f3e11]: fukuda-yuki · Project 3
+    - button "設定" [ref=f3e14]
+    - button "最小化" [ref=f3e18]
+    - button "最大化" [ref=f3e20]
+    - button "閉じる" [ref=f3e23]
+  - generic [ref=f3e26]:
+    - button "計画に戻る" [ref=f3e27]
+    - generic [ref=f3e30]: 設定
+    - generic [ref=f3e31]: 第2027.04版 · fukuda-yuki · Project 3 だけに適用します
+  - generic [ref=f3e32]:
+    - tablist "設定の項目" [ref=f3e33]:
+      - tab "プロジェクトと列" [selected] [ref=f3e34]
+      - tab "担当者" [ref=f3e35]
+      - tab "休日" [ref=f3e36]
+      - tab "接続とファイル" [ref=f3e37]
+    - generic [ref=f3e38]:
+      - generic [ref=f3e39]:
+        - generic [ref=f3e40]:
+          - heading "期間" [level=2] [ref=f3e41]
+          - generic [ref=f3e42]: サマリーの残り稼働日と、終了日までに必要な稼働はこの期間と休日で計算します。
+          - generic [ref=f3e43]:
+            - generic [ref=f3e44]:
+              - generic [ref=f3e45]: 開始日
+              - button "2026/10/13 (火)" [ref=f3e46] [cursor=pointer]
+            - generic [ref=f3e50]:
+              - generic [ref=f3e51]: 終了日
+              - button "2027/04/30 (金)" [ref=f3e52] [cursor=pointer]
+        - generic [ref=f3e56]:
+          - heading "工程" [level=2] [ref=f3e57]
+          - generic [ref=f3e58]: サマリーの工程別と担当者 × 工程は、この GitHub のフィールドの値で集計します。値は GitHub 側で管理します。
+          - generic [ref=f3e59]:
+            - generic [ref=f3e60]: 集計に使うフィールド（単一選択）
+            - button "工程" [ref=f3e61] [cursor=pointer]
+          - generic [ref=f3e64]:
+            - generic [ref=f3e65]:
+              - generic [ref=f3e66]: 値
+              - generic [ref=f3e67]: タスク
+              - generic [ref=f3e68]: マイルストーン（任意）
+            - generic [ref=f3e69]:
+              - generic [ref=f3e70]: SA 要件定義
+              - generic [ref=f3e71]: "120"
+              - button "要件定義完了 · 11/13" [ref=f3e74] [cursor=pointer]
+            - generic [ref=f3e77]:
+              - generic [ref=f3e78]: UI 外部設計
+              - generic [ref=f3e79]: "120"
+              - button "外部設計完了 · 12/4" [ref=f3e82] [cursor=pointer]
+            - generic [ref=f3e85]:
+              - generic [ref=f3e86]: SS 基本設計
+              - generic [ref=f3e87]: "120"
+              - button "基本設計完了 · 12/11" [ref=f3e90] [cursor=pointer]
+            - generic [ref=f3e93]:
+              - generic [ref=f3e94]: PS 詳細設計
+              - generic [ref=f3e95]: "120"
+              - button "詳細設計完了 · 1/15" [ref=f3e98] [cursor=pointer]
+            - generic [ref=f3e101]:
+              - generic [ref=f3e102]: PG 製造
+              - generic [ref=f3e103]: "160"
+              - button "製造完了 · 2/19" [ref=f3e106] [cursor=pointer]
+            - generic [ref=f3e109]:
+              - generic [ref=f3e110]: PT 単体テスト
+              - generic [ref=f3e111]: "120"
+              - button "単体テスト完了 · 2/26" [ref=f3e114] [cursor=pointer]
+            - generic [ref=f3e117]:
+              - generic [ref=f3e118]: IT 結合テスト
+              - generic [ref=f3e119]: "120"
+              - button "結合テスト完了 · 3/19" [ref=f3e122] [cursor=pointer]
+            - generic [ref=f3e125]:
+              - generic [ref=f3e126]: ST 総合テスト
+              - generic [ref=f3e127]: "80"
+              - button "総合テスト完了 · 4/9" [ref=f3e130] [cursor=pointer]
+            - generic [ref=f3e133]:
+              - generic [ref=f3e134]: OT 運用テスト
+              - generic [ref=f3e135]: "40"
+              - button "運用テスト完了 · 4/30" [ref=f3e138] [cursor=pointer]
+            - generic [ref=f3e141]:
+              - generic [ref=f3e142]: 工程なし
+              - generic [ref=f3e143]: "0"
+          - generic [ref=f3e144]: GitHub のマイルストーンを工程に対応させると、その期日を目標日としてサマリーに完了見込との差を出します。期日は GitHub で管理し、ここでは入力しません。
+      - generic [ref=f3e145]:
+        - generic [ref=f3e146]:
+          - generic [ref=f3e147]:
+            - heading "計画シートの列" [level=2] [ref=f3e148]
+            - generic [ref=f3e149]: 表示する列、順序（ドラッグ）、表示名を選びます。この Project のフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。
+          - button "既定に戻す" [ref=f3e150] [cursor=pointer]
+        - generic [ref=f3e151]:
+          - generic [ref=f3e152]:
+            - generic [ref=f3e153]: 表示
+            - generic [ref=f3e154]: 表示名
+            - generic [ref=f3e155]: GitHub
+            - generic [ref=f3e156]: 種類
+            - generic [ref=f3e157]: 計画シートで
+          - generic [ref=f3e158]:
+            - generic "常に表示" [ref=f3e160]
+            - generic [ref=f3e163]: ID
+            - generic [ref=f3e164]: Issue 番号
+            - generic [ref=f3e165]: —
+            - generic [ref=f3e166]: 読み取りのみ
+          - generic [ref=f3e167]:
+            - generic "常に表示" [ref=f3e169]
+            - generic [ref=f3e172]: 状態
+            - generic [ref=f3e173]: （遅れ・見積超過の印）
+            - generic [ref=f3e174]: —
+            - generic [ref=f3e175]: 計算
+          - generic [ref=f3e176]:
+            - generic [ref=f3e189]: タスク名
+            - generic [ref=f3e190]: Title
+            - generic [ref=f3e191]: テキスト
+            - generic [ref=f3e192]: 編集できる
+          - generic [ref=f3e193]:
+            - generic [ref=f3e206]: 工程
+            - generic [ref=f3e207]: 工程
+            - generic [ref=f3e208]: 単一選択
+            - generic [ref=f3e209]: 編集できる
+          - generic [ref=f3e210]:
+            - generic [ref=f3e223]: 担当者
+            - generic [ref=f3e224]: Assignees
+            - generic [ref=f3e225]: 担当者
+            - generic [ref=f3e226]: 編集できる
+          - generic [ref=f3e227]:
+            - generic [ref=f3e240]: 見積 h
+            - generic [ref=f3e242]: 見積
+            - generic [ref=f3e243]: 数値
+            - generic [ref=f3e244]: 編集できる
+          - generic [ref=f3e245]:
+            - generic [ref=f3e258]: 実績 h
+            - generic [ref=f3e259]: 実績
+            - generic [ref=f3e260]: 数値
+            - generic [ref=f3e261]: 編集できる
+          - generic [ref=f3e262]:
+            - generic [ref=f3e275]: 残 h
+            - generic [ref=f3e276]: 残（未入力は 見積 − 実績）
+            - generic [ref=f3e277]: 数値
+            - generic [ref=f3e278]: 編集できる
+          - generic [ref=f3e279]:
+            - generic [ref=f3e290]: 見込 h
+            - generic [ref=f3e291]: （実績 + 残）
+            - generic [ref=f3e292]: —
+            - generic [ref=f3e293]: 計算
+          - generic [ref=f3e294]:
+            - generic [ref=f3e307]: 開始日
+            - generic [ref=f3e308]: Start date
+            - generic [ref=f3e309]: 日付
+            - generic [ref=f3e310]: 編集できる
+          - generic [ref=f3e311]:
+            - generic [ref=f3e324]: 終了日
+            - generic [ref=f3e325]: End date
+            - generic [ref=f3e326]: 日付
+            - generic [ref=f3e327]: 編集できる
+          - generic [ref=f3e328]:
+            - generic [ref=f3e341]: 先行
+            - generic [ref=f3e342]: Blocked by（依存関係）
+            - generic [ref=f3e343]: 関係
+            - generic [ref=f3e344]: 編集できる
+          - generic [ref=f3e345]:
+            - generic [ref=f3e356]: ステータス
+            - generic [ref=f3e357]: Status
+            - generic [ref=f3e358]: 単一選択
+            - generic [ref=f3e359]: 編集できる
+          - generic [ref=f3e360]:
+            - generic [ref=f3e371]: ラベル
+            - generic [ref=f3e372]: Labels
+            - generic [ref=f3e373]: ラベル
+            - generic [ref=f3e374]: 編集できる
+          - generic [ref=f3e375]:
+            - generic [ref=f3e386]: マイルストーン
+            - generic [ref=f3e387]: Milestone
+            - generic [ref=f3e388]: マイルストーン
+            - generic [ref=f3e389]: 編集できる
+          - generic [ref=f3e390]:
+            - generic [ref=f3e401]: イテレーション
+            - generic [ref=f3e402]: Iteration
+            - generic [ref=f3e403]: イテレーション
+            - generic [ref=f3e404]: 読み取りのみ
+          - generic [ref=f3e405]:
+            - generic [ref=f3e416]: リポジトリ
+            - generic [ref=f3e417]: Repository
+            - generic [ref=f3e418]: リポジトリ
+            - generic [ref=f3e419]: 読み取りのみ
+        - generic [ref=f3e420]: 見出しにマウスを置くと GitHub のフィールド名を表示します。リポジトリは移すと Issue の移管になるため、読み取りのみです。

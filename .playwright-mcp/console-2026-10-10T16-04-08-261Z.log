@@ -1,0 +1,3 @@
+[      17ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'join-ad-interest-group'. @ :0
+[      17ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'. @ :0
+[      23ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://127.0.0.1:8765/project/support.js:0

@@ -1,0 +1,30 @@
+# Patch layer for the CLI-owned `headless` DSH profile used by the Claude Code bridge.
+#
+# The shipped `headless` template only composes `@deepseek-ai/dsh-base` +
+# `@deepseek-ai/dsh-headless`, whose default model route is `deepseek-official`.
+# This layer mirrors the verified `desktop` profile route so a delegated run
+# resolves exactly the same provider/model/profile as the interactive app.
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    provider: opencode-go
+    model: deepseek-v4.1-flash
+    reasoningEffort: max
+- id: llm-pi-ai
+  name: "@deepseek-ai/dsh-llm-pi-ai"
+  config:
+    providers:
+      opencode-go:
+        baseURL: https://opencode.ai/zen/go/v1
+        models:
+          - id: deepseek-v4.1-flash
+            name: DeepSeek V4.1 Flash
+            contextWindow: 1000000
+            maxTokens: 384000
+            input:
+              - text
+              - image
+- id: llm-deepseek
+  name: "@deepseek-ai/dsh-llm-deepseek-api-key"
+  config:
+    models: []
