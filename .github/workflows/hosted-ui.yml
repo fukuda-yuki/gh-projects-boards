@@ -1,5 +1,4 @@
-# TEMPORARY measurement branch for #124 acceptance (not for merge): baseline 05fe629 + exported scroll harness
-# vs candidate b5284c0 on one runner at 1920x1080, alternating runs, with desktop recordings.
+# TEMPORARY rerun branch for #124 acceptance (not for merge): suspect hosted tests, baseline 05fe629 vs candidate b5284c0.
 name: hosted-ui
 on:
   workflow_dispatch:
@@ -39,57 +38,27 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'candidate build failed' }
           dotnet build ../base/GhProjectsBoards.sln --configuration Release
           if ($LASTEXITCODE -ne 0) { throw 'baseline build failed' }
-      - name: Get ffmpeg for desktop recordings
+      - name: Rerun the suspect tests five times on each side
         shell: pwsh
         continue-on-error: true
         run: |
-          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress | Out-Null }
-          ffmpeg -version | Select-Object -First 1
-      - name: Measure alternately (baseline, candidate, baseline, candidate)
-        shell: pwsh
-        run: |
-          $out = Join-Path $env:GITHUB_WORKSPACE 'measure-out'
-          New-Item -ItemType Directory -Force $out | Out-Null
-          $ffmpeg = (Get-Command ffmpeg -ErrorAction SilentlyContinue)?.Source
-          foreach ($pass in 1, 2) {
+          $where = "test =~ /InsertAndIndentRollUpTheParent|ChartWidthChangesKeepVisibleDates|EmptyFilterCancelsPendingText|EnterAppliesFilterBeforePause/"
+          foreach ($pass in 1..5) {
             foreach ($side in 'baseline', 'candidate') {
               $root = if ($side -eq 'baseline') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
-              $name = "$side-$pass"
-              $env:GHPB_PLAN_EVIDENCE = Join-Path $out $name
-              $rec = $null
-              if ($ffmpeg -and $pass -eq 1) {
-                $rec = Start-Process $ffmpeg -ArgumentList @('-y','-f','gdigrab','-framerate','30','-i','desktop','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p','-f','matroska', (Join-Path $out "$name.mkv")) -PassThru -WindowStyle Hidden -RedirectStandardError (Join-Path $out "$name-ffmpeg.log")
-                Start-Sleep -Seconds 2
-              }
               Push-Location $root
-              try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetPerformance' -TimeoutSeconds 1800 } catch { Write-Host "$name failed: $_" }
+              try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where $where -TimeoutSeconds 900 } catch { Write-Host "$side-$pass failed: $_" }
               finally { Pop-Location }
-              if ($rec) { Stop-Process -Id $rec.Id -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
               $run = Get-ChildItem (Join-Path $root 'TestResults/ui-integration') -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
-              Copy-Item -Recurse $run.FullName (Join-Path $out "$name-run")
-              $meta = Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json
-              Write-Host "$name exit=$($meta.exitCode) counts=$($meta.counts | ConvertTo-Json -Compress)"
-              Get-ChildItem $env:GHPB_PLAN_EVIDENCE -Filter *.json -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "== $name $($_.Name)"; Get-Content -Raw $_.FullName | Write-Host }
+              Copy-Item -Recurse $run.FullName (Join-Path $env:GITHUB_WORKSPACE "measure-out/rerun-$side-$pass")
+              [xml]$x = Get-Content -Raw (Join-Path $run.FullName 'results.xml')
+              foreach ($c in $x.SelectNodes('//test-case')) { Write-Host "RERUN $side-$pass $($c.result) $($c.name) $($c.failure.message.'#cdata-section' -replace '\s+',' ')" }
             }
-          }
-          Remove-Item Env:\GHPB_PLAN_EVIDENCE
-      - name: Native keys, pointer and clipboard (baseline, candidate)
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          foreach ($side in 'baseline', 'candidate') {
-            $root = if ($side -eq 'baseline') { (Resolve-Path ../base).Path } else { $env:GITHUB_WORKSPACE }
-            Push-Location $root
-            try { ./scripts/Test-UiIntegration.ps1 -NoBuild -Where 'cat == PlanSheetNative' -TimeoutSeconds 1800 } catch { Write-Host "$side native failed: $_" }
-            finally { Pop-Location }
-            $run = Get-ChildItem (Join-Path $root 'TestResults/ui-integration') -Directory | Sort-Object LastWriteTime | Select-Object -Last 1
-            Copy-Item -Recurse $run.FullName (Join-Path $env:GITHUB_WORKSPACE "measure-out/$side-native-run")
-            Write-Host "$side native counts=$((Get-Content -Raw (Join-Path $run.FullName 'metadata.json') | ConvertFrom-Json).counts | ConvertTo-Json -Compress)"
           }
       - name: Upload measurements and recordings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: measure-124
+          name: rerun-124
           path: measure-out
           if-no-files-found: warn
