@@ -50,7 +50,7 @@ internal sealed partial class PlanSheetView : Grid
     internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
     internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
-        new(null, "ID", 52), new(null, "インジケーター", 28, true), new(PlanField.Title, "タスク名", 272), new(PlanField.Assignees, "担当者", 80),
+        new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 272), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
@@ -68,8 +68,8 @@ internal sealed partial class PlanSheetView : Grid
     internal double DayWidth { get; private set; } = 8;
     internal DateOnly FirstDay { get; private set; }
     internal int DayCount { get; private set; } = 365;
-    internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? DateOnly.FromDateTime(DateTime.Today);
-    internal static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    internal DateOnly StatusDate => Session.Document.State.Settings.StatusDate ?? PlanClock.Today;
+    internal static DateOnly Today => PlanClock.Today;
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
     private ScrollViewer? rowScroll;
     private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
@@ -81,6 +81,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly Button retrySave = Id(new Button { Content = "保存を再試行", Visibility = Visibility.Collapsed }, "PlanSheetRetrySave");
     private string? headerKey, timelineKey;
     private string acceptedFilter = "";
+    private Func<PlanRow, bool>? filterPredicate;
     private long filterGeneration;
     private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
@@ -99,7 +100,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
-    private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選ぶと、開始と終了の理由がここに出ます", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
+    private readonly TextBlock emptyHint = Id(new TextBlock { Text = "タスクを選択すると、開始日と終了日の根拠を表示します", Foreground = Brush("TextFillColorSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetEmptyHint");
     private readonly TextBlock totals = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), HorizontalAlignment = HorizontalAlignment.Right }, "PlanSheetTotals");
     private readonly Border slipPill = new() { Background = Brush("GanttLateTintBrush"), CornerRadius = new(11), Padding = new(8, 2, 8, 2), Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton issueLink = Id(new HyperlinkButton { Padding = new(0), MinHeight = 0 }, "PlanSheetIssue");
@@ -129,7 +130,7 @@ internal sealed partial class PlanSheetView : Grid
         controls.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         controls.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var scales = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
-        scales.Children.Add(new TextBlock { Text = "尺度", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
+        scales.Children.Add(new TextBlock { Text = "表示単位", VerticalAlignment = VerticalAlignment.Center }); scales.Children.Add(zoom);
         var filterBox = new Grid();
         filter.Padding = new(30, 4, 24, 4);
         filterBox.Children.Add(filter);
@@ -138,7 +139,7 @@ internal sealed partial class PlanSheetView : Grid
             IsHitTestVisible = false, IsTabStop = false, Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetFilterSearch"));
         scales.Children.Add(filterBox); scales.Children.Add(filterCount);
         controls.Children.Add(scales); SetColumn(scales, 1);
-        AutomationProperties.SetName(statusDate, "状況日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
+        AutomationProperties.SetName(statusDate, "基準日"); AutomationProperties.SetName(zoom, "ガントの表示単位"); AutomationProperties.SetName(filter, "タイトルで絞り込み");
         Children.Add(controls);
         var commands = commandBar = Id(new SheetCommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
             OverflowButtonVisibility = CommandBarOverflowButtonVisibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Left }, "PlanSheetCommands");
@@ -264,6 +265,7 @@ internal sealed partial class PlanSheetView : Grid
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
             var value = statusDate.Date is { } date ? DateOnly.FromDateTime(date.Date) : (DateOnly?)null;
+            if (value is null) { Refresh(); return; }
             if (changeStatusDate is not null) { await changeStatusDate(value); Refresh(); }
             else await Run(async () => { await CommitPending(); Check(await Session.Execute(new ReplacePlanSettings(Session.Document.State.Settings with { StatusDate = value }), Today)); Refresh(); }, "Status date");
         };
@@ -318,6 +320,28 @@ internal sealed partial class PlanSheetView : Grid
         try { filter.Text = acceptedFilter; }
         finally { rendering = wasRendering; }
     }
+    internal void FilterChangedTasks(IReadOnlySet<string> identities)
+    {
+        CancelPendingFilter();
+        acceptedFilter = "日程変更";
+        filterPredicate = row => identities.Contains(row.Identity) && !SummaryIds.Contains(row.Identity);
+        rendering = true;
+        try { filter.Text = acceptedFilter; }
+        finally { rendering = false; }
+        Refresh();
+    }
+    internal void ClearChangedTasksFilter()
+    {
+        if (filterPredicate is null) return;
+        CancelPendingFilter();
+        acceptedFilter = ""; filterPredicate = null;
+        rendering = true;
+        try { filter.Text = ""; }
+        finally { rendering = false; }
+        Refresh();
+    }
+    private bool MatchesFilter(PlanRow row) => filterPredicate?.Invoke(row)
+        ?? row.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase);
     private Task ApplyFilter()
     {
         filterDelay.Stop();
@@ -335,7 +359,7 @@ internal sealed partial class PlanSheetView : Grid
             }
             if (generation != filterGeneration || filter.Text != proposed || disposed) return;
             pendingFrame = metrics.Begin(Session.Document.State.Rows.Length, "filter");
-            acceptedFilter = proposed;
+            acceptedFilter = proposed; filterPredicate = null;
             metrics.Mark("accepted");
             Refresh();
             metrics.Mark("presented");
@@ -474,12 +498,12 @@ internal sealed partial class PlanSheetView : Grid
                 FinishInput();
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
-            var value = PlanSheetEditing.Parse(Session.Document, field, text);
+            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today);
             PlanCommand command;
             if (identity.Length == 0)
             {
                 if (Session.Document.State.Settings.DefaultRepository is not { Length: > 0 } repository)
-                    throw new ArgumentException("設定で既定リポジトリを選んでください。");
+                    throw new ArgumentException("設定で新規 Issue の作成先を選んでください。");
                 var row = PlanRow.New("", repository);
                 // Use the same typed edit semantics (End -> Fixed) for a new row.
                 var temporary = Session.Document with { State = Session.Document.State with { Rows = Session.Document.State.Rows.Add(row) } };
@@ -559,7 +583,7 @@ internal sealed partial class PlanSheetView : Grid
         var matches = 0;
         foreach (var row in document.State.Rows)
         {
-            var matchesFilter = acceptedFilter.Length > 0 && row.Title.Contains(acceptedFilter, StringComparison.CurrentCultureIgnoreCase);
+            var matchesFilter = acceptedFilter.Length > 0 && MatchesFilter(row);
             if (matchesFilter) matches++;
             if (pendingRows.Contains(row.Identity) || (acceptedFilter.Length > 0 ? matchesFilter : !HiddenByFold(row))) next.Add(row.Identity);
         }
@@ -595,10 +619,14 @@ internal sealed partial class PlanSheetView : Grid
         }
     }
     internal string Header(Column column) => column.Label;
-    private string HeaderHelp(Column column) => column.Field is { } field
+    internal static string FullName(Column column) => column.Field switch {
+        PlanField.Estimate => "見積工数", PlanField.Actual => "実績工数", PlanField.Remaining => "見込み残存工数", _ => column.Label };
+
+    internal static string EffortPrefix(Column column) => column.Field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining ? FullName(column) + " · " : "";
+    private string HeaderHelp(Column column) => EffortPrefix(column) + (column.Field is { } field
         ? Session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)?.Name is { } name ? "GitHub: " + name
             : field == PlanField.Title ? "GitHub: Title" : field == PlanField.Assignees ? "GitHub: Assignees" : "未設定"
-        : column.Label;
+        : column.Label);
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
     internal DateOnly? CellDate(string identity, PlanField field) => field switch {
@@ -609,7 +637,8 @@ internal sealed partial class PlanSheetView : Grid
         ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""
         : field == PlanField.Assignees && Rows.TryGetValue(identity, out var row)
             ? string.Join(", ", row.Assignees.Select(id => Session.Document.Sync.PeopleNames.GetValueOrDefault(id)
-                ?? peopleNames.GetValueOrDefault(id) ?? "担当者（未確認）")) : Display(identity, field);
+                ?? peopleNames.GetValueOrDefault(id) ?? "担当者（未確認）")) : field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining
+                ? Display(identity, field).TrimEnd('h') : Display(identity, field);
     internal PlanTaskLateness? LatenessOf(string identity) => lateness.Tasks.GetValueOrDefault(identity);
     private string AssigneeName(string id) => !string.IsNullOrWhiteSpace(peopleNames.GetValueOrDefault(id)) ? peopleNames[id]
         : !string.IsNullOrWhiteSpace(Session.Document.Sync.PeopleNames.GetValueOrDefault(id)) ? Session.Document.Sync.PeopleNames[id] : "担当者（未確認）";
@@ -622,9 +651,9 @@ internal sealed partial class PlanSheetView : Grid
         string Date(DateOnly? day) => DateText(day);
         return field switch {
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
-            PlanField.Estimate => computed.Estimate?.ToString(CultureInfo.CurrentCulture) ?? "",
-            PlanField.Remaining => computed.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "",
-            PlanField.Actual => computed.Actual?.ToString(CultureInfo.CurrentCulture) ?? "",
+            PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
+            PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
+            PlanField.Actual => computed.Actual is { } actual ? actual.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.StartNoEarlierThan => Date(row.StartNoEarlierThan),
             PlanField.Fixed => row.Fixed ? "固定" : "",
             PlanField.Predecessors => string.Join(", ", row.Predecessors.Select(p => PlanIds.TryGetValue(p, out var id) ? id.ToString() : "計画外")),
@@ -740,7 +769,7 @@ internal sealed partial class PlanSheetView : Grid
             var text = Id(new TextBlock { Text = column.Indicator ? "\uE946" : Header(column), Width = column.Width, Padding = new(8, 0, 4, 6), FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
                 "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
             if (column.Indicator) text.FontFamily = new FontFamily("Segoe Fluent Icons");
-            AutomationProperties.SetName(text, column.Label); AutomationProperties.SetHelpText(text, HeaderHelp(column));
+            AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, HeaderHelp(column));
             ToolTipService.SetToolTip(text, HeaderHelp(column)); sheetHead.Children.Add(text);
         }
         sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
@@ -821,9 +850,9 @@ internal sealed partial class PlanSheetView : Grid
             Stroke = Brush("SystemControlHighlightAccentBrush"), StrokeThickness = 2 }, "PlanStatusLine"));
         if (statusX < 0 || statusX > ChartViewport) return;
         var pill = Id(new Border { CornerRadius = new(9), Padding = new(7, 1, 7, 1), Background = Brush("SystemControlHighlightAccentBrush"),
-            Child = new TextBlock { Text = $"状況日 {StatusDate:M/d}", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Child = new TextBlock { Text = $"基準日 {StatusDate:M/d}", FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Foreground = Brush("TextOnAccentFillColorPrimaryBrush") } }, "PlanStatusDateLabel");
-        AutomationProperties.SetName(pill, $"状況日 {StatusDate:M/d}");
+        AutomationProperties.SetName(pill, $"基準日 {StatusDate:M/d}");
         chartHead.Children.Add(pill);
         pill.Measure(new Size(double.PositiveInfinity, 24));
         var pillWidth = pill.DesiredSize.Width;

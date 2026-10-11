@@ -11,6 +11,181 @@ namespace GhProjectsBoards.Tests;
 [Parallelizable(ParallelScope.All)]
 internal sealed class PlanPublisherTests
 {
+    [Test, Category("PlanReset")]
+    public async Task ResetAdoptsFreshValuesAndDatesAndUndoRestoresMergedWork()
+    {
+        var settings = Settings with { People = [new("U1", "Alice", 50, 20)], CompanyDaysOff = [Today.AddDays(2)], ProjectStart = Today.AddDays(-10) };
+        await Start(3, settings: settings);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Older edit")]), Today);
+        var added = PlanRow.New("Never created", "acme/repo");
+        await session.Execute(new InsertPlanRows([added]), Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Actual, 4m)]), Today);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Where(i => i.Row.Identity != "I3").Select(i => i with {
+            Row = i.Row with { Title = "Remote " + i.Row.Identity, Remaining = 16, Start = Today.AddDays(-2), End = Today.AddDays(-1) }
+        }).Reverse().ToImmutableArray() });
+        await session.SaveSync(session.Document.Sync with { Failures = [new("I2", PlanField.Actual, "Verified failure")] });
+        var day = Today.AddDays(7);
+        var result = await publisher.ResetAsync(session, day);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.Multiple(() => {
+            Assert.That(PlanJson.Text(session.Document.State.Rows), Is.EqualTo(PlanJson.Text(session.Document.Baseline.Rows)));
+            Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I2", "I1" }));
+            Assert.That(session.Document.State.Rows.Select(r => r.Title), Is.EqualTo(new[] { "Remote I2", "Remote I1" }));
+            Assert.That(session.Document.State.Settings, Is.EqualTo(settings with { StatusDate = day }));
+            Assert.That(session.Document.Sync.Conflicts, Is.Empty);
+            Assert.That(session.Document.Sync.Unavailable, Is.Empty);
+            Assert.That(session.Document.Sync.Failures, Is.Empty);
+            Assert.That(session.Changes(day).TaskCount, Is.Zero);
+            Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
+            Assert.That(session.Schedule(day).All(t => t.Start.Value == Today.AddDays(-2) && t.End.Value == Today.AddDays(-1)), Is.True);
+        });
+        await Reopen();
+        await session.Undo(day);
+        Assert.That(session.Document.Dates.Held, Is.Null);
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Older edit"));
+        Assert.That(session.Document.Baseline.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Remote I1"));
+        Assert.That(session.Document.State.Rows.Any(r => r.Identity == added.Identity), Is.True);
+        Assert.That(session.Document.Sync.Unavailable, Does.Contain("I3"));
+        Assert.That(session.Document.Sync.Conflicts.Any(c => c.Identity == "I1" && c.Field == PlanField.Title), Is.True);
+        Assert.That(session.Changes(day).TaskCount, Is.GreaterThan(0));
+        await session.SaveSync(session.Document.Sync with { Failures = [new("I2", PlanField.Actual, "Verified failure after Undo")] });
+        await session.Redo(day);
+        Assert.That(session.Changes(day).TaskCount, Is.Zero);
+        Assert.That(session.Document.Sync.Failures, Is.Empty);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "After reset")]), day);
+        Assert.That(session.Document.Dates.Recalculated, Is.EqualTo(PlanDateHoldOrigin.Reset));
+        Assert.That(session.Schedule(day).Any(t => t.Start.Value != Today.AddDays(-2)), Is.True);
+        await session.Undo(day); // edit
+        await session.Undo(day); // reset
+        await session.Undo(day); // actual
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I2").Actual, Is.Null);
+        await session.Undo(day); // insert
+        Assert.That(session.Document.State.Rows.Any(r => r.Identity == added.Identity), Is.False);
+        await session.Undo(day); // older title
+        Assert.That(session.Document.State.Rows.Single(r => r.Identity == "I1").Title, Is.EqualTo("Remote I1"));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReset")]
+    public async Task ResetAtZeroUnpublishedReadsAgainAndKeepsGitHubProjectOrder()
+    {
+        await Start(3, state => state with {
+            Issues = state.Issues.Select(i => i.Row.Identity == "I1" ? i : i with { Row = i.Row with { Parent = "I1" } }).ToImmutableArray(),
+            SubOrders = state.SubOrders.Add("I1", ["I2", "I3"])
+        });
+        Assert.That((await publisher.ResetAsync(session, Today)).Succeeded, Is.True);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i with {
+            Row = i.Row with { Start = Today.AddDays(-3), End = i.Row.Identity == "I1" ? null : Today.AddDays(-1) }
+        }).ToImmutableArray() });
+        var day = Today.AddDays(7);
+        Assert.That((await publisher.ResetAsync(session, day)).Succeeded, Is.True);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day));
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "I1", "I2", "I3" }));
+        Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(new[] { "I2", "I3" }));
+        Assert.That(session.Schedule(day).Single(r => r.Input.Identity == "I1").End.Value, Is.Null);
+        Assert.That(session.Changes(day).TaskCount, Is.Zero);
+        Assert.That((await publisher.ResetAsync(session, day.AddDays(1))).Succeeded, Is.True);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(day.AddDays(1)));
+        Assert.That(session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.Reset));
+        Assert.That(session.Changes(day).TaskCount, Is.Zero);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanReset")]
+    public async Task ResetFailedOrCancelledReadPreservesStoredCheckpoint(bool cancel)
+    {
+        await Start(1);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local")]), Today);
+        var before = PlanJson.Text(session.Document);
+        var bytes = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+        if (cancel) {
+            using var cancellation = new CancellationTokenSource();
+            var progress = new InlineProgress<RemoteProgress>(p => { if (p.Stage == "日程を計算") cancellation.Cancel(); });
+            Assert.ThrowsAsync<OperationCanceledException>(() => publisher.ResetAsync(session, Today.AddDays(7), cancellation.Token, progress));
+        } else {
+            Scenario("readfailure");
+            Assert.That((await publisher.ResetAsync(session, Today.AddDays(7))).Succeeded, Is.False);
+        }
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(bytes));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanReset")]
+    public async Task ResetRejectsUnreconciledPublicationWithoutChangingCheckpoint(bool unverified)
+    {
+        await Start(1);
+        await session.SaveSync(session.Document.Sync with {
+            Publish = new(Guid.NewGuid().ToString("N"), []), Unverified = unverified ? ["I1"] : []
+        });
+        var bytes = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+        var result = await publisher.ResetAsync(session, Today);
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(result.Error, Does.Contain("発行"));
+        Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(bytes));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanReset")]
+    public async Task ResetRejectsAnotherRemoteOperation()
+    {
+        await Start(1);
+        var bytes = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+        using var operation = session.BeginRemoteOperation();
+        Assert.That((await publisher.ResetAsync(session, Today)).Succeeded, Is.False);
+        Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(bytes));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task RefreshFailureOrCancellationPreservesDatePlanAndHistory(bool cancel)
+    {
+        await Start(1);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = Today.AddDays(-3) }), Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local")]), Today);
+        var before = session.Document;
+        var bytes = File.ReadAllBytes(new PlanStore(root).FileFor(Project));
+        var undo = session.UndoCount;
+        if (cancel)
+        {
+            using var cancellation = new CancellationTokenSource();
+            var progress = new InlineProgress<RemoteProgress>(p => { if (p.Stage == "日程を計算") cancellation.Cancel(); });
+            Assert.ThrowsAsync<OperationCanceledException>(() => publisher.RefreshAsync(session, Today.AddDays(10), cancellation.Token, progress));
+        }
+        else
+        {
+            Scenario("readfailure");
+            Assert.That((await publisher.RefreshAsync(session, Today.AddDays(10))).Succeeded, Is.False);
+        }
+        Assert.That(session.Document, Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        Assert.That(File.ReadAllBytes(new PlanStore(root).FileFor(Project)), Is.EqualTo(bytes));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test]
+    public async Task RefreshReportsChangedDatesAndSupersedesPickedDateWhilePublishKeepsIt()
+    {
+        await Start(1, state => state with { Issues = state.Issues.Select(i => i with { Row = i.Row with { Remaining = 16 } }).ToImmutableArray() });
+        var picked = Today.AddDays(1);
+        await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { StatusDate = picked }), Today);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local")]), Today);
+        var published = await publisher.PublishAsync(session, Today.AddDays(10));
+        Assert.That(published.Succeeded, Is.True, published.Error);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(picked));
+        Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Start, Is.EqualTo(picked));
+        var refreshed = await publisher.RefreshAsync(session, Today.AddDays(3));
+        Assert.That(refreshed.Succeeded, Is.True, refreshed.Error);
+        Assert.That(session.Document.State.Settings.StatusDate, Is.EqualTo(Today.AddDays(3)));
+        Assert.That(refreshed.Refresh!.PreviousStatusDate, Is.EqualTo(picked));
+        Assert.That(refreshed.Refresh.StatusDate, Is.EqualTo(Today.AddDays(3)));
+        Assert.That(refreshed.Refresh.ChangedTasks, Is.EquivalentTo(new[] { "I1" }));
+        Assert.That((await publisher.RefreshAsync(session, Today.AddDays(3))).Refresh!.ChangedTasks, Is.Empty);
+    }
+
     [Test]
     public async Task LastChildOutdentReactivatesStoredAssigneeConflictBeforeAnyRemoteWrite()
     {

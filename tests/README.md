@@ -19,7 +19,7 @@ The policy follows the classical school of *Unit Testing: Principles, Practices,
 | In-process collaborators | Scheduler, document, history, validation, view models, real views and controls | Use the real ones. |
 | Managed out-of-process | The app's own local storage, settings and journal | Use the real implementation with isolated storage per test. |
 | Unmanaged out-of-process | GitHub through gh, OS clipboard, native file picker, Microsoft IME | Substitute at the outermost edge: the fake gh executable, `IGhProcessRunner`, the clipboard transport, the picker result. |
-| Nondeterministic inputs | Today's date, the 状況日 | Pass them in as values. |
+| Nondeterministic inputs | Today's date, the 基準日 | Pass them in as values. |
 
 What the system sends to an unmanaged dependency is observable behavior. Assert it there: which writes were sent, that a failed mutation is not resent, that a read-only flow sends no mutation. Never assert communication between the application's own classes or with managed dependencies: no call counts, call order, internal method invocations or private state.
 

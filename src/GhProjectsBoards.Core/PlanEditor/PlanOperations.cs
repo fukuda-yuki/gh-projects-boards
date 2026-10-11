@@ -48,7 +48,14 @@ internal static class PlanOperations
         { GitHubStart = baseline.GetValueOrDefault(r.Identity)?.Start, GitHubEnd = baseline.GetValueOrDefault(r.Identity)?.End }).ToArray(),
             new PlanSettings { StatusDate = settings.StatusDate, ProjectStart = settings.ProjectStart,
                 Calendar = new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() },
-                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today);
+                People = settings.People.Select(p => new PlanPerson(p.Identity, p.Rate)).ToArray() }, today, holdGitHubDates: document.Dates.Held is not null);
+    }
+    internal static ImmutableHashSet<string> ChangedTaskDates(PlanDocument before, PlanDocument after, DateOnly today)
+    {
+        var previous = Schedule(before, today).ToDictionary(t => t.Input.Identity);
+        return Schedule(after, today).Where(t => !t.IsSummary &&
+            (!previous.TryGetValue(t.Input.Identity, out var old) || old.Start.Value != t.Start.Value || old.End.Value != t.End.Value))
+            .Select(t => t.Input.Identity).ToImmutableHashSet();
     }
     internal static bool RowEqual(PlanRow? a, PlanRow? b) => ReferenceEquals(a, b) || a is not null && b is not null &&
         a with { Assignees = b.Assignees, Predecessors = b.Predecessors } == b &&
@@ -66,7 +73,7 @@ internal static class PlanOperations
         Require(s.DefaultRepository is null || Repository(s.DefaultRepository), "リポジトリはowner/repositoryで指定してください。");
         foreach (var p in s.People)
         {
-            Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または許容量が不正です。");
+            Require(!string.IsNullOrWhiteSpace(p.Identity) && !string.IsNullOrWhiteSpace(p.Name) && p.Rate > 0 && p.Rate <= 100 && !(p.Allowance < 0), "担当者、稼働率または上限工数が不正です。");
         }
         foreach (var c in s.Columns)
         {
@@ -325,7 +332,7 @@ internal static class PlanOperations
         foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];
-            if (r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
+            if (d.Dates.Held is null && r.Closed && !calculated.IsSummary) r = r with { Remaining = 0 };
             if (!baseline.TryGetValue(r.Identity, out var old)) { result[r.Identity] = [PlanField.NewTask]; continue; }
             var fields = ImmutableArray.CreateBuilder<PlanField>();
             foreach (var field in new[] { PlanField.Title, PlanField.Repository, PlanField.Status, PlanField.Closed, PlanField.Parent,
@@ -337,7 +344,7 @@ internal static class PlanOperations
                 fields.Add(PlanField.Start);
             if (calculated.End.Value != old.End && !IsUnmappedCalculation(calculated, PlanField.End, d.State.Settings))
                 fields.Add(PlanField.End);
-            foreach (var field in fields.Where(field => IsRecalculatedField(calculated, field)))
+            foreach (var field in fields.Where(field => d.Dates.Held is null && IsRecalculatedField(calculated, field)))
                 recalculated.Add((r.Identity, field));
             if (moved.Contains(r.Identity)) fields.Add(PlanField.Order);
             var children = childrenByParent[r.Identity];

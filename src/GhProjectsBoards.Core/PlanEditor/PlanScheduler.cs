@@ -5,8 +5,8 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal static class PlanScheduler
 {
-    public static IReadOnlyList<ScheduledTask> Calculate(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today)
-        => new Calculation(tasks, settings, today).Run();
+    public static IReadOnlyList<ScheduledTask> Calculate(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today, bool holdGitHubDates = false)
+        => new Calculation(tasks, settings, today, holdGitHubDates).Run();
 
     internal static int? PublishedEndLateness(DateOnly? publishedEnd, DateOnly? calculatedEnd, PlanCalendar calendar)
     {
@@ -77,6 +77,7 @@ internal static class PlanScheduler
         private readonly IReadOnlyList<PlanTask> tasks;
         private readonly PlanSettings settings;
         private readonly DateOnly statusDate;
+        private readonly bool holdGitHubDates;
         private readonly Dictionary<string, PlanTask> byId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, List<string>> children = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string[]> ancestors = new(StringComparer.Ordinal);
@@ -87,9 +88,10 @@ internal static class PlanScheduler
         private readonly HashSet<string> active = new(StringComparer.Ordinal);
         private readonly List<string> path = [];
 
-        public Calculation(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today)
+        public Calculation(IReadOnlyList<PlanTask> tasks, PlanSettings settings, DateOnly today, bool holdGitHubDates)
         {
             this.tasks = tasks;
+            this.holdGitHubDates = holdGitHubDates;
             this.settings = settings;
             statusDate = settings.StatusDate ?? today;
             holidays = settings.Calendar.Holidays.Dates.Select(h => h.Date).ToHashSet();
@@ -225,6 +227,19 @@ internal static class PlanScheduler
                 warnings.Add(summary ? "工数の集計が範囲外" : "日程が日付の範囲外");
                 result = Isolate(task, warnings, summary);
             }
+            if (holdGitHubDates && result.Valid)
+            {
+                // Retain effort rollups and structural checks without deriving dates from the clock or children.
+                result = result with {
+                    Start = task.GitHubStart is { } start ? Point.Morning(start) : null,
+                    End = task.GitHubEnd is { } end ? new Point(end.DayNumber, 18) : null,
+                    Row = result.Row with {
+                        Start = new(task.GitHubStart, DateOrigin.Kept, false), End = new(task.GitHubEnd, DateOrigin.Kept, false),
+                        StartReason = "GitHub の日付（次の編集で再計算）"
+                    }
+                };
+            }
+            if (holdGitHubDates) result = result with { Row = result.Row with { DatesHeld = true } };
             results.Add(id, result);
             return result;
         }
@@ -240,8 +255,12 @@ internal static class PlanScheduler
         }
         private Result Leaf(PlanTask task, List<(PlanTask Task, Result Result)> dependencies, HashSet<string> warnings)
         {
+            if (holdGitHubDates)
+                return Create(task, task.GitHubStart is { } heldStart ? Point.Morning(heldStart) : null,
+                    task.GitHubEnd is { } heldEnd ? new Point(heldEnd.DayNumber, 18) : null,
+                    DateOrigin.Kept, DateOrigin.Kept, "GitHub の日付（次の編集で再計算）", warnings);
             var earliest = Point.Morning(statusDate);
-            var reason = "状況日";
+            var reason = "基準日";
             void Consider(Point candidate, string candidateReason, bool winTie = true)
             {
                 if (candidate.CompareTo(earliest) > 0 || winTie && candidate.CompareTo(earliest) == 0)

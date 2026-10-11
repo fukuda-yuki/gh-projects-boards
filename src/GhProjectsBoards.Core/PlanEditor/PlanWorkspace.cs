@@ -19,7 +19,7 @@ internal static class PlanColumnMatching
 }
 
 internal sealed record PlanWorkspaceCatalog(int Version, ImmutableArray<ProjectChoice> Projects, ScopedId? Selected);
-internal sealed class PlanWorkspace(PlanStore store)
+internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
 {
     private readonly Dictionary<ScopedId, PlanSession> sessions = [];
     private PlanWorkspaceCatalog catalog = new(1, [], null);
@@ -43,10 +43,10 @@ internal sealed class PlanWorkspace(PlanStore store)
                     .Select(id => new PlanResource(id, document.Sync.PeopleNames.GetValueOrDefault(id, "担当者（未確認）"), 100, null))).ToArray();
         }
     }
-    public static PlanWorkspace ForUser() => new(PlanStore.ForUser());
+    public static PlanWorkspace ForUser(Func<DateOnly> today) => new(PlanStore.ForUser(), today);
     public async Task<PlanCsvPreview> PreviewCsv(PlanCsvFile file, CancellationToken token = default)
     {
-        var session = Session ?? throw new InvalidOperationException("Projectを開いてください。");
+        var session = Session ?? throw new InvalidOperationException("プロジェクトを開いてください。");
         if (Service is null || Context is null || session.Document.Project.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
         if (!file.Errors.IsEmpty) return new(file.Errors, null, false);
         using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
@@ -83,8 +83,8 @@ internal sealed class PlanWorkspace(PlanStore store)
             } while (true);
         }
         token.ThrowIfCancellationRequested();
-        if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("Projectが変更されました。CSVを選び直してください。");
-        return PlanCsvImport.Prepare(session.Document, file, repositories, DateOnly.FromDateTime(DateTime.Today));
+        if (!ReferenceEquals(Session, session)) throw new InvalidOperationException("プロジェクトが変更されました。CSVを選び直してください。");
+        return PlanCsvImport.Prepare(session.Document, file, repositories, today());
     }
     public async Task Connect(GhProjectsBoards.App.GitHub.GhConnectionService service, CancellationToken token = default)
     {
@@ -100,7 +100,7 @@ internal sealed class PlanWorkspace(PlanStore store)
             catalog = PlanJson.Read<PlanWorkspaceCatalog>(await File.ReadAllBytesAsync(path, token));
             if (catalog.Version != 1 || catalog.Projects.IsDefault || catalog.Projects.Any(p => p.Id.Scope.ViewerId <= 0)
                 || catalog.Projects.Select(p => p.Id).Distinct().Count() != catalog.Projects.Length)
-                throw new InvalidOperationException("Project一覧を読み込めません。");
+                throw new InvalidOperationException("プロジェクト一覧を読み込めません。");
         }
         var discovery = new ProjectDiscovery(service);
         var available = new List<ProjectChoice>();
@@ -108,7 +108,7 @@ internal sealed class PlanWorkspace(PlanStore store)
         foreach (var owner in await discovery.OwnersAsync(Context, token))
         {
             try { available.AddRange(await discovery.ProjectsAsync(Context, owner.Login, null, "", token)); }
-            catch (DiscoveryException) { token.ThrowIfCancellationRequested(); DiscoveryWarning = owner.Login + " のProjectを取得できません。再接続してください。"; }
+            catch (DiscoveryException) { token.ThrowIfCancellationRequested(); DiscoveryWarning = owner.Login + " のプロジェクトを取得できません。再接続してください。"; }
         }
         token.ThrowIfCancellationRequested();
         Available = available.DistinctBy(p => p.Id).ToArray();
@@ -125,7 +125,7 @@ internal sealed class PlanWorkspace(PlanStore store)
         var adoptionStarted = false;
         if (!sessions.TryGetValue(choice.Id, out var session))
         {
-            var opened = await PlanSession.OpenAsync(store, choice.Id, DateOnly.FromDateTime(DateTime.Today));
+            var opened = await PlanSession.OpenAsync(store, choice.Id, today());
             if (opened.Status == PlanLoadStatus.Blocked) throw new IOException(opened.Error);
             session = opened.Session;
             if (session is null)
@@ -133,7 +133,7 @@ internal sealed class PlanWorkspace(PlanStore store)
                 using var lease = await Service.BeginOperationAsync(Context, token, mutation: false);
                 var read = await PlanSnapshot.ReadConsistentAsync(Service, lease, Context, choice.Id, token, progress);
                 token.ThrowIfCancellationRequested();
-                if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("Projectを取得できません。");
+                if (read.Outcome != ProjectReadOutcome.Complete || read.Project is null) throw new InvalidOperationException("プロジェクトを取得できません。");
                 var project = read.Project;
                 var fields = project.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem && f.Availability == ValueAvailability.Present)
                     .Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType));
@@ -142,15 +142,15 @@ internal sealed class PlanWorkspace(PlanStore store)
                 names = names.SetItems(project.Issues.Values.SelectMany(i => i.Native?.Assignees ?? []).DistinctBy(p => p.Id)
                     .Select(p => new KeyValuePair<string, string>(p.Id.NodeId, p.Login)));
                 var people = names.Select(p => new PlanResource(p.Key, p.Value, 100, null)).ToImmutableArray();
-                var settings = new ProjectPlanSettings { Columns = PlanColumnMatching.Match(fields), People = people,
+                var settings = new ProjectPlanSettings { StatusDate = today(), Columns = PlanColumnMatching.Match(fields), People = people,
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
                 var remote = PlanSnapshot.From(read, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
-                { Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
+                { Dates = new(PlanDateHoldOrigin.FirstTakeIn), Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
                 progress?.Report(new("日程を計算"));
                 token.ThrowIfCancellationRequested();
                 adoptionStarted = true;
-                session = await PlanSession.CreateAsync(store, document, DateOnly.FromDateTime(DateTime.Today));
+                session = await PlanSession.CreateAsync(store, document, today());
                 RequireSave(await session.FlushAsync());
             }
             sessions.Add(choice.Id, session);
@@ -215,11 +215,19 @@ internal sealed class PlanWorkspace(PlanStore store)
         }
         return people.ToImmutable();
     }
-    public async Task Refresh(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
+    public async Task<PlanRefreshResult?> Refresh(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
     {
-        if (Session is null || Service is null || Context is null) return;
-        var result = await new PlanPublisher(Service, Context).RefreshAsync(Session, DateOnly.FromDateTime(DateTime.Today), token, progress);
+        if (Session is null || Service is null || Context is null) return null;
+        var result = await new PlanPublisher(Service, Context).RefreshAsync(Session, today(), token, progress);
         if (!result.Succeeded) throw new InvalidOperationException(result.Error);
+        return result.Refresh;
+    }
+    public async Task<PlanRefreshResult?> Reset(CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
+    {
+        if (Session is null || Service is null || Context is null) return null;
+        var result = await new PlanPublisher(Service, Context).ResetAsync(Session, today(), token, progress);
+        if (!result.Succeeded) throw new InvalidOperationException(result.Error);
+        return result.Refresh;
     }
     public async Task Flush()
     {
@@ -241,7 +249,7 @@ internal sealed class PlanWorkspace(PlanStore store)
             var latest = PlanJson.Read<PlanWorkspaceCatalog>(await File.ReadAllBytesAsync(path));
             if (latest.Version != 1 || latest.Projects.IsDefault || latest.Projects.Any(p => p.Id.Scope.ViewerId <= 0)
                 || latest.Projects.Select(p => p.Id).Distinct().Count() != latest.Projects.Length)
-                throw new IOException("Project一覧を読み込めません。");
+                throw new IOException("プロジェクト一覧を読み込めません。");
             candidate = candidate with { Projects = latest.Projects.Where(p => candidate.Projects.All(c => c.Id != p.Id))
                 .Concat(candidate.Projects).ToImmutableArray() };
         }

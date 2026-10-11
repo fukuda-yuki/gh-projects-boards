@@ -20,7 +20,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 
 ## Planning rules
 
-- Effort is entered and shown in person-hours (人時). One working day is eight hours: weekdays 09:00–13:00 and 14:00–18:00, excluding Japanese public holidays and explicit company days off. Personal days off are not maintained: versions run for months and the PMO cannot keep them current ([#128](https://github.com/fukuda-yuki/gh-projects-boards/issues/128)).
+- Effort is entered and shown in person-hours (h). One working day is eight hours: weekdays 09:00–13:00 and 14:00–18:00, excluding Japanese public holidays and explicit company days off. Personal days off are not maintained: versions run for months and the PMO cannot keep them current ([#128](https://github.com/fukuda-yuki/gh-projects-boards/issues/128)).
 - Effort follows the fields of a TFS task, which MS Project shares ([#131](https://github.com/fukuda-yuki/gh-projects-boards/issues/131)). Estimate (見積) is the original estimate (TFS Original Estimate, Project baseline work). Actual (実績) is the cumulative work done (Completed Work) and counts for the task's current assignee. Remaining (残) is the current estimate of the work left (Remaining Work) and drives scheduling, so an open task's forecast finish is worked back from it. The forecast (見込) is Actual + Remaining.
 - A task is complete when its Issue is closed, and it ends on its close date.
 - Scheduling is a bounded subset of MS Project auto-scheduling: finish-to-start predecessors, effort, the assignee's rate for the Project, the calendar, 開始日指定 (start no earlier than) and 日程固定 (keep typed dates). No lag, other link or constraint types, critical path, leveling or cost.

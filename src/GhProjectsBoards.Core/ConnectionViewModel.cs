@@ -130,7 +130,7 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
                 StatusText = FailureText(Connection.Authentication.Store == CredentialStore.Plaintext ? FailureKind.PlaintextCredentials : FailureKind.UnknownCredentialStore);
             else
                 StatusText = Issue.Failure == FailureKind.None && Project.Failure == FailureKind.None
-                    ? "接続を確認しました。個別のProject・Issueのアクセス権限は、その作業で確認します。"
+                    ? "接続を確認しました。個別のプロジェクト・Issueのアクセス権限は、その作業で確認します。"
                     : "接続を確認しました。対象の診断に取得できない項目があります。下の理由を確認してください。";
         }
         catch (OperationCanceledException)
@@ -191,7 +191,7 @@ internal sealed class ConnectionViewModel(Func<string, string, GhConnectionServi
             + (target.Failure == FailureKind.None ? "" : $"\n{FailureText(target.Failure)}");
     internal static string FailureText(FailureKind failure) => failure switch
     {
-        FailureKind.InvalidInput => "入力を確認してください。URLは接続先と同じホストのIssue／Projectを指定します。",
+        FailureKind.InvalidInput => "入力を確認してください。URLは接続先と同じホストのIssue／プロジェクトを指定します。",
         FailureKind.MissingExecutable => "gh.exeが見つかりません。GitHub CLIを導入するか、実行ファイルを指定してください。",
         FailureKind.StartFailed => "gh.exeを起動できません。実行ファイルと端末の実行権限を確認してください。",
         FailureKind.NotLoggedIn => "このホストには未ログインです。下のログイン手順を実行して再確認してください。",

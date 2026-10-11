@@ -34,7 +34,7 @@ internal sealed partial class PlanWorkspaceView
                 command = command with { AllowDuplicateCsv = true };
             }
             token.ThrowIfCancellationRequested();
-            if (!ReferenceEquals(workspace.Session, session)) throw new InvalidOperationException("Projectが変更されました。CSVを選び直してください。");
+            if (!ReferenceEquals(workspace.Session, session)) throw new InvalidOperationException("プロジェクトが変更されました。CSVを選び直してください。");
             var save = await session.Execute(command, Today);
             RenderTasks();
             sheet!.RevealAddedRow(command.Rows[0].Identity);

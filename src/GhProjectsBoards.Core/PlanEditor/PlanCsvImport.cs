@@ -89,7 +89,7 @@ internal static class PlanCsvImport
             decimal? estimate = null;
             if (source.Estimate.Length > 0)
             {
-                if (!decimal.TryParse(source.Estimate, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number) || number < 0) Error("見積は0以上の数値にしてください。");
+                if (!decimal.TryParse(source.Estimate, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number) || number < 0) Error("見積工数は0以上の数値にしてください。");
                 else estimate = number;
             }
             DateOnly? start = null;

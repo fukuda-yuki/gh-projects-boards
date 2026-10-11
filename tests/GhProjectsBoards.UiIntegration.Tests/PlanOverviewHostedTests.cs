@@ -257,7 +257,7 @@ internal sealed class PlanOverviewHostedTests
             Assert.That(status.X1, Is.EqualTo(sheet.X(Today)).Within(.1));
             Assert.That(status.StrokeThickness, Is.EqualTo(2));
             var pill = Ui.Find<Border>("PlanStatusDateLabel");
-            Assert.That(((TextBlock)pill.Child).Text, Is.EqualTo("状況日 10/5"));
+            Assert.That(((TextBlock)pill.Child).Text, Is.EqualTo("基準日 10/5"));
             Assert.That(Canvas.GetLeft(pill), Is.InRange(0d, sheet.ChartViewport - pill.ActualWidth));
             if (scale == "日") Assert.That(Canvas.GetLeft(pill) + pill.ActualWidth / 2, Is.EqualTo(sheet.X(Today)).Within(1));
             AssertNoOverlap(TimelineLabels("PlanTimelineUpper").Cast<FrameworkElement>().Append(pill));

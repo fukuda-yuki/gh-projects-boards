@@ -11,6 +11,7 @@ internal sealed partial class PlanWorkspaceView
     private readonly Grid publishReview = new() { RowSpacing = 8, Visibility = Visibility.Collapsed };
     private readonly ListView reviewLines = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanPublishLines");
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
+    private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
     private Button confirmPublish = null!;
     private bool publishing;
 
@@ -31,7 +32,7 @@ internal sealed partial class PlanWorkspaceView
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
         reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
@@ -47,6 +48,11 @@ internal sealed partial class PlanWorkspaceView
     {
         if (workspace.Session is not { } session) return;
         var document = session.Document;
+        publishStatusDate.Text = "日付は基準日 " + (document.State.Settings.StatusDate ?? Today).ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))
+            + " で計算したものです。" + (document.Dates.Recalculated switch {
+                PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
+                PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
+            });
         var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
         PlanPublishReviewGroup Group(string identity)
@@ -102,7 +108,7 @@ internal sealed partial class PlanWorkspaceView
         foreach (var failure in document.Sync.Failures)
             Group(failure.Identity).Lines.Add(new((failure.Reason == "NotDispatched" ? "未送信: " : "発行失敗: ") + PlanPublishText.Failure(failure)));
         foreach (var identity in document.Sync.Unverified)
-            Group(identity).Lines.Add(new("未検証 — 最新の情報に更新で確認"));
+            Group(identity).Lines.Add(new("GitHub で未確認 — 最新の情報に更新で確認"));
         if (groups.Count == 0) groups.Add("", new("", "", "", () => false) { Lines = [new("未発行の変更はありません")] });
         reviewLines.ItemsSource = groups.Values.ToArray();
         UpdatePublishAvailability();
@@ -112,6 +118,7 @@ internal sealed partial class PlanWorkspaceView
         var reasons = new List<string>();
         if (publishing) reasons.Add("発行中です。完了までお待ちください。");
         if (busyKind == "refresh") reasons.Add("最新の情報に更新しています。");
+        if (busyKind == "reset") reasons.Add("GitHub の状態に戻しています。");
         if (closing) reasons.Add("終了処理中です。");
         if (workspace.Session is not { } session) reasons.Add("プロジェクトを開いてください。");
         else {
@@ -138,7 +145,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, PlanField field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
-        var label = PlanSheetView.Columns.FirstOrDefault(c => c.Field == field)?.Label ?? field switch {
+        var label = PlanSheetView.Columns.FirstOrDefault(c => c.Field == field) is { } column ? PlanSheetView.FullName(column) : field switch {
             PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
             PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
             PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
@@ -154,7 +161,7 @@ internal sealed partial class PlanWorkspaceView
         {
             line.Text += "  競合  GitHub: " + ReviewValue(document, field, conflict.Remote);
             foreach (var remote in new[] { false, true })
-                line.Actions.Add(new(remote ? "GitHubを採用" : "ローカルを採用", $"PlanResolve{conflict.Identity}_{field}_{remote}", () => Run(async () => {
+                line.Actions.Add(new(remote ? "GitHub の値にする" : "この PC の値にする", $"PlanResolve{conflict.Identity}_{field}_{remote}", () => Run(async () => {
                     var position = ReviewPosition(identity);
                     Check(await workspace.Session!.ResolveConflict(conflict.Identity, field, remote, Today));
                     RenderTasks();
@@ -177,6 +184,7 @@ internal sealed partial class PlanWorkspaceView
         string Identity(string id) => field == PlanField.Assignees ? document.Sync.PeopleNames.GetValueOrDefault(id,
             document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）") : Caption(document, id);
         if (field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan && element.ValueKind == JsonValueKind.String && DateOnly.TryParseExact(element.GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day)) return day.ToString("yyyy/M/d", System.Globalization.CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)day.DayOfWeek] + ")";
+        if (field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining && element.ValueKind == JsonValueKind.Number) return element.ToString() + "h";
         return element.ValueKind switch {
             JsonValueKind.Array => element.GetArrayLength() == 0 ? "未入力" : string.Join("、", element.EnumerateArray().Select(e => Identity(e.GetString()!))),
             JsonValueKind.String => field == PlanField.Parent ? Identity(element.GetString()!) : element.GetString() is { Length: > 0 } text ? text : "未入力",
@@ -315,7 +323,7 @@ internal static class PlanPublishText
 {
     internal static string Failure(PlanPublishFailure failure) => failure.Reason switch
     {
-        "VerificationMismatch" when failure.Field == PlanField.NewTask => "Project への追加を確認できません",
+        "VerificationMismatch" when failure.Field == PlanField.NewTask => "プロジェクトへの追加を確認できません",
         "VerificationMismatch" => "GitHubへの反映を確認できません",
         "NotDispatched" => "まだGitHubへ送信されていません",
         _ when failure.Reason.IndexOf(": ", StringComparison.Ordinal) is var separator && separator >= 0 => failure.Reason[(separator + 2)..],

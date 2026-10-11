@@ -197,7 +197,7 @@ public sealed class PlanSheetRow : Grid
                 markers[i] = marker; ((Grid)frames[i].Child).Children.Add(marker);
             }
             if (markers[i] is { } outcomeMarker) {
-                outcomeMarker.Text = owner.Session.Document.Sync.Unverified.Contains(Identity) ? "未検証" : "失敗";
+                outcomeMarker.Text = owner.Session.Document.Sync.Unverified.Contains(Identity) ? "GitHub で未確認" : "失敗";
                 outcomeMarker.Visibility = !conflict && outcome ? Visibility.Visible : Visibility.Collapsed;
                 outcomeMarker.Foreground = PlanSheetView.Brush("SystemFillColorCriticalBrush");
             }
@@ -236,10 +236,10 @@ public sealed class PlanSheetRow : Grid
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
-            AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {owner.Header(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
+            AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
-            ToolTipService.SetToolTip(cell, problem ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
-                : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text));
+            ToolTipService.SetToolTip(cell, PlanSheetView.EffortPrefix(column) + (problem ?? (owner.CellDate(Identity, field) is { } date ? PlanSheetView.DateText(date, true)
+                : field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : text)));
             if (summary && field != PlanField.Title) {
                 if (!summaryCells.TryGetValue(field, out var display)) {
                     display = new PlanSummaryCell(this, field);
@@ -255,10 +255,10 @@ public sealed class PlanSheetRow : Grid
                 AutomationProperties.SetAutomationId(display, $"PlanCell{number}_{field}");
                 var accessibleValue = field is PlanField.Start or PlanField.End && owner.CellDate(Identity, field) is { } accessibleDate
                     ? PlanSheetView.DateText(accessibleDate, true) : display.Text.Text;
-                AutomationProperties.SetName(display, $"ID {number} {owner.Header(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
+                AutomationProperties.SetName(display, $"ID {number} {PlanSheetView.FullName(column)} {accessibleValue} · {PlanOperations.SummaryReadOnlyReason(field)}");
                 var fullValue = field == PlanField.Assignees ? owner.AssigneeTooltip(Identity) : accessibleValue;
                 AutomationProperties.SetHelpText(display, string.Join(" · ", new[] { fullValue, AutomationProperties.GetHelpText(cell) }.Where(value => value.Length > 0)));
-                ToolTipService.SetToolTip(display, problem ?? fullValue);
+                ToolTipService.SetToolTip(display, PlanSheetView.EffortPrefix(column) + (problem ?? fullValue));
             } else if (summaryCells.TryGetValue(field, out var display)) {
                 display.Visibility = Visibility.Collapsed;
                 AutomationProperties.SetAutomationId(display, "");
@@ -276,7 +276,7 @@ public sealed class PlanSheetRow : Grid
             var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
             var remaining = effort?.Remaining;
             var remainingText = remaining is { } work
-                ? $"（残 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
+                ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
             states.Add(late.OverdueKind == PlanOverdueKind.Finish
                 ? $"期限超過: 完了予定 {date} を過ぎて未完了{remainingText}"
                 : $"期限超過: 開始予定 {date} を過ぎて未着手");
@@ -290,7 +290,7 @@ public sealed class PlanSheetRow : Grid
             if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
         }
         if (effort?.IsOverEstimate == true)
-            states.Add(effort.Forecast is null ? "見積超過: 見込・差異が数値の範囲外です" : $"見積超過: 見込 {effort.Forecast:0.############################}h（見積 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
+            states.Add(effort.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {effort.Forecast:0.############################}h（見積工数 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
         if (effort?.IsZeroRemainingOpen == true) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
         if (done) states.Add("完了");
         if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
@@ -599,7 +599,7 @@ internal sealed class PlanSheetCell : TextBox
     private string EditOriginal()
     {
         if (row.Owner is not { } owner) return shownText;
-        var text = Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees
+        var text = Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees or PlanField.Estimate or PlanField.Actual or PlanField.Remaining
             && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
         return PlanSheetEditing.EditBaseline(owner.Rows.GetValueOrDefault(row.Identity), Field, text);
     }

@@ -51,7 +51,7 @@ internal static class PlanPublishPlan
             };
             if (target is not null) PlanOperations.Require(input.RootElement.GetProperty(target).GetString() == (target == "itemId" ? "item:" : "") + write.Identity, "発行対象が行と一致しません。");
             if (input.RootElement.TryGetProperty("projectId", out var project))
-                PlanOperations.Require(project.GetString() == document.Project.NodeId, "発行先のProjectが一致しません。");
+                PlanOperations.Require(project.GetString() == document.Project.NodeId, "発行先のプロジェクトが一致しません。");
         }
     }
     internal static PlanPublishReview Build(PlanDocument document, PlanRemoteSnapshot remote, DateOnly today, string runId)
@@ -65,7 +65,7 @@ internal static class PlanPublishPlan
         foreach (var scheduled in PlanOperations.Schedule(document, today))
         {
             var row = rows[scheduled.Input.RowId - 1] with { Start = scheduled.Start.Value, End = scheduled.End.Value,
-                Remaining = scheduled.Input.Closed && !scheduled.IsSummary ? 0 : scheduled.Input.Remaining };
+                Remaining = !scheduled.DatesHeld && scheduled.Input.Closed && !scheduled.IsSummary ? 0 : scheduled.Input.Remaining };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
             if (isNew)

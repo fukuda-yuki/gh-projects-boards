@@ -61,7 +61,7 @@ internal sealed class PlanPeopleTests
         var report = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Week, 1);
         var p = report.People.Single(p => p.Identity == "U1");
         Assert.That(p.Remaining, Is.Null); Assert.That(p.Actual, Is.Zero); Assert.That(p.Forecast, Is.Null);
-        Assert.That(p.Missing, Does.Contain("残が未入力").And.Not.Contain("実績が未入力"));
+        Assert.That(p.Missing, Does.Contain("見込み残存工数が未入力").And.Not.Contain("実績工数が未入力"));
         Assert.That(p.Unallocated, Does.Contain("I1")); Assert.That(p.Periods[0].Planned, Is.Null);
         foreach (var id in new[] { PlanPeople.Unassigned, PlanPeople.Multiple }) {
             var other = report.People.Single(p => p.Identity == id);
@@ -76,7 +76,7 @@ internal sealed class PlanPeopleTests
         var before = PlanJson.Text(d);
         var p = PlanPeople.Calculate(d, Day, Day, PlanPeriodScale.Day, 1).People.Single(p => p.Identity == "U1");
         Assert.That((p.Actual, p.Forecast, p.Difference), Is.EqualTo((0m, 90m, -10m)));
-        Assert.That(p.Missing, Does.Not.Contain("実績が未入力"));
+        Assert.That(p.Missing, Does.Not.Contain("実績工数が未入力"));
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
     }
     [Test]

@@ -152,7 +152,7 @@ internal sealed class PlanLatenessTests
         Assert.That(result.LaterTasks, Is.Zero);
     }
 
-    [TestCase("started", "終了: 状況日 11/11 から残り 16h")]
+    [TestCase("started", "終了: 基準日 11/11 から見込み残存工数 16h")]
     [TestCase("remaining", "終了: 開始から 7.5h")]
     [TestCase("estimate", "終了: 開始から 40h")]
     [TestCase("fixed", "終了: 指定")]

@@ -245,6 +245,9 @@ internal static class Ui
         if (control is SelectorBarItem item) {
             Assert.That(item.IsLoaded && item.IsEnabled, Is.True);
             ((ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(item).GetPattern(PatternInterface.SelectionItem)).Select();
+        } else if (control is SplitButton split) {
+            Assert.That(split.IsLoaded && split.IsEnabled, Is.True);
+            ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(split).GetPattern(PatternInterface.Invoke)).Invoke();
         } else Click((Button)control);
     }
     public static void Toggle(CheckBox checkbox)

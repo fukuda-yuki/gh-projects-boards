@@ -107,7 +107,7 @@ internal sealed partial class PlanSheetView
     internal string RemoteProblem(string identity)
     {
         var sync = Session.Document.Sync;
-        if (sync.Unverified.Contains(identity)) return "未検証 — 最新の情報に更新で確認";
+        if (sync.Unverified.Contains(identity)) return "GitHub で未確認 — 最新の情報に更新で確認";
         var failures = sync.Failures.Where(f => f.Identity == identity).Select(PlanPublishText.Failure).Distinct().ToArray();
         if (failures.Length > 0) return (sync.Failures.Where(f => f.Identity == identity).All(f => f.Reason == "NotDispatched") ? "未送信: " : "発行失敗: ") + string.Join(" / ", failures);
         return sync.Unavailable.Contains(identity) ? "GitHubで取得できません — 発行で確認" : "";
@@ -334,7 +334,7 @@ internal sealed partial class PlanSheetView
             SheetCopy copied;
             try { copied = JsonSerializer.Deserialize<SheetCopy>(metadata, PlanJson.Options) ?? throw new ArgumentException("コピー元を確認できません。"); }
             catch (JsonException ex) { throw new ArgumentException("コピー元を確認できません。", ex); }
-            if (copied.Project != Session.Document.Project) throw new ArgumentException("別Projectの内部コピーは貼り付けできません。");
+            if (copied.Project != Session.Document.Project) throw new ArgumentException("別のプロジェクトからコピーしたセルは貼り付けできません。");
             RequireNoPending(copied.Identities, copied.Fields);
             if (copied.Values.Length == 0 || copied.Values.Any(row => row is null || row.Length != copied.Fields.Length))
                 throw new ArgumentException("コピー元の形状を確認できません。");
@@ -359,13 +359,13 @@ internal sealed partial class PlanSheetView
                 }
             command = new(PlanOperationKind.Paste, changes.ToImmutable());
         }
-        else command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text);
+        else command = PlanSheetEditing.Paste(Session.Document, visible, columns, range, text, Today);
         foreach (var change in command.Cells) RequireNoPending([change.Identity], [change.Field]);
         Check(await Session.Execute(command, Today)); Refresh();
     }
     private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
         or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status
-        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field));
+        ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field), Today);
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
     internal async Task Fill(PlanOperationKind kind)
@@ -385,7 +385,7 @@ internal sealed partial class PlanSheetView
     private async Task Insert()
     {
         if (Session.Document.State.Settings.DefaultRepository is not { Length: > 0 } repository)
-            throw new ArgumentException("設定で既定リポジトリを選んでください。");
+            throw new ArgumentException("設定で新規 Issue の作成先を選んでください。");
         var row = PlanRow.New("", repository);
         Check(await Session.Execute(new InsertPlanRows([row], selected.Length == 0 ? null : selected), Today));
         RevealAddedRow(row.Identity);

@@ -74,7 +74,7 @@ internal sealed class EvaluationFixtureTests
         {
             await EvaluationFixture.Create(root, version);
             var plan = EvaluationFixture.ReadPlan(version);
-            var workspace = new PlanWorkspace(new PlanStore(root));
+            var workspace = new PlanWorkspace(new PlanStore(root), () => DateOnly.FromDateTime(DateTime.Today));
             var runner = new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = Path.Combine(root, "fake-gh") });
             await workspace.Connect(new GhConnectionService(GhProcessTests.FakeExecutable, "github.com", runner));
             Assert.That(workspace.Available.First().Title, Is.EqualTo(plan.Title));
