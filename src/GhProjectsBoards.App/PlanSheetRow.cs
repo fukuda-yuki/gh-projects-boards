@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 using Windows.System;
 using System.Globalization;
+using NativePath = Microsoft.UI.Xaml.Shapes.Path;
 namespace GhProjectsBoards.App;
 
 // A recycled native row owns no plan state. Identity and pending input belong to the sheet.
@@ -55,6 +56,11 @@ public sealed class PlanSheetRow : Grid
         internal string LineId = "", HeadId = "", RowIdentity = "";
     }
     private readonly Dictionary<(string From, string To), DependencyVisual> dependencyVisuals = [];
+    private NativePath? crossingPath;
+    private double[] crossingXs = [], visibleCrossingXs = [];
+    private double crossingHeight;
+    private Brush? crossingBrush;
+    private string crossingId = "", crossingIdentity = "";
     private ChartPresentation? chartPresentation;
     internal long DependencyShapesCreated { get; private set; }
     internal long DependencyShapesReused { get; private set; }
@@ -126,6 +132,8 @@ public sealed class PlanSheetRow : Grid
             if (visual.Head is { } head) AutomationProperties.SetAutomationId(head, "");
             visual.HeadId = "";
         }
+        if (crossingPath is not null) AutomationProperties.SetAutomationId(crossingPath, "");
+        crossingId = "";
     }
     internal void Refresh()
     {
@@ -299,7 +307,10 @@ public sealed class PlanSheetRow : Grid
     {
         if (Owner is not { } owner) return;
         if (sheet && lineTranslation.X != -owner.SheetOffset) lineTranslation.X = -owner.SheetOffset;
-        if (gantt && chartOffset != owner.ChartOffset) RefreshChartOffset(owner);
+        if (gantt && chartOffset != owner.ChartOffset) {
+            RefreshChartOffset(owner);
+            if (DataContext is string) RefreshCrossings(owner, owner.PlanIds.GetValueOrDefault(Identity));
+        }
     }
     private void RefreshChartOffset(PlanSheetView owner)
     {
@@ -317,6 +328,7 @@ public sealed class PlanSheetRow : Grid
         if (DataContext is not string) { chart.Opacity = 0; return; }
         if (Owner is not { } owner || !owner.Schedule.TryGetValue(Identity, out var task)) {
             dependencyChart.Children.Clear(); dependencyVisuals.Clear(); taskChart.Children.Clear();
+            crossingXs = []; ClearCrossings();
             chartPresentation = null; chart.Opacity = 1;
             return;
         }
@@ -340,20 +352,11 @@ public sealed class PlanSheetRow : Grid
     private void DrawDependencies(PlanSheetView owner, int number, int rowIndex)
     {
         var current = new HashSet<(string From, string To)>();
+        var crossings = new HashSet<double>();
         var brush = PlanSheetView.Brush("GanttArrowBrush");
         foreach (var edge in owner.Edges)
         {
             if (rowIndex < Math.Min(edge.From, edge.To) || rowIndex > Math.Max(edge.From, edge.To)) continue;
-            var key = (owner.RowIds[edge.From], owner.RowIds[edge.To]);
-            current.Add(key);
-            if (!dependencyVisuals.TryGetValue(key, out var visual)) {
-                visual = new DependencyVisual(); dependencyVisuals.Add(key, visual);
-                dependencyChart.Children.Add(visual.Line); DependencyShapesCreated++;
-            } else {
-                DependencyShapesReused++;
-                if (visual.RowIdentity != Identity) DependencyShapesReusedAcrossBindings++;
-            }
-            visual.RowIdentity = Identity;
             var successor = owner.Schedule[owner.RowIds[edge.To]];
             var successorMilestone = successor.IsMilestone && successor.Start.Value == successor.End.Value;
             var predecessor = owner.Schedule[owner.RowIds[edge.From]];
@@ -365,6 +368,19 @@ public sealed class PlanSheetRow : Grid
             var inset = Math.Min(3, successorWidth / 2);
             // Clamp locally: adding a large date coordinate can invert equal bounds through rounding.
             var entry = x2 + Math.Clamp(Math.Max(x1 - x2 + 5, 5), inset, successorWidth - inset);
+            // Between endpoints only the vertical segment enters this row's clip.
+            // Share coincident strokes instead of creating a native shape per link.
+            if (rowIndex != edge.From && rowIndex != edge.To) { crossings.Add(entry); continue; }
+            var key = (owner.RowIds[edge.From], owner.RowIds[edge.To]);
+            current.Add(key);
+            if (!dependencyVisuals.TryGetValue(key, out var visual)) {
+                visual = new DependencyVisual(); dependencyVisuals.Add(key, visual);
+                dependencyChart.Children.Add(visual.Line); DependencyShapesCreated++;
+            } else {
+                DependencyShapesReused++;
+                if (visual.RowIdentity != Identity) DependencyShapesReusedAcrossBindings++;
+            }
+            visual.RowIdentity = Identity;
             var down = edge.To > edge.From;
             var y1 = (edge.From - rowIndex) * owner.RowHeight + owner.RowHeight / 2;
             var center = (edge.To - rowIndex) * owner.RowHeight + owner.RowHeight / 2;
@@ -379,8 +395,7 @@ public sealed class PlanSheetRow : Grid
             // Parent clipping does not bound the native shape's rasterization surface.
             // These orthogonal segments need only the row slice, with a guard for the stroke.
             for (var i = 0; i < points.Length; i++) points[i] = new(points[i].X, Math.Clamp(points[i].Y, -2, owner.RowHeight + 2));
-            // Most long dependencies have the same bounded middle slice in a
-            // recycled row. Preserve its native geometry when those points agree.
+            // Preserve the native endpoint geometry when its current row slice agrees.
             if (!visual.Points.SequenceEqual(points)) {
                 visual.Line.Points = [.. points]; visual.Points = points; DependencyPointsUpdated++;
             }
@@ -413,6 +428,50 @@ public sealed class PlanSheetRow : Grid
             if (visual.Head is { } head) dependencyChart.Children.Remove(head);
             dependencyVisuals.Remove(key);
         }
+        crossingXs = crossings.Order().ToArray();
+        if (!ReferenceEquals(crossingBrush, brush)) {
+            crossingBrush = brush;
+            if (crossingPath is not null) crossingPath.Stroke = brush;
+        }
+        RefreshCrossings(owner, number);
+    }
+    private void ClearCrossings()
+    {
+        visibleCrossingXs = [];
+        if (crossingPath is null) return;
+        crossingPath.Data = null;
+        crossingPath.Visibility = Visibility.Collapsed;
+        if (crossingId.Length > 0) AutomationProperties.SetAutomationId(crossingPath, "");
+        crossingId = "";
+    }
+    private void RefreshCrossings(PlanSheetView owner, int number)
+    {
+        // A single Path must not span the whole timeline's rasterization surface.
+        // Keep only the current horizontal slice, with a guard for its one-pixel stroke.
+        var visible = crossingXs.Where(x => x >= owner.ChartOffset - 1 && x <= owner.ChartOffset + owner.ChartViewport + 1).ToArray();
+        if (visible.Length == 0 || owner.ChartViewport <= 0) { ClearCrossings(); return; }
+        if (crossingPath is null) {
+            crossingPath = new NativePath { StrokeThickness = 1, Stroke = crossingBrush, IsHitTestVisible = false };
+            chart.Children.Insert(0, crossingPath); DependencyShapesCreated++;
+        } else {
+            DependencyShapesReused++;
+            if (crossingIdentity != Identity) DependencyShapesReusedAcrossBindings++;
+        }
+        crossingIdentity = Identity;
+        if (crossingHeight != owner.RowHeight || !visibleCrossingXs.SequenceEqual(visible)) {
+            var origin = visible[0];
+            var geometry = new PathGeometry();
+            foreach (var x in visible) {
+                var figure = new PathFigure { StartPoint = new(x - origin, -2), IsClosed = false, IsFilled = false };
+                figure.Segments.Add(new LineSegment { Point = new(x - origin, owner.RowHeight + 2) });
+                geometry.Figures.Add(figure);
+            }
+            crossingPath.Data = geometry; Canvas.SetLeft(crossingPath, origin);
+            visibleCrossingXs = visible; crossingHeight = owner.RowHeight; DependencyPointsUpdated++;
+        }
+        crossingPath.Visibility = Visibility.Visible;
+        var id = "PlanArrowCrossings" + number;
+        if (crossingId != id) { AutomationProperties.SetAutomationId(crossingPath, id); crossingId = id; }
     }
     private void DrawTask(PlanSheetView owner, int number, ScheduledTask task)
     {
