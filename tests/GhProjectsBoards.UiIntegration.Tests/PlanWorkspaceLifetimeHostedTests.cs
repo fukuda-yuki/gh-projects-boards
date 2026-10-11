@@ -25,10 +25,12 @@ internal sealed class PlanWorkspaceLifetimeHostedTests
     public async Task Cleanup()
     {
         try {
-            await Ui.Run(() => Ui.Window.ExtendsContentIntoTitleBar = previousTitleBarMode);
-            Directory.Delete(root, true);
+            await Ui.Run(() => { Ui.Window.ExtendsContentIntoTitleBar = previousTitleBarMode; return Task.CompletedTask; }, check: false);
         }
-        finally { Ui.EndTest(); }
+        finally {
+            try { Directory.Delete(root, true); }
+            finally { Ui.EndTest(); }
+        }
     }
 
     [Test]
@@ -54,9 +56,10 @@ internal sealed class PlanWorkspaceLifetimeHostedTests
             await Ui.Run(() => Ui.Window.SetTitleBar(view.WorkspaceTitleBar));
             await Ui.Ready<Microsoft.UI.Xaml.Controls.Button>("PlanProjectPicker");
         } finally {
-            await Ui.Run(() => Ui.Window.SetTitleBar(null));
-            await Ui.Unmount(view, check: false);
+            try { await Ui.Run(() => { Ui.Window.SetTitleBar(null); return Task.CompletedTask; }, check: false); }
+            finally { await Ui.Unmount(view, check: false); }
         }
+        Ui.Check();
         return new WeakReference(view);
     }
 }
