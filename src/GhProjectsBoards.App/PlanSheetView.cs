@@ -634,6 +634,8 @@ internal sealed partial class PlanSheetView : Grid
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);
     private void RowContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
+        // This template is populated from Item, with no DataContext bindings.
+        if (args.Phase == 0) args.Handled = true;
         if (args.ItemContainer.ContentTemplateRoot is PlanSheetRow row)
             row.SetOwner(args.InRecycleQueue ? null : this, args.InRecycleQueue ? null : (string)args.Item);
         else if (!args.InRecycleQueue && args.Phase == 0)
