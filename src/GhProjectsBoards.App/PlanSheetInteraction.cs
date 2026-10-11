@@ -364,7 +364,7 @@ internal sealed partial class PlanSheetView
         Check(await Session.Execute(command, Today)); Refresh();
     }
     private object? CopyValue(string identity, PlanField field) => field is PlanField.Assignees or PlanField.Predecessors
-        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status
+        or PlanField.StartNoEarlierThan or PlanField.Fixed or PlanField.Status or PlanField.Phase
         ? PlanOperations.Value(Rows[identity], field) : PlanSheetEditing.Parse(Session.Document, field, EditForm(identity, field), Today);
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, PlanField field)
         => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());

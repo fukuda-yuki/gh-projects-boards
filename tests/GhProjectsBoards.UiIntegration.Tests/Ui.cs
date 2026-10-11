@@ -257,7 +257,8 @@ internal static class Ui
     }
     public static void Click(Button button)
     {
-        Assert.That(button.IsLoaded && button.IsEnabled, Is.True, "The bound button must be loaded and enabled");
+        Assert.That(button.IsLoaded && button.IsEnabled, Is.True,
+            $"The bound button {AutomationProperties.GetAutomationId(button)} must be loaded and enabled (loaded={button.IsLoaded}, enabled={button.IsEnabled})");
         var peer = FrameworkElementAutomationPeer.CreatePeerForElement(button);
         ((IInvokeProvider)peer.GetPattern(PatternInterface.Invoke)).Invoke();
     }

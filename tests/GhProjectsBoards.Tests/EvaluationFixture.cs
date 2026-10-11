@@ -31,9 +31,9 @@ internal static class EvaluationFixture
 
     internal static PlanDocument Document(VersionPlan plan, ImmutableArray<PlanRow> rows, DateOnly statusDate)
     {
-        var columns = PlanColumnMatching.Roles.Select(r => new PlanColumnDefinition("F-" + r.Role, r.Name, r.Type)).ToImmutableArray();
+        var columns = PlanColumnMatching.Roles.Select(r => new PlanColumnDefinition("F-" + r.Role, r.Name, r.Type) { Options = r.Role == PlanField.Phase ? [.. plan.Phases] : [] }).ToImmutableArray();
         var settings = new ProjectPlanSettings {
-            StatusDate = statusDate, ProjectStart = plan.ProjectStart, DefaultRepository = "acme/repo",
+            StatusDate = statusDate, ProjectStart = plan.ProjectStart, ProjectEnd = plan.ProjectEnd, DefaultRepository = "acme/repo",
             Columns = PlanColumnMatching.Roles.Select(r => new PlanColumnMapping(r.Role, "F-" + r.Role, r.Name, r.Type)).ToImmutableArray(),
             People = plan.People.Select(p => new PlanResource(p.Identity, p.Name, p.Rate, p.Allowance)).ToImmutableArray()
         };
@@ -48,7 +48,7 @@ internal static class EvaluationFixture
         var identities = Identities(plan);
         var source = plan.Rows.ToDictionary(r => identities[r.Key]);
         var rows = plan.Rows.Select(r => new PlanRow(identities[r.Key], r.Title, "acme/repo") {
-            Parent = r.Parent is null ? null : identities[r.Parent], Estimate = r.Estimate, Remaining = r.Estimate,
+            Phase = r.Phase, Parent = r.Parent is null ? null : identities[r.Parent], Estimate = r.Estimate, Remaining = r.Estimate,
             Actual = r.Parent is null ? null : 0, Assignees = r.Person is null ? [] : [r.Person],
             Predecessors = r.Predecessors.Select(k => identities[k]).ToImmutableArray(), StartNoEarlierThan = r.Start
         }).ToImmutableArray();

@@ -14,6 +14,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Done",
+        "phase": null,
         "closed": true,
         "closeDate": null,
         "assignees": [],
@@ -33,6 +34,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -56,6 +58,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -79,6 +82,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Done",
+        "phase": null,
         "closed": true,
         "closeDate": null,
         "assignees": [
@@ -100,6 +104,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -121,6 +126,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -140,6 +146,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -161,6 +168,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -180,6 +188,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -199,6 +208,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -218,6 +228,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -239,6 +250,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -260,6 +272,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -279,6 +292,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -300,6 +314,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -319,6 +334,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -338,6 +354,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -357,6 +374,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -376,6 +394,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -395,6 +414,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -414,6 +434,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -433,6 +454,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -452,6 +474,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -471,6 +494,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -490,6 +514,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -509,6 +534,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -528,6 +554,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -547,6 +574,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -566,6 +594,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -584,112 +613,134 @@
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C3Y",
         "name": "Title",
-        "dataType": "TITLE"
+        "dataType": "TITLE",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C3g",
         "name": "Assignees",
-        "dataType": "ASSIGNEES"
+        "dataType": "ASSIGNEES",
+        "options": []
       },
       {
         "id": "F-Status",
         "name": "Status",
-        "dataType": "SINGLE_SELECT"
+        "dataType": "SINGLE_SELECT",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C30",
         "name": "Labels",
-        "dataType": "LABELS"
+        "dataType": "LABELS",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C38",
         "name": "Linked pull requests",
-        "dataType": "LINKED_PULL_REQUESTS"
+        "dataType": "LINKED_PULL_REQUESTS",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4I",
         "name": "Milestone",
-        "dataType": "MILESTONE"
+        "dataType": "MILESTONE",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4M",
         "name": "Repository",
-        "dataType": "REPOSITORY"
+        "dataType": "REPOSITORY",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4c",
         "name": "Reviewers",
-        "dataType": "REVIEWERS"
+        "dataType": "REVIEWERS",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4g",
         "name": "Parent issue",
-        "dataType": "PARENT_ISSUE"
+        "dataType": "PARENT_ISSUE",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4o",
         "name": "Sub-issues progress",
-        "dataType": "SUB_ISSUES_PROGRESS"
+        "dataType": "SUB_ISSUES_PROGRESS",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C4s",
         "name": "Created",
-        "dataType": "CREATED"
+        "dataType": "CREATED",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C40",
         "name": "Updated",
-        "dataType": "UPDATED"
+        "dataType": "UPDATED",
+        "options": []
       },
       {
         "id": "PVTF_lAHOBGPKL84BjFYczhh7C48",
         "name": "Closed",
-        "dataType": "CLOSED"
+        "dataType": "CLOSED",
+        "options": []
       },
       {
         "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_0",
         "name": "Priority",
-        "dataType": "SINGLE_SELECT"
+        "dataType": "SINGLE_SELECT",
+        "options": []
       },
       {
         "id": "PVTSSF_lAHOBGPKL84BjFYczhh7C_4",
         "name": "Size",
-        "dataType": "SINGLE_SELECT"
+        "dataType": "SINGLE_SELECT",
+        "options": []
       },
       {
         "id": "F-Estimate",
         "name": "Estimate",
-        "dataType": "NUMBER"
+        "dataType": "NUMBER",
+        "options": []
       },
       {
         "id": "F-Start",
         "name": "Start date",
-        "dataType": "DATE"
+        "dataType": "DATE",
+        "options": []
       },
       {
         "id": "F-End",
         "name": "Target date",
-        "dataType": "DATE"
+        "dataType": "DATE",
+        "options": []
       },
       {
         "id": "F-Remaining",
         "name": "Remaining",
-        "dataType": "NUMBER"
+        "dataType": "NUMBER",
+        "options": []
       },
       {
         "id": "F-Actual",
         "name": "Actual",
-        "dataType": "NUMBER"
+        "dataType": "NUMBER",
+        "options": []
       },
       {
         "id": "F-StartNoEarlierThan",
         "name": "開始日指定",
-        "dataType": "DATE"
+        "dataType": "DATE",
+        "options": []
       },
       {
         "id": "F-Fixed",
         "name": "日程固定",
-        "dataType": "SINGLE_SELECT"
+        "dataType": "SINGLE_SELECT",
+        "options": []
       }
     ]
   },
@@ -701,6 +752,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Done",
+        "phase": null,
         "closed": true,
         "closeDate": null,
         "assignees": [],
@@ -720,6 +772,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -743,6 +796,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -766,6 +820,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Done",
+        "phase": null,
         "closed": true,
         "closeDate": null,
         "assignees": [
@@ -787,6 +842,7 @@
         "repository": "acme/repo",
         "csvSourceHash": null,
         "status": "Backlog",
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -808,6 +864,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -827,6 +884,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -848,6 +906,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -869,6 +928,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -892,6 +952,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -915,6 +976,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -938,6 +1000,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -957,6 +1020,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -980,6 +1044,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1001,6 +1066,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1024,6 +1090,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1047,6 +1114,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1070,6 +1138,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1089,6 +1158,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1112,6 +1182,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1133,6 +1204,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1156,6 +1228,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1179,6 +1252,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1202,6 +1276,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1221,6 +1296,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1244,6 +1320,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [],
@@ -1265,6 +1342,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1288,6 +1366,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1311,6 +1390,7 @@
         "repository": "acme/repo",
         "csvSourceHash": "c6bc774ae5951028c25f21efdfe2dee86ff8ea349275b985c1d1cd4f883962f0",
         "status": null,
+        "phase": null,
         "closed": false,
         "closeDate": null,
         "assignees": [
@@ -1385,6 +1465,7 @@
         }
       ],
       "projectStart": null,
+      "projectEnd": null,
       "defaultRepository": "acme/repo",
       "statusDate": null
     }

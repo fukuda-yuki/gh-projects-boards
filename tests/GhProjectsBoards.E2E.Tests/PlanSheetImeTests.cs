@@ -13,11 +13,16 @@ namespace GhProjectsBoards.E2E.Tests;
 public sealed class PlanSheetImeTests
 {
     [TestCase("direct"), TestCase("f2"), TestCase("cancel"), TestCase("cancel-f2"), TestCase("reconvert"), TestCase("reconvert-f2")]
-    public void PlanSheetPhysicalJapaneseImeKeepsConversionSeparateFromCellCommit(string scenario)
+    public void PlanSheetPhysicalJapaneseImeKeepsConversionSeparateFromCellCommit(string scenario) => RunScenario(scenario, settings: false);
+
+    [TestCase("confirm"), TestCase("cancel")]
+    public void SettingsPhysicalJapaneseImeKeepsConfirmationAndCancellationSeparateFromValidation(string scenario) => RunScenario(scenario, settings: true);
+
+    private static void RunScenario(string scenario, bool settings)
     {
         if (Environment.GetEnvironmentVariable("GHPB_RUN_E2E") != "1")
             Assert.Ignore("Run Test-E2E.ps1 -Filter TestCategory=GridIme on the PMO Japanese IME desktop.");
-        var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, "plan-ime-" + scenario + "-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Environment.GetEnvironmentVariable("GHPB_E2E_ARTIFACTS")!, (settings ? "settings-ime-" : "plan-ime-") + scenario + "-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true}""");
         File.WriteAllText(Path.Combine(root, "plan-state.json"), JsonSerializer.Serialize(new {
@@ -44,43 +49,59 @@ public sealed class PlanSheetImeTests
             Find("AvailableProjects").AsListBox().Select(0);
             Wait(() => window!.FindFirstDescendant(c => c.ByAutomationId("PlanCell1_Title")) is { IsOffscreen: false });
             Keyboard.TypeVirtualKeyCode(0x12); window!.SetForeground();
-            var cell = Find("PlanCell1_Title").AsTextBox(); cell.Click();
+            if (settings) {
+                Find("PlanShowSettings").AsButton().Invoke();
+                Wait(() => window.FindFirstDescendant(c => c.ByAutomationId("PlanDefaultRepository")) is not null);
+                Find("PlanDefaultRepository").Focus();
+                Wait(() => !Find("PlanDefaultRepository").IsOffscreen);
+            }
+            var cell = Find(settings ? "PlanDefaultRepository" : "PlanCell1_Title").AsTextBox(); cell.Click();
+            var original = SavedText(root, settings);
+            if (settings) Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
             Wait(() => cell.Properties.HasKeyboardFocus.ValueOrDefault);
             if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
             Keyboard.TypeVirtualKeyCode(0x16);
             Key(VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_I, VirtualKeyShort.KEY_H, VirtualKeyShort.KEY_O, VirtualKeyShort.KEY_N, VirtualKeyShort.KEY_G, VirtualKeyShort.KEY_O);
             Assert.That(cell.Text, Is.EqualTo("にほんご"), "Physical input must appear exactly once.");
             Assert.That(Count(), Is.EqualTo("未発行 0 タスク"));
-            Assert.That(SavedTitle(root), Is.EqualTo("Issue 1"));
+            Assert.That(SavedText(root, settings), Is.EqualTo(original));
             Key(VirtualKeyShort.SPACE); Assert.That(cell.Text, Is.EqualTo("日本語"));
             if (scenario.StartsWith("cancel", StringComparison.Ordinal))
             {
                 Key(VirtualKeyShort.ESCAPE); Assert.That(cell.Text, Is.EqualTo("にほんご"));
                 Key(VirtualKeyShort.ESCAPE, VirtualKeyShort.ESCAPE);
-                Wait(() => cell.Text == "Issue 1");
+                Wait(() => cell.Text == original);
                 Assert.That(Count(), Is.EqualTo("未発行 0 タスク"));
-                Assert.That(SavedTitle(root), Is.EqualTo("Issue 1"));
+                Assert.That(SavedText(root, settings), Is.EqualTo(original));
             }
             else
             {
                 Key(VirtualKeyShort.RETURN);
                 Assert.That(cell.Properties.HasKeyboardFocus.ValueOrDefault, Is.True);
                 Assert.That(Count(), Is.EqualTo("未発行 0 タスク"));
-                Assert.That(SavedTitle(root), Is.EqualTo("Issue 1"));
-                Key(VirtualKeyShort.RETURN);
-                Wait(() => Count() == "1 未発行のタスク" && Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault);
-                Assert.That(SavedTitle(root), Is.EqualTo("日本語"));
-                if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
-                {
-                    cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.ValueOrDefault);
-                    if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
-                    Keyboard.TypeVirtualKeyCode(0x1C); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Key(VirtualKeyShort.SPACE);
-                    var alternative = cell.Text; Assert.That(alternative, Is.Not.Empty.And.Not.EqualTo("日本語"));
+                Assert.That(SavedText(root, settings), Is.EqualTo(original));
+                if (settings) {
+                    Assert.That(window.FindFirstDescendant(c => c.ByAutomationId("PlanError"))?.Properties.Name.ValueOrDefault, Is.Null.Or.Empty, "IME confirmation must not validate or commit a setting.");
                     Key(VirtualKeyShort.RETURN);
-                    Assert.That(cell.Properties.HasKeyboardFocus.ValueOrDefault, Is.True);
-                    Assert.That(SavedTitle(root), Is.EqualTo("日本語"));
+                    Wait(() => (window.FindFirstDescendant(c => c.ByAutomationId("PlanError"))?.Properties.Name.ValueOrDefault ?? "").Contains("owner/repository"));
+                    Assert.That(SavedText(root, settings), Is.EqualTo(original));
+                    Key(VirtualKeyShort.ESCAPE); Wait(() => cell.Text == original);
+                } else {
                     Key(VirtualKeyShort.RETURN);
-                    Wait(() => Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault && SavedTitle(root) == alternative);
+                    Wait(() => Count() == "1 未発行のタスク" && Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault);
+                    Assert.That(SavedText(root, settings), Is.EqualTo("日本語"));
+                    if (scenario.StartsWith("reconvert", StringComparison.Ordinal))
+                    {
+                        cell.Click(); Wait(() => cell.Properties.HasKeyboardFocus.ValueOrDefault);
+                        if (scenario.EndsWith("f2", StringComparison.Ordinal)) Key(VirtualKeyShort.F2);
+                        Keyboard.TypeVirtualKeyCode(0x1C); FlaUI.Core.Input.Wait.UntilInputIsProcessed(); Key(VirtualKeyShort.SPACE);
+                        var alternative = cell.Text; Assert.That(alternative, Is.Not.Empty.And.Not.EqualTo("日本語"));
+                        Key(VirtualKeyShort.RETURN);
+                        Assert.That(cell.Properties.HasKeyboardFocus.ValueOrDefault, Is.True);
+                        Assert.That(SavedText(root, settings), Is.EqualTo("日本語"));
+                        Key(VirtualKeyShort.RETURN);
+                        Wait(() => Find("PlanCell2_Title").Properties.HasKeyboardFocus.ValueOrDefault && SavedText(root, settings) == alternative);
+                    }
                 }
             }
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "ime-" + scenario + ".png"));
@@ -103,11 +124,12 @@ public sealed class PlanSheetImeTests
             if (!process.HasExited) { process.Kill(entireProcessTree: true); process.WaitForExit(5000); }
         }
     }
-    private static string SavedTitle(string root)
+    private static string SavedText(string root, bool settings)
     {
         var path = Directory.GetFiles(Path.Combine(root, "data", "PlanningEditor", "v1"), "*.json").Single(p => Path.GetFileName(p) != "workspace.json");
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var document = JsonDocument.Parse(stream);
+        if (settings) return document.RootElement.GetProperty("document").GetProperty("state").GetProperty("settings").GetProperty("defaultRepository").GetString() ?? "";
         return document.RootElement.GetProperty("document").GetProperty("state").GetProperty("rows").EnumerateArray()
             .Single(row => row.GetProperty("identity").GetString() == "I1").GetProperty("title").GetString()!;
     }

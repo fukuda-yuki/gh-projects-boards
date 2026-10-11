@@ -3,9 +3,10 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal enum PlanField { Title, Repository, Status, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder }
+internal enum PlanField { Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder }
 internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
-internal sealed record PlanColumnDefinition(string Id, string Name, string DataType);
+internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
+{ public ImmutableArray<string> Options { get; init; } = []; }
 internal sealed record PlanColumnMapping(PlanField Role, string FieldId, string Name, string DataType);
 internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance);
 internal sealed record PlanHoliday(DateOnly Date, string Name);
@@ -24,6 +25,7 @@ internal sealed record ProjectPlanSettings
     public PlanHolidayData? ImportedHolidays { get; init; }
     public ImmutableArray<PlanResource> People { get; init; } = [];
     public DateOnly? ProjectStart { get; init; }
+    public DateOnly? ProjectEnd { get; init; }
     public string? DefaultRepository { get; init; }
     public DateOnly? StatusDate { get; init; }
 }
@@ -31,6 +33,7 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
 {
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
+    public string? Phase { get; init; }
     public bool Closed { get; init; }
     public DateOnly? CloseDate { get; init; }
     public ImmutableArray<string> Assignees { get; init; } = [];

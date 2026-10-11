@@ -59,3 +59,5 @@ The live rewrite to the waterfall shape, with the 工程 field, milestones and w
 ## Evidence
 
 Record source and binary identity, data root, real or substituted endpoint, row/task counts, operation results, screenshots and timings. Offline automated results, ordinary-app product review, real-GitHub readback and the owner's acceptance are distinct claims. Run `python -m unittest discover -s scripts/evaluation -p 'test_*.py' -v` for the sandbox script's safety contracts.
+
+The local settings seed both Project start and end from the version plan. 工程 auto-maps to its existing single-select field. The initial baseline and local phase values agree, preserving zero unpublished tasks. Summary calculations consume the same scheduled result as the plan; recorded evaluation measures provide independent expected values for regression tests.

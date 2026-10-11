@@ -73,6 +73,8 @@ internal static class PlanSnapshot
                         decimal.Parse(scalar, NumberStyles.Number, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
                     PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan => scalar is null ? "null" :
                         PlanJson.Text(DateOnly.ParseExact(scalar, "yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                    PlanField.Phase => value?.Availability != ValueAvailability.Present ? "null" : PlanJson.Text(
+                        field.Options.SingleOrDefault(o => o.Id == value.OptionId)?.Name ?? throw new InvalidOperationException("工程の選択肢を確認してください。")),
                     PlanField.Fixed => value?.OptionId is null ? "false" : field.Options.Single(o => o.Id == value.OptionId).Name == "固定" ? "true" :
                         throw new InvalidOperationException("日程固定の選択肢を確認してください。"),
                     _ => throw new InvalidOperationException("未対応の列割り当てです。")
@@ -81,7 +83,7 @@ internal static class PlanSnapshot
             }
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
         }
-        return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType)).ToImmutableArray()),
+        return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()),
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))
         { InaccessibleCount = p.UndeliveredItemCount + p.Items.Count(i => i.Kind == ProjectItemKind.Unavailable),
           IssueLinks = p.Issues.Values.ToImmutableDictionary(i => i.Id.NodeId, i => new PlanIssueLink($"{i.Repository.NameWithOwner}#{i.Number}", i.Url)),
