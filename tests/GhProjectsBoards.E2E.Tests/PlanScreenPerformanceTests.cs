@@ -320,7 +320,7 @@ public sealed class PlanScreenPerformanceTests
                 File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
                     phase = "repeated opening observed", probeTriggerDetails, repeatedProbeDetails,
                     firstOpeningObserved = true, repeatedOpeningObserved = true, utc = DateTime.UtcNow,
-                    boundary = "Two native AutomationElement.Click activations from freshly resolved external UIA screen bounds; no concurrent pixel capture. Escape dismisses each opening."
+                    boundary = "Two native pointer moves followed by mouse clicks at freshly resolved external UIA screen points; FlaUI waits for move input processing before press/release. No concurrent pixel capture. Escape dismisses each opening."
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 CloseProbe();
                 var trigger = PrepareCommand();
@@ -381,7 +381,16 @@ public sealed class PlanScreenPerformanceTests
                         phase, stage = "before Click", utc = DateTime.UtcNow, point,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
                     }) + Environment.NewLine);
-                    element.Click();
+                    // Model moving to an item before clicking. A SetCursorPos followed
+                    // immediately by down/up can deliver popup Entered with the button
+                    // already held; preserve that failing experiment in earlier logs.
+                    Mouse.MoveTo(point);
+                    File.AppendAllText(trace, JsonSerializer.Serialize(new {
+                        phase, stage = "after MoveTo, before press/release", utc = DateTime.UtcNow, point,
+                        desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
+                    }) + Environment.NewLine);
+                    Mouse.Click();
+                    FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                     File.AppendAllText(trace, JsonSerializer.Serialize(new {
                         phase, stage = "after Click", utc = DateTime.UtcNow, point,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
