@@ -299,6 +299,30 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").FocusState, Is.Not.EqualTo(FocusState.Unfocused)));
     }
 
+    [Test, Category("PlanSheetNative")]
+    public async Task OverflowKeyboardCopyUsesTheSelectedCellAndRestoresFocus()
+    {
+        clipboard = new("not copied", null);
+        var undo = session.UndoCount;
+        await Select(2, PlanField.Remaining);
+        await SheetNativeInput.ActivateWindow();
+        await Ui.Run(() => Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").Focus(FocusState.Keyboard), Is.True));
+        SheetNativeInput.Key(VirtualKey.Down, true); SheetNativeInput.Key(VirtualKey.Down, false);
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetCopy");
+        await Ui.Run(() => Assert.That(Ui.Find<MenuFlyoutItem>("PlanSheetCopy").Focus(FocusState.Keyboard), Is.True));
+        SheetNativeInput.Key(VirtualKey.Enter, true); SheetNativeInput.Key(VirtualKey.Enter, false);
+        // Observe the command's public effect, independent of ClickCommand's
+        // automation invocation and native menu-close synchronization.
+        await Ui.Until(() => clipboard.Text == "8");
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Popup<MenuFlyoutItem>("PlanSheetCopy"), Is.Null);
+            Assert.That(SelectProvider("PlanCell2_Remaining").IsSelected, Is.True);
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").FocusState, Is.Not.EqualTo(FocusState.Unfocused));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+        });
+    }
+
     [Test]
     public async Task OverflowReflectsCommandAvailabilityAndClosesForRemoteWork()
     {
