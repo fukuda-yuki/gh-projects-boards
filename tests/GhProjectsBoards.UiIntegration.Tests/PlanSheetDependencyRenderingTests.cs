@@ -36,13 +36,50 @@ internal sealed partial class PlanSheetHostedTests
         var row = (sheet.List.ContainerFromItem(identity) as ListViewItem)?.ContentTemplateRoot as PlanSheetRow;
         return row is { IsLoaded: true, DataContext: string current } && current == identity && row.Owner == sheet ? row : null;
     }
-    private Task WaitForDependencyPresentation(int from, int to, int number) => Ui.Until(() => {
-        if (CurrentDependencyRow("I" + number) is not { } row) return false;
-        var shapes = Ui.Tree(row).OfType<Shape>().Where(shape => shape.IsLoaded && shape.ActualWidth > 0)
-            .Select(AutomationProperties.GetAutomationId).ToHashSet();
-        return shapes.Contains("PlanBar" + number) && shapes.Contains($"PlanArrow{from}_{to}_{number}")
-            && shapes.Contains($"PlanArrowHead{from}_{to}_{number}");
-    });
+    private async Task WaitForDependencyPresentation(int from, int to, int number)
+    {
+        var routeId = $"PlanArrow{from}_{to}_{number}";
+        try {
+            await Ui.Until(() => {
+                if (CurrentDependencyRow("I" + number) is not { } row) return false;
+                var shapes = Ui.Tree(row).OfType<Shape>().Where(shape => shape.IsLoaded).ToArray();
+                var bar = shapes.SingleOrDefault(shape => AutomationProperties.GetAutomationId(shape) == "PlanBar" + number);
+                var route = shapes.OfType<Polyline>().SingleOrDefault(shape => AutomationProperties.GetAutomationId(shape) == routeId);
+                var head = shapes.OfType<Polygon>().SingleOrDefault(shape => AutomationProperties.GetAutomationId(shape) == $"PlanArrowHead{from}_{to}_{number}");
+                // A passive line's layout width is not its point geometry. Wait for
+                // the bound line payload; the assertions below verify its screen coordinates.
+                return bar is { ActualWidth: > 0, ActualHeight: > 0 } && route is { Points.Count: >= 2 }
+                    && head is { ActualWidth: > 0, ActualHeight: > 0 };
+            });
+        } catch (TimeoutException) {
+            await Ui.Run(() => WriteDependencyPresentationDiagnostic(number, "timeout " + routeId));
+            throw;
+        }
+        await Ui.Run(() => {
+            var route = Ui.Find<Polyline>(routeId, CurrentDependencyRow("I" + number)!);
+            if (route.ActualWidth <= 0) WriteDependencyPresentationDiagnostic(number, "ready with zero layout-width " + routeId);
+        });
+    }
+
+    private void WriteDependencyPresentationDiagnostic(int number, string reason)
+    {
+        var container = sheet.List.ContainerFromItem("I" + number) as ListViewItem;
+        var row = container?.ContentTemplateRoot as PlanSheetRow;
+        TestContext.Out.WriteLine($"Dependency presentation ({reason}): item=I{number}; container={container is not null}; "
+            + $"context={row?.DataContext ?? "<null>"}; loaded={row?.IsLoaded}; owner={row?.Owner == sheet}; realized={row is not null && sheet.Realized.Contains(row)}; "
+            + $"row-size={row?.ActualWidth}x{row?.ActualHeight}; chart-offset={sheet.ChartOffset}; chart-viewport={sheet.ChartViewport}");
+        if (row is null) return;
+        foreach (var element in Ui.Tree(row).OfType<FrameworkElement>().Where(element => element is Canvas or Shape)) {
+            var points = element switch {
+                Polyline line => string.Join(";", line.Points.Select(point => $"{point.X},{point.Y}")),
+                Polygon polygon => string.Join(";", polygon.Points.Select(point => $"{point.X},{point.Y}")),
+                _ => ""
+            };
+            TestContext.Out.WriteLine($"  {element.GetType().Name}/{AutomationProperties.GetAutomationId(element)}: loaded={element.IsLoaded}; "
+                + $"actual={element.ActualWidth}x{element.ActualHeight}; requested={element.Width}x{element.Height}; "
+                + $"visibility={element.Visibility}; opacity={element.Opacity}; canvas={Canvas.GetLeft(element)},{Canvas.GetTop(element)}; points=[{points}]");
+        }
+    }
 
     [Test]
     public async Task LongCrossingDependenciesKeepTheirCurrentRowIdentityThroughBothScrollDirections()

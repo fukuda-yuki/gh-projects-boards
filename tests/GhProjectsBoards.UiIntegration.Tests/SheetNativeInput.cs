@@ -12,6 +12,19 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 // are called by this driver; coordinates come from currently rendered controls.
 internal static class SheetNativeInput
 {
+    internal static async Task<string> DesktopState()
+    {
+        var state = "";
+        await Ui.Run(() => {
+            var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
+            var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
+            Assert.That(GetCursorPos(out var cursor), Is.True);
+            state = $"hwnd={hwnd:X} foreground={GetForegroundWindow():X} cursor={cursor.X},{cursor.Y} "
+                + $"windowAtCursor={WindowFromPoint(cursor):X} clientOrigin={origin.X},{origin.Y} "
+                + $"windowPosition={Ui.Window.AppWindow.Position} scale={Ui.Root.XamlRoot.RasterizationScale}";
+        });
+        return state;
+    }
     internal static Task ActivateWindow() => Ui.Run(() => {
         var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
         Ui.Window.Activate();
@@ -25,17 +38,20 @@ internal static class SheetNativeInput
         await Rendered();
         await ActivateWindow();
         Point result = default;
-        await Ui.Run(() => {
-            var control = find();
-            Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
-            var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
-            var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
-            Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
-            var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
-            var scale = Ui.Root.XamlRoot.RasterizationScale;
-            result = new(origin.X + (bounds.X + bounds.Width * x) * scale, origin.Y + (bounds.Y + bounds.Height * y) * scale);
-        });
+        await Ui.Run(() => result = ScreenPoint(find(), x, y));
         return result;
+    }
+    // Call on the UI thread. This also supports popup controls without reactivating
+    // their already-active owner while the popup is open.
+    internal static Point ScreenPoint(FrameworkElement control, double x = .5, double y = .5)
+    {
+        Assert.That(control.IsLoaded && control.ActualWidth > 0 && control.ActualHeight > 0, Is.True);
+        var bounds = control.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, control.ActualWidth, control.ActualHeight));
+        var hwnd = Win32Interop.GetWindowFromWindowId(Ui.Window.AppWindow.Id);
+        Assert.That(GetForegroundWindow(), Is.EqualTo(hwnd));
+        var origin = new NativePoint(); Assert.That(ClientToScreen(hwnd, ref origin), Is.True);
+        var scale = Ui.Root.XamlRoot.RasterizationScale;
+        return new(origin.X + (bounds.X + bounds.Width * x) * scale, origin.Y + (bounds.Y + bounds.Height * y) * scale);
     }
     internal static Task Rendered() => Ui.Run(async () => {
             var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -130,5 +146,7 @@ internal static class SheetNativeInput
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(nint hwnd, ref NativePoint point);
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
+    [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
     [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] private static extern bool SystemParametersInfo(uint action, uint parameter, out uint value, uint flags);
 }

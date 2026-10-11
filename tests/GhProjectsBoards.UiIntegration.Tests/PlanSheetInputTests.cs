@@ -315,6 +315,11 @@ internal sealed partial class PlanSheetHostedTests
                 Windows.Foundation.Point point = default;
                 var pressed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                Microsoft.UI.Xaml.Input.PointerEventHandler onRootPressed = (_, args) =>
+                    trace.Add($"opening={opening} ROOT pressed source={args.OriginalSource.GetType().Name}/{AutomationProperties.GetAutomationId((DependencyObject)args.OriginalSource)} point={args.GetCurrentPoint(Ui.Root).Position} handled={args.Handled}");
+                Microsoft.UI.Xaml.Input.PointerEventHandler onPopupPressed = (_, args) =>
+                    trace.Add($"opening={opening} POPUP pressed source={args.OriginalSource.GetType().Name}/{AutomationProperties.GetAutomationId((DependencyObject)args.OriginalSource)} point={args.GetCurrentPoint(Ui.Root).Position} handled={args.Handled}");
+                FrameworkElement presenter = null!;
                 Microsoft.UI.Xaml.Input.PointerEventHandler onPressed = (_, args) => {
                     trace.Add($"opening={opening} pressed source={args.OriginalSource.GetType().Name} handled={args.Handled}");
                     pressed.TrySetResult();
@@ -326,27 +331,52 @@ internal sealed partial class PlanSheetHostedTests
                 await SheetNativeInput.Rendered();
                 await Ui.Run(() => {
                     item = Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!;
-                    // Popups have a separate visual route. Use their public screen
-                    // rectangle and observe delivery on the actual menu item.
+                    // The in-process peer returns rasterized client coordinates;
+                    // external UIA adds the screen origin. Native input uses the
+                    // same root-to-screen conversion as the other pointer tests.
                     var bounds = FrameworkElementAutomationPeer.CreatePeerForElement(item).GetBoundingRectangle();
                     Assert.That(bounds.Width > 0 && bounds.Height > 0, Is.True);
-                    point = new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
-                    trace.Add($"opening={opening} menu={bounds} click={point}");
+                    point = SheetNativeInput.ScreenPoint(item);
+                    var local = item.TransformToVisual(Ui.Root).TransformBounds(new(0, 0, item.ActualWidth, item.ActualHeight));
+                    trace.Add($"opening={opening} peerMenu={bounds} rootMenu={local} click={point}");
+                    presenter = (FrameworkElement)VisualTreeHelper.GetOpenPopupsForXamlRoot(Ui.Root.XamlRoot)
+                        .Single(p => Ui.Tree(p.Child).Contains(item)).Child;
+                    Ui.Root.AddHandler(UIElement.PointerPressedEvent, onRootPressed, true);
+                    presenter.AddHandler(UIElement.PointerPressedEvent, onPopupPressed, true);
                     item.AddHandler(UIElement.PointerPressedEvent, onPressed, true);
                     item.AddHandler(UIElement.PointerReleasedEvent, onReleased, true);
                 });
                 var held = false;
                 try {
                     SheetNativeInput.Move(point);
+                    trace.Add($"opening={opening} beforePress {await SheetNativeInput.DesktopState()}");
                     SheetNativeInput.Button(true); held = true;
+                    // Match the established driver: observe the native press before
+                    // submitting release, without a frame wait or arbitrary delay.
+                    await pressed.Task.WaitAsync(TimeSpan.FromSeconds(5));
                     SheetNativeInput.Button(false); held = false;
-                    await Task.WhenAll(pressed.Task, released.Task).WaitAsync(TimeSpan.FromSeconds(5));
+                    await released.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch {
+                    if (held) { SheetNativeInput.Button(false); held = false; }
+                    trace.Add($"opening={opening} failure {await SheetNativeInput.DesktopState()}");
+                    await Ui.Diagnose("Columns native pointer delivery", sheetHost);
+                    try {
+                        await Ui.Run(async () => {
+                            await RenderedEvidence.Capture(Ui.Root, "columns-pointer-failure-root");
+                            if (presenter.IsLoaded) await RenderedEvidence.Capture(presenter, "columns-pointer-failure-popup");
+                        });
+                    }
+                    catch (Exception error) { trace.Add("Failure screenshot: " + error); }
+                    throw;
                 }
                 finally {
                     if (held) SheetNativeInput.Button(false);
                     await Ui.Run(() => {
                         item.RemoveHandler(UIElement.PointerPressedEvent, onPressed);
                         item.RemoveHandler(UIElement.PointerReleasedEvent, onReleased);
+                        Ui.Root.RemoveHandler(UIElement.PointerPressedEvent, onRootPressed);
+                        presenter.RemoveHandler(UIElement.PointerPressedEvent, onPopupPressed);
                     });
                 }
                 await Ui.Ready<CheckBox>("PlanColumnRemaining");
