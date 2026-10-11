@@ -15,7 +15,8 @@ internal static class RenderedEvidence
         var timer = System.Diagnostics.Stopwatch.StartNew();
         Ui.Trace($"[CAPTURE start] {name} size={view.ActualWidth}x{view.ActualHeight}");
         if (!view.IsLoaded || view.XamlRoot is null) throw new InvalidOperationException($"Capture target unloaded: {name}");
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        // Leave encoding time after settling and native rendering on slower hosted desktops.
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         // Let native item entrance animations settle before pixel evidence is captured.
         // This delay is not used to establish behavior; tests assert their state separately.
         await Task.Delay(1000, deadline.Token);
@@ -43,6 +44,7 @@ internal static class RenderedEvidence
         var dpi = 96 * view.XamlRoot.RasterizationScale;
         encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, dpi, dpi, pixels);
         await encoder.FlushAsync().AsTask(deadline.Token);
+        Ui.Trace($"[CAPTURE saved] {name} milliseconds={timer.Elapsed.TotalMilliseconds:F1}");
         Console.WriteLine("Rendered review evidence: " + file.Path);
     }
 }
