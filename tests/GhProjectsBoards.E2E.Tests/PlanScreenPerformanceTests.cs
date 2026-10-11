@@ -28,6 +28,7 @@ public sealed class PlanScreenPerformanceTests
     [DllImport("user32.dll", EntryPoint = "mouse_event")]
     private static extern void MouseEvent(uint flags, uint x, uint y, uint data, nuint extraInfo);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(nint hwnd, out NativeRectangle bounds);
@@ -186,38 +187,6 @@ public sealed class PlanScreenPerformanceTests
             }
             using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, "after-edits.png"));
             Assert.That(originalAnimation != 0 || changedAnimation, Is.True, "Menu recording requires Windows client-area animations enabled.");
-            var commands = Find("PlanSheetCommands");
-            var more = commands.FindFirstDescendant(c => c.ByAutomationId("MoreButton"));
-            // Search the bounded command bar for the baseline's native button. The
-            // candidate's adjacent button is known to exist when that button is hidden.
-            if (more is null || more.IsOffscreen) more = Find("PlanSheetMore");
-            var menuBounds = more.BoundingRectangle;
-            var menuRegion = Rectangle.FromLTRB(Math.Max(0, (int)menuBounds.Left - 300), (int)menuBounds.Bottom + 2,
-                Math.Min(1920, (int)menuBounds.Right + 300), Math.Min(1080, (int)menuBounds.Bottom + 550));
-            var menuOpen = RecordPixels(Path.Combine(root, "menu-open"), menuRegion,
-                mark => { mark("More click"); more.Click(); }, TimeSpan.FromSeconds(2));
-            process.Refresh();
-            Assert.That(process.HasExited, Is.False,
-                process.HasExited ? $"The app exited while opening the menu: 0x{process.ExitCode:X8}. Desktop pixels are not an opened menu." : "");
-            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.True,
-                "The captured state must contain the application's opened command menu.");
-            Assert.That(menuOpen.ScreenChanged && menuOpen.FinalStateStable, Is.True, "The opened menu must appear in the recorded pixels.");
-            var menuClose = RecordPixels(Path.Combine(root, "menu-close"), menuRegion,
-                mark => { mark("Escape"); Keyboard.Type(VirtualKeyShort.ESCAPE); }, TimeSpan.FromSeconds(2));
-            process.Refresh();
-            Assert.That(process.HasExited, Is.False,
-                process.HasExited ? $"The app exited while closing the menu: 0x{process.ExitCode:X8}." : "");
-            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
-            Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
-            RecordRefreshMenu();
-            RecordFlyout("columns", "PlanSheetColumns", "PlanColumnRemaining", [
-                "PlanColumnId", "PlanColumnIndicator", "PlanColumnTitle", "PlanColumnAssignees", "PlanColumnEstimate",
-                "PlanColumnRemaining", "PlanColumnActual", "PlanColumnStart", "PlanColumnEnd", "PlanColumnPredecessors",
-                "PlanColumnStartNoEarlierThan", "PlanColumnFixed", "PlanColumnStatus"]);
-            RecordFlyout("predecessor", "PlanSheetPredecessorAdd", "PlanPredecessorSearch",
-                ["PlanPredecessorSearch", "PlanPredecessorCandidates", "PlanPredecessorConfirm", "PlanPredecessorCancel"]);
-            RecordFlyout("project", "PlanProjectPicker", "PlanChooseProject",
-                ["RegisteredProjects", "PlanChooseProject", "PlanConnection"]);
             // Retain native character delivery and filtering separately at both typing rhythms.
             var filter = Find("PlanSheetFilter").AsTextBox();
             var filterRegion = Rectangle.Round(window.BoundingRectangle);
@@ -285,6 +254,47 @@ public sealed class PlanScreenPerformanceTests
             }));
             Assert.That(filter.Text, Is.EqualTo("ST-002"));
             Assert.That(countElement!.Properties.Name.ValueOrDefault, Is.EqualTo("40 件"));
+            // Return to the edited task before the independent popup probes.
+            using (Keyboard.Pressing(VirtualKeyShort.CONTROL)) Keyboard.Type(VirtualKeyShort.KEY_A);
+            Keyboard.Type(VirtualKeyShort.BACK);
+            Wait(() => filter.Text.Length == 0 && countElement.IsOffscreen);
+            list.Patterns.Scroll.Pattern.SetScrollPercent(-1, 13);
+            Wait(() => Find("PlanCell144_Title").IsOffscreen == false);
+            var selectedEditor = Find("PlanCell144_Title");
+            selectedEditor.Focus();
+            Wait(() => selectedEditor.Properties.HasKeyboardFocus.ValueOrDefault);
+            var commands = Find("PlanSheetCommands");
+            var more = commands.FindFirstDescendant(c => c.ByAutomationId("MoreButton"));
+            // Search the bounded command bar for the baseline's native button. The
+            // candidate's adjacent button is known to exist when that button is hidden.
+            if (more is null || more.IsOffscreen) more = Find("PlanSheetMore");
+            var menuBounds = more.BoundingRectangle;
+            var menuRegion = Rectangle.FromLTRB(Math.Max(0, (int)menuBounds.Left - 300), (int)menuBounds.Bottom + 2,
+                Math.Min(1920, (int)menuBounds.Right + 300), Math.Min(1080, (int)menuBounds.Bottom + 550));
+            var menuOpen = RecordPixels(Path.Combine(root, "menu-open"), menuRegion,
+                mark => { mark("More click"); more.Click(); }, TimeSpan.FromSeconds(2));
+            process.Refresh();
+            Assert.That(process.HasExited, Is.False,
+                process.HasExited ? $"The app exited while opening the menu: 0x{process.ExitCode:X8}. Desktop pixels are not an opened menu." : "");
+            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.True,
+                "The captured state must contain the application's opened command menu.");
+            Assert.That(menuOpen.ScreenChanged && menuOpen.FinalStateStable, Is.True, "The opened menu must appear in the recorded pixels.");
+            var menuClose = RecordPixels(Path.Combine(root, "menu-close"), menuRegion,
+                mark => { mark("Escape"); Keyboard.Type(VirtualKeyShort.ESCAPE); }, TimeSpan.FromSeconds(2));
+            process.Refresh();
+            Assert.That(process.HasExited, Is.False,
+                process.HasExited ? $"The app exited while closing the menu: 0x{process.ExitCode:X8}." : "");
+            Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
+            Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
+            RecordRefreshMenu();
+            RecordFlyout("columns", "PlanSheetColumns", "PlanColumnRemaining", [
+                "PlanColumnId", "PlanColumnIndicator", "PlanColumnTitle", "PlanColumnAssignees", "PlanColumnEstimate",
+                "PlanColumnRemaining", "PlanColumnActual", "PlanColumnStart", "PlanColumnEnd", "PlanColumnPredecessors",
+                "PlanColumnStartNoEarlierThan", "PlanColumnFixed", "PlanColumnStatus"]);
+            RecordFlyout("predecessor", "PlanSheetPredecessorAdd", "PlanPredecessorSearch",
+                ["PlanPredecessorSearch", "PlanPredecessorCandidates", "PlanPredecessorConfirm", "PlanPredecessorCancel"]);
+            RecordFlyout("project", "PlanProjectPicker", "PlanChooseProject",
+                ["RegisteredProjects", "PlanChooseProject", "PlanConnection"]);
             window.Close();
             Assert.That(process.WaitForExit(10000), Is.True, "Normal close must finish local storage.");
             Assert.That(process.ExitCode, Is.Zero);
@@ -367,7 +377,7 @@ public sealed class PlanScreenPerformanceTests
                 File.WriteAllText(probeEvidence, JsonSerializer.Serialize(new {
                     phase = "repeated opening observed", probeTriggerDetails, repeatedProbeDetails,
                     firstOpeningObserved = true, repeatedOpeningObserved = true, utc = DateTime.UtcNow,
-                    boundary = "Two native pointer moves followed by 100 ms mouse presses at freshly resolved external UIA screen points; FlaUI waits for move input processing before press/release. No concurrent pixel capture. Escape dismisses each opening."
+                    boundary = "Two native mouse-move packets followed by 100 ms mouse presses at freshly resolved external UIA screen points. Movement is sent through mouse_event, not only SetCursorPos; each move gets the standard 100 ms input-processing interval. No concurrent pixel capture. Escape dismisses each opening."
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 CloseProbe();
                 var trigger = PrepareCommand();
@@ -428,12 +438,15 @@ public sealed class PlanScreenPerformanceTests
                         phase, stage = "before Click", utc = DateTime.UtcNow, point,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
                     }) + Environment.NewLine);
-                    // Model moving to an item before clicking. A SetCursorPos followed
-                    // immediately by down/up can deliver popup Entered with the button
-                    // already held; preserve that failing experiment in earlier logs.
-                    Mouse.MoveTo(point);
+                    // FlaUI MoveTo changes cursor position with SetCursorPos. Send
+                    // actual mouse movement packets so native popup input observes
+                    // entering the item before the button is pressed.
+                    NativeMove(more.GetClickablePoint());
+                    FlaUI.Core.Input.Wait.UntilInputIsProcessed();
+                    NativeMove(point);
+                    FlaUI.Core.Input.Wait.UntilInputIsProcessed();
                     File.AppendAllText(trace, JsonSerializer.Serialize(new {
-                        phase, stage = "after MoveTo, before press/release", utc = DateTime.UtcNow, point,
+                        phase, stage = "after native moves, before press/release", utc = DateTime.UtcNow, point,
                         desktop = DescribeDesktopInput(window.Properties.NativeWindowHandle.Value, point)
                     }) + Environment.NewLine);
                     var pressTimer = Stopwatch.StartNew();
@@ -497,6 +510,14 @@ public sealed class PlanScreenPerformanceTests
             return new { hwnd = hwnd.ToString("X"), className = name.ToString(), processId, owner = GetWindow(hwnd, 4).ToString("X"),
                 bounds = new { bounds.Left, bounds.Top, bounds.Right, bounds.Bottom } };
         }
+    }
+
+    private static void NativeMove(Point point)
+    {
+        var x = (uint)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1));
+        var y = (uint)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1));
+        // MOVE | MOVE_NOCOALESCE | VIRTUALDESK | ABSOLUTE.
+        MouseEvent(0xE001, x, y, 0, 0);
     }
 
     private static Window AttachMainWindow(Application app, UIA3Automation automation, Process process, string evidence)
