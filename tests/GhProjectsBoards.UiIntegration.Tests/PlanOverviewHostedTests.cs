@@ -352,8 +352,20 @@ internal sealed class PlanOverviewHostedTests
         await Ui.ClickCommand("PlanSheetExpandAll");
         await Ui.Idle();
         double x = 0, width = 0;
+        var renderedPositions = new List<double>();
+        void RecordPosition(object? sender, RenderedEventArgs args)
+        {
+            if (sheet.ChartViewport <= width + 50) return;
+            var bar = Ui.Find<Shape>("PlanBar3");
+            var scroll = Ui.Find<ScrollViewer>("PlanGanttHorizontal");
+            renderedPositions.Add(bar.TransformToVisual(sheet).TransformPoint(new()).X
+                - scroll.TransformToVisual(sheet).TransformPoint(new()).X);
+        }
         var windowSize = default(Windows.Graphics.SizeInt32);
-        await Ui.Run(() => { x = BarXInChart(3); width = sheet.ChartViewport; windowSize = Ui.Window.AppWindow.Size; });
+        await Ui.Run(() => {
+            x = BarXInChart(3); width = sheet.ChartViewport; windowSize = Ui.Window.AppWindow.Size;
+            CompositionTarget.Rendered += RecordPosition;
+        });
         try {
             await Ui.Run(() => {
                 if (resizeWindow) Ui.Window.AppWindow.Resize(new(windowSize.Width + 200, windowSize.Height));
@@ -369,8 +381,18 @@ internal sealed class PlanOverviewHostedTests
             await Ui.ClickCommand("PlanSheetExpandAll");
             await Ui.Idle();
             await Ui.Run(() => Assert.That(BarXInChart(3), Is.EqualTo(x).Within(1), "The next refresh must preserve the same dates."));
+            await Ui.Until(() => renderedPositions.Count > 0);
+            await Ui.Run(() => {
+                TestContext.Out.WriteLine($"Resize frames: expectedX={x}; actual=[{string.Join(",", renderedPositions)}]");
+                Assert.That(renderedPositions, Is.All.EqualTo(x).Within(1), "Every rendered frame must preserve the date coordinate.");
+            });
         }
-        finally { if (resizeWindow) await Ui.Run(() => Ui.Window.AppWindow.Resize(windowSize)); }
+        finally {
+            await Ui.Run(() => {
+                CompositionTarget.Rendered -= RecordPosition;
+                if (resizeWindow) Ui.Window.AppWindow.Resize(windowSize);
+            });
+        }
     }
 
     [TestCase("週"), TestCase("月")]

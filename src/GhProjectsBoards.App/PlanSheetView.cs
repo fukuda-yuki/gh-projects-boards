@@ -79,7 +79,6 @@ internal sealed partial class PlanSheetView : Grid
     private readonly DispatcherTimer filterDelay = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly TextBlock filterCount = Id(new TextBlock { Visibility = Visibility.Collapsed,
         Foreground = Brush("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center }, "PlanSheetFilterCount");
-    private bool scrollSubscribed, sheetScrollPending, chartScrollPending;
     private int acceptedZoom = 1;
     private bool initialChartPositioned;
     internal bool ShowLatenessLabels => acceptedZoom is 0 or 1;
@@ -232,8 +231,8 @@ internal sealed partial class PlanSheetView : Grid
         AutomationProperties.SetName(divider, "シートとガントの幅");
         ToolTipService.SetToolTip(divider, "ドラッグまたは左右キーで幅を変更");
         Children.Add(divider); SetRow(divider, 3); SetRowSpan(divider, 3);
-        sheetHorizontal.ViewChanged += (_, _) => QueueScrollRefresh(sheet: true);
-        chartHorizontal.ViewChanged += (_, _) => QueueScrollRefresh(sheet: false);
+        sheetHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: true, chart: false);
+        chartHorizontal.ViewChanged += (_, _) => RefreshScrolledRows(sheet: false, chart: true);
         SizeChanged += (_, _) => RefreshLayout();
         statusDate.DateChanged += async (_, _) => {
             if (rendering) return;
@@ -271,8 +270,7 @@ internal sealed partial class PlanSheetView : Grid
             args.Handled = true; await ApplyFilter();
         };
         InitializeInteraction();
-        Unloaded += (_, _) => { disposed = true; CancelPendingFilter(); CompositionTarget.Rendering -= RefreshScrolledRows;
-            scrollSubscribed = sheetScrollPending = chartScrollPending = false;
+        Unloaded += (_, _) => { disposed = true; CancelPendingFilter();
             inputProblem.Close(); predecessorFlyout?.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
             if (!initialChartPositioned) {
@@ -312,18 +310,8 @@ internal sealed partial class PlanSheetView : Grid
             acceptedFilter = proposed; Refresh();
         }, "Filter");
     }
-    private void QueueScrollRefresh(bool sheet)
+    private void RefreshScrolledRows(bool sheet, bool chart)
     {
-        if (disposed) return;
-        if (sheet) sheetScrollPending = true; else chartScrollPending = true;
-        if (scrollSubscribed) return;
-        scrollSubscribed = true; CompositionTarget.Rendering += RefreshScrolledRows;
-    }
-    private void RefreshScrolledRows(object? sender, object args)
-    {
-        CompositionTarget.Rendering -= RefreshScrolledRows; scrollSubscribed = false;
-        var sheet = sheetScrollPending; var chart = chartScrollPending;
-        sheetScrollPending = chartScrollPending = false;
         if (disposed) return;
         if (sheet) sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
         if (chart) RenderTimelineHeader();

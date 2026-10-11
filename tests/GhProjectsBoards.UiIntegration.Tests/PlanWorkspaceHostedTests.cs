@@ -91,7 +91,7 @@ internal sealed class PlanWorkspaceHostedTests
     }
 
     [Test]
-    public async Task ProjectAndReviewListsHaveNoTransitionsOrScrollingPlaceholders()
+    public async Task ProjectAndReviewListsHaveNoTransitions()
     {
         await Open();
         await PickerCommand("PlanChooseProject");

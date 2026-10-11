@@ -86,16 +86,42 @@ internal sealed partial class PlanSheetHostedTests
     public async Task EnterAppliesFilterBeforePauseThroughNativeKeyRoute()
     {
         await SheetNativeInput.ActivateWindow();
-        var elapsed = Stopwatch.StartNew();
-        await Ui.Run(() => {
-            var filter = Ui.Find<TextBox>("PlanSheetFilter");
-            Assert.That(filter.Focus(FocusState.Programmatic), Is.True);
+        TextBox filter = null!;
+        var elapsed = new Stopwatch();
+        var applied = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+        long observer = 0;
+        Microsoft.UI.Xaml.Input.KeyEventHandler pressed = (_, args) => {
+            if (args.OriginalKey != VirtualKey.Enter) return;
+            // Supply fresh text at native key delivery, after activation/focus and input-driver setup.
+            // The real KeyDown route must apply it without waiting for the newly started debounce.
             filter.Text = "Task 20";
+            elapsed.Restart();
+        };
+        await Ui.Run(() => {
+            filter = Ui.Find<TextBox>("PlanSheetFilter");
+            Assert.That(filter.Focus(FocusState.Programmatic), Is.True);
         });
-        await SheetNativeInput.Press(VirtualKey.Enter);
-        await Ui.Until(() => sheet.List.Items.Count == 2);
-        Assert.That(elapsed.ElapsedMilliseconds, Is.LessThan(300), "Enter must bypass the debounce.");
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件")));
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            filter.AddHandler(UIElement.PreviewKeyDownEvent, pressed, true);
+            observer = sheet.List.RegisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, (_, _) => {
+                if (((IEnumerable<string>)sheet.List.ItemsSource).SequenceEqual(new[] { "I20", "" }))
+                    applied.TrySetResult(elapsed.Elapsed.TotalMilliseconds);
+            });
+        });
+        try {
+            await SheetNativeInput.Press(VirtualKey.Enter);
+            var keyToRows = await applied.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            TestContext.Out.WriteLine($"Native Enter to accepted rows: {keyToRows:F3} ms");
+            Assert.That(elapsed.IsRunning, Is.True, "The native preview-key route must run.");
+            Assert.That(keyToRows, Is.LessThan(300), "Enter must bypass the debounce, excluding activation and driver setup.");
+            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("1 件")));
+        } finally {
+            await Ui.Run(() => {
+                filter.RemoveHandler(UIElement.PreviewKeyDownEvent, pressed);
+                sheet.List.UnregisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, observer);
+            });
+        }
     }
 
     [TestCase("Task 20"), TestCase("")]
@@ -267,7 +293,7 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
-    public async Task SheetAndPeopleListsDoNotAnimateItemsOrShowScrollingPlaceholders()
+    public async Task SheetAndPeopleListsDoNotAnimateItems()
     {
         await Ui.Run(() => AssertQuietList(sheet.List));
         PlanPeopleView people = null!;
@@ -311,7 +337,6 @@ internal sealed partial class PlanSheetHostedTests
     internal static void AssertQuietList(ListView list)
     {
         Assert.That(list.ItemContainerTransitions, Is.Null.Or.Empty);
-        Assert.That(list.ShowsScrollingPlaceholders, Is.False);
         Assert.That(list.Transitions, Is.Null.Or.Empty);
         foreach (var item in Ui.Tree(list).OfType<ListViewItem>()) {
             Assert.That(item.ContentTransitions, Is.Null.Or.Empty);

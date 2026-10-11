@@ -16,7 +16,7 @@ internal sealed partial class PlanSheetHostedTests
         .Single(scroll => scroll.Content is ItemsPresenter);
 
     private sealed record ScrollFrame(double ElapsedMs, double IntervalMs, string Phase, double RequestedOffset,
-        double VerticalOffset, double HorizontalOffset, int[] UnpopulatedRows);
+        double VerticalOffset, double HorizontalOffset, int RealizedRows, int[] UnpopulatedRows);
 
     [Test, Category("PlanSheetPerformance")]
     public async Task VersionRowsScrollRoundTripRecordsFrameIntervalsAndViewportPopulation()
@@ -57,7 +57,7 @@ internal sealed partial class PlanSheetHostedTests
                     missing.Add(index + 1);
             }
             lock (frames) frames.Add(new(elapsed, elapsed - previous, phase, requestedOffset,
-                vertical.VerticalOffset, horizontal.HorizontalOffset, missing.ToArray()));
+                vertical.VerticalOffset, horizontal.HorizontalOffset, sheet.Realized.Count, missing.ToArray()));
             previous = elapsed;
             nextFrame?.TrySetResult();
         }
@@ -131,7 +131,7 @@ internal sealed partial class PlanSheetHostedTests
                 ScrollFrame[] samples;
                 lock (frames) samples = frames.ToArray();
                 var result = new {
-                    schemaVersion = 1, outcome, failure, version = EvaluationFixture.DefaultVersion,
+                    schemaVersion = 2, outcome, failure, version = EvaluationFixture.DefaultVersion,
                     rows = session.Document.State.Rows.Length, statusDate = session.Document.State.Settings.StatusDate,
                     windowPixels = new { width = 1920, height = 1080 }, clientWidth, clientHeight, scale,
                     verticalStep, horizontalStep, verticalExtent, horizontalExtent,
@@ -140,6 +140,7 @@ internal sealed partial class PlanSheetHostedTests
                     longFrameThresholdMs = 50, frameCount = samples.Length,
                     longFrames = samples.Count(f => f.IntervalMs > 50),
                     unpopulatedFrames = samples.Count(f => f.UnpopulatedRows.Length > 0),
+                    maxRealizedRows = samples.Length == 0 ? 0 : samples.Max(f => f.RealizedRows),
                     maxFrameMs = samples.Length == 0 ? (double?)null : samples.Max(f => f.IntervalMs), frames = samples,
                     boundary = "Hosted CompositionTarget.Rendered callback intervals and fixed-height viewport population; not physical-display flicker detection"
                 };

@@ -57,6 +57,7 @@ Remove-Item Env:\GHPB_PLAN_EVIDENCE
 | `frames[].ElapsedMs`, `IntervalMs` | Stopwatch time since sampling started and interval between `CompositionTarget.Rendered` callbacks (first interval starts at sampling start) |
 | `frames[].Phase`, `RequestedOffset`, `VerticalOffset`, `HorizontalOffset` | Round-trip phase and requested/observed scroll positions |
 | `frames[].UnpopulatedRows` | One-based visible slots lacking a loaded row with the expected identity/title and viewport position (2 effective-pixel rounding tolerance); includes the append slot when visible |
+| `maxRealizedRows`, `frames[].RealizedRows` | Loaded row population, to distinguish bounded viewport caching from accumulation as the scroll moves deeper (schema version 2) |
 
 Population detection compares expected slots from the current pixel offset and the sheet's fixed row height, including partly visible rows, against real containers. This detects unrealized slots and recycled/stale rows, rather than counting only the rows that happened to load. It is a hosted XAML diagnostic, not pixel analysis: compositor artifacts, occlusion and physical-display flicker still require the PMO's 1920 × 1080 screen capture. Report those observations alongside both scroll JSON files and the unchanged edit-to-screen measurement. A remaining rendering bottleneck informs a separate cell-renderer decision; the harness does not authorize that redesign.
 
