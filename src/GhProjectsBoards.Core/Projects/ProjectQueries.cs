@@ -4,6 +4,7 @@ internal static class ProjectQueries
 {
     private const string PageInfo = "totalCount pageInfo { hasNextPage endCursor }";
     public static readonly string Milestones = "query ProjectMilestones($id:ID!,$after:String){node(id:$id){__typename ... on Repository{id milestones(first:100,after:$after,states:[OPEN,CLOSED]){" + PageInfo + " nodes{id title dueOn state}}}}}";
+    public static readonly string Labels = "query ProjectLabels($id:ID!,$after:String){node(id:$id){__typename ... on Repository{id labels(first:100,after:$after){" + PageInfo + " nodes{id name}}}}}";
     private const string Native = "assignees(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id login } } blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { id } } parent { id }";
     public static readonly string Assignees = "query PlanningAssignees($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id assignees(first:100, after:$after) { " + PageInfo + " nodes { id login } } } } }";
     public static readonly string Predecessors = "query PlanningPredecessors($id: ID!, $after: String) { node(id: $id) { __typename ... on Issue { id blockedBy(first:100, after:$after) { " + PageInfo + " nodes { id } } } } }";
@@ -14,6 +15,8 @@ internal static class ProjectQueries
           __typename
           ... on ProjectV2ItemFieldValueCommon { id FIELD_REFERENCE }
           ... on ProjectV2ItemFieldSingleSelectValue { optionId }
+          ... on ProjectV2ItemFieldTextValue { text }
+          ... on ProjectV2ItemFieldIterationValue { title }
           ... on ProjectV2ItemFieldNumberValue { number }
           ... on ProjectV2ItemFieldDateValue { date }
           ... on ProjectV2ItemFieldLabelValue { FIELD_REFERENCE }
@@ -57,7 +60,7 @@ internal static class ProjectQueries
                     __typename
                     ... on Node { id }
                     ... on Issue {
-                      number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
+                      labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
                       repository { id nameWithOwner owner { id } }
                     }
                   }
@@ -68,15 +71,7 @@ internal static class ProjectQueries
           }
         }
         """.Replace("NATIVE", Native).Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
-    public static readonly string ItemValues = """
-        query ProjectItemValues($id: ID!, $after: String) {
-          node(id: $id) {
-            __typename
-            ... on ProjectV2Item {
-              id project { id }
-              fieldValues(first: 100, after: $after) { PAGE_INFO VALUES }
-            }
-          }
-        }
-        """.Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
+    internal static string ItemValueSelection(int index)
+        => ("v" + index + ":node(id:$id" + index + "){__typename ... on ProjectV2Item{id project{id} fieldValues(first:100,after:$after" + index + "){PAGE_INFO VALUES}}}")
+            .Replace("PAGE_INFO", PageInfo).Replace("VALUES", Values).Replace("FIELD_REFERENCE", FieldReference);
 }

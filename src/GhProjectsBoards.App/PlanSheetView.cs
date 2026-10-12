@@ -28,12 +28,12 @@ internal sealed partial class PlanSheetView : Grid
     internal readonly ListView List = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0), ShowsScrollingPlaceholders = false }, "PlanTasks");
     internal sealed record Input(string Text, long Generation, string OriginalText);
     private long inputGeneration;
-    internal readonly Dictionary<(string Identity, PlanField Field), Input> Pending = [];
+    internal readonly Dictionary<(string Identity, string Field), Input> Pending = [];
     private readonly PlanInputProblem inputProblem = new("SheetInputProblem");
     private sealed class InputRejectedException(string message, Exception? inner = null) : InvalidOperationException(message, inner);
-    internal void SetInput(string identity, PlanField field, string text, string originalText) => Pending[(identity, field)] = new(text, ++inputGeneration, originalText);
-    internal long Generation(string identity, PlanField field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
-    internal readonly Dictionary<(string Identity, PlanField Field), string> Problems = [];
+    internal void SetInput(string identity, string field, string text, string originalText) => Pending[(identity, field)] = new(text, ++inputGeneration, originalText);
+    internal long Generation(string identity, string field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
+    internal readonly Dictionary<(string Identity, string Field), string> Problems = [];
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
     private ObservableCollection<string> rowItems = [];
     internal Dictionary<string, int> RowIndexes { get; private set; } = [];
@@ -47,15 +47,15 @@ internal sealed partial class PlanSheetView : Grid
     internal int OverdueTasks => lateness.OverdueTasks;
     internal int LaterTasks => lateness.LaterTasks;
     private Dictionary<string, string> peopleNames = new();
-    internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<PlanField>>.Empty);
-    internal sealed record Column(PlanField? Field, string Label, double Width, bool Indicator = false);
+    internal PlanUnpublished Unpublished { get; private set; } = new(ImmutableDictionary<string, ImmutableArray<string>>.Empty);
+    internal sealed record Column(string? Field, string Label, double Width, bool Indicator = false);
     internal static readonly Column[] Columns = [
         new(null, "ID", 52), new(null, "状態", 28, true), new(PlanField.Title, "タスク名", 224), new(PlanField.Phase, "工程", 48), new(PlanField.Assignees, "担当者", 80),
         new(PlanField.Estimate, "見積 h", 56), new(PlanField.Remaining, "残 h", 56), new(PlanField.Actual, "実績 h", 56),
         new(PlanField.Start, "開始日", 92), new(PlanField.End, "終了日", 92), new(PlanField.Predecessors, "先行", 64),
         new(PlanField.StartNoEarlierThan, "開始日指定", 100), new(PlanField.Fixed, "日程固定", 80), new(PlanField.Status, "ステータス", 100)];
     internal bool IndicatorVisible { get; private set; } = true;
-    internal readonly HashSet<PlanField?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
+    internal readonly HashSet<string?> Hidden = [PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status];
     internal Column[] VisibleColumns { get; private set; } = Columns.Take(11).ToArray();
     internal double RowHeight { get; private set; } = 28;
     private double? dividerWidth;
@@ -118,7 +118,7 @@ internal sealed partial class PlanSheetView : Grid
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
     internal event Action? SaveFeedbackChanged;
-    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false)
+    internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null)
     {
         Session = session;
         this.readClipboard = readClipboard is null ? ReadClipboard : _ => readClipboard();
@@ -158,32 +158,12 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
-        var columns = Id(new AppBarButton { Label = "表示列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
-        AutomationProperties.SetName(columns, "表示列"); ToolTipService.SetToolTip(columns, "表示列");
-        var choices = new StackPanel { Spacing = 4 };
-        foreach (var column in Columns)
-        {
-            var toggle = Id(new CheckBox { Content = column.Label, IsChecked = column.Indicator ? IndicatorVisible : !Hidden.Contains(column.Field) }, "PlanColumn" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
-            var synchronizing = false;
-            async void VisibilityChanged(object sender, RoutedEventArgs args) {
-                if (synchronizing) return;
-                var proposed = toggle.IsChecked == true;
-                await Run(async () => {
-                await CommitPending();
-                if (column.Indicator) IndicatorVisible = proposed;
-                else if (proposed) Hidden.Remove(column.Field); else Hidden.Add(column.Field);
-                VisibleColumns = Columns.Where(c => c.Indicator ? IndicatorVisible : !Hidden.Contains(c.Field)).ToArray();
-                if (VisibleColumns.Length == 0) { if (column.Indicator) IndicatorVisible = true; else Hidden.Remove(column.Field); VisibleColumns = Columns.Where(c => c.Indicator ? IndicatorVisible : !Hidden.Contains(c.Field)).ToArray(); }
-                RefreshLayout(); ReconcileSelection(); }, "Column visibility");
-                synchronizing = true;
-                try { toggle.IsChecked = column.Indicator ? IndicatorVisible : !Hidden.Contains(column.Field); }
-                finally { synchronizing = false; }
-                if (Problems.Count > 0) { columns.Flyout?.Hide(); FocusSelected(); }
-            }
-            toggle.Checked += VisibilityChanged; toggle.Unchecked += VisibilityChanged;
-            choices.Children.Add(toggle);
-        }
-        columns.Flyout = new Flyout { Content = choices, AreOpenCloseAnimationsEnabled = false }; commands.SecondaryCommands.Add(columns);
+        Overflow("表示列", "PlanSheetColumns", Symbol.List, async () => {
+            var accepted = false;
+            await Run(async () => { await CommitPending(); accepted = true; }, "Column settings");
+            // The workspace flushes this queue, so invoke navigation only after it completes.
+            if (accepted && openColumns is not null) await openColumns();
+        }, queued: false);
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
@@ -475,12 +455,12 @@ internal sealed partial class PlanSheetView : Grid
             }
         }
     }
-    internal Task CommitCell(string identity, PlanField field, string text)
+    internal Task CommitCell(string identity, string field, string text)
     {
         var input = Pending.GetValueOrDefault((identity, field));
         return Run(() => Commit(identity, field, text, input?.Generation ?? 0, input?.OriginalText ?? ""));
     }
-    private async Task Commit(string identity, PlanField field, string text, long generation, string originalText)
+    private async Task Commit(string identity, string field, string text, long generation, string originalText)
     {
         if (generation == 0 || !Pending.ContainsKey((identity, field))) return;
         void FinishInput()
@@ -499,7 +479,7 @@ internal sealed partial class PlanSheetView : Grid
                 FinishInput();
                 Refresh(); metrics.End(pendingFrame, "unchanged"); return;
             }
-            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today);
+            var value = PlanSheetEditing.Parse(Session.Document, field, text, Today, identity);
             PlanCommand command;
             if (identity.Length == 0)
             {
@@ -534,15 +514,27 @@ internal sealed partial class PlanSheetView : Grid
         CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false;
         metrics.End(pendingFrame, "rendered");
     }
-    internal void CancelEdit(string identity, PlanField field)
+    internal void CancelEdit(string identity, string field)
     {
         Pending.Remove((identity, field)); Problems.Remove((identity, field)); error.Text = "";
         Refresh();
     }
+    internal Column[] ConfiguredColumns { get; private set; } = Columns;
     internal void Refresh()
     {
         if (disposed) return;
         var document = Session.Document;
+        var configured = PlanSheetColumns.All(document).Select(c => {
+            var standard = Columns.FirstOrDefault(s => (s.Indicator ? "Indicator" : s.Field ?? "Id") == c.Key);
+            return standard is null ? new Column(c.Key, c.Name, 140) : standard with { Label = c.Name };
+        }).ToArray();
+        if (!ConfiguredColumns.SequenceEqual(configured)) ConfiguredColumns = configured;
+        var choices = PlanSheetColumns.All(document).ToDictionary(c => c.Key);
+        Hidden.Clear();
+        foreach (var c in ConfiguredColumns.Where(c => !c.Indicator && !choices[c.Field ?? "Id"].Visible)) Hidden.Add(c.Field);
+        IndicatorVisible = choices["Indicator"].Visible;
+        var visible = ConfiguredColumns.Where(c => choices[c.Indicator ? "Indicator" : c.Field ?? "Id"].Visible).ToArray();
+        if (!VisibleColumns.SequenceEqual(visible)) VisibleColumns = visible;
         var today = Today;
         metrics.Mark("derived-start");
         // A filter or fold only changes presentation. Document identity also invalidates
@@ -620,21 +612,25 @@ internal sealed partial class PlanSheetView : Grid
         }
     }
     internal string Header(Column column) => column.Label;
-    internal static string FullName(Column column) => column.Field switch {
+    internal static string FullName(Column column) => Columns.FirstOrDefault(c => c.Field == column.Field && c.Indicator == column.Indicator) is { } standard && standard.Label != column.Label ? column.Label : column.Field switch {
         PlanField.Estimate => "見積工数", PlanField.Actual => "実績工数", PlanField.Remaining => "見込み残存工数", _ => column.Label };
 
     internal static string EffortPrefix(Column column) => column.Field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining ? FullName(column) + " · " : "";
-    private string HeaderHelp(Column column) => EffortPrefix(column) + (column.Field is { } field
-        ? Session.Document.State.Settings.Columns.SingleOrDefault(m => m.Role == field)?.Name is { } name ? "GitHub: " + name
-            : field == PlanField.Title ? "GitHub: Title" : field == PlanField.Assignees ? "GitHub: Assignees" : "未設定"
-        : column.Label);
+    private string HeaderHelp(Column column)
+    {
+        var source = PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
+        return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source);
+    }
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
-    internal DateOnly? CellDate(string identity, PlanField field) => field switch {
+    internal bool IsDateField(string field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
+        || PlanSheetColumns.IsExtra(field) && Session.Document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == field)?.DataType == "DATE";
+    internal DateOnly? CellDate(string identity, string field) => PlanSheetColumns.IsExtra(field) && IsDateField(field)
+        ? Rows.TryGetValue(identity,out var row) && PlanExtraEditing.Value(row,field) is string text && DateOnly.TryParseExact(text,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out var day) ? day : null : field switch {
         PlanField.Start => Schedule.GetValueOrDefault(identity)?.Start.Value,
         PlanField.End => Schedule.GetValueOrDefault(identity)?.End.Value,
         PlanField.StartNoEarlierThan => Rows.GetValueOrDefault(identity)?.StartNoEarlierThan, _ => null };
-    internal string EditForm(string identity, PlanField field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan
+    internal string EditForm(string identity, string field) => IsDateField(field)
         ? CellDate(identity, field)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""
         : field == PlanField.Assignees && Rows.TryGetValue(identity, out var row)
             ? string.Join(", ", row.Assignees.Select(id => Session.Document.Sync.PeopleNames.GetValueOrDefault(id)
@@ -645,12 +641,15 @@ internal sealed partial class PlanSheetView : Grid
         : !string.IsNullOrWhiteSpace(Session.Document.Sync.PeopleNames.GetValueOrDefault(id)) ? Session.Document.Sync.PeopleNames[id] : "担当者（未確認）";
     internal string AssigneeTooltip(string identity) => Rows.TryGetValue(identity, out var row)
         ? string.Join(", ", row.Assignees.Select(AssigneeName)) : "";
-    internal string Display(string identity, PlanField field)
+    internal string Display(string identity, string field)
     {
         if (!Rows.TryGetValue(identity, out var row)) return "";
+        if (PlanSheetColumns.IsExtra(field) && PlanExtraEditing.Read(row, field).Availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return "取得できません";
+        if (PlanSheetColumns.IsExtra(field) && IsDateField(field)) return DateText(CellDate(identity,field));
         var computed = Schedule[identity];
         string Date(DateOnly? day) => DateText(day);
         return field switch {
+            PlanField.Labels => string.Join(", ", row.Labels),
             PlanField.Start => Date(computed.Start.Value), PlanField.End => Date(computed.End.Value),
             PlanField.Estimate => computed.Estimate is { } estimate ? estimate.ToString(CultureInfo.CurrentCulture) + "h" : "",
             PlanField.Remaining => computed.Remaining is { } remaining ? remaining.ToString(CultureInfo.CurrentCulture) + "h" : "",
@@ -664,16 +663,18 @@ internal sealed partial class PlanSheetView : Grid
             _ => PlanOperations.Value(row, field)?.ToString() ?? ""
         };
     }
-    internal bool IsCalculated(string identity, PlanField field) => Schedule.TryGetValue(identity, out var result) &&
+    internal bool IsCalculated(string identity, string field) => Schedule.TryGetValue(identity, out var result) &&
         (field == PlanField.Start && result.Start.Origin == DateOrigin.Calculated
         || field == PlanField.End && result.End.Origin == DateOrigin.Calculated
         || field == PlanField.Remaining && (result.Input.Closed || result.Input.Remaining is null && result.Remaining is not null)
         || result.IsSummary && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual);
-    internal string? ReadOnlyReason(string identity, PlanField field) => Rows.TryGetValue(identity, out var row)
-        ? field == PlanField.Phase && !Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? "工程のフィールドが未設定です。"
+    internal string? ReadOnlyReason(string identity, string field) => Rows.TryGetValue(identity, out var row)
+        ? field == PlanField.Repository ? "この列は読み取り専用です。"
+        : PlanSheetColumns.IsExtra(field) && PlanExtraEditing.ReadOnlyReason(Session.Document,row,field) is { } extraReason ? extraReason
+        : field == PlanField.Phase && !Session.Document.State.Settings.Columns.Any(c => c.Role == field) ? "工程のフィールドが未設定です。"
             : PlanOperations.ReadOnlyReason(row, Schedule.GetValueOrDefault(identity)?.IsSummary == true, field) : null;
-    internal bool ReadOnly(string identity, PlanField field) => remoteBusy || ReadOnlyReason(identity, field) is not null;
-    internal bool IsChanged(string identity, PlanField field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
+    internal bool ReadOnly(string identity, string field) => remoteBusy || ReadOnlyReason(identity, field) is not null;
+    internal bool IsChanged(string identity, string field) => !(Schedule.GetValueOrDefault(identity)?.IsSummary == true
         && field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual) &&
         Unpublished.Fields.TryGetValue(identity, out var fields) && fields.Contains(field);
     private void RowContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -759,7 +760,7 @@ internal sealed partial class PlanSheetView : Grid
     }
     private void RefreshHeaders()
     {
-        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{HeaderHelp(c)}"));
+        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{c.Label}:{HeaderHelp(c)}"));
         if (headerKey == key) return;
         headerKey = key;
         sheetHead.Children.Clear();

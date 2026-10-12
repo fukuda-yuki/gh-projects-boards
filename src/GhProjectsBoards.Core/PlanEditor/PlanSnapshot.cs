@@ -36,13 +36,14 @@ internal static class PlanSnapshot
         foreach (var item in p.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived))
         {
             if (item.ContentId is null || !p.Issues.TryGetValue(item.ContentId, out var issue) || !item.ValuesComplete ||
-                issue.Native is not { Complete: true } native || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
+                issue.Native is not { Complete: true } native || issue.Labels.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
                 issue.State.Availability != ValueAvailability.Present ||
                 issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                 throw new InvalidOperationException("Issue の取得が不完全です。");
             var row = new PlanRow(issue.Id.NodeId, issue.Title.Value!, issue.Repository.NameWithOwner)
             {
                 MilestoneTitle = issue.Milestone.Value?.Title,
+                Labels = (issue.Labels.Value ?? []).Select(l => l.Name).Order(StringComparer.Ordinal).ToImmutableArray(),
                 Closed = issue.State.Value == IssueState.Closed,
                 CloseDate = issue.State.Value == IssueState.Closed && issue.ClosedAt.Value is { } closedAt
                     ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(closedAt, timeZone ?? TimeZoneInfo.Local).DateTime) : null,
@@ -82,9 +83,39 @@ internal static class PlanSnapshot
                 };
                 row = PlanValues.Set(row, mapping.Role, json);
             }
+            foreach (var definition in p.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem))
+            {
+                var key = "Project:" + definition.Id.NodeId;
+                var value = item.Values.SingleOrDefault(v => v.FieldId?.NodeId == key[8..]);
+                var availability = value?.Availability ?? ValueAvailability.Unavailable;
+                string? json = null;
+                if (availability == ValueAvailability.Empty) json = "null";
+                else if (availability == ValueAvailability.Present && definition is not null)
+                {
+                    if (definition.DataType == "SINGLE_SELECT")
+                    {
+                        var option = definition.Options.SingleOrDefault(o => o.Id == value?.OptionId);
+                        if (option is null) availability = ValueAvailability.Unavailable; else json = PlanJson.Text(option.Name);
+                    }
+                    else if (definition.DataType == "NUMBER")
+                    {
+                        if (decimal.TryParse(value?.Scalar, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)) json = PlanJson.Text(number);
+                        else availability = ValueAvailability.Unavailable;
+                    }
+                    else if (definition.DataType == "DATE")
+                    {
+                        if (DateOnly.TryParseExact(value?.Scalar,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out var day)) json = PlanJson.Text(day);
+                        else availability = ValueAvailability.Unavailable;
+                    }
+                    else json = PlanJson.Text(value?.Scalar);
+                }
+                row = row with { ExtraValues = row.ExtraValues.SetItem(key, new(availability,json)) };
+            }
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
         }
         return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()) {
+                RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == m.RepositoryId).Repository.NameWithOwner, m.Id.NodeId, m.Title)).ToImmutableArray(),
+                RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == l.RepositoryId).Repository.NameWithOwner, l.Id, l.Name)).ToImmutableArray(),
                 Milestones = p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
                     g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray() },
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))

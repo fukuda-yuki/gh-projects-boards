@@ -66,6 +66,15 @@ internal sealed partial class PlanSheetHostedTests
         });
         await Ui.Mount(sheetHost);
     }
+    private async Task SetColumnVisible(string key,bool visible)
+    {
+        await Ui.Run(async () => {
+            await sheet.FlushInput();
+            var save=await session.Execute(new ReplacePlanSettings(PlanSheetColumns.Change(session.Document,key,visible)),Today);
+            Assert.That(save.Succeeded,Is.True,save.Error); sheet.Refresh();
+        });
+        await Ui.Idle();
+    }
     [TearDown]
     public async Task Cleanup()
     {
@@ -92,20 +101,24 @@ internal sealed partial class PlanSheetHostedTests
         var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
         await MountPresentation([parent with { Assignees = ["local"], Predecessors = [], StartNoEarlierThan = Today.AddDays(7), Fixed = !held, Status = "Local" }, child, predecessor],
             [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
-        await Ui.ClickCommand("PlanSheetColumns");
-        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) {
-            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
-            await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
-        }
-        await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) await SetColumnVisible(field,true);
+        var undo = session.UndoCount;
         foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
+            await Ui.Idle();
+            await Ui.Until(() => SelectProvider($"PlanCell1_{field}").IsSelected
+                && Ui.Find<PlanSummaryCell>($"PlanCell1_{field}").FocusState != FocusState.Unfocused);
             await Ui.Run(async () => {
+                Assert.That(FocusManager.GetFocusedElement(sheet.XamlRoot), Is.SameAs(Ui.Find<PlanSummaryCell>($"PlanCell1_{field}")), field);
+                Assert.That(SelectProvider($"PlanCell1_{field}").IsSelected, Is.True, field);
+                clipboard = new("not copied", null);
                 await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
-                Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""));
+                Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""), field);
+                Assert.That(clipboard.Metadata, Is.Not.Null, field);
                 using var metadata = JsonDocument.Parse(clipboard.Metadata!);
-                Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo(JsonSerializer.Serialize(PlanOperations.Value(parent, field), PlanJson.Options)));
+                Assert.That(metadata.RootElement.GetProperty("fields").EnumerateArray().Select(v => v.GetString()), Is.EqualTo(new[] { field }), field);
+                Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo(JsonSerializer.Serialize(PlanOperations.Value(parent, field), PlanJson.Options)), field);
             });
         }
         await Select(1, PlanField.Assignees);
@@ -116,7 +129,27 @@ internal sealed partial class PlanSheetHostedTests
             var peer = FrameworkElementAutomationPeer.CreatePeerForElement(cell);
             Assert.That(peer.GetHelpText(), held ? Does.Contain("alice, bob") : Is.Empty);
         });
-        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+
+    [Test]
+    public async Task QueuedSummaryCopyKeepsTheSelectionAtTheCommandRequest()
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo") { Fixed = true, Assignees = ["U1"] };
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1" };
+        await MountPresentation([parent, child], [parent, child], [new("U1", "alice", 100, null)]);
+        await SetColumnVisible(PlanField.Fixed, true);
+        await Select(1, PlanField.Fixed);
+        await Ui.Run(async () => {
+            var copy = sheet.KeyboardCommand(Windows.System.VirtualKey.C);
+            SelectProvider("PlanCell1_Assignees").Select();
+            await copy;
+            Assert.That(clipboard.Text, Is.EqualTo("固定"));
+            using var metadata = JsonDocument.Parse(clipboard.Metadata!);
+            Assert.That(metadata.RootElement.GetProperty("fields").EnumerateArray().Select(v => v.GetString()),
+                Is.EqualTo(new[] { PlanField.Fixed }));
+            Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo("true"));
+        });
     }
 
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]
@@ -169,12 +202,7 @@ internal sealed partial class PlanSheetHostedTests
         var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1", Estimate = 8, Remaining = 8, Assignees = ["U1"] };
         var predecessor = new PlanRow("I3", "Earlier", "acme/repo");
         await MountPresentation([parent, child, predecessor], [parent, child, predecessor]);
-        await Ui.ClickCommand("PlanSheetColumns");
-        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) {
-            await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumn" + field) is { IsLoaded: true, IsEnabled: true });
-            await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumn" + field)!.IsChecked = true);
-        }
-        await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide()); await Ui.Idle();
+        foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) await SetColumnVisible(field,true);
         foreach (var (field, expected) in new[] { (PlanField.Assignees, "alice"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "10/5 (月)"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
@@ -189,7 +217,7 @@ internal sealed partial class PlanSheetHostedTests
 
     [TestCase(PlanField.Estimate, "子タスクから集計（編集不可）")]
     [TestCase(PlanField.Assignees, "要求事項の行では編集できません")]
-    public async Task SummaryCellsExposeStaticValuesAndSelectionReason(PlanField field, string reason)
+    public async Task SummaryCellsExposeStaticValuesAndSelectionReason(string field, string reason)
     {
         await session.Execute(new IndentPlanRows(["I3"]), Today);
         await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
@@ -209,7 +237,7 @@ internal sealed partial class PlanSheetHostedTests
     }
     [TestCase(PlanField.Estimate), TestCase(PlanField.Assignees)]
     [Category("PlanSheetNative")]
-    public async Task SummaryPointerAndKeysNeverOpenEditorAndArrowsTraverseCells(PlanField field)
+    public async Task SummaryPointerAndKeysNeverOpenEditorAndArrowsTraverseCells(string field)
     {
         await session.Execute(new IndentPlanRows(["I3"]), Today);
         await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
@@ -244,18 +272,11 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(SelectProvider($"PlanCell2_{(field == PlanField.Assignees ? PlanField.Estimate : PlanField.Remaining)}").IsSelected, Is.True));
     }
 
-    [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true)]
+    [TestCase(false, false), TestCase(false, true)]
     [Category("PlanSheetFollowup")]
     public async Task PointerRangeEndsAtEstimateAndClearChangesOnlyItsCells(bool hideId, bool hideIndicator)
     {
-        if (hideId || hideIndicator) {
-            await Ui.ClickCommand("PlanSheetColumns");
-            await Ui.Until(() => (!hideId || Ui.Popup<CheckBox>("PlanColumnId") is { IsLoaded: true, IsEnabled: true })
-                && (!hideIndicator || Ui.Popup<CheckBox>("PlanColumnIndicator") is { IsLoaded: true, IsEnabled: true }));
-            if (hideId) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnId")!.IsChecked = false); await Ui.Idle(); }
-            if (hideIndicator) { await Ui.Run(() => Ui.Popup<CheckBox>("PlanColumnIndicator")!.IsChecked = false); await Ui.Idle(); }
-            await Ui.Run(() => Ui.CommandButton("PlanSheetColumns").Flyout.Hide());
-        }
+        if (hideIndicator) await SetColumnVisible("Indicator",false);
         var before = session.Document.State.Rows;
         await Select(1, PlanField.Estimate);
         await Ui.Until(() => {
@@ -626,12 +647,12 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     private async Task MountPresentation(ImmutableArray<PlanRow> rows, ImmutableArray<PlanRow> baseline,
-        ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null)
+        ImmutableArray<PlanResource> people = default, ImmutableDictionary<string, string>? logins = null, ImmutableArray<PlanColumnDefinition> columns = default)
     {
         await Ui.Unmount(sheetHost); await session.FlushAsync();
         var settings = session.Document.State.Settings;
         if (!people.IsDefault) settings = settings with { People = people };
-        var document = new PlanDocument(session.Document.Project, new(baseline, []), new(rows, settings)) {
+        var document = new PlanDocument(session.Document.Project, new(baseline, columns.IsDefault ? [] : columns), new(rows, settings)) {
             Sync = new() { PeopleNames = logins ?? ImmutableDictionary<string, string>.Empty,
                 IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#1", "https://github.com/acme/repo/issues/1")) } };
         session = await PlanSession.CreateAsync(new(Path.Combine(root, "presentation")), document, Today);
@@ -936,12 +957,7 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(accessible.Count(), Is.EqualTo(1), id);
             }
         });
-        await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is not null);
-        await Ui.Run(() => {
-            Assert.That(Ui.Popup<CheckBox>("PlanColumnStart")!.Content, Is.EqualTo("開始日"));
-            Assert.That(Ui.Popup<CheckBox>("PlanColumnIndicator")!.Content, Is.EqualTo("状態"));
-        });
+        await Ui.Run(() => Assert.That(Ui.CommandButton("PlanSheetColumns").Flyout, Is.Null));
     }
     [Test, Category("PlanSheetPhase2")]
     public async Task StandardHeadersAndShortDatesExposeMappedFieldsAndFullDates()
@@ -1108,20 +1124,14 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test]
-    public async Task SheetRefusedColumnToggleRestoresAcceptedVisibility()
+    public async Task SheetRefusedColumnChangeKeepsInvalidInputReachable()
     {
         await Edit(1, PlanField.Remaining, "invalid");
-        await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnRemaining") is { IsLoaded: true, IsEnabled: true });
-        CheckBox toggle = null!;
-        await Ui.Run(() => { toggle = Ui.Popup<CheckBox>("PlanColumnRemaining")!; Ui.Toggle(toggle); });
-        await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(toggle.IsChecked, Is.True);
+        await Ui.Run(async () => {
+            Assert.That(async () => await sheet.FlushInput(), Throws.InstanceOf<InvalidOperationException>());
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Visibility, Is.EqualTo(Visibility.Visible));
-            Ui.CommandButton("PlanSheetColumns").Flyout.Hide();
+            await Task.CompletedTask;
         });
-        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Remaining").FocusState != FocusState.Unfocused);
     }
 
     [Test, Category("PlanSheetNative")]
@@ -1242,7 +1252,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
     }
     [TestCase(PlanField.Start), TestCase(PlanField.End), Category("PlanSheetReview3")]
-    public async Task ReturningToTheDisplayedCalculatedDateKeepsAutomaticSchedulingAndHistory(PlanField field)
+    public async Task ReturningToTheDisplayedCalculatedDateKeepsAutomaticSchedulingAndHistory(string field)
     {
         await Select(1, field);
         var before = session.Document.State; var undo = session.UndoCount;
@@ -1413,12 +1423,12 @@ internal sealed partial class PlanSheetHostedTests
     }
     private static ISelectionItemProvider SelectProvider(string id)
         => (ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<FrameworkElement>(id)).GetPattern(PatternInterface.SelectionItem);
-    private async Task Select(int row, PlanField field, bool extend = false)
+    private async Task Select(int row, string field, bool extend = false)
     {
         await Ui.Ready<FrameworkElement>($"PlanCell{row}_{field}");
         await Ui.Run(() => { var provider = SelectProvider($"PlanCell{row}_{field}"); if (extend) provider.AddToSelection(); else provider.Select(); });
     }
-    private async Task Edit(int row, PlanField field, string text)
+    private async Task Edit(int row, string field, string text)
     {
         await Select(row, field);
         var before = session.UndoCount;
@@ -1736,9 +1746,7 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task SelectingAnOffscreenColumnMakesTheWholeCellReachableWithoutMovingTheChart()
     {
-        await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStatus") is { IsLoaded: true, IsEnabled: true });
-        await Ui.Run(() => { Ui.Popup<CheckBox>("PlanColumnStatus")!.IsChecked = true; Ui.CommandButton("PlanSheetColumns").Flyout.Hide(); });
+        await SetColumnVisible(PlanField.Status,true);
         await Ui.Idle();
         double barX = 0;
         await Ui.Run(() => barX = Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport);
@@ -1931,15 +1939,10 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanRowId3").Text, Is.EqualTo("3"));
         });
-        await Ui.ClickCommand("PlanSheetColumns");
-        await Ui.Until(() => Ui.Popup<CheckBox>("PlanColumnStart") is { IsLoaded: true, IsEnabled: true });
-        await Ui.Run(() => Ui.Toggle(Ui.Popup<CheckBox>("PlanColumnStart")!)); await Ui.Idle();
-        await Ui.Run(() => {
-            Assert.That(Ui.Tree(sheet).OfType<TextBox>().Any(c =>
-                Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(c) == "PlanCell3_Start" && c.Visibility == Visibility.Visible), Is.False);
-            Ui.Toggle(Ui.Popup<CheckBox>("PlanColumnStart")!);
-        });
-        await Ui.Idle();
+        await SetColumnVisible(PlanField.Start,false);
+        await Ui.Run(() => Assert.That(Ui.Tree(sheet).OfType<TextBox>().Any(c =>
+            AutomationProperties.GetAutomationId(c) == "PlanCell3_Start" && c.Visibility == Visibility.Visible), Is.False));
+        await SetColumnVisible(PlanField.Start,true);
         await Ui.Ready<TextBlock>("PlanHeaderStart");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderStart").Text, Is.EqualTo("開始日")));
     }

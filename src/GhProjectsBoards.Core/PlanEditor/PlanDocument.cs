@@ -3,11 +3,36 @@ using GhProjectsBoards.Core.Projects;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal enum PlanField { Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder }
+internal static class PlanField
+{
+    public const string Title = "Title";
+    public const string Repository = "Repository";
+    public const string Status = "Status";
+    public const string Phase = "Phase";
+    public const string Closed = "Closed";
+    public const string Assignees = "Assignees";
+    public const string Estimate = "Estimate";
+    public const string Remaining = "Remaining";
+    public const string Actual = "Actual";
+    public const string Start = "Start";
+    public const string End = "End";
+    public const string Predecessors = "Predecessors";
+    public const string Parent = "Parent";
+    public const string Order = "Order";
+    public const string StartNoEarlierThan = "StartNoEarlierThan";
+    public const string Fixed = "Fixed";
+    public const string NewTask = "NewTask";
+    public const string SubIssueOrder = "SubIssueOrder";
+    public const string Labels = "Labels";
+    public const string MilestoneTitle = "MilestoneTitle";
+    public static readonly string[] All = [Title, Repository, Status, Phase, Closed, Assignees, Estimate, Remaining, Actual, Start, End, Predecessors, Parent, Order, StartNoEarlierThan, Fixed, NewTask, SubIssueOrder, Labels, MilestoneTitle];
+    public static bool IsDefined(string value) => All.Contains(value) || PlanSheetColumns.IsExtra(value);
+}
+
 internal enum PlanOperationKind { Cell, Paste, Fill, CtrlD, Clear, Insert, CsvImport, Indent, Outdent, Move, Settings, ResolveConflict, Reset }
 internal sealed record PlanColumnDefinition(string Id, string Name, string DataType)
 { public ImmutableArray<string> Options { get; init; } = []; }
-internal sealed record PlanColumnMapping(PlanField Role, string FieldId, string Name, string DataType);
+internal sealed record PlanColumnMapping(string Role, string FieldId, string Name, string DataType);
 internal sealed record PlanResource(string Identity, string Name, decimal Rate, decimal? Allowance);
 internal sealed record PlanHoliday(DateOnly Date, string Name);
 internal sealed record PlanHolidayData(string Version, string Source, string SourceSha256, DateTimeOffset RetrievedAt,
@@ -18,8 +43,10 @@ internal sealed record PlanHolidayData(string Version, string Source, string Sou
     public HolidayPreset ToPreset() => new(Version, Source, SourceSha256, RetrievedAt, FirstYear, LastYear,
         Dates.Select(d => new HolidayDate(d.Date, d.Name)).ToArray());
 }
+internal sealed record PlanSheetColumnChoice(string Key, bool Visible, string? DisplayName);
 internal sealed record ProjectPlanSettings
 {
+    public ImmutableArray<PlanSheetColumnChoice> SheetColumns { get; init; } = [];
     public ImmutableDictionary<string, string> PhaseMilestones { get; init; } = ImmutableDictionary<string, string>.Empty;
     public ImmutableArray<PlanColumnMapping> Columns { get; init; } = [];
     public ImmutableArray<DateOnly> CompanyDaysOff { get; init; } = [];
@@ -30,9 +57,12 @@ internal sealed record ProjectPlanSettings
     public string? DefaultRepository { get; init; }
     public DateOnly? StatusDate { get; init; }
 }
+internal sealed record PlanExtraValue(ValueAvailability Availability, string? Json);
 internal sealed record PlanRow(string Identity, string Title, string Repository)
 {
     public string? MilestoneTitle { get; init; }
+    public ImmutableArray<string> Labels { get; init; } = [];
+    public ImmutableDictionary<string, PlanExtraValue> ExtraValues { get; init; } = ImmutableDictionary<string, PlanExtraValue>.Empty;
     public string? CsvSourceHash { get; init; }
     public string? Status { get; init; }
     public string? Phase { get; init; }
@@ -51,8 +81,11 @@ internal sealed record PlanRow(string Identity, string Title, string Repository)
     public static PlanRow New(string title, string repository = "") => new("local:" + Guid.NewGuid().ToString("N"), title, repository);
 }
 internal sealed record PlanMilestone(string Title, DateOnly? DueDate, bool Closed, bool ConflictingDates);
+internal sealed record PlanRepositoryOption(string Repository, string Id, string Name);
 internal sealed record PlanBaseline(ImmutableArray<PlanRow> Rows, ImmutableArray<PlanColumnDefinition> Columns)
-{ public ImmutableArray<PlanMilestone> Milestones { get; init; } = []; }
+{ public ImmutableArray<PlanMilestone> Milestones { get; init; } = [];
+  public ImmutableArray<PlanRepositoryOption> RepositoryMilestones { get; init; } = [];
+  public ImmutableArray<PlanRepositoryOption> RepositoryLabels { get; init; } = []; }
 internal sealed record PlanState(ImmutableArray<PlanRow> Rows, ProjectPlanSettings Settings);
 internal enum PlanDateHoldOrigin { FirstTakeIn, Reset }
 internal sealed record PlanDateState(PlanDateHoldOrigin? Held = null, PlanDateHoldOrigin? Recalculated = null);
@@ -61,11 +94,11 @@ internal sealed record PlanDocument(ScopedId Project, PlanBaseline Baseline, Pla
     public PlanSync Sync { get; init; } = new();
     public PlanDateState Dates { get; init; } = new();
 }
-internal sealed record PlanCellChange(string Identity, PlanField Field, object? Value);
+internal sealed record PlanCellChange(string Identity, string Field, object? Value);
 internal abstract record PlanCommand;
 internal sealed record EditPlanCells(PlanOperationKind Kind, ImmutableArray<PlanCellChange> Cells) : PlanCommand;
-internal sealed record FillPlanCells(PlanOperationKind Kind, string Source, ImmutableArray<string> Targets, ImmutableArray<PlanField> Fields) : PlanCommand;
-internal sealed record ClearPlanCells(ImmutableArray<string> Targets, ImmutableArray<PlanField> Fields) : PlanCommand;
+internal sealed record FillPlanCells(PlanOperationKind Kind, string Source, ImmutableArray<string> Targets, ImmutableArray<string> Fields) : PlanCommand;
+internal sealed record ClearPlanCells(ImmutableArray<string> Targets, ImmutableArray<string> Fields) : PlanCommand;
 internal sealed record InsertPlanRows(ImmutableArray<PlanRow> Rows, string? Before = null, PlanOperationKind Kind = PlanOperationKind.Insert) : PlanCommand
 {
     public ImmutableArray<PlanResource> CsvPeople { get; init; } = [];
@@ -101,15 +134,15 @@ internal sealed record PlanOpenResult(PlanLoadStatus Status, PlanSession? Sessio
 internal sealed record PlanImportResult(bool Applied, ImmutableArray<string> Warnings, string? Error, PlanSaveResult? Save);
 internal sealed record PlanSiblingOrderChange(ImmutableArray<string> Before, ImmutableArray<string> After);
 internal enum PlanUnpublishedInputKind { Entered, Recalculated }
-internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<PlanField>> Fields)
+internal sealed record PlanUnpublished(ImmutableDictionary<string, ImmutableArray<string>> Fields)
 {
     public int TaskCount => Fields.Count;
     public int NewTaskCount => Fields.Count(pair => pair.Value.Contains(PlanField.NewTask));
     public int EnteredTaskCount => Fields.Count(pair => pair.Value.Contains(PlanField.NewTask)
         || pair.Value.Any(value => InputKind(pair.Key, value) == PlanUnpublishedInputKind.Entered));
     public int RecalculatedTaskCount => TaskCount - EnteredTaskCount;
-    public ImmutableHashSet<(string Identity, PlanField Field)> RecalculatedFields { get; init; } = [];
-    public PlanUnpublishedInputKind? InputKind(string identity, PlanField field)
+    public ImmutableHashSet<(string Identity, string Field)> RecalculatedFields { get; init; } = [];
+    public PlanUnpublishedInputKind? InputKind(string identity, string field)
         => !Fields.TryGetValue(identity, out var fields) || !fields.Contains(field) ? null
             : RecalculatedFields.Contains((identity, field)) ? PlanUnpublishedInputKind.Recalculated : PlanUnpublishedInputKind.Entered;
 }

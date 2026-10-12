@@ -83,9 +83,8 @@ internal sealed class PlanSession
             else PlanOperations.Require(remoteOperation && checkpoint.Document.Sync.Publish is null, "列設定を変更できません。");
             var (state, kind) = PlanOperations.Apply(checkpoint.Document, command, today);
             var priorSettings = checkpoint.Document.State.Settings;
-            var mappingOnly = command is ReplacePlanSettings && !PlanOperations.SettingsEqual(priorSettings, state.Settings)
-                && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones });
-            // Milestone targets are comparisons, including while GitHub dates are held.
+            var mappingOnly = command is ReplacePlanSettings && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones, SheetColumns = priorSettings.SheetColumns });
+            // Column presentation and milestone targets do not change the held schedule.
             var dates = fromRemote || mappingOnly ? checkpoint.Document.Dates : ReleaseDates(checkpoint.Document);
             var patch = DateTransition(PlanOperations.Difference(checkpoint.Document.State, state, kind), checkpoint.Document, dates);
             if (patch.Rows.IsEmpty && patch.BeforeOrder is null && patch.BeforeSettings is null && patch.BeforeDates is null) return CurrentSave();
@@ -185,17 +184,21 @@ internal sealed class PlanSession
             return QueueSave();
         }
     }
-    public Task<PlanSaveResult> ResolveConflict(string identity, PlanField field, bool useGitHub, DateOnly today)
+    public Task<PlanSaveResult> ResolveConflict(string identity, string field, bool useGitHub, DateOnly today)
     {
         lock (gate)
         {
             var document = checkpoint.Document;
             if (remoteOperation) throw new InvalidOperationException("更新または発行が進行中です。");
             var conflict = document.Sync.Conflicts.Single(c => c.Identity == identity && c.Field == field);
+            if (conflict.DeletedFieldName is not null && !useGitHub)
+                throw new InvalidOperationException("GitHub で削除されたフィールドには発行できません。編集を破棄してください。");
             var state = document.State;
             if (useGitHub)
             {
-                if (field == PlanField.SubIssueOrder) state = PlanMerge.SiblingOrder(state, identity, System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!);
+                if (conflict.DeletedFieldName is not null)
+                    state = state with { Rows = state.Rows.Select(r => r.Identity == identity ? r with { ExtraValues = r.ExtraValues.Remove(field) } : r).ToImmutableArray() };
+                else if (field == PlanField.SubIssueOrder) state = PlanMerge.SiblingOrder(state, identity, System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!);
                 else if (field == PlanField.Order)
                 {
                     var order = System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!;
@@ -239,6 +242,7 @@ internal sealed class PlanSession
                 Closed = r.Identity == identity ? false : r.Closed,
                 CloseDate = r.Identity == identity ? null : r.CloseDate,
                 Status = r.Identity == identity ? null : r.Status,
+                ExtraValues = r.Identity == identity ? r.ExtraValues.RemoveRange(r.ExtraValues.Keys.Where(k => PlanExtraEditing.ReadOnlyReason(document, r, k) is not null)) : r.ExtraValues,
                 Parent = r.Parent == identity ? replacement : r.Parent,
                 Predecessors = r.Predecessors.Where(id => id != identity || copyToNew).Select(id => id == identity ? replacement! : id).ToImmutableArray()
             }).ToImmutableArray();
@@ -373,7 +377,7 @@ internal sealed class PlanSession
                 var observed = promoted.ContainsKey(row.Identity) ? remote.Baseline.Rows.Single(r => r.Identity == Id(row.Identity)) : null;
                 if (observed is not null)
                 {
-                    foreach (var field in PlanValues.RowFields.Where(f => f is not (PlanField.Repository or PlanField.Title or PlanField.Parent or PlanField.Predecessors or PlanField.Closed)))
+                    foreach (var field in PlanValues.Fields(row, observed).Where(f => f is not (PlanField.Repository or PlanField.Title or PlanField.Parent or PlanField.Predecessors or PlanField.Closed)))
                         if (PlanValues.Get(row, field) is "null" or "[]" or "false")
                             row = PlanValues.Set(row, field, PlanValues.Get(observed, field));
                 }
@@ -441,7 +445,7 @@ internal sealed class PlanSession
             foreach (var write in writes)
             {
                 var field = PlanVerification.Field(write, state.Settings);
-                if (PlanValues.RowFields.Contains(field) && priorRows.TryGetValue(Id(write.Identity), out var prior) && externalRows.TryGetValue(Id(write.Identity), out var observed))
+                if (PlanField.IsDefined(field) && field is not (PlanField.Order or PlanField.NewTask or PlanField.SubIssueOrder) && priorRows.TryGetValue(Id(write.Identity), out var prior) && externalRows.TryGetValue(Id(write.Identity), out var observed))
                     externalRows[observed.Identity] = PlanValues.Set(observed, field, PlanValues.Get(prior, field));
             }
             var externalOrder = writes.Any(w => w.Stage == PlanPublishStage.Order)

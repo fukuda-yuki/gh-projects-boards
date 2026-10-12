@@ -71,7 +71,7 @@ internal sealed class PlanMilestoneTests
     }
 
     [Test]
-    public void MilestoneMembershipUsesBaselineAndRefreshReplacesItWithoutPublishChanges()
+    public void UneditedMilestoneMembershipAdoptsRemoteAndSummaryUsesLocalMembership()
     {
         var d = Document(new PlanRow("I1", "Kept", "a/b") { MilestoneTitle = "Release", End = Day });
         var remote = d.Baseline with { Milestones = [new("New", Day.AddDays(7), false, false)],
@@ -83,8 +83,9 @@ internal sealed class PlanMilestoneTests
         Assert.That(PlanOperations.Changes(merged, Day).TaskCount, Is.Zero);
         var snapshot = new PlanRemoteSnapshot(remote, ImmutableDictionary<string, string>.Empty, [], 0, 0);
         Assert.That(PlanPublishPlan.Build(merged, snapshot, Day, "milestones").Writes, Is.Empty);
-        var staleRow = merged with { State = merged.State with { Rows = d.State.Rows } };
-        Assert.That(PlanSummary.CalculateMilestones(staleRow, PlanOperations.Schedule(staleRow, Day))[0].Tasks, Is.EqualTo(new[] { "I1" }));
+        var locallyChanged = merged with { State = merged.State with { Rows = d.State.Rows } };
+        Assert.That(PlanSummary.CalculateMilestones(locallyChanged, PlanOperations.Schedule(locallyChanged, Day))[0].Tasks, Is.Empty);
+        Assert.That(PlanOperations.Changes(locallyChanged, Day).Fields["I1"], Does.Contain(PlanField.MilestoneTitle));
     }
 
     [Test]

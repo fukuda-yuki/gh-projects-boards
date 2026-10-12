@@ -202,7 +202,7 @@ internal sealed class PlanLatenessTests
 
     [TestCase(PlanField.Start)]
     [TestCase(PlanField.End)]
-    public void TypedDateDifference_IsEnteredAndTaskCountIsUnchanged(PlanField field)
+    public void TypedDateDifference_IsEnteredAndTaskCountIsUnchanged(string field)
     {
         var document = Document(Row() with { Start = Status, End = Status });
         var state = PlanOperations.Apply(document, new EditPlanCells(PlanOperationKind.Cell,
@@ -308,7 +308,7 @@ internal sealed class PlanLatenessTests
 
     [TestCase(PlanField.End, TestName = "EstimateEdit_CalculatedEndReturnsToHistoricalInput_IsRecalculated")]
     [TestCase(PlanField.Start, TestName = "StatusDateEdit_CalculatedStartReturnsToHistoricalInput_IsRecalculated")]
-    public void AutomaticDateReturningToHistoricalInput_IsRecalculated(PlanField field)
+    public void AutomaticDateReturningToHistoricalInput_IsRecalculated(string field)
     {
         var savedDate = Status.AddDays(2);
         var row = Row() with { Start = savedDate, End = savedDate, Estimate = field == PlanField.End ? 16 : 8 };

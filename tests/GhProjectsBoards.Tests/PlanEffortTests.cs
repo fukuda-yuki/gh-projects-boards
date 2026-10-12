@@ -224,7 +224,7 @@ internal sealed class PlanEffortTests
             new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Updated")]), Day).State };
         Assert.That(PlanOperations.Schedule(d, Day).Single().Remaining, Is.Zero);
         Assert.That(d.State.Rows[0].Remaining, Is.Null);
-        var expected = editTitle ? new[] { PlanField.Title } : Array.Empty<PlanField>();
+        var expected = editTitle ? new[] { PlanField.Title } : Array.Empty<string>();
         var unpublished = PlanOperations.Changes(d, Day);
         Assert.That(unpublished.Fields.Values.SelectMany(fields => fields), Is.EquivalentTo(expected));
         Assert.That(unpublished.RecalculatedFields, Is.Empty);

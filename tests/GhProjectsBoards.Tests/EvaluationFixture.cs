@@ -38,7 +38,10 @@ internal static class EvaluationFixture
             Columns = PlanColumnMatching.Roles.Select(r => new PlanColumnMapping(r.Role, "F-" + r.Role, r.Name, r.Type)).ToImmutableArray(),
             People = plan.People.Select(p => new PlanResource(p.Identity, p.Name, p.Rate, p.Allowance)).ToImmutableArray()
         };
-        return new PlanDocument(new ScopedId(new("github.com", 42), "P1"), new(rows, columns) { Milestones = plan.Milestones.Select(m => new PlanMilestone(m.Title, m.Due, false, false)).ToImmutableArray() }, new(rows, settings));
+        return new PlanDocument(new ScopedId(new("github.com", 42), "P1"), new(rows, columns) {
+            Milestones = plan.Milestones.Select(m => new PlanMilestone(m.Title, m.Due, false, false)).ToImmutableArray(),
+            RepositoryMilestones = plan.Milestones.Select((m, i) => new PlanRepositoryOption("acme/repo", "M" + i, m.Title)).ToImmutableArray()
+        }, new(rows, settings));
     }
 
     // The team works day by day as the plan says and updates 実績 and 残 as it goes: 残 is the

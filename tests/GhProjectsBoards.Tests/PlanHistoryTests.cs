@@ -19,12 +19,12 @@ internal sealed class PlanHistoryTests
     }
     private static PlanRemoteSnapshot Remote(PlanDocument document) => new(document.Baseline,
         document.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
-    private static EditPlanCells Edit(string id, PlanField field, object? value) => new(PlanOperationKind.Cell, [new(id, field, value)]);
+    private static EditPlanCells Edit(string id, string field, object? value) => new(PlanOperationKind.Cell, [new(id, field, value)]);
     [TestCase(PlanField.Parent, false)]
     [TestCase(PlanField.Parent, true)]
     [TestCase(PlanField.Predecessors, false)]
     [TestCase(PlanField.Predecessors, true)]
-    public async Task RemoteRebaseRetainsOnlyReachableHistoryInEachDirection(PlanField relation, bool redo)
+    public async Task RemoteRebaseRetainsOnlyReachableHistoryInEachDirection(string relation, bool redo)
     {
         var initial = Initial(); var session = await PlanSession.CreateAsync(new(root), initial, Today);
         await session.Execute(Edit("C", PlanField.Title, "Earlier"), Today);
