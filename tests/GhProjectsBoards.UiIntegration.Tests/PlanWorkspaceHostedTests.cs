@@ -2260,7 +2260,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (stage == "csv") await Ui.ClickCommand("PlanSheetCsv");
         var marker = Path.Combine(root, "held-gh.pid");
         int pid = 0;
-        await Ui.Until(() => File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid));
+        // The fake gh may still hold the marker open while writing its process id.
+        await Ui.Until(() => { try { return File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid); } catch (IOException) { return false; } });
         using var process = Process.GetProcessById(pid);
         Task<bool> stop = null!;
         await Ui.Run(() => { stop = view.StopAsync(); });
