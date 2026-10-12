@@ -250,11 +250,15 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.C));
         await Select(2,"Project:X");
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.V));
-        await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="メモ");
+        await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="メモ", PasteState);
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.Delete));
         await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="");
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="メモ");
         await Ui.Run(()=>Assert.That(Ui.Find<TextBlock>("PlanHeaderProject:X").Text,Is.EqualTo("Notes")));
+        string PasteState() => $"cells=[{Ui.Find<TextBox>("PlanCell1_Project:X").Text}|{Ui.Find<TextBox>("PlanCell2_Project:X").Text}], "
+            + $"selected1={sheet.IsSelected("I1","Project:X")}, selected2={sheet.IsSelected("I2","Project:X")}, "
+            + $"error={Ui.Find<TextBlock>("PlanSheetError").Text}, focused={(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(sheet.XamlRoot) as FrameworkElement)?.Name}/"
+            + $"{AutomationProperties.GetAutomationId(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(sheet.XamlRoot) as FrameworkElement ?? sheet)}, {sheet.WorkDescription}";
     }
 }

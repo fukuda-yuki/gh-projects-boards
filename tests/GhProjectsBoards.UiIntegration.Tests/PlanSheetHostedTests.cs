@@ -1889,7 +1889,10 @@ internal sealed partial class PlanSheetHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
         // Finish the divider's native date-viewport compensation before measuring column selection.
-        await Ui.Until(() => Math.Abs(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport - barX) < 1);
+        await Ui.Until(() => Math.Abs(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport - barX) < 1,
+            () => $"bar={Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport}, expected={barX}, "
+                + $"sheetViewport={sheet.SheetViewport}, chartOffset={sheet.ChartOffset}, chartScrollable={Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth}, "
+                + $"sheetScrollable={Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth}, width={sheet.ActualWidth}, {sheet.WorkDescription}");
         await Ui.Idle();
         double chartOffset = 0;
         await Ui.Run(() => chartOffset = sheet.ChartOffset);
