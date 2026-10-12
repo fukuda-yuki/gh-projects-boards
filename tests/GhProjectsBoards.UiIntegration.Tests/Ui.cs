@@ -124,7 +124,16 @@ internal static class Ui
         await Run(() => Task.CompletedTask, check: false);
         Check();
     }
-    public static async Task Until(Func<bool> predicate)
+    // Runs after dispatcher work already queued at low priority, such as a deferred column reveal.
+    public static async Task LowPriorityIdle()
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!Queue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => completion.TrySetResult()))
+            throw new InvalidOperationException("The dispatcher rejected the low-priority probe.");
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Check();
+    }
+    public static async Task Until(Func<bool> predicate, Func<string>? describe = null)
     {
         var deadline = DateTime.UtcNow.AddSeconds(20);
         while (true)
@@ -132,7 +141,11 @@ internal static class Ui
             bool ready = false;
             await Run(() => ready = predicate());
             if (ready) return;
-            if (DateTime.UtcNow >= deadline) throw new TimeoutException("Observable UI condition did not complete");
+            if (DateTime.UtcNow >= deadline) {
+                var state = "";
+                if (describe is not null) await Run(() => state = ": " + describe());
+                throw new TimeoutException("Observable UI condition did not complete" + state);
+            }
             // Leave native input, dispatcher timers and layout time to run between
             // observations. A continuously replenished normal-priority queue can
             // otherwise starve the very scrolling operation being observed.

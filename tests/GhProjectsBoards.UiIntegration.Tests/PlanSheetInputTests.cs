@@ -420,6 +420,7 @@ internal sealed partial class PlanSheetHostedTests
         await Select(2, PlanField.Title);
         await Ui.ClickCommand("PlanSheetPredecessorAdd");
         await Ui.Ready<TextBox>("PlanPredecessorSearch");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanPredecessorSearch").FocusState != FocusState.Unfocused);
         await Ui.Run(() => {
             Assert.That(Ui.Popup<MenuFlyoutItem>("PlanSheetCopy"), Is.Null);
             Assert.That(Ui.Find<TextBox>("PlanPredecessorSearch").FocusState, Is.Not.EqualTo(FocusState.Unfocused));

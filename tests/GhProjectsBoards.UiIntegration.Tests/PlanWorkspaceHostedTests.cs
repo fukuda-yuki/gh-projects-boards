@@ -10,6 +10,8 @@ using GhProjectsBoards.Core.PlanEditor;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Media;
 using Polygon = Microsoft.UI.Xaml.Shapes.Polygon;
 using NUnit.Framework;
@@ -1659,9 +1661,16 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanShowTasks"));
         await Ui.Until(() => AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanCell1_Title")).Contains("競合"));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.True));
+        // Native GotFocus selects the cell asynchronously; Focus returning does not mean the reason is ready.
+        await Ui.Until(() => {
+            var cell = Ui.Find<TextBox>("PlanCell1_Title");
+            var selection = (ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement(cell).GetPattern(PatternInterface.SelectionItem);
+            return cell.FocusState != FocusState.Unfocused && selection.IsSelected
+                && Ui.Find<TextBlock>("PlanStartReason").Text.Contains("競合: GitHub では GitHub変更");
+        });
         await Ui.Run(() => {
             var cell = Ui.Find<TextBox>("PlanCell1_Title");
-            cell.Focus(FocusState.Programmatic);
             var frame = (Border)VisualTreeHelper.GetParent(VisualTreeHelper.GetParent(cell));
             var critical = ((SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"]).Color;
             Assert.That(((SolidColorBrush)frame.BorderBrush).Color, Is.EqualTo(critical));
@@ -1855,6 +1864,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         await Settings();
+        await Ui.Ready<Button>("PlanAddFields");
         await Ui.Run(() => Ui.Click("PlanAddFields"));
         await Ui.Until(() => workspace.Session!.Document.State.Settings.Columns.Length == 7 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Idle();
@@ -2260,7 +2270,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         if (stage == "csv") await Ui.ClickCommand("PlanSheetCsv");
         var marker = Path.Combine(root, "held-gh.pid");
         int pid = 0;
-        await Ui.Until(() => File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid));
+        // The fake gh may still hold the marker open while writing its process id.
+        await Ui.Until(() => { try { return File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid); } catch (IOException) { return false; } });
         using var process = Process.GetProcessById(pid);
         Task<bool> stop = null!;
         await Ui.Run(() => { stop = view.StopAsync(); });

@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
+using Windows.System;
 namespace GhProjectsBoards.App;
 
 internal sealed partial class PlanSheetView : Grid
@@ -152,10 +153,10 @@ internal sealed partial class PlanSheetView : Grid
             button.KeyboardAcceleratorTextOverride = shortcut;
             commands.PrimaryCommands.Remove(button); commands.SecondaryCommands.Add(button); return button;
         }
-        Overflow("コピー", "PlanSheetCopy", Symbol.Copy, Copy, "Ctrl+C");
-        Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, Paste, "Ctrl+V");
+        Overflow("コピー", "PlanSheetCopy", Symbol.Copy, () => KeyboardCommand(VirtualKey.C), "Ctrl+C", queued: false);
+        Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, () => KeyboardCommand(VirtualKey.V), "Ctrl+V", queued: false);
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
-        Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
+        Overflow("クリア", "PlanSheetClear", Symbol.Clear, () => KeyboardCommand(VirtualKey.Delete), "Delete", queued: false);
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
         Overflow("表示列", "PlanSheetColumns", Symbol.List, async () => {

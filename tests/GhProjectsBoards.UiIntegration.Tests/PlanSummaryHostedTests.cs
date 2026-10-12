@@ -21,6 +21,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with {
             ProjectStart = readDay, ProjectEnd = new(2026, 10, 30), StatusDate = readDay }), readDay);
         await Ui.Run(() => Ui.Click("PlanShowSummary")); await Ui.Ready<TextBlock>("SummaryProgress");
+        // The person × phase table renders after the Project band.
+        await Ui.Ready<Button>("SummaryCell_U1_0");
     }
     [Test]
     public async Task SummaryBandMeasuresAndPhaseTotalsAreReadOnly()
