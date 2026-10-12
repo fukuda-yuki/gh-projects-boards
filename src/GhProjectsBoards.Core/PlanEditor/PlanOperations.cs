@@ -41,8 +41,8 @@ internal static class PlanOperations
     internal static ImmutableArray<PlanConflict> BlockingConflicts(PlanDocument document)
     {
         var summaries = document.State.Rows.Where(r => r.Parent is not null).Select(r => r.Parent!).ToHashSet();
-        return document.Sync.Conflicts.Where(c => !summaries.Contains(c.Identity)
-            || !(IsSummaryPublishExcluded(true, c.Field) || c.Field is PlanField.Start or PlanField.End)).ToImmutableArray();
+        return document.Sync.Conflicts.Where(c => c.DeletedFieldName is null && (!summaries.Contains(c.Identity)
+            || !(IsSummaryPublishExcluded(true, c.Field) || c.Field is PlanField.Start or PlanField.End))).ToImmutableArray();
     }
     internal static IReadOnlyList<ScheduledTask> Schedule(PlanDocument document, DateOnly today)
     {

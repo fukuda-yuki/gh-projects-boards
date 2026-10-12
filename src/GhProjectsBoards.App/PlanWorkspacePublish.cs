@@ -95,6 +95,16 @@ internal sealed partial class PlanWorkspaceView
         }
         foreach (var conflict in conflicts.Where(c => c.Field == PlanField.Order))
             Group(conflict.Identity).Lines.Add(ReviewLine(document, conflict.Identity, conflict.Field, conflict.Baseline, conflict.Local, conflict));
+        foreach (var conflict in document.Sync.Conflicts.Where(c => c.DeletedFieldName is not null))
+        {
+            var line = new PlanPublishReviewLine($"{conflict.DeletedFieldName}  {ReviewValue(document, conflict.Field, conflict.Local)}  GitHub で削除されたフィールド（発行対象外）");
+            line.Actions.Add(new("編集を破棄", $"PlanDiscardDeleted{conflict.Identity}_{conflict.Field}", () => Run(async () => {
+                var position = ReviewPosition(conflict.Identity);
+                Check(await session.ResolveConflict(conflict.Identity, conflict.Field, true, Today));
+                RenderTasks(); RenderReview(); RestoreReviewPosition(conflict.Identity, position);
+            })));
+            Group(conflict.Identity).Lines.Add(line);
+        }
         if (session.Changes(Today).Fields.Any(p => p.Value.Contains(PlanField.Order)))
             Group(document.Project.NodeId).Lines.Add(new("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
         foreach (var identity in document.Sync.Unavailable)

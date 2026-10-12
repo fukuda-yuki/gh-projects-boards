@@ -191,10 +191,14 @@ internal sealed class PlanSession
             var document = checkpoint.Document;
             if (remoteOperation) throw new InvalidOperationException("更新または発行が進行中です。");
             var conflict = document.Sync.Conflicts.Single(c => c.Identity == identity && c.Field == field);
+            if (conflict.DeletedFieldName is not null && !useGitHub)
+                throw new InvalidOperationException("GitHub で削除されたフィールドには発行できません。編集を破棄してください。");
             var state = document.State;
             if (useGitHub)
             {
-                if (field == PlanField.SubIssueOrder) state = PlanMerge.SiblingOrder(state, identity, System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!);
+                if (conflict.DeletedFieldName is not null)
+                    state = state with { Rows = state.Rows.Select(r => r.Identity == identity ? r with { ExtraValues = r.ExtraValues.Remove(field) } : r).ToImmutableArray() };
+                else if (field == PlanField.SubIssueOrder) state = PlanMerge.SiblingOrder(state, identity, System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!);
                 else if (field == PlanField.Order)
                 {
                     var order = System.Text.Json.JsonSerializer.Deserialize<string[]>(conflict.Remote!)!;

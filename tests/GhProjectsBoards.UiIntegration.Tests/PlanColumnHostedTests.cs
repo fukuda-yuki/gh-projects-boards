@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using GhProjectsBoards.App;
 using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
@@ -10,6 +11,34 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanWorkspaceHostedTests
 {
+    [Test]
+    public async Task DeletedExtraEditIsVisibleAndDiscardableWithoutBlockingOtherChanges()
+    {
+        await Open();
+        var session = workspace.Session!;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var baseline = session.Document.Baseline;
+        baseline = baseline with { Columns = baseline.Columns.Add(new("DeletedNote", "Review notes", "TEXT")),
+            Rows = baseline.Rows.Select(r => PlanValues.Set(r, "Project:DeletedNote", "\"original\"")).ToImmutableArray() };
+        await session.AcceptRefresh(new(baseline, System.Collections.Immutable.ImmutableDictionary<string,string>.Empty, [], 0, 0), today, refresh: false);
+        var identity = session.Document.State.Rows[0].Identity;
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new(identity, "Project:DeletedNote", "keep this draft")]), today);
+        var deleted = baseline with { Columns = baseline.Columns.RemoveAt(baseline.Columns.Length - 1),
+            Rows = baseline.Rows.Select(r => r with { ExtraValues = r.ExtraValues.Remove("Project:DeletedNote") }).ToImmutableArray() };
+        await session.AcceptRefresh(new(deleted, System.Collections.Immutable.ImmutableDictionary<string,string>.Empty, [], 0, 0), today, refresh: false);
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        var id = "PlanDiscardDeleted" + identity + "_Project:DeletedNote";
+        await Ui.Ready<Button>(id);
+        await Ui.Run(() => {
+            var text = string.Join(" ", Ui.Tree(view).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("Review notes").And.Contain("keep this draft").And.Contain("GitHub で削除されたフィールド"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
+            Ui.Click(id);
+        });
+        await Ui.Until(() => session.Document.Sync.Conflicts.IsEmpty);
+        Assert.That(session.Document.State.Rows.All(r => !r.ExtraValues.ContainsKey("Project:DeletedNote")), Is.True);
+    }
+
     private async Task OpenColumnSettingsThroughOverflow()
     {
         await Ui.Run(() => Ui.Click("PlanSheetMore"));
@@ -124,6 +153,30 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [TestCase("Repository", false), TestCase("Project:I", false), TestCase("Project:I", true)]
+    public async Task ReadOnlyColumnCellsAndRectanglesReachTheClipboard(string field, bool rectangle)
+    {
+        var rows = System.Collections.Immutable.ImmutableArray.Create(
+            PlanValues.Set(new PlanRow("I1", "First", "acme/repo"), "Project:I", "\"Sprint 2\""),
+            PlanValues.Set(new PlanRow("I2", "Second", "acme/other"), "Project:I", "\"Sprint 3\""));
+        await MountPresentation(rows, rows, columns: [new("I", "Sprint", "ITERATION")]);
+        await SetColumnVisible("Project:I", true); await SetColumnVisible("Repository", true);
+        await Ui.Run(async () => {
+            await session.Execute(new ReplacePlanSettings(PlanSheetColumns.Move(session.Document, "Project:I", 0)), Today);
+            await session.Execute(new ReplacePlanSettings(PlanSheetColumns.Move(session.Document, "Repository", 1)), Today);
+            sheet.Refresh();
+        });
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        await Select(1, field);
+        if (rectangle) await Select(2, "Repository", true);
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.C));
+        Assert.That(clipboard.Text, Is.EqualTo(rectangle ? "Sprint 2\tacme/repo\nSprint 3\tacme/other" : field == "Repository" ? "acme/repo" : "Sprint 2"));
+        using var metadata = System.Text.Json.JsonDocument.Parse(clipboard.Metadata!);
+        Assert.That(metadata.RootElement.GetProperty("values").GetArrayLength(), Is.EqualTo(rectangle ? 2 : 1));
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+
     [Test, Category("PlanSheetNative")]
     public async Task ExtraDateF2EnterKeepsTheOriginalValueWithoutAnUndoStep()
     {

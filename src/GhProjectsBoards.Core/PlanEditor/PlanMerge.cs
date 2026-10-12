@@ -1,10 +1,14 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal sealed record PlanConflict(string Identity, string Field, string? Baseline, string? Local, string? Remote);
+internal sealed record PlanConflict(string Identity, string Field, string? Baseline, string? Local, string? Remote)
+{
+    public string? DeletedFieldName { get; init; }
+}
 internal sealed record PlanPublishFailure(string Identity, string Field, string Reason)
 {
     // The child order a failed sub-issue reorder asked for, so the retry can tell whether the plan
@@ -31,11 +35,14 @@ internal sealed record PlanSync
 }
 internal static class PlanValues
 {
+    internal static string NormalizeNumber(string json)
+        => decimal.TryParse(json, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
+            ? number.ToString("G29", CultureInfo.InvariantCulture) : json;
     internal static readonly string[] RowFields = PlanField.All.Where(f => f is not (PlanField.Order or PlanField.NewTask or PlanField.SubIssueOrder)).ToArray();
     internal static IEnumerable<string> Fields(params PlanRow[] rows) => RowFields.Concat(rows.SelectMany(r => r.ExtraValues.Keys)).Distinct();
     internal static string Get(PlanRow row, string field)
     {
-        if (PlanSheetColumns.IsExtra(field)) return row.ExtraValues.GetValueOrDefault(field)?.Json ?? "null";
+        if (PlanSheetColumns.IsExtra(field)) return NormalizeNumber(row.ExtraValues.GetValueOrDefault(field)?.Json ?? "null");
         var property = typeof(PlanRow).GetProperty(field.ToString()) ?? throw new ArgumentException("Unknown row field.");
         var value = property.GetValue(row);
         if (field is PlanField.Assignees or PlanField.Predecessors or PlanField.Labels) value = ((ImmutableArray<string>)value!).Order(StringComparer.Ordinal).ToArray();
@@ -43,7 +50,7 @@ internal static class PlanValues
     }
     internal static PlanRow Set(PlanRow row, string field, string json)
     {
-        if (PlanSheetColumns.IsExtra(field)) return row with { ExtraValues = row.ExtraValues.SetItem(field, new(json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present, json)) };
+        if (PlanSheetColumns.IsExtra(field)) return row with { ExtraValues = row.ExtraValues.SetItem(field, new(json == "null" ? Projects.ValueAvailability.Empty : Projects.ValueAvailability.Present, NormalizeNumber(json))) };
         var node = JsonNode.Parse(PlanJson.Text(row))!.AsObject();
         var name = JsonNamingPolicy.CamelCase.ConvertName(field.ToString());
         node[name] = JsonNode.Parse(json);
@@ -122,6 +129,22 @@ internal static class PlanMerge
             }
             local[r.Identity] = merged;
         }
+        var removed = document.Baseline.Columns.Where(c => !remote.Columns.Any(r => r.Id == c.Id))
+            .ToDictionary(c => "Project:" + c.Id, c => c.Name);
+        foreach (var prior in document.Sync.Conflicts.Where(c => c.DeletedFieldName is not null))
+            removed.TryAdd(prior.Field, prior.DeletedFieldName!);
+        foreach (var row in document.State.Rows)
+        {
+            foreach (var (field, name) in removed)
+            {
+                var prior = document.Sync.Conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
+                var bv = baseline.TryGetValue(row.Identity, out var before) ? PlanValues.Get(before, field) : "null";
+                var lv = PlanValues.Get(row, field);
+                if (prior is not null || lv != bv)
+                    conflicts.Add(new(row.Identity, field, prior?.Baseline ?? bv, prior?.DeletedFieldName is not null ? prior.Local : lv, "null") { DeletedFieldName = name });
+            }
+            local[row.Identity] = local[row.Identity] with { ExtraValues = local[row.Identity].ExtraValues.RemoveRange(removed.Keys) };
+        }
         // Compare order only among identities present in all three snapshots; membership is merged separately.
         var shared = baseline.Keys.Where(incoming.ContainsKey).ToHashSet();
         string Order(IEnumerable<PlanRow> rows) => JsonSerializer.Serialize(rows.Where(r => shared.Contains(r.Identity)).Select(r => r.Identity));
@@ -138,7 +161,8 @@ internal static class PlanMerge
         // Unavailable rows remain in the baseline solely to preserve their last known content and identity.
         return document with
         {
-            Baseline = remote with { Rows = remote.Rows.AddRange(document.Baseline.Rows.Where(r => unavailable.Contains(r.Identity))) },
+            Baseline = remote with { Rows = remote.Rows.AddRange(document.Baseline.Rows.Where(r => unavailable.Contains(r.Identity)))
+                .Select(r => r with { ExtraValues = r.ExtraValues.RemoveRange(removed.Keys) }).ToImmutableArray() },
             State = document.State with { Rows = order.Select(id => local[id]).ToImmutableArray() },
             Sync = document.Sync with { Conflicts = conflicts.ToImmutableArray(), Unavailable = unavailable }
         };

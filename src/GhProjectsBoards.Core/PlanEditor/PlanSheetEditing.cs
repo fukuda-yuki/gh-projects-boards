@@ -11,6 +11,13 @@ internal sealed record CellRange(int Row, int Column, int RowCount = 1, int Colu
 // Text/range adaptation only; PlanSession validates and applies the complete operation.
 internal static class PlanSheetEditing
 {
+    internal static object? CopyValue(PlanRow row, string field, string editText)
+        => field switch {
+            PlanField.Start or PlanField.End => editText.Length == 0 ? null : DateOnly.ParseExact(editText, "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            PlanField.Estimate or PlanField.Remaining or PlanField.Actual => editText.Length == 0 ? null : decimal.Parse(editText, CultureInfo.CurrentCulture),
+            _ => PlanOperations.Value(row, field)
+        };
+
     internal static string EditBaseline(PlanRow? row, string field, string editText)
         => field == PlanField.Remaining ? row?.Remaining?.ToString(CultureInfo.CurrentCulture) ?? "" : editText;
 

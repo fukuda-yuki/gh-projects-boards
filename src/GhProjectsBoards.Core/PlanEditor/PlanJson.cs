@@ -38,6 +38,7 @@ internal static class PlanJson
             sync.Unavailable.Distinct().Count() == sync.Unavailable.Length && sync.Unavailable.All(id => checkpoint.Document.Baseline.Rows.Any(r => r.Identity == id)), "更新状態が不正です。");
         PlanOperations.Require(sync.Conflicts.Select(c => (c.Identity, c.Field)).Distinct().Count() == sync.Conflicts.Length &&
             sync.Conflicts.All(c => PlanField.IsDefined(c.Field) && c.Field != PlanField.NewTask && c.Baseline is not null && c.Local is not null && c.Remote is not null &&
+                (c.DeletedFieldName is null || PlanSheetColumns.IsExtra(c.Field) && c.Remote == "null" && !checkpoint.Document.Baseline.Columns.Any(f => "Project:" + f.Id == c.Field)) &&
                 (c.Field == PlanField.Order ? c.Identity == "" : checkpoint.Document.State.Rows.Any(r => r.Identity == c.Identity))), "競合状態が不正です。");
         PlanOperations.Require(!sync.CreationStarts.IsDefault && sync.CreationStarts.All(s => s.Issues is >= 1 and <= 10) &&
             sync.CreationStarts.Select(s => s.Started).SequenceEqual(sync.CreationStarts.Select(s => s.Started).Order()), "作成ペースの記録が不正です。");
