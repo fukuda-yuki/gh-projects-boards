@@ -11,6 +11,95 @@ internal sealed class ProjectReaderTests
 {
     private static readonly ConnectionScope Scope = new("github.com", 42);
 
+    [Test]
+    public async Task PlanRepositoryCatalogReadsAreBatchedAndDeduplicatedWithCurrentIssues()
+    {
+        var batches = new List<int>(); var catalogs = new List<(string Stage, string Id)>();
+        var names = Enumerable.Range(0, 51).Select(i => "example/extra" + i).ToArray();
+        var boundary = new ProjectBoundary { Override = (query, variables) => {
+            if (query.Contains("ProjectCatalogRepositories")) {
+                var data = new Dictionary<string, object>();
+                var count = variables.EnumerateObject().Count() / 2;
+                batches.Add(count);
+                for (var i = 0; i < count; i++) {
+                    var name = variables.GetProperty("name" + i).GetString()!;
+                    data["r" + i] = new { __typename = "Repository", id = "R-" + name, nameWithOwner = "example/" + name, owner = new { id = "RO1" } };
+                }
+                return ScriptedRunner.Http(JsonSerializer.Serialize(new { data }));
+            }
+            if (query.Contains("ProjectMilestones") || query.Contains("ProjectLabels")) {
+                var id = variables.GetProperty("id").GetString()!;
+                var stage = query.Contains("ProjectMilestones") ? "milestones" : "labels";
+                catalogs.Add((stage, id));
+                return Response(new Dictionary<string, object> { ["__typename"] = "Repository", ["id"] = id, [stage] = Page([], 0) });
+            }
+            return null;
+        } };
+        var required = names.Concat(Enumerable.Repeat(names[0], 1000)).Concat(new[] { "EXAMPLE/REPOSITORY", "example/repository" }).ToArray();
+        var result = await Read(boundary, requiredRepositories: required);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        Assert.That(batches, Is.EqualTo(new[] { 50, 1 }));
+        Assert.That(result.Project!.Repositories.Count, Is.EqualTo(52));
+        Assert.That(catalogs.Count, Is.EqualTo(104));
+        Assert.That(catalogs.Distinct().Count(), Is.EqualTo(catalogs.Count));
+        Assert.That(catalogs.Count(c => c.Id == "R1"), Is.EqualTo(2));
+        boundary.AssertQueriesOnly();
+    }
+
+    [TestCase("missing"), TestCase("wrong-name"), TestCase("milestones"), TestCase("labels")]
+    public async Task UnreadableRequiredRepositoryCatalogCannotBecomeAnAdoptableSnapshot(string fault)
+    {
+        var boundary = new ProjectBoundary { Override = (query, variables) => {
+            if (query.Contains("ProjectItems")) return Response(Project("P1", "items", Page([], 0)));
+            if (query.Contains("ProjectCatalogRepositories"))
+                return ScriptedRunner.Http(JsonSerializer.Serialize(new { data = new { r0 = fault == "missing" ? null : new {
+                    __typename = "Repository", id = "R2", nameWithOwner = fault == "wrong-name" ? "example/wrong" : "example/departed", owner = new { id = "RO2" } } } }));
+            if (query.Contains("ProjectMilestones")) return Response(new { __typename = "Repository", id = "R2", milestones = Page([], fault == "milestones" ? 1 : 0) });
+            if (query.Contains("ProjectLabels")) return Response(new { __typename = "Repository", id = "R2", labels = Page([], fault == "labels" ? 1 : 0) });
+            return null;
+        } };
+        var result = await Read(boundary, requiredRepositories: ["example/departed"]);
+        Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
+        Assert.That(result.Project!.MilestonesComplete, Is.False);
+        Assert.That(() => GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(result, new()), Throws.InvalidOperationException);
+        boundary.AssertQueriesOnly();
+    }
+
+    [TestCase(true, false), TestCase(false, true), TestCase(true, true)]
+    public async Task LocalRepositoryCatalogAllowsPublicationAfterItsLastProjectIssueLeft(bool milestone, bool labels)
+    {
+        var catalogQueries = new List<string>();
+        var boundary = new ProjectBoundary { Override = (query, variables) => {
+            if (query.Contains("ProjectItems")) return Response(Project("P1", "items", Page([], 0)));
+            if (query.Contains("ProjectCatalogRepositories")) {
+                Assert.That(variables.EnumerateObject().Count(), Is.EqualTo(2), "Duplicate plan rows must not duplicate repository reads.");
+                Assert.That(variables.GetProperty("owner0").GetString(), Is.EqualTo("example"));
+                Assert.That(variables.GetProperty("name0").GetString(), Is.EqualTo("departed"));
+                return ScriptedRunner.Http(JsonSerializer.Serialize(new { data = new { r0 = new { __typename = "Repository", id = "R2", nameWithOwner = "example/departed", owner = new { id = "RO2" } } } }));
+            }
+            if (query.Contains("ProjectMilestones")) {
+                catalogQueries.Add("milestones:" + variables.GetProperty("id").GetString());
+                return Response(new { __typename = "Repository", id = "R2", milestones = Page([new { id = "M2", title = "Release", dueOn = (string?)null, state = "OPEN" }], 1) });
+            }
+            if (query.Contains("ProjectLabels")) {
+                catalogQueries.Add("labels:" + variables.GetProperty("id").GetString());
+                return Response(new { __typename = "Repository", id = "R2", labels = Page([new { id = "L2", name = "bug" }], 1) });
+            }
+            return null;
+        } };
+        var read = await Read(boundary, requiredRepositories: Enumerable.Repeat("example/departed", 1000).ToArray());
+        Assert.That(read.Outcome, Is.EqualTo(ProjectReadOutcome.Complete));
+        var snapshot = GhProjectsBoards.Core.PlanEditor.PlanSnapshot.From(read, new());
+        var local = GhProjectsBoards.Core.PlanEditor.PlanRow.New("Recovery", "example/departed") with { MilestoneTitle = milestone ? "Release" : null, Labels = labels ? ["bug"] : [] };
+        var document = new GhProjectsBoards.Core.PlanEditor.PlanDocument(new(Scope, "P1"), snapshot.Baseline, new([local], new()));
+        var plan = GhProjectsBoards.Core.PlanEditor.PlanPublishPlan.Build(document, snapshot, new(2026, 10, 12), Guid.NewGuid().ToString("N"));
+        Assert.That(plan.Writes.Any(w => w.Mutation == "createIssue"), Is.True);
+        Assert.That(plan.Writes.Any(w => w.Field == "MilestoneTitle" && w.Input.Contains("M2")), Is.EqualTo(milestone));
+        Assert.That(plan.Writes.Any(w => w.Field == "Labels" && w.Input.Contains("L2")), Is.EqualTo(labels));
+        Assert.That(catalogQueries, Is.EquivalentTo(new[] { "milestones:R2", "labels:R2" }));
+        boundary.AssertQueriesOnly();
+    }
+
     [TestCase("2026-11-13T00:00:00Z", "2026-11-13", false, true)]
     [TestCase("2026-11-13T00:00:00Z", "2026-11-13", false, false)]
     [TestCase("2026-11-16T00:00:00Z", "2026-11-16", true, true)]
@@ -611,11 +700,11 @@ internal sealed class ProjectReaderTests
         Assert.That(result.Problems.Any(p => p.Kind == ReadProblemKind.DuplicateIdentity), Is.True);
     }
 
-    private static async Task<ProjectReadResult> Read(ProjectBoundary boundary, CancellationToken cancellation = default)
+    private static async Task<ProjectReadResult> Read(ProjectBoundary boundary, CancellationToken cancellation = default, IReadOnlyCollection<string>? requiredRepositories = null)
     {
         var service = new GhConnectionService("gh.exe", Scope.Host, boundary.Runner);
         var context = (await service.ConnectAsync()).Context!;
-        return await new ProjectReader(service).ReadAsync(context, new(Scope, "P1"), cancellation);
+        return await new ProjectReader(service).ReadAsync(context, new(Scope, "P1"), cancellation, requiredRepositories: requiredRepositories);
     }
 
     internal sealed class ProjectBoundary

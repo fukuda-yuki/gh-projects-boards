@@ -644,7 +644,7 @@ internal sealed partial class PlanSheetView : Grid
     internal string Display(string identity, string field)
     {
         if (!Rows.TryGetValue(identity, out var row)) return "";
-        if (PlanSheetColumns.IsExtra(field) && row.ExtraValues.GetValueOrDefault(field)?.Availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return "取得できません";
+        if (PlanSheetColumns.IsExtra(field) && PlanExtraEditing.Read(row, field).Availability is not (ValueAvailability.Present or ValueAvailability.Empty)) return "取得できません";
         if (PlanSheetColumns.IsExtra(field) && IsDateField(field)) return DateText(CellDate(identity,field));
         var computed = Schedule[identity];
         string Date(DateOnly? day) => DateText(day);

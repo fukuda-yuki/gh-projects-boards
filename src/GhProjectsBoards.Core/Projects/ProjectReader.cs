@@ -7,15 +7,18 @@ namespace GhProjectsBoards.Core.Projects;
 internal sealed class ProjectReader(GhConnectionService service, GhConnectionService.OperationLease? lease = null)
 {
     public Task<ProjectReadResult> ReadAsync(ConnectionContext context, ScopedId project,
-        CancellationToken cancellationToken = default, IProgress<RemoteProgress>? progress = null)
-        => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
+        CancellationToken cancellationToken = default, IProgress<RemoteProgress>? progress = null,
+        IReadOnlyCollection<string>? requiredRepositories = null)
+        => new ReadSession(service, context, project, cancellationToken, progress, requiredRepositories ?? [], lease).RunAsync();
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null)
+        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress,
+        IReadOnlyCollection<string> requiredRepositories, GhConnectionService.OperationLease? lease = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
         private readonly Dictionary<ScopedId, IssueReadModel> issues = [];
+        private readonly Dictionary<ScopedId, RepositoryReadModel> repositories = [];
         private readonly Dictionary<ScopedId, ItemBuilder> items = [];
         private readonly HashSet<string> valueIds = new(StringComparer.Ordinal);
         private ProjectReadModel? project;
@@ -63,7 +66,8 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                         AddItemAsync);
                 await ReadValuePages();
                 await ReadLabelPages();
-                foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
+                milestonesComplete &= await ReadRepositories();
+                foreach (var repository in repositories.Keys)
                 {
                     if (stopped) { milestonesComplete = false; break; }
                     milestonesComplete &= await WalkAsync("milestones", ProjectQueries.Milestones, repository.NodeId,
@@ -72,7 +76,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                             if (!milestones.TryAdd(milestone.Id, milestone)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                             return Task.CompletedTask; });
                 }
-                foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
+                foreach (var repository in repositories.Keys)
                     milestonesComplete &= await WalkAsync("labels", ProjectQueries.Labels, repository.NodeId,
                         node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "labels"); },
                         node => { labels.Add(new(repository, Text(node, "id"), Text(node, "name"))); return Task.CompletedTask; });
@@ -103,11 +107,57 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 {
                     Fields = fields.Values.ToArray(),
                     Issues = new ReadOnlyDictionary<ScopedId, IssueReadModel>(issues),
+                    Repositories = repositories.Values.ToArray(),
                     Items = items.Values.Select(item => BuildItem(item, complete)).ToArray(),
                     FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems,
                     Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
                 };
             return new(outcome, project, problems.ToArray());
+        }
+
+        private async Task<bool> ReadRepositories()
+        {
+            foreach (var issue in issues.Values) repositories.TryAdd(issue.Repository.Id, issue.Repository);
+            var known = repositories.Values.Select(r => r.NameWithOwner).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var missing = requiredRepositories.Distinct(StringComparer.OrdinalIgnoreCase).Where(name => !known.Contains(name)).ToArray();
+            foreach (var batch in missing.Chunk(50))
+            {
+                if (stopped) return false;
+                cancellationToken.ThrowIfCancellationRequested();
+                var variables = new Dictionary<string, object>();
+                var arguments = new List<string>(); var selections = new List<string>();
+                for (var i = 0; i < batch.Length; i++)
+                {
+                    var parts = batch[i].Split('/');
+                    if (parts.Length != 2 || parts.Any(string.IsNullOrWhiteSpace)) throw new ReadException(ReadProblemKind.InvalidResponse);
+                    variables["owner" + i] = parts[0]; variables["name" + i] = parts[1];
+                    arguments.Add($"$owner{i}:String!,$name{i}:String!");
+                    selections.Add($"r{i}:repository(owner:$owner{i},name:$name{i}){{__typename id nameWithOwner owner{{id}}}}");
+                }
+                var response = await SendAsync("query ProjectCatalogRepositories(" + string.Join(",", arguments) + "){" + string.Join(" ", selections) + "}", variables);
+                if (!response.IsSuccess)
+                {
+                    stopped = true; interruption = response.Outcome;
+                    problems.Add(new(ReadProblemKind.Api, "repositories", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
+                    return false;
+                }
+                var data = Property(response.Data ?? default, "data");
+                for (var i = 0; i < batch.Length; i++)
+                {
+                    var node = Property(data, "r" + i);
+                    if (node.ValueKind == JsonValueKind.Null)
+                    {
+                        stopped = true;
+                        problems.Add(new(ReadProblemKind.Api, "repositories", FailureKind.NotFoundOrInaccessible));
+                        return false;
+                    }
+                    if (Text(node, "__typename") != "Repository" || !Text(node, "nameWithOwner").Equals(batch[i], StringComparison.OrdinalIgnoreCase))
+                        throw new ReadException(ReadProblemKind.ScopeMismatch);
+                    var repository = new RepositoryReadModel(Id(node), Id(Property(node, "owner")), Text(node, "nameWithOwner"));
+                    if (!repositories.TryAdd(repository.Id, repository)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
+                }
+            }
+            return !stopped;
         }
 
         private JsonElement ReadProjectFields(JsonElement node)

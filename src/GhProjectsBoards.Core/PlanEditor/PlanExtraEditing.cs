@@ -4,6 +4,9 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal static class PlanExtraEditing
 {
+    internal static PlanExtraValue Read(PlanRow row, string key)
+        => row.ExtraValues.GetValueOrDefault(key) ?? (row.Identity.StartsWith("local:", StringComparison.Ordinal)
+            ? new(Projects.ValueAvailability.Empty, "null") : new(Projects.ValueAvailability.Unavailable, null));
     internal static PlanColumnDefinition Definition(PlanDocument document, string key) => document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == key)
         ?? throw new ArgumentException("列を読み取れません。最新の情報に更新してください。");
     internal static string? ReadOnlyReason(PlanDocument document, PlanRow row, string key)
@@ -11,12 +14,12 @@ internal static class PlanExtraEditing
         if (PlanSheetColumns.IsMappedExtra(document, key)) return "このフィールドは割り当てた標準列で編集してください。";
         var definition = document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == key);
         if (definition?.DataType is not ("TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT")) return "この列は読み取り専用です。";
-        return row.ExtraValues.GetValueOrDefault(key)?.Availability is Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty
-            || row.Identity.StartsWith("local:",StringComparison.Ordinal) ? null : "列の値を読み取れません。最新の情報に更新してください。";
+        return Read(row, key).Availability is Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty
+            ? null : "列の値を読み取れません。最新の情報に更新してください。";
     }
     internal static object? Value(PlanRow row, string key)
     {
-        if (row.ExtraValues.GetValueOrDefault(key)?.Json is not { } json) return null;
+        if (Read(row, key).Json is not { } json) return null;
         using var node = JsonDocument.Parse(json);
         return node.RootElement.ValueKind switch { JsonValueKind.Null => null, JsonValueKind.Number => node.RootElement.GetDecimal(), JsonValueKind.String => node.RootElement.GetString(), _ => throw new ArgumentException("列の値が不正です。") };
     }

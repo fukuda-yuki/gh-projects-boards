@@ -168,6 +168,28 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [TestCase("TEXT", "\"held\""), TestCase("NUMBER", "8"), TestCase("DATE", "\"2026-10-14\""), TestCase("SINGLE_SELECT", "\"High\"")]
+    public async Task UnenteredLocalExtraCopiesBlankAndDoesNotClearPasteDestination(string type, string held)
+    {
+        var source = PlanRow.New("New", "acme/repo");
+        var target = PlanValues.Set(new("I2", "Existing", "acme/repo"), "Project:X", held);
+        await MountPresentation([source, target], [target], columns: [new("X", "Extra", type) { Options = ["High"] }]);
+        await SetColumnVisible("Project:X", true);
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        await Select(1, "Project:X");
+        await Ui.Run(async () => {
+            Assert.That(sheet.Display(source.Identity, "Project:X"), Is.Empty);
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
+        });
+        Assert.That(clipboard.Text, Is.Empty);
+        using var metadata = System.Text.Json.JsonDocument.Parse(clipboard.Metadata!);
+        Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo("null"));
+        await Select(2, "Project:X");
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.V));
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+    }
+
     [TestCase("Repository", false), TestCase("Project:I", false), TestCase("Project:I", true)]
     public async Task ReadOnlyColumnCellsAndRectanglesReachTheClipboard(string field, bool rectangle)
     {

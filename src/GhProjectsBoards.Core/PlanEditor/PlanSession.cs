@@ -242,7 +242,7 @@ internal sealed class PlanSession
                 Closed = r.Identity == identity ? false : r.Closed,
                 CloseDate = r.Identity == identity ? null : r.CloseDate,
                 Status = r.Identity == identity ? null : r.Status,
-                ExtraValues = r.Identity == identity ? r.ExtraValues.RemoveRange(r.ExtraValues.Keys.Where(k => PlanSheetColumns.IsMappedExtra(document, k))) : r.ExtraValues,
+                ExtraValues = r.Identity == identity ? r.ExtraValues.RemoveRange(r.ExtraValues.Keys.Where(k => PlanExtraEditing.ReadOnlyReason(document, r, k) is not null)) : r.ExtraValues,
                 Parent = r.Parent == identity ? replacement : r.Parent,
                 Predecessors = r.Predecessors.Where(id => id != identity || copyToNew).Select(id => id == identity ? replacement! : id).ToImmutableArray()
             }).ToImmutableArray();

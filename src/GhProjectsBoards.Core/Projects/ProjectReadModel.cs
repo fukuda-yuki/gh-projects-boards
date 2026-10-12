@@ -42,7 +42,8 @@ internal sealed record ProjectReadModel(ScopedId Id, ScopedId OwnerId, string Ow
     string Url, string Title, IReadOnlyList<ProjectFieldDefinition> Fields,
     IReadOnlyDictionary<ScopedId, IssueReadModel> Issues, IReadOnlyList<ProjectItemReadModel> Items,
     bool FieldsComplete, bool ItemsComplete, CapabilityObservation? Capability = null)
-{ public IReadOnlyList<RepositoryLabel> Labels { get; init; } = [];
+{ public IReadOnlyList<RepositoryReadModel> Repositories { get; init; } = [];
+  public IReadOnlyList<RepositoryLabel> Labels { get; init; } = [];
   public IReadOnlyList<MilestoneReadModel> Milestones { get; init; } = [];
   public bool MilestonesComplete { get; init; }
   public int UndeliveredItemCount { get; init; } }
