@@ -1014,7 +1014,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => workspace.Session!.Changes(DateOnly.FromDateTime(DateTime.Today)).TaskCount == 0);
-        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Until(() => Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("設計の変更"));
         await Ui.Run(() => { Ui.Click("PlanPublishClose"); Ui.Click("PlanUndo"); });
         await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "1");
@@ -1378,7 +1378,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("新規 Issue")));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "publish-review"));
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
         var remote = FakePlanEditor.Load(root);
         Assert.That(remote.Issues.Single(i => i.Row.Title == "子タスク").Row.Parent, Is.EqualTo("I1"));
@@ -1414,7 +1414,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(writesBeforeRetry));
         await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         Assert.That(workspace.Session!.Document.Sync.Failures, Is.Empty);
         Assert.That(workspace.Session.Document.Sync.Unverified, Is.Empty);
         Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("発行予定"));
@@ -1460,7 +1460,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
         await Ui.Until(() => Ui.Find<ContentControl>("PlanBusyPanel").Visibility == Visibility.Visible);
         await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublish").IsEnabled, Is.False));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" && Ui.Find<Button>("PlanPublish").IsEnabled && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
         await Ui.Run(() => Ui.Find<ContentControl>("PlanBusyPanel").UnregisterPropertyChangedCallback(AutomationProperties.NameProperty, callback));
         Assert.That(prematureVerification, Is.False);
         Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Title == "新しい計画" && i.Added), Is.EqualTo(1));
@@ -1493,16 +1493,25 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Click("PlanResolveI2_Parent_True");
         });
         await Ui.Until(() => session.Document.Sync.Conflicts.Length == 1
-            && Ui.Find<Button>("PlanPublishConfirm").IsEnabled == !initiallySummary
+            && !Ui.Find<Button>("PlanPublishConfirm").IsEnabled
             && Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI1_Assignees_True") == initiallySummary);
         await Ui.Run(() => {
             Assert.That(session.Document.Sync.Conflicts.Single().Field, Is.EqualTo(PlanField.Assignees));
-            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(!initiallySummary));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
+            if (!initiallySummary) Assert.That(session.Changes(today).TaskCount, Is.Zero);
             var reason = Ui.Find<TextBlock>("PlanPublishBlockedReason");
-            Assert.That(reason.Text, initiallySummary ? Does.Contain("競合") : Is.Empty);
+            // With nothing left to write, the empty review's own line is the visible reason.
+            if (initiallySummary) Assert.That(reason.Text, Does.Contain("競合"));
+            else Assert.That(Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Any(t => t.Text == "未発行の変更はありません"), Is.True);
             Assert.That(reason.Visibility, Is.EqualTo(initiallySummary ? Visibility.Visible : Visibility.Collapsed));
             Assert.That(Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b) == "PlanResolveI1_Assignees_True"), Is.EqualTo(initiallySummary));
         });
+        await Ui.Run(async () => {
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I3", PlanField.Title, "Independent edit")]), today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Any(text => text.Text.Contains("Other → Independent edit")));
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(!initiallySummary)));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
