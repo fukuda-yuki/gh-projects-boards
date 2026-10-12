@@ -3,7 +3,9 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
     [string]$Filter = 'TestCategory=E2E&TestCategory!=GridIme&TestCategory!=Performance',
-    [switch]$NoBuild
+    [switch]$NoBuild,
+    # Release validation drives the extracted distributable through the same journeys.
+    [string]$AppPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,7 +43,8 @@ try {
     }
     $env:GHPB_RUN_E2E = '1'
     $env:GHPB_DATA_ROOT = Join-Path $results 'isolated-default-data'
-    $env:GHPB_E2E_APP_PATH = Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe"
+    $env:GHPB_E2E_APP_PATH = if ($AppPath) { (Resolve-Path -LiteralPath $AppPath).Path }
+        else { Join-Path $repoRoot "src/GhProjectsBoards.App/bin/$Configuration/net10.0-windows10.0.26100.0/win-x64/GhProjectsBoards.App.exe" }
     $env:GHPB_E2E_FAKE_GH_PATH = Join-Path $repoRoot "tests/GhProjectsBoards.Tests/bin/$Configuration/net10.0-windows/GhProjectsBoards.Tests.exe"
     $env:GHPB_E2E_ARTIFACTS = $results
     foreach ($path in @($env:GHPB_E2E_APP_PATH, $env:GHPB_E2E_FAKE_GH_PATH)) {
