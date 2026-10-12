@@ -40,6 +40,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private bool syncingTabs;
     private int pendingViewSelections;
     private readonly Button settingsButton;
+    private readonly Button undoButton, redoButton;
     private string currentPage = "connection", settingsReturnPage = "tasks";
     private readonly StackPanel connection = new() { Spacing = 8, MaxWidth = 540, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly StackPanel chooser = new() { Spacing = 8 };
@@ -161,8 +162,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         commandButtons.Children.Add(new TextBlock { Text = "基準日", VerticalAlignment = VerticalAlignment.Center, Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush") });
         commandButtons.Children.Add(statusDateHost);
         commandButtons.Children.Add(CommandDivider());
-        commandButtons.Children.Add(Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
-        commandButtons.Children.Add(Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(undoButton = Command("元に戻す", "PlanUndo", Symbol.Undo, async () => { if (workspace.Session is { } session) Check(await session.Undo(Today)); RenderTasks(); RenderSettings(); }));
+        commandButtons.Children.Add(redoButton = Command("やり直し", "PlanRedo", Symbol.Redo, async () => { if (workspace.Session is { } session) Check(await session.Redo(Today)); RenderTasks(); RenderSettings(); }));
         commandButtons.Children.Add(CommandDivider());
         unpublished.VerticalAlignment = VerticalAlignment.Center;
         unpublished.TextAlignment = TextAlignment.Center;
@@ -264,6 +265,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (projectFlyout.IsOpen) projectFlyout.Hide(); ClearSettingsInputProblem(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
         };
         Content = root;
+        UpdateCommandAvailability();
         Show("connection");
     }
     private static Border CommandDivider() => new() {
@@ -303,6 +305,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void UpdateStatus()
     {
+        UpdateCommandAvailability();
         ClearObsoletePublishResult();
         if (workspace.Session is not { } session) return;
         var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
@@ -369,7 +372,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
                 error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
             }
-            finally { operationCancellation = null; }
+            finally { operationCancellation = null; UpdateCommandAvailability(); }
         }
     }
     private static InfoBar FailureBar(string id, string title) => Id(new InfoBar {
@@ -448,10 +451,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshResult.IsOpen = false;
         sheet?.ClearChangedTasksFilter();
     }
+    private void UpdateCommandAvailability()
+    {
+        foreach (var button in commandButtons.Children.OfType<Button>())
+            button.IsEnabled = busyKind is null && (button == undoButton ? workspace.Session?.UndoCount > 0
+                : button == redoButton ? workspace.Session?.RedoCount > 0 : true);
+    }
     private void SetRemotePresentation()
     {
         var busy = busyKind is not null;
-        foreach (var button in commandButtons.Children.OfType<Button>()) button.IsEnabled = !busy;
+        UpdateCommandAvailability();
         refreshButton.IsEnabled = !busy;
         UpdateResetAvailability();
         projectPicker.IsEnabled = settingsButton.IsEnabled = !busy;
@@ -528,7 +537,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
-                next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
+                next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { UpdateCommandAvailability(); ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
             }
             taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
@@ -556,7 +565,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task ChangeSettings(Func<ProjectPlanSettings, ProjectPlanSettings> change)
     {
         if (workspace.Session is not { } session) return;
-        Check(await session.Execute(new ReplacePlanSettings(change(session.Document.State.Settings)), Today));
+        // Execute accepts the operation before persisting it; show the new history while the save runs.
+        var save = session.Execute(new ReplacePlanSettings(change(session.Document.State.Settings)), Today);
+        UpdateCommandAvailability();
+        Check(await save);
         RenderTasks();
     }
     private void ShowPlanningResult(PlanSaveResult save)
@@ -566,6 +578,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void Check(PlanSaveResult save)
     {
+        UpdateCommandAvailability();
         ShowPlanningResult(save);
         if (!save.Succeeded) throw new IOException(save.Error);
         ClearSaveFailures();

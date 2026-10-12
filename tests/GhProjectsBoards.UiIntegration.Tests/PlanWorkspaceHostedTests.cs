@@ -18,6 +18,52 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed partial class PlanWorkspaceHostedTests
 {
+    [Test, Category("CommandAvailability")]
+    public async Task FreshProjectDisablesBothHistoryCommands()
+    {
+        await Open();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.False);
+            Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase(false), TestCase(true), Category("CommandAvailability")]
+    public async Task HistoryCommandsFollowAcceptedEditsAndSheetUndoRedo(bool settingsEdit)
+    {
+        await Open();
+        if (settingsEdit) await Settings();
+        await CommitText(settingsEdit ? "PlanAllowanceU1" : "PlanCell1_Title", settingsEdit ? "80" : "Changed title");
+        // The focus-loss commit completes after the dispatcher turn that moved focus.
+        await Ui.Until(() => Ui.Find<Button>("PlanUndo").IsEnabled);
+        await AssertHistory(true, false);
+        await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
+        await AssertHistory(false, true);
+        await Ui.Run(() => Ui.Click("PlanRedo")); await Ui.Idle();
+        await AssertHistory(true, false);
+        if (settingsEdit) { await Ui.Run(() => Ui.Click("PlanSettingsBack")); await Ui.Idle(); }
+        await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().KeyboardCommand(Windows.System.VirtualKey.Z));
+        await Ui.Idle();
+        await AssertHistory(false, true);
+        await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().KeyboardCommand(Windows.System.VirtualKey.Y));
+        await Ui.Idle();
+        await AssertHistory(true, false);
+        await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
+        await AssertHistory(false, true);
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled); await Ui.Idle();
+        // Refresh rebases the local history onto the new read, so the undone edit stays redoable.
+        Assert.That(workspace.Session!.RedoCount, Is.EqualTo(1));
+        await AssertHistory(false, true);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+
+        Task AssertHistory(bool undo, bool redo) => Ui.Run(() => {
+            Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.EqualTo(undo));
+            Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.EqualTo(redo));
+        });
+    }
+
     private static void OpenRefreshMenu()
     {
         var split = Ui.Find<SplitButton>("PlanRefresh");
@@ -141,6 +187,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(bar.Title, Does.StartWith("GitHub の状態に戻しました（"));
             Assert.That(bar.Message, Is.EqualTo("基準日を " + dateText + " にしました。日程は GitHub の値のままです。"));
             Assert.That(bar.ActionButton, Is.Null);
+            Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.True);
+            Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
         });
         await OpenResetDialog();
         await Ui.Run(() => {
@@ -653,6 +701,8 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task WorkspaceHistoryCommitsThenReversesAndReappliesOneOperation(bool people)
     {
         await Open();
+        await CommitText("PlanCell1_Title", "履歴のある設計");
+        await Ui.Until(() => Ui.Find<Button>("PlanUndo").IsEnabled);
         if (people) { await Ui.Run(() => Ui.Click("PlanShowSettings")); await Ui.Ready<TextBox>("PlanAllowanceU1"); }
         await Ui.Run(() => {
             var input = Ui.Find<TextBox>(people ? "PlanAllowanceU1" : "PlanCell1_Title");
@@ -661,7 +711,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Idle();
         await Ui.Run(() => {
-            Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("設計"));
+            Assert.That(workspace.Session!.Document.State.Rows.Single().Title, Is.EqualTo("履歴のある設計"));
             if (people) Assert.That(workspace.Session.Document.State.Settings.People.Single(p => p.Identity == "U1").Allowance, Is.Null);
             Ui.Click("PlanRedo");
         });
@@ -1098,6 +1148,8 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(AutomationProperties.GetLiveSetting(panel), Is.EqualTo(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite));
                 var button = Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh");
                 Assert.That(button.IsEnabled, Is.False);
+                Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.False);
+                Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
                 Assert.That(AutomationProperties.GetName(button), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
                 Assert.That(Ui.Find<Button>("PlanBusyCancel").Visibility, Is.EqualTo(publish ? Visibility.Collapsed : Visibility.Visible));
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Focus(FocusState.Programmatic), Is.False);
@@ -1110,6 +1162,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<ContentControl>("PlanBusyPanel").Visibility, Is.EqualTo(Visibility.Collapsed));
             Assert.That(AutomationProperties.GetName(Ui.Find<Control>(publish ? "PlanPublish" : "PlanRefresh")), Is.EqualTo(publish ? "発行…" : "最新の情報に更新"));
             Assert.That(Ui.Find<TextBox>("PlanCell1_Title").IsReadOnly, Is.False);
+            Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.EqualTo(publish));
+            Assert.That(Ui.Find<Button>("PlanRedo").IsEnabled, Is.False);
         });
     }
 
