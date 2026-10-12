@@ -731,7 +731,9 @@ internal sealed class PlanSummaryCell : ContentControl
         AutomationProperties.SetAccessibilityView(Text, AccessibilityView.Raw);
         Content = Text;
         GotFocus += (_, _) => {
-            if (row.Owner is { } owner && !owner.IsSelected(row.Identity, field)) owner.Select(row.Identity, field, false);
+            // GotFocus can arrive after focus has moved to another cell.
+            if (FocusState != FocusState.Unfocused && row.Owner is { } owner && !owner.IsSelected(row.Identity, field))
+                owner.Select(row.Identity, field, false);
         };
         PointerPressed += (_, args) => row.Owner?.BeginRange(row.Identity, field, this, args);
         DoubleTapped += (_, args) => args.Handled = true;

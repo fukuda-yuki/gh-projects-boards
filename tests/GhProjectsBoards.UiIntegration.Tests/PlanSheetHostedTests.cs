@@ -110,6 +110,8 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Until(() => SelectProvider($"PlanCell1_{field}").IsSelected
                 && Ui.Find<PlanSummaryCell>($"PlanCell1_{field}").FocusState != FocusState.Unfocused);
             await Ui.Run(async () => {
+                Assert.That(FocusManager.GetFocusedElement(sheet.XamlRoot), Is.SameAs(Ui.Find<PlanSummaryCell>($"PlanCell1_{field}")), field);
+                Assert.That(SelectProvider($"PlanCell1_{field}").IsSelected, Is.True, field);
                 clipboard = new("not copied", null);
                 await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
                 Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""), field);
