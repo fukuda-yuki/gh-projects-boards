@@ -31,6 +31,12 @@ internal sealed partial class PlanSheetView
     private void RefreshOverviewCommands()
     {
         collapseAll.IsEnabled = expandAll.IsEnabled = FoldingEnabled && SummaryIds.Count > 0;
+        var reason = acceptedFilter.Length > 0 ? "絞り込み中は折りたためません" : "";
+        foreach (var button in new[] { collapseAll, expandAll }) {
+            button.AllowFocusWhenDisabled = reason.Length > 0;
+            AutomationProperties.SetHelpText(button, reason);
+            ToolTipService.SetToolTip(button, reason.Length > 0 ? reason : button.Label);
+        }
         goToDate.IsEnabled = SelectedDate() is not null;
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
     }
