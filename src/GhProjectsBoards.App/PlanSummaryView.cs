@@ -390,7 +390,11 @@ internal sealed class PlanSummaryView : UserControl
         table.Children.Add(list); detail.Children.Add(Wide(table));
         if (selectedRows.Length > 200) detail.Children.Add(Text($"ほか {selectedRows.Length - 200:N0} タスク。計画で絞り込むとすべて表示します", "SummaryTasksMore"));
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
-            if (detail.IsLoaded) detail.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0,
+            if (!detail.IsLoaded) return;
+            // The new details may not be arranged yet; revealing the old, shorter panel
+            // clamps the scroll above the command that has just been added.
+            detail.UpdateLayout();
+            detail.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0,
                 TargetRect = new Windows.Foundation.Rect(0, 0, detail.ActualWidth, 80) });
         });
     }

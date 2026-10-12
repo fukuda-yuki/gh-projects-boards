@@ -589,10 +589,20 @@ internal sealed class PlanSheetCell : TextBox
             AutomationProperties.SetAccessibilityView(AssigneeNameDisplay, AccessibilityView.Raw);
             AutomationProperties.SetAccessibilityView(AssigneeCountDisplay, AccessibilityView.Raw);
         }
+        // Sheet Clear owns deletion, so the template has no delete button taking editor width.
+        Style = (Style)Application.Current.Resources["PlanSheetCellStyle"];
         MinWidth = 0; MinHeight = 26; Height = 26; Padding = new(4, 2, 4, 2); FontSize = 13; BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         if (field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors) TextAlignment = TextAlignment.Right;
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(this, FontNumeralAlignment.Tabular);
-        GotFocus += (_, _) => { if (row.Owner is { } owner) { if (!owner.IsSelected(row.Identity, Field)) owner.Select(row.Identity, Field, false); owner.UpdateInputProblem(); } if (!Editing) SelectAll(); };
+        GotFocus += (_, _) => {
+            // GotFocus can arrive after focus has moved to another cell.
+            if (FocusState == FocusState.Unfocused) return;
+            if (row.Owner is { } owner) {
+                if (!owner.IsSelected(row.Identity, Field)) owner.Select(row.Identity, Field, false);
+                owner.UpdateInputProblem();
+            }
+            if (!Editing) SelectAll();
+        };
         TextChanging += (_, _) => {
             // WinUI may deliver a programmatic text notification after Refresh returns.
             if (refreshing || Text == shownText || row.Owner is not { } owner || IsReadOnly) return;
@@ -617,17 +627,6 @@ internal sealed class PlanSheetCell : TextBox
         AddHandler(PointerPressedEvent, new PointerEventHandler((_, args) => {
             if (!Editing && row.Owner is { } owner) owner.BeginRange(row.Identity, Field, this, args);
         }), true);
-    }
-    protected override void OnApplyTemplate()
-    {
-        base.OnApplyTemplate();
-        if (GetTemplateChild("DeleteButton") is Button button) {
-            // Sheet Clear already owns deletion; the narrow editor needs the entire content width.
-            // ButtonVisible can change Visibility, so also keep its layout width at zero.
-            button.Visibility = Visibility.Collapsed;
-            button.MinWidth = button.Width = button.MaxWidth = 0;
-            button.IsHitTestVisible = false;
-        }
     }
     private string EditOriginal()
     {
