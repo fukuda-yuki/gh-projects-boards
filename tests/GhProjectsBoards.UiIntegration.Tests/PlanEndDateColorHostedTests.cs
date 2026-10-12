@@ -46,8 +46,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             await Ui.Ready<Button>("PlanPublishConfirm");
             await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+            // After a successful publication the review keeps 発行する disabled and shows the result line (#138).
             await Ui.Until(() => workspace.Session!.Document.Baseline.Rows.Single().End == calculatedEnd
-                && Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+                && Ui.Find<TextBlock>("PlanPublishResult").Visibility == Microsoft.UI.Xaml.Visibility.Visible && Ui.Find<Button>("PlanPublish").IsEnabled);
             await Ui.Run(() => Ui.Click("PlanPublishClose"));
             await Ui.Idle();
             Assert.That(FakePlanEditor.Load(root).Issues.Single().Row.End, Is.EqualTo(calculatedEnd));
