@@ -8,39 +8,6 @@ namespace GhProjectsBoards.Tests;
 internal sealed partial class PlanPublisherTests
 {
     [Test]
-    public async Task RecoveryCopyPublishesMembershipsWhenRepositoryHasNoProjectIssues()
-    {
-        await Start(1, state => state with {
-            Issues = state.Issues.Select(i => i with { Row = i.Row with { Labels = ["bug"], MilestoneTitle = "Release" } }).ToImmutableArray(),
-            Labels = [new("acme/repo", "L1", "bug")], Milestones = [new("M1", "acme/repo", "Release", Today)]
-        });
-        var original = FakePlanEditor.Load(root);
-        FakePlanEditor.Save(root, original with { Issues = original.Issues.Select(i => i with { Added = false }).ToImmutableArray() });
-        var refresh = await publisher.RefreshAsync(session, Today);
-        Assert.That(refresh.Succeeded, Is.True, refresh.Error);
-        Assert.That(session.Document.Sync.Unavailable, Is.EqualTo(new[] { "I1" }));
-        Assert.That((await session.ResolveUnavailable("I1", true, Today)).Succeeded, Is.True);
-        var published = await publisher.PublishAsync(session, Today);
-        Assert.That(published.Succeeded, Is.True, published.Error);
-        var remote = FakePlanEditor.Load(root);
-        var created = remote.Issues.Single(i => i.Added);
-        Assert.That(created.Row.Identity, Is.Not.EqualTo("I1"));
-        Assert.That(created.Row.Labels, Is.EqualTo(new[] { "bug" }));
-        Assert.That(created.Row.MilestoneTitle, Is.EqualTo("Release"));
-        var retained = remote.Issues.Single(i => i.Row.Identity == "I1");
-        var prior = original.Issues.Single();
-        Assert.That(retained.Added, Is.False);
-        Assert.That(retained.Row.Labels, Is.EqualTo(prior.Row.Labels));
-        Assert.That(retained.Row.MilestoneTitle, Is.EqualTo(prior.Row.MilestoneTitle));
-        Assert.That(retained.Row.ExtraValues, Is.EquivalentTo(prior.Row.ExtraValues));
-        Assert.That(PlanJson.Text(retained.Row), Is.EqualTo(PlanJson.Text(prior.Row)));
-        Assert.That(retained.Body, Is.EqualTo(prior.Body));
-        Assert.That(retained.Archived, Is.EqualTo(prior.Archived));
-        Assert.That(retained.Phase, Is.EqualTo(prior.Phase));
-        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
-    }
-
-    [Test]
     public async Task OpenReadsHiddenValuesLabelsAndMappedFieldsWithoutDependingOnTheirNames()
     {
         Scenario();

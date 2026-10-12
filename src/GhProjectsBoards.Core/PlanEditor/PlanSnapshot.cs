@@ -16,12 +16,11 @@ internal static class PlanSnapshot
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
         result.Problems.Select(p => $"{p.Stage}/{p.Kind}/{p.Failure}/{p.ApiOutcome}/{p.HttpStatus}"));
     internal static async Task<ProjectReadResult> ReadConsistentAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
-        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null,
-        IReadOnlyCollection<string>? requiredRepositories = null)
+        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null)
     {
         for (var attempt = 1; ; attempt++)
         {
-            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token, progress, requiredRepositories).ConfigureAwait(false);
+            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token, progress).ConfigureAwait(false);
             if (result.Outcome == ProjectReadOutcome.Complete || attempt == 3 || result.Outcome != ProjectReadOutcome.Partial ||
                 result.Problems.Count == 0 || result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange)) return result;
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
@@ -115,8 +114,8 @@ internal static class PlanSnapshot
             rows.Add(row); items.Add(row.Identity, item.Id.NodeId);
         }
         return new(new(rows.ToImmutable(), p.Fields.Select(f => new PlanColumnDefinition(f.Id.NodeId, f.Name, f.DataType) { Options = f.Options.Select(o => o.Name).ToImmutableArray() }).ToImmutableArray()) {
-                RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(p.Repositories.Single(r => r.Id == m.RepositoryId).NameWithOwner, m.Id.NodeId, m.Title)).ToImmutableArray(),
-                RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(p.Repositories.Single(r => r.Id == l.RepositoryId).NameWithOwner, l.Id, l.Name)).ToImmutableArray(),
+                RepositoryMilestones = p.Milestones.Select(m => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == m.RepositoryId).Repository.NameWithOwner, m.Id.NodeId, m.Title)).ToImmutableArray(),
+                RepositoryLabels = p.Labels.Select(l => new PlanRepositoryOption(p.Issues.Values.First(i => i.Repository.Id == l.RepositoryId).Repository.NameWithOwner, l.Id, l.Name)).ToImmutableArray(),
                 Milestones = p.Milestones.GroupBy(m => m.Title, StringComparer.Ordinal).Select(g => new PlanMilestone(g.Key,
                     g.Max(m => m.DueDate), g.All(m => m.Closed), g.Select(m => m.DueDate).Distinct().Count() > 1)).ToImmutableArray() },
             items.ToImmutable(), p.Fields.ToImmutableArray(), p.Items.Count(i => i.Kind == ProjectItemKind.Draft), p.Items.Count(i => i.Kind == ProjectItemKind.PullRequest))

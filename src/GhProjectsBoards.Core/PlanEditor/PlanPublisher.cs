@@ -93,8 +93,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
     {
         var document = session.Document;
         if (document.Project.Scope != ConnectionScope.From(context)) throw new InvalidOperationException("プロジェクトの接続先が一致しません。");
-        var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter,
-            document.State.Rows.Select(r => r.Repository).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()).ConfigureAwait(false);
+        var read = await PlanSnapshot.ReadConsistentAsync(service, lease, context, document.Project, token, progressReporter).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
         var snapshot = PlanSnapshot.From(read, document.State.Settings);
         if (snapshot.Baseline.Rows.Any(r => r.ExtraValues.Any(v => v.Value.Availability is Projects.ValueAvailability.Unavailable or Projects.ValueAvailability.NotLoaded)))

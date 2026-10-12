@@ -144,17 +144,6 @@ internal static class FakePlanEditor
             Write(new { data = new { repository = new { nameWithOwner = name, hasIssuesEnabled = true, isArchived = false, viewerCanCreateIssues = true,
                 assignableUsers = Page(second ? new object[] { new { id = "U101", login = "late-user" } } : [new { id = "U1", login = "alice" }, new { id = "U2", login = "person-U2" }], second ? 1 : 2, !second, second ? null : "next") } } }); return 0;
         }
-        if (query.Contains("ProjectCatalogRepositories"))
-        {
-            var data = new Dictionary<string, object?> { ["viewer"] = new { databaseId = 42 } };
-            for (var i = 0; variables.TryGetProperty("owner" + i, out var owner); i++)
-            {
-                var name = owner.GetString() + "/" + variables.GetProperty("name" + i).GetString();
-                data["r" + i] = name is "acme/repo" or "acme/other"
-                    ? new { __typename = "Repository", id = name == "acme/other" ? "R2" : "R1", nameWithOwner = name, owner = new { id = "O1" } } : null;
-            }
-            Write(new { data }); return 0;
-        }
         if (query.Contains("PlanPublishRepository"))
         {
             if (fault == "repository-missing") { Write(new { data = new { repository = (object?)null } }); return 0; }
