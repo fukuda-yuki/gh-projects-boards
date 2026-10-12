@@ -35,7 +35,7 @@ internal sealed partial class PlanSheetView : Grid
     internal long Generation(string identity, string field) => Pending.GetValueOrDefault((identity, field))?.Generation ?? 0;
     internal readonly Dictionary<(string Identity, string Field), string> Problems = [];
     internal IReadOnlyList<string> RowIds { get; private set; } = [];
-    private ObservableCollection<string> rowItems = [];
+    private PlanRowItems rowItems = [];
     internal Dictionary<string, int> RowIndexes { get; private set; } = [];
     internal Dictionary<string, int> PlanIds { get; private set; } = [];
     internal ImmutableArray<PlanConflict> BlockingConflicts { get; private set; } = [];
@@ -293,6 +293,10 @@ internal sealed partial class PlanSheetView : Grid
         Unloaded += (_, _) => { disposed = true; pendingWheelOffset = null; CancelPendingFilter();
             inputProblem.Close(); predecessorFlyout?.Hide(); pendingMenuAction = null; commandMenu.Hide(); lifetime.Cancel(); CancelRequestedFocus(); CancelDrag(); CompositionTarget.Rendered -= FrameRendered; frameSubscribed = false; metrics.End(pendingFrame, "unloaded-before-frame"); };
         Loaded += (_, _) => { if (lifetime.IsCancellationRequested) { lifetime.Dispose(); lifetime = new(); } disposed = false; RefreshLayout();
+            // The first culture-aware comparison loads collation data (about 90 ms measured);
+            // pay it while idle instead of on the first typed filter character.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+                () => _ = "a".Contains("A", StringComparison.CurrentCultureIgnoreCase));
             if (!initialChartPositioned) {
                 PositionTimelineAnchor();
                 initialChartPositioned = true;
@@ -603,9 +607,26 @@ internal sealed partial class PlanSheetView : Grid
             RowIndexes = next.Select((identity, index) => (identity, index)).ToDictionary(p => p.identity, p => p.index);
             RefreshEdges();
             if (List.ItemsSource is null) List.ItemsSource = rowItems = new(next);
-            else ReconcileRowItems(next);
+            else if (FocusWithinRows() || ChangedIdentities(next) <= RowResetThreshold) ReconcileRowItems(next);
+            // One notification per row makes a version-scale filter cost hundreds of milliseconds.
+            // Without a focused editor to keep, a single reset only re-realizes the viewport.
+            else rowItems.Replace(next);
             (selected, anchor, selectedField, anchorField) = priorSelection;
         }
+    }
+    private const int RowResetThreshold = 100;
+    private int ChangedIdentities(IReadOnlyList<string> next)
+    {
+        var current = rowItems.ToHashSet();
+        var wanted = next.ToHashSet();
+        return current.Count(identity => !wanted.Contains(identity)) + wanted.Count(identity => !current.Contains(identity));
+    }
+    private bool FocusWithinRows()
+    {
+        for (DependencyObject? element = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            element is not null; element = VisualTreeHelper.GetParent(element))
+            if (ReferenceEquals(element, List)) return true;
+        return false;
     }
     private void ReconcileRowItems(IReadOnlyList<string> next)
     {
@@ -979,4 +1000,17 @@ internal sealed partial class PlanSheetView : Grid
     }
     internal double X(DateOnly day) => ChartDateInset + (day.DayNumber - FirstDay.DayNumber) * DayWidth - ChartOffset;
 }
-
+internal sealed class PlanRowItems : ObservableCollection<string>
+{
+    public PlanRowItems() { }
+    public PlanRowItems(IEnumerable<string> values) : base(values) { }
+    internal void Replace(IEnumerable<string> values)
+    {
+        CheckReentrancy();
+        Items.Clear();
+        foreach (var value in values) Items.Add(value);
+        OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(Count)));
+        OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs("Item[]"));
+        OnCollectionChanged(new System.Collections.Specialized.NotifyCollectionChangedEventArgs(System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
+    }
+}
