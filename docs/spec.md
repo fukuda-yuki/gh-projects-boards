@@ -83,7 +83,7 @@ Settings **期間** contains optional 開始日 and 終了日 (yyyy-MM-dd). End 
 
 ## Current publish workspace (#79)
 
-The review header exposes `PlanPublishStatusDate`: **日付は基準日 yyyy/MM/dd (曜) で計算したものです。** When the latest planning action released held GitHub dates, append **（最初の取り込みのあとの再計算）** or **（GitHub の状態に戻したあとの再計算）**. This origin survives reopening until a successful publish or refresh; Undo back into the hold clears it.
+The review header exposes `PlanPublishStatusDate`. When 基準日 is before today (the App's `PlanClock.Today`), show **注意: 基準日 yyyy/MM/dd (曜) は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。** using the existing unpublished-work amber caution brush, not overdue critical red. Its accessible name carries the full visible text. This warning does not block publication or change the mutations sent. When 基準日 is today or later, show **日付は基準日 yyyy/MM/dd (曜) で計算したものです。** In either case, when the latest planning action released held GitHub dates, append **（最初の取り込みのあとの再計算）** or **（GitHub の状態に戻したあとの再計算）**. This origin survives reopening until a successful publish or refresh; Undo back into the hold clears it.
 
 The review includes the native sub-issue order changes the publish will write before → after (the retained native order → the plan's child order), including non-conflicting changes and a retry of a failed reorder; a child-order difference only GitHub holds is not listed. Relationships outside the plan use a retrieved repository/Issue number when available; otherwise they are labelled as unretrieved external Issues and offer a link to the source Issue's GitHub relationships. They never use the Project caption.
 
