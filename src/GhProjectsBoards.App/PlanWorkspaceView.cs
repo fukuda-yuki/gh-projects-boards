@@ -902,7 +902,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
         };
         input.LostFocus += async (_, _) => {
+            // An unchanged rejection is already reported; retrying it here steals focus from the Project picker.
+            // Navigation commands still validate it through CommitPending.
             if (!composing && !endedThisTurn && !rendering && generation == settingsGeneration
+                && !(ReferenceEquals(invalidSetting, input) && input.Text == invalidSettingText)
                 && (input.Text != accepted || ReferenceEquals(invalidSetting, input))) await Run(Commit, commitPending: false);
         };
         return input;

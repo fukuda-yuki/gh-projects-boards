@@ -39,12 +39,13 @@ internal sealed partial class PlanSheetHostedTests
                 Assert.That(handles.Select(AutomationProperties.GetAutomationId), Is.EqualTo(new[] { $"PlanFillHandle{active}_{end}" }));
             });
         }
-        await Select(1, PlanField.Estimate);
-        await Select(4, PlanField.Remaining, true);
+        for (var number = 1; number <= 6; number++) await Ui.Ready<TextBox>($"PlanCell{number}_Remaining");
+        await SelectFocusedCell(1, PlanField.Estimate);
+        await SelectFocusedCell(4, PlanField.Remaining, true);
         await CheckSelection(1, 4, [PlanField.Estimate, PlanField.Remaining], 4, PlanField.Remaining);
-        await Select(2, PlanField.Estimate, true);
+        await SelectFocusedCell(2, PlanField.Estimate, true);
         await CheckSelection(1, 2, [PlanField.Estimate], 2, PlanField.Estimate);
-        await Select(6, PlanField.Remaining);
+        await SelectFocusedCell(6, PlanField.Remaining);
         await CheckSelection(6, 6, [PlanField.Remaining], 6, PlanField.Remaining);
         Assert.That(PlanJson.Text(session.Document.State), Is.EqualTo(before));
         Assert.That(session.UndoCount, Is.Zero);
