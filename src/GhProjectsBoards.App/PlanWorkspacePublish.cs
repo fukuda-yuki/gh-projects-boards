@@ -61,12 +61,19 @@ internal sealed partial class PlanWorkspaceView
         if (workspace.Session is not { } session) return;
         ClearObsoletePublishResult();
         var document = session.Document;
-        var changes = session.Changes(Today);
-        publishStatusDate.Text = "日付は基準日 " + (document.State.Settings.StatusDate ?? Today).ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))
-            + " で計算したものです。" + (document.Dates.Recalculated switch {
+        var today = Today;
+        var changes = session.Changes(today);
+        var statusDate = document.State.Settings.StatusDate ?? today;
+        var pastStatusDate = statusDate < today;
+        var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
+        publishStatusDate.Text = (pastStatusDate
+            ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
+            : "日付は基準日 " + dateText + " で計算したものです。") + (document.Dates.Recalculated switch {
                 PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
                 PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
             });
+        publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
+        AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
         PlanPublishReviewGroup Group(string identity)

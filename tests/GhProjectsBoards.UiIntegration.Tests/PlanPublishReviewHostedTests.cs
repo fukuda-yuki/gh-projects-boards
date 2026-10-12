@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 using GhProjectsBoards.App;
 using GhProjectsBoards.App.GitHub;
 using GhProjectsBoards.Core.PlanEditor;
@@ -14,10 +15,11 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed class PlanPublishReviewHostedTests
 {
     private DateOnly readDay;
+    private string? previousToday;
     private string root = null!;
     private PlanWorkspace workspace = null!;
     private PlanWorkspaceView view = null!;
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly Today => new(2026, 10, 7);
     private static string FakeExecutable
     {
         get
@@ -32,7 +34,9 @@ internal sealed class PlanPublishReviewHostedTests
     public async Task Setup()
     {
         await Ui.BeginTest();
-        readDay = PlanClock.Today;
+        previousToday = Environment.GetEnvironmentVariable("GHPB_TODAY");
+        Environment.SetEnvironmentVariable("GHPB_TODAY", "2026-10-07");
+        readDay = Today;
         root = Path.Combine(Path.GetTempPath(), "ghpb-publish-review-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
@@ -64,7 +68,7 @@ internal sealed class PlanPublishReviewHostedTests
                 finally { await workspace.Flush(); Directory.Delete(root, true); }
             }
         }
-        finally { Ui.EndTest(); }
+        finally { Environment.SetEnvironmentVariable("GHPB_TODAY", previousToday); Ui.EndTest(); }
     }
     [Test, Category("PublishOutcome")]
     public async Task ReviewNamesDestinationAndChangesAndClosingKeepsWork()
@@ -241,14 +245,15 @@ internal sealed class PlanPublishReviewHostedTests
         });
     }
 
-    [TestCase(false), TestCase(true), Category("PlanReadDate")]
-    public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh)
+    [TestCase(false, -1), TestCase(true, -1), TestCase(false, 0), TestCase(true, 0), TestCase(false, 1), Category("PlanReadDate")]
+    public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh, int dayOffset)
     {
-        readDay = new(2026, 10, 6);
+        readDay = Today.AddDays(dayOffset);
         await Open(1);
         Assert.That(workspace.Session!.Document.State.Settings.StatusDate, Is.EqualTo(readDay));
         Assert.That(workspace.Session.Document.Dates.Held, Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
-        await Ui.Run(() => {
+        await Ui.Run(async () => {
+            await workspace.Session.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay }), Today);
             var title = Ui.Find<TextBox>("PlanCell1_Title");
             title.Focus(FocusState.Programmatic); title.Text = "Edited";
             Ui.Click("PlanPublish");
@@ -272,26 +277,86 @@ internal sealed class PlanPublishReviewHostedTests
             await Ui.Idle();
         }
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。" + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
+            Is.EqualTo(DateMessage(dayOffset) + (refresh ? "" : "（最初の取り込みのあとの再計算）"))));
         await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue130-publish-date-" + refresh));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
-    [Test, Category("PlanReset")]
-    public async Task ReviewNamesResetOriginAfterTheNextPlanningEdit()
+    [TestCase(-1), TestCase(0), Category("PlanReset")]
+    public async Task ReviewNamesResetOriginAfterTheNextPlanningEdit(int dayOffset)
     {
-        readDay = new(2026, 10, 6);
+        readDay = Today.AddDays(dayOffset);
         await Open(1);
         await workspace.Reset();
         Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.Zero);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
-        await Ui.Run(async () => await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell,
-            [new("I1", PlanField.Title, "Edited after reset")]), Today));
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new ReplacePlanSettings(workspace.Session.Document.State.Settings with { StatusDate = readDay }), Today);
+            await workspace.Session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+                [new("I1", PlanField.Title, "Edited after reset")]), Today);
+        });
         await Ui.Run(() => Ui.Click("PlanPublish"));
         await Ui.Ready<TextBlock>("PlanPublishStatusDate");
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishStatusDate").Text,
-            Is.EqualTo("日付は基準日 2026/10/06 (火) で計算したものです。（GitHub の状態に戻したあとの再計算）")));
+            Is.EqualTo(DateMessage(dayOffset) + "（GitHub の状態に戻したあとの再計算）")));
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    private static string DateMessage(int dayOffset) => dayOffset switch {
+        -1 => "注意: 基準日 2026/10/06 (火) は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。",
+        0 => "日付は基準日 2026/10/07 (水) で計算したものです。",
+        1 => "日付は基準日 2026/10/08 (木) で計算したものです。",
+        _ => throw new ArgumentOutOfRangeException(nameof(dayOffset))
+    };
+
+    [Test, Category("PlanReadDate")]
+    public async Task PastStatusDateWarnsAndPublishesTheSameMutationsAsToday()
+    {
+        await Open(1);
+        var original = FakePlanEditor.Load(root);
+        string[]? pastMutations = null;
+        foreach (var dayOffset in new[] { -1, 0 })
+        {
+            if (dayOffset == 0)
+            {
+                await Ui.Run(() => Ui.Click("PlanPublishClose"));
+                FakePlanEditor.Save(root, original);
+                await Ui.Run(async () => await workspace.Reset());
+            }
+            await Ui.Run(async () => {
+                var session = workspace.Session!;
+                await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with {
+                    StatusDate = Today.AddDays(dayOffset), ProjectStart = new(2026, 10, 13)
+                }), Today);
+                await session.Execute(new EditPlanCells(PlanOperationKind.Cell,
+                    [new("I1", PlanField.Title, "Edited")]), Today);
+                Ui.Click("PlanPublish");
+            });
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishStatusDate").Text.StartsWith(DateMessage(dayOffset)));
+            await Ui.Run(async () => {
+                var line = Ui.Find<TextBlock>("PlanPublishStatusDate");
+                Assert.That(AutomationProperties.GetName(line), Is.EqualTo(line.Text));
+                Assert.That(line.Foreground, Is.EqualTo(PlanSheetView.Brush(dayOffset < 0 ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush")));
+                Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
+                await RenderedEvidence.Capture(view, "issue166-status-date-" + dayOffset);
+            });
+            var log = Path.Combine(root, "plan-mutations.jsonl");
+            var before = File.Exists(log) ? File.ReadAllLines(log).Length : 0;
+            await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" &&
+                Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+            var mutations = File.ReadAllLines(log).Skip(before).Select(line => {
+                using var json = JsonDocument.Parse(line);
+                return json.RootElement.GetProperty("query").GetString() + "\n" +
+                    json.RootElement.GetProperty("variables").GetRawText();
+            }).ToArray();
+            Assert.That(mutations, Is.Not.Empty);
+            Assert.That(FakePlanEditor.Load(root).Issues[0].Row.Title, Is.EqualTo("Edited"));
+            Assert.That(workspace.Session!.Document.Sync.Failures, Is.Empty);
+            Assert.That(workspace.Session.Document.Sync.Unverified, Is.Empty);
+            if (dayOffset < 0) pastMutations = mutations;
+            else Assert.That(mutations, Is.EqualTo(pastMutations));
+        }
     }
 
     [Test, Category("PlanSheetFollowup")]
