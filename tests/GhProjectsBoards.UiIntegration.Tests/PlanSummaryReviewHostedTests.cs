@@ -38,11 +38,14 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(cell.BorderBrush, Is.EqualTo(Application.Current.Resources["SheetSelectionStrokeBrush"]));
         });
         await Ui.Ready<TextBlock>("SummaryTaskId_I1"); await Ui.Idle();
-        await Ui.Run(() => {
+        // The details are brought into view after their layout, at low dispatcher priority.
+        await Ui.Until(() => {
             var viewport = Ui.Find<ScrollViewer>("SummaryScroll");
             var command = Ui.Find<Button>("SummaryFilter");
             var top = command.TransformToVisual(viewport).TransformPoint(new()).Y;
-            Assert.That(top, Is.GreaterThanOrEqualTo(0)); Assert.That(top + command.ActualHeight, Is.LessThanOrEqualTo(viewport.ActualHeight));
+            return top >= 0 && top + command.ActualHeight <= viewport.ActualHeight;
+        });
+        await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I1").Text, Is.EqualTo("1"));
             Assert.That(Ui.Find<TextBlock>("SummaryTaskId_I2").Text, Is.EqualTo("2"));
             Ui.Find<ComboBox>("SummaryMeasure").SelectedIndex = 2;

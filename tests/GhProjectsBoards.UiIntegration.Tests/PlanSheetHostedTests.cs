@@ -393,6 +393,8 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         else await SheetNativeInput.Press(exit == "Enter" ? Windows.System.VirtualKey.Enter
             : exit == "Tab" ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Escape);
+        // WinUI raises LostFocus asynchronously after focus has already moved to the filter.
+        await Ui.Until(() => !Ui.Find<PlanSheetCell>("PlanCell1_Remaining").Editing);
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(explicitValue ? 32m : (decimal?)null));
@@ -1648,7 +1650,7 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
         await SheetNativeInput.Press(tab ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Enter);
         await Ui.Until(() => session.Document.State.Rows[0].Title == "Edited");
-        await Ui.Until(() => Ui.Find<TextBox>(tab ? "PlanCell1_Assignees" : "PlanCell2_Title").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Ui.Find<TextBox>(tab ? "PlanCell1_Phase" : "PlanCell2_Title").FocusState != FocusState.Unfocused);
         Assert.That(session.UndoCount, Is.EqualTo(1));
     }
     [Test, Category("PlanSheetNative")]

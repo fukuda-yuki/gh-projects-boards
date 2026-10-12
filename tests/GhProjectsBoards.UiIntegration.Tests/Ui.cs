@@ -124,6 +124,15 @@ internal static class Ui
         await Run(() => Task.CompletedTask, check: false);
         Check();
     }
+    // Runs after dispatcher work already queued at low priority, such as a deferred column reveal.
+    public static async Task LowPriorityIdle()
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!Queue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => completion.TrySetResult()))
+            throw new InvalidOperationException("The dispatcher rejected the low-priority probe.");
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Check();
+    }
     public static async Task Until(Func<bool> predicate)
     {
         var deadline = DateTime.UtcNow.AddSeconds(20);

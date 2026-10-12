@@ -116,6 +116,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => session.Document.State.Settings.SheetColumns.Any(c=>c.Key==PlanField.Estimate && !c.Visible));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
+        // Returning re-renders the header after the plan is loaded again.
+        await Ui.Until(() => !Ui.Tree(view).OfType<TextBlock>().Any(t=>AutomationProperties.GetAutomationId(t)=="PlanHeaderEstimate"));
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Text,Is.EqualTo("作業名"));
             Assert.That(AutomationProperties.GetHelpText(Ui.Find<TextBlock>("PlanHeaderTitle")),Does.Contain("Title"));
