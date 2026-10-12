@@ -39,6 +39,60 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.DialogReady("PlanResetConfirm");
     }
 
+    [TestCase(false), TestCase(true), Category("PlanReadDate")]
+    public async Task FirstCellEditShowsRecalculationAndUndoClosesItWithoutRedoNotice(bool reset)
+    {
+        readDay = PlanClock.Today;
+        FakePlanEditor.Save(root, new([
+            new(new("I1", "設計", "acme/repo"), "", true),
+            new(new("I2", "Moving task", "acme/repo") { Parent = "I1", Remaining = 16, Start = readDay.AddDays(-10), End = readDay.AddDays(-9) }, "", true),
+            new(new("I3", "Unchanged task", "acme/repo"), "", true)
+        ], 4));
+        await Open();
+        if (reset) {
+            await OpenResetDialog();
+            await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
+            await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult").IsOpen && Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+            await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").Message, Does.Contain("日程は GitHub の値のままです。")));
+        }
+        await Ui.Ready<TextBox>("PlanCell2_Title");
+        await Ui.Run(() => {
+            var cell = Ui.Find<TextBox>("PlanCell2_Title");
+            Assert.That(cell.Focus(FocusState.Programmatic), Is.True);
+            cell.Text = "Edited task";
+        });
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
+        await Ui.Idle();
+        await Ui.Until(() => workspace.Session!.Document.State.Rows[1].Title == "Edited task");
+        await Ui.Run(() => {
+            var bar = Ui.Find<InfoBar>("PlanRefreshResult");
+            Assert.That(bar.IsOpen, Is.True);
+            Assert.That(bar.Title, Is.EqualTo("日程を再計算しました"));
+            Assert.That(bar.Message, Is.EqualTo("基準日 " + readDay.ToString("M/d (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP")) + " で日程を再計算しました。日程が変わったタスク 1"));
+        });
+        await Ui.Ready<Button>("PlanRefreshChangedFilter");
+        await Ui.Run(() => Ui.Click("PlanRefreshChangedFilter"));
+        await Ui.Until(() => Ui.Find<ListView>("PlanTasks").Items.Count == 2);
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue165-recalculation-" + reset));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Cast<string>(), Is.EqualTo(new[] { "I2", "" }));
+            Ui.Click("PlanUndo");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
+            Assert.That(Ui.Find<ListView>("PlanTasks").Items.Count, Is.EqualTo(4));
+            Assert.That(workspace.Session!.Document.Dates.Held, Is.Not.Null);
+            Ui.Click("PlanRedo");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<InfoBar>("PlanRefreshResult").IsOpen, Is.False);
+            Assert.That(workspace.Session!.Document.Dates.Held, Is.Null);
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [Test, Category("PlanReset")]
     public async Task ResetConfirmationCancelBusyResultAndUndoUseTheRealView()
     {
