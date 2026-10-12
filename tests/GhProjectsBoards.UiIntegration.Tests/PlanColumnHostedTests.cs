@@ -136,6 +136,12 @@ internal sealed partial class PlanWorkspaceHostedTests
     public async Task InvalidSheetInputRefusesColumnSettingsNavigation()
     {
         await Open();
+        var original = "";
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("PlanCell1_Remaining");
+            Assert.That(input.Focus(FocusState.Programmatic), Is.True);
+            original = input.Text;
+        });
         await CommitText("PlanCell1_Remaining","invalid");
         var before = PlanJson.Text(workspace.Session!.Document);
         var undo = workspace.Session.UndoCount;
@@ -148,6 +154,15 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        // Invalid input also refuses window close; cleanup must follow a real correction.
+        await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.False));
+        await CommitText("PlanCell1_Remaining", original);
+        Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBox>("PlanColumnNameTitle");
+        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Ready<TextBlock>("PlanHeaderTitle");
     }
 }
 

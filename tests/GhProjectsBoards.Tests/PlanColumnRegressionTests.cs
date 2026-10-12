@@ -8,6 +8,18 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanColumnRegressionTests
 {
+    [TestCase("Assignees", "[]"), TestCase("Predecessors", "[]"), TestCase("Labels", "[]")]
+    [TestCase("StartNoEarlierThan", "null"), TestCase("Status", "null"), TestCase("MilestoneTitle", "null"), TestCase("Fixed", "false")]
+    public void EmptySummaryValuesAgreeWithTypedCopy(string field, string expected)
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo");
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1" };
+        var document = new PlanDocument(new(new("github.com", 42), "P1"), new([parent, child], []), new([parent, child], new()));
+        var effective = PlanOperations.EffectiveRows(document)[0];
+        Assert.That(PlanJson.Text(PlanOperations.Value(parent, field)), Is.EqualTo(expected), "plan " + field);
+        Assert.That(PlanJson.Text(PlanOperations.Value(effective, field)), Is.EqualTo(expected), "summary " + field);
+        Assert.That(PlanJson.Text(PlanSheetEditing.CopyValue(effective, field, "")), Is.EqualTo(expected), "copy " + field);
+    }
     private static readonly DateOnly Day = new(2026, 10, 12);
     private static PlanDocument Document(string type, string json)
     {

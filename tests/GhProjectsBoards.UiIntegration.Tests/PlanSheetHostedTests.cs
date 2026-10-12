@@ -106,11 +106,17 @@ internal sealed partial class PlanSheetHostedTests
         foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
+            await Ui.Idle();
+            await Ui.Until(() => SelectProvider($"PlanCell1_{field}").IsSelected
+                && Ui.Find<PlanSummaryCell>($"PlanCell1_{field}").FocusState != FocusState.Unfocused);
             await Ui.Run(async () => {
+                clipboard = new("not copied", null);
                 await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
-                Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""));
+                Assert.That(clipboard.Text, Is.EqualTo(held ? text : ""), field);
+                Assert.That(clipboard.Metadata, Is.Not.Null, field);
                 using var metadata = JsonDocument.Parse(clipboard.Metadata!);
-                Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo(JsonSerializer.Serialize(PlanOperations.Value(parent, field), PlanJson.Options)));
+                Assert.That(metadata.RootElement.GetProperty("fields").EnumerateArray().Select(v => v.GetString()), Is.EqualTo(new[] { field }), field);
+                Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo(JsonSerializer.Serialize(PlanOperations.Value(parent, field), PlanJson.Options)), field);
             });
         }
         await Select(1, PlanField.Assignees);
