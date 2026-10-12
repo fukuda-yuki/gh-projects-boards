@@ -88,6 +88,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var before = PlanJson.Text(workspace.Session!.Document); var undo = workspace.Session.UndoCount;
         var calls = File.ReadAllText(Path.Combine(root, "calls.jsonl"));
         await Ui.Run(() => Ui.Click("SummaryCell_U1_0")); await Ui.Ready<TextBlock>("SummaryTaskId_I200"); await Ui.Idle();
+        await Ui.Ready<Button>("SummaryFilter");
         await Ui.Run(() => {
             var list = Ui.Find<FrameworkElement>("SummaryTasks");
             var ids = Ui.Tree(list).OfType<TextBlock>().Where(t => AutomationProperties.GetAutomationId(t).StartsWith("SummaryTaskId_", StringComparison.Ordinal)).ToArray();

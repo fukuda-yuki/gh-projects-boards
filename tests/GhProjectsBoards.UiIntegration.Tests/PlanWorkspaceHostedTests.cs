@@ -1864,6 +1864,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
         await Settings();
+        await Ui.Ready<Button>("PlanAddFields");
         await Ui.Run(() => Ui.Click("PlanAddFields"));
         await Ui.Until(() => workspace.Session!.Document.State.Settings.Columns.Length == 7 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Idle();
