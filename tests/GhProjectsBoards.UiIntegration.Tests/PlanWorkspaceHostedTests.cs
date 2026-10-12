@@ -64,6 +64,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         await Ui.Idle();
         await Ui.Until(() => workspace.Session!.Document.State.Rows[1].Title == "Edited task");
+        // Core accepts the edit at once; the workspace shows the notice when that edit's save completes.
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
         await Ui.Run(() => {
             var bar = Ui.Find<InfoBar>("PlanRefreshResult");
             Assert.That(bar.IsOpen, Is.True);

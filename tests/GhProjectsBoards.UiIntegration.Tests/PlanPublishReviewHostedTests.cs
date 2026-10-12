@@ -344,7 +344,7 @@ internal sealed class PlanPublishReviewHostedTests
             var before = File.Exists(log) ? File.ReadAllLines(log).Length : 0;
             await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
             await Ui.Until(() => Ui.Find<TextBlock>("PlanUnpublished").Text == "未発行 0 タスク" &&
-                Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+                Ui.Find<TextBlock>("PlanPublishResult").Visibility == Visibility.Visible && Ui.Find<Button>("PlanPublish").IsEnabled);
             var mutations = File.ReadAllLines(log).Skip(before).Select(line => {
                 using var json = JsonDocument.Parse(line);
                 return json.RootElement.GetProperty("query").GetString() + "\n" +
