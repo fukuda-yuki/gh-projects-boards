@@ -364,6 +364,8 @@ internal static class FakePlanEditor
             // GitHub may apply the writes even when its gateway returns no GraphQL result.
             if (fault == "gateway" && matches.Count > scenario.GetProperty("gatewayAliasLimit").GetInt32())
             { Console.Write("HTTP/2 502 Bad Gateway\nContent-Type: text/html\n\n<html><body>Bad Gateway</body></html>"); return 1; }
+            if (fault == "gateway-json" && matches.Count > scenario.GetProperty("gatewayAliasLimit").GetInt32())
+            { Console.Write("HTTP/2 502 Bad Gateway\nContent-Type: application/json\n\n{\"message\":\"Server Error\"}"); return 1; }
             if (fault == "creation-resource-uncertain" && query.Contains("createIssue") && matches.Count > 1)
             { Write(new { data = (object?)null, errors = new[] { new { type = "RESOURCE_LIMITS_EXCEEDED", message = "Synthetic resource failure with an uncertain creation" } } }); return 0; }
             if (interruptedPositions) return 1;

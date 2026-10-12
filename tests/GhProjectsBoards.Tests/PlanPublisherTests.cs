@@ -520,13 +520,14 @@ internal sealed partial class PlanPublisherTests
         Assert.That(issues.All(i => i.Added), Is.True);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
-    [Test]
-    public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling()
+    [TestCase("gateway")]
+    [TestCase("gateway-json")]
+    public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling(string body)
     {
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario("gateway", gatewayAliasLimit: 13);
+        Scenario(body, gatewayAliasLimit: 13);
 
         var result = await publisher.PublishAsync(session, Today);
 

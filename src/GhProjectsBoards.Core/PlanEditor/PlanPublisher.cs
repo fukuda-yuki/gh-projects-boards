@@ -363,7 +363,9 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                     // A missing outcome is not an alias rejection; later writes would widen the uncertainty.
                     // Field writes set absolute values or membership, so a gateway failure can use the same bounded split recovery.
                     var fieldGatewayRecovery = group.Length > 1 && group[0].Stage == PlanPublishStage.Fields &&
-                        response.HttpStatus is >= 500 and <= 599 && response.Data is null;
+                        response.HttpStatus is >= 500 and <= 599 &&
+                        !(response.Data is { ValueKind: JsonValueKind.Object } gatewayBody && gatewayBody.TryGetProperty("data", out var gatewayData) &&
+                            gatewayData.ValueKind == JsonValueKind.Object);
                     var resourceRecovery = group.Length > 1 && response.Data is { ValueKind: JsonValueKind.Object } responseBody &&
                         responseBody.TryGetProperty("errors", out var responseErrors) && responseErrors.ValueKind == JsonValueKind.Array &&
                         responseErrors.GetArrayLength() > 0 && responseErrors.EnumerateArray().All(e => e.ValueKind == JsonValueKind.Object &&
