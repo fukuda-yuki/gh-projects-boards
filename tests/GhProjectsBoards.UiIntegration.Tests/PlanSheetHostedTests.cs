@@ -130,6 +130,26 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
 
+    [Test]
+    public async Task QueuedSummaryCopyKeepsTheSelectionAtTheCommandRequest()
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo") { Fixed = true, Assignees = ["U1"] };
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1" };
+        await MountPresentation([parent, child], [parent, child], [new("U1", "alice", 100, null)]);
+        await SetColumnVisible(PlanField.Fixed, true);
+        await Select(1, PlanField.Fixed);
+        await Ui.Run(async () => {
+            var copy = sheet.KeyboardCommand(Windows.System.VirtualKey.C);
+            SelectProvider("PlanCell1_Assignees").Select();
+            await copy;
+            Assert.That(clipboard.Text, Is.EqualTo("固定"));
+            using var metadata = JsonDocument.Parse(clipboard.Metadata!);
+            Assert.That(metadata.RootElement.GetProperty("fields").EnumerateArray().Select(v => v.GetString()),
+                Is.EqualTo(new[] { PlanField.Fixed }));
+            Assert.That(metadata.RootElement.GetProperty("values")[0][0].GetString(), Is.EqualTo("true"));
+        });
+    }
+
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]
     public async Task SummaryStartTabAndEnterOnlyNavigate(bool tab)
     {

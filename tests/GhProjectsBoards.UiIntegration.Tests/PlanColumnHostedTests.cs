@@ -138,9 +138,11 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Open();
         var original = "";
         await Ui.Run(() => {
-            var input = Ui.Find<TextBox>("PlanCell1_Remaining");
+            var input = Ui.Find<PlanSheetCell>("PlanCell1_Remaining");
             Assert.That(input.Focus(FocusState.Programmatic), Is.True);
+            input.BeginEditing();
             original = input.Text;
+            Assert.That(original, Is.EqualTo(workspace.Session!.Document.State.Rows[0].Remaining?.ToString(System.Globalization.CultureInfo.CurrentCulture) ?? ""));
         });
         await CommitText("PlanCell1_Remaining","invalid");
         var before = PlanJson.Text(workspace.Session!.Document);

@@ -27,7 +27,16 @@ internal sealed partial class PlanPublisherTests
         Assert.That(created.Row.Identity, Is.Not.EqualTo("I1"));
         Assert.That(created.Row.Labels, Is.EqualTo(new[] { "bug" }));
         Assert.That(created.Row.MilestoneTitle, Is.EqualTo("Release"));
-        Assert.That(remote.Issues.Single(i => i.Row.Identity == "I1"), Is.EqualTo(original.Issues.Single() with { Added = false }));
+        var retained = remote.Issues.Single(i => i.Row.Identity == "I1");
+        var prior = original.Issues.Single();
+        Assert.That(retained.Added, Is.False);
+        Assert.That(retained.Row.Labels, Is.EqualTo(prior.Row.Labels));
+        Assert.That(retained.Row.MilestoneTitle, Is.EqualTo(prior.Row.MilestoneTitle));
+        Assert.That(retained.Row.ExtraValues, Is.EquivalentTo(prior.Row.ExtraValues));
+        Assert.That(PlanJson.Text(retained.Row), Is.EqualTo(PlanJson.Text(prior.Row)));
+        Assert.That(retained.Body, Is.EqualTo(prior.Body));
+        Assert.That(retained.Archived, Is.EqualTo(prior.Archived));
+        Assert.That(retained.Phase, Is.EqualTo(prior.Phase));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
 

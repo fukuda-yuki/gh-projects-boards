@@ -223,17 +223,25 @@ internal sealed partial class PlanSheetView
         Select(RowIds[Math.Clamp(row, 0, RowIds.Count - 1)], Fields[Math.Clamp(column, 0, Fields.Length - 1)], false);
         FocusSelected();
     }
-    internal Task KeyboardCommand(VirtualKey key) => Run(async () => {
-        switch (key)
-        {
-            case VirtualKey.C: await Copy(); break;
-            case VirtualKey.V: await Paste(); break;
-            case VirtualKey.D: await Fill(PlanOperationKind.CtrlD); break;
-            case VirtualKey.Delete: await Clear(); break;
-            case VirtualKey.Z: await ChangeHistory(false); break;
-            case VirtualKey.Y: await ChangeHistory(true); break;
-        }
-    });
+    internal Task KeyboardCommand(VirtualKey key)
+    {
+        // Run yields to native focus events before executing. Preserve the user's
+        // copy target at invocation, including summary cells without an editor.
+        var range = Range;
+        var copyRows = key == VirtualKey.C ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
+        var copyFields = key == VirtualKey.C ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
+        return Run(async () => {
+            switch (key)
+            {
+                case VirtualKey.C: await Copy(copyRows, copyFields); break;
+                case VirtualKey.V: await Paste(); break;
+                case VirtualKey.D: await Fill(PlanOperationKind.CtrlD); break;
+                case VirtualKey.Delete: await Clear(); break;
+                case VirtualKey.Z: await ChangeHistory(false); break;
+                case VirtualKey.Y: await ChangeHistory(true); break;
+            }
+        });
+    }
     private string[] RangeRows(CellRange range)
     {
         var rows = RowIds.Skip(range.Row).Take(range.RowCount).ToArray();
@@ -313,9 +321,14 @@ internal sealed partial class PlanSheetView
         { throw new InvalidOperationException(ClipboardError, error); }
         finally { clipboardWork = "none"; }
     }
-    private async Task Copy()
+    private Task Copy()
     {
-        var range = Range; var rows = RangeRows(range); var fields = Fields.Skip(range.Column).Take(range.ColumnCount).ToArray();
+        var range = Range;
+        return Copy(RangeRows(range), Fields.Skip(range.Column).Take(range.ColumnCount).ToArray());
+    }
+    private async Task Copy(string[] rows, string[] fields)
+    {
+        if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         RequireNoPending(rows, fields);
         var text = string.Join("\n", rows.Select(id => string.Join("	", fields.Select(f => EditForm(id, f)))));
         var typed = rows.Select(id => fields.Select(field => JsonSerializer.Serialize(CopyValue(id, field), PlanJson.Options)).ToArray()).ToArray();
