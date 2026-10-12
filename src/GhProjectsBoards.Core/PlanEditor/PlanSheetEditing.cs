@@ -92,6 +92,9 @@ internal static class PlanSheetEditing
         if (matrix.Any(row => row.Length != matrix[0].Length)) throw new ArgumentException("TSVの列数が一致していません。");
         var single = matrix.Length == 1 && matrix[0].Length == 1;
         var target = PasteRange(selection, matrix.Length, matrix[0].Length, rows.Count, columns.Count);
+        var existing = document.State.Rows.Select(row => row.Identity).ToHashSet();
+        if (rows.Skip(target.Row).Take(target.RowCount).Any(id => !existing.Contains(id)))
+            throw new ArgumentException("空行を除いて範囲を選択してください。");
         var expand = single && !selection.Single;
         var changes = ImmutableArray.CreateBuilder<PlanCellChange>();
         for (var r = 0; r < target.RowCount; r++)

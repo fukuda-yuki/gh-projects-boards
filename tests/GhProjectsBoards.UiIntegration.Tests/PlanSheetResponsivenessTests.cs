@@ -377,6 +377,8 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Until(() => Math.Abs(Ui.Find<ScrollViewer>("PlanSheetHorizontal").ActualWidth - 500) < 1);
         await SheetNativeInput.Rendered();
         await Select(1, PlanField.Title);
+        // Selection reveals its column again at low priority; let that finish before scrolling.
+        await Ui.LowPriorityIdle();
         await Ui.Run(() => {
             cell = Ui.Find<TextBox>("PlanCell1_Title");
             Assert.That(cell.Focus(FocusState.Programmatic), Is.True);

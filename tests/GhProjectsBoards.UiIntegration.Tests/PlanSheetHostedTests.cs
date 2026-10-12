@@ -132,6 +132,36 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
 
+    [TestCase(true, false), TestCase(true, true), TestCase(false, false), TestCase(false, true)]
+    public async Task QueuedPasteRejectsARowRemovedByUndoAndKeepsTheQueueUsable(bool internalCopy, bool expand)
+    {
+        await Select(3, PlanField.Title);
+        if (expand) await Select(4, PlanField.Title, true);
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.C));
+        Assert.That(clipboard.Metadata, Is.Not.Null);
+        if (!internalCopy) clipboard = new(clipboard.Text, null);
+        var before = PlanJson.Text(session.Document); var history = session.UndoCount;
+        var inserted = PlanRow.New("Temporary destination", "acme/repo");
+        var save = await session.Execute(new InsertPlanRows([inserted], "I2"), Today);
+        Assert.That(save.Succeeded, Is.True, save.Error);
+        await Ui.Run(() => sheet.Refresh());
+        await Select(expand ? 1 : 2, PlanField.Title);
+        await Ui.Run(async () => {
+            var undo = sheet.KeyboardCommand(Windows.System.VirtualKey.Z);
+            var paste = sheet.KeyboardCommand(Windows.System.VirtualKey.V);
+            await Task.WhenAll(undo, paste);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("空行を除いて範囲を選択してください。"));
+            Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+            Assert.That(session.UndoCount, Is.EqualTo(history));
+            Assert.That(session.RedoCount, Is.EqualTo(1));
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.Y);
+            Assert.That(session.Document.State.Rows.Any(row => row.Identity == inserted.Identity), Is.True);
+            Assert.That(session.UndoCount, Is.EqualTo(history + 1));
+            Assert.That(session.RedoCount, Is.Zero);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+        });
+    }
+
     [Test]
     public async Task QueuedSummaryCopyKeepsTheSelectionAtTheCommandRequest()
     {
@@ -393,6 +423,8 @@ internal sealed partial class PlanSheetHostedTests
             await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Focus(FocusState.Programmatic));
         else await SheetNativeInput.Press(exit == "Enter" ? Windows.System.VirtualKey.Enter
             : exit == "Tab" ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Escape);
+        // WinUI raises LostFocus asynchronously after focus has already moved to the filter.
+        await Ui.Until(() => !Ui.Find<PlanSheetCell>("PlanCell1_Remaining").Editing);
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(session.Document.State.Rows[0].Remaining, Is.EqualTo(explicitValue ? 32m : (decimal?)null));
@@ -1648,7 +1680,7 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("Task 1"));
         await SheetNativeInput.Press(tab ? Windows.System.VirtualKey.Tab : Windows.System.VirtualKey.Enter);
         await Ui.Until(() => session.Document.State.Rows[0].Title == "Edited");
-        await Ui.Until(() => Ui.Find<TextBox>(tab ? "PlanCell1_Assignees" : "PlanCell2_Title").FocusState != FocusState.Unfocused);
+        await Ui.Until(() => Ui.Find<TextBox>(tab ? "PlanCell1_Phase" : "PlanCell2_Title").FocusState != FocusState.Unfocused);
         Assert.That(session.UndoCount, Is.EqualTo(1));
     }
     [Test, Category("PlanSheetNative")]
@@ -1878,6 +1910,8 @@ internal sealed partial class PlanSheetHostedTests
     {
         await SetColumnVisible(PlanField.Status,true);
         await Ui.Idle();
+        // The wider sheet can still move the chart offset after normal-priority work; measure after it settles.
+        await Ui.LowPriorityIdle();
         double barX = 0;
         await Ui.Run(() => barX = Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport);
         await Ui.Run(() => {
@@ -1887,7 +1921,10 @@ internal sealed partial class PlanSheetHostedTests
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth > 0);
         // Finish the divider's native date-viewport compensation before measuring column selection.
-        await Ui.Until(() => Math.Abs(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport - barX) < 1);
+        await Ui.Until(() => Math.Abs(Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport - barX) < 1,
+            () => $"bar={Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport}, expected={barX}, "
+                + $"sheetViewport={sheet.SheetViewport}, chartOffset={sheet.ChartOffset}, chartScrollable={Ui.Find<ScrollViewer>("PlanGanttHorizontal").ScrollableWidth}, "
+                + $"sheetScrollable={Ui.Find<ScrollViewer>("PlanSheetHorizontal").ScrollableWidth}, width={sheet.ActualWidth}, {sheet.WorkDescription}");
         await Ui.Idle();
         double chartOffset = 0;
         await Ui.Run(() => chartOffset = sheet.ChartOffset);

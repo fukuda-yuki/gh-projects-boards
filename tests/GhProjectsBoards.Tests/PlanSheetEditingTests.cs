@@ -58,6 +58,20 @@ internal sealed class PlanSheetEditingTests
             new("I3", PlanField.Title, "third edited"), new("I3", PlanField.Remaining, 16m),
             new("I1", PlanField.Remaining, 8m) }));
     }
+    [TestCase("changed\nvalue")]
+    [TestCase("changed\n\n")]
+    [TestCase("")]
+    public void PasteRejectsEveryMissingDestinationIncludingEmptyCells(string text)
+    {
+        Assert.That(() => PlanSheetEditing.Paste(Document, ["I1", "removed"], [PlanField.Title],
+            new(0, 0, 2, 1), text, Day), Throws.ArgumentException.With.Message.EqualTo("空行を除いて範囲を選択してください。"));
+    }
+    [Test]
+    public void PasteIgnoresMissingRowsOutsideItsDestination()
+    {
+        var command = PlanSheetEditing.Paste(Document, ["I1", "removed"], [PlanField.Title], new(0, 0), "changed", Day);
+        Assert.That(command.Cells, Is.EqualTo(new[] { new PlanCellChange("I1", PlanField.Title, "changed") }));
+    }
     [TestCase(3, 1, "16\n8", false)]
     [TestCase(2, 2, "16", false)]
     [TestCase(2, 1, "16\t8\n8\t16", false)]
