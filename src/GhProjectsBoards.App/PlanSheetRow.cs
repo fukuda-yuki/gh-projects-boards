@@ -100,6 +100,7 @@ public sealed class PlanSheetRow : Grid
             Cells = [.. Cells, cell];
             var grid = new Grid(); grid.Children.Add(cell);
             if (cell.TitleDisplay is { } display) grid.Children.Add(display);
+            if (cell.AssigneeDisplay is { } assignees) grid.Children.Add(assignees);
             if (cell.Field == PlanField.Title) grid.Children.Add(fold);
             var frame = new Border { Child = grid, BorderThickness = new(0, 0, 0, 1) };
             line.Children.Add(frame); frames.Add(frame); markers.Add(null); corners.Add(null); handles.Add(null);
@@ -247,6 +248,11 @@ public sealed class PlanSheetRow : Grid
             var text = owner.Pending.GetValueOrDefault((Identity, field))?.Text ?? (cell.Editing ? owner.EditForm(Identity, field) : owner.Display(Identity, field));
             cell.Refresh(text);
             if (cell.TitleDisplay is { } titleDisplay) AutomationProperties.SetAutomationId(titleDisplay, "PlanTitleDisplay" + number);
+            if (cell.AssigneeDisplay is { } assigneeDisplay) {
+                assigneeDisplay.Visibility = cell.Visibility == Visibility.Visible && !cell.Editing ? Visibility.Visible : Visibility.Collapsed;
+                AutomationProperties.SetAutomationId(cell.AssigneeNameDisplay!, "PlanAssigneeName" + number);
+                AutomationProperties.SetAutomationId(cell.AssigneeCountDisplay!, "PlanAssigneeCount" + number);
+            }
             AutomationProperties.SetAutomationId(cell, $"PlanCell{number}_{field}");
             AutomationProperties.SetName(cell, $"ID {(number == 0 ? "新規" : number)} {PlanSheetView.FullName(column)}" + (owner.CellDate(Identity, field) is { } day ? " " + PlanSheetView.DateText(day, true) : ""));
             AutomationProperties.SetHelpText(cell, conflict ? "競合" + (problem is null ? "" : " · " + problem) : problem ?? (changed ? "未発行" : owner.IsCalculated(Identity, field) ? "計算値" : ""));
@@ -558,6 +564,9 @@ internal sealed class PlanSheetCell : TextBox
     internal bool Composing { get; private set; }
     internal bool Editing { get; private set; }
     internal TextBlock? TitleDisplay { get; }
+    internal Grid? AssigneeDisplay { get; }
+    internal TextBlock? AssigneeNameDisplay { get; }
+    internal TextBlock? AssigneeCountDisplay { get; }
     private bool refreshing, endedThisTurn, committing;
     private string shownText = "", editingFrom = "";
     internal PlanSheetCell(PlanSheetRow row, string field)
@@ -567,6 +576,18 @@ internal sealed class PlanSheetCell : TextBox
             TitleDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap,
                 VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
             AutomationProperties.SetAccessibilityView(TitleDisplay, AccessibilityView.Raw);
+        }
+        if (field == PlanField.Assignees) {
+            AssigneeDisplay = new Grid { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
+            AssigneeDisplay.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+            AssigneeDisplay.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            AssigneeNameDisplay = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap };
+            AssigneeCountDisplay = new TextBlock();
+            Grid.SetColumn(AssigneeCountDisplay, 1);
+            AssigneeDisplay.Children.Add(AssigneeNameDisplay); AssigneeDisplay.Children.Add(AssigneeCountDisplay);
+            AutomationProperties.SetAccessibilityView(AssigneeDisplay, AccessibilityView.Raw);
+            AutomationProperties.SetAccessibilityView(AssigneeNameDisplay, AccessibilityView.Raw);
+            AutomationProperties.SetAccessibilityView(AssigneeCountDisplay, AccessibilityView.Raw);
         }
         MinWidth = 0; MinHeight = 26; Height = 26; Padding = new(4, 2, 4, 2); FontSize = 13; BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         if (field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual or PlanField.Predecessors) TextAlignment = TextAlignment.Right;
@@ -578,7 +599,7 @@ internal sealed class PlanSheetCell : TextBox
             if (!Editing) editingFrom = EditOriginal();
             Editing = true; owner.SetInput(row.Identity, Field, Text, editingFrom);
             shownText = Text;
-            RefreshTitleDisplay();
+            RefreshDisplay();
         };
         LostFocus += async (_, _) => {
             if (Composing) return;
@@ -587,7 +608,7 @@ internal sealed class PlanSheetCell : TextBox
             var identity = row.Identity; var text = Text;
             await owner.CommitCell(identity, Field, text);
         };
-        TextCompositionStarted += (_, _) => { if (!Editing) editingFrom = EditOriginal(); Composing = true; Editing = true; RefreshTitleDisplay(); };
+        TextCompositionStarted += (_, _) => { if (!Editing) editingFrom = EditOriginal(); Composing = true; Editing = true; RefreshDisplay(); };
         TextCompositionEnded += (_, _) => {
             Composing = false; endedThisTurn = true;
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => endedThisTurn = false);
@@ -638,18 +659,34 @@ internal sealed class PlanSheetCell : TextBox
             Refresh(owner.Pending.GetValueOrDefault((row.Identity, Field))?.Text ?? owner.Display(row.Identity, Field));
     }
     internal void Rebind() { Editing = false; Composing = false; endedThisTurn = false;
-        if (TitleDisplay is { } display) AutomationProperties.SetAutomationId(display, ""); }
+        if (TitleDisplay is { } display) AutomationProperties.SetAutomationId(display, "");
+        if (AssigneeNameDisplay is { } name) AutomationProperties.SetAutomationId(name, "");
+        if (AssigneeCountDisplay is { } count) AutomationProperties.SetAutomationId(count, ""); }
     internal void Refresh(string text)
     {
         shownText = text;
-        RefreshTitleDisplay();
+        RefreshDisplay();
         if (Text == text) return;
         refreshing = true;
         try { Text = text; }
         finally { refreshing = false; }
     }
-    private void RefreshTitleDisplay()
+    private void RefreshDisplay()
     {
+        if (AssigneeDisplay is { } assignees) {
+            Opacity = Editing ? 1 : 0;
+            assignees.Visibility = !Editing && Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+            assignees.Margin = Padding;
+            var count = row.Owner?.Rows.GetValueOrDefault(row.Identity)?.Assignees.Length ?? 0;
+            var suffix = count > 1 ? $" +{count - 1}" : "";
+            // Pending input is not an accepted summary and must not acquire a count suffix.
+            if (row.Owner?.Pending.ContainsKey((row.Identity, Field)) == true || !shownText.EndsWith(suffix, StringComparison.Ordinal)) suffix = "";
+            AssigneeNameDisplay!.Text = suffix.Length == 0 ? shownText : shownText[..^suffix.Length];
+            AssigneeCountDisplay!.Text = suffix;
+            foreach (var part in new[] { AssigneeNameDisplay, AssigneeCountDisplay }) {
+                part.FontSize = FontSize; part.FontFamily = FontFamily; part.FontWeight = FontWeight; part.Foreground = Foreground;
+            }
+        }
         if (TitleDisplay is not { } display) return;
         // Keep the full TextBox value, focus, hit testing and native input path intact.
         // Only its paint is hidden while the ellipsized display owns presentation.
