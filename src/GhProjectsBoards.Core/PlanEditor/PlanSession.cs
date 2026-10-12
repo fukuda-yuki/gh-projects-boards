@@ -81,7 +81,8 @@ internal sealed class PlanSession
         {
             if (!fromRemote) RequireEditable(command);
             else PlanOperations.Require(remoteOperation && checkpoint.Document.Sync.Publish is null, "列設定を変更できません。");
-            var (state, kind) = PlanOperations.Apply(checkpoint.Document, command, today);
+            var document = checkpoint.Document;
+            var (state, kind) = PlanOperations.Apply(document, command, today);
             var priorSettings = checkpoint.Document.State.Settings;
             var mappingOnly = command is ReplacePlanSettings && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones, SheetColumns = priorSettings.SheetColumns });
             // Column presentation and milestone targets do not change the held schedule.
@@ -95,9 +96,20 @@ internal sealed class PlanSession
             // (only adding or removing its row drops it); like NewTask and Order, its field is not a row
             // value, so it must not be compared through PlanValues.
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = checkpoint.Document with { State = state, Dates = dates, Sync = checkpoint.Document.Sync with { Publish = publish, Failures = checkpoint.Document.Sync.Failures.Where(f => !patch.Rows.Any(r => r.Identity == f.Identity && (r.Before is null || r.After is null || f.Field is PlanField.NewTask or PlanField.Order || f.Field != PlanField.SubIssueOrder && PlanValues.Get(r.Before, f.Field) != PlanValues.Get(r.After, f.Field)))).ToImmutableArray() } }, Undo = undo, Redo = [] };
-            return QueueSave();
+            return SaveAfterPlanningCommand(document, today);
         }
     }
+    private Task<PlanSaveResult> SaveAfterPlanningCommand(PlanDocument before, DateOnly today)
+    {
+        var after = checkpoint.Document;
+        if (before.Dates.Held is null || after.Dates.Held is not null) return QueueSave();
+        var date = after.State.Settings.StatusDate ?? today;
+        var result = new PlanRefreshResult(date, date, PlanOperations.ChangedTaskDates(before, after, today));
+        return WithRecalculation(QueueSave(), result);
+    }
+    private static async Task<PlanSaveResult> WithRecalculation(Task<PlanSaveResult> save, PlanRefreshResult result)
+        // The shared save task and lastSave stay notification-free for later commands and retries.
+        => (await save.ConfigureAwait(false)) with { Recalculation = result };
     public Task<PlanSaveResult> Undo(DateOnly today) => Travel(false, today);
     public Task<PlanSaveResult> Redo(DateOnly today) => Travel(true, today);
     private Task<PlanSaveResult> Travel(bool forward, DateOnly today)
@@ -224,7 +236,7 @@ internal sealed class PlanSession
             patch = DateTransition(patch, document, ReleaseDates(document));
             var undo = checkpoint.Undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = document with { State = state, Dates = ReleaseDates(document), Sync = document.Sync with { Conflicts = conflicts, Publish = publish, LocalOrderChoices = choices } }, Undo = undo, Redo = [] };
-            return QueueSave();
+            return SaveAfterPlanningCommand(document, today);
         }
     }
     public Task<PlanSaveResult> ResolveUnavailable(string identity, bool copyToNew, DateOnly today)
@@ -267,7 +279,7 @@ internal sealed class PlanSession
             patch = DateTransition(patch, document, ReleaseDates(document));
             var undo = checkpoint.Undo.Add(patch); if (undo.Length > HistoryLimit) undo = undo.RemoveAt(0);
             checkpoint = checkpoint with { Revision = checked(checkpoint.Revision + 1), Document = updated with { Dates = ReleaseDates(document) }, Undo = undo, Redo = [] };
-            return QueueSave();
+            return SaveAfterPlanningCommand(document, today);
         }
     }
     internal string? ResetUnavailableReason => Document.Sync is { } sync && (sync.Publish is not null || !sync.Unverified.IsEmpty)

@@ -417,20 +417,23 @@ internal sealed partial class PlanWorkspaceView : UserControl
             RenderTasks(); RenderSettings();
         }
     }
-    private void ShowRefreshResult(PlanRefreshResult result)
+    private bool showingRecalculation;
+    private void ShowRefreshResult(PlanRefreshResult result, bool recalculation = false)
     {
+        showingRecalculation = recalculation;
         var culture = CultureInfo.GetCultureInfo("ja-JP");
         string Date(DateOnly date) => date.ToString("M/d (ddd)", culture);
         var moved = result.PreviousStatusDate != result.StatusDate;
         var direction = result.StatusDate > result.PreviousStatusDate ? "進めて" : "戻して";
-        refreshResult.Title = "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
+        refreshResult.Title = recalculation ? "日程を再計算しました" : "最新の情報に更新しました（" + DateTimeOffset.Now.ToString("M/d H:mm", culture) + "）";
         refreshResult.Message = moved
             ? $"基準日を {Date(result.PreviousStatusDate)} から {Date(result.StatusDate)} に{direction}日程を再計算しました。"
             : $"基準日 {Date(result.StatusDate)} で日程を再計算しました。";
         refreshResult.ActionButton = null;
+        if (recalculation || result.ChangedTasks.Count > 0)
+            refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
         if (result.ChangedTasks.Count > 0)
         {
-            refreshResult.Message += "日程が変わったタスク " + result.ChangedTasks.Count.ToString("N0", culture);
             refreshResult.ActionButton = Button("変更したタスクだけ表示", "PlanRefreshChangedFilter", () => {
                 Show("tasks"); sheet?.FilterChangedTasks(result.ChangedTasks); return Task.CompletedTask;
             });
@@ -439,6 +442,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void CloseRefreshResult()
     {
+        showingRecalculation = false;
         refreshResult.IsOpen = false;
         sheet?.ClearChangedTasksFilter();
     }
@@ -521,7 +525,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
-                next.SaveFeedbackChanged += () => { if (ReferenceEquals(sheet, next)) { saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
+                next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
             }
             taskArea.Children.Clear(); sheet = next; taskArea.Children.Add(sheet);
@@ -552,8 +556,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
         Check(await session.Execute(new ReplacePlanSettings(change(session.Document.State.Settings)), Today));
         RenderTasks();
     }
+    private void ShowPlanningResult(PlanSaveResult save)
+    {
+        if (showingRecalculation && workspace.Session?.Document.Dates.Held is not null) CloseRefreshResult();
+        if (save.Recalculation is { } result) ShowRefreshResult(result, recalculation: true);
+    }
     private void Check(PlanSaveResult save)
     {
+        ShowPlanningResult(save);
         if (!save.Succeeded) throw new IOException(save.Error);
         ClearSaveFailures();
     }

@@ -117,7 +117,7 @@ internal sealed partial class PlanSheetView : Grid
     private bool frameSubscribed;
     internal string WorkDescription => $"loaded={IsLoaded}, disposed={disposed}, commands=[{string.Join(", ", commands.Values)}], tail={tail.Status}, clipboard={clipboardWork}, dragTimer={dragScroll.IsEnabled}, frame={frameSubscribed}, focusTarget={requestedFocus}, pendingCells={Pending.Count}, realizedRows={Realized.Count}, zoomOpen={zoom.IsDropDownOpen}, calendarOpen={statusDate.IsCalendarOpen}";
     internal event Action? Changed;
-    internal event Action? SaveFeedbackChanged;
+    internal event Action<PlanSaveResult>? SaveFeedbackChanged;
     internal PlanSheetView(PlanSession session, Func<Task<PlanClipboardContent>>? readClipboard = null, Action<PlanClipboardContent>? writeClipboard = null, Func<Task>? importCsv = null, Func<DateOnly?, Task>? changeStatusDate = null, bool hostSaveFailure = false, Func<Task>? openColumns = null)
     {
         Session = session;
@@ -414,7 +414,7 @@ internal sealed partial class PlanSheetView : Grid
     internal void Check(PlanSaveResult result)
     {
         if (disposed) return;
-        SaveFeedbackChanged?.Invoke();
+        SaveFeedbackChanged?.Invoke(result);
         if (result.Succeeded) ClearSaveFailure();
         else {
             error.Text = ""; SaveFailure.Message = result.Error ?? "保存できません。再試行してください。";
