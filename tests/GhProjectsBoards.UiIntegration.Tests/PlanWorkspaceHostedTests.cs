@@ -18,6 +18,26 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 [TestFixture, NonParallelizable, Category("PlanWorkspace")]
 internal sealed partial class PlanWorkspaceHostedTests
 {
+    [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true), Category("PlanSheetNative")]
+    public async Task SheetF6CyclesCommandRowAndSelectedCell(bool reverse, bool summary)
+    {
+        await Open();
+        if (summary) {
+            await workspace.Session!.Execute(new InsertPlanRows([PlanRow.New("Child", "acme/repo") with { Parent = "I1" }]), readDay);
+            await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh()); await Ui.Idle();
+        }
+        var cellId = summary ? "PlanCell1_Estimate" : "PlanCell1_Title";
+        await SheetNativeInput.ActivateWindow();
+        await Ui.Run(() => { var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single(); sheet.Select("I1", summary ? PlanField.Estimate : PlanField.Title, false); sheet.FocusSelected(); });
+        await Ui.Until(() => Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot) == Ui.Find<Control>(cellId));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F6, reverse ? [Windows.System.VirtualKey.Shift] : []);
+        await Ui.Run(() => Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot),
+            Is.SameAs(Ui.Find<SelectorBarItem>("PlanShowTasks"))));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F6, reverse ? [Windows.System.VirtualKey.Shift] : []);
+        await Ui.Run(() => Assert.That(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(view.XamlRoot),
+            Is.SameAs(Ui.Find<Control>(cellId))));
+    }
+
     private static void OpenRefreshMenu()
     {
         var split = Ui.Find<SplitButton>("PlanRefresh");

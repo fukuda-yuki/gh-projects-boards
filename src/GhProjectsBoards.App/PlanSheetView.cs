@@ -274,6 +274,17 @@ internal sealed partial class PlanSheetView : Grid
             else filterDelay.Start();
         };
         filterDelay.Tick += async (_, _) => await ApplyFilter();
+        // Escape during or just after IME conversion belongs to the IME, not to leaving the filter.
+        bool filterComposing = false, filterCompositionEnded = false;
+        filter.TextCompositionStarted += (_, _) => filterComposing = true;
+        filter.TextCompositionEnded += (_, _) => {
+            filterComposing = false; filterCompositionEnded = true;
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => filterCompositionEnded = false);
+        };
+        filter.PreviewKeyDown += async (_, args) => {
+            if (args.Key != Windows.System.VirtualKey.Escape || filterComposing || filterCompositionEnded) return;
+            args.Handled = true; await ReturnFromFilter();
+        };
         filter.KeyDown += async (_, args) => {
             if (args.Key != Windows.System.VirtualKey.Enter) return;
             args.Handled = true; await ApplyFilter();

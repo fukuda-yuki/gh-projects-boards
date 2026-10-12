@@ -150,6 +150,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         toolbar.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         tabs.Items.Add(tasksTab); tabs.Items.Add(summaryTab); toolbar.Children.Add(tabs);
         toolbar.Children.Add(commandButtons); Grid.SetColumn(commandButtons, 1);
+        toolbar.PreviewKeyDown += (_, args) => {
+            if (args.Key != Windows.System.VirtualKey.F6 || PlanSheetView.Down(Windows.System.VirtualKey.Control)
+                || PlanSheetView.Down(Windows.System.VirtualKey.Menu) || currentPage != "tasks" || sheet is null) return;
+            args.Handled = true; sheet.FocusSelected();
+        };
         tabs.SelectionChanged += async (_, _) => {
             if (syncingTabs) return;
             var selected = tabs.SelectedItem;
@@ -520,6 +525,10 @@ internal sealed partial class PlanWorkspaceView : UserControl
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
+                next.CommandRowFocusRequested += () => {
+                    if (ReferenceEquals(sheet, next) && FocusManager.FindFirstFocusableElement(toolbar) is Control command)
+                        command.Focus(FocusState.Keyboard);
+                };
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 next.SaveFeedbackChanged += () => { if (ReferenceEquals(sheet, next)) { saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
