@@ -56,9 +56,16 @@ internal static class PlanOperations
     }
     internal static ImmutableHashSet<string> ChangedTaskDates(PlanDocument before, PlanDocument after, DateOnly today)
     {
-        var previous = Schedule(before, today).ToDictionary(t => t.Input.Identity);
+        // Held dates are exactly the baseline; comparing them needs no scheduler pass.
+        var baseline = before.Dates.Held is not null ? before.Baseline.Rows.ToDictionary(r => r.Identity) : null;
+        var previous = before.Dates.Held is not null
+            ? before.State.Rows.ToDictionary(r => r.Identity, r => {
+                var row = baseline!.GetValueOrDefault(r.Identity);
+                return (Start: row?.Start, End: row?.End);
+            })
+            : Schedule(before, today).ToDictionary(t => t.Input.Identity, t => (Start: t.Start.Value, End: t.End.Value));
         return Schedule(after, today).Where(t => !t.IsSummary &&
-            (!previous.TryGetValue(t.Input.Identity, out var old) || old.Start.Value != t.Start.Value || old.End.Value != t.End.Value))
+            (!previous.TryGetValue(t.Input.Identity, out var old) || old.Start != t.Start.Value || old.End != t.End.Value))
             .Select(t => t.Input.Identity).ToImmutableHashSet();
     }
     internal static bool RowEqual(PlanRow? a, PlanRow? b) => ReferenceEquals(a, b) || a is not null && b is not null &&

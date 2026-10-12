@@ -775,6 +775,54 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanTitleDisplay1").Visibility, Is.EqualTo(Visibility.Visible)));
     }
 
+    [TestCase(false, 1), TestCase(false, 2), TestCase(true, 1), TestCase(true, 2)]
+    [Category("SheetRowPresentation")]
+    public async Task LongAssigneeNameTrimsAndAdditionalCountStaysInsideDefaultCell(bool displayName, int count)
+    {
+        const string login = "abcdefghijklmnopqrst";
+        const string japanese = "山田太郎（プロジェクト管理担当）";
+        var name = displayName ? japanese : login;
+        var row = new PlanRow("I1", "Task", "acme/repo") { Assignees = count == 2 ? ["U1", "U2"] : ["U1"] };
+        await MountPresentation([row], [row], displayName ? [new("U1", japanese, 100, null)] : [],
+            ImmutableDictionary<string, string>.Empty.Add("U1", login).Add("U2", "suzuki"));
+        foreach (var selected in new[] { false, true }) {
+            await Select(1, selected ? PlanField.Assignees : PlanField.Title); await Ui.Idle();
+            await Ui.Run(async () => {
+                var cell = Ui.Find<PlanSheetCell>("PlanCell1_Assignees");
+                var label = Ui.Find<TextBlock>("PlanAssigneeName1");
+                var suffix = Ui.Find<TextBlock>("PlanAssigneeCount1");
+                Assert.That(sheet.ConfiguredColumns.Single(c => c.Field == PlanField.Assignees).Width, Is.EqualTo(80));
+                Assert.That(label.Text, Is.EqualTo(name));
+                Assert.That(label.IsTextTrimmed, Is.True);
+                Assert.That(suffix.Text, Is.EqualTo(count == 2 ? " +1" : ""));
+                if (count == 2) {
+                    var bounds = suffix.TransformToVisual(cell).TransformBounds(new(0, 0, suffix.ActualWidth, suffix.ActualHeight));
+                    Assert.That(bounds.Left, Is.GreaterThanOrEqualTo(0));
+                    Assert.That(bounds.Right, Is.LessThanOrEqualTo(cell.ActualWidth));
+                    Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0));
+                    Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(cell.ActualHeight));
+                    Assert.That(suffix.ActualWidth, Is.GreaterThan(0));
+                    Assert.That(suffix.IsTextTrimmed, Is.False);
+                }
+                Assert.That(cell.Text, Is.EqualTo(name + (count == 2 ? " +1" : "")));
+                await RenderedEvidence.Capture(sheetHost, $"assignee-{displayName}-{count}-{selected}");
+            });
+        }
+        await Ui.Run(async () => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell1_Assignees");
+            var full = login + (count == 2 ? ", suzuki" : "");
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.C);
+            Assert.That(clipboard.Text, Is.EqualTo(full));
+            cell.BeginEditing();
+            Assert.That(cell.Text, Is.EqualTo(full));
+            Assert.That(cell.Opacity, Is.EqualTo(1));
+            Assert.That(((FrameworkElement)Ui.Find<TextBlock>("PlanAssigneeName1").Parent).Visibility, Is.EqualTo(Visibility.Collapsed));
+            cell.EndEditing();
+            Assert.That(((FrameworkElement)Ui.Find<TextBlock>("PlanAssigneeName1").Parent).Visibility, Is.EqualTo(Visibility.Visible));
+        });
+        Assert.That(session.UndoCount, Is.Zero);
+    }
+
     [TestCase(0, ""), TestCase(1, "渡辺"), TestCase(2, "渡辺 +1"), TestCase(3, "alice"), TestCase(4, "担当者（未確認）")]
     [Category("SheetRowPresentation")]
     public async Task AssigneeDisplayUsesNameThenLoginWhileEditAndCopyKeepAllInputs(int kind, string expected)
@@ -786,6 +834,8 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(async () => {
             var cell = Ui.Find<PlanSheetCell>("PlanCell1_Assignees");
             Assert.That(cell.Text, Is.EqualTo(expected));
+            Assert.That(Ui.Find<TextBlock>("PlanAssigneeName1").Text, Is.EqualTo(kind == 2 ? "渡辺" : expected));
+            Assert.That(Ui.Find<TextBlock>("PlanAssigneeCount1").Text, Is.EqualTo(kind == 2 ? " +1" : ""));
             Assert.That(ToolTipService.GetToolTip(cell), Is.EqualTo(kind == 2 ? "渡辺, 鈴木" : expected));
             var full = kind switch { 0 => "", 2 => "alice, bob", 4 => "担当者（未確認）", _ => "alice" };
             Assert.That(sheet.EditForm("I1", PlanField.Assignees), Is.EqualTo(full));
@@ -1426,6 +1476,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<FrameworkElement>($"PlanCell{row}_{field}");
         await Ui.Run(() => { var provider = SelectProvider($"PlanCell{row}_{field}"); if (extend) provider.AddToSelection(); else provider.Select(); });
     }
+    private async Task SelectFocusedCell(int row, string field, bool extend = false)
+    {
+        await Select(row, field, extend);
+        // Selection requests focus and scrolling; loaded cells alone do not mean native layout has settled.
+        await Ui.Until(() => Ui.Find<Control>($"PlanCell{row}_{field}").FocusState != FocusState.Unfocused
+            && SelectProvider($"PlanCell{row}_{field}").IsSelected);
+        await SheetNativeInput.Rendered();
+    }
     private async Task Edit(int row, string field, string text)
     {
         await Select(row, field);
@@ -1953,14 +2011,23 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task InsertAndIndentRollUpTheParentAndOutdentRestoresLeafEditing()
     {
-        await Select(3, PlanField.Title);
+        await SelectFocusedCell(3, PlanField.Title);
         await Ui.ClickCommand("PlanSheetInsert"); await Ui.Idle();
+        var inserted = await session.FlushAsync();
+        Assert.That(inserted.Succeeded, Is.True, inserted.Error);
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[2].Repository, Is.EqualTo("acme/repo"));
+        await Ui.Ready<TextBox>("PlanCell3_Title");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Title").Text == ""
+            && Ui.Find<TextBox>("PlanCell3_Title").FocusState != FocusState.Unfocused);
+        await SheetNativeInput.Rendered();
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
-        await Select(3, PlanField.Title);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<TextBox>().Any(cell =>
+            AutomationProperties.GetAutomationId(cell) == "PlanCell3_Title" && cell.IsLoaded && cell.Text == "Task 3"));
+        await SelectFocusedCell(3, PlanField.Title);
         await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.EqualTo("I2"));
+        await Ui.Ready<PlanSummaryCell>("PlanCell2_Remaining");
         await Ui.Run(() => {
             Assert.That(Ui.Find<FrameworkElement>("PlanCell2_Remaining"), Is.Not.InstanceOf<TextBox>());
         });
@@ -1969,6 +2036,8 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
         await Ui.Ready<TextBox>("PlanCell2_Remaining");
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.False));
+        await Ui.Idle();
+        await SelectFocusedCell(2, PlanField.Remaining);
         await Edit(2, PlanField.Remaining, "16");
         Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));
     }

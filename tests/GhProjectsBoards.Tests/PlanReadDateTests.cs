@@ -26,6 +26,64 @@ internal sealed class PlanReadDateTests
         document.Baseline.Rows.ToImmutableDictionary(r => r.Identity, r => "T-" + r.Identity), [], 0, 0);
     private static EditPlanCells Edit(string title) => new(PlanOperationKind.Cell, [new("I2", PlanField.Title, title)]);
 
+    [TestCase(PlanDateHoldOrigin.FirstTakeIn, "edit")]
+    [TestCase(PlanDateHoldOrigin.Reset, "edit")]
+    [TestCase(PlanDateHoldOrigin.Reset, "conflict")]
+    [TestCase(PlanDateHoldOrigin.Reset, "unavailable")]
+    public async Task HoldReleaseReportsChangedTasksOnlyOnTheReleasingCommand(PlanDateHoldOrigin origin, string action)
+    {
+        var document = Document() with { Dates = new(origin) };
+        document = document with { Sync = document.Sync with {
+            Conflicts = [new("I2", PlanField.Title, "\"Task\"", "\"Task\"", "\"Remote\"")],
+            Unavailable = ["I3"]
+        } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        var result = action switch {
+            "conflict" => await session.ResolveConflict("I2", PlanField.Title, true, Day),
+            "unavailable" => await session.ResolveUnavailable("I3", false, Day),
+            _ => await session.Execute(Edit("Edited"), Day)
+        };
+        Assert.That(result.Recalculation, Is.Not.Null);
+        Assert.That(result.Recalculation!.StatusDate, Is.EqualTo(Day));
+        Assert.That(result.Recalculation.ChangedTasks, Is.EquivalentTo(new[] { "I2" }));
+        Assert.That((await session.FlushAsync()).Recalculation, Is.Null);
+        Assert.That((await session.RetrySaveAsync()).Recalculation, Is.Null);
+        Assert.That((await session.Undo(Day)).Recalculation, Is.Null);
+        Assert.That(session.Document.Dates.Held, Is.EqualTo(origin));
+        Assert.That((await session.Redo(Day)).Recalculation, Is.Null);
+        Assert.That(session.Document.Dates.Held, Is.Null);
+        Assert.That((await session.Execute(Edit("Another edit"), Day)).Recalculation, Is.Null);
+        Assert.That((await session.Execute(Edit("Another edit"), Day)).Recalculation, Is.Null);
+        await session.Undo(Day);
+        await session.Undo(Day);
+        Assert.That((await session.Execute(Edit("New release"), Day)).Recalculation, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task HoldReleaseWithUnchangedDatesStillReportsZeroTasks()
+    {
+        var document = Document();
+        var row = document.State.Rows[1] with { Parent = null, Start = Day, End = Day, Remaining = 8 };
+        document = document with { Baseline = document.Baseline with { Rows = [row] }, State = document.State with { Rows = [row] } };
+        var session = await PlanSession.CreateAsync(new(root), document, Day);
+        var result = await session.Execute(Edit("Edited"), Day);
+        Assert.That(result.Recalculation, Is.Not.Null);
+        Assert.That(result.Recalculation!.ChangedTasks, Is.Empty);
+    }
+
+    [Test]
+    public async Task HoldReleaseNoticeIsNotPersistedOnReopen()
+    {
+        var session = await PlanSession.CreateAsync(new(root), Document(), Day);
+        var result = await session.Execute(Edit("Edited"), Day);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(result.Recalculation, Is.Not.Null);
+        var reopened = await PlanSession.OpenAsync(new(root), Project, Day);
+        Assert.That(reopened.Status, Is.EqualTo(PlanLoadStatus.Loaded));
+        Assert.That((await reopened.Session!.FlushAsync()).Recalculation, Is.Null);
+        Assert.That((await reopened.Session.Execute(Edit("After restart"), Day)).Recalculation, Is.Null);
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task SettingsImportPreservesReadDateAndZeroUnpublishedOnLaterReopen(bool hasImportedDate)
     {

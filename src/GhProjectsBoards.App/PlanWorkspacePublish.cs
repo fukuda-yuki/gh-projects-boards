@@ -12,12 +12,18 @@ internal sealed partial class PlanWorkspaceView
     private readonly ListView reviewLines = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "PlanPublishLines");
     private readonly TextBlock publishBlockedReason = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishBlockedReason");
     private readonly TextBlock publishStatusDate = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishStatusDate");
+    private readonly TextBlock publishSummary = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPublishSummary");
+    private readonly TextBlock publishResult = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanPublishResult");
+    private PlanDocument? publishedDocument;
+    private Button openPublish = null!;
+    private int reviewTaskCount;
+    private bool reviewHasWritableChanges, reviewEmpty;
     private Button confirmPublish = null!;
     private bool publishing;
 
     private void InitializePublishing()
     {
-        var open = CommandButton("発行…", "PlanPublish", Symbol.Upload);
+        var open = openPublish = CommandButton("発行…", "PlanPublish", Symbol.Upload);
         open.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
         open.Click += async (_, _) => {
             if (publishing) return;
@@ -28,13 +34,19 @@ internal sealed partial class PlanWorkspaceView
         publishReview.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         confirmPublish = Button("発行する", "PlanPublishConfirm", Publish);
-        var close = Id(new Button { Content = "閉じる" }, "PlanPublishClose");
+        confirmPublish.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+        var close = Id(new Button { Content = "閉じる（変更は保持）" }, "PlanPublishClose");
         close.Click += (_, _) => { if (!closing && !publishing) Show("tasks"); };
         actions.Children.Add(confirmPublish); actions.Children.Add(close);
         var header = new StackPanel { Spacing = 8 };
-        header.Children.Add(actions); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
+        header.Children.Add(actions); header.Children.Add(publishSummary); header.Children.Add(publishResult); header.Children.Add(publishStatusDate); header.Children.Add(publishBlockedReason);
         AutomationProperties.SetLiveSetting(publishBlockedReason, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        AutomationProperties.SetLiveSetting(publishResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         publishReview.Children.Add(header);
+        reviewLines.ContainerContentChanging += (_, args) => {
+            AutomationProperties.SetName(args.ItemContainer, !args.InRecycleQueue && args.Item is PlanPublishReviewGroup group
+                ? string.Join("\n", new[] { group.Caption }.Concat(group.Lines.Select(line => line.Text))) : "");
+        };
         reviewLines.ItemTemplate = (DataTemplate)Application.Current.Resources["PlanPublishGroupTemplate"];
         ScrollViewer.SetHorizontalScrollBarVisibility(reviewLines, ScrollBarVisibility.Disabled);
         ScrollViewer.SetHorizontalScrollMode(reviewLines, ScrollMode.Disabled);
@@ -47,12 +59,21 @@ internal sealed partial class PlanWorkspaceView
     private void RenderReview()
     {
         if (workspace.Session is not { } session) return;
+        ClearObsoletePublishResult();
         var document = session.Document;
-        publishStatusDate.Text = "日付は基準日 " + (document.State.Settings.StatusDate ?? Today).ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))
-            + " で計算したものです。" + (document.Dates.Recalculated switch {
+        var today = Today;
+        var changes = session.Changes(today);
+        var statusDate = document.State.Settings.StatusDate ?? today;
+        var pastStatusDate = statusDate < today;
+        var dateText = statusDate.ToString("yyyy/MM/dd (ddd)", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"));
+        publishStatusDate.Text = (pastStatusDate
+            ? "注意: 基準日 " + dateText + " は今日より前です。「最新の情報に更新」で今日の進捗を取り込めます。"
+            : "日付は基準日 " + dateText + " で計算したものです。") + (document.Dates.Recalculated switch {
                 PlanDateHoldOrigin.FirstTakeIn => "（最初の取り込みのあとの再計算）",
                 PlanDateHoldOrigin.Reset => "（GitHub の状態に戻したあとの再計算）", _ => ""
             });
+        publishStatusDate.Foreground = PlanSheetView.Brush(pastStatusDate ? "SheetChangedMarkBrush" : "TextFillColorPrimaryBrush");
+        AutomationProperties.SetName(publishStatusDate, publishStatusDate.Text);
         var conflicts = PlanOperations.BlockingConflicts(document);
         var groups = new Dictionary<string, PlanPublishReviewGroup>();
         PlanPublishReviewGroup Group(string identity)
@@ -68,9 +89,11 @@ internal sealed partial class PlanWorkspaceView
         {
             var result = scheduled[row.Identity];
             var current = row with { Start = result.Start.Value, End = result.End.Value };
+            // Same rule as PlanOperations.Changes: a closed task publishes its Remaining as 0.
+            if (document.Dates.Held is null && row.Closed && !result.IsSummary) current = current with { Remaining = 0 };
             var isNew = !baseline.TryGetValue(row.Identity, out var before);
             before ??= new(row.Identity, "", row.Repository);
-            if (isNew) Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}"));
+            if (isNew) { Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}")); Group(row.Identity).HasWritableChanges = true; }
             foreach (var field in PlanValues.Fields(before, current))
             {
                 if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
@@ -78,6 +101,7 @@ internal sealed partial class PlanWorkspaceView
                 if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
                 if (oldValue == newValue && conflict is null || isNew && field is PlanField.Title or PlanField.Repository) continue;
+                if (changes.Fields.TryGetValue(row.Identity, out var fields) && fields.Contains(field)) Group(row.Identity).HasWritableChanges = true;
                 Group(row.Identity).Lines.Add(ReviewLine(document, row.Identity, field, oldValue, newValue, conflict, isNew));
             }
         }
@@ -91,6 +115,7 @@ internal sealed partial class PlanWorkspaceView
             if (sibling is null && conflict is null) continue;
             var previous = sibling?.Before ?? PlanOperations.PreviousSiblingOrder(document, parent);
             var children = sibling?.After ?? PlanOperations.PlanChildren(document, parent);
+            if (sibling is not null) Group(parent).HasWritableChanges = true;
             Group(parent).Lines.Add(ReviewLine(document, parent, PlanField.SubIssueOrder, PlanJson.Text(previous), PlanJson.Text(children), conflict, !baseline.ContainsKey(parent)));
         }
         foreach (var conflict in conflicts.Where(c => c.Field == PlanField.Order))
@@ -105,8 +130,11 @@ internal sealed partial class PlanWorkspaceView
             })));
             Group(conflict.Identity).Lines.Add(line);
         }
-        if (session.Changes(Today).Fields.Any(p => p.Value.Contains(PlanField.Order)))
+        if (changes.Fields.Any(p => p.Value.Contains(PlanField.Order)))
+        {
+            Group(document.Project.NodeId).HasWritableChanges = true;
             Group(document.Project.NodeId).Lines.Add(new("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
+        }
         foreach (var identity in document.Sync.Unavailable)
         {
             var line = new PlanPublishReviewLine("GitHubで取得できません");
@@ -122,13 +150,23 @@ internal sealed partial class PlanWorkspaceView
             Group(failure.Identity).Lines.Add(new((failure.Reason == "NotDispatched" ? "未送信: " : "発行失敗: ") + PlanPublishText.Failure(failure)));
         foreach (var identity in document.Sync.Unverified)
             Group(identity).Lines.Add(new("GitHub で未確認 — 最新の情報に更新で確認"));
+        reviewEmpty = groups.Count == 0;
         if (groups.Count == 0) groups.Add("", new("", "", "", () => false) { Lines = [new("未発行の変更はありません")] });
-        reviewLines.ItemsSource = groups.Values.ToArray();
+        var rendered = groups.Values.ToArray();
+        reviewTaskCount = rendered.Count(group => group.HasWritableChanges && group.Identity != document.Project.NodeId);
+        // An interrupted or partly failed publication stays resumable through explicit confirmation.
+        reviewHasWritableChanges = rendered.Any(group => group.HasWritableChanges) || document.Sync.Publish is not null || !document.Sync.Failures.IsEmpty;
+        publishSummary.Text = workspace.Selected is { } project
+            ? $"{project.Title} ({project.OwnerLogin} / プロジェクト {project.Number}) の {reviewTaskCount} タスクを GitHub に書き込みます" : "";
+        publishSummary.Visibility = reviewTaskCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        reviewLines.ItemsSource = rendered;
         UpdatePublishAvailability();
     }
     private void UpdatePublishAvailability()
     {
         var reasons = new List<string>();
+        // An empty review already says 未発行の変更はありません in the list.
+        if (!reviewHasWritableChanges && !reviewEmpty) reasons.Add("書き込む未発行の変更はありません。");
         if (publishing) reasons.Add("発行中です。完了までお待ちください。");
         if (busyKind == "refresh") reasons.Add("最新の情報に更新しています。");
         if (busyKind == "reset") reasons.Add("GitHub の状態に戻しています。");
@@ -141,9 +179,19 @@ internal sealed partial class PlanWorkspaceView
                 reasons.Add($"競合を解決してください（{count}件）。");
             if (!document.Sync.Unavailable.IsEmpty) reasons.Add("GitHubで取得できないタスクを確認してください。");
         }
-        confirmPublish.IsEnabled = reasons.Count == 0;
+        confirmPublish.IsEnabled = reasons.Count == 0 && reviewHasWritableChanges;
         publishBlockedReason.Text = string.Join(" ", reasons);
         publishBlockedReason.Visibility = reasons.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+    private void ClearPublishResult()
+    {
+        publishedDocument = null;
+        publishResult.Text = "";
+        publishResult.Visibility = Visibility.Collapsed;
+    }
+    private void ClearObsoletePublishResult()
+    {
+        if (publishedDocument is not null && !ReferenceEquals(publishedDocument, workspace.Session?.Document)) ClearPublishResult();
     }
     private int ReviewPosition(string identity) => reviewLines.Items.Cast<PlanPublishReviewGroup>().TakeWhile(g => g.Identity != identity).Count();
     private void RestoreReviewPosition(string identity, int position)
@@ -209,7 +257,9 @@ internal sealed partial class PlanWorkspaceView
     }
     private async Task Publish()
     {
-        if (workspace.Session is not { } session || publishing) return;
+        if (workspace.Session is not { } session || publishing || !confirmPublish.IsEnabled) return;
+        var taskCount = reviewTaskCount;
+        ClearPublishResult();
         publishing = true;
         Show("tasks");
         var reporter = BeginBusy("publish", "発行しています");
@@ -243,6 +293,15 @@ internal sealed partial class PlanWorkspaceView
                     publishFailure.IsOpen = !result.Succeeded && !OperationToken.IsCancellationRequested;
                 }
                 RenderTasks();
+                if (result.Succeeded)
+                {
+                    publishedDocument = session.Document;
+                    publishResult.Text = $"{taskCount} タスクを発行しました（{DateTimeOffset.Now.ToString("H:mm", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))}）";
+                    publishResult.Visibility = Visibility.Visible;
+                    (Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.FromElement(publishResult)
+                        ?? Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(publishResult))
+                        ?.RaiseAutomationEvent(Microsoft.UI.Xaml.Automation.Peers.AutomationEvents.LiveRegionChanged);
+                }
             }
         }
         catch (OperationCanceledException) when (OperationToken.IsCancellationRequested) { throw; }
@@ -271,6 +330,7 @@ internal sealed partial class PlanWorkspaceView
 
 internal sealed record PlanPublishReviewGroup(string Identity, string Caption, string IssueCaption, Func<bool> CanAct)
 {
+    internal bool HasWritableChanges { get; set; }
     internal List<PlanPublishReviewLine> Lines { get; init; } = [];
 }
 internal sealed class PlanPublishReviewLine(string text)

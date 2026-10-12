@@ -63,12 +63,15 @@ internal sealed partial class PlanSheetView
         void AddItem(AppBarButton button)
         {
             var item = Id(new MenuFlyoutItem { Text = button.Label, IsEnabled = button.IsEnabled,
+                AllowFocusWhenDisabled = button.AllowFocusWhenDisabled,
                 KeyboardAcceleratorTextOverride = button.KeyboardAcceleratorTextOverride, Icon = button.Icon switch {
                     SymbolIcon icon => new SymbolIcon(icon.Symbol),
                     PathIcon { Tag: string path } => CommandIcon(path),
                     _ => null
                 } }, AutomationProperties.GetAutomationId(button));
             AutomationProperties.SetName(item, button.Label);
+            AutomationProperties.SetHelpText(item, AutomationProperties.GetHelpText(button));
+            ToolTipService.SetToolTip(item, ToolTipService.GetToolTip(button));
             item.Click += (_, _) => {
                 if (remoteBusy || !button.IsEnabled) return;
                 pendingMenuAction = button.Flyout is { } flyout

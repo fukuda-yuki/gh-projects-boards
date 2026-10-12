@@ -127,6 +127,7 @@ internal enum PlanLoadStatus { Missing, Loaded, Blocked }
 internal enum PlanSaveFailure { None, Io, ChangedFile, InvalidFile }
 internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, string? Error, string? Fingerprint)
 {
+    public PlanRefreshResult? Recalculation { get; init; }
     public bool Retryable => Failure == PlanSaveFailure.Io;
 }
 internal sealed record PlanLoadResult(PlanLoadStatus Status, PlanCheckpoint? Checkpoint, string? Fingerprint, string? Error);

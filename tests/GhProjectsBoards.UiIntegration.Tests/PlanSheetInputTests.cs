@@ -14,6 +14,53 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [Test, Category("CommandAvailability")]
+    public async Task FilterExplainsDisabledFoldingInToolbarAndOverflowAndClearsTheReason()
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo");
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1" };
+        await MountPresentation([parent, child], [parent, child]);
+        await Ui.Run(() => sheetHost.Width = 760);
+        await Ui.Until(() => Ui.CommandButton("PlanSheetCollapseAll").IsInOverflow
+            && Ui.CommandButton("PlanSheetExpandAll").IsInOverflow);
+        foreach (var filtered in new[] { true, false }) {
+            await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = filtered ? "Task" : "");
+            await Ui.Until(() => sheet.RowIds.Count == (filtered ? 2 : 3));
+            await Ui.Run(() => {
+                foreach (var id in new[] { "PlanSheetCollapseAll", "PlanSheetExpandAll" })
+                    AssertFolding(Ui.CommandButton(id), filtered);
+                Ui.Click("PlanSheetMore");
+            });
+            await Ui.Ready<MenuFlyoutItem>("PlanSheetCollapseAll");
+            await Ui.Run(() => {
+                foreach (var id in new[] { "PlanSheetCollapseAll", "PlanSheetExpandAll" }) {
+                    var item = Ui.Find<MenuFlyoutItem>(id);
+                    AssertFolding(item, filtered);
+                    if (filtered) Assert.That(item.Focus(FocusState.Keyboard), Is.True);
+                }
+                Ui.Find<AppBarButton>("PlanSheetMore").Flyout.Hide();
+            });
+            await Ui.Idle();
+        }
+        await Ui.Run(() => {
+            sheet.SetRemoteBusy(true);
+            Assert.That(Ui.Find<AppBarButton>("PlanSheetMore").IsEnabled, Is.False);
+            foreach (var id in new[] { "PlanSheetCollapseAll", "PlanSheetExpandAll" }) {
+                var button = Ui.CommandButton(id);
+                Assert.That(AutomationProperties.GetHelpText(button), Is.Empty);
+            }
+            sheet.SetRemoteBusy(false);
+        });
+
+        static void AssertFolding(Control command, bool filtered)
+        {
+            Assert.That(command.IsEnabled, Is.EqualTo(!filtered));
+            Assert.That(AutomationProperties.GetHelpText(command), Is.EqualTo(filtered ? "絞り込み中は折りたためません" : ""));
+            Assert.That(ToolTipService.GetToolTip(command), Is.EqualTo(filtered ? "絞り込み中は折りたためません" : AutomationProperties.GetName(command)));
+            if (filtered) Assert.That(command.AllowFocusWhenDisabled, Is.True);
+        }
+    }
+
     [TestCase(false, false), TestCase(true, false), TestCase(false, true), TestCase(true, true), Category("PlanSheetNative")]
     public async Task HorizontalWheelOverGanttMovesDatesWithoutMovingRowsOrSheet(bool shift, bool header)
     {

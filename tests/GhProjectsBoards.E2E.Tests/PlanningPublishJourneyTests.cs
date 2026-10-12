@@ -57,7 +57,8 @@ public sealed class PlanningPublishJourneyTests
                 Wait(() => !Find("PlanPublishConfirm").Properties.IsOffscreen.ValueOrDefault);
                 if (launch == 0) Assert.That(State().GetProperty("mutationBatches").GetInt32(), Is.Zero);
                 using (var capture = Capture.Element(window)) capture.ToFile(Path.Combine(root, $"review-{launch}.png"));
-                Find("PlanPublishConfirm").AsButton().Invoke();
+                if (Find("PlanPublishConfirm").IsEnabled) Find("PlanPublishConfirm").AsButton().Invoke();
+                else Assert.That(launch, Is.GreaterThan(0), "The first review must contain writable changes.");
                 if (launch == 0 && interrupted)
                 {
                     Wait(() =>
@@ -78,7 +79,7 @@ public sealed class PlanningPublishJourneyTests
                 }
                 else
                 {
-                    Wait(() => Find("PlanUnpublished").Properties.Name.ValueOrDefault == "未発行 0 タスク" && Find("PlanPublishConfirm").IsEnabled);
+                    Wait(() => Find("PlanUnpublished").Properties.Name.ValueOrDefault == "未発行 0 タスク" && Find("PlanPublish").IsEnabled && !Find("PlanPublishConfirm").IsEnabled);
                     var state = State();
                     Assert.That(state.GetProperty("issues").GetArrayLength(), Is.EqualTo(interrupted ? 2 : 1));
                     if (completedBatches >= 0) Assert.That(state.GetProperty("mutationBatches").GetInt32(), Is.EqualTo(completedBatches), "Verified writes must not be sent on restart.");
