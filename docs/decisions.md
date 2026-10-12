@@ -124,11 +124,11 @@ Use one versioned JSON planning checkpoint per host/stable viewer/Project with e
 | Refresh, publish, conflicts and creation guard | #79 |
 | Summary view and settings allowances | #127 |
 | CSV import of new tasks | #82 |
-| Distribution, notices, signing and company-environment validation | Deferred under #76 (previous findings in closed #13) |
+| Distribution, notices, signing and company-environment validation | #92; portable ZIP and draft-release automation, with company-PC and human acceptance remaining |
 
 Required dependencies must not require paid licensing or company-size/revenue eligibility. Local development permission is distinct from binary redistribution permission. Resolve the actual output-to-license/notice manifest before a release; build output alone is not approval to distribute it.
 
-The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. Their applicability to the app-local payloads remains unresolved and blocks distribution. Preserve the exact [terms and package provenance](dependencies.md).
+The parent Windows App SDK and its DWrite/Widgets packages have different redistribution wording. The packaging audit excludes unused Widgets component assets and verifies native payloads against the separately licensed Runtime MSIX, retaining the exact [terms and package provenance](dependencies.md). [Release automation](releases.md) prepares a draft from a main commit with successful CI; it does not establish company-PC or human acceptance.
 
 ### Core scheduling representation (#78)
 

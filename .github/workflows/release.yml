@@ -1,0 +1,183 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag (v1.2.3 or v1.2.3-rc.1); run from main
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'scripts/release-policy*'
+      - 'scripts/Publish-Internal.ps1'
+      - 'scripts/Test-ReleasePackage*'
+      - 'scripts/Test-E2E.ps1'
+      - 'src/**/*.csproj'
+      - 'docs/notices/**'
+      - 'docs/dependencies.md'
+      - 'docs/internal-distribution-ja.md'
+      - 'templates/**'
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.source.outputs.tag }}
+      version: ${{ steps.source.outputs.version }}
+      prerelease: ${{ steps.source.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test release policy
+        run: node --test scripts/release-policy.test.cjs
+      - name: Validate tag, main ancestry and exact-commit CI
+        id: source
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const validate = require('./scripts/release-policy.cjs');
+            const result = await validate({ github, context });
+            for (const [name, value] of Object.entries(result)) core.setOutput(name, value);
+
+  package:
+    needs: validate
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_COMMIT: ${{ needs.validate.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+      - name: Test package verification
+        run: |
+          $pester = [version]'5.9.0'
+          if (-not (Get-Module -ListAvailable Pester | Where-Object Version -eq $pester)) {
+            Install-Module Pester -RequiredVersion $pester -Scope CurrentUser -Force
+          }
+          Import-Module Pester -RequiredVersion $pester
+          $result = Invoke-Pester -Path scripts/Test-ReleasePackage.Tests.ps1 -PassThru -Output Detailed
+          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) { throw 'Package verification tests failed.' }
+      - name: Publish self-contained Windows x64 package and audit dependencies
+        run: ./scripts/Publish-Internal.ps1 -ArtifactsRoot "$env:RUNNER_TEMP/ghpb-package" -Version $env:RELEASE_VERSION
+      - name: Extract and verify the distributable
+        id: extract
+        run: |
+          $records = @(Get-ChildItem "$env:RUNNER_TEMP/ghpb-package" -Recurse -Filter result.json)
+          if ($records.Count -ne 1) { throw 'Expected exactly one audited package.' }
+          $result = Get-Content -LiteralPath $records[0].FullName -Raw | ConvertFrom-Json
+          $zip = Join-Path $records[0].DirectoryName $result.zip
+          if ((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash -ne $result.sha256) { throw 'ZIP hash differs.' }
+          $extracted = Join-Path $env:RUNNER_TEMP 'ghpb-extracted'
+          Expand-Archive -LiteralPath $zip -DestinationPath $extracted
+          $app = ./scripts/Test-ReleasePackage.ps1 -PackageRoot "$extracted/GhProjectsBoards-win-x64" -ExpectedCommit $env:RELEASE_COMMIT -ExpectedVersion $env:RELEASE_VERSION
+          "app=$app" >> $env:GITHUB_OUTPUT
+          $assets = New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ghpb-release-assets"
+          Copy-Item -LiteralPath $zip -Destination $assets
+          "$($result.sha256.ToLowerInvariant())  $($result.zip)" | Set-Content "$assets/SHA256SUMS.txt" -Encoding utf8NoBOM
+      - name: Exercise the extracted app through fake gh
+        env:
+          RELEASE_APP: ${{ steps.extract.outputs.app }}
+        run: |
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force
+          dotnet restore GhProjectsBoards.sln
+          if ($LASTEXITCODE -ne 0) { throw 'E2E restore failed.' }
+          ./scripts/Test-E2E.ps1 -Configuration Release -AppPath $env:RELEASE_APP
+      - name: Retain package and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-evidence
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/ghpb-package/**/source.json
+            ${{ runner.temp }}/ghpb-package/**/command.json
+            ${{ runner.temp }}/ghpb-package/**/result.json
+            ${{ runner.temp }}/ghpb-package/**/publish.log
+            ${{ runner.temp }}/ghpb-package/**/failure.txt
+            TestResults/e2e
+          if-no-files-found: warn
+      - name: Retain verified release assets
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/ghpb-release-assets/*
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  draft:
+    if: github.event_name != 'pull_request'
+    needs: [validate, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recheck tag and CI before creating a draft
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          EXPECTED_COMMIT: ${{ needs.validate.outputs.sha }}
+        with:
+          script: |
+            const validate = require('./scripts/release-policy.cjs');
+            const result = await validate({ github, context });
+            if (result.sha !== process.env.EXPECTED_COMMIT) throw new Error('Tag moved during packaging.');
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Verify transferred assets and prepare notes
+        env:
+          RELEASE_COMMIT: ${{ needs.validate.outputs.sha }}
+        working-directory: release-assets
+        run: |
+          sha256sum --check SHA256SUMS.txt
+          cat > ../release-notes.md <<EOF
+          Windows 11 x64 / self-contained ZIP (.NET and Windows App SDK included).
+          Extract the complete ZIP and read 使い方.md. GitHub CLI must be installed and authenticated separately.
+
+          Source: ${RELEASE_COMMIT}
+          Validation: dependency/notices audit, payload hashes and extracted-app E2E through fake gh.
+          Clean-company-PC, physical Japanese IME and full-working-day acceptance remain separate under #92.
+          EOF
+      - name: Create draft Release (never publish automatically)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        run: |
+          args=(--draft --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md --generate-notes)
+          if [[ "$RELEASE_PRERELEASE" == 'true' ]]; then args+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" release-assets/* "${args[@]}"

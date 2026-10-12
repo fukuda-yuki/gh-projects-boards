@@ -1,6 +1,10 @@
 #requires -Version 7.0
 [CmdletBinding()]
-param([string]$ArtifactsRoot)
+param(
+    [string]$ArtifactsRoot,
+    [ValidatePattern('\A(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(rc|pr)\.[1-9][0-9]*)?\z')]
+    [string]$Version
+)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = Split-Path $PSScriptRoot -Parent
@@ -37,6 +41,7 @@ try {
     $arguments = @('publish', (Join-Path $repo 'src/GhProjectsBoards.App/GhProjectsBoards.App.csproj'), '-c', 'Release', '-r', 'win-x64',
         '--self-contained', 'true', '--artifacts-path', $build, '-o', $package,
         '-p:WindowsAppSDKSelfContained=true', '-p:DebugType=None', '-p:DebugSymbols=false', '-p:ContinuousIntegrationBuild=true')
+    if ($Version) { $arguments += "-p:Version=$Version" }
     JsonFile ([ordered]@{ executable = 'dotnet'; arguments = $arguments; sdk = $sdk }) (Join-Path $run 'command.json')
     & dotnet @arguments 2>&1 | Tee-Object -FilePath (Join-Path $run 'publish.log') | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'Publish failed; logs and partial output are retained.' }
@@ -173,13 +178,14 @@ try {
         [ordered]@{ path = $relative; bytes = $_.Length; sha256 = Hash $_.FullName; origin = $origins[$relative] }
     })
     $manifest = [ordered]@{ format = 1; platform = 'Windows 11 x64'; packaging = 'unpackaged self-contained'; sdk = $sdk;
-        sourceCommit = $head; sourceDirty = $status.Count -gt 0; sourceManifestSha256 = Hash (Join-Path $run 'source.json');
+        version = $Version; sourceCommit = $head; sourceDirty = $status.Count -gt 0; sourceManifestSha256 = Hash (Join-Path $run 'source.json');
         runtimeMsix = [ordered]@{ package = $runtimeId[0]; sha256 = Hash $runtimeMsix };
         validation = [ordered]@{ widgetComponentExcluded = $true; binaryOriginsVerified = $true; applicationResourcesVerified = $resources;
             cleanPc = 'not established'; humanAcceptance = 'not established' };
         files = $payload }
     JsonFile $manifest (Join-Path $package 'distribution-manifest.json')
-    $zip = Join-Path $run 'GhProjectsBoards-win-x64.zip'
+    $zipName = if ($Version) { "GhProjectsBoards-$Version-win-x64.zip" } else { 'GhProjectsBoards-win-x64.zip' }
+    $zip = Join-Path $run $zipName
     [IO.Compression.ZipFile]::CreateFromDirectory($package, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
     JsonFile ([ordered]@{ zip = [IO.Path]::GetFileName($zip); sha256 = Hash $zip; bytes = (Get-Item -LiteralPath $zip).Length;
         files = $payload.Count + 1; checks = 'Widgets assets excluded; all binary origins verified; notices retained' }) (Join-Path $run 'result.json')
