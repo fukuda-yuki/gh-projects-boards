@@ -41,10 +41,10 @@ internal sealed class PlanPublishReviewHostedTests
             new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
         await Ui.Mount(view);
     }
-    private async Task Open(int count)
+    private async Task Open(int count, DateOnly? publishedDay = null)
     {
         FakePlanEditor.Save(root, new(Enumerable.Range(1, count).Select(i => new PlanFakeIssue(
-            new("I" + i, "要求タスク " + i, "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0 }, "", true)).ToImmutableArray(), count + 1));
+            new("I" + i, "要求タスク " + i, "acme/repo") { Estimate = 8, Remaining = 8, Actual = 0, Start = publishedDay, End = publishedDay }, "", true)).ToImmutableArray(), count + 1));
         await Ui.Run(() => Ui.Click("PlanConnect"));
         await Ui.Until(() => workspace.Available.Count == 2 || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
         await Ui.Run(() => { Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty); Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0; });
@@ -66,6 +66,181 @@ internal sealed class PlanPublishReviewHostedTests
         }
         finally { Ui.EndTest(); }
     }
+    [Test, Category("PublishOutcome")]
+    public async Task ReviewNamesDestinationAndChangesAndClosingKeepsWork()
+    {
+        await Open(2);
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste,
+                [new("I1", PlanField.Title, "変更したタスク"), new("I1", PlanField.Actual, 3m), new("I2", PlanField.Actual, 2m)]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Run(() => {
+            var project = workspace.Selected!;
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Is.EqualTo($"{project.Title} ({project.OwnerLogin} / プロジェクト {project.Number}) の 2 タスクを GitHub に書き込みます"));
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            Assert.That(list.Items.Count, Is.EqualTo(2));
+            var name = new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(0)).GetName();
+            Assert.That(name, Does.Contain("変更したタスク").And.Contain("要求タスク 1 → 変更したタスク").And.Contain("実績工数  0h → 3h").And.Not.Contain("PlanPublishReviewGroup"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"]));
+            Assert.That(Ui.Find<Button>("PlanPublish").Style, Is.Not.SameAs(Application.Current.Resources["AccentButtonStyle"]));
+            Assert.That(Ui.Find<Button>("PlanPublishClose").Content, Is.EqualTo("閉じる（変更は保持）"));
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublish").Style, Is.SameAs(Application.Current.Resources["AccentButtonStyle"])));
+        Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.EqualTo(2));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [TestCase("edit"), TestCase("refresh"), TestCase("reset"), TestCase("project"), Category("PublishOutcome")]
+    public async Task SuccessDisablesPublicationAndRetainsResultUntilNextWork(string next)
+    {
+        await Open(1);
+        await Ui.Run(() => Ui.Click("PlanPublish"));
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False));
+        await Ui.Run(async () => {
+            Ui.Click("PlanPublishClose");
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "発行したタスク")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "issue138-review"));
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanPublishResult").Visibility == Visibility.Visible && Ui.Find<Button>("PlanPublish").IsEnabled);
+        string result = "";
+        await Ui.Run(async () => {
+            result = Ui.Find<TextBlock>("PlanPublishResult").Text;
+            Assert.That(result, Does.Match(@"^1 タスクを発行しました（\d{1,2}:\d{2}）$"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.False);
+            await RenderedEvidence.Capture(view, "issue138-result");
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Run(() => Ui.Click("PlanPublish")); await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanPublishResult").Text, Is.EqualTo(result));
+            Ui.Click("PlanPublishClose");
+        });
+        await Ui.Idle();
+        if (next == "edit")
+        {
+            await Ui.Run(() => { var title = Ui.Find<TextBox>("PlanCell1_Title"); title.Focus(FocusState.Programmatic); title.Text = "次の変更"; Ui.Click("PlanPublish"); });
+            await Ui.Until(() => workspace.Session!.Document.State.Rows[0].Title == "次の変更");
+        }
+        else if (next == "project")
+        {
+            await Ui.Run(() => Ui.Click("PlanProjectPicker"));
+            await Ui.Ready<Button>("PlanChooseProject");
+            await Ui.Run(() => Ui.Click("PlanChooseProject"));
+            await Ui.Ready<ListView>("AvailableProjects");
+            await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 1);
+            await Ui.Until(() => workspace.Selected!.Id == workspace.Available[1].Id && Ui.Find<Button>("PlanPublish").IsEnabled);
+        }
+        else
+        {
+            await Ui.Run(() => {
+                if (next == "refresh") Ui.Click("PlanRefresh");
+                else ((Microsoft.UI.Xaml.Automation.Provider.IExpandCollapseProvider)Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<SplitButton>("PlanRefresh"))
+                    .GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.ExpandCollapse)).Expand();
+            });
+            if (next == "reset")
+            {
+                await Ui.Until(() => Ui.Popup<MenuFlyoutItem>("PlanReset") is { IsLoaded: true, IsEnabled: true });
+                await Ui.Run(() => {
+                    var item = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
+                        .SelectMany(p => Ui.Tree(p.Child)).OfType<MenuFlyoutItem>().Single(i => AutomationProperties.GetAutomationId(i) == "PlanReset");
+                    ((Microsoft.UI.Xaml.Automation.Provider.IInvokeProvider)Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(item)
+                        .GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke)).Invoke();
+                });
+                await Ui.DialogReady("PlanResetConfirm");
+                await Ui.Run(() => Ui.DialogButton("PlanResetConfirm", "PrimaryButton"));
+            }
+            await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled
+                && Ui.Find<TextBlock>("PlanPublishResult").Visibility == Visibility.Collapsed);
+        }
+        await Ui.Run(() => Ui.Click("PlanPublish")); await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanPublishResult").Visibility, Is.EqualTo(Visibility.Collapsed)));
+    }
+
+    [TestCase(false, true), TestCase(true, true), TestCase(false, false), TestCase(true, false), Category("PublishOutcome")]
+    public async Task InformationalGroupsDoNotCountAsWritableTasks(bool edit, bool datesAlreadyPublished)
+    {
+        readDay = new(2026, 10, 6);
+        await Open(2, datesAlreadyPublished ? readDay : null);
+        await Ui.Run(async () => {
+            var session = workspace.Session!;
+            var baseline = session.Document.Baseline;
+            baseline = baseline with { Columns = baseline.Columns.Add(new("DeletedNote", "Review notes", "TEXT")),
+                Rows = baseline.Rows.Select(r => PlanValues.Set(r, "Project:DeletedNote", "\"original\"")).ToImmutableArray() };
+            await session.AcceptRefresh(new(baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today, refresh: false);
+            await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", "Project:DeletedNote", "保持するメモ")]), Today);
+            var deleted = baseline with { Columns = baseline.Columns.RemoveAt(baseline.Columns.Length - 1),
+                Rows = baseline.Rows.Select(r => r with { ExtraValues = r.ExtraValues.Remove("Project:DeletedNote") }).ToImmutableArray() };
+            await session.AcceptRefresh(new(deleted, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today, refresh: false);
+            if (edit) await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "書き込み対象")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI2");
+        await Ui.Run(() => {
+            var expectedTasks = datesAlreadyPublished ? (edit ? 1 : 0) : 2;
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"の {expectedTasks} タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.EqualTo(expectedTasks > 0));
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI2")).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("GitHub で削除されたフィールド"));
+            Assert.That(text, datesAlreadyPublished ? Does.Not.Contain("開始日") : Does.Contain("開始日").And.Contain("終了日"));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PublishOutcome")]
+    public async Task ClosedTaskRemainingZeroIsReviewedAndPublishable()
+    {
+        readDay = new(2026, 10, 6);
+        await Open(2, readDay);
+        var remote = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, remote with { Issues = remote.Issues.Select(i => i.Row.Identity == "I1"
+            ? i with { Row = i.Row with { Closed = true, CloseDate = readDay, Status = "Done" } } : i).ToImmutableArray() });
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled && workspace.Session!.Document.State.Rows[0].Closed);
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I2", PlanField.Title, "別の変更")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroupI1");
+        var expected = workspace.Session!.Changes(Today).TaskCount;
+        Assert.That(expected, Is.EqualTo(2), "Precondition: Core publishes the closed task's Remaining 0.");
+        await Ui.Run(() => {
+            var text = string.Join(" ", Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroupI1")).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(text, Does.Contain("見込み残存工数  8h → 0h"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain($"の {expected} タスクを GitHub に書き込みます"));
+            Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PublishOutcome")]
+    public async Task PartialFailureKeepsTaskFailureAndDoesNotClaimSuccess()
+    {
+        await Open(2);
+        File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true,\"planFault\":\"partial\"}");
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Paste,
+                [new("I1", PlanField.Title, "変更1"), new("I2", PlanField.Title, "変更2")]), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Find<Button>("PlanPublishConfirm").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanPublishConfirm"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanPublishFailure").IsOpen && Ui.Find<Button>("PlanPublish").IsEnabled);
+        await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>()
+            .Any(text => text.IsLoaded && text.ActualHeight > 0 && text.Text.Contains("発行失敗")));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanPublishResult").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(string.Join(" ", Ui.Tree(Ui.Find<ListView>("PlanPublishLines")).OfType<TextBlock>().Select(t => t.Text)), Does.Contain("発行失敗").And.Contain("Synthetic failure"));
+        });
+    }
+
     [TestCase(false), TestCase(true), Category("PlanReadDate")]
     public async Task ReviewNamesCalculationDateAndFirstTakeInOrigin(bool refresh)
     {
@@ -205,6 +380,7 @@ internal sealed class PlanPublishReviewHostedTests
             var list = Ui.Find<ListView>("PlanPublishLines");
             var last = (ListViewItem)list.ContainerFromIndex(1039);
             var text = string.Join("\n", Ui.Tree(last).OfType<TextBlock>().Select(t => t.Text));
+            Assert.That(AutomationProperties.GetName(last), Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h").And.Not.Contain("1 要求タスク 1\n"));
             Assert.That(text, Does.Contain("要求タスク 1040").And.Contain("見積工数  8h → 16h")
                 .And.Contain("実績工数  0h → 3h").And.Contain("見込み残存工数  8h → 13h"));
             Assert.That(Ui.Find<Button>("PlanPublishConfirm").IsEnabled, Is.True);

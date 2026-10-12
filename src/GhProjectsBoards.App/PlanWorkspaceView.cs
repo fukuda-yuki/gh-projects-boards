@@ -303,6 +303,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void UpdateStatus()
     {
+        ClearObsoletePublishResult();
         if (workspace.Session is not { } session) return;
         var count = sheet?.Session == session ? sheet.Unpublished.TaskCount : session.Changes(Today).TaskCount;
         unpublished.Text = count > 0 ? count.ToString("N0", CultureInfo.GetCultureInfo("ja-JP")) : "未発行 0 タスク";
@@ -389,6 +390,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private Task RefreshRemote() => ReadRemote(false);
     private async Task ReadRemote(bool reset)
     {
+        ClearPublishResult();
         var reporter = BeginBusy(reset ? "reset" : "refresh", reset ? "GitHub の状態に戻しています" : "最新の情報を取得しています");
         var outcome = reset ? "GitHub の状態に戻す操作を中止しました" : "更新を中止しました";
         try {
@@ -478,6 +480,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     {
         if (page != "tasks") sheet?.CancelPendingFilter();
         currentPage = page; SyncTabs();
+        openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
         publishReview.Visibility = page == "publish" ? Visibility.Visible : Visibility.Collapsed;
@@ -492,7 +495,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         projectMetadata.Text = workspace.Selected is { } project ? $"{project.OwnerLogin} · プロジェクト {project.Number}" : "";
         title.Text = workspace.Selected?.Title ?? "GitHub Projects";
     }
-    private void Opened() { ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); RefreshLists(); RenderTasks(); Show("tasks"); }
+    private void Opened() { ClearPublishResult(); ClearSaveFailures(); refreshFailure.IsOpen = publishFailure.IsOpen = false; settingsGeneration++; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); RefreshLists(); RenderTasks(); Show("tasks"); }
     private void RefreshLists()
     {
         rendering = true;
