@@ -702,7 +702,13 @@ internal sealed partial class PlanWorkspaceHostedTests
             Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
             Ui.Click("PlanPublish");
         });
-        await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => t.Text.Contains("CSV task")));
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, ActualHeight: > 0 });
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            // The sheet also contains CSV task; its text does not prove this review group is realized.
+            list.ScrollIntoView(list.Items.Cast<PlanPublishReviewGroup>().Single(g => g.Identity == row.Identity), ScrollIntoViewAlignment.Leading);
+        });
+        await Ui.Ready<PlanPublishGroupView>("PlanPublishGroup" + row.Identity);
         await Ui.Run(async () => {
             var lines = Ui.Tree(Ui.Find<PlanPublishGroupView>("PlanPublishGroup" + row.Identity)).OfType<TextBlock>().Select(t => t.Text).ToArray();
             Assert.That(string.Join(" ", lines), Does.Not.Contain("未入力 →").And.Not.Contain(reason).And.Contain(text));
@@ -1788,11 +1794,16 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open(); await Settings();
         await CommitText("PlanProjectStart", "invalid");
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0);
-        await Ui.Run(() => {
-            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Not.Empty);
-        });
+        // Error text precedes the low-priority focus/scroll recovery that can dismiss a newly opened picker.
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.Length > 0
+            && Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
+            && Ui.Find<TextBox>("PlanProjectStart").FocusState != FocusState.Unfocused);
+        await SheetNativeInput.Rendered();
         await PickerCommand("PlanChooseProject");
+        if (pickerClosed is { } closingPicker) await closingPicker.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await Ui.Until(() => Ui.Popup<Border>("SettingsInputProblem") is { IsLoaded: true }
+            && Ui.Find<TextBox>("PlanProjectStart").FocusState != FocusState.Unfocused);
+        await SheetNativeInput.Rendered();
         await Ui.Idle();
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBox>("PlanProjectStart").Text, Is.EqualTo("invalid"));
@@ -1801,6 +1812,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await CommitText("PlanProjectStart", "2026-10-07");
         await Ui.Until(() => workspace.Session!.Document.State.Settings.ProjectStart == new DateOnly(2026, 10, 7));
+        await Ui.Idle();
     }
 
     [Test]

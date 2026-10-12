@@ -1428,6 +1428,14 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Ready<FrameworkElement>($"PlanCell{row}_{field}");
         await Ui.Run(() => { var provider = SelectProvider($"PlanCell{row}_{field}"); if (extend) provider.AddToSelection(); else provider.Select(); });
     }
+    private async Task SelectFocusedCell(int row, string field, bool extend = false)
+    {
+        await Select(row, field, extend);
+        // Selection requests focus and scrolling; loaded cells alone do not mean native layout has settled.
+        await Ui.Until(() => Ui.Find<Control>($"PlanCell{row}_{field}").FocusState != FocusState.Unfocused
+            && SelectProvider($"PlanCell{row}_{field}").IsSelected);
+        await SheetNativeInput.Rendered();
+    }
     private async Task Edit(int row, string field, string text)
     {
         await Select(row, field);
@@ -1881,14 +1889,23 @@ internal sealed partial class PlanSheetHostedTests
     [Test]
     public async Task InsertAndIndentRollUpTheParentAndOutdentRestoresLeafEditing()
     {
-        await Select(3, PlanField.Title);
+        await SelectFocusedCell(3, PlanField.Title);
         await Ui.ClickCommand("PlanSheetInsert"); await Ui.Idle();
+        var inserted = await session.FlushAsync();
+        Assert.That(inserted.Succeeded, Is.True, inserted.Error);
         Assert.That(session.Document.State.Rows.Length, Is.EqualTo(101));
         Assert.That(session.Document.State.Rows[2].Repository, Is.EqualTo("acme/repo"));
+        await Ui.Ready<TextBox>("PlanCell3_Title");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Title").Text == ""
+            && Ui.Find<TextBox>("PlanCell3_Title").FocusState != FocusState.Unfocused);
+        await SheetNativeInput.Rendered();
         await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
-        await Select(3, PlanField.Title);
+        await Ui.Until(() => Ui.Tree(sheet).OfType<TextBox>().Any(cell =>
+            AutomationProperties.GetAutomationId(cell) == "PlanCell3_Title" && cell.IsLoaded && cell.Text == "Task 3"));
+        await SelectFocusedCell(3, PlanField.Title);
         await Ui.ClickCommand("PlanSheetIndent"); await Ui.Idle();
         Assert.That(session.Document.State.Rows[2].Parent, Is.EqualTo("I2"));
+        await Ui.Ready<PlanSummaryCell>("PlanCell2_Remaining");
         await Ui.Run(() => {
             Assert.That(Ui.Find<FrameworkElement>("PlanCell2_Remaining"), Is.Not.InstanceOf<TextBox>());
         });
@@ -1897,6 +1914,8 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.Document.State.Rows[2].Parent, Is.Null);
         await Ui.Ready<TextBox>("PlanCell2_Remaining");
         await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanCell2_Remaining").IsReadOnly, Is.False));
+        await Ui.Idle();
+        await SelectFocusedCell(2, PlanField.Remaining);
         await Edit(2, PlanField.Remaining, "16");
         Assert.That(session.Document.State.Rows[1].Remaining, Is.EqualTo(16));
     }
