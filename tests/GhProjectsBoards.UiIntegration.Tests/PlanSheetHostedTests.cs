@@ -171,9 +171,7 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
 
-    [TestCase(Windows.System.VirtualKey.F6, false, false)]
     [TestCase(Windows.System.VirtualKey.F10, false, false)]
-    [TestCase(Windows.System.VirtualKey.F, true, false)]
     [TestCase(Windows.System.VirtualKey.Tab, true, false)]
     [TestCase(Windows.System.VirtualKey.Left, false, true)]
     [Category("PlanSheetNative")]
@@ -1676,6 +1674,80 @@ internal sealed partial class PlanSheetHostedTests
         }
         finally { await Ui.Run(() => preserved?.Dispose()); }
     }
+    [TestCase(1, false), TestCase(2, false)]
+    [TestCase(1, true, Category = "PlanSheetNative"), TestCase(2, true, Category = "PlanSheetNative")]
+    public async Task SingleCellCtrlDCopiesAboveAsOneUndoOrDoesNothingOnFirstRow(int number, bool native)
+    {
+        await Select(number, PlanField.Title);
+        if (native) {
+            await SheetNativeInput.Click($"PlanCell{number}_Title");
+            await SheetNativeInput.Press(Windows.System.VirtualKey.D, Windows.System.VirtualKey.Control);
+        } else await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.D));
+        await Ui.Idle();
+        Assert.That(session.Document.State.Rows[number - 1].Title, Is.EqualTo("Task 1"));
+        Assert.That(session.UndoCount, Is.EqualTo(number == 1 ? 0 : 1));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
+        if (number == 2) {
+            await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
+            Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Task 2"));
+            Assert.That(session.UndoCount, Is.Zero);
+        }
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>($"PlanCell{number}_Title").Text, Is.EqualTo($"Task {number}")));
+    }
+
+    [Test]
+    public async Task SingleCellCtrlDSkipsReadOnlySourceWithoutChangingHistory()
+    {
+        await session.Execute(new IndentPlanRows(["I3"]), Today);
+        await Ui.Run(() => sheet.Refresh()); await Ui.Idle();
+        await Select(3, PlanField.Remaining);
+        var before = PlanJson.Text(session.Document);
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.D)); await Ui.Idle();
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty));
+    }
+
+    [Test]
+    public async Task SingleCellCtrlDUsesPreviousVisibleRow()
+    {
+        await Edit(1, PlanField.Title, "Visible source");
+        await Edit(3, PlanField.Title, "Visible target");
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Visible");
+        await Ui.Until(() => sheet.RowIds.Contains("I3") && !sheet.RowIds.Contains("I2"));
+        await Select(3, PlanField.Title);
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.D)); await Ui.Idle();
+        Assert.That(session.Document.State.Rows[2].Title, Is.EqualTo("Visible source"));
+        Assert.That(session.Document.State.Rows[1].Title, Is.EqualTo("Task 2"));
+        Assert.That(session.UndoCount, Is.EqualTo(3));
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.Z)); await Ui.Idle();
+        Assert.That(session.Document.State.Rows[2].Title, Is.EqualTo("Visible target"));
+    }
+
+    [TestCase(false), TestCase(true), Category("PlanSheetNative")]
+    public async Task SheetSearchEscapeReturnsToTheSameCellAndKeepsFilter(bool summary)
+    {
+        if (summary) {
+            await Ui.Run(async () => {
+                await session.Execute(new IndentPlanRows(["I3"]), Today); sheet.Refresh();
+            });
+            await Ui.Idle();
+        }
+        var field = summary ? PlanField.Estimate : PlanField.Title;
+        await Select(2, field);
+        await SheetNativeInput.Click($"PlanCell2_{field}");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F, Windows.System.VirtualKey.Control);
+        await Ui.Run(() => Assert.That(FocusManager.GetFocusedElement(sheet.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PlanSheetFilter"))));
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Escape);
+        await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(FocusManager.GetFocusedElement(sheet.XamlRoot), Is.SameAs(Ui.Find<Control>($"PlanCell2_{field}")));
+            Assert.That(Ui.Find<TextBox>("PlanSheetFilter").Text, Is.EqualTo("Task"));
+        });
+        Assert.That(session.UndoCount, Is.EqualTo(summary ? 1 : 0));
+    }
+
     [Test, Category("PlanSheetNative")]
     public async Task NativeCtrlDDeleteUndoRedoUseOneOperationForTheSelectedColumn()
     {

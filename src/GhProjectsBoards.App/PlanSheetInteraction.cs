@@ -176,8 +176,33 @@ internal sealed partial class PlanSheetView
         Select(RowIds[Math.Clamp(row, 0, RowIds.Count - 1)], Fields[Math.Clamp(column, 0, Fields.Length - 1)], extend);
         FocusSelected();
     }
+    internal event Action? CommandRowFocusRequested;
+    private (string Identity, string Field)? filterReturnCell;
+    internal bool HandleFocusShortcut(VirtualKey key)
+    {
+        if (Down(VirtualKey.Menu)) return false;
+        if (key == VirtualKey.F && Down(VirtualKey.Control)) {
+            filterReturnCell = (selected, selectedField);
+            CancelRequestedFocus();
+            return filter.Focus(FocusState.Keyboard);
+        }
+        if (key == VirtualKey.F6 && !Down(VirtualKey.Control) && CommandRowFocusRequested is not null) {
+            CancelRequestedFocus();
+            CommandRowFocusRequested();
+            return true;
+        }
+        return false;
+    }
+    private async Task ReturnFromFilter()
+    {
+        await ApplyFilter();
+        if (filterReturnCell is { } cell && RowIds.Contains(cell.Identity) && Fields.Contains(cell.Field))
+            Select(cell.Identity, cell.Field, false);
+        filterReturnCell = null;
+        FocusSelected();
+    }
     private (string Identity, string Field)? requestedFocus;
-    private void FocusSelected()
+    internal void FocusSelected()
     {
         requestedFocus = (selected, selectedField);
         List.LayoutUpdated -= FocusAfterLayout;
@@ -384,6 +409,14 @@ internal sealed partial class PlanSheetView
     internal async Task Fill(PlanOperationKind kind)
     {
         var range = Range; var rows = RangeRows(range);
+        if (kind == PlanOperationKind.CtrlD && range.RowCount == 1 && range.ColumnCount == 1) {
+            if (range.Row == 0) return;
+            var source = RowIds[range.Row - 1]; var sourceField = Fields[range.Column];
+            if (!Rows.ContainsKey(source) || ReadOnly(source, sourceField)) return;
+            RequireNoPending([source, .. rows], [sourceField]);
+            Check(await Session.Execute(FillCommand(kind, source, rows, sourceField), Today)); Refresh();
+            return;
+        }
         if (range.ColumnCount != 1 || rows.Length < 2) throw new ArgumentException("同じ列の2行以上を選択してください。");
         var field = Fields[range.Column]; RequireNoPending(rows, [field]);
         if (Display(rows[0], field).Length == 0) throw new ArgumentException("空値からコピーできません。クリアを使ってください。");

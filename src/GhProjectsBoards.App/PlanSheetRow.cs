@@ -700,7 +700,8 @@ internal sealed class PlanSheetCell : TextBox
         if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
         if (Composing || endedThisTurn) { base.OnPreviewKeyDown(args); return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
-        if (args.Key == VirtualKey.Escape)
+        if (!Editing && owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        else if (args.Key == VirtualKey.Escape)
         {
             args.Handled = true; owner.CancelDrag(); owner.CancelEdit(row.Identity, Field); EndEditing();
         }
@@ -780,7 +781,8 @@ internal sealed class PlanSummaryCell : ContentControl
         if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
         if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
-        if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
+        if (owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        else if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
             args.Handled = true; owner.MoveSelection(args.Key, shift);
         }
         else if (!control && args.Key is VirtualKey.Tab or VirtualKey.Enter) {
