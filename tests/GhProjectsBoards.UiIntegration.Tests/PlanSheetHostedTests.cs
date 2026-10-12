@@ -132,6 +132,36 @@ internal sealed partial class PlanSheetHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
 
+    [TestCase(true, false), TestCase(true, true), TestCase(false, false), TestCase(false, true)]
+    public async Task QueuedPasteRejectsARowRemovedByUndoAndKeepsTheQueueUsable(bool internalCopy, bool expand)
+    {
+        await Select(3, PlanField.Title);
+        if (expand) await Select(4, PlanField.Title, true);
+        await Ui.Run(() => sheet.KeyboardCommand(Windows.System.VirtualKey.C));
+        Assert.That(clipboard.Metadata, Is.Not.Null);
+        if (!internalCopy) clipboard = new(clipboard.Text, null);
+        var before = PlanJson.Text(session.Document); var history = session.UndoCount;
+        var inserted = PlanRow.New("Temporary destination", "acme/repo");
+        var save = await session.Execute(new InsertPlanRows([inserted], "I2"), Today);
+        Assert.That(save.Succeeded, Is.True, save.Error);
+        await Ui.Run(() => sheet.Refresh());
+        await Select(expand ? 1 : 2, PlanField.Title);
+        await Ui.Run(async () => {
+            var undo = sheet.KeyboardCommand(Windows.System.VirtualKey.Z);
+            var paste = sheet.KeyboardCommand(Windows.System.VirtualKey.V);
+            await Task.WhenAll(undo, paste);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.EqualTo("空行を除いて範囲を選択してください。"));
+            Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+            Assert.That(session.UndoCount, Is.EqualTo(history));
+            Assert.That(session.RedoCount, Is.EqualTo(1));
+            await sheet.KeyboardCommand(Windows.System.VirtualKey.Y);
+            Assert.That(session.Document.State.Rows.Any(row => row.Identity == inserted.Identity), Is.True);
+            Assert.That(session.UndoCount, Is.EqualTo(history + 1));
+            Assert.That(session.RedoCount, Is.Zero);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetError").Text, Is.Empty);
+        });
+    }
+
     [Test]
     public async Task QueuedSummaryCopyKeepsTheSelectionAtTheCommandRequest()
     {

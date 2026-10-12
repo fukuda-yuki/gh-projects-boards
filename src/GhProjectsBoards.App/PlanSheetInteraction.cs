@@ -376,6 +376,8 @@ internal sealed partial class PlanSheetView
             if (copied.Values.Length != matrix.Length || matrix.Any(row => row.Length != copied.Fields.Length))
                 throw new ArgumentException("コピー元の形状を確認できません。");
             var target = PlanSheetEditing.PasteRange(range, copied.Values.Length, copied.Fields.Length, visible.Length, columns.Length);
+            if (visible.Skip(target.Row).Take(target.RowCount).Any(id => !Rows.ContainsKey(id)))
+                throw new ArgumentException("空行を除いて範囲を選択してください。");
             var single = copied.Values.Length == 1 && copied.Fields.Length == 1;
             var changes = ImmutableArray.CreateBuilder<PlanCellChange>();
             for (var r = 0; r < target.RowCount; r++)
@@ -401,7 +403,10 @@ internal sealed partial class PlanSheetView
     private object? CopyValue(string identity, string field)
         => PlanSheetEditing.CopyValue(Rows[identity], field, EditForm(identity, field));
     private EditPlanCells FillCommand(PlanOperationKind kind, string source, IEnumerable<string> targets, string field)
-        => new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
+    {
+        if (!Rows.ContainsKey(source)) throw new ArgumentException("空行を除いて範囲を選択してください。");
+        return new(kind, targets.Where(id => id != source).Select(id => new PlanCellChange(id, field, CopyValue(source, field))).ToImmutableArray());
+    }
     internal async Task Fill(PlanOperationKind kind)
     {
         var range = Range; var rows = RangeRows(range);
