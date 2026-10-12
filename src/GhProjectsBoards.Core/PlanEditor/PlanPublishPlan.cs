@@ -62,6 +62,7 @@ internal static class PlanPublishPlan
     }
     internal static PlanPublishReview Build(PlanDocument document, PlanRemoteSnapshot remote, DateOnly today, string runId)
     {
+        PlanSheetColumns.ValidateOwnership(document);
         if (!PlanOperations.BlockingConflicts(document).IsEmpty || !document.Sync.Unavailable.IsEmpty) throw new InvalidOperationException("競合を解決してください。");
         var changes = ImmutableArray.CreateBuilder<PlanReviewChange>(); var writes = ImmutableArray.CreateBuilder<PlanWrite>();
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
@@ -87,7 +88,7 @@ internal static class PlanPublishPlan
             }
             foreach (var field in PlanValues.Fields(before, row))
             {
-                if (PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
+                if (PlanSheetColumns.IsMappedExtra(document.State.Settings, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
                     || PlanOperations.IsUnmappedCalculation(scheduled, field, document.State.Settings)) continue;
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;

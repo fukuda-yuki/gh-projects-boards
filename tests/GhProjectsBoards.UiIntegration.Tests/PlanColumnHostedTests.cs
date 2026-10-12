@@ -3,18 +3,63 @@ using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using NUnit.Framework;
 namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanWorkspaceHostedTests
 {
+    private async Task OpenColumnSettingsThroughOverflow()
+    {
+        await Ui.Run(() => Ui.Click("PlanSheetMore"));
+        await Ui.Ready<MenuFlyoutItem>("PlanSheetColumns");
+        await Ui.Run(() => ((IInvokeProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
+            Ui.Popup<MenuFlyoutItem>("PlanSheetColumns")!).GetPattern(PatternInterface.Invoke)).Invoke());
+    }
+
+    [Test]
+    public async Task OverflowOpensTheCompactColumnsSectionAndItsAccessibleCommands()
+    {
+        await Open();
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBlock>("PlanColumnSettings");
+        await Ui.Until(() => {
+            var title = Ui.Find<TextBlock>("PlanColumnSettings");
+            var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+            var y = title.TransformToVisual(viewport).TransformPoint(new()).Y;
+            return y >= 0 && y + title.ActualHeight <= viewport.ViewportHeight;
+        });
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("計画シートの列"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnIntro").Text,Is.EqualTo("表示する列、順序（ドラッグ）、表示名を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnFootnote").Text,Is.EqualTo("見出しにマウスを置くと GitHub のフィールド名を表示します。リポジトリは移すと Issue の移管になるため、読み取りのみです。"));
+            var input = Ui.Find<TextBox>("PlanColumnNameTitle");
+            Assert.That(input.Header,Is.Null);
+            Assert.That(input.PlaceholderText,Is.EqualTo("タスク名"));
+            Assert.That(AutomationProperties.GetName(input),Is.EqualTo("タスク名 の表示名"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<CheckBox>("PlanColumnEstimate")),Is.EqualTo("見積 h を表示"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanColumnUpTitle")),Is.EqualTo("タスク名 を上へ"));
+            Assert.That(AutomationProperties.GetName(Ui.Find<Button>("PlanColumnDownTitle")),Is.EqualTo("タスク名 を下へ"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnTypeEstimate").Text,Is.EqualTo("数値"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnModeIndicator").Text,Is.EqualTo("計算"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnModeRepository").Text,Is.EqualTo("読み取りのみ"));
+        });
+        double before = 0;
+        await Ui.Run(() => {
+            before = Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset;
+            Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
+            Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
+        });
+        await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset > before);
+    }
     [Test]
     public async Task ColumnSettingsNavigateRenameMoveHideResetAndUndoRenderedHeaders()
     {
         await Open();
         var session=workspace.Session!;
         var undo=session.UndoCount;
-        await Ui.ClickCommand("PlanSheetColumns");
+        await OpenColumnSettingsThroughOverflow();
         await Ui.Ready<TextBox>("PlanColumnNameTitle");
         await Ui.Run(() => {
             Assert.That(Ui.Tree(view).OfType<CheckBox>().Any(c => AutomationProperties.GetAutomationId(c) is "PlanColumnId" or "PlanColumnTitle"),Is.False);
@@ -36,7 +81,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             var title=Ui.Find<TextBox>("PlanCell1_Title");
             Assert.That(title.TransformToVisual(view).TransformPoint(new()).X,Is.LessThan(Ui.Find<FontIcon>("PlanIndicator1").TransformToVisual(view).TransformPoint(new()).X));
         });
-        await Ui.ClickCommand("PlanSheetColumns");
+        await OpenColumnSettingsThroughOverflow();
         await Ui.Ready<Button>("PlanColumnReset");
         await Ui.Run(()=>Ui.Click("PlanColumnReset"));
         await Ui.Until(()=>session.Document.State.Settings.SheetColumns.IsEmpty);
@@ -50,7 +95,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await CommitText("PlanCell1_Remaining","invalid");
-        await Ui.ClickCommand("PlanSheetColumns");
+        await OpenColumnSettingsThroughOverflow();
         await Ui.Idle();
         await Ui.Run(()=> {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text,Is.EqualTo("invalid"));
@@ -61,6 +106,25 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [Test, Category("PlanSheetNative")]
+    public async Task ExtraDateF2EnterKeepsTheOriginalValueWithoutAnUndoStep()
+    {
+        var row = new PlanRow("I1","Task","acme/repo") {
+            ExtraValues = System.Collections.Immutable.ImmutableDictionary<string,PlanExtraValue>.Empty
+                .Add("Project:D",new(GhProjectsBoards.Core.Projects.ValueAvailability.Present,"\"2026-10-14\"")) };
+        await MountPresentation([row],[row],columns:[new("D","Review date","DATE")]);
+        await SetColumnVisible("Project:D",true);
+        await Select(1,"Project:D");
+        await SheetNativeInput.Click("PlanCell1_Project:D");
+        var before = PlanJson.Text(session.Document);
+        var undo = session.UndoCount;
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell1_Project:D").Text == "2026-10-14");
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Enter);
+        await Ui.Idle();
+        Assert.That(PlanJson.Text(session.Document),Is.EqualTo(before));
+        Assert.That(session.UndoCount,Is.EqualTo(undo));
+    }
     [Test]
     public async Task ExtraTextUsesNativeEditorPasteClearUndoAndConfiguredOrder()
     {

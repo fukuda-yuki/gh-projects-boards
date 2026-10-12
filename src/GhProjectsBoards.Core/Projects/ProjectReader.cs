@@ -4,14 +4,14 @@ using GhProjectsBoards.App.GitHub;
 
 namespace GhProjectsBoards.Core.Projects;
 
-internal sealed class ProjectReader(GhConnectionService service, GhConnectionService.OperationLease? lease = null, IReadOnlySet<string>? selectedColumns = null)
+internal sealed class ProjectReader(GhConnectionService service, GhConnectionService.OperationLease? lease = null)
 {
     public Task<ProjectReadResult> ReadAsync(ConnectionContext context, ScopedId project,
         CancellationToken cancellationToken = default, IProgress<RemoteProgress>? progress = null)
-        => new ReadSession(service, context, project, cancellationToken, progress, lease, selectedColumns).RunAsync();
+        => new ReadSession(service, context, project, cancellationToken, progress, lease).RunAsync();
 
     private sealed class ReadSession(GhConnectionService service, ConnectionContext context,
-        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null, IReadOnlySet<string>? selectedColumns = null)
+        ScopedId projectId, CancellationToken cancellationToken, IProgress<RemoteProgress>? progress, GhConnectionService.OperationLease? lease = null)
     {
         private readonly List<ReadProblem> problems = [];
         private readonly Dictionary<ScopedId, ProjectFieldDefinition> fields = [];
@@ -23,11 +23,9 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private bool milestonesComplete = true;
         private readonly Dictionary<ScopedId, MilestoneReadModel> milestones = [];
         private int undeliveredItems;
-        private ProjectFieldDefinition[] selectedFields = [];
         private readonly List<RepositoryLabel> labels = [];
         private readonly Dictionary<ScopedId, (string Cursor, int Total)> labelPages = [];
         private readonly Dictionary<ScopedId, HashSet<string>> labelCursors = [];
-        private bool ReadLabels => selectedColumns?.Contains("Labels") == true;
         private ApiOutcome? interruption;
 
         private async Task<ApiResult> SendAsync(string query, object variables)
@@ -59,12 +57,11 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             {
                 fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
                     ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
-                selectedFields = fields.Values.Where(f => selectedColumns is not null && (selectedColumns.Contains("Project:" + f.Id.NodeId) || selectedColumns.Contains("Field:" + f.Id.NodeId) || selectedColumns.Contains("Name:" + f.Name.ToUpperInvariant()) || f.Name == "Status")).ToArray();
-                if (selectedFields.Any(f => fields.Values.Count(other => other.Name == f.Name) != 1)) throw new ReadException(ReadProblemKind.InvalidResponse);
                 if (!stopped)
-                    itemsComplete = await WalkAsync("items", ProjectQueries.SelectedValues(lease is null ? ProjectQueries.Items : ProjectQueries.Items.Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}"), selectedFields, ReadLabels, selectedColumns is not null), projectId.NodeId,
+                    itemsComplete = await WalkAsync("items", (lease is null ? ProjectQueries.Items : ProjectQueries.Items.Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}")), projectId.NodeId,
                         node => { MatchNode(node, projectId.NodeId, "ProjectV2"); return Property(node, "items"); },
                         AddItemAsync);
+                await ReadValuePages();
                 await ReadLabelPages();
                 foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
                 {
@@ -75,15 +72,19 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                             if (!milestones.TryAdd(milestone.Id, milestone)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
                             return Task.CompletedTask; });
                 }
-                if (ReadLabels)
-                    foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
-                        milestonesComplete &= await WalkAsync("labels", ProjectQueries.Labels, repository.NodeId,
-                            node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "labels"); },
-                            node => { labels.Add(new(repository, Text(node, "id"), Text(node, "name"))); return Task.CompletedTask; });
+                foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
+                    milestonesComplete &= await WalkAsync("labels", ProjectQueries.Labels, repository.NodeId,
+                        node => { MatchNode(node, repository.NodeId, "Repository"); return Property(node, "labels"); },
+                        node => { labels.Add(new(repository, Text(node, "id"), Text(node, "name"))); return Task.CompletedTask; });
                 if (milestonesComplete && !stopped)
                     foreach (var issue in issues.Values)
                         if (issue.Milestone.Value is { } member && (!milestones.TryGetValue(member.Id, out var catalog) || member != catalog))
                         { milestonesComplete = false; problems.Add(new(ReadProblemKind.ConcurrentChange, "milestones")); }
+            }
+            catch (ReadException error)
+            {
+                stopped = true;
+                problems.Add(new(error.Kind, "read", FailureKind.InvalidResponse));
             }
             catch (OperationCanceledException)
             {
@@ -104,7 +105,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     Issues = new ReadOnlyDictionary<ScopedId, IssueReadModel>(issues),
                     Items = items.Values.Select(item => BuildItem(item, complete)).ToArray(),
                     FieldsComplete = fieldsComplete, ItemsComplete = itemsComplete, UndeliveredItemCount = undeliveredItems,
-                    SelectedColumns = selectedColumns ?? new HashSet<string>(), Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
+                    Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
                 };
             return new(outcome, project, problems.ToArray());
         }
@@ -181,7 +182,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var issue = new IssueReadModel(item.ContentId, new(Id(repository), Id(Property(repository, "owner")),
                         Text(repository, "nameWithOwner")), PositiveInt(content, "number"), SameHostUrl(content, "url"),
                         ReadTitle(content), ReadState(content), Capability(content), await ReadNativeAsync(content)) { ClosedAt = ReadClosedAt(content),
-                            Labels = ReadLabels ? ReadIssueLabels(content) : new(ValueAvailability.NotLoaded),
+                            Labels = ReadIssueLabels(content),
                             Milestone = Property(content, "milestone").ValueKind == JsonValueKind.Null ? new(ValueAvailability.Empty)
                                 : new(ValueAvailability.Present, ReadMilestone(Property(content, "milestone"), Id(repository))) };
                     if (!issues.TryAdd(issue.Id, issue)) throw new ReadException(ReadProblemKind.DuplicateIdentity);
@@ -199,23 +200,62 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 item.Complete = true;
                 return;
             }
-            item.Complete = await WalkAsync("values", selectedColumns is null ? ProjectQueries.ItemValues : ProjectQueries.SelectedValues(ProjectQueries.ItemValues, [], false), id.NodeId,
-                value => { MatchNode(value, id.NodeId, "ProjectV2Item"); MatchProject(value); return Property(value, "fieldValues"); },
-                value => { AddValue(item, value); return Task.CompletedTask; }, Optional(node, "fieldValues"));
-            for (var i = 0; i < selectedFields.Length; i++)
-            {
-                var f = selectedFields[i]; item.FieldIds.Add(f.Id); var observed = Optional(node, "extra" + i);
-                if (f.DataType is not ("TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION")) { item.Values.Add(new(f.Id,null,f.TypeName,ValueAvailability.Unsupported)); continue; }
-                if (observed.ValueKind == JsonValueKind.Null) { item.Values.Add(new(f.Id,null,f.TypeName,ValueAvailability.Empty)); continue; }
-                var key = f.DataType switch { "TEXT" => "text", "NUMBER" => "number", "DATE" => "date", "SINGLE_SELECT" => "optionId", "ITERATION" => "title", _ => "" };
-                if (key.Length == 0) { item.Values.Add(new(f.Id,null,f.TypeName,ValueAvailability.Unsupported)); continue; }
-                var scalar = Optional(observed,key);
-                var value = scalar.ValueKind == JsonValueKind.Number ? scalar.GetRawText() : scalar.ValueKind == JsonValueKind.String ? scalar.GetString() : null;
-                var availability = scalar.ValueKind == JsonValueKind.Null ? ValueAvailability.Empty : value is null ? ValueAvailability.Unavailable : ValueAvailability.Present;
-                item.FieldIds.Add(f.Id);
-                item.Values.Add(new(f.Id,null,f.TypeName,availability, f.DataType == "SINGLE_SELECT" ? value : null, f.DataType != "SINGLE_SELECT" ? value : null));
+            try { AcceptValuePage(item, Property(node, "fieldValues")); }
+            catch (ReadException error) {
+                stopped = true;
+                problems.Add(new(error.Kind, "values", FailureKind.InvalidResponse));
             }
+        }
 
+        private void AcceptValuePage(ItemBuilder item, JsonElement page)
+        {
+            var total = NonnegativeInt(page, "totalCount");
+            if (item.ValueTotal is not null && item.ValueTotal != total) throw new ReadException(ReadProblemKind.ConcurrentChange);
+            item.ValueTotal = total;
+            var nodes = Array(page, "nodes");
+            foreach (var node in nodes.EnumerateArray()) { AddValue(item, node); item.ValueCount++; }
+            var info = Property(page, "pageInfo");
+            var next = Boolean(info, "hasNextPage");
+            var cursor = OptionalText(info, "endCursor");
+            if (item.ValueCount > total || !next && item.ValueCount != total || next && (nodes.GetArrayLength() == 0 || item.ValueCount >= total || cursor is null))
+                throw new ReadException(ReadProblemKind.IncompleteTraversal);
+            if (cursor is not null && !item.ValueCursors.Add(cursor)) throw new ReadException(ReadProblemKind.RepeatedCursor);
+            item.NextValueCursor = next ? cursor : null;
+            item.Complete = !next && !stopped;
+        }
+
+        private async Task ReadValuePages()
+        {
+            try {
+                while (!stopped)
+                {
+                    var batch = items.Values.Where(i => i.NextValueCursor is not null).Take(20).ToArray();
+                    if (batch.Length == 0) return;
+                    var variables = new Dictionary<string, object?>();
+                    for (var i = 0; i < batch.Length; i++) {
+                        variables["id" + i] = batch[i].Id.NodeId;
+                        variables["after" + i] = batch[i].NextValueCursor;
+                    }
+                    var arguments = string.Join(",", Enumerable.Range(0, batch.Length).Select(i => "$id" + i + ":ID!,$after" + i + ":String!"));
+                    var query = "query ProjectItemValues(" + arguments + "){" + string.Join(" ", Enumerable.Range(0, batch.Length).Select(ProjectQueries.ItemValueSelection)) + "}";
+                    var response = await SendAsync(query, variables);
+                    if (!response.IsSuccess) {
+                        stopped = true; interruption = response.Outcome;
+                        problems.Add(new(ReadProblemKind.Api, "values", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
+                        if (response.Failure != FailureKind.GraphQl) return;
+                    }
+                    var data = Property(response.Data ?? default, "data");
+                    for (var i = 0; i < batch.Length; i++) {
+                        var node = Property(data, "v" + i);
+                        MatchNode(node, batch[i].Id.NodeId, "ProjectV2Item"); MatchProject(node);
+                        AcceptValuePage(batch[i], Property(node, "fieldValues"));
+                    }
+                }
+            }
+            catch (ReadException error) {
+                stopped = true;
+                problems.Add(new(error.Kind, "values", FailureKind.InvalidResponse));
+            }
         }
 
         private ReadValue<NativeLabel[]> ReadIssueLabels(JsonElement content)
@@ -332,8 +372,6 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 problems.Add(new(ReadProblemKind.IncompleteTraversal, "value-definition"));
                 return;
             }
-            if (selectedFields.Any(f => f.Id == fieldId)) return;
-            if (selectedColumns is not null && definition.ValueOwner == FieldOwner.ProjectItem) { item.Values.Add(new(fieldId,valueId,type,ValueAvailability.NotLoaded)); return; }
             if (definition.Availability == ValueAvailability.Unsupported)
             {
                 item.Values.Add(new(fieldId, valueId, type, ValueAvailability.Unsupported));
@@ -397,8 +435,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 ? value with { Availability = ValueAvailability.Unavailable } : value).ToList();
             foreach (var field in fields.Values.Where(field => !item.FieldIds.Contains(field.Id)))
             {
-                var availability = selectedColumns is not null && !selectedFields.Any(f => f.Id == field.Id) && field.ValueOwner == FieldOwner.ProjectItem ? ValueAvailability.NotLoaded
-                    : field.Availability == ValueAvailability.Unsupported ? ValueAvailability.Unsupported
+                var availability = field.Availability == ValueAvailability.Unsupported ? ValueAvailability.Unsupported
                     : kind == ProjectItemKind.Unavailable ? ValueAvailability.Unavailable
                     : kind == ProjectItemKind.Unsupported ? ValueAvailability.NotLoaded
                     : complete && item.Complete ? ValueAvailability.Empty : ValueAvailability.NotLoaded;
@@ -545,6 +582,10 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
             public List<ProjectFieldValue> Values { get; } = [];
             public HashSet<ScopedId> FieldIds { get; } = [];
             public bool Complete { get; set; }
+            public int? ValueTotal { get; set; }
+            public int ValueCount { get; set; }
+            public string? NextValueCursor { get; set; }
+            public HashSet<string> ValueCursors { get; } = new(StringComparer.Ordinal);
         }
     }
 

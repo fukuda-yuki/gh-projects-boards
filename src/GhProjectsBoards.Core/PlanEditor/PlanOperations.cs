@@ -104,6 +104,7 @@ internal static class PlanOperations
             Uri.CheckHostName(d.Project.Scope.Host) != UriHostNameType.Unknown && d.Project.Scope.Host == d.Project.Scope.Host.ToLowerInvariant(), "プロジェクトの識別情報が不正です。");
         ValidateSettings(d.State.Settings);
         ValidateRows(d.Baseline.Rows); ValidateRows(d.State.Rows);
+        PlanSheetColumns.ValidateOwnership(d);
         Unique(d.Baseline.Milestones.Select(m => m.Title).ToImmutableArray());
         Require(d.Baseline.Milestones.All(m => !string.IsNullOrWhiteSpace(m.Title)), "マイルストーンの名前が不正です。");
         Unique(d.Baseline.Columns.Select(c => c.Id).ToImmutableArray());
@@ -392,7 +393,7 @@ internal static class PlanOperations
                 if (!IsLocalConstraint(field, d.State.Settings) && !IsSummaryPublishExcluded(calculated.IsSummary, field) && !IsUnmappedCalculation(calculated, field, d.State.Settings) && !Equals(Value(r, field), Value(old, field))) fields.Add(field);
             if (!calculated.IsSummary)
                 foreach (var extra in r.ExtraValues.Keys.Union(old.ExtraValues.Keys))
-                    if (PlanValues.Get(r, extra) != PlanValues.Get(old, extra)) fields.Add(extra);
+                    if (!PlanSheetColumns.IsMappedExtra(d.State.Settings, extra) && PlanValues.Get(r, extra) != PlanValues.Get(old, extra)) fields.Add(extra);
             if (!calculated.IsSummary && !r.Labels.ToHashSet().SetEquals(old.Labels)) fields.Add(PlanField.Labels);
             if (!calculated.IsSummary && !r.Assignees.ToHashSet().SetEquals(old.Assignees)) fields.Add(PlanField.Assignees);
             if (!calculated.IsSummary && !r.Predecessors.ToHashSet().SetEquals(old.Predecessors)) fields.Add(PlanField.Predecessors);

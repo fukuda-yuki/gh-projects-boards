@@ -158,10 +158,7 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
-        var columns = Id(new AppBarButton { Label = "表示列", Icon = new SymbolIcon(Symbol.List) }, "PlanSheetColumns");
-        AutomationProperties.SetName(columns, "表示列"); ToolTipService.SetToolTip(columns, "表示列");
-        columns.Click += async (_, _) => { if (openColumns is not null) await openColumns(); };
-        commands.SecondaryCommands.Add(columns);
+        Overflow("表示列", "PlanSheetColumns", Symbol.List, openColumns ?? (() => Task.CompletedTask), queued: false);
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
@@ -614,8 +611,11 @@ internal sealed partial class PlanSheetView : Grid
         PlanField.Estimate => "見積工数", PlanField.Actual => "実績工数", PlanField.Remaining => "見込み残存工数", _ => column.Label };
 
     internal static string EffortPrefix(Column column) => column.Field is PlanField.Estimate or PlanField.Actual or PlanField.Remaining ? FullName(column) + " · " : "";
-    private string HeaderHelp(Column column) => EffortPrefix(column) + "GitHub: " +
-        PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
+    private string HeaderHelp(Column column)
+    {
+        var source = PlanSheetColumns.All(Session.Document).First(c => c.Key == (column.Indicator ? "Indicator" : column.Field ?? "Id")).GitHub;
+        return EffortPrefix(column) + (source == "—" && column.Field is not null ? "未設定" : "GitHub: " + source);
+    }
     internal static string DateText(DateOnly? day, bool full = false) => day is { } value
         ? value.ToString(full ? "yyyy-MM-dd" : "M/d", CultureInfo.InvariantCulture) + " (" + "日月火水木金土"[(int)value.DayOfWeek] + ")" : "";
     internal bool IsDateField(string field) => field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan

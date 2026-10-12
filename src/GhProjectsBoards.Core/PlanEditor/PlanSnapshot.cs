@@ -13,38 +13,14 @@ internal sealed record PlanRemoteSnapshot(PlanBaseline Baseline, ImmutableDictio
   public ImmutableDictionary<string, ImmutableArray<string>> SubIssueOrders { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty; }
 internal static class PlanSnapshot
 {
-    internal static IReadOnlySet<string> SelectedColumns(PlanDocument document)
-    {
-        var selected = document.State.Settings.SheetColumns.Where(c => c.Visible).Select(c => c.Key).ToHashSet();
-        selected.UnionWith(document.State.Settings.Columns.Select(c => "Field:" + c.FieldId));
-        var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
-        foreach (var row in document.State.Rows)
-        {
-            var before = baseline.GetValueOrDefault(row.Identity);
-            foreach (var key in row.ExtraValues.Keys)
-                if (before is null || PlanValues.Get(before,key) != PlanValues.Get(row,key)) selected.Add(key);
-            if (before is null ? row.Labels.Length > 0 : !row.Labels.ToHashSet().SetEquals(before.Labels)) selected.Add(PlanField.Labels);
-        }
-        return selected;
-    }
-    internal static PlanRemoteSnapshot PreserveUnread(PlanRemoteSnapshot snapshot, PlanDocument document, IReadOnlySet<string> selected)
-    {
-        var old = document.Baseline.Rows.ToDictionary(r => r.Identity);
-        return snapshot with { Baseline = snapshot.Baseline with {
-            Rows = snapshot.Baseline.Rows.Select(r => !old.TryGetValue(r.Identity, out var b) ? r : r with {
-                ExtraValues = b.ExtraValues.SetItems(r.ExtraValues), Labels = selected.Contains(PlanField.Labels) ? r.Labels : b.Labels
-            }).ToImmutableArray(),
-            RepositoryLabels = selected.Contains(PlanField.Labels) ? snapshot.Baseline.RepositoryLabels : document.Baseline.RepositoryLabels
-        } };
-    }
     internal static string ReadDiagnostic(ProjectReadResult result) => $"{result.Outcome}: " + string.Join("; ",
         result.Problems.Select(p => $"{p.Stage}/{p.Kind}/{p.Failure}/{p.ApiOutcome}/{p.HttpStatus}"));
     internal static async Task<ProjectReadResult> ReadConsistentAsync(GhConnectionService service, GhConnectionService.OperationLease lease,
-        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null, IReadOnlySet<string>? selectedColumns = null)
+        ConnectionContext context, ScopedId project, CancellationToken token, IProgress<RemoteProgress>? progress = null)
     {
         for (var attempt = 1; ; attempt++)
         {
-            var result = await new ProjectReader(service, lease, selectedColumns ?? PlanColumnMatching.Roles.Select(r => "Name:" + r.Name.ToUpperInvariant()).ToHashSet()).ReadAsync(context, project, token, progress).ConfigureAwait(false);
+            var result = await new ProjectReader(service, lease).ReadAsync(context, project, token, progress).ConfigureAwait(false);
             if (result.Outcome == ProjectReadOutcome.Complete || attempt == 3 || result.Outcome != ProjectReadOutcome.Partial ||
                 result.Problems.Count == 0 || result.Problems.Any(p => p.Kind != ReadProblemKind.ConcurrentChange)) return result;
             await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
@@ -60,7 +36,7 @@ internal static class PlanSnapshot
         foreach (var item in p.Items.Where(i => i.Kind == ProjectItemKind.Issue && !i.IsArchived))
         {
             if (item.ContentId is null || !p.Issues.TryGetValue(item.ContentId, out var issue) || !item.ValuesComplete ||
-                issue.Native is not { Complete: true } native || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
+                issue.Native is not { Complete: true } native || issue.Labels.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Milestone.Availability is not (ValueAvailability.Empty or ValueAvailability.Present) || issue.Title.Availability != ValueAvailability.Present ||
                 issue.State.Availability != ValueAvailability.Present ||
                 issue.State.Value == IssueState.Closed && (issue.ClosedAt.Availability != ValueAvailability.Present || issue.ClosedAt.Value is null) || native.Parent.Availability is not (ValueAvailability.Present or ValueAvailability.Empty))
                 throw new InvalidOperationException("Issue の取得が不完全です。");
@@ -107,9 +83,9 @@ internal static class PlanSnapshot
                 };
                 row = PlanValues.Set(row, mapping.Role, json);
             }
-            foreach (var key in p.SelectedColumns.Where(PlanSheetColumns.IsExtra))
+            foreach (var definition in p.Fields.Where(f => f.ValueOwner == FieldOwner.ProjectItem))
             {
-                var definition = p.Fields.SingleOrDefault(f => f.Id.NodeId == key[8..]);
+                var key = "Project:" + definition.Id.NodeId;
                 var value = item.Values.SingleOrDefault(v => v.FieldId?.NodeId == key[8..]);
                 var availability = value?.Availability ?? ValueAvailability.Unavailable;
                 string? json = null;

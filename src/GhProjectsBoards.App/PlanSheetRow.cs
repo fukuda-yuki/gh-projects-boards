@@ -611,7 +611,7 @@ internal sealed class PlanSheetCell : TextBox
     private string EditOriginal()
     {
         if (row.Owner is not { } owner) return shownText;
-        var text = Field is PlanField.Start or PlanField.End or PlanField.StartNoEarlierThan or PlanField.Assignees or PlanField.Estimate or PlanField.Actual or PlanField.Remaining
+        var text = (owner.IsDateField(Field) || Field is PlanField.Assignees or PlanField.Estimate or PlanField.Actual or PlanField.Remaining)
             && !owner.Pending.ContainsKey((row.Identity, Field)) ? owner.EditForm(row.Identity, Field) : shownText;
         return PlanSheetEditing.EditBaseline(owner.Rows.GetValueOrDefault(row.Identity), Field, text);
     }

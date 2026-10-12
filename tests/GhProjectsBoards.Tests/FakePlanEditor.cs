@@ -71,8 +71,18 @@ internal static class FakePlanEditor
         object[] Values(PlanFakeIssue issue)
         {
             var values = fieldRoles.Where(f => PlanValues.Get(issue.Row, f) is not ("null" or "false")).Select(f => Value(issue.Row, f));
-            return (issue.Phase is null ? values : values.Append(new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = issue.Row.Identity + "-Phase",
-                field = new { id = "F-Phase", project = new { id = projectId } }, optionId = "phase-" + issue.Phase })).ToArray();
+            var result = (issue.Phase is null ? values : values.Append(new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = issue.Row.Identity + "-Phase",
+                field = new { id = "F-Phase", project = new { id = projectId } }, optionId = "phase-" + issue.Phase })).ToList();
+            foreach (var definition in state.ExtraFields) {
+                var raw = issue.Row.ExtraValues.GetValueOrDefault("Project:" + definition.Id)?.Json;
+                if (raw is null or "null") continue;
+                var type = definition.DataType switch { "TEXT" => "Text", "NUMBER" => "Number", "DATE" => "Date", "ITERATION" => "Iteration", _ => "SingleSelect" };
+                var key = definition.DataType switch { "TEXT" => "text", "NUMBER" => "number", "DATE" => "date", "ITERATION" => "title", _ => "optionId" };
+                result.Add(new JsonObject { ["__typename"] = "ProjectV2ItemField" + type + "Value", ["id"] = issue.Row.Identity + "-" + definition.Id,
+                    ["field"] = JsonSerializer.SerializeToNode(new { id = definition.Id, project = new { id = projectId } }),
+                    [key] = key == "optionId" ? JsonValue.Create("extra-" + JsonSerializer.Deserialize<string>(raw)) : JsonNode.Parse(raw) });
+            }
+            return result.ToArray();
         }
         object Milestone(PlanFakeMilestone m) => new { id = m.Id, title = m.Title,
             dueOn = m.DueDate.HasValue ? m.DueDate.Value.ToString("yyyy-MM-dd") + "T00:00:00Z" : null, state = m.Closed ? "CLOSED" : "OPEN" };
@@ -91,29 +101,6 @@ internal static class FakePlanEditor
                     subIssues = query.Contains("subIssues(", StringComparison.Ordinal) ? Children(row.Identity) : null,
                     parent = row.Parent is null ? null : new { id = row.Parent } },
                 fieldValues = Page(Values(issue), Values(issue).Length) })!.AsObject();
-            foreach (Match match in Regex.Matches(query, @"(extra\d+):fieldValueByName\(name:(""(?:\\.|[^""\\])*"")\)"))
-            {
-                var fieldName = JsonSerializer.Deserialize<string>(match.Groups[2].Value)!;
-                var definition = state.ExtraFields.SingleOrDefault(f => f.Name == fieldName);
-                if (definition is null)
-                {
-                    var role = fieldRoles.SingleOrDefault(f => JsonSerializer.SerializeToElement(Field(f)).GetProperty("name").GetString() == fieldName);
-                    if (role is null && fieldName == "工程") role = PlanField.Phase;
-                    if (role is null) throw new InvalidOperationException("Unknown selected field.");
-                    var raw = role == PlanField.Phase ? JsonSerializer.SerializeToNode(issue.Phase) : JsonNode.Parse(PlanValues.Get(row,role));
-                    if (raw is null || role == PlanField.Fixed && !row.Fixed) { item[match.Groups[1].Value]=null; continue; }
-                    var kind = role == PlanField.Phase ? "SINGLE_SELECT" : Type(role);
-                    var key = kind == "NUMBER" ? "number" : kind == "DATE" ? "date" : "optionId";
-                    item[match.Groups[1].Value] = new JsonObject { ["__typename"] = "ProjectV2ItemFieldValue", [key] = key == "optionId" ? JsonValue.Create(role == PlanField.Fixed ? "fixed" : role == PlanField.Phase ? "phase-" + issue.Phase : row.Status == "Done" ? "done" : row.Status == "Backlog" ? "backlog" : "progress") : raw };
-                }
-                else
-                {
-                    var json = row.ExtraValues.GetValueOrDefault("Project:" + definition.Id)?.Json;
-                    if (json is null or "null") { item[match.Groups[1].Value] = null; continue; }
-                    var key = definition.DataType switch { "TEXT" => "text", "NUMBER" => "number", "DATE" => "date", "ITERATION" => "title", _ => "optionId" };
-                    item[match.Groups[1].Value] = new JsonObject { ["__typename"] = "ProjectV2ItemFieldValue", [key] = key == "optionId" ? JsonValue.Create("extra-" + JsonSerializer.Deserialize<string>(json)) : JsonNode.Parse(json) };
-                }
-            }
             return item;
         }
         if (query.Contains("ProjectIssueLabels"))

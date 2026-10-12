@@ -8,6 +8,7 @@ internal static class PlanExtraEditing
         ?? throw new ArgumentException("列を読み取れません。最新の情報に更新してください。");
     internal static string? ReadOnlyReason(PlanDocument document, PlanRow row, string key)
     {
+        if (PlanSheetColumns.IsMappedExtra(document.State.Settings, key)) return "このフィールドは割り当てた標準列で編集してください。";
         var definition = document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == key);
         if (definition?.DataType is not ("TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT")) return "この列は読み取り専用です。";
         return row.ExtraValues.GetValueOrDefault(key)?.Availability is Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty

@@ -5,6 +5,18 @@ namespace GhProjectsBoards.Tests;
 [TestFixture, Category("Integration")]
 internal sealed class EvaluationFixtureTests
 {
+    [Test]
+    public void EvaluationMilestoneMembershipEditsUseTheRepositoryCatalog()
+    {
+        var plan = EvaluationFixture.ReadPlan();
+        var row = new PlanRow("I2", "R01 SA-001", "acme/repo") { MilestoneTitle = "SA 完了" };
+        var document = EvaluationFixture.Document(plan, [row], plan.StatusDate);
+        Assert.That(PlanSheetEditing.Parse(document, PlanField.MilestoneTitle, "ui 完了", plan.StatusDate, row.Identity),
+            Is.EqualTo("UI 完了"));
+        Assert.That(() => PlanSheetEditing.Parse(document, PlanField.MilestoneTitle, "Unknown", plan.StatusDate, row.Identity),
+            Throws.ArgumentException.With.Message.Contains("SA 完了").And.Message.Contains("UI 完了").And.Message.Contains("OT 完了"));
+        Assert.That(document.Baseline.RepositoryMilestones.Select(m => m.Id), Is.Unique);
+    }
     private static void Report(EvaluationFixture.StatusMeasures measures)
     {
         var total = measures.Total;
@@ -112,7 +124,8 @@ internal sealed class EvaluationFixtureTests
             Assert.That(session.Document.State.Settings.People.Length, Is.EqualTo(20));
             Assert.That(session.Changes(plan.StatusDate).TaskCount, Is.Zero);
             var publisher = new PlanPublisher(workspace.Service!, workspace.Context!);
-            Assert.That((await publisher.RefreshAsync(session, plan.StatusDate)).Succeeded, Is.True);
+            var refresh = await publisher.RefreshAsync(session, plan.StatusDate);
+            Assert.That(refresh.Succeeded, Is.True, refresh.Error);
             Assert.That(session.Changes(plan.StatusDate).TaskCount, Is.Zero);
             Assert.That(session.Document.Sync.NativeOrders["I1"], Is.EqualTo(session.Document.State.Rows.Where(r => r.Parent == "I1").Select(r => r.Identity)));
             var rows = session.Document.State.Rows;

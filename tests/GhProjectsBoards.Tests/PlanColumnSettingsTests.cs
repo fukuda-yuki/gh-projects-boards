@@ -42,6 +42,36 @@ internal sealed class PlanColumnSettingsTests
     }
 
     private static readonly DateOnly Day = new(2026,10,12);
+    [Test]
+    public void MappingRejectsUnpublishedExtraValuesWithoutChangingTheDocument()
+    {
+        var d = ExtraDocument();
+        d = d with { State = PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", "Project:N", 5m)]), Day).State };
+        var before = PlanJson.Text(d);
+        var settings = d.State.Settings with { Columns = [new(PlanField.Estimate, "N", "Risk", "NUMBER")] };
+        Assert.That(() => PlanOperations.Apply(d, new ReplacePlanSettings(settings), Day),
+            Throws.ArgumentException.With.Message.Contains("未発行"));
+        Assert.That(PlanJson.Text(d), Is.EqualTo(before));
+    }
+
+    [Test]
+    public void MappedFieldCannotBeEditedAsAnExtraAndPublishesOnlyThroughItsRole()
+    {
+        var d = ExtraDocument();
+        var settings = d.State.Settings with { Columns = [new(PlanField.Estimate, "N", "Risk", "NUMBER")] };
+        d = d with { State = PlanOperations.Apply(d, new ReplacePlanSettings(settings), Day).State };
+        Assert.That(PlanSheetColumns.All(d).Any(c => c.Key == "Project:N"), Is.False);
+        Assert.That(() => PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", "Project:N", 5m)]), Day), Throws.ArgumentException);
+        d = d with { State = PlanOperations.Apply(d, new EditPlanCells(PlanOperationKind.Cell,
+            [new("I1", PlanField.Estimate, 8m)]), Day).State };
+        var snapshot = new PlanRemoteSnapshot(d.Baseline, ImmutableDictionary<string,string>.Empty.Add("I1","T1"),
+            [new(new(d.Project.Scope,"N"),d.Project,"Risk","ProjectV2Field","NUMBER",FieldOwner.ProjectItem,[],ValueAvailability.Present)],0,0);
+        var writes = PlanPublishPlan.Build(d,snapshot,Day,Guid.NewGuid().ToString("N")).Writes;
+        Assert.That(writes, Has.Length.EqualTo(1));
+        Assert.That(writes[0].Input, Does.Contain("\"fieldId\": \"N\"").And.Contain("\"number\": 8"));
+    }
     private static PlanDocument ExtraDocument()
     {
         var row = new PlanRow("I1", "Task", "acme/repo") { ExtraValues = ImmutableDictionary<string,PlanExtraValue>.Empty
@@ -92,8 +122,7 @@ internal sealed class PlanColumnSettingsTests
         Assert.That(merged.Sync.Conflicts.Single().Field,Is.EqualTo("Project:T"));
         Assert.That(PlanValues.Get(merged.State.Rows[0],"Project:T"),Is.EqualTo("\"local\""));
         Assert.That(PlanValues.Get(merged.State.Rows[0],"Project:N"),Is.EqualTo("3"));
-        Assert.That(PlanSnapshot.SelectedColumns(merged),Does.Contain("Project:T"));
-        Assert.That(PlanSnapshot.SelectedColumns(merged),Does.Not.Contain("Project:N"));
+        Assert.That(merged.State.Settings.SheetColumns,Is.Empty,"Visibility does not control retained edits.");
     }
     [Test]
     public void ExtraPublicationUsesExistingMutationsAndReadbackWithoutCreationOrTransfer()

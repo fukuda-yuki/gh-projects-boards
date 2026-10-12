@@ -205,7 +205,7 @@ internal sealed class ProjectReaderTests
         var boundary = new ProjectBoundary();
         boundary.Override = (query, variables) =>
         {
-            var after = variables.GetProperty("after").ValueKind == JsonValueKind.Null ? null : variables.GetProperty("after").GetString();
+            var after = variables.TryGetProperty("after",out var cursor) && cursor.ValueKind == JsonValueKind.String ? cursor.GetString() : null;
             if (query.Contains("ProjectFields"))
                 return Response(Project("P1", "fields", after is null
                     ? Page(Enumerable.Range(1, 100).Select(n => Field("P1", "F" + n)).ToArray(), 101, true, "fields-next")
@@ -218,10 +218,10 @@ internal sealed class ProjectReaderTests
                     : Page([Item("P1", "T101", Page([], 0), Issue("I101", 101))], 101)));
             if (query.Contains("ProjectItemValues"))
             {
-                Assert.That(variables.GetProperty("id").GetString(), Is.EqualTo("T1"));
-                Assert.That(after, Is.EqualTo("values-next"));
-                return Response(new { __typename = "ProjectV2Item", id = "T1", project = new { id = "P1" },
-                    fieldValues = Page([Value("P1", "F101")], 101) });
+                Assert.That(variables.GetProperty("id0").GetString(), Is.EqualTo("T1"));
+                Assert.That(variables.GetProperty("after0").GetString(), Is.EqualTo("values-next"));
+                return ScriptedRunner.Http(JsonSerializer.Serialize(new { data = new { v0 = new { __typename = "ProjectV2Item", id = "T1", project = new { id = "P1" },
+                    fieldValues = Page([Value("P1", "F101")], 101) } } }));
             }
             return null;
         };
@@ -236,6 +236,37 @@ internal sealed class ProjectReaderTests
             Assert.That(result.Project.Items[100].Values.All(v => v.Availability == ValueAvailability.Empty), Is.True);
         });
         boundary.AssertQueriesOnly();
+    }
+
+    [Test]
+    public async Task FieldValueContinuationPagesAreBatchedAcrossIssues()
+    {
+        var boundary = new ProjectBoundary();
+        var requests = 0;
+        object[] Values(int item, int start, int count) => Enumerable.Range(start, count)
+            .Select(f => (object)Value("P1", "F" + f, id: $"V{item}-{f}")).ToArray();
+        boundary.Override = (query, variables) => {
+            if (query.Contains("ProjectFields")) {
+                var next = variables.GetProperty("after").ValueKind == JsonValueKind.String;
+                return Response(Project("P1", "fields", next ? Page([Field("P1", "F101")], 101)
+                    : Page(Enumerable.Range(1,100).Select(f => Field("P1", "F" + f)).ToArray(),101,true,"fields-next")));
+            }
+            if (query.Contains("ProjectItems"))
+                return Response(Project("P1","items",Page(Enumerable.Range(1,21).Select(n => Item("P1","T" + n,
+                    Page(Values(n,1,100),101,true,"values-next"),Issue("I" + n,n))).ToArray(),21)));
+            if (!query.Contains("ProjectItemValues")) return null;
+            requests++;
+            object Node(string id) => new { __typename = "ProjectV2Item", id, project = new { id = "P1" },
+                fieldValues = Page(Values(int.Parse(id[1..]),101,1),101) };
+            if (variables.TryGetProperty("id",out var single)) return Response(Node(single.GetString()!));
+            var data = variables.EnumerateObject().Where(v => v.Name.StartsWith("id",StringComparison.Ordinal))
+                .ToDictionary(v => "v" + v.Name[2..], v => Node(v.Value.GetString()!));
+            return ScriptedRunner.Http(JsonSerializer.Serialize(new { data }));
+        };
+        var result = await Read(boundary);
+        Assert.That(result.Outcome,Is.EqualTo(ProjectReadOutcome.Complete),result.ToString());
+        Assert.That(result.Project!.Items.All(i => i.Values.Count(v => v.Availability == ValueAvailability.Present) == 101),Is.True);
+        Assert.That(requests,Is.EqualTo(2),"Twenty-one continuations must use two bounded batches, not one request per Issue.");
     }
 
     [Test]
@@ -366,7 +397,7 @@ internal sealed class ProjectReaderTests
                 return Response(Project("P1", "items", Page([Item("P1", "T" + pageNumber, Page([], 0), Issue("I" + pageNumber, pageNumber))], 10, true, "repeated")));
             var values = Page([Value("P1", "F" + pageNumber)], 10, true, "repeated");
             return query.Contains("ProjectItems") ? Response(Project("P1", "items", Page([Item("P1", values: values)], 1)))
-                : Response(new { __typename = "ProjectV2Item", id = "P1-item", project = new { id = "P1" }, fieldValues = values });
+                : ScriptedRunner.Http(JsonSerializer.Serialize(new { data = new { v0 = new { __typename = "ProjectV2Item", id = "P1-item", project = new { id = "P1" }, fieldValues = values } } }));
         }};
         var result = await Read(boundary);
         Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
@@ -409,7 +440,7 @@ internal sealed class ProjectReaderTests
     {
         var boundary = new ProjectBoundary { Override = (query, variables) =>
         {
-            var after = variables.GetProperty("after");
+            var after = variables.TryGetProperty("after", out var single) ? single : variables.GetProperty("after0");
             if (after.ValueKind == JsonValueKind.String) return ScriptedRunner.Http("{}", 503, 1);
             if (query.Contains("ProjectFields") && stage == "fields")
                 return Response(Project("P1", "fields", Page([Field("P1", "P1-status")], 2, true, "next")));
@@ -627,6 +658,8 @@ internal sealed class ProjectReaderTests
                 var custom = Override?.Invoke(query, variables);
                 if (custom is not null) return custom;
                 var id = variables.GetProperty("id").GetString()!;
+                if (query.Contains("ProjectLabels"))
+                    return Response(new { __typename = "Repository", id, labels = Page([], 0) });
                 if (query.Contains("ProjectMilestones"))
                     return Response(new { __typename = "Repository", id, milestones = Page([], 0) });
                 if (query.Contains("ProjectFields"))
@@ -668,7 +701,7 @@ internal sealed class ProjectReaderTests
         => new { __typename = "ProjectV2ItemFieldSingleSelectValue", id = id ?? project + "-value-" + field,
             optionId = option, field = new { id = field, project = new { id = project } } };
     internal static object Issue(string id = "I1", int number = 1, string state = "OPEN", string? closedAt = null) => new { __typename = "Issue", id, number,
-        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt, milestone = (object?)null,
+        url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt, labels = Page([], 0), milestone = (object?)null,
         assignees = Page([], 0), blockedBy = Page([], 0), parent = (object?)null,
         repository = new { id = "R1", nameWithOwner = "example/repository", owner = new { id = "RO1" } } };
     internal static object Item(string project, string? id = null, object? values = null, object? content = null,

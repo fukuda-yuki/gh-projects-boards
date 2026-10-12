@@ -3,6 +3,7 @@ namespace GhProjectsBoards.Core.PlanEditor;
 
 internal sealed record PlanSheetColumn(string Key, string DefaultName, string GitHub, string Editability, bool Visible, string? DisplayName)
 {
+    public string Type { get; init; } = "—";
     public string Name => string.IsNullOrWhiteSpace(DisplayName) ? DefaultName : DisplayName;
     public bool Required => Key is "Id" or "Title";
 }
@@ -13,6 +14,16 @@ internal static class PlanSheetColumns
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
         ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     internal static bool IsExtra(string key) => key.StartsWith("Project:", StringComparison.Ordinal) && key.Length > 8;
+    internal static bool IsMappedExtra(ProjectPlanSettings settings, string key)
+        => IsExtra(key) && settings.Columns.Any(c => c.FieldId == key[8..]);
+    internal static void ValidateOwnership(PlanDocument document)
+    {
+        var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
+        foreach (var row in document.State.Rows)
+            foreach (var key in row.ExtraValues.Keys.Where(k => IsMappedExtra(document.State.Settings, k)))
+                PlanOperations.Require(PlanValues.Get(row, key) == (baseline.TryGetValue(row.Identity, out var before) ? PlanValues.Get(before, key) : "null"),
+                    "未発行の追加列編集があるフィールドは割り当てられません。編集を発行するか元に戻してください。");
+    }
     internal static void Validate(ImmutableArray<PlanSheetColumnChoice> choices)
     {
         PlanOperations.Require(!choices.IsDefault && choices.All(c => c is not null &&
@@ -28,13 +39,19 @@ internal static class PlanSheetColumns
         {
             var (key, name) = Standard[i];
             var mapping = settings.Columns.SingleOrDefault(c => c.Role.ToString() == key);
-            var source = mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", "Id" or "Indicator" => "—", _ => "未設定" };
-            result.Add(new(key, name, source, key is "Id" or "Indicator" ? "読み取り専用" : "編集可", i < 11, null));
+            var source = mapping?.Name ?? key switch { "Title" => "Title", "Assignees" => "Assignees", "Predecessors" => "Blocked by", "Status" => "Status", _ => "—" };
+            var type = key switch { "Title" => "テキスト", "Assignees" => "担当者", "Predecessors" => "関係",
+                "Estimate" or "Remaining" or "Actual" => "数値", "Start" or "End" or "StartNoEarlierThan" => "日付",
+                "Phase" or "Status" or "Fixed" => "単一選択", _ => "—" };
+            result.Add(new(key, name, source, key == "Indicator" ? "計算" : key == "Id" ? "読み取りのみ" : "編集できる", i < 11, null) { Type = type });
         }
         var mapped = settings.Columns.Select(c => c.FieldId).ToHashSet();
         foreach (var f in document.Baseline.Columns.Where(f => !mapped.Contains(f.Id) && !(f.Name == "Status" && f.DataType == "SINGLE_SELECT") && f.DataType is "TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT" or "ITERATION"))
-            result.Add(new("Project:" + f.Id, f.Name, f.Name, f.DataType == "ITERATION" ? "読み取り専用" : "編集可", false, null));
-        result.AddRange([new("Labels", "ラベル", "Labels", "編集可", false, null), new("MilestoneTitle", "マイルストーン", "Milestone", "編集可", false, null), new("Repository", "リポジトリ", "Repository", "読み取り専用", false, null)]);
+            result.Add(new("Project:" + f.Id, f.Name, f.Name, f.DataType == "ITERATION" ? "読み取りのみ" : "編集できる", false, null) {
+                Type = f.DataType switch { "TEXT" => "テキスト", "NUMBER" => "数値", "DATE" => "日付", "SINGLE_SELECT" => "単一選択", "ITERATION" => "イテレーション", _ => "—" } });
+        result.AddRange([new("Labels", "ラベル", "Labels", "編集できる", false, null) { Type = "ラベル" },
+            new("MilestoneTitle", "マイルストーン", "Milestone", "編集できる", false, null) { Type = "マイルストーン" },
+            new("Repository", "リポジトリ", "Repository", "読み取りのみ", false, null) { Type = "リポジトリ" }]);
         var definitions = result.ToDictionary(c => c.Key);
         var ordered = settings.SheetColumns.Where(c => definitions.ContainsKey(c.Key)).Select(c => definitions[c.Key] with { Visible = c.Visible, DisplayName = c.DisplayName }).ToList();
         var used = ordered.Select(c => c.Key).ToHashSet();
