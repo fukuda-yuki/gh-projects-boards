@@ -93,7 +93,7 @@
             <!-- Every realized row carries a dozen cell editors. The default TextBox template also builds
                  header, description, placeholder, delete-button and scroll-bar parts that a sheet cell never
                  shows, so it keeps only the editing parts and the default pointer/focus appearance. -->
-            <Style x:Key="PlanSheetCellScrollViewerStyle" TargetType="ScrollViewer">
+            <Style x:Key="PlanSheetCellScrollViewerStyle" TargetType="ScrollViewer" BasedOn="{StaticResource DefaultScrollViewerStyle}">
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ScrollViewer">
@@ -102,7 +102,7 @@
                     </Setter.Value>
                 </Setter>
             </Style>
-            <Style x:Key="PlanSheetCellStyle" TargetType="TextBox">
+            <Style x:Key="PlanSheetCellStyle" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
