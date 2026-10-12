@@ -14,13 +14,14 @@ internal static class PlanSheetColumns
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),
         ("Predecessors", "先行"), ("StartNoEarlierThan", "開始日指定"), ("Fixed", "日程固定"), ("Status", "ステータス")];
     internal static bool IsExtra(string key) => key.StartsWith("Project:", StringComparison.Ordinal) && key.Length > 8;
-    internal static bool IsMappedExtra(ProjectPlanSettings settings, string key)
-        => IsExtra(key) && settings.Columns.Any(c => c.FieldId == key[8..]);
+    internal static bool IsMappedExtra(PlanDocument document, string key)
+        => IsExtra(key) && (document.State.Settings.Columns.Any(c => c.FieldId == key[8..])
+            || document.Baseline.Columns.Any(c => c.Id == key[8..] && c.Name == "Status" && c.DataType == "SINGLE_SELECT"));
     internal static void ValidateOwnership(PlanDocument document)
     {
         var baseline = document.Baseline.Rows.ToDictionary(r => r.Identity);
         foreach (var row in document.State.Rows)
-            foreach (var key in row.ExtraValues.Keys.Where(k => IsMappedExtra(document.State.Settings, k)))
+            foreach (var key in row.ExtraValues.Keys.Where(k => IsMappedExtra(document, k)))
                 PlanOperations.Require(PlanValues.Get(row, key) == (baseline.TryGetValue(row.Identity, out var before) ? PlanValues.Get(before, key) : "null"),
                     "未発行の追加列編集があるフィールドは割り当てられません。編集を発行するか元に戻してください。");
     }

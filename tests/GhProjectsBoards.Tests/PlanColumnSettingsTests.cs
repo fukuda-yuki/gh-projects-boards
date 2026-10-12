@@ -42,6 +42,61 @@ internal sealed class PlanColumnSettingsTests
     }
 
     private static readonly DateOnly Day = new(2026,10,12);
+    [TestCase("Labels", "acme/repo にラベルがありません。ラベルは GitHub で作成します。")]
+    [TestCase("MilestoneTitle", "acme/repo にマイルストーンがありません。マイルストーンは GitHub で作成します。")]
+    [TestCase("Project:S", "Priority に選択肢がありません。選択肢は GitHub のプロジェクト設定で追加します。")]
+    [TestCase("Phase", "工程 に選択肢がありません。選択肢は GitHub のプロジェクト設定で追加します。")]
+    public void EmptyChoiceCatalogExplainsWhereToCreateChoicesAndStillAllowsClear(string field, string expected)
+    {
+        var row = new PlanRow("I1", "Task", "acme/repo");
+        var d = new PlanDocument(new(new("github.com",1),"P1"),new([row],[new("S","Priority","SINGLE_SELECT")]) {
+            RepositoryLabels = [new("acme/other","L","other")], RepositoryMilestones = [new("acme/other","M","other")] },
+            new([row],new() { Columns = field == "Phase" ? [new(PlanField.Phase,"S","Priority","SINGLE_SELECT")] : [] }));
+        Assert.That(() => PlanSheetEditing.Parse(d,field,"unknown",Day,"I1"),Throws.ArgumentException.With.Message.EqualTo(expected));
+        var cleared = PlanSheetEditing.Parse(d,field,"",Day,"I1");
+        if (field == PlanField.Labels) Assert.That(cleared,Is.Empty); else Assert.That(cleared,Is.Null);
+    }
+
+    [TestCase("Labels", "ラベルは bug, urgent のどれかを入力してください。")]
+    [TestCase("MilestoneTitle", "マイルストーンは Release のどれかを入力してください。")]
+    [TestCase("Project:S", "Priorityは High, Low のどれかを入力してください。")]
+    public void NonemptyChoiceCatalogStillListsValidNames(string field, string expected)
+        => Assert.That(() => PlanSheetEditing.Parse(ExtraDocument(),field,"unknown",Day,"I1"),Throws.ArgumentException.With.Message.EqualTo(expected));
+
+    [TestCase(false, "Done", false), TestCase(false, "Done", true), TestCase(true, null, true)]
+    public async Task UnavailableCopyDoesNotPublishCachedStandardFieldValues(bool closed, string? status, bool mapped)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-copy-columns-" + Guid.NewGuid().ToString("N"));
+        var row = new PlanRow("I1","Task","acme/repo") { Closed = closed, CloseDate = closed ? Day : null, Status = status, Estimate = mapped ? 8 : null,
+            ExtraValues = ImmutableDictionary<string,PlanExtraValue>.Empty
+                .Add("Project:S",new(status is null ? ValueAvailability.Empty : ValueAvailability.Present,PlanJson.Text(status)))
+                .Add("Project:N",new(ValueAvailability.Present,"8"))
+                .Add("Project:T",new(ValueAvailability.Present,"\"keep\"")) };
+        var d = new PlanDocument(new(new("github.com",1),"P1"),new([row],[new("S","Status","SINGLE_SELECT") { Options = ["Done"] },new("N","Estimate","NUMBER"),new("T","Notes","TEXT")]),
+            new([row],new() { Columns = mapped ? [new(PlanField.Estimate,"N","Estimate","NUMBER")] : [] })) { Sync = new() { Unavailable = ["I1"] } };
+        var session = await PlanSession.CreateAsync(new(root),d,Day);
+        try {
+            await session.ResolveUnavailable("I1",true,Day);
+            var copy = session.Document.State.Rows.Single();
+            Assert.That(copy.Status,Is.Null);
+            Assert.That(copy.Closed,Is.False); Assert.That(copy.CloseDate,Is.Null);
+            Assert.That(copy.Estimate,Is.EqualTo(mapped ? (decimal?)8 : null));
+            Assert.That(PlanValues.Get(copy,"Project:S"),Is.EqualTo("null"));
+            Assert.That(PlanValues.Get(copy,"Project:N"),Is.EqualTo(mapped ? "null" : "8"));
+            Assert.That(PlanValues.Get(copy,"Project:T"),Is.EqualTo("\"keep\""));
+            var remote = new PlanRemoteSnapshot(session.Document.Baseline,ImmutableDictionary<string,string>.Empty,
+                [new(new(d.Project.Scope,"S"),d.Project,"Status","ProjectV2SingleSelectField","SINGLE_SELECT",FieldOwner.ProjectItem,[new("done","Done")],ValueAvailability.Present),
+                 new(new(d.Project.Scope,"N"),d.Project,"Estimate","ProjectV2Field","NUMBER",FieldOwner.ProjectItem,[],ValueAvailability.Present),
+                 new(new(d.Project.Scope,"T"),d.Project,"Notes","ProjectV2Field","TEXT",FieldOwner.ProjectItem,[],ValueAvailability.Present)],0,0);
+            var writes = PlanPublishPlan.Build(session.Document,remote,Day,Guid.NewGuid().ToString("N")).Writes;
+            Assert.That(writes.Any(w => w.Input.Contains("\"fieldId\": \"S\"")),Is.False);
+            Assert.That(writes.Count(w => w.Input.Contains("\"fieldId\": \"N\"")),Is.EqualTo(1));
+            await session.Undo(Day);
+            Assert.That(PlanValues.Get(session.Document.State.Rows.Single(),"Project:S"),Is.EqualTo(PlanJson.Text(status)));
+            await session.Redo(Day);
+            Assert.That(session.Document.State.Rows.Single().Status,Is.Null);
+        } finally { await session.FlushAsync(); Directory.Delete(root,true); }
+    }
     [Test]
     public void MappingRejectsUnpublishedExtraValuesWithoutChangingTheDocument()
     {

@@ -46,12 +46,25 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<TextBlock>("PlanColumnModeRepository").Text,Is.EqualTo("読み取りのみ"));
         });
         double before = 0;
+        double backY = 0;
         await Ui.Run(() => {
+            var back = Ui.Find<Button>("PlanSettingsBack");
+            Assert.That(back.IsLoaded && back.IsEnabled, Is.True);
+            backY = back.TransformToVisual(view).TransformPoint(new()).Y;
+            var viewport = Ui.Find<ScrollViewer>("PlanSettingsScroll");
+            Assert.That(backY, Is.GreaterThanOrEqualTo(0));
+            Assert.That(backY + back.ActualHeight, Is.LessThanOrEqualTo(viewport.TransformToVisual(view).TransformPoint(new()).Y));
             before = Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset;
             Ui.Find<TextBox>("PlanColumnNameRepository").Focus(FocusState.Keyboard);
             Ui.Find<TextBox>("PlanColumnNameRepository").StartBringIntoView(new() { AnimationDesired = false });
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").VerticalOffset > before);
+        await Ui.Run(() => {
+            var back = Ui.Find<Button>("PlanSettingsBack");
+            Assert.That(back.TransformToVisual(view).TransformPoint(new()).Y, Is.EqualTo(backY).Within(1));
+            Ui.Click("PlanSettingsBack");
+        });
+        await Ui.Ready<TextBlock>("PlanHeaderTitle");
     }
     [Test]
     public async Task ColumnSettingsNavigateRenameMoveHideResetAndUndoRenderedHeaders()
@@ -95,12 +108,17 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         await CommitText("PlanCell1_Remaining","invalid");
+        var before = PlanJson.Text(workspace.Session!.Document);
+        var undo = workspace.Session.UndoCount;
         await OpenColumnSettingsThroughOverflow();
         await Ui.Idle();
         await Ui.Run(()=> {
             Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text,Is.EqualTo("invalid"));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").IsLoaded,Is.True);
             Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t=>AutomationProperties.GetAutomationId(t)=="PlanColumnNameTitle" && t.IsLoaded && t.Visibility==Visibility.Visible),Is.False);
         });
+        Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
     }
 }
 

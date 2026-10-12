@@ -102,6 +102,7 @@ internal sealed partial class PlanSheetHostedTests
         await MountPresentation([parent with { Assignees = ["local"], Predecessors = [], StartNoEarlierThan = Today.AddDays(7), Fixed = !held, Status = "Local" }, child, predecessor],
             [parent, child, predecessor], [new("U1", "alice", 100, null), new("U2", "bob", 100, null)]);
         foreach (var field in new[] { PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status }) await SetColumnVisible(field,true);
+        var undo = session.UndoCount;
         foreach (var (field, text) in new[] { (PlanField.Assignees, "alice, bob"), (PlanField.Predecessors, "3"),
             (PlanField.StartNoEarlierThan, "2026-10-05"), (PlanField.Fixed, "固定"), (PlanField.Status, "Todo") }) {
             await Select(1, field);
@@ -120,7 +121,7 @@ internal sealed partial class PlanSheetHostedTests
             var peer = FrameworkElementAutomationPeer.CreatePeerForElement(cell);
             Assert.That(peer.GetHelpText(), held ? Does.Contain("alice, bob") : Is.Empty);
         });
-        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
     }
 
     [TestCase(false), TestCase(true), Category("PlanSheetNative")]

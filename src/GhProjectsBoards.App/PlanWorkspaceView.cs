@@ -45,6 +45,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly StackPanel chooser = new() { Spacing = 8 };
     private readonly StackPanel settings = new() { Spacing = 12, MaxWidth = 850, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ScrollViewer settingsScroll;
+    private readonly Grid settingsArea = new() { RowSpacing = 12 };
+    private readonly Button settingsBack;
     private FrameworkElement? columnSettingsHeading;
     private readonly ListView registered = Id(new ListView { SelectionMode = ListViewSelectionMode.Single }, "RegisteredProjects");
     private readonly ListView available = Id(new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 450 }, "AvailableProjects");
@@ -206,6 +208,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         registered.SelectionChanged += async (_, _) => { if (!rendering && registered.SelectedItem is ProjectChoice choice) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(() => OpenProject(choice)); } };
         available.SelectionChanged += async (_, _) => { if (!rendering && available.SelectedItem is ProjectChoice choice) await Run(() => OpenProject(choice)); };
         settingsScroll = Id(new ScrollViewer { Content = settings, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, "PlanSettingsScroll");
+        settingsArea.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        settingsArea.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
+        settingsBack = Button("戻る", "PlanSettingsBack", () => {
+            if (settingsReturnPage == "summary") RenderSummary();
+            if (settingsReturnPage == "publish") RenderReview();
+            Show(settingsReturnPage); return Task.CompletedTask;
+        });
+        settingsBack.HorizontalAlignment = HorizontalAlignment.Left;
+        settingsArea.Children.Add(settingsBack);
+        settingsArea.Children.Add(settingsScroll); Grid.SetRow(settingsScroll, 1);
         settingsScroll.ViewChanged += async (_, args) => {
             if (rendering || args.IsIntermediate || currentPage != "settings") return;
             if (invalidSetting is { } invalid && invalid.Text == invalidSettingText) { RevealSettingsInput(); return; }
@@ -213,7 +225,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             var pending = settingsTextInputs.FirstOrDefault(p => ReferenceEquals(p.Input, focused) && p.Dirty());
             if (pending.Input is not null && !SettingIsVisible(pending.Input)) await Run(pending.Commit, commitPending: false);
         };
-        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, summaryArea, settingsScroll, publishReview }) { surfaces.Children.Add(surface); }
+        foreach (var surface in new FrameworkElement[] { connection, chooser, taskArea, summaryArea, settingsArea, publishReview }) { surfaces.Children.Add(surface); }
         var cardContent = new Grid();
         cardContent.RowDefinitions.Add(new() { Height = GridLength.Auto });
         cardContent.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -444,7 +456,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
         if (summaryView is not null) summaryView.IsEnabled = !busy;
-        settingsScroll.IsEnabled = !busy;
+        settingsScroll.IsEnabled = settingsBack.IsEnabled = !busy;
         foreach (var bar in new[] { refreshFailure, publishFailure, saveFailure, sheet?.SaveFailure })
             if (bar?.ActionButton is Button retry) retry.IsEnabled = !busy;
     }
@@ -472,7 +484,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         connection.Visibility = page == "connection" ? Visibility.Visible : Visibility.Collapsed;
         chooser.Visibility = page == "chooser" ? Visibility.Visible : Visibility.Collapsed;
         taskArea.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
-        settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
+        settingsArea.Visibility = settingsScroll.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
         toolbar.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
         projectPicker.Visibility = workspace.Context is null ? Visibility.Collapsed : Visibility.Visible;
         settingsButton.Visibility = workspace.Session is null ? Visibility.Collapsed : Visibility.Visible;
@@ -552,11 +564,6 @@ internal sealed partial class PlanWorkspaceView : UserControl
         try
         {
             var generation = ++settingsGeneration; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); settings.Children.Clear();
-            settings.Children.Add(Button("戻る", "PlanSettingsBack", () => {
-                if (settingsReturnPage == "summary") RenderSummary();
-                if (settingsReturnPage == "publish") RenderReview();
-                Show(settingsReturnPage); return Task.CompletedTask;
-            }));
             var value = session.Document.State.Settings;
             settings.Children.Add(Label("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)

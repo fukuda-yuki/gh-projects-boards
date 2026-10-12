@@ -23,9 +23,11 @@ internal static class PlanSheetEditing
                 ?? throw new ArgumentException("編集する Issue を選択してください。");
             var options = (field == PlanField.Labels ? document.Baseline.RepositoryLabels : document.Baseline.RepositoryMilestones)
                 .Where(o => o.Repository == repository).Select(o => o.Name).ToArray();
-            if (field == PlanField.MilestoneTitle) return PlanExtraEditing.Select("マイルストーン", options, text);
+            var name = field == PlanField.Labels ? "ラベル" : "マイルストーン";
+            var emptyMessage = $"{repository} に{name}がありません。{name}は GitHub で作成します。";
+            if (field == PlanField.MilestoneTitle) return PlanExtraEditing.Select(name, options, text, emptyMessage);
             return text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Select(label => PlanExtraEditing.Select("ラベル", options, label)!).Distinct().Order(StringComparer.Ordinal).ToImmutableArray();
+                .Select(label => PlanExtraEditing.Select(name, options, label, emptyMessage)!).Distinct().Order(StringComparer.Ordinal).ToImmutableArray();
         }
         if (PlanSheetColumns.IsExtra(field)) return PlanExtraEditing.Parse(document, field, text, today);
         if (field == PlanField.Phase)
@@ -33,11 +35,7 @@ internal static class PlanSheetEditing
             var mapping = document.State.Settings.Columns.SingleOrDefault(c => c.Role == field)
                 ?? throw new ArgumentException("工程のフィールドが未設定です。");
             var options = document.Baseline.Columns.SingleOrDefault(c => c.Id == mapping.FieldId)?.Options ?? [];
-            var value = text.Trim();
-            if (value.Length == 0) return null;
-            var matches = options.Where(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (matches.Length == 1) return matches[0];
-            throw new ArgumentException($"工程は {string.Join(", ", options)} のどれかを入力してください。");
+            return PlanExtraEditing.Select("工程", options, text);
         }
         if (text.Length == 0) return null;
         switch (field)

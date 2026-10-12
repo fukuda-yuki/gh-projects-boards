@@ -8,7 +8,7 @@ internal static class PlanExtraEditing
         ?? throw new ArgumentException("列を読み取れません。最新の情報に更新してください。");
     internal static string? ReadOnlyReason(PlanDocument document, PlanRow row, string key)
     {
-        if (PlanSheetColumns.IsMappedExtra(document.State.Settings, key)) return "このフィールドは割り当てた標準列で編集してください。";
+        if (PlanSheetColumns.IsMappedExtra(document, key)) return "このフィールドは割り当てた標準列で編集してください。";
         var definition = document.Baseline.Columns.SingleOrDefault(c => "Project:" + c.Id == key);
         if (definition?.DataType is not ("TEXT" or "NUMBER" or "DATE" or "SINGLE_SELECT")) return "この列は読み取り専用です。";
         return row.ExtraValues.GetValueOrDefault(key)?.Availability is Projects.ValueAvailability.Present or Projects.ValueAvailability.Empty
@@ -31,13 +31,15 @@ internal static class PlanExtraEditing
             "DATE" => PlanSheetEditing.Parse(document, PlanField.Start, text, today),
             "SINGLE_SELECT" => Select(definition.Name, definition.Options, text), _ => null };
     }
-    internal static string? Select(string name, IEnumerable<string> options, string text)
+    internal static string? Select(string name, IEnumerable<string> options, string text, string? emptyMessage = null)
     {
         var value = text.Trim();
         if (value.Length == 0) return null;
-        var matches = options.Where(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var choices = options.ToArray();
+        if (choices.Length == 0) throw new ArgumentException(emptyMessage ?? $"{name} に選択肢がありません。選択肢は GitHub のプロジェクト設定で追加します。");
+        var matches = choices.Where(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (matches.Length == 1) return matches[0];
-        throw new ArgumentException($"{name}は {string.Join(", ", options)} のどれかを入力してください。");
+        throw new ArgumentException($"{name}は {string.Join(", ", choices)} のどれかを入力してください。");
     }
     internal static object? Validate(PlanDocument document, string key, object? value)
     {

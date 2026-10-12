@@ -88,7 +88,7 @@ internal static class PlanPublishPlan
             }
             foreach (var field in PlanValues.Fields(before, row))
             {
-                if (PlanSheetColumns.IsMappedExtra(document.State.Settings, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
+                if (PlanSheetColumns.IsMappedExtra(document, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings) || PlanOperations.IsSummaryPublishExcluded(scheduled.IsSummary, field)
                     || PlanOperations.IsUnmappedCalculation(scheduled, field, document.State.Settings)) continue;
                 var bv = PlanValues.Get(before, field); var av = PlanValues.Get(row, field);
                 if (bv == av) continue;

@@ -158,7 +158,12 @@ internal sealed partial class PlanSheetView : Grid
         Overflow("クリア", "PlanSheetClear", Symbol.Clear, Clear, "Delete");
         commands.SecondaryCommands.Add(new AppBarSeparator());
         if (importCsv is not null) Overflow("CSV から追加…", "PlanSheetCsv", Symbol.OpenFile, importCsv, queued: false);
-        Overflow("表示列", "PlanSheetColumns", Symbol.List, openColumns ?? (() => Task.CompletedTask), queued: false);
+        Overflow("表示列", "PlanSheetColumns", Symbol.List, async () => {
+            var accepted = false;
+            await Run(async () => { await CommitPending(); accepted = true; }, "Column settings");
+            // The workspace flushes this queue, so invoke navigation only after it completes.
+            if (accepted && openColumns is not null) await openColumns();
+        }, queued: false);
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };

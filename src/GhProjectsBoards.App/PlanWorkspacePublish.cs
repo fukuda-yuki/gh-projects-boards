@@ -73,7 +73,7 @@ internal sealed partial class PlanWorkspaceView
             if (isNew) Group(row.Identity).Lines.Add(new($"新規 Issue  {row.Repository}"));
             foreach (var field in PlanValues.Fields(before, current))
             {
-                if (PlanSheetColumns.IsMappedExtra(document.State.Settings, field)) continue;
+                if (PlanSheetColumns.IsMappedExtra(document, field)) continue;
                 var conflict = conflicts.SingleOrDefault(c => c.Identity == row.Identity && c.Field == field);
                 if (conflict is null && (PlanOperations.IsSummaryPublishExcluded(result.IsSummary, field) || PlanOperations.IsLocalConstraint(field, document.State.Settings))) continue;
                 var oldValue = PlanValues.Get(before, field); var newValue = PlanValues.Get(current, field);
