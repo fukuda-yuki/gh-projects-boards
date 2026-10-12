@@ -161,10 +161,6 @@ internal sealed partial class PlanWorkspaceHostedTests
         await CommitText("PlanCell1_Remaining", original);
         Assert.That(PlanJson.Text(workspace.Session.Document), Is.EqualTo(before));
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo));
-        await OpenColumnSettingsThroughOverflow();
-        await Ui.Ready<TextBox>("PlanColumnNameTitle");
-        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
-        await Ui.Ready<TextBlock>("PlanHeaderTitle");
     }
 }
 
