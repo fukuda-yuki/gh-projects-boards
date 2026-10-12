@@ -252,7 +252,7 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.V));
         await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="メモ", PasteState);
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.Delete));
-        await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="");
+        await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="", PasteState);
         await Ui.Run(async ()=>await sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
         await Ui.Until(()=>Ui.Find<TextBox>("PlanCell2_Project:X").Text=="メモ");
         await Ui.Run(()=>Assert.That(Ui.Find<TextBlock>("PlanHeaderProject:X").Text,Is.EqualTo("Notes")));

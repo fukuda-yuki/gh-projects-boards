@@ -1880,6 +1880,8 @@ internal sealed partial class PlanSheetHostedTests
     {
         await SetColumnVisible(PlanField.Status,true);
         await Ui.Idle();
+        // The wider sheet can still move the chart offset after normal-priority work; measure after it settles.
+        await Ui.LowPriorityIdle();
         double barX = 0;
         await Ui.Run(() => barX = Ui.Find<Rectangle>("PlanBar1").TransformToVisual(sheet).TransformPoint(new()).X - sheet.SheetViewport);
         await Ui.Run(() => {
