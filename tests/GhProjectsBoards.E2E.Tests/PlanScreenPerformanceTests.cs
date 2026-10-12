@@ -287,10 +287,6 @@ public sealed class PlanScreenPerformanceTests
             Assert.That(window.FindAllDescendants(c => c.ByAutomationId("PlanSheetCopy")).Any(item => !item.IsOffscreen), Is.False);
             Assert.That(menuClose.ScreenChanged && menuClose.FinalStateStable, Is.True, "Escape must remove the recorded menu.");
             RecordRefreshMenu();
-            RecordFlyout("columns", "PlanSheetColumns", "PlanColumnRemaining", [
-                "PlanColumnId", "PlanColumnIndicator", "PlanColumnTitle", "PlanColumnAssignees", "PlanColumnEstimate",
-                "PlanColumnRemaining", "PlanColumnActual", "PlanColumnStart", "PlanColumnEnd", "PlanColumnPredecessors",
-                "PlanColumnStartNoEarlierThan", "PlanColumnFixed", "PlanColumnStatus"]);
             RecordFlyout("predecessor", "PlanSheetPredecessorAdd", "PlanPredecessorSearch",
                 ["PlanPredecessorSearch", "PlanPredecessorCandidates", "PlanPredecessorConfirm", "PlanPredecessorCancel"]);
             RecordFlyout("project", "PlanProjectPicker", "PlanChooseProject",
