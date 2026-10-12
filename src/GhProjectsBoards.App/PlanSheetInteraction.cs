@@ -250,18 +250,20 @@ internal sealed partial class PlanSheetView
     }
     internal Task KeyboardCommand(VirtualKey key)
     {
-        // Run yields to native focus events before executing. Preserve the user's
-        // copy target at invocation, including summary cells without an editor.
+        // Run yields to native focus events before executing. Preserve command
+        // targets at invocation, including paste's matrix expansion order.
         var range = Range;
-        var copyRows = key == VirtualKey.C ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
-        var copyFields = key == VirtualKey.C ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
+        var rows = key is VirtualKey.C or VirtualKey.Delete ? RowIds.Skip(range.Row).Take(range.RowCount).ToArray() : [];
+        var fields = key is VirtualKey.C or VirtualKey.Delete ? Fields.Skip(range.Column).Take(range.ColumnCount).ToArray() : [];
+        var visible = key == VirtualKey.V ? RowIds.Where(Rows.ContainsKey).ToArray() : [];
+        var columns = key == VirtualKey.V ? Fields.ToArray() : [];
         return Run(async () => {
             switch (key)
             {
-                case VirtualKey.C: await Copy(copyRows, copyFields); break;
-                case VirtualKey.V: await Paste(); break;
+                case VirtualKey.C: await Copy(rows, fields); break;
+                case VirtualKey.V: await Paste(range, visible, columns); break;
                 case VirtualKey.D: await Fill(PlanOperationKind.CtrlD); break;
-                case VirtualKey.Delete: await Clear(); break;
+                case VirtualKey.Delete: await Clear(rows, fields); break;
                 case VirtualKey.Z: await ChangeHistory(false); break;
                 case VirtualKey.Y: await ChangeHistory(true); break;
             }
@@ -346,11 +348,6 @@ internal sealed partial class PlanSheetView
         { throw new InvalidOperationException(ClipboardError, error); }
         finally { clipboardWork = "none"; }
     }
-    private Task Copy()
-    {
-        var range = Range;
-        return Copy(RangeRows(range), Fields.Skip(range.Column).Take(range.ColumnCount).ToArray());
-    }
     private async Task Copy(string[] rows, string[] fields)
     {
         if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
@@ -361,9 +358,8 @@ internal sealed partial class PlanSheetView
         var write = writeClipboard;
         await WithClipboard(token => { write(content, token); return Task.FromResult(true); });
     }
-    private async Task Paste()
+    private async Task Paste(CellRange range, string[] visible, string[] columns)
     {
-        var range = Range; var visible = RowIds.Where(Rows.ContainsKey).ToArray(); var columns = Fields;
         var content = await WithClipboard(readClipboard);
         var text = content.Text;
         EditPlanCells command;
@@ -422,11 +418,11 @@ internal sealed partial class PlanSheetView
         if (Display(rows[0], field).Length == 0) throw new ArgumentException("空値からコピーできません。クリアを使ってください。");
         Check(await Session.Execute(FillCommand(kind, rows[0], rows.Skip(1), field), Today)); Refresh();
     }
-    private async Task Clear()
+    private async Task Clear(string[] rows, string[] fields)
     {
-        var range = Range; var rows = RangeRows(range); var fields = Fields.Skip(range.Column).Take(range.ColumnCount).ToImmutableArray();
+        if (rows.Any(id => !Rows.ContainsKey(id))) throw new ArgumentException("空行を除いて範囲を選択してください。");
         RequireNoPending(rows, fields);
-        Check(await Session.Execute(new ClearPlanCells(rows.ToImmutableArray(), fields), Today)); Refresh();
+        Check(await Session.Execute(new ClearPlanCells(rows.ToImmutableArray(), fields.ToImmutableArray()), Today)); Refresh();
     }
     private async Task Insert()
     {
