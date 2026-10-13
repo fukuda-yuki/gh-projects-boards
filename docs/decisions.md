@@ -4,7 +4,7 @@ Record accepted choices and their rationale. Keep task progress and experimental
 
 ## Manual shipped with the app (#140, #172 option B)
 
-The manual ships as Markdown (`マニュアル.md`) beside the executable so it is available with the installed app without a repository checkout or network access. **ヘルプ** and F1 open it in the default application, with Notepad as the fallback when Markdown has no association. [#140](https://github.com/fukuda-yuki/gh-projects-boards/issues/140) owns shipping and opening; [#172](https://github.com/fukuda-yuki/gh-projects-boards/issues/172) may change the format when captured screenshots are added.
+The manual ships as Markdown (`マニュアル.md`) with `manual/images/*.png` beside the executable, available without a checkout or network. Markdown remains the single source. **ヘルプ** and F1 render it as a small, escaped HTML document in the user's temporary directory and open it with the default application; absolute file URIs keep the shipped images available. Conversion/write failure opens the original Markdown, with Notepad as the missing-association fallback. A dependency-free Core converter covers only the manual's Markdown constructs, with no raw HTML. This keeps option B from [#140](https://github.com/fukuda-yuki/gh-projects-boards/issues/140) while making the app-captured screenshots in [#172](https://github.com/fukuda-yuki/gh-projects-boards/issues/172) readable. Images are regenerated through the ordinary app's existing offline automation in one documented command, never hand-cropped or replaced by mockups.
 
 ## Planning editor for GitHub Projects
 

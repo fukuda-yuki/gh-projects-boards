@@ -23,6 +23,7 @@ function JsonFile($Value, [string]$Path) { $Value | ConvertTo-Json -Depth 20 | S
 function Sources {
     @((Get-ChildItem -LiteralPath (Join-Path $repo 'src') -Recurse -File | Where-Object FullName -NotMatch '[\\/](bin|obj)[\\/]'),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'docs/notices') -File),
+      (Get-ChildItem -LiteralPath (Join-Path $repo 'docs/manual/images') -Filter '*.png' -File),
       (Get-Item -LiteralPath $PSCommandPath, (Join-Path $repo 'docs/dependencies.md'), (Join-Path $repo 'docs/internal-distribution-ja.md'), (Join-Path $repo 'docs/user-manual.md')),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'templates') -File)) | ForEach-Object { $_ } | Sort-Object FullName | ForEach-Object {
         [ordered]@{ path = [IO.Path]::GetRelativePath($repo, $_.FullName).Replace('\', '/'); sha256 = Hash $_.FullName }
