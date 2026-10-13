@@ -51,7 +51,7 @@ internal static class PlanSheetEditing
                 if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number) && number >= 0) return number;
                 throw new ArgumentException("工数は0以上の数値で入力してください。");
             case PlanField.Start: case PlanField.End: case PlanField.StartNoEarlierThan:
-                if (DateOnly.TryParseExact(text, ["yyyy-MM-dd", "yyyy/M/d"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)) return day;
+                if (PlanDateInput.TryParse(text, out var day)) return day;
                 var status = document.State.Settings.StatusDate ?? today;
                 var candidates = Enumerable.Range(Math.Max(1, status.Year - 4), Math.Min(9999, status.Year + 4) - Math.Max(1, status.Year - 4) + 1)
                     .Select(year => DateOnly.TryParseExact($"{year:D4}/{text}", "yyyy/M/d", CultureInfo.InvariantCulture, DateTimeStyles.None, out var candidate) ? candidate : (DateOnly?)null)

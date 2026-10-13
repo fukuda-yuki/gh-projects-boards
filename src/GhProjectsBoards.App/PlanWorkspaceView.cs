@@ -375,7 +375,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 RefreshLists();
                 if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
-                error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd または yyyy/M/d で入力してください。" : ex.Message;
             }
             finally { operationCancellation = null; UpdateCommandAvailability(); }
         }
@@ -681,9 +681,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
             settings.Children.Add(Label("期間"));
             settings.Children.Add(TextSetting("開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
-                text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+                text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
+                () => workspace.Session!.Document.State.Settings.ProjectStart?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(TextSetting("終了日", "PlanProjectEnd", value.ProjectEnd?.ToString("yyyy-MM-dd") ?? "",
-                text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+                text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
+                () => workspace.Session!.Document.State.Settings.ProjectEnd?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(Label("工程"));
             var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
             var phaseTargets = new StackPanel { Spacing = 4 };
@@ -894,7 +896,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             } else settingsInputProblem.Show(input, message);
         }
     }
-    private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply)
+    private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply, Func<string>? display = null)
     {
         var input = Id(new TextBox { Header = label, Text = value, MinWidth = 280 }, id);
         var accepted = value;
@@ -912,12 +914,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await apply(text); }
             catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
                 var name = AutomationProperties.GetName(input);
-                var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                var reason = ex is FormatException ? "日付は yyyy-MM-dd または yyyy/M/d で入力してください。" : ex.Message;
                 invalidSetting = input; invalidSettingText = text; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
                 AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
                 throw new InvalidOperationException(invalidSettingMessage, ex);
             }
-            accepted = text; AutomationProperties.SetHelpText(input, "");
+            accepted = display?.Invoke() ?? text;
+            if (display is not null && input.Text == text) input.Text = accepted;
+            AutomationProperties.SetHelpText(input, "");
             if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
