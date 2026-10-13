@@ -504,7 +504,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
-                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "表示列" }));
+                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
             Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
         });

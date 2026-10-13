@@ -25,6 +25,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly SplitButton refreshButton = Id(new SplitButton { Height = 32 }, "PlanRefresh");
     private readonly MenuFlyoutItem resetItem = Id(new MenuFlyoutItem { Text = "GitHub の状態に戻す…", AllowFocusWhenDisabled = true }, "PlanReset");
     private readonly InfoBar refreshResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanRefreshResult");
+    private readonly InfoBar csvExportResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanCsvExportResult");
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
@@ -195,6 +196,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
         AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(refreshResult);
+        AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        failures.Children.Add(csvExportResult);
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
@@ -540,7 +543,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
                 next.CommandRowFocusRequested += () => {
                     if (ReferenceEquals(sheet, next) && FocusManager.FindFirstFocusableElement(toolbar) is Control command)
                         command.Focus(FocusState.Keyboard);
@@ -985,11 +988,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task<string?> SelectFile(string purpose)
     {
         if (PickFile is { } pick) return await pick(purpose);
-        if (purpose == "export")
+        if (purpose is "export" or "csv-export")
         {
-            var picker = new FileSavePicker { SuggestedFileName = "project-settings" };
+            var csv = purpose == "csv-export";
+            var title = string.Concat((workspace.Selected?.Title ?? "Project").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).TrimEnd(' ', '.');
+            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : "project-settings" };
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
-            picker.FileTypeChoices.Add("JSON", [".json"]);
+            picker.FileTypeChoices.Add(csv ? "CSV" : "JSON", [csv ? ".csv" : ".json"]);
             return (await picker.PickSaveFileAsync())?.Path;
         }
         else

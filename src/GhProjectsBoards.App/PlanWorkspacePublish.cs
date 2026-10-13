@@ -206,12 +206,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private PlanPublishReviewLine ReviewLine(PlanDocument document, string identity, string field, string? before, string? after, PlanConflict? conflict, bool isNew = false)
     {
-        var label = PlanSheetView.Columns.FirstOrDefault(c => c.Field == field) is { } column ? PlanSheetView.FullName(column) : field switch {
-            PlanField.Title => "タイトル", PlanField.Assignees => "担当者", PlanField.Parent => "親タスク",
-            PlanField.Predecessors => "先行タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
-            PlanField.Fixed => "日程固定", PlanField.StartNoEarlierThan => "開始日指定", _ => field.ToString() };
-        var configured = PlanSheetColumns.All(document).FirstOrDefault(c => c.Key == field);
-        if (configured is not null && (configured.DisplayName is not null || PlanSheetColumns.IsExtra(field) || field is PlanField.Labels or PlanField.MilestoneTitle or PlanField.Repository)) label = configured.Name;
+        var label = PlanSheetColumns.ReviewName(field, PlanSheetColumns.All(document).FirstOrDefault(c => c.Key == field));
         var line = new PlanPublishReviewLine(isNew ? $"{label}  {ReviewValue(document, field, after)}" : $"{label}  {ReviewValue(document, field, before)} → {ReviewValue(document, field, after)}");
         if (field is PlanField.Parent or PlanField.Predecessors &&
             new[] { before, after, conflict?.Remote }.Any(json => ReviewValue(document, field, json).Contains("未取得")))
@@ -392,17 +387,4 @@ public sealed class PlanPublishGroupView : Grid
         }
         RefreshActions();
     }
-}
-
-internal static class PlanPublishText
-{
-    internal static string Failure(PlanPublishFailure failure) => failure.Reason switch
-    {
-        "VerificationMismatch" when failure.Field == PlanField.NewTask => "プロジェクトへの追加を確認できません",
-        "VerificationMismatch" => "GitHubへの反映を確認できません",
-        "NotDispatched" => "まだGitHubへ送信されていません",
-        _ when failure.Reason.IndexOf(": ", StringComparison.Ordinal) is var separator && separator >= 0 => failure.Reason[(separator + 2)..],
-        _ when failure.Reason.Any(c => c > 127 || char.IsWhiteSpace(c)) => failure.Reason,
-        _ => "GitHubへの発行に失敗しました。再発行してください。"
-    };
 }

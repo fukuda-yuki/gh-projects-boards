@@ -41,6 +41,20 @@ Publication resolves each new row's repository separately. Every destination mus
 
 The [sandbox evaluation file](evaluation/sandbox-plan.csv) contains a small plan for Project 3, uses only `fukuda-yuki` or no assignee, and targets `fukuda-yuki/codex-sandbox`. Importing it is local preparation; publishing it remains an explicit ordinary-app action.
 
+## CSV export (#173)
+
+**CSV に書き出し…** (`PlanSheetCsvExport`) sits beside **CSV から追加…** in the plan sheet overflow. With a Project open, it resolves pending cell input through the ordinary command gate before opening a native save picker; invalid or composing input prevents export. The suggested name is `<Project title>.csv`, with a `.csv` file type. Cancellation does nothing. Generation and writing run off the UI thread. Failure shows the reason in the existing error presentation; success confirms the exported data-row count (for example **1,040 行を書き出しました。**). Export never reads or writes GitHub and requires no Excel installation.
+
+Export includes every local-document row in plan order, including requirement/summary rows, folded children and filtered-out tasks. There is no row-scope choice. Values are the current local sheet values, including calculated dates, summary effort and calculated Remaining. Empty values are empty cells; unavailable/unsupported extra values retain **取得できません**. Assignees use the full comma-separated sheet names; labels and predecessors use the sheet text (plan row IDs, or 計画外).
+
+The column set is deliberately tied to the sheet configuration:
+
+1. Fixed **ID**, the one-based plan row number.
+2. Every visible column from `PlanSheetColumns.All(document)` in its current order, excluding `Id`. Headers are their configured display names (`Name`). Supported standard columns are 状態, タスク名, 工程, 担当者, 見積 h, 残 h, 実績 h, 開始日, 終了日, 先行, 開始日指定, 日程固定 and ステータス; optional columns include other Project TEXT/NUMBER/DATE/SINGLE_SELECT/ITERATION fields, ラベル, マイルストーン and リポジトリ. 状態 exports its accessible state text, empty for an ordinary unchanged row. A visible repository column does not replace the fixed identity column.
+3. Fixed **リポジトリ** (`owner/name`), **Issue 番号**, **URL**, then **未発行**. Local tasks have no Issue number or URL. 未発行 is **新規** for a new local task, otherwise comma-separated changed-field names as in publish review, or empty for an unchanged row. This uses the same unpublished-change rules as the sheet, including changes to hidden fields.
+
+Effort and Project NUMBER values are invariant decimal numbers without units or grouping; negative numeric values remain numeric. Dates use `yyyy-MM-dd`. The file is UTF-8 **with BOM**, with CRLF record endings and RFC 4180 escaping: fields containing commas, double quotes, CR or LF are quoted and embedded quotes are doubled; embedded line breaks are preserved. Any text cell (including headers and identity values) starting with `=`, `+`, `-`, `@`, tab or CR is prefixed with one apostrophe to neutralize Excel formulas. Exporter-produced numbers and dates are not prefixed. This is an analysis output, not the new-task import template; Gantt, `.xlsx` and import changes are excluded.
+
 ## Summary view (#127)
 
 **サマリー** is the selected Project's read-only waterfall status view. Planning edits belong to 計画; rates and whole-Project allowances belong to settings. Undo/Redo, refresh and publish remain in the shell. The status bar has no Gantt legend here. All measures consume the same scheduled result as the sheet; no second scheduling or resource leveling occurs. Requirement/summary rows never contribute to counts or effort.

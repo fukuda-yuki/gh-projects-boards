@@ -283,43 +283,19 @@ public sealed class PlanSheetRow : Grid
             }
             if (problem is not null) frames[i].BorderBrush = PlanSheetView.Brush("SystemFillColorCriticalBrush");
         }
-        var states = new List<string>();
         var taskRow = owner.Rows.GetValueOrDefault(Identity);
         var done = taskRow?.Closed == true;
         var effort = owner.Schedule.GetValueOrDefault(Identity);
         var typed = taskRow?.StartNoEarlierThan is not null || taskRow?.Fixed == true;
         var unpublished = owner.Unpublished.Fields.ContainsKey(Identity);
-        if (remoteProblem.Length > 0) states.Add(remoteProblem);
-        if (late?.MissedPublishedDate is { } missed) {
-            var date = missed.ToString("M/d", CultureInfo.InvariantCulture);
-            var remaining = effort?.Remaining;
-            var remainingText = remaining is { } work
-                ? $"（見込み残存工数 {work.ToString("0.############################", CultureInfo.InvariantCulture)}h）" : "";
-            states.Add(late.OverdueKind == PlanOverdueKind.Finish
-                ? $"期限超過: 完了予定 {date} を過ぎて未完了{remainingText}"
-                : $"期限超過: 開始予定 {date} を過ぎて未着手");
-        }
-        if (late?.DaysLater is { } days && owner.PublishedEnd(Identity) is { } published)
-            states.Add($"予定より遅れ: 発行済み {published.ToString("M/d", CultureInfo.InvariantCulture)} から +{days} 日");
-        if (summary && late is not null) {
-            var descendants = new List<string>();
-            if (late.OverdueDescendantTasks > 0) descendants.Add($"期限超過 {late.OverdueDescendantTasks}");
-            if (late.LaterDescendantTasks > 0) descendants.Add($"予定より遅れ {late.LaterDescendantTasks}");
-            if (descendants.Count > 0) states.Add("配下に" + string.Join("、", descendants));
-        }
-        if (effort?.IsOverEstimate == true)
-            states.Add(effort.Forecast is null ? "見積超過: 見込工数・差異が数値の範囲外です" : $"見積超過: 見込工数 {effort.Forecast:0.############################}h（見積工数 {effort.Estimate:0.############################}h、差異 {effort.Variance:+0.############################;-0.############################;0}h）");
-        if (effort?.IsZeroRemainingOpen == true) states.Add("残 0・未完了: 見込み残存工数が 0 ですが Issue は閉じていません");
-        if (done) states.Add("完了");
-        if (typed) states.Add(taskRow?.Fixed == true ? "日程固定" : "開始日を指定");
-        if (unpublished) states.Add("未発行の変更あり");
+        var stateText = PlanSheetText.Indicator(taskRow, effort, late, owner.PublishedEnd(Identity), remoteProblem, unpublished);
         indicator.Glyph = remoteProblem.Length > 0 ? "\uEA39" : late?.Level == PlanLatenessLevel.Overdue ? "\uE814"
             : late?.Level == PlanLatenessLevel.Later ? "\uE7BA" : effort?.IsOverEstimate == true || effort?.IsZeroRemainingOpen == true ? "\uE7BA" : done ? "\uE73E" : typed ? "\uE718" : unpublished ? "\u2022" : "";
         indicator.FontFamily = new FontFamily(indicator.Glyph == "\u2022" ? "Segoe UI" : "Segoe Fluent Icons");
         indicator.Foreground = PlanSheetView.Brush(remoteProblem.Length > 0 || late?.Level is PlanLatenessLevel.Overdue or PlanLatenessLevel.Later ? "SystemFillColorCriticalBrush" : done ? "IndicatorDoneBrush" : typed ? "IndicatorTypedBrush" : "SheetChangedMarkBrush");
         indicator.Visibility = owner.IndicatorVisible ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(indicator, "PlanIndicator" + number);
-        AutomationProperties.SetName(indicator, string.Join("、", states)); ToolTipService.SetToolTip(indicator, string.Join("、", states));
+        AutomationProperties.SetName(indicator, stateText); ToolTipService.SetToolTip(indicator, stateText);
         Background = owner.IsSelectedRow(Identity) ? PlanSheetView.Brush("SheetSelectionBrush") : null;
         id.Foreground = PlanSheetView.Brush("TextFillColorSecondaryBrush");
         id.FontWeight = summary ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
