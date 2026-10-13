@@ -9,6 +9,12 @@ internal sealed record PlanSheetColumn(string Key, string DefaultName, string Gi
 }
 internal static class PlanSheetColumns
 {
+    internal static string ReviewName(string field, PlanSheetColumn? column = null)
+        => column?.DisplayName is not null ? column.Name : field switch {
+            PlanField.Estimate => "見積工数", PlanField.Remaining => "見込み残存工数", PlanField.Actual => "実績工数",
+            PlanField.Parent => "親タスク", PlanField.Order => "表示順", PlanField.SubIssueOrder => "子タスクの順序",
+            _ => column?.Name ?? Standard.FirstOrDefault(c => c.Key == field).Name ?? field
+        };
     internal static readonly (string Key, string Name)[] Standard = [
         ("Id", "ID"), ("Indicator", "状態"), ("Title", "タスク名"), ("Phase", "工程"), ("Assignees", "担当者"),
         ("Estimate", "見積 h"), ("Remaining", "残 h"), ("Actual", "実績 h"), ("Start", "開始日"), ("End", "終了日"),

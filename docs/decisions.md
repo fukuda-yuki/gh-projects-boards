@@ -2,6 +2,10 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
+## Manual shipped with the app (#140, #172 option B)
+
+The manual ships as Markdown (`マニュアル.md`) with `manual/images/*.png` beside the executable, available without a checkout or network. Markdown remains the single source. **ヘルプ** and F1 render it as a small, escaped HTML document in the user's temporary directory and open it with the default application; absolute file URIs keep the shipped images available. Conversion/write failure opens the original Markdown, with Notepad as the missing-association fallback. A dependency-free Core converter covers only the manual's Markdown constructs, with no raw HTML. This keeps option B from [#140](https://github.com/fukuda-yuki/gh-projects-boards/issues/140) while making the app-captured screenshots in [#172](https://github.com/fukuda-yuki/gh-projects-boards/issues/172) readable. Images are regenerated through the ordinary app's existing offline automation in one documented command, never hand-cropped or replaced by mockups.
+
 ## Planning editor for GitHub Projects
 
 Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). The product replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. GitHub Projects has no way to build a schedule from effort, assignees and predecessors, so the app provides that job and leaves general Issue work to GitHub.
@@ -197,4 +201,10 @@ Use the same scheduled result as the sheet and compare it with the optional Proj
 
 ## Milestone targets (#133)
 
+See also [first-open period and mapping initialization](#period-and-milestone-mapping-on-first-open-195).
+
 Use GitHub repository milestones as the source of target dates and Issue membership, grouping exact titles across repositories. Use the latest known due date on disagreement and disclose that disagreement. A group is closed only when all sources are closed. Targets inform comparison and drill-down, never scheduling. Due dates and membership remain owned by GitHub; only optional phase mappings are edited locally.
+
+## Period and milestone mapping on first open (#195)
+
+GitHub Projects has no native Project period. Initialize empty local settings from the first complete read: earliest Issue start, latest grouped milestone due date (or latest Issue end when no due date exists), and uniquely matching phase milestone titles using case-insensitive exact names or a non-letter/non-digit boundary after the option name. Leave an inverted period empty. Do this only at document creation, preserving held dates, zero unpublished tasks and empty Undo history. Never re-derive on refresh, reopen or reset, so explicit settings and user clears always win. Settings date inputs share the sheet's full-date formats, `yyyy-MM-dd` and `yyyy/M/d`, with ISO display.

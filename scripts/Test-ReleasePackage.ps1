@@ -28,8 +28,9 @@ foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File) {
     if ($relative -ne 'distribution-manifest.json' -and -not $paths.Contains($relative)) { throw "Unexpected payload: $relative" }
 }
 foreach ($required in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 'coreclr.dll', 'hostpolicy.dll',
-    'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'templates/new-tasks.csv')) {
+    'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'templates/new-tasks.csv')) {
     if (-not $paths.Contains($required)) { throw "Required payload missing: $required" }
 }
 if (@($paths | Where-Object { $_.StartsWith('notices/') }).Count -eq 0) { throw 'Required payload missing: notices' }
+if (@($paths | Where-Object { $_ -match '^manual/images/[^/]+\.png$' }).Count -eq 0) { throw 'Required payload missing: manual/images/*.png' }
 Join-Path $root 'GhProjectsBoards.App.exe'

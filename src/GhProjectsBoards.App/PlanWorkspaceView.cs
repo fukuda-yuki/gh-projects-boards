@@ -25,6 +25,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly SplitButton refreshButton = Id(new SplitButton { Height = 32 }, "PlanRefresh");
     private readonly MenuFlyoutItem resetItem = Id(new MenuFlyoutItem { Text = "GitHub の状態に戻す…", AllowFocusWhenDisabled = true }, "PlanReset");
     private readonly InfoBar refreshResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanRefreshResult");
+    private readonly InfoBar csvExportResult = Id(new InfoBar { Severity = InfoBarSeverity.Informational, IsClosable = true, IsOpen = false }, "PlanCsvExportResult");
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
@@ -82,6 +83,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
     internal Func<string, Task<string?>>? PickFile { get; set; }
+    internal Action<string>? OpenDocument { get; set; }
     private DateOnly Today => PlanClock.Today;
 
     internal PlanWorkspaceView(PlanWorkspace workspace, Func<string, string, GhConnectionService>? factory = null)
@@ -145,6 +147,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         settingsButton.MinHeight = 0; settingsButton.Height = 32; settingsButton.Padding = new(8, 0, 8, 0);
         AutomationProperties.SetName(settingsButton, "設定");
         ToolTipService.SetToolTip(settingsButton, "設定");
+        var titleCommands = new StackPanel { Orientation = Orientation.Horizontal };
+        titleCommands.Children.Add(CreateHelpButton()); titleCommands.Children.Add(settingsButton);
         root.Children.Add(WorkspaceTitleBar);
         root.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -195,6 +199,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         refreshResult.Closed += (_, _) => sheet?.ClearChangedTasksFilter();
         AutomationProperties.SetLiveSetting(refreshResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(refreshResult);
+        AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        failures.Children.Add(csvExportResult);
         failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
@@ -262,7 +268,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
-        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = settingsButton; };
+        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands; };
         Unloaded += (_, _) => {
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
@@ -375,7 +381,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 RefreshLists();
                 if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
-                error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd または yyyy/M/d で入力してください。" : ex.Message;
             }
             finally { operationCancellation = null; UpdateCommandAvailability(); }
         }
@@ -540,7 +546,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             if (!sheets.TryGetValue(session.Document.Project, out var next))
             {
-                next = new(session, importCsv: () => Run(() => ImportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
+                next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
                 next.CommandRowFocusRequested += () => {
                     if (ReferenceEquals(sheet, next) && FocusManager.FindFirstFocusableElement(toolbar) is Control command)
                         command.Focus(FocusState.Keyboard);
@@ -681,9 +687,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }
             settings.Children.Add(Label("期間"));
             settings.Children.Add(TextSetting("開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
-                text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+                text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
+                () => workspace.Session!.Document.State.Settings.ProjectStart?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(TextSetting("終了日", "PlanProjectEnd", value.ProjectEnd?.ToString("yyyy-MM-dd") ?? "",
-                text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : DateOnly.ParseExact(text.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture) })));
+                text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
+                () => workspace.Session!.Document.State.Settings.ProjectEnd?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(Label("工程"));
             var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
             var phaseTargets = new StackPanel { Spacing = 4 };
@@ -894,7 +902,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             } else settingsInputProblem.Show(input, message);
         }
     }
-    private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply)
+    private TextBox TextSetting(string label, string id, string value, Func<string, Task> apply, Func<string>? display = null)
     {
         var input = Id(new TextBox { Header = label, Text = value, MinWidth = 280 }, id);
         var accepted = value;
@@ -912,12 +920,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
             try { await apply(text); }
             catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException) {
                 var name = AutomationProperties.GetName(input);
-                var reason = ex is FormatException ? "日付は yyyy-MM-dd で入力してください。" : ex.Message;
+                var reason = ex is FormatException ? "日付は yyyy-MM-dd または yyyy/M/d で入力してください。" : ex.Message;
                 invalidSetting = input; invalidSettingText = text; invalidSettingMessage = (name.Length > 0 ? name : label) + ": " + reason;
                 AutomationProperties.SetHelpText(input, invalidSettingMessage); RevealSettingsInput();
                 throw new InvalidOperationException(invalidSettingMessage, ex);
             }
-            accepted = text; AutomationProperties.SetHelpText(input, "");
+            accepted = display?.Invoke() ?? text;
+            if (display is not null && input.Text == text) input.Text = accepted;
+            AutomationProperties.SetHelpText(input, "");
             if (ReferenceEquals(invalidSetting, input)) ClearSettingsInputProblem();
         }
         pendingSettings.Add(Commit);
@@ -985,11 +995,13 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private async Task<string?> SelectFile(string purpose)
     {
         if (PickFile is { } pick) return await pick(purpose);
-        if (purpose == "export")
+        if (purpose is "export" or "csv-export")
         {
-            var picker = new FileSavePicker { SuggestedFileName = "project-settings" };
+            var csv = purpose == "csv-export";
+            var title = string.Concat((workspace.Selected?.Title ?? "Project").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).TrimEnd(' ', '.');
+            var picker = new FileSavePicker { SuggestedFileName = csv ? (title.Length == 0 ? "Project" : title) + ".csv" : "project-settings" };
             WinRT.Interop.InitializeWithWindow.Initialize(picker, WindowHandle);
-            picker.FileTypeChoices.Add("JSON", [".json"]);
+            picker.FileTypeChoices.Add(csv ? "CSV" : "JSON", [csv ? ".csv" : ".json"]);
             return (await picker.PickSaveFileAsync())?.Path;
         }
         else

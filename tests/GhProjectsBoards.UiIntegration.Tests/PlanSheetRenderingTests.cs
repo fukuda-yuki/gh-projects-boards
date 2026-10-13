@@ -15,6 +15,76 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [TestCase(false), TestCase(true), Category("SheetRowPresentation")]
+    public async Task OrdinaryCellTextSharesTitleAndAssigneeVerticalCentre(bool editing)
+    {
+        await SelectFocusedCell(1, PlanField.Estimate);
+        if (editing) await Ui.Run(() => Ui.Find<PlanSheetCell>("PlanCell1_Estimate").BeginEditing());
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var estimate = Ui.Find<PlanSheetCell>("PlanCell1_Estimate");
+            var title = Ui.Find<TextBlock>("PlanTitleDisplay1");
+            var assignee = Ui.Find<TextBlock>("PlanAssigneeName1");
+            Assert.That(estimate.Editing, Is.EqualTo(editing));
+            Assert.That(title.Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(TextCentre(assignee), Is.EqualTo(TextCentre(title)).Within(1));
+            Assert.That(EditorTextCentre(estimate), Is.EqualTo(TextCentre(title)).Within(1), "Estimate text must share the display overlays' vertical centre.");
+        });
+    }
+
+    [TestCase(PlanField.Title), TestCase(PlanField.Assignees), Category("SheetRowPresentation")]
+    public async Task DisplayOverlaySwitchToEditorPreservesVerticalTextCentre(string field)
+    {
+        await SelectFocusedCell(1, field);
+        double centre = 0;
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
+            centre = TextCentre(field == PlanField.Title ? cell.TitleDisplay! : cell.AssigneeNameDisplay!);
+            cell.BeginEditing();
+        });
+        await SheetNativeInput.Rendered();
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>($"PlanCell1_{field}");
+            Assert.That(cell.Editing, Is.True);
+            Assert.That(cell.Opacity, Is.EqualTo(1));
+            Assert.That((field == PlanField.Title ? (FrameworkElement)cell.TitleDisplay! : cell.AssigneeDisplay!).Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(EditorTextCentre(cell), Is.EqualTo(centre).Within(1), "Entering edit mode must not move text vertically.");
+        });
+    }
+
+    [Test, Category("SheetRowPresentation")]
+    public async Task RequirementCellTextSharesItsRowTitleVerticalCentre()
+    {
+        var parent = new PlanRow("I1", "Requirement", "acme/repo");
+        var child = new PlanRow("I2", "Task", "acme/repo") { Parent = "I1", Estimate = 8, Remaining = 8, Assignees = ["U1"] };
+        await MountPresentation([parent, child], [parent, child]);
+        await SelectFocusedCell(1, PlanField.Estimate);
+        await Ui.Run(() => {
+            var title = Ui.Find<TextBlock>("PlanTitleDisplay1");
+            var estimate = Ui.Find<PlanSummaryCell>("PlanCell1_Estimate");
+            Assert.That(estimate.Text.Text, Is.Not.Empty);
+            Assert.That(TextCentre(estimate.Text), Is.EqualTo(TextCentre(title)).Within(1.5), "Summary text may round one physical pixel differently from the title overlay.");
+            Assert.That(TextCentre(estimate.Text), Is.EqualTo(TextCentre(estimate)).Within(1), "Requirement text stays centred in its row.");
+        });
+    }
+
+    private double TextCentre(FrameworkElement element)
+    {
+        Assert.That(element.ActualHeight, Is.GreaterThan(0), "Text must be laid out before comparing centres.");
+        return element.TransformToVisual(sheet).TransformPoint(new(0, element.ActualHeight / 2)).Y * sheet.XamlRoot.RasterizationScale;
+    }
+
+    private double EditorTextCentre(PlanSheetCell cell)
+    {
+        Assert.That(cell.Text, Is.Not.Empty);
+        var content = Ui.Tree(cell).OfType<ScrollViewer>().Single(v => v.Name == "ContentElement");
+        var text = (FrameworkElement)content.Content;
+        Assert.That(Ui.Tree(content), Does.Contain(text), "Measure the native text element inside the rendered template.");
+        Assert.That(text.DesiredSize.Height, Is.GreaterThan(0));
+        // The native text view can stretch to the viewport; its desired height is the single text line.
+        return text.TransformToVisual(sheet).TransformPoint(new(0, text.DesiredSize.Height / 2)).Y * sheet.XamlRoot.RasterizationScale;
+    }
+
     [Test, Category("PlanSheetPerformance")]
     public async Task VersionRowsCommitToRenderedDatesAndBarsRecordsTwentySamples()
     {

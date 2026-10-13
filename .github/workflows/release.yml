@@ -19,6 +19,8 @@ on:
       - 'docs/notices/**'
       - 'docs/dependencies.md'
       - 'docs/internal-distribution-ja.md'
+      - 'docs/user-manual.md'
+      - 'docs/manual/**'
       - 'templates/**'
 permissions:
   contents: read

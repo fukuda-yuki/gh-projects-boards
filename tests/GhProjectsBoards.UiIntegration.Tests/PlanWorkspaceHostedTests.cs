@@ -504,7 +504,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
-                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "表示列" }));
+                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
             Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
         });
@@ -2022,6 +2022,20 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
         await Ui.Run(() => Ui.Click("PlanUndo")); await Ui.Idle();
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
+    }
+
+    [TestCase("PlanProjectStart"), TestCase("PlanProjectEnd")]
+    public async Task SettingsPeriodAcceptsSlashDateAndDisplaysIsoDate(string id)
+    {
+        await Open(); await Settings();
+        var undo = workspace.Session!.UndoCount;
+        await CommitText(id, "2026/10/13");
+        await Ui.Until(() => (id == "PlanProjectStart" ? workspace.Session.Document.State.Settings.ProjectStart
+            : workspace.Session.Document.State.Settings.ProjectEnd) == new DateOnly(2026, 10, 13));
+        await Ui.Until(() => Ui.Find<TextBox>(id).Text == "2026-10-13");
+        await SettingsErrorCleared(id);
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test]

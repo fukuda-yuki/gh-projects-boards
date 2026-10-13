@@ -6,6 +6,24 @@ namespace GhProjectsBoards.App;
 
 internal sealed partial class PlanWorkspaceView
 {
+    private async Task ExportCsv(PlanSession session)
+    {
+        if (await SelectFile("csv-export") is not { } path) return;
+        var token = OperationToken;
+        token.ThrowIfCancellationRequested();
+        var document = session.Document;
+        var today = Today;
+        csvExportResult.IsOpen = false;
+        try { await Task.Run(async () => await File.WriteAllBytesAsync(path, PlanCsvExport.Create(document, today), token), token); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An export failure must not offer recovery for the plan's own durable save.
+            throw new InvalidOperationException("CSVを書き出せませんでした。 " + ex.Message, ex);
+        }
+        csvExportResult.Message = $"{document.State.Rows.Length.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("ja-JP"))} 行を書き出しました。";
+        csvExportResult.IsOpen = true;
+    }
+
     private async Task ImportCsv(PlanSession session)
     {
         var token = OperationToken;

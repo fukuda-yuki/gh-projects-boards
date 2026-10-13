@@ -104,14 +104,7 @@ internal sealed partial class PlanSheetView
             left += column.Width;
         }
     }
-    internal string RemoteProblem(string identity)
-    {
-        var sync = Session.Document.Sync;
-        if (sync.Unverified.Contains(identity)) return "GitHub で未確認 — 最新の情報に更新で確認";
-        var failures = sync.Failures.Where(f => f.Identity == identity).Select(PlanPublishText.Failure).Distinct().ToArray();
-        if (failures.Length > 0) return (sync.Failures.Where(f => f.Identity == identity).All(f => f.Reason == "NotDispatched") ? "未送信: " : "発行失敗: ") + string.Join(" / ", failures);
-        return sync.Unavailable.Contains(identity) ? "GitHubで取得できません — 発行で確認" : "";
-    }
+    internal string RemoteProblem(string identity) => PlanSheetText.RemoteProblem(Session.Document.Sync, identity);
     private void UpdateReason()
     {
         selection.Text = PlanIds.TryGetValue(selected, out var number) ? $"ID {number}" : "";

@@ -145,6 +145,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
                 var settings = new ProjectPlanSettings { StatusDate = today(), Columns = PlanColumnMatching.Match(fields), People = people,
                     DefaultRepository = repositories.Length == 1 ? repositories[0] : null };
                 var remote = PlanSnapshot.From(read, settings);
+                settings = PlanInitialSettings.From(remote.Baseline, settings);
                 var document = new PlanDocument(choice.Id, remote.Baseline, new(remote.Baseline.Rows, settings))
                 { Dates = new(PlanDateHoldOrigin.FirstTakeIn), Sync = new() { InaccessibleCount = remote.InaccessibleCount, DraftCount = remote.DraftCount, PullRequestCount = remote.PullRequestCount, NativeOrders = remote.SubIssueOrders, IssueLinks = remote.IssueLinks, PeopleNames = names } };
                 progress?.Report(new("日程を計算"));
