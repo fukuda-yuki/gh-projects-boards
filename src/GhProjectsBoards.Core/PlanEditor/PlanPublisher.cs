@@ -361,12 +361,16 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                         RequireSave(await session.SaveSync(session.Document.Sync with { NotBefore = DateTimeOffset.UtcNow + delay }).ConfigureAwait(false));
                     }
                     // A missing outcome is not an alias rejection; later writes would widen the uncertainty.
-                    // Explicit resource failures retain the bounded split/creation-guard recovery below.
+                    // Field writes set absolute values or membership, so a gateway failure can use the same bounded split recovery.
+                    var fieldGatewayRecovery = group.Length > 1 && group[0].Stage == PlanPublishStage.Fields &&
+                        response.HttpStatus is >= 500 and <= 599 &&
+                        !(response.Data is { ValueKind: JsonValueKind.Object } gatewayBody && gatewayBody.TryGetProperty("data", out var gatewayData) &&
+                            gatewayData.ValueKind == JsonValueKind.Object);
                     var resourceRecovery = group.Length > 1 && response.Data is { ValueKind: JsonValueKind.Object } responseBody &&
                         responseBody.TryGetProperty("errors", out var responseErrors) && responseErrors.ValueKind == JsonValueKind.Array &&
                         responseErrors.GetArrayLength() > 0 && responseErrors.EnumerateArray().All(e => e.ValueKind == JsonValueKind.Object &&
                             e.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "RESOURCE_LIMITS_EXCEEDED");
-                    if (results.Any(w => w.State == PlanWriteState.Dispatched &&
+                    if (!fieldGatewayRecovery && results.Any(w => w.State == PlanWriteState.Dispatched &&
                         !(resourceRecovery && w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)))
                         throw new InvalidOperationException("GitHubの応答を確認できないため発行を中断しました。最新の情報に更新で確認してから再発行してください。");
                     if (response.RetryAfter is { } wait && wait > TimeSpan.Zero)
@@ -387,7 +391,7 @@ internal sealed class PlanPublisher(GhConnectionService service, ConnectionConte
                             .Select(w => w with { State = PlanWriteState.Succeeded, Error = null }));
                     }
                     var limited = results.Where(w => w.State != PlanWriteState.Succeeded &&
-                        w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true).ToArray();
+                        (fieldGatewayRecovery || w.Error?.StartsWith("RESOURCE_LIMITS_EXCEEDED:", StringComparison.Ordinal) == true)).ToArray();
                     if (group.Length > 1 && limited.Length > 0)
                     {
                         var reduced = Math.Max(1, group.Length / 2);

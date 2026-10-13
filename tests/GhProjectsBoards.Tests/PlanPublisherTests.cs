@@ -520,6 +520,63 @@ internal sealed partial class PlanPublisherTests
         Assert.That(issues.All(i => i.Added), Is.True);
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
     }
+    [TestCase("gateway")]
+    [TestCase("gateway-json")]
+    public async Task FieldGatewayFailureSplitsAndRetainsTheReducedCeiling(string body)
+    {
+        await Start(65);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
+            .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
+        Scenario(body, gatewayAliasLimit: 13);
+
+        var result = await publisher.PublishAsync(session, Today);
+
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        // The first 50 split twice; the remaining original batch inherits the ceiling of 12.
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 50, 25, 12, 12, 1, 25, 12, 12, 1, 12, 3 }));
+        var remote = FakePlanEditor.Load(root);
+        Assert.That(remote.Issues.All(i => i.Row.Actual == 3), Is.True);
+        Assert.That(remote.MutationBatches, Is.EqualTo(11));
+        Assert.That(runner.MaximumConcurrent, Is.EqualTo(1));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+        Assert.That(session.Document.Sync.Publish?.Writes.Any(w => w.State == PlanWriteState.Dispatched) ?? false, Is.False);
+    }
+
+    [Test]
+    public async Task SingleFieldGatewayFailureStopsWithTheWriteDispatched()
+    {
+        await Start(1);
+        await session.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Actual, 3m)]), Today);
+        Scenario("gateway");
+
+        var result = await publisher.PublishAsync(session, Today);
+
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(result.Error, Does.Contain("GitHubの応答を確認できないため発行を中断しました"));
+        Assert.That(session.Document.Sync.Publish!.Writes.Single().State, Is.EqualTo(PlanWriteState.Dispatched));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(1));
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 1 }));
+    }
+
+    [Test]
+    public async Task CreationGatewayFailureStopsWithoutResendingTheBatch()
+    {
+        await Start(0);
+        await session.Execute(new InsertPlanRows(Enumerable.Range(1, 2)
+            .Select(i => PlanRow.New("Created " + i, "acme/repo")).ToImmutableArray()), Today);
+        Scenario("gateway");
+
+        var result = await publisher.PublishAsync(session, Today);
+
+        Assert.That(result.Succeeded, Is.False);
+        Assert.That(result.Error, Does.Contain("GitHubの応答を確認できないため発行を中断しました"));
+        Assert.That(session.Document.Sync.Publish!.Writes.Where(w => w.Stage == PlanPublishStage.Create)
+            .All(w => w.State == PlanWriteState.Dispatched), Is.True);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(1));
+        Assert.That(FakePlanEditor.Load(root).Issues, Has.Length.EqualTo(2));
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 2 }));
+    }
+
     [Test]
     public async Task MixedResourceBatchSplitsAndFinishesWithoutResendingSuccesses()
     {
@@ -930,9 +987,9 @@ internal sealed partial class PlanPublisherTests
         TestContext.Out.WriteLine("Real fake-gh processes: " + (runner?.Count ?? 0));
         Directory.Delete(root, true);
     }
-    private void Scenario(string? fault = null, int batch = 1)
+    private void Scenario(string? fault = null, int batch = 1, int gatewayAliasLimit = 0)
     {
-        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch }));
+        File.WriteAllText(Path.Combine(root, "scenario.json"), JsonSerializer.Serialize(new { planEditor = true, planFault = fault, faultBatch = batch, gatewayAliasLimit }));
         if (File.Exists(FakePlanEditor.StatePath(root))) FakePlanEditor.Save(root, FakePlanEditor.Load(root) with { ReadAttempts = 0 });
     }
     private async Task Start(int count, Func<PlanFakeState, PlanFakeState>? fixture = null, ProjectPlanSettings? settings = null)
