@@ -2,6 +2,10 @@
 
 Record accepted choices and their rationale. Keep task progress and experimental findings in the owning Issues.
 
+## Manual shipped with the app (#140, #172 option B)
+
+The manual ships as Markdown (`マニュアル.md`) beside the executable so it is available with the installed app without a repository checkout or network access. **ヘルプ** and F1 open it in the default application, with Notepad as the fallback when Markdown has no association. [#140](https://github.com/fukuda-yuki/gh-projects-boards/issues/140) owns shipping and opening; [#172](https://github.com/fukuda-yuki/gh-projects-boards/issues/172) may change the format when captured screenshots are added.
+
 ## Planning editor for GitHub Projects
 
 Accepted 2026-10-05 under [#76](https://github.com/fukuda-yuki/gh-projects-boards/issues/76). The product replaces the planning work previously done with TFS 2017 + MS Project + the Excel add-in. GitHub Projects has no way to build a schedule from effort, assignees and predecessors, so the app provides that job and leaves general Issue work to GitHub.

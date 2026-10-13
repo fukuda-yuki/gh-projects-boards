@@ -10,7 +10,7 @@ Describe 'Extracted release package' {
         $script:Root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory $script:Root | Out-Null
         $files = foreach ($name in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 'coreclr.dll', 'hostpolicy.dll',
-            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'templates/new-tasks.csv', 'notices/license.txt')) {
+            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'templates/new-tasks.csv', 'notices/license.txt')) {
             $path = Join-Path $script:Root $name
             New-Item -ItemType Directory (Split-Path $path -Parent) -Force | Out-Null
             Set-Content -LiteralPath $path 'fixture payload'
@@ -35,9 +35,12 @@ Describe 'Extracted release package' {
         Set-Content (Join-Path $script:Root 'credentials.json') '{}'
         { & $script:Verify $script:Root abc123 '1.2.3-rc.1' } | Should -Throw '*Unexpected payload*'
     }
-    It 'rejects an incomplete self-contained package even if the manifest agrees' {
-        Remove-Item (Join-Path $script:Root 'coreclr.dll')
-        $script:Manifest.files = @($script:Manifest.files | Where-Object path -NE 'coreclr.dll')
+    It 'rejects a package missing <Required> even if the manifest agrees' -TestCases @(
+        @{ Required = 'coreclr.dll' }, @{ Required = 'マニュアル.md' }
+    ) {
+        param($Required)
+        Remove-Item (Join-Path $script:Root $Required)
+        $script:Manifest.files = @($script:Manifest.files | Where-Object path -NE $Required)
         Save-Manifest
         { & $script:Verify $script:Root abc123 '1.2.3-rc.1' } | Should -Throw '*Required payload*'
     }

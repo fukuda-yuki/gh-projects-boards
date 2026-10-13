@@ -82,6 +82,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private bool rendering, closing;
     internal IntPtr WindowHandle { get; set; }
     internal Func<string, Task<string?>>? PickFile { get; set; }
+    internal Action<string>? OpenDocument { get; set; }
     private DateOnly Today => PlanClock.Today;
 
     internal PlanWorkspaceView(PlanWorkspace workspace, Func<string, string, GhConnectionService>? factory = null)
@@ -145,6 +146,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         settingsButton.MinHeight = 0; settingsButton.Height = 32; settingsButton.Padding = new(8, 0, 8, 0);
         AutomationProperties.SetName(settingsButton, "設定");
         ToolTipService.SetToolTip(settingsButton, "設定");
+        var titleCommands = new StackPanel { Orientation = Orientation.Horizontal };
+        titleCommands.Children.Add(CreateHelpButton()); titleCommands.Children.Add(settingsButton);
         root.Children.Add(WorkspaceTitleBar);
         root.Children.Add(toolbar); Grid.SetRow(toolbar, 1);
         toolbar.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -262,7 +265,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(statusBar); Grid.SetRow(statusBar, 4);
         // A TitleBar that has been loaded keeps its header elements after it unloads, and their
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
-        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = settingsButton; };
+        Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands; };
         Unloaded += (_, _) => {
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;

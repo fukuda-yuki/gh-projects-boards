@@ -32,7 +32,7 @@ If CI was still running, wait for it, then retry via Run workflow with the same 
 
 ## Self-contained policy
 
-Ship .NET and Windows App SDK app-locally in a portable **Windows 11 x64 ZIP**. Recipients do not install either runtime or a development SDK. WinUI XAML/PRI, native libraries, templates and notices stay alongside the executable; single-file publishing, trimming and Native AOT are not enabled. Extract the whole ZIP, and update into a new folder.
+Ship .NET and Windows App SDK app-locally in a portable **Windows 11 x64 ZIP**. Recipients do not install either runtime or a development SDK. WinUI XAML/PRI, native libraries, templates, notices, `使い方.md` (distribution guide) and `マニュアル.md` (user manual, opened with **ヘルプ** or F1) stay alongside the executable; single-file publishing, trimming and Native AOT are not enabled. Extract the whole ZIP, and update into a new folder.
 
 GitHub CLI remains a separately installed/authenticated dependency, following the [Japanese guide](internal-distribution-ja.md). Bundling it would add another binary inventory, notice audit and update responsibility; this workflow does not claim a machine with no prerequisites. Windows system components, company execution policies, network access and Project permissions still apply. ARM64, installers, signing and automatic updates have no delivery path in this workflow.
 
