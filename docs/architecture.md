@@ -2,7 +2,7 @@
 
 ## Production boundaries
 
-One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard and UI Automation. No UI framework enters Core.
+One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.
 
 ## Workspace and settings (#81)
 
