@@ -10,7 +10,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 
 ## Agreed boundaries
 
-- Launch from a Windows executable; no browser extension or Excel dependency.
+- Launch from a Windows executable; no browser extension or Excel dependency. Ship a Japanese manual and app-generated screenshots that let a new internal user complete the weekly cycle; Help/F1 opens an offline HTML rendering of the shipped Markdown ([#172](https://github.com/fukuda-yuki/gh-projects-boards/issues/172)).
 - Register Projects explicitly and switch between them. Each scoped Project is one workspace. Only Issues are planned; draft items and pull requests are not.
 - Edit locally and publish explicitly, as with MS Project and the TFS Office integration. No request is sent per edit. The PMO can reset the plan to GitHub's current state, overwriting every local value with GitHub's data after a confirmation; afterwards the plan shows GitHub's values, dates included, and nothing is unpublished ([#123](https://github.com/fukuda-yuki/gh-projects-boards/issues/123)).
 - The published plan is reproducible from GitHub plus the exported settings file: Issue title and assignees, blocked-by predecessors, sub-issue hierarchy, Estimate (見積), Actual (実績) and Remaining (残) number fields, a 工程 single-select field, Start/Target date fields, and two added Project fields, **開始日指定** (date) and **日程固定** (single select). Calendar, rates and allowances are local settings.

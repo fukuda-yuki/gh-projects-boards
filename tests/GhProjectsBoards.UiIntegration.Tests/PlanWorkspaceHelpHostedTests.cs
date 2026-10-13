@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 using GhProjectsBoards.Tests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -20,8 +21,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(ToolTipService.GetToolTip(help), Is.EqualTo("ヘルプ（F1）"));
             Ui.Click("PlanHelp");
         });
-        await Ui.Idle();
-        Assert.That(launched, Is.EqualTo(new[] { Path.Combine(AppContext.BaseDirectory, "マニュアル.md") }));
+        await Ui.Until(() => !launched.IsEmpty);
+        AssertRenderedManual(launched.Single());
         Assert.That(workspace.Session, Is.Null);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
@@ -46,8 +47,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             view.OpenDocument = path => launched.Enqueue(path);
             Ui.Click("PlanHelp");
         });
-        await Ui.Idle();
-        Assert.That(launched, Is.EqualTo(new[] { Path.Combine(AppContext.BaseDirectory, "マニュアル.md") }));
+        await Ui.Until(() => !launched.IsEmpty);
+        AssertRenderedManual(launched.Single());
         Assert.That(session.Document, Is.SameAs(document));
         Assert.That(session.UndoCount, Is.EqualTo(undo));
         Assert.That(session.RedoCount, Is.EqualTo(redo));
@@ -74,7 +75,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                 cell.Focus(FocusState.Programmatic); cell.Text = "Pending title";
                 Ui.Click("PlanHelp");
             });
-            Assert.That(await started.Task.WaitAsync(TimeSpan.FromSeconds(5)), Is.EqualTo(Path.Combine(AppContext.BaseDirectory, "マニュアル.md")));
+            AssertRenderedManual(await started.Task.WaitAsync(TimeSpan.FromSeconds(5)));
             await Ui.Run(() => {
                 Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("Pending title"));
                 Assert.That(session.Document, Is.SameAs(document));
@@ -82,6 +83,35 @@ internal sealed partial class PlanWorkspaceHostedTests
             });
         }
         finally { release.Set(); await Ui.Idle(); }
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    private static void AssertRenderedManual(string path)
+    {
+        Assert.That(Path.IsPathFullyQualified(path), Is.True);
+        Assert.That(Path.GetExtension(path), Is.EqualTo(".html"));
+        var html = XDocument.Load(path);
+        Assert.That(html.Descendants("h1").Single().Value, Is.EqualTo("プロジェクトの計画と設定"));
+        var images = html.Descendants("img").Select(e => new Uri((string)e.Attribute("src")!, UriKind.Absolute)).ToArray();
+        Assert.That(images, Is.Not.Empty);
+        foreach (var image in images) {
+            Assert.That(image.IsFile, Is.True);
+            Assert.That(image.AbsoluteUri, Does.StartWith("file:///"));
+            Assert.That(image.LocalPath, Does.StartWith(Path.Combine(AppContext.BaseDirectory, "manual", "images") + Path.DirectorySeparatorChar));
+            Assert.That(File.Exists(image.LocalPath), Is.True, "Generate and rebuild the shipped manual images: " + image.LocalPath);
+        }
+    }
+
+    [Test, Category("Manual")]
+    public async Task UnreadableManualFallsBackToOriginalMarkdown()
+    {
+        var manual = Path.Combine(AppContext.BaseDirectory, "マニュアル.md");
+        var launched = new ConcurrentQueue<string>();
+        using var locked = File.Open(manual, FileMode.Open, FileAccess.Read, FileShare.None);
+        await Ui.Run(() => { view.OpenDocument = path => launched.Enqueue(path); Ui.Click("PlanHelp"); });
+        await Ui.Until(() => !launched.IsEmpty);
+        Assert.That(launched, Is.EqualTo(new[] { manual }));
+        Assert.That(workspace.Session, Is.Null);
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
@@ -94,7 +124,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         File.Move(manual, retained);
         try {
             await Ui.Run(() => { view.OpenDocument = path => launched.Enqueue(path); Ui.Click("PlanHelp"); });
-            await Ui.Idle();
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.StartsWith("マニュアルが見つかりません:"));
             await Ui.Run(() => {
                 var error = Ui.Find<TextBlock>("PlanError");
                 Assert.That(error.Visibility, Is.EqualTo(Visibility.Visible));
@@ -112,7 +142,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             view.OpenDocument = _ => throw new IOException("Cannot open the document.");
             Ui.Click("PlanHelp");
         });
-        await Ui.Idle();
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text == "Cannot open the document.");
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.EqualTo("Cannot open the document."));
             Assert.That(Ui.Find<InfoBar>("PlanSaveFailure").IsOpen, Is.False);

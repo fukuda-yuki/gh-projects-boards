@@ -68,3 +68,13 @@ Set-Location C:\w\b126; python scripts/evaluation/version_sandbox.py verify --ev
 Record source and binary identity, data root, real or substituted endpoint, row/task counts, operation results, screenshots and timings. Offline automated results, ordinary-app product review, real-GitHub readback and the owner's acceptance are distinct claims. Run `python -m unittest discover -s scripts/evaluation -p 'test_*.py' -v` for the sandbox script's safety contracts.
 
 The local settings seed both Project start and end from the version plan. 工程 auto-maps to its existing single-select field. The initial baseline and local phase values agree, preserving zero unpublished tasks. Summary calculations consume the same scheduled result as the plan; recorded evaluation measures provide independent expected values for regression tests.
+
+## Starting and resuming the ordinary app
+
+From the repository root in PowerShell 7, run `./scripts/Start-Evaluation.ps1` (or add `-NoBuild` after a Release build). Restore dependencies separately first; if a long checkout causes MSB3030, use a short checkout path. Keep the printed absolute data root. Choose **接続**, then **第2027.04版**; gh is already selected. This uses no real account or network, starts with 40 requirements, 1,000 tasks and 20 people, and has zero unpublished tasks. Resume with `./scripts/Start-Evaluation.ps1 -NoBuild -Resume -DataRoot <absolute path>`. Use `-Version 2027.10` for the year-long version or `-StatusDate 2027-02-17` for another recorded progress date. Per-phase measures are in the run's `evaluation.json`.
+
+The historical CSV example in sandbox Project 3 is the 24 tasks #864–#887; do not reimport that CSV. The earlier whole-version registration used R01–R39 (39 requirements and 975 tasks, 1,014 Issues); the current manifest and setup cover R01–R40. Do not confuse the CSV example with the WBS. Project 3 is https://github.com/users/fukuda-yuki/projects/3; authentication, permissions and company-environment acceptance need their own live evidence.
+
+## Manual images
+
+[The capture plan](../docs/manual/README.md) owns the single rebuild command, UI states and image-to-section mapping. Captures use a fresh offline root and the ordinary Release executable; never edit fixture files or crop images manually. Developer build instructions remain in [README](../README.md#build-and-run). `GHPB_DATA_ROOT` can select an isolated absolute storage path; it is not an ordinary user setup step.

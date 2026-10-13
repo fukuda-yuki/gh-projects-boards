@@ -32,4 +32,5 @@ foreach ($required in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 
     if (-not $paths.Contains($required)) { throw "Required payload missing: $required" }
 }
 if (@($paths | Where-Object { $_.StartsWith('notices/') }).Count -eq 0) { throw 'Required payload missing: notices' }
+if (@($paths | Where-Object { $_ -match '^manual/images/[^/]+\.png$' }).Count -eq 0) { throw 'Required payload missing: manual/images/*.png' }
 Join-Path $root 'GhProjectsBoards.App.exe'

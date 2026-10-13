@@ -4,6 +4,8 @@
 
 One UI-independent GhProjectsBoards.Core library and one GhProjectsBoards.App WinUI 3 application implement the [specification](spec.md). Core owns authentication orchestration, scoped identity, retrieval, validation, scheduling, local storage and publication. The app owns controls, presentation, window lifetime, file pickers, clipboard, shell document launching and UI Automation. No UI framework enters Core.
 
+PlanManualHtml in Core converts the shipped Markdown text to escaped, self-contained HTML markup and resolves relative resources against the supplied manual directory. The UI reads the source, writes a per-user temporary HTML file and opens it through the existing OpenDocument process-launch boundary. Conversion/write failures retain the Markdown launch path. The capture script is development tooling over Start-Evaluation and Invoke-EvaluationUi, not a product execution mode.
+
 ## Workspace and settings (#81)
 
 MainWindow hosts PlanWorkspaceView, sizes the ordinary window and cancels UI-owned remote operations, waits for their owned processes and local saves on close. Failed saves keep the window open. PlanWorkspaceView contains connection, Project discovery, the registered-Project list, the editable plan sheet and row-aligned Gantt and one settings page. Native control events invoke Core operations. Save recovery bypasses pending-input application until the retained save has been retried. The company day-off editor uses native calendar selection and explicit date-list changes. Pending text is committed before navigation or normal close; obsolete settings controls cannot apply late events after replacement.

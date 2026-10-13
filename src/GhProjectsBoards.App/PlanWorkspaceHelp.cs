@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using GhProjectsBoards.Core.PlanEditor;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -40,7 +41,17 @@ internal sealed partial class PlanWorkspaceView
         try {
             var found = await Task.Run(() => {
                 if (!File.Exists(path)) return false;
-                launch(path); return true;
+                var rendered = path;
+                try {
+                    var html = PlanManualHtml.Render(File.ReadAllText(path), AppContext.BaseDirectory);
+                    // Separate invocations cannot overwrite a document the browser is still opening.
+                    var folder = Path.Combine(Path.GetTempPath(), "GhProjectsBoards", Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(folder);
+                    rendered = Path.Combine(folder, "マニュアル.html");
+                    File.WriteAllText(rendered, html);
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException) { rendered = path; }
+                launch(rendered); return true;
             });
             if (!found && !closing) error.Text = "マニュアルが見つかりません: " + path;
         }
@@ -53,6 +64,7 @@ internal sealed partial class PlanWorkspaceView
     {
         try { using var process = Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1155) {
+            if (Path.GetExtension(path) == ".html") { LaunchDocument(Path.Combine(AppContext.BaseDirectory, "マニュアル.md")); return; }
             var start = new ProcessStartInfo("notepad.exe") { UseShellExecute = false };
             start.ArgumentList.Add(path);
             using var process = Process.Start(start);
