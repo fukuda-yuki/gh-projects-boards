@@ -7,11 +7,15 @@ namespace GhProjectsBoards.Tests;
 internal sealed class PlanInitialSettingsTests
 {
     private static readonly DateOnly Day = new(2026, 10, 13);
+    // Every milestone passed here is used by one undated Issue of the Project; Unused adds milestones of another version.
     private static PlanBaseline Baseline(params PlanMilestone[] milestones) => new([
         new("I1", "Later", "a/b") { Start = Day.AddDays(2), End = Day.AddDays(30) },
         new("I2", "Earlier", "a/b") { Start = Day, End = Day.AddDays(10) },
-        new("I3", "Undated", "a/b")
+        new("I3", "Undated", "a/b"),
+        .. milestones.Select((m, i) => new PlanRow("M" + i, "Milestone task", "a/b") { MilestoneTitle = m.Title })
     ], [new("F", "工程", "SINGLE_SELECT") { Options = ["SA", "P", "PS", "UI"] }]) { Milestones = [.. milestones] };
+    private static PlanBaseline Unused(PlanBaseline baseline, params PlanMilestone[] milestones)
+        => baseline with { Milestones = [.. baseline.Milestones, .. milestones] };
     private static ProjectPlanSettings Settings() => new() { Columns = [new(PlanField.Phase, "F", "工程", "SINGLE_SELECT")] };
 
     [Test]
@@ -49,8 +53,9 @@ internal sealed class PlanInitialSettingsTests
     }
 
     [TestCase("SA", true), TestCase("sa 完了", true), TestCase("SA-完了", true), TestCase("SA_完了", true),
-     TestCase("SA/完了", true), TestCase("SA2", false), TestCase("SAX", false), TestCase("SA完了", false)]
-    public void PhaseTitleRequiresExactNameOrNonLetterDigitBoundary(string title, bool matched)
+     TestCase("SA/完了", true), TestCase("SA完了", true), TestCase("第2027.04版 SA 完了", true), TestCase("2027.04-SA", true),
+     TestCase("SA2", false), TestCase("SAX", false), TestCase("XSA 完了", false), TestCase("2SA 完了", false)]
+    public void PhaseNameMatchesAnywhereAtAsciiLetterDigitBoundary(string title, bool matched)
     {
         var settings = PlanInitialSettings.From(Baseline(new PlanMilestone(title, null, true, false)), Settings());
         Assert.That(settings.PhaseMilestones.GetValueOrDefault("SA"), Is.EqualTo(matched ? title : null));
@@ -63,6 +68,21 @@ internal sealed class PlanInitialSettingsTests
             new("ps 完了", Day, false, false)), Settings());
         Assert.That(settings.PhaseMilestones, Is.EquivalentTo(new Dictionary<string, string> { ["PS"] = "ps 完了" }));
     }
+
+    [Test]
+    public void MilestonesNoProjectIssueUsesAreIgnored()
+    {
+        var baseline = Unused(Baseline(new PlanMilestone("2027.04 SA 完了", Day.AddDays(5), false, false)),
+            new("2027.10 PS 完了", Day.AddDays(200), false, false), new("2027.10 UI 完了", Day.AddDays(150), false, false));
+        var settings = PlanInitialSettings.From(baseline, Settings());
+        Assert.That(settings.ProjectEnd, Is.EqualTo(Day.AddDays(5)), "Another version's later milestone must not become the end.");
+        Assert.That(settings.PhaseMilestones, Is.EquivalentTo(new Dictionary<string, string> { ["SA"] = "2027.04 SA 完了" }));
+    }
+
+    [Test]
+    public void OnlyUnusedMilestonesFallBackToLatestIssueEnd()
+        => Assert.That(PlanInitialSettings.From(Unused(Baseline(), new PlanMilestone("SA 完了", Day.AddDays(90), false, false)), Settings()).ProjectEnd,
+            Is.EqualTo(Day.AddDays(30)));
 
     [Test]
     public void UnmappedPhaseFieldDoesNotInferMappings()

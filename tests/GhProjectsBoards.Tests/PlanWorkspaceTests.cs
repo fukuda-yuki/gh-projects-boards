@@ -16,13 +16,15 @@ internal sealed class PlanWorkspaceTests
             File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
             var day = new DateOnly(2026, 10, 13);
             FakePlanEditor.Save(root, new([
-                new(new("I1", "Later", "acme/repo") { Start = day.AddDays(2), End = day.AddDays(30), Remaining = 8 }, "", true) { Phase = "SA" },
+                new(new("I1", "Later", "acme/repo") { Start = day.AddDays(2), End = day.AddDays(30), Remaining = 8, MilestoneTitle = "SA 完了" }, "", true) { Phase = "SA" },
                 new(new("I2", "Earlier", "acme/other") { Start = day, End = day.AddDays(3), Actual = 4, Remaining = 8 }, "", true) { Phase = "PS" },
-                new(new("I3", "Undated", "acme/repo") { Remaining = 8 }, "", true)
+                new(new("I3", "Undated", "acme/repo") { Remaining = 8, MilestoneTitle = "ps 完了" }, "", true)
             ], 4) { Phases = ["SA", "P", "PS"], Milestones = [
                 new("M1", "acme/repo", "SA 完了", day.AddDays(5)),
                 new("M2", "acme/other", "SA 完了", day.AddDays(6)),
-                new("M3", "acme/repo", "ps 完了", day.AddDays(20))] });
+                new("M3", "acme/repo", "ps 完了", day.AddDays(20)),
+                // Another version's milestone in the same repository: no Issue of this Project uses it.
+                new("M4", "acme/repo", "2027.10 SA 完了", day.AddDays(90))] });
             var store = new PlanStore(root);
             var workspace = new PlanWorkspace(store, () => day);
             GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
