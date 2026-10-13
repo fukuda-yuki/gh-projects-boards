@@ -35,8 +35,8 @@ internal sealed class PlanCsvExportTests
         var document = Columns(Document(new PlanRow("I1", "設計", "acme/repo")), "Actual", "Id", "Title", "Repository");
         document = document with { State = document.State with { Settings = PlanSheetColumns.Change(document, "Title", name: "作業名", rename: true) } };
         var rows = Read(PlanCsvExport.Create(document, Today));
-        Assert.That(rows[0], Is.EqualTo(new[] { "ID", "実績 h", "作業名", "リポジトリ", "リポジトリ", "Issue 番号", "URL", "未発行" }));
-        Assert.That(rows[1], Is.EqualTo(new[] { "1", "", "設計", "acme/repo", "acme/repo", "", "", "" }));
+        Assert.That(rows[0], Is.EqualTo(new[] { "ID", "実績 h", "作業名", "リポジトリ", "要求事項", "リポジトリ", "Issue 番号", "URL", "未発行" }));
+        Assert.That(rows[1], Is.EqualTo(new[] { "1", "", "設計", "acme/repo", "", "acme/repo", "", "", "" }));
     }
 
     [Test]
@@ -48,9 +48,18 @@ internal sealed class PlanCsvExportTests
             IssueLinks = ImmutableDictionary<string, PlanIssueLink>.Empty.Add("I1", new("acme/repo#123", "https://github.com/acme/repo/issues/123")) } };
         var rows = Read(PlanCsvExport.Create(document, Today));
         Assert.That(rows, Has.Length.EqualTo(4));
-        Assert.That(rows[1], Is.EqualTo(new[] { "1", "要求事項", "acme/repo", "", "", "" }));
-        Assert.That(rows[2], Is.EqualTo(new[] { "2", "子タスク", "acme/repo", "123", "https://github.com/acme/repo/issues/123", "" }));
-        Assert.That(rows[3], Is.EqualTo(new[] { "3", "新しい作業", "acme/repo", "", "", "新規" }));
+        Assert.That(rows[1], Is.EqualTo(new[] { "1", "要求事項", "", "acme/repo", "", "", "" }));
+        Assert.That(rows[2], Is.EqualTo(new[] { "2", "子タスク", "要求事項", "acme/repo", "123", "https://github.com/acme/repo/issues/123", "" }));
+        Assert.That(rows[3], Is.EqualTo(new[] { "3", "新しい作業", "", "acme/repo", "", "", "新規" }));
+    }
+
+    [Test]
+    public void RequirementColumnNamesTheTopLevelAncestorAtEveryDepth()
+    {
+        var document = Columns(Document(new("R1", "=要求", "acme/repo"), new PlanRow("S1", "中間", "acme/repo") { Parent = "R1" },
+            new PlanRow("T1", "孫タスク", "acme/repo") { Parent = "S1" }, new PlanRow("T2", "単独タスク", "acme/repo")), "Title");
+        var rows = Read(PlanCsvExport.Create(document, Today));
+        Assert.That(rows.Skip(1).Select(r => r[2]), Is.EqualTo(new[] { "", "'=要求", "'=要求", "" }));
     }
 
     [Test]
@@ -111,7 +120,7 @@ internal sealed class PlanCsvExportTests
         var document = Columns(Document(new PlanRow("I1", "設計,\"確認\"\r\n次\n最後", "acme/repo")), "Title");
         var bytes = PlanCsvExport.Create(document, Today);
         Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xef, 0xbb, 0xbf }));
-        Assert.That(Encoding.UTF8.GetString(bytes), Is.EqualTo("\uFEFFID,タスク名,リポジトリ,Issue 番号,URL,未発行\r\n1,\"設計,\"\"確認\"\"\r\n次\n最後\",acme/repo,,,\r\n"));
+        Assert.That(Encoding.UTF8.GetString(bytes), Is.EqualTo("\uFEFFID,タスク名,要求事項,リポジトリ,Issue 番号,URL,未発行\r\n1,\"設計,\"\"確認\"\"\r\n次\n最後\",,acme/repo,,,\r\n"));
     }
 
     [Test]

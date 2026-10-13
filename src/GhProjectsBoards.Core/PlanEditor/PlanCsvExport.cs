@@ -20,7 +20,8 @@ internal static class PlanCsvExport
         var calendar = new PlanCalendar { ImportedHolidays = document.State.Settings.ImportedHolidays?.ToPreset(), CompanyDaysOff = document.State.Settings.CompanyDaysOff.ToHashSet() };
         var lateness = PlanLateness.Classify(schedule, document.Baseline, calendar, document.State.Settings.StatusDate ?? today);
         var text = new StringBuilder("\uFEFF");
-        WriteRow([Text("ID"), .. visible.Select(c => Text(c.Name)), Text("リポジトリ"), Text("Issue 番号"), Text("URL"), Text("未発行")]);
+        var rowsById = document.State.Rows.ToDictionary(r => r.Identity);
+        WriteRow([Text("ID"), .. visible.Select(c => Text(c.Name)), Text("要求事項"), Text("リポジトリ"), Text("Issue 番号"), Text("URL"), Text("未発行")]);
         foreach (var row in PlanOperations.EffectiveRows(document))
         {
             var task = scheduled[row.Identity];
@@ -31,7 +32,7 @@ internal static class PlanCsvExport
             var marker = !changes.Fields.TryGetValue(row.Identity, out var fields) ? "" : fields.Contains(PlanField.NewTask) ? "新規"
                 : string.Join(", ", fields.Select(f => names.GetValueOrDefault(f) ?? PlanSheetColumns.ReviewName(f)));
             WriteRow([ids[row.Identity].ToString(CultureInfo.InvariantCulture), .. visible.Select(c => Cell(c.Key)),
-                Text(row.Repository), number, Text(link?.Url ?? ""), Text(marker)]);
+                Text(Requirement(row)), Text(row.Repository), number, Text(link?.Url ?? ""), Text(marker)]);
 
             string Cell(string field)
             {
@@ -56,6 +57,13 @@ internal static class PlanCsvExport
         return Encoding.UTF8.GetBytes(text.ToString());
 
         void WriteRow(IEnumerable<string> cells) => text.AppendJoin(',', cells).Append("\r\n");
+        string Requirement(PlanRow row)
+        {
+            if (row.Parent is null) return "";
+            var top = row;
+            for (var depth = 0; depth < rowsById.Count && top.Parent is not null && rowsById.TryGetValue(top.Parent, out var parent); depth++) top = parent;
+            return top.Title;
+        }
         string Assignee(string id) => !string.IsNullOrWhiteSpace(people.GetValueOrDefault(id)) ? people[id]
             : !string.IsNullOrWhiteSpace(document.Sync.PeopleNames.GetValueOrDefault(id)) ? document.Sync.PeopleNames[id] : "担当者（未確認）";
     }
