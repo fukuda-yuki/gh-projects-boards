@@ -61,14 +61,14 @@ internal static class FakeGhProgram
             query = payload.RootElement.GetProperty("query").GetString();
             mutation = query?.TrimStart().StartsWith("mutation", StringComparison.Ordinal) == true;
         }
-        File.AppendAllText(Path.Combine(directory, "calls.jsonl"), JsonSerializer.Serialize(new
+        await WriteDiagnosticAsync(Path.Combine(directory, "calls.jsonl"), JsonSerializer.Serialize(new
         {
             operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId
-        }) + "\n");
+        }) + "\n", append: true);
         if (settings.TryGetProperty("holdOperation", out var heldOperation) && args[0] == heldOperation.GetString() ||
             settings.TryGetProperty("holdQuery", out var heldQuery) && query?.Contains(heldQuery.GetString()!) == true)
         {
-            File.WriteAllText(Path.Combine(directory, "held-gh.pid"), Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            await WriteDiagnosticAsync(Path.Combine(directory, "held-gh.pid"), Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
             var deadline = DateTime.UtcNow.AddSeconds(20);
             while (!File.Exists(Path.Combine(directory, "release-gh")) && DateTime.UtcNow < deadline) await Task.Delay(20);
         }
@@ -105,6 +105,27 @@ internal static class FakeGhProgram
             return 0;
         }
         return 2;
+    }
+
+    private static async Task WriteDiagnosticAsync(string path, string text, bool append = false)
+    {
+        var wait = System.Diagnostics.Stopwatch.StartNew();
+        FileStream stream;
+        while (true)
+        {
+            try
+            {
+                stream = new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read);
+                break;
+            }
+            catch (IOException error) when ((error.HResult & 0xffff) is 32 or 33 && wait.Elapsed < TimeSpan.FromSeconds(10))
+            {
+                await Task.Delay(10);
+            }
+        }
+        // Only acquiring the exclusive writer is retried: retrying a write could duplicate a partial record.
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
+        await writer.WriteAsync(text);
     }
 
     private static void WriteHttp(object body) => Console.Write("HTTP/2.0 200 OK\r\nContent-Type: application/json\r\n\r\n" + JsonSerializer.Serialize(body));

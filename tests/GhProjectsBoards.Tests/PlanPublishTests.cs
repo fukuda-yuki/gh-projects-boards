@@ -538,10 +538,10 @@ internal sealed class PlanPublishTests
         Assert.That(plan.Writes, Has.Length.EqualTo(4));
         Assert.That(plan.Changes.All(c => c.After == "\"2026-10-05\""), Is.True);
     }
-    [TestCase(PlanPublishStage.Fields, 49, 1, "number")]
-    [TestCase(PlanPublishStage.Fields, 50, 1, "number")]
-    [TestCase(PlanPublishStage.Fields, 51, 2, "number")]
-    [TestCase(PlanPublishStage.Fields, 51, 2, "date")]
+    [TestCase(PlanPublishStage.Fields, 49, 5, "number")]
+    [TestCase(PlanPublishStage.Fields, 50, 5, "number")]
+    [TestCase(PlanPublishStage.Fields, 51, 6, "number")]
+    [TestCase(PlanPublishStage.Fields, 51, 6, "date")]
     [TestCase(PlanPublishStage.Fields, 11, 2, "mixed")]
     [TestCase(PlanPublishStage.Create, 9, 1, "")]
     [TestCase(PlanPublishStage.Create, 10, 1, "")]
@@ -558,15 +558,15 @@ internal sealed class PlanPublishTests
         Assert.That(actual.SelectMany(b => b), Is.EqualTo(writes));
     }
     [Test]
-    public void SparseAssigneeChangesDoNotReduceLongNumericDateRunsToTenAliases()
+    public void MixedAndNumericDateRunsUseAtMostTenAliasesWithoutReordering()
     {
         var writes = Enumerable.Range(0, 135).Select(i => new PlanWrite(i.ToString(), "I" + i, PlanPublishStage.Fields,
             i is 0 or 121 ? "updateIssue" : "updateProjectV2ItemFieldValue", "Input",
             i is 0 or 121 ? "{\"id\":\"I1\",\"assigneeIds\":[\"U1\"]}" : "{\"value\":{\"number\":8}}", "id")).ToArray();
         var batches = PlanPublishPlan.Batches(writes).ToArray();
         Assert.That(batches.SelectMany(b => b), Is.EqualTo(writes), "Writes retain their planned order and occur exactly once.");
-        Assert.That(batches.Any(b => b.Length == 50), Is.True, "A sparse assignee edit must not impose the mixed limit on the entire phase.");
+        Assert.That(batches.Length, Is.EqualTo(14));
         foreach (var batch in batches) Assert.That(batch.Length,
-            Is.LessThanOrEqualTo(batch.All(w => w.Mutation == "updateProjectV2ItemFieldValue") ? 50 : 10));
+            Is.LessThanOrEqualTo(10));
     }
 }

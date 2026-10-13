@@ -48,6 +48,9 @@ internal static class FakePlanEditor
             return 0;
         }
         var projectId = workspace && variables.TryGetProperty("id", out var projectNode) && projectNode.GetString() == "P2" ? "P2" : "P1";
+        string ItemIdFor(string owner, string id) => workspace && owner == "P2" ? "P2:" + id : id;
+        string ItemId(string id) => ItemIdFor(projectId, id);
+        static string ItemIdentity(string id) => id[(id.LastIndexOf(':') + 1)..][2..];
         var fieldRoles = new[] { PlanField.Estimate, PlanField.Remaining, PlanField.Actual, PlanField.Start, PlanField.End, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Status };
         string Type(string role) => role is PlanField.Estimate or PlanField.Remaining or PlanField.Actual ? "NUMBER" : role is PlanField.Fixed or PlanField.Status ? "SINGLE_SELECT" : "DATE";
         object Field(string role) => new { __typename = role is PlanField.Fixed or PlanField.Status ? "ProjectV2SingleSelectField" : "ProjectV2Field", id = "F-" + role, name = workspace && role == PlanField.Start ? "Start date" : workspace && role == PlanField.End ? "Target date" : state.AddedFields.Contains(role.ToString()) ? role == PlanField.Fixed ? "日程固定" : "開始日指定" : role.ToString(), dataType = Type(role), isIssueField = false, project = new { id = projectId }, options = role == PlanField.Status ? new[] { new { id = "progress", name = "In progress" }, new { id = "done", name = "Done" }, new { id = "backlog", name = "Backlog" } } : new[] { new { id = "fixed", name = "固定" } } };
@@ -89,7 +92,7 @@ internal static class FakePlanEditor
         object Item(PlanFakeIssue issue)
         {
             var row = issue.Row;
-            var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = "T-" + row.Identity, type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
+            var item = JsonSerializer.SerializeToNode(new { __typename = "ProjectV2Item", id = ItemId("T-" + row.Identity), type = "ISSUE", isArchived = issue.Archived, project = new { id = projectId },
                 content = new { __typename = "Issue", id = row.Identity, number = int.Parse(row.Identity[1..]), url = "https://github.com/" + row.Repository + "/issues/" + row.Identity[1..], title = row.Title,
                     state = row.Closed ? "CLOSED" : "OPEN",
                     labels = Page(state.Labels.Where(l => l.Repository == row.Repository && row.Labels.Contains(l.Name)).Take(100).Select(l => (object)new { id = l.Id, name = l.Name }), row.Labels.Length, row.Labels.Length>100, row.Labels.Length>100 ? "100" : null),
@@ -162,7 +165,8 @@ internal static class FakePlanEditor
         {
             var id = variables.GetProperty("id").GetString(); var issue = state.Issues.Single(i => i.Row.Identity == id);
             var visible = issue.Added && !(fault == "membership-delay" && state.ReadAttempts < 2);
-            node = new { projectItems = Page(visible ? [new { id = "T-" + id, project = new { id = projectId } }] : [], visible ? 1 : 0) };
+            var owners = visible ? workspace ? new[] { "P1", "P2" } : new[] { "P1" } : [];
+            node = new { projectItems = Page(owners.Select(owner => (object)new { id = ItemIdFor(owner, "T-" + id), project = new { id = owner } }), owners.Length) };
         }
         else if (query.Contains("PlanSubIssues"))
         {
@@ -189,16 +193,30 @@ internal static class FakePlanEditor
         else if (query.Contains("ProjectFields"))
             node = new { __typename = "ProjectV2", id = projectId, number = 3, url = "https://github.com/users/acme/projects/3", title = "Plan", viewerCanUpdate = true,
                 owner = new { __typename = "User", id = "O1" }, fields = Page(fieldRoles.Select(Field).Concat(state.Phases.IsEmpty ? [] : [PhaseField()]).Concat(state.ExtraFields.Select(f => (object)new { __typename = f.DataType == "SINGLE_SELECT" ? "ProjectV2SingleSelectField" : f.DataType == "ITERATION" ? "ProjectV2IterationField" : "ProjectV2Field", id = f.Id, name = f.Name, dataType = f.DataType, isIssueField = false, project = new { id = projectId }, options = f.Options.Select(o => new { id = "extra-" + o, name = o }).ToArray() })), fieldRoles.Length + (state.Phases.IsEmpty ? 0 : 1) + state.ExtraFields.Length) };
-        else if (query.Contains("ProjectItems"))
+        else if (query.Contains("ProjectItems") || query.Contains("ProjectItemDetails"))
         {
             var all = state.Issues.Where(i => i.Added && !(fault == "membership-delay" && state.MutationBatches is > 0 and <= 4 && state.ReadAttempts < 2 && int.Parse(i.Row.Identity[1..]) % 2 == 0)).ToArray();
             var offset = variables.TryGetProperty("after", out var cursor) && cursor.ValueKind == JsonValueKind.String ? int.Parse(cursor.GetString()!) : 0;
-            object Excluded(string id, string kind, string type) => new { __typename = "ProjectV2Item", id, type, isArchived = false,
+            object Excluded(string id, string kind, string type) => new { __typename = "ProjectV2Item", id = ItemId(id), type, isArchived = false,
                 project = new { id = projectId }, content = new { __typename = kind, id = "content-" + id }, fieldValues = Page([], 0) };
-            var nodes = all.Select(Item).Concat(Enumerable.Range(0, state.Drafts).Select(i => Excluded("D" + i, "DraftIssue", "DRAFT_ISSUE")))
+            object[] Nodes() => all.Select(Item).Concat(Enumerable.Range(0, state.Drafts).Select(i => Excluded("D" + i, "DraftIssue", "DRAFT_ISSUE")))
                 .Concat(Enumerable.Range(0, state.PullRequests).Select(i => Excluded("PR" + i, "PullRequest", "PULL_REQUEST")))
-                .Concat(Enumerable.Range(0, state.Redacted).Select(i => (object)new { __typename = "ProjectV2Item", id = "REDACTED" + i, type = "REDACTED", isArchived = false, project = new { id = projectId }, content = (object?)null, fieldValues = Page([], 0) })).ToArray();
-            node = new { __typename = "ProjectV2", id = projectId, items = Page(nodes.Skip(offset).Take(100), nodes.Length + state.HiddenItems + (offset == 0 &&
+                .Concat(Enumerable.Range(0, state.Redacted).Select(i => (object)new { __typename = "ProjectV2Item", id = ItemId("REDACTED" + i), type = "REDACTED", isArchived = false, project = new { id = projectId }, content = (object?)null, fieldValues = Page([], 0) })).ToArray();
+            if (query.Contains("ProjectItemDetails"))
+            {
+                var ids = variables.GetProperty("ids").EnumerateArray().Select(id => id.GetString()!).ToArray();
+                var byId = new Dictionary<string, JsonElement>();
+                foreach (var owner in ids.Select(id => workspace && id.StartsWith("P2:", StringComparison.Ordinal) ? "P2" : "P1").Distinct())
+                {
+                    projectId = owner;
+                    foreach (var item in Nodes().Select(n => JsonSerializer.SerializeToElement(n)))
+                        byId.Add(item.GetProperty("id").GetString()!, item);
+                }
+                Write(new { data = new { nodes = ids.Select(id => byId.TryGetValue(id, out var item) ? (JsonElement?)item : null).ToArray(), viewer = new { databaseId = 42 } } });
+                return 0;
+            }
+            var nodes = Nodes();
+            node = new { __typename = "ProjectV2", id = projectId, items = Page(nodes.Skip(offset).Take(100).Select(n => new { id = JsonSerializer.SerializeToElement(n).GetProperty("id").GetString() }), nodes.Length + state.HiddenItems + (offset == 0 &&
                 (fault == "churn" && state.ReadAttempts <= faultBatch || fault == "verification-churn" && state.MutationBatches > 0 && state.ReadAttempts <= 3) ? 1 : 0),
                 offset + 100 < nodes.Length, offset + 100 < nodes.Length ? (offset + 100).ToString() : null) };
         }
@@ -233,6 +251,7 @@ internal static class FakePlanEditor
             {
                 if (interruptedPositions && data.Count >= 2 || fault == "creation-resource-uncertain" && query.Contains("createIssue") && matches.Count > 1 && data.Count >= 1) break;
                 var alias = match.Groups[1].Value; var mutation = match.Groups[2].Value; var input = variables.GetProperty(match.Groups[3].Value);
+                if (workspace && input.TryGetProperty("projectId", out var destination)) projectId = destination.GetString()!;
                 if (fault is "missing-alias" or "unknown-and-resource" && state.MutationBatches == faultBatch && alias != "w0")
                 {
                     if (fault == "unknown-and-resource" && alias == "w1")
@@ -258,11 +277,11 @@ internal static class FakePlanEditor
                     { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, message = "Content already exists in this project" })); data[alias] = null; continue; }
                     var addedIssue = issues[index] with { Added = !(fault == "membership-pending" && issueId == "I2") };
                     if (fault is "workflow-status" or "workflow-backlog" or "mixed-resource") addedIssue = addedIssue with { Row = addedIssue.Row with { Status = fault == "workflow-status" ? "In progress" : "Backlog" } };
-                    issues.RemoveAt(index); issues.Add(addedIssue); id = "T-" + issueId; selection = "item";
+                    issues.RemoveAt(index); issues.Add(addedIssue); id = ItemId("T-" + issueId); selection = "item";
                 }
                 else
                 {
-                    var identity = input.TryGetProperty("itemId", out var itemId) ? itemId.GetString()![2..] :
+                    var identity = input.TryGetProperty("itemId", out var itemId) ? ItemIdentity(itemId.GetString()!) :
                         input.TryGetProperty("labelableId", out var labelable) ? labelable.GetString()! : input.TryGetProperty("id", out var issueId) ? issueId.GetString()! : input.TryGetProperty("assignableId", out var assignable) ? assignable.GetString()! : input.GetProperty("issueId").GetString()!;
                     var index = issues.FindIndex(i => i.Row.Identity == identity); var issue = issues[index]; var row = issue.Row;
                     if (mutation == "updateIssue") row = input.TryGetProperty("milestoneId", out var milestone) ? row with { MilestoneTitle = milestone.ValueKind == JsonValueKind.Null ? null : state.Milestones.Single(m => m.Id == milestone.GetString() && m.Repository == row.Repository).Title } : row with { Title = input.GetProperty("title").GetString()! };
@@ -293,7 +312,7 @@ internal static class FakePlanEditor
                     {
                         issues.RemoveAt(index);
                         var afterId = input.GetProperty("afterId");
-                        var place = afterId.ValueKind == JsonValueKind.Null ? 0 : issues.FindIndex(i => "T-" + i.Row.Identity == afterId.GetString()) + 1;
+                        var place = afterId.ValueKind == JsonValueKind.Null ? 0 : issues.FindIndex(i => ItemId("T-" + i.Row.Identity) == afterId.GetString()) + 1;
                         issues.Insert(place, issue); index = place; selection = "items";
                     }
                     else if (mutation is "addAssigneesToAssignable" or "removeAssigneesFromAssignable")
@@ -349,7 +368,7 @@ internal static class FakePlanEditor
                         subOrders = subOrders.SetItem(identity, children.ToImmutableArray());
                     }
                     else throw new InvalidOperationException("Unsupported fake mutation: " + mutation);
-                    issues[index] = issue with { Row = row }; id = selection == "projectV2Item" ? "T-" + identity : identity;
+                    issues[index] = issue with { Row = row }; id = selection == "projectV2Item" ? ItemId("T-" + identity) : identity;
                 }
                 if (fault == "link-already-exists" && mutation is "addSubIssue" or "addBlockedBy")
                 { errors.Add(JsonSerializer.SerializeToNode(new { path = new[] { alias }, type = "UNPROCESSABLE", message = "Relationship already exists" })); data[alias] = null; continue; }

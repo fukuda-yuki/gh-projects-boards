@@ -32,11 +32,17 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
 {
     private readonly IGhProcessRunner runner = new GhProjectsBoards.Core.Projects.PerformanceTrace.Runner(processRunner ?? new GhProcessRunner());
     private readonly SemaphoreSlim gate = new(1, 1);
+    private readonly object budgetLock = new();
     private DateTimeOffset operationNotBefore;
     private async Task WaitForOperationBudget(CancellationToken token)
     {
-        var delay = operationNotBefore - DateTimeOffset.UtcNow;
-        if (delay > TimeSpan.Zero) await Task.Delay(delay, token).ConfigureAwait(false);
+        while (true)
+        {
+            TimeSpan delay;
+            lock (budgetLock) delay = operationNotBefore - DateTimeOffset.UtcNow;
+            if (delay <= TimeSpan.Zero) return;
+            await Task.Delay(delay, token).ConfigureAwait(false);
+        }
     }
 
     internal async Task<OperationLease> BeginOperationAsync(ConnectionContext context, CancellationToken token, bool mutation = true)
@@ -64,7 +70,12 @@ internal sealed class GhConnectionService(string executable, string host, IGhPro
             if (context.IsInvalidated) return new(ApiOutcome.Failed, FailureKind.IdentityChanged);
             await owner.WaitForOperationBudget(token).ConfigureAwait(false);
             var result = await owner.Transport().SendAsync(context.Host, request, token).ConfigureAwait(false);
-            if (result.RetryAfter is { } delay && delay > TimeSpan.Zero) owner.operationNotBefore = DateTimeOffset.UtcNow + delay;
+            if (result.RetryAfter is { } delay && delay > TimeSpan.Zero)
+            {
+                var deadline = DateTimeOffset.UtcNow + delay;
+                lock (owner.budgetLock)
+                    if (deadline > owner.operationNotBefore) owner.operationNotBefore = deadline;
+            }
             return result;
         }
         public void Dispose() { if (!disposed) { disposed = true; owner.gate.Release(); } }

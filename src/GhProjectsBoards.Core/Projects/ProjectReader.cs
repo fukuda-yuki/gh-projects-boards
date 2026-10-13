@@ -23,6 +23,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
         private bool milestonesComplete = true;
         private readonly Dictionary<ScopedId, MilestoneReadModel> milestones = [];
         private int undeliveredItems;
+        private int? itemTotal;
         private readonly List<RepositoryLabel> labels = [];
         private readonly Dictionary<ScopedId, (string Cursor, int Total)> labelPages = [];
         private readonly Dictionary<ScopedId, HashSet<string>> labelCursors = [];
@@ -58,9 +59,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                 fieldsComplete = await WalkAsync("fields", ProjectQueries.Fields, projectId.NodeId,
                     ReadProjectFields, value => { AddField(value); return Task.CompletedTask; });
                 if (!stopped)
-                    itemsComplete = await WalkAsync("items", (lease is null ? ProjectQueries.Items : ProjectQueries.Items.Replace("parent { id }", "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}")), projectId.NodeId,
-                        node => { MatchNode(node, projectId.NodeId, "ProjectV2"); return Property(node, "items"); },
-                        AddItemAsync);
+                    itemsComplete = await ReadItemsAsync();
                 await ReadValuePages();
                 await ReadLabelPages();
                 foreach (var repository in issues.Values.Select(i => i.Repository.Id).Distinct())
@@ -108,6 +107,149 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     Labels = labels.ToArray(), MilestonesComplete = milestonesComplete && !stopped, Milestones = complete ? milestones.Values.ToArray() : []
                 };
             return new(outcome, project, problems.ToArray());
+        }
+
+        // Larger detail requests hit measured gateway timeouts; six sends stay well inside secondary limits.
+        private const int DetailBatchSize = 25;
+        private const int DetailConcurrency = 6;
+        private readonly List<string> detailIds = [];
+        private readonly Queue<(string[] Ids, Task<ApiResult> Response)> pendingDetails = [];
+
+        private async Task<bool> ReadItemsAsync()
+        {
+            try
+            {
+                var walked = await WalkAsync("items", ProjectQueries.Items, projectId.NodeId,
+                    node => { MatchNode(node, projectId.NodeId, "ProjectV2"); return Property(node, "items"); },
+                    async node => {
+                        if (stopped) return;
+                        detailIds.Add(Text(node, "id"));
+                        if (detailIds.Count == DetailBatchSize) await FlushDetailsAsync();
+                    });
+                while (!stopped && pendingDetails.Count > 0)
+                {
+                    await DrainCompletedDetailsAsync();
+                    if (!stopped && pendingDetails.Count > 0)
+                        await WaitForDetailResponseAsync();
+                }
+                return walked && !stopped;
+            }
+            finally
+            {
+                // Even a validation failure or cancellation must not outlive this read's lease.
+                await Task.WhenAll(pendingDetails.Select(batch => batch.Response));
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        private void RecordItemFailure(ApiResult response)
+        {
+            stopped = true;
+            interruption = response.Outcome;
+            problems.Add(new(ReadProblemKind.Api, "items", response.Failure, response.Outcome, response.HttpStatus, response.RetryAfter));
+        }
+
+        private async Task ObserveDetailFailuresAsync()
+        {
+            foreach (var batch in pendingDetails)
+                if (batch.Response.IsCompleted && !stopped && await batch.Response is { IsSuccess: false } failure)
+                    RecordDetailFailure(failure, batch.Ids.Length);
+        }
+
+        private void RecordDetailFailure(ApiResult response, int expectedCount)
+        {
+            var root = response.Data ?? default;
+            var nodes = Optional(Optional(root, "data"), "nodes");
+            var errors = Optional(root, "errors");
+            // GitHub reports a deletion with both a null node and a failed gh exit.
+            // Only exact node-level NOT_FOUND errors may enter the snapshot churn retry.
+            if (response.Failure == FailureKind.GraphQl && nodes.ValueKind == JsonValueKind.Array
+                && nodes.GetArrayLength() == expectedCount && errors.ValueKind == JsonValueKind.Array
+                && errors.GetArrayLength() > 0 && errors.EnumerateArray().All(error =>
+                {
+                    var type = Optional(error, "type");
+                    var path = Optional(error, "path");
+                    return type.ValueKind == JsonValueKind.String && type.GetString() == "NOT_FOUND"
+                        && path.ValueKind == JsonValueKind.Array && path.GetArrayLength() == 2
+                        && path[0].ValueKind == JsonValueKind.String && path[0].GetString() == "nodes"
+                        && path[1].ValueKind == JsonValueKind.Number && path[1].TryGetInt32(out var index)
+                        && index >= 0 && index < expectedCount && nodes[index].ValueKind == JsonValueKind.Null;
+                }))
+            {
+                stopped = true;
+                problems.Add(new(ReadProblemKind.ConcurrentChange, "items"));
+            }
+            else RecordItemFailure(response);
+        }
+
+        private async Task DrainCompletedDetailsAsync()
+        {
+            while (!stopped && pendingDetails.TryPeek(out var first) && first.Response.IsCompleted)
+                await AcceptNextDetailsAsync();
+            await ObserveDetailFailuresAsync();
+        }
+
+        private Task WaitForDetailResponseAsync()
+            => Task.WhenAny(pendingDetails.Select(batch => batch.Response).Where(task => !task.IsCompleted)
+                .Prepend(pendingDetails.Peek().Response));
+
+        private async Task FlushDetailsAsync()
+        {
+            await DrainCompletedDetailsAsync();
+            if (stopped || detailIds.Count == 0) return;
+            while (!stopped && pendingDetails.Count >= DetailConcurrency)
+            {
+                await WaitForDetailResponseAsync();
+                await DrainCompletedDetailsAsync();
+            }
+            if (stopped) return;
+            cancellationToken.ThrowIfCancellationRequested();
+            var ids = detailIds.ToArray(); detailIds.Clear();
+            var query = lease is null ? ProjectQueries.ItemDetails : ProjectQueries.ItemDetails.Replace("parent { id }",
+                "parent { id } subIssues(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id}}");
+            var response = SendAsync(query, new { ids });
+            pendingDetails.Enqueue((ids, response));
+            await DrainCompletedDetailsAsync();
+        }
+
+        private async Task AcceptNextDetailsAsync()
+        {
+            var batch = pendingDetails.Dequeue();
+            var response = await batch.Response;
+            if (!response.IsSuccess)
+            {
+                RecordDetailFailure(response, batch.Ids.Length);
+                if (problems[^1].Kind == ReadProblemKind.ConcurrentChange) return;
+                if (response.Failure != FailureKind.GraphQl) return;
+            }
+            var nodes = Array(Property(response.Data ?? default, "data"), "nodes");
+            if (nodes.GetArrayLength() != batch.Ids.Length) throw new ReadException(ReadProblemKind.IncompleteTraversal);
+            for (var i = 0; i < batch.Ids.Length; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var node = nodes[i];
+                if (node.ValueKind == JsonValueKind.Null) throw new ReadException(ReadProblemKind.ConcurrentChange);
+                MatchNode(node, batch.Ids[i], "ProjectV2Item");
+                await AddItemAsync(node);
+                progress?.Report(new("プロジェクトの項目を取得", items.Count, itemTotal));
+                if (stopped) break;
+            }
+        }
+
+        private async Task<ApiResult> SendItemPageAsync(string query, object variables)
+        {
+            var page = SendAsync(query, variables);
+            try
+            {
+                while (!page.IsCompleted && !stopped && pendingDetails.Count > 0)
+                {
+                    await Task.WhenAny(pendingDetails.Select(batch => batch.Response).Where(task => !task.IsCompleted)
+                        .Prepend(pendingDetails.Peek().Response).Append(page));
+                    await DrainCompletedDetailsAsync();
+                }
+                return await page;
+            }
+            finally { await page; }
         }
 
         private JsonElement ReadProjectFields(JsonElement node)
@@ -460,9 +602,11 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var trusted = !stopped;
                     if (page.ValueKind == JsonValueKind.Undefined)
                     {
+                        if (stage == "items") await FlushDetailsAsync();
                         if (stopped) return false;
                         if (stage == "items" && total is null) progress?.Report(new("プロジェクトの項目を取得"));
-                        var result = await SendAsync(query, new { id, after });
+                        var result = stage == "items" ? await SendItemPageAsync(query, new { id, after })
+                            : await SendAsync(query, new { id, after });
                         trusted = result.IsSuccess;
                         if (!trusted)
                         {
@@ -484,6 +628,7 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                     var expected = NonnegativeInt(page, "totalCount");
                     if (total is not null && total != expected) throw new ReadException(ReadProblemKind.ConcurrentChange);
                     total = expected;
+                    if (stage == "items") itemTotal = total;
                     if (stage == "items" && count == 0) progress?.Report(new("プロジェクトの項目を取得", count, total));
                     var nodes = Array(page, "nodes");
                     foreach (var node in nodes.EnumerateArray())
@@ -491,8 +636,8 @@ internal sealed class ProjectReader(GhConnectionService service, GhConnectionSer
                         cancellationToken.ThrowIfCancellationRequested();
                         await accept(node);
                         count++;
-                        if (stage == "items") progress?.Report(new("プロジェクトの項目を取得", count, total));
                     }
+                    if (stage == "items") await FlushDetailsAsync();
                     var info = Property(page, "pageInfo");
                     var next = Boolean(info, "hasNextPage");
                     var cursor = OptionalText(info, "endCursor");

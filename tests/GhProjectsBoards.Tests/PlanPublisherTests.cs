@@ -527,17 +527,17 @@ internal sealed partial class PlanPublisherTests
         await Start(65);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows
             .Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 3m)).ToImmutableArray()), Today);
-        Scenario(body, gatewayAliasLimit: 13);
+        Scenario(body, gatewayAliasLimit: 6);
 
         var result = await publisher.PublishAsync(session, Today);
 
         Assert.That(result.Succeeded, Is.True, result.Error);
-        // The first 50 split twice; the remaining original batch inherits the ceiling of 12.
-        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 50, 25, 12, 12, 1, 25, 12, 12, 1, 12, 3 }));
+        // The first ten split in half; subsequent requests retain the ceiling of five.
+        Assert.That(publisher.EffectiveBatchSizes, Is.EqualTo(new[] { 10, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 }));
         var remote = FakePlanEditor.Load(root);
         Assert.That(remote.Issues.All(i => i.Row.Actual == 3), Is.True);
-        Assert.That(remote.MutationBatches, Is.EqualTo(11));
-        Assert.That(runner.MaximumConcurrent, Is.EqualTo(1));
+        Assert.That(remote.MutationBatches, Is.EqualTo(14));
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(1));
         Assert.That(session.Changes(Today).TaskCount, Is.Zero);
         Assert.That(session.Document.Sync.Publish?.Writes.Any(w => w.State == PlanWriteState.Dispatched) ?? false, Is.False);
     }
@@ -669,8 +669,8 @@ internal sealed partial class PlanPublisherTests
         Assert.That(remote.Count(i => i.Row.Parent is not null), Is.EqualTo(20));
         Assert.That(remote.Sum(i => i.Row.Predecessors.Length), Is.EqualTo(19));
         Assert.That(remote.All(i => i.Added && i.Row.Status == "Backlog"), Is.True);
-        Assert.That(runner.MaximumConcurrent, Is.EqualTo(1));
-        TestContext.Out.WriteLine($"Fresh24 {fault}: requests={runner.Count - before}; serial elapsed={watch.Elapsed.TotalSeconds:F3}s; creation wait={publisher.CreationWait.TotalSeconds:F3}s; max concurrent={runner.MaximumConcurrent}; batches={string.Join(',', publisher.EffectiveBatchSizes)}");
+        Assert.That(runner.MaximumConcurrentMutations, Is.EqualTo(1));
+        TestContext.Out.WriteLine($"Fresh24 {fault}: requests={runner.Count - before}; elapsed={watch.Elapsed.TotalSeconds:F3}s; creation wait={publisher.CreationWait.TotalSeconds:F3}s; max concurrent mutations={runner.MaximumConcurrentMutations}; batches={string.Join(',', publisher.EffectiveBatchSizes)}");
     }
     [Test]
     public async Task Snapshot2RecoveryRestoresRelationshipsAndFinishesWithoutCreation()
@@ -1626,7 +1626,7 @@ internal sealed partial class PlanPublisherTests
         Assert.That((await PlanSession.OpenAsync(new(root), Project, Today)).Status, Is.EqualTo(PlanLoadStatus.Loaded));
     }
     [Test]
-    public async Task FiftyOneUpdatesUseTwoBatchesAndUndoAfterPublishStaysLocal()
+    public async Task FiftyOneUpdatesUseSixBatchesAndUndoAfterPublishStaysLocal()
     {
         await Start(51);
         await session.Execute(new EditPlanCells(PlanOperationKind.Paste, session.Document.State.Rows.Select(r => new PlanCellChange(r.Identity, PlanField.Actual, 2m)).ToImmutableArray()), Today);
@@ -1634,7 +1634,7 @@ internal sealed partial class PlanPublisherTests
         var result = await publisher.PublishAsync(session, Today);
         Assert.That(result.Succeeded, Is.True, result.Error);
         Assert.That(FakePlanEditor.Load(root).Issues.All(i => i.Row.Actual == 2), Is.True);
-        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(2));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.EqualTo(6));
         TestContext.Out.WriteLine("51-update publish processes: " + (runner.Count - start));
         await session.Undo(Today);
         Assert.That(session.Changes(Today).TaskCount, Is.EqualTo(51));
@@ -1673,7 +1673,9 @@ internal sealed partial class PlanPublisherTests
         Scenario(fault);
         var first = await publisher.PublishAsync(session, Today);
         Assert.That(first.Succeeded, Is.EqualTo(fault == "resource"));
-        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(fault == "resource" ? 0 : 1));
+        var pending = fault switch { "resource" => 0, "after" => 41, _ => 1 };
+        Assert.That(FakePlanEditor.Load(root).Issues.Count(i => i.Row.Actual != 3), Is.EqualTo(pending),
+            "An after-batch failure applies the first ten writes and leaves 41 of 51 unsent; partial rejects one alias, while resource rejection recovers.");
         Scenario();
         var opened = await PlanSession.OpenAsync(new(root), Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Loaded), opened.Error);
@@ -1688,6 +1690,8 @@ internal sealed partial class PlanPublisherTests
         }).ToArray();
         Assert.That(sent.Count(id => id == "T-I1"), Is.EqualTo(1), "Successful siblings must not be resent.");
         Assert.That(sent.Count(id => id == "T-I2"), Is.EqualTo(fault == "after" ? 1 : 2));
+        if (fault == "after") Assert.That(sent, Is.EquivalentTo(Enumerable.Range(1, 51).Select(i => "T-I" + i)),
+            "Restart sends every remaining write exactly once without repeating any successful first-batch alias.");
     }
     [Test]
     public async Task VerificationMismatchStaysPendingAndIsResent()
@@ -1881,23 +1885,27 @@ internal sealed partial class PlanPublisherTests
     private sealed class CountingRunner(IGhProcessRunner inner) : IGhProcessRunner
     {
         private int active;
-        public int MaximumConcurrent { get; private set; }
+        public int MaximumConcurrentMutations { get; private set; }
         public int Count { get; private set; }
         public List<string> Queries { get; } = [];
         public List<DateTimeOffset> Started { get; } = [];
         public Action? RateLimitObserved { get; set; }
         public async Task<GhProcessResult> RunAsync(GhCommand command, CancellationToken cancellationToken = default)
         {
-            Count++; Started.Add(DateTimeOffset.UtcNow);
-            if (command.Arguments.Contains("graphql") && command.StandardInput is { } input) { using var json = JsonDocument.Parse(input); Queries.Add(json.RootElement.GetProperty("query").GetString()!); }
-            MaximumConcurrent = Math.Max(MaximumConcurrent, Interlocked.Increment(ref active));
+            var mutation = command.StandardInput?.Contains("mutation PlanPublish", StringComparison.Ordinal) == true;
+            lock (Queries)
+            {
+                Count++; Started.Add(DateTimeOffset.UtcNow);
+                if (command.Arguments.Contains("graphql") && command.StandardInput is { } input) { using var json = JsonDocument.Parse(input); Queries.Add(json.RootElement.GetProperty("query").GetString()!); }
+                if (mutation) MaximumConcurrentMutations = Math.Max(MaximumConcurrentMutations, Interlocked.Increment(ref active));
+            }
             try
             {
                 var result = await inner.RunAsync(command, cancellationToken);
                 if (result.StandardOutput.StartsWith("HTTP/2 429", StringComparison.Ordinal)) RateLimitObserved?.Invoke();
                 return result;
             }
-            finally { Interlocked.Decrement(ref active); }
+            finally { if (mutation) Interlocked.Decrement(ref active); }
         }
     }
 }
