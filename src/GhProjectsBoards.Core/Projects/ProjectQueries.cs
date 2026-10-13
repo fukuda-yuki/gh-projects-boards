@@ -46,27 +46,22 @@ internal static class ProjectQueries
           }
         }
         """.Replace("PAGE_INFO", PageInfo);
-    public static readonly string Items = """
-        query ProjectItems($id: ID!, $after: String) {
-          node(id: $id) {
-            __typename
-            ... on ProjectV2 {
-              id
-              items(first: 100, after: $after) {
-                PAGE_INFO
-                nodes {
-                  __typename id type isArchived project { id }
-                  content {
-                    __typename
-                    ... on Node { id }
-                    ... on Issue {
-                      labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
-                      repository { id nameWithOwner owner { id } }
-                    }
-                  }
-                  fieldValues(first: 100) { PAGE_INFO VALUES }
+    public static readonly string Items = "query ProjectItems($id:ID!,$after:String){node(id:$id){__typename ... on ProjectV2{id items(first:100,after:$after){" + PageInfo + " nodes{id}}}}}";
+    public static readonly string ItemDetails = """
+        query ProjectItemDetails($ids:[ID!]!) {
+          nodes(ids:$ids) {
+            __typename id
+            ... on ProjectV2Item {
+              type isArchived project { id }
+              content {
+                __typename
+                ... on Node { id }
+                ... on Issue {
+                  labels(first:100){totalCount pageInfo{hasNextPage endCursor} nodes{id name}} number url title state closedAt viewerCanUpdate milestone { id title dueOn state } NATIVE
+                  repository { id nameWithOwner owner { id } }
                 }
               }
+              fieldValues(first: 100) { PAGE_INFO VALUES }
             }
           }
         }

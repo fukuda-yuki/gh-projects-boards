@@ -61,7 +61,8 @@ internal sealed partial class PlanPublisherTests
         Assert.That(snapshot.Baseline.Rows.All(r=>r.ExtraValues.Keys.Count(k=>k.StartsWith("Project:X-",StringComparison.Ordinal))==4 && r.ExtraValues["Project:X-S"].Availability==ValueAvailability.Empty && r.Labels.SequenceEqual(new[]{"bug"})),Is.True);
         Assert.That(PlanValues.Get(snapshot.Baseline.Rows[0],"Project:X-N"),Is.EqualTo("-2"));
         Assert.That(runner.Queries.Count(q=>q.Contains("ProjectItems")),Is.EqualTo((count+99)/100));
-        Assert.That(runner.Queries.Count,Is.EqualTo((count+99)/100+3));
+        Assert.That(runner.Queries.Count(q=>q.Contains("ProjectItemDetails")),Is.EqualTo((count+24)/25));
+        Assert.That(runner.Queries.Count,Is.EqualTo((count+99)/100+(count+24)/25+3));
         Assert.That(PlanValues.Get(snapshot.Baseline.Rows[0],"Project:X-H"),Is.EqualTo("\"secret\""));
         Assert.That(FakePlanEditor.Load(root).MutationBatches,Is.Zero);
     }

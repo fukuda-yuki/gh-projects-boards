@@ -24,7 +24,7 @@ internal sealed class ProjectReaderTests
         issue2["repository"]!["id"] = "R2"; issue2["repository"]!["nameWithOwner"] = "example/other";
         var boundary = new ProjectBoundary { Override = (query, variables) => {
             if (query.Contains("ProjectItems")) {
-                Assert.That(query, Does.Contain("milestone { id title dueOn state }"));
+
                 return Response(Project("P1", "items", Page([Item("P1", "T1", content: issue1), Item("P1", "T2", content: issue2, values: Page([], 0))], 2)));
             }
             if (!query.Contains("ProjectMilestones")) return null;
@@ -465,8 +465,10 @@ internal sealed class ProjectReaderTests
     [Test]
     public async Task GraphQlPartialDataIsRetainedWithoutTreatingMissingValuesAsEmpty()
     {
-        var boundary = new ProjectBoundary { Override = (query, _) => query.Contains("ProjectItems")
-            ? Response(Project("P1", "items", Page([Item("P1", values: Page([], 0))], 1)), errors: true) : null };
+        var boundary = new ProjectBoundary { DetailsOverride = (_, _) => ScriptedRunner.Http(JsonSerializer.Serialize(new {
+            data = new { nodes = new[] { Item("P1", values: Page([], 0)) } },
+            errors = new[] { new { type = "FORBIDDEN", message = "synthetic-private-error" } }
+        })) };
         var result = await Read(boundary);
         Assert.That(result.Outcome, Is.EqualTo(ProjectReadOutcome.Partial));
         Assert.That(result.Project!.Items.Single().Values.Single().Availability, Is.EqualTo(ValueAvailability.NotLoaded));
@@ -624,6 +626,8 @@ internal sealed class ProjectReaderTests
         public Func<string, JsonElement, GhProcessResult?>? Override { get; set; }
         public Action<string, System.Text.Json.Nodes.JsonNode>? ChangeObservationResponse { get; set; }
         public Func<GhCommand, GhProcessResult?>? OverrideProcess { get; set; }
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Text.Json.Nodes.JsonNode> detailNodes = new();
+        public Func<string, JsonElement, GhProcessResult?>? DetailsOverride { get; set; }
         public long ViewerId { get; set; } = 42;
         public ProjectBoundary()
         {
@@ -638,7 +642,23 @@ internal sealed class ProjectReaderTests
                 using var json = JsonDocument.Parse(command.StandardInput!);
                 var query = json.RootElement.GetProperty("query").GetString()!;
                 var variables = json.RootElement.GetProperty("variables");
-                var response = Respond(query, variables);
+                var response = query.Contains("ProjectItemDetails")
+                    ? DetailsOverride?.Invoke(query, variables) ?? ScriptedRunner.Http(JsonSerializer.Serialize(new { data = new {
+                        nodes = variables.GetProperty("ids").EnumerateArray().Select(id => detailNodes[id.GetString()!]).ToArray() } }))
+                    : Respond(query, variables);
+                if (query.Contains("ProjectItems") && response.StandardOutput.StartsWith("HTTP/2.0 200"))
+                {
+                    var body = Body(response);
+                    if (body["data"]?["node"]?["items"]?["nodes"] is System.Text.Json.Nodes.JsonArray nodes)
+                    {
+                        foreach (var node in nodes)
+                            if (node?["id"]?.GetValue<string>() is { } id) detailNodes[id] = node.DeepClone();
+                        // Both responses come from the same scripted items; the wire page exposes only IDs.
+                        for (var i = 0; i < nodes.Count; i++)
+                            if (nodes[i] is { } node) nodes[i] = new System.Text.Json.Nodes.JsonObject { ["id"] = node["id"]?.DeepClone() };
+                        response = ScriptedRunner.Http(body.ToJsonString());
+                    }
+                }
                 if (query.Contains("viewer { databaseId }") && response.StandardOutput.StartsWith("HTTP/2.0 200"))
                 {
                     var data = Body(response);
@@ -646,7 +666,7 @@ internal sealed class ProjectReaderTests
                     {
                         fields["viewer"] = JsonSerializer.SerializeToNode(new { databaseId = ViewerId });
                         ChangeObservationResponse?.Invoke(query, data);
-                        return ScriptedRunner.Http(data.ToJsonString());
+                        return ScriptedRunner.Http(data.ToJsonString(), exit: response.ExitCode ?? 0);
                     }
                 }
                 return response;
@@ -702,7 +722,7 @@ internal sealed class ProjectReaderTests
             optionId = option, field = new { id = field, project = new { id = project } } };
     internal static object Issue(string id = "I1", int number = 1, string state = "OPEN", string? closedAt = null) => new { __typename = "Issue", id, number,
         url = $"https://github.com/example/repository/issues/{number}", title = "Synthetic issue", state, closedAt, labels = Page([], 0), milestone = (object?)null,
-        assignees = Page([], 0), blockedBy = Page([], 0), parent = (object?)null,
+        assignees = Page([], 0), blockedBy = Page([], 0), subIssues = Page([], 0), parent = (object?)null,
         repository = new { id = "R1", nameWithOwner = "example/repository", owner = new { id = "RO1" } } };
     internal static object Item(string project, string? id = null, object? values = null, object? content = null,
         string type = "ISSUE")

@@ -204,7 +204,10 @@ internal sealed class PlanLivePreflightTests
         Assert.That(review.Changes.All(c => c.Identity.StartsWith("owned-", StringComparison.Ordinal)), Is.True);
         Assert.That(review.Changes.Count(c => c.Field is PlanField.Estimate or PlanField.Remaining or PlanField.Actual), Is.EqualTo(300));
         Assert.That(review.Changes.Count(c => c.Field is PlanField.Start or PlanField.End), Is.EqualTo(200));
-        Assert.That(PlanPublishPlan.Batches(review.Writes).Count(), Is.EqualTo(10));
+        const int fieldAliasLimit = 10;
+        var expectedBatches = (review.Writes.Length + fieldAliasLimit - 1) / fieldAliasLimit;
+        Assert.That(PlanPublishPlan.Batches(review.Writes).Count(), Is.EqualTo(expectedBatches),
+            $"{review.Writes.Length} field writes require ceiling(write count / {fieldAliasLimit}) requests under docs/spec.md's ten-alias contract.");
         Assert.That(baseline.Rows[1].Fixed, Is.False);
     }
     [Test, Category("Integration")]

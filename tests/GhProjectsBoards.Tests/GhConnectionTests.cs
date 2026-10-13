@@ -9,6 +9,31 @@ namespace GhProjectsBoards.Tests;
 internal sealed class GhConnectionTests
 {
     [Test]
+    public async Task ConcurrentRetryAfterResponsesKeepTheLongestDeadline()
+    {
+        var releases = new[] { new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously),
+            new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        var runner = ConnectedRunner(command => ScriptedRunner.Http("{}", 429, 1,
+            "Retry-After: " + (command.Arguments[1] == "long" ? "60" : "1") + "\r\n"));
+        runner.BeforeResponse = (command, token) => command.Arguments[0] == "api" && command.Arguments[1] is "long" or "short"
+            ? releases[command.Arguments[1] == "long" ? 0 : 1].Task.WaitAsync(token) : Task.CompletedTask;
+        var service = new GhConnectionService("gh.exe", "github.com", runner);
+        var context = (await service.ConnectAsync()).Context!;
+        using var lease = await service.BeginOperationAsync(context, CancellationToken.None, mutation: false);
+        var longer = lease.SendAsync(ApiRequest.Rest("GET", "long"), CancellationToken.None);
+        var shorter = lease.SendAsync(ApiRequest.Rest("GET", "short"), CancellationToken.None);
+        releases[0].SetResult();
+        Assert.That((await longer).RetryAfter, Is.EqualTo(TimeSpan.FromSeconds(60)));
+        releases[1].SetResult();
+        Assert.That((await shorter).RetryAfter, Is.EqualTo(TimeSpan.FromSeconds(1)));
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            await lease.SendAsync(ApiRequest.Rest("GET", "next"), cancellation.Token));
+        Assert.That(runner.Commands.Any(c => c.Arguments.Contains("next")), Is.False,
+            "A later one-second response must not release the sixty-second budget; cancellation stops the wait before dispatch.");
+    }
+
+    [Test]
     public async Task CancelledOperationRecheckReportsCancellationAndAllowsRetry()
     {
         using var cancellation = new CancellationTokenSource();
