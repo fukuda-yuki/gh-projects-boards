@@ -6,6 +6,68 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanWorkspaceTests
 {
+    [TestCase(false), TestCase(true)]
+    public async Task FirstOpenInitializesPeriodAndMilestonesThenPreservesUserSettings(bool clear)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-first-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "scenario.json"), "{\"planEditor\":true,\"workspace\":true}");
+            var day = new DateOnly(2026, 10, 13);
+            FakePlanEditor.Save(root, new([
+                new(new("I1", "Later", "acme/repo") { Start = day.AddDays(2), End = day.AddDays(30), Remaining = 8 }, "", true) { Phase = "SA" },
+                new(new("I2", "Earlier", "acme/other") { Start = day, End = day.AddDays(3), Actual = 4, Remaining = 8 }, "", true) { Phase = "PS" },
+                new(new("I3", "Undated", "acme/repo") { Remaining = 8 }, "", true)
+            ], 4) { Phases = ["SA", "P", "PS"], Milestones = [
+                new("M1", "acme/repo", "SA 完了", day.AddDays(5)),
+                new("M2", "acme/other", "SA 完了", day.AddDays(6)),
+                new("M3", "acme/repo", "ps 完了", day.AddDays(20))] });
+            var store = new PlanStore(root);
+            var workspace = new PlanWorkspace(store, () => day);
+            GhConnectionService Service() => new(GhProcessTests.FakeExecutable, "github.com",
+                new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }));
+            await workspace.Connect(Service());
+            await workspace.Open(workspace.Available[0]);
+            var session = workspace.Session!;
+            var initial = session.Document.State.Settings;
+            Assert.Multiple(() => {
+                Assert.That(initial.ProjectStart, Is.EqualTo(day));
+                Assert.That(initial.ProjectEnd, Is.EqualTo(day.AddDays(20)));
+                Assert.That(initial.PhaseMilestones, Is.EquivalentTo(new Dictionary<string, string> { ["SA"] = "SA 完了", ["PS"] = "ps 完了" }));
+                Assert.That(session.Document.Baseline.Milestones.Single(m => m.Title == "SA 完了").DueDate, Is.EqualTo(day.AddDays(6)));
+                Assert.That(session.UndoCount, Is.Zero);
+                Assert.That(session.Changes(day).TaskCount, Is.Zero);
+                Assert.That(session.Schedule(day).Select(t => (t.Start.Value, t.End.Value)),
+                    Is.EqualTo(session.Document.Baseline.Rows.Select(r => (r.Start, r.End))));
+            });
+            var export = Path.Combine(root, "settings.json");
+            await session.ExportSettingsAsync(export);
+            var chosen = initial with { ProjectStart = clear ? null : day.AddDays(-7), ProjectEnd = clear ? null : day.AddDays(40),
+                PhaseMilestones = clear ? initial.PhaseMilestones.Clear() : initial.PhaseMilestones.SetItem("SA", "ps 完了").Remove("PS") };
+            var saved = await session.Execute(new ReplacePlanSettings(chosen), day);
+            Assert.That(saved.Succeeded, Is.True, saved.Error);
+            var expected = PlanJson.Text(chosen);
+            await workspace.Refresh();
+            Assert.That(PlanJson.Text(session.Document.State.Settings), Is.EqualTo(expected));
+            await workspace.Reset();
+            Assert.That(PlanJson.Text(session.Document.State.Settings), Is.EqualTo(expected));
+            await workspace.Open(workspace.Selected!);
+            Assert.That(PlanJson.Text(workspace.Session!.Document.State.Settings), Is.EqualTo(expected));
+            var restarted = new PlanWorkspace(store, () => day.AddDays(1));
+            await restarted.Connect(Service());
+            Assert.That(PlanJson.Text(restarted.Session!.Document.State.Settings), Is.EqualTo(expected));
+            var undo = restarted.Session.UndoCount;
+            Assert.That((await restarted.Session.ImportSettingsAsync(export, day)).Applied, Is.True);
+            Assert.That(PlanJson.Text(restarted.Session.Document.State.Settings), Is.EqualTo(PlanJson.Text(initial)));
+            Assert.That(restarted.Session.UndoCount, Is.EqualTo(undo + 1));
+            var remote = FakePlanEditor.Load(root);
+            Assert.That(remote.MutationBatches, Is.Zero);
+            Assert.That(remote.AddedFields, Is.Empty);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [TestCase(false, false), TestCase(false, true), TestCase(true, false), TestCase(false, true, true)]
     public async Task RecalculationOriginPersistsUntilSuccessfulRefreshOrPublish(bool refresh, bool noWrites, bool undoBeforePublish = false)
     {

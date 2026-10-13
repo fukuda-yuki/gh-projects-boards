@@ -2024,6 +2024,20 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(workspace.Session.Document.State.Settings.ProjectEnd, Is.Null);
     }
 
+    [TestCase("PlanProjectStart"), TestCase("PlanProjectEnd")]
+    public async Task SettingsPeriodAcceptsSlashDateAndDisplaysIsoDate(string id)
+    {
+        await Open(); await Settings();
+        var undo = workspace.Session!.UndoCount;
+        await CommitText(id, "2026/10/13");
+        await Ui.Until(() => (id == "PlanProjectStart" ? workspace.Session.Document.State.Settings.ProjectStart
+            : workspace.Session.Document.State.Settings.ProjectEnd) == new DateOnly(2026, 10, 13));
+        await Ui.Until(() => Ui.Find<TextBox>(id).Text == "2026-10-13");
+        await SettingsErrorCleared(id);
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(undo + 1));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [Test]
     public async Task SettingsPeriodCorrectionBackToAcceptedValueClearsAllFeedbackWithoutAnEdit()
     {
