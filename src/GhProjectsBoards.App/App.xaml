@@ -4,11 +4,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:tabular="using:Microsoft.UI.Xaml.Controls.Tabular"
     xmlns:local="using:GhProjectsBoards.App">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <controls:XamlControlsResources />
+                <tabular:TabularControlsResources />
             </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
@@ -136,6 +138,25 @@
                 </Setter>
             </Style>
             <DataTemplate x:Key="PlanSheetRowTemplate"><local:PlanSheetRow /></DataTemplate>
+            <DataTemplate x:Key="PlanTableTitle">
+                <TextBlock Text="{Binding Title, Mode=OneWay}" Margin="8,0"
+                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                    AutomationProperties.AutomationId="{Binding TitleDisplayId, Mode=OneWay}" />
+            </DataTemplate>
+            <DataTemplate x:Key="PlanTableRemaining">
+                <TextBlock Text="{Binding Remaining, Mode=OneWay}" Margin="8,0" TextAlignment="Right"
+                    VerticalAlignment="Center" AutomationProperties.AutomationId="{Binding RemainingDisplayId, Mode=OneWay}" />
+            </DataTemplate>
+            <DataTemplate x:Key="PlanTableEnd">
+                <TextBlock Text="{Binding End, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </DataTemplate>
+            <DataTemplate x:Key="PlanTableTitleEditor">
+                <local:PlanTableViewEditor Field="Title" AutomationProperties.Name="タスク名" />
+            </DataTemplate>
+            <DataTemplate x:Key="PlanTableRemainingEditor">
+                <local:PlanTableViewEditor Field="Remaining" TextAlignment="Right" AutomationProperties.Name="見込み残存工数" />
+            </DataTemplate>
             <DataTemplate x:Key="PlanPublishGroupTemplate"><local:PlanPublishGroupView /></DataTemplate>
             <DataTemplate x:Key="PlanProjectChoiceTemplate">
                 <Grid ColumnSpacing="8" ToolTipService.ToolTip="{Binding Url}">

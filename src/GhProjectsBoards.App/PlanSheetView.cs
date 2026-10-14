@@ -21,6 +21,7 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
+        if (tableView is not null) tableView.IsReadOnly = value;
         commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
         RefreshRealized();
     }
@@ -306,6 +307,7 @@ internal sealed partial class PlanSheetView : Grid
         };
         ActualThemeChanged += (_, _) => { headerKey = timelineKey = null; RefreshHeaders(); RenderTimelineHeader(); RefreshRealized(); };
 
+        if (App.UseTableView) InitializeTableView(controls);
         Refresh();
     }
     internal void CancelPendingFilter()
@@ -456,6 +458,7 @@ internal sealed partial class PlanSheetView : Grid
     }
     private async Task CommitPending()
     {
+        RequireTableViewCompositionResolved();
         var composing = Realized.SelectMany(r => r.Cells).FirstOrDefault(c => c.Composing);
         if (composing is not null) {
             var identity = Realized.First(r => r.Cells.Contains(composing)).Identity;
@@ -468,9 +471,12 @@ internal sealed partial class PlanSheetView : Grid
             try { await Commit(input.Key.Identity, input.Key.Field, input.Value.Text, input.Value.Generation, input.Value.OriginalText); }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                Select(input.Key.Identity, input.Key.Field, false); FocusSelected(); throw;
+                if (tableView is not null) FocusTableViewProblem(input.Key.Identity, input.Key.Field);
+                else { Select(input.Key.Identity, input.Key.Field, false); FocusSelected(); }
+                throw;
             }
         }
+        FinishTableViewEdit();
     }
     internal Task CommitCell(string identity, string field, string text)
     {
@@ -577,6 +583,7 @@ internal sealed partial class PlanSheetView : Grid
         }
         metrics.Mark("derived");
         RefreshVisibleRows(document);
+        RefreshTableViewRows();
         metrics.Mark("visible-rows");
         rendering = true;
         try { statusDate.Date = new DateTimeOffset(StatusDate.ToDateTime(TimeOnly.MinValue)); }
@@ -741,6 +748,7 @@ internal sealed partial class PlanSheetView : Grid
     internal void UpdateInputProblem()
     {
         if (disposed || !IsLoaded || Problems.Count == 0) { inputProblem.Close(); return; }
+        if (tableView is not null) { UpdateTableViewProblem(); return; }
         var cells = Realized.Where(r => r.IsLoaded && ReferenceEquals(r.Owner, this))
             .SelectMany(r => r.Cells.Where(c => c.IsLoaded && Problems.ContainsKey((r.Identity, c.Field)) && InputProblemCellIsVisible(c))
             .Select(c => (Cell: c, Problem: Problems[(r.Identity, c.Field)]))).ToArray();
