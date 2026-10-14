@@ -18,9 +18,9 @@
     <Content Include="../../docs/user-manual.md" Link="マニュアル.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/manual/images/*.png" Link="manual/images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="GhProjectsBoards.UiIntegration.Tests" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="[1.8.260804001]" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.5.1]" />
     <!-- Unused Widgets component assets have different redistribution terms from the Runtime MSIX. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.Widgets" Version="[1.8.251231004]" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Widgets" Version="[2.0.5]" ExcludeAssets="all" />
     <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
   </ItemGroup>
 </Project>
