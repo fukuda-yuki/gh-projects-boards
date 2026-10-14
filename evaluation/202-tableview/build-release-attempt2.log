@@ -1,0 +1,33 @@
+  GhProjectsBoards.Core -> C:\w\tv202\src\GhProjectsBoards.Core\bin\Release\net10.0\GhProjectsBoards.Core.dll
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(60,32): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewColumn' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(63,38): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(63,56): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewCellEditEndingEventArgs' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(17,13): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(17,13): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(24,28): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(26,58): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewSelectionMode' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(27,23): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewDensity' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(30,9): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewTemplateColumn' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(72,32): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewEditAction' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\App.xaml(13,18): XamlCompiler warning WMC1501: TabularControlsResources is for evaluation purposes only and is subject to change or removal in future updates. [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+App.xaml(141,50): XamlCompiler error WMC0612: The XAML Binary Format (XBF) generator reported syntax error '0x09C4' : Property Not Found [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+  GhProjectsBoards.Tests -> C:\w\tv202\tests\GhProjectsBoards.Tests\bin\Release\net10.0-windows\GhProjectsBoards.Tests.dll
+
+ビルドに失敗しました。
+
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(60,32): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewColumn' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(63,38): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(63,56): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewCellEditEndingEventArgs' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(17,13): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(17,13): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(24,28): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableView' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(26,58): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewSelectionMode' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(27,23): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewDensity' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(30,9): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewTemplateColumn' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\PlanSheetTableView.cs(72,32): warning CS8305: 'Microsoft.UI.Xaml.Controls.Tabular.TableViewEditAction' は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。 [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+C:\w\tv202\src\GhProjectsBoards.App\App.xaml(13,18): XamlCompiler warning WMC1501: TabularControlsResources is for evaluation purposes only and is subject to change or removal in future updates. [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+App.xaml(141,50): XamlCompiler error WMC0612: The XAML Binary Format (XBF) generator reported syntax error '0x09C4' : Property Not Found [C:\w\tv202\src\GhProjectsBoards.App\GhProjectsBoards.App.csproj]
+    11 個の警告
+    1 エラー
+
+経過時間 00:00:09.46

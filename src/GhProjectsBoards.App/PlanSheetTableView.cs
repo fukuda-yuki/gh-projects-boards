@@ -163,7 +163,9 @@ public sealed class PlanTableViewEditor : TextBox
     public PlanTableViewEditor()
     {
         MinWidth = 0;
-        Loaded += (_, _) => BindItem();
+        // Gate 1 run 1 showed native F2 realizes this template but leaves keyboard focus on the row,
+        // so physical input never reached the editor. Focus it through the public API on realization.
+        Loaded += (_, _) => { BindItem(); Focus(FocusState.Keyboard); };
         DataContextChanged += (_, _) => BindItem();
         Unloaded += (_, _) => {
             if (Item?.Owner.TableEditor == this) { Item.Owner.TableEditor = null; Item.Owner.UpdateInputProblem(); }

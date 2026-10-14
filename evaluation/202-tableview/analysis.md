@@ -1,5 +1,7 @@
 # Native TableView investigation — Issue #202
 
+> Pre-run desk analysis. The desktop execution result (Gate 1 failed; Gates 2–4 not run) is in [gate1-result.md](gate1-result.md).
+
 ## Scope and decision
 
 This is a throwaway, never-merge Gate 1 experiment on `claude/202-tableview-prototype`, using the owner's 2026-10-14 Issue summary supplied in the task. No network, remote writes, app launch or desktop tests are authorized in this environment. The existing two project-file changes pin Windows App SDK `2.5.4-experimental`; they are input to the experiment, not a dependency upgrade performed here.
