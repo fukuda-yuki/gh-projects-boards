@@ -20,6 +20,17 @@ New-Item -ItemType Directory -Path $package | Out-Null
 
 function Hash([string]$Path) { (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash }
 function JsonFile($Value, [string]$Path) { $Value | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $Path -Encoding utf8 }
+function Test-BinplacedPackageLicense([string]$Identity, [string]$Location, [string]$NoticeSource, $NoticeHashes) {
+    $license = Join-Path $Location 'license.txt'
+    $name = $Identity.Replace('/', '-') + '-license.txt'
+    $retained = Join-Path $NoticeSource $name
+    $reviewed = @($NoticeHashes | Where-Object file -EQ $name)
+    if ($reviewed.Count -ne 1 -or -not (Test-Path -LiteralPath $license -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $retained -PathType Leaf)) { return $false }
+    $hash = Hash $license
+    return $hash -eq $reviewed[0].sha256 -and $hash -eq (Hash $retained) -and
+        (Get-Content -LiteralPath $license -Raw).Contains('Any files that are binplaced with your application')
+}
 function Sources {
     @((Get-ChildItem -LiteralPath (Join-Path $repo 'src') -Recurse -File | Where-Object FullName -NotMatch '[\\/](bin|obj)[\\/]'),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'docs/notices') -File),
@@ -49,7 +60,7 @@ try {
     if (($source | ConvertTo-Json -Depth 5 -Compress) -cne (@(Sources) | ConvertTo-Json -Depth 5 -Compress)) {
         throw 'Source files changed during publication. Retry after the source is stable.'
     }
-    # WinUI 1.8's publish target omits the compiled application XAML and PRI from publish output.
+    # Supply compiled application XAML/PRI only when the WinUI publish target omits them.
     # Use only the resources belonging to this isolated build, never an existing checkout's bin.
     $appBuild = Join-Path $build 'bin/GhProjectsBoards.App/release_win-x64'
     if ((Hash (Join-Path $appBuild 'GhProjectsBoards.App.dll')) -ne (Hash (Join-Path $package 'GhProjectsBoards.App.dll'))) {
@@ -64,8 +75,10 @@ try {
         $built = Join-Path $appBuild $resource
         if (-not (Test-Path -LiteralPath $built -PathType Leaf)) { throw "Compiled application resource missing: $resource" }
         $destination = Join-Path $package $resource
-        New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
-        Copy-Item -LiteralPath $built -Destination $destination
+        if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
+            New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+            Copy-Item -LiteralPath $built -Destination $destination
+        }
         if ((Hash $built) -ne (Hash $destination)) { throw "Compiled application resource differs: $resource" }
     }
 
@@ -84,7 +97,8 @@ try {
     }
 
     $noticeSource = Join-Path $repo 'docs/notices'
-    foreach ($retained in (Get-Content -LiteralPath (Join-Path $noticeSource 'hashes.json') -Raw | ConvertFrom-Json)) {
+    $noticeHashes = @(Get-Content -LiteralPath (Join-Path $noticeSource 'hashes.json') -Raw | ConvertFrom-Json)
+    foreach ($retained in $noticeHashes) {
         if ((Hash (Join-Path $noticeSource $retained.file)) -ne $retained.sha256) { throw "Retained notice changed: $($retained.file)" }
     }
     $notices = Join-Path $package 'notices'
@@ -122,9 +136,18 @@ try {
 
     $runtimeId = @($packages.Keys | Where-Object { $_ -like 'Microsoft.WindowsAppSDK.Runtime/*' })
     if ($runtimeId.Count -ne 1) { throw 'Expected exactly one Windows App Runtime package.' }
-    $runtimeMsix = Join-Path $packages[$runtimeId[0]] 'tools/MSIX/win10-x64/Microsoft.WindowsAppRuntime.1.8.msix'
+    $binplacedPackages = @{}
+    foreach ($identity in $packages.Keys) {
+        $binplacedPackages[$identity] = Test-BinplacedPackageLicense $identity $packages[$identity] $noticeSource $noticeHashes
+    }
+    $runtimeMsixes = @(Get-ChildItem -LiteralPath (Join-Path $packages[$runtimeId[0]] 'tools/MSIX/win10-x64') -File -Filter 'Microsoft.WindowsAppRuntime.*.msix' |
+        Where-Object Name -NotMatch '^Microsoft\.WindowsAppRuntime\.(DDLM|Main|Singleton)\.')
+    if ($runtimeMsixes.Count -ne 1) { throw 'Expected exactly one Windows App Runtime main framework MSIX.' }
+    $runtimeMsix = $runtimeMsixes[0].FullName
+    $runtimeMsixRelative = [IO.Path]::GetRelativePath($packages[$runtimeId[0]], $runtimeMsix).Replace('\', '/')
     $runtimeLicense = Get-Content -LiteralPath (Join-Path $packages[$runtimeId[0]] 'license.txt') -Raw
     if (-not $runtimeLicense.Contains('Any files that are binplaced with your application')) { throw 'Runtime package grant changed; review exact terms.' }
+    if (-not $binplacedPackages[$runtimeId[0]]) { throw 'Runtime package license does not match the retained reviewed terms.' }
     $origins = @{}
     foreach ($resource in $resources) { $origins[$resource.Replace('\', '/')] = 'application build resources' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -138,18 +161,22 @@ try {
             if ($entry.FullName -eq 'resources.pri') { continue }
             $stream = $entry.Open()
             try { $expected = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) } finally { $stream.Dispose() }
-            if ((Hash $outputFile) -ne $expected) { throw "Runtime MSIX file changed: $($entry.FullName)" }
-            $origins[$entry.FullName.Replace('\', '/')] = "$($runtimeId[0])/tools/MSIX/win10-x64/Microsoft.WindowsAppRuntime.1.8.msix!$($entry.FullName)"
+            if ((Hash $outputFile) -ne $expected) {
+                # Component binaries may differ from the framework MSIX; verify their own licensed package below.
+                if ([IO.Path]::GetExtension($outputFile) -in '.dll', '.exe', '.winmd') { continue }
+                throw "Runtime MSIX file changed: $($entry.FullName)"
+            }
+            $origins[$entry.FullName.Replace('\', '/')] = "$($runtimeId[0])/$runtimeMsixRelative!$($entry.FullName)"
         }
     } finally { $archive.Dispose() }
-    foreach ($required in @('DWriteCore.dll', 'Microsoft.Windows.Widgets.dll', 'Microsoft.Windows.Widgets.winmd')) {
-        if (-not $origins.ContainsKey($required)) { throw "Missing verified Runtime MSIX origin: $required" }
-    }
-
     # Match remaining managed/native binaries by exact content, including implicit SDK runtime packs.
     $packageFiles = @{}
-    foreach ($identity in $packages.Keys) {
-        foreach ($file in (Get-ChildItem -LiteralPath $packages[$identity] -Recurse -File | Where-Object Extension -In '.dll', '.exe', '.winmd')) {
+    foreach ($identity in ($packages.Keys | Sort-Object)) {
+        # These packages retain their separately reviewed MIT/SDK redistribution boundaries.
+        $separateTerms = $identity.Split('/')[0] -in 'Microsoft.Web.WebView2', 'System.Numerics.Tensors',
+            'Microsoft.NETCore.App.Runtime.win-x64', 'Microsoft.Windows.SDK.NET.Ref'
+        if (-not $separateTerms -and -not $binplacedPackages[$identity]) { continue }
+        foreach ($file in (Get-ChildItem -LiteralPath $packages[$identity] -Recurse -File | Where-Object Extension -In '.dll', '.exe', '.winmd' | Sort-Object FullName)) {
             if (-not $packageFiles.ContainsKey($file.Name)) { $packageFiles[$file.Name] = @() }
             $packageFiles[$file.Name] += [PSCustomObject]@{ identity = $identity; file = $file.FullName }
         }
@@ -160,12 +187,13 @@ try {
         if ($origins.ContainsKey($relative)) { continue }
         if ($relative -in $ownBinaries) { $origins[$relative] = 'application build'; continue }
         $hash = Hash $file.FullName
+        if (-not $packageFiles.ContainsKey($file.Name)) { throw "Unknown binary origin: $relative" }
         $matches = @($packageFiles[$file.Name] | Where-Object { (Hash $_.file) -eq $hash })
         if ($matches.Count -eq 0) { throw "Unknown binary origin: $relative" }
         $match = $matches[0]
         $origins[$relative] = $match.identity + '/' + [IO.Path]::GetRelativePath($packages[$match.identity], $match.file).Replace('\', '/')
-        if ($match.identity -like 'Microsoft.WindowsAppSDK.Widgets/*') { throw "Unexpected Widgets component file: $relative" }
     }
+    if (-not $origins.ContainsKey('DWriteCore.dll')) { throw 'Missing verified binary origin: DWriteCore.dll' }
     $holidays = Get-Content -LiteralPath (Join-Path $repo 'src/GhProjectsBoards.Core/Planning/JapanHolidays2025-2027.json') -Raw | ConvertFrom-Json
     @"
 出典：内閣府「国民の祝日」 $($holidays.Source)
@@ -181,7 +209,7 @@ try {
     $manifest = [ordered]@{ format = 1; platform = 'Windows 11 x64'; packaging = 'unpackaged self-contained'; sdk = $sdk;
         version = $Version; sourceCommit = $head; sourceDirty = $status.Count -gt 0; sourceManifestSha256 = Hash (Join-Path $run 'source.json');
         runtimeMsix = [ordered]@{ package = $runtimeId[0]; sha256 = Hash $runtimeMsix };
-        validation = [ordered]@{ widgetComponentExcluded = $true; binaryOriginsVerified = $true; applicationResourcesVerified = $resources;
+        validation = [ordered]@{ widgetProjectionExcluded = $true; binaryOriginsVerified = $true; applicationResourcesVerified = $resources;
             cleanPc = 'not established'; humanAcceptance = 'not established' };
         files = $payload }
     JsonFile $manifest (Join-Path $package 'distribution-manifest.json')
@@ -189,7 +217,7 @@ try {
     $zip = Join-Path $run $zipName
     [IO.Compression.ZipFile]::CreateFromDirectory($package, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
     JsonFile ([ordered]@{ zip = [IO.Path]::GetFileName($zip); sha256 = Hash $zip; bytes = (Get-Item -LiteralPath $zip).Length;
-        files = $payload.Count + 1; checks = 'Widgets assets excluded; all binary origins verified; notices retained' }) (Join-Path $run 'result.json')
+        files = $payload.Count + 1; checks = 'Widgets projection excluded; all binary origins verified; notices retained' }) (Join-Path $run 'result.json')
     Write-Output "Package: $zip"
     Write-Output "Evidence: $run"
 } catch {
