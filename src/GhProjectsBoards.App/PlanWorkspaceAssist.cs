@@ -57,7 +57,7 @@ internal sealed partial class PlanWorkspaceView
         assistToggle.Content = caption;
         AutomationProperties.SetName(assistToggle, "アシスト"); ToolTipService.SetToolTip(assistToggle, "アシスト");
         commands.Children.Insert(0, assistToggle);
-        assistToggle.Checked += async (_, _) => { await assistLoaded; UpdateAssistVisibility(); };
+        assistToggle.Checked += async (_, _) => { detailToggle.IsChecked = false; await assistLoaded; UpdateAssistVisibility(); };
         assistToggle.Unchecked += (_, _) => UpdateAssistVisibility();
         work.Children.Add(assistPane); Grid.SetColumn(assistPane, 1);
         assistSend.Click += async (_, _) => await StartAssist();

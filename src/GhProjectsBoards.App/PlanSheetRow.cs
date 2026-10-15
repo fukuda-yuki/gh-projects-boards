@@ -553,7 +553,7 @@ internal sealed class PlanSheetCell : TextBox
     internal Grid? AssigneeDisplay { get; }
     internal TextBlock? AssigneeNameDisplay { get; }
     internal TextBlock? AssigneeCountDisplay { get; }
-    private bool refreshing, endedThisTurn, committing;
+    private bool refreshing, endedThisTurn, committing, preservePendingOnLostFocus;
     private string shownText = "", editingFrom = "";
     internal PlanSheetCell(PlanSheetRow row, string field)
     {
@@ -597,8 +597,17 @@ internal sealed class PlanSheetCell : TextBox
             shownText = Text;
             RefreshDisplay();
         };
+        LosingFocus += (_, args) => {
+            // LostFocus can arrive after a pane action has moved focus again. Decide from this
+            // transition's destination, not the eventual global focus when the notification arrives.
+            preservePendingOnLostFocus = row.Owner?.PreservePendingFocus?.Invoke(args.NewFocusedElement) == true;
+        };
         LostFocus += async (_, _) => {
+            var preservePending = preservePendingOnLostFocus;
+            preservePendingOnLostFocus = false;
             if (Composing) return;
+            // Reading beside the plan must leave the native draft intact, even when a header button takes focus.
+            if (preservePending) return;
             EndEditing();
             if (committing || !IsLoaded || row.Owner is not { } owner || !owner.Pending.ContainsKey((row.Identity, Field))) return;
             var identity = row.Identity; var text = Text;

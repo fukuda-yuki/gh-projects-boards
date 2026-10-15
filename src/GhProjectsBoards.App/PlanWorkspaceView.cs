@@ -160,7 +160,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
         toolbar.PreviewKeyDown += (_, args) => {
             if (args.Key != Windows.System.VirtualKey.F6 || PlanSheetView.Down(Windows.System.VirtualKey.Control)
                 || PlanSheetView.Down(Windows.System.VirtualKey.Menu) || currentPage != "tasks" || sheet is null) return;
-            args.Handled = true; sheet.FocusSelected();
+            args.Handled = true;
+            if (DetailVisible && !PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else sheet.FocusSelected();
         };
         tabs.SelectionChanged += async (_, _) => {
             if (syncingTabs) return;
@@ -208,12 +209,16 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
-            await EndAssist(); ClearAssistMessages();
-            openFailure.IsOpen = false;
-            await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
-            RefreshLists(); RenderTasks();
-            if (workspace.DiscoveryWarning is { } warning) error.Text = warning;
-            Show(workspace.Session is null ? "chooser" : "tasks");
+            CancelDetail(clearCache: true); detailConnecting = true;
+            try {
+                await EndAssist(); ClearAssistMessages();
+                openFailure.IsOpen = false;
+                await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
+                RefreshLists(); RenderTasks();
+                if (workspace.DiscoveryWarning is { } warning) error.Text = warning;
+                Show(workspace.Session is null ? "chooser" : "tasks");
+            }
+            finally { detailConnecting = false; UpdateDetailVisibility(); }
         }));
         chooser.Children.Add(Label("プロジェクトを選択"));
         chooser.Children.Add(available);
@@ -252,7 +257,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var work = new Grid();
         work.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         work.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        work.Children.Add(card); InitializeAssist(work, titleCommands);
+        work.Children.Add(card); InitializeAssist(work, titleCommands); InitializeDetail(work, titleCommands);
         root.Children.Add(work); Grid.SetRow(work, 3);
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -279,6 +284,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         // handlers would keep this whole view and its native tree alive. Attach them only while loaded.
         Loaded += (_, _) => { WorkspaceTitleBar.LeftHeader = appGlyph; WorkspaceTitleBar.Content = projectPicker; WorkspaceTitleBar.RightHeader = titleCommands; };
         Unloaded += (_, _) => {
+            CancelDetail(clearCache: true); detailNavigationStarted?.TrySetCanceled(); detailWeb?.Close();
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
@@ -326,7 +332,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void UpdateStatus()
     {
-        UpdateAssistSelection(); UpdateAssistProposals();
+        UpdateAssistSelection(); UpdateAssistProposals(); UpdateDetailSelection();
         UpdateCommandAvailability();
         ClearObsoletePublishResult();
         if (workspace.Session is not { } session) return;
@@ -512,8 +518,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal async Task<bool> StopAsync()
     {
         closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide();
+        CancelDetail(clearCache: true);
         // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
         operationCancellation?.Cancel();
+        detailNavigationStarted?.TrySetCanceled();
+        await detailWork;
         await EndAssist();
         closing = true; await operation;
         try { await CommitPending(); await workspace.Flush(); return true; }
@@ -529,7 +538,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void Show(string page)
     {
         if (page != "tasks") sheet?.CancelPendingFilter();
-        currentPage = page; SyncTabs(); UpdateAssistVisibility();
+        currentPage = page; SyncTabs(); UpdateAssistVisibility(); UpdateDetailVisibility();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
@@ -577,11 +586,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
             {
                 next = new(session, importCsv: () => Run(() => ImportCsv(session)), exportCsv: () => Run(() => ExportCsv(session)), changeStatusDate: value => Run(() => ChangeSettings(settings => settings with { StatusDate = value })), hostSaveFailure: true, openColumns: () => Run(() => { settingsReturnPage = "tasks"; RenderSettings(); Show("settings"); SyncTabs(); settingsScroll.UpdateLayout(); columnSettingsHeading?.StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 }); return Task.CompletedTask; }));
                 next.CommandRowFocusRequested += () => {
-                    if (ReferenceEquals(sheet, next) && FocusManager.FindFirstFocusableElement(toolbar) is Control command)
-                        command.Focus(FocusState.Keyboard);
+                    if (!ReferenceEquals(sheet, next)) return;
+                    if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
                 };
+                next.PreservePendingFocus = IsDetailFocus;
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
-                next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) UpdateAssistSelection(); };
+                next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) { UpdateAssistSelection(); UpdateDetailSelection(); } };
                 next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { UpdateCommandAvailability(); ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
             }

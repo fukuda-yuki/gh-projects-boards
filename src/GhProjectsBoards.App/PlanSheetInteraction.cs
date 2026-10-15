@@ -69,6 +69,8 @@ internal sealed partial class PlanSheetView
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;
+    internal Func<DependencyObject?, bool>? PreservePendingFocus { get; set; }
+    internal bool HasActiveCellEdit => Pending.Count > 0 || Realized.SelectMany(r => r.Cells).Any(c => c.Editing || c.Composing);
     internal event Action? SelectionChanged;
     internal bool IsRangeEnd(string identity, string field) => identity == selected && field == selectedField;
     internal void Select(string identity, string field, bool extend)
