@@ -48,6 +48,8 @@ internal sealed partial class PlanWorkspaceView
     }
     private IProgress<RemoteProgress> BeginBusy(string kind, string heading, bool resolvingUrl = false)
     {
+        CancelDetail(clearCache: kind is "refresh" or "reset" or "open");
+        ClearDetailContent();
         CloseRefreshResult();
         busyReturnFocus = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as Control;
         busyKind = kind; var generation = ++busyGeneration;
@@ -132,6 +134,7 @@ internal sealed partial class PlanWorkspaceView
         if (!closing && busyReturnFocus?.Focus(FocusState.Programmatic) != true) projectPicker.Focus(FocusState.Programmatic);
         busyReturnFocus = null;
         AnnounceRemote(announcement);
+        UpdateDetailVisibility();
     }
     private void AnnounceRemote(string message)
     {
@@ -141,6 +144,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private async Task OpenProject(ProjectChoice? choice, string? address = null, bool readAgain = false)
     {
+        CancelDetail(clearCache: true);
         await EndAssist(); ClearAssistMessages();
         openFailure.IsOpen = false;
         var previousPage = currentPage;

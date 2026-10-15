@@ -54,16 +54,18 @@ internal static class FakeGhProgram
         var method = methodIndex >= 0 ? args[methodIndex + 1] : "GET";
         var input = api && args.Contains("--input") ? await Console.In.ReadToEndAsync() : null;
         var mutation = api && method != "GET" && args[1] != "graphql";
-        string? query = null;
+        string? query = null, detailId = null;
         if (api && args[1] == "graphql" && input is not null)
         {
             using var payload = JsonDocument.Parse(input);
             query = payload.RootElement.GetProperty("query").GetString();
             mutation = query?.TrimStart().StartsWith("mutation", StringComparison.Ordinal) == true;
+            if (query?.StartsWith("query PlanIssueDetail(", StringComparison.Ordinal) == true)
+                detailId = payload.RootElement.GetProperty("variables").GetProperty("id").GetString();
         }
         await WriteDiagnosticAsync(Path.Combine(directory, "calls.jsonl"), JsonSerializer.Serialize(new
         {
-            operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId
+            operation = args[0], endpoint = api ? args[1] : null, host, method, mutation, pid = Environment.ProcessId, detailId
         }) + "\n", append: true);
         if (settings.TryGetProperty("holdOperation", out var heldOperation) && args[0] == heldOperation.GetString() ||
             settings.TryGetProperty("holdQuery", out var heldQuery) && query?.Contains(heldQuery.GetString()!) == true)
@@ -79,6 +81,31 @@ internal static class FakeGhProgram
             if (state == "notLoggedIn") { Console.Write("[]"); return 0; }
             var source = settings.TryGetProperty("plaintext", out var plain) && plain.GetBoolean() ? Path.Combine(directory, "hosts.yml") : "keyring";
             Console.Write(JsonSerializer.Serialize(new[] { new { host, login = "fixture-user", active = true, state, tokenSource = source, scopes = "repo,project,read:org" } }));
+            return 0;
+        }
+        if (detailId is not null)
+        {
+            var fault = settings.TryGetProperty("detailFault", out var detailFault) ? detailFault.GetString() : null;
+            var issue = FakePlanEditor.Load(directory).Issues.FirstOrDefault(i => i.Row.Identity == detailId);
+            if (fault == "missing" || issue is null) { WriteHttp(new { data = new { node = (object?)null } }); return 0; }
+            if (fault == "network") { Console.Write("HTTP/2.0 503 Unavailable\r\n\r\n{}"); return 1; }
+            var number = int.Parse(detailId[1..], System.Globalization.CultureInfo.InvariantCulture);
+            var issueUrl = $"https://github.com/{issue.Row.Repository}/issues/{number}";
+            var empty = fault is "empty" or "marker";
+            var commentCount = empty ? 0 : settings.TryGetProperty("detailCommentCount", out var count) && count.ValueKind == JsonValueKind.Number ? count.GetInt32() : 7;
+            WriteHttp(new { data = new { node = new {
+                number, title = issue.Row.Title, url = issueUrl, state = issue.Row.Closed ? "CLOSED" : "OPEN", stateReason = (string?)null,
+                body = fault == "marker" ? "<!-- ghpb-plan:\nfixture marker\n-->\n " : empty ? "" : "<!-- ghpb-plan:fixture -->**Body " + issue.Row.Title + "**",
+                bodyHTML = empty ? "" : "<p><strong>Body " + System.Net.WebUtility.HtmlEncode(issue.Row.Title) + "</strong></p>"
+                    + "<a id='fixture-link' href='https://example.com/read'>Read</a> <a id='fixture-new' target='_blank' href='https://example.com/new'>New</a>"
+                    + "<a id='fixture-relative' href='/acme/repo/issues/2'>Relative</a>"
+                    + "<a id='fixture-other' href='file:///ignored'>Other</a><input type='checkbox' checked disabled>",
+                updatedAt = "2026-10-15T08:30:00Z", repository = new { nameWithOwner = issue.Row.Repository },
+                comments = new { totalCount = commentCount, nodes = Enumerable.Range(1, Math.Min(commentCount, 5)).Select(i => new {
+                    author = i == 1 ? null : new { login = "fixture-user" }, createdAt = $"2026-10-{10 + i}T08:00:00Z",
+                    url = issueUrl + "#issuecomment-" + i, body = "<!-- hidden\ncomment metadata -->Comment " + i, bodyHTML = "<p>Comment " + i + "</p>"
+                }).ToArray() }
+            } } });
             return 0;
         }
         if (query is not null && input is not null && settings.TryGetProperty("planEditor", out var planEditor) && planEditor.GetBoolean())

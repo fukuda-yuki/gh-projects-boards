@@ -908,7 +908,17 @@ internal sealed partial class PlanWorkspaceHostedTests
                 try { await workspace.Flush(); }
                 catch when (TestContext.CurrentContext.Result.Outcome.Status != NUnit.Framework.Interfaces.TestStatus.Passed)
                 { await workspace.RetrySave(); }
-                finally { Directory.Delete(root, true); }
+                finally {
+                    // WebView2 closes its browser asynchronously after the view unloads; native profile
+                    // files can remain locked briefly even though all managed work has finished.
+                    var deletion = Stopwatch.StartNew();
+                    while (Directory.Exists(root)) {
+                        try { Directory.Delete(root, true); break; }
+                        catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && deletion.Elapsed < TimeSpan.FromSeconds(15)) {
+                            await Task.Delay(100);
+                        }
+                    }
+                }
             }
         }
         if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Passed) Assert.That(stopped, Is.True, problem);
