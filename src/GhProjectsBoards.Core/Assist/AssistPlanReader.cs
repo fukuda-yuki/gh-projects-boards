@@ -2,7 +2,10 @@ using GhProjectsBoards.Core.PlanEditor;
 
 namespace GhProjectsBoards.Core.Assist;
 
-internal sealed record AssistTaskReference(string Identity, int Id, string Title);
+internal sealed record AssistTaskReference(string Identity, int Id, string Title)
+{
+    public IReadOnlyList<AssistPerson> Assignees { get; init; } = [];
+}
 internal sealed record AssistPerson(string Identity, string Name);
 internal sealed record AssistPage<T>(int Total, int Offset, bool Complete, IReadOnlyList<T> Items);
 internal sealed record AssistFindTasks
@@ -45,7 +48,9 @@ internal sealed class AssistPlanReader
         this.document = document; this.today = today;
         schedule = PlanOperations.Schedule(document, today); scheduled = schedule.ToDictionary(t => t.Input.Identity);
         rows = PlanOperations.EffectiveRows(document).ToDictionary(r => r.Identity);
-        references = document.State.Rows.Select((r, i) => new AssistTaskReference(r.Identity, i + 1, r.Title)).ToDictionary(r => r.Identity);
+        references = document.State.Rows.Select((r, i) => new AssistTaskReference(r.Identity, i + 1, r.Title) {
+            Assignees = rows[r.Identity].Assignees.Select(Person).ToArray()
+        }).ToDictionary(r => r.Identity);
         var settings = document.State.Settings;
         lateness = PlanLateness.Classify(schedule, document.Baseline,
             new() { CompanyDaysOff = settings.CompanyDaysOff.ToHashSet(), ImportedHolidays = settings.ImportedHolidays?.ToPreset() }, settings.StatusDate ?? today);
@@ -87,8 +92,14 @@ internal sealed class AssistPlanReader
             })).Select(r => Reference(r.Identity)).ToArray();
         return Page(matches, filter.Offset, filter.Limit);
     }
-    private AssistPerson Person(string id) => new(id, document.Sync.PeopleNames.GetValueOrDefault(id)
-        ?? document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name ?? "担当者（未確認）");
+    internal static string PersonName(PlanDocument document, string id)
+    {
+        var configured = document.State.Settings.People.FirstOrDefault(p => p.Identity == id)?.Name;
+        var synchronized = document.Sync.PeopleNames.GetValueOrDefault(id);
+        return !string.IsNullOrWhiteSpace(configured) ? configured
+            : !string.IsNullOrWhiteSpace(synchronized) ? synchronized : "担当者（未確認）";
+    }
+    private AssistPerson Person(string id) => new(id, PersonName(document, id));
     public AssistPage<AssistTaskDetails> GetTasks(IReadOnlyList<string> identities)
     {
         if (identities.Count is < 1 or > 20 || identities.Distinct().Count() != identities.Count)
@@ -115,6 +126,13 @@ internal sealed class AssistPlanReader
     public AssistPlanSummary SummarizePlan()
     {
         var summary = PlanSummary.Calculate(document, schedule, document.State.Settings.StatusDate ?? today);
+        string Name(string id, string fallback) => id is PlanPeople.Unassigned or PlanPeople.Multiple ? fallback : PersonName(document, id);
+        summary = summary with {
+            People = summary.People.Select(p => p with { Name = Name(p.Identity, p.Name) }).ToArray(),
+            Months = summary.Months is { } months ? months with {
+                People = months.People.Select(p => p with { Name = Name(p.Identity, p.Name) }).ToArray()
+            } : null
+        };
         var settings = document.State.Settings;
         var overloads = summary.People.Where(p => p.Tasks.Remaining.Value > p.Capacity).Select(p =>
             new AssistOverload(p.Identity, p.Name, p.Tasks.Remaining.Value, p.Capacity, settings.People.FirstOrDefault(s => s.Identity == p.Identity)?.Allowance)).ToArray();

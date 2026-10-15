@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace GhProjectsBoards.App;
@@ -15,7 +16,7 @@ internal sealed partial class PlanWorkspaceView
     private readonly Border assistPane = Id(new Border { Width = 380, Visibility = Visibility.Collapsed,
         Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Padding = new(12) }, "PlanAssistPane");
     private readonly ToggleButton assistToggle = Id(new ToggleButton { Height = 32, MinHeight = 0, Padding = new(8, 0, 8, 0) }, "PlanAssist");
-    private readonly ListView assistMessages = new() { SelectionMode = ListViewSelectionMode.None, Padding = new(0) };
+    private readonly ListView assistMessages = Id(new ListView { SelectionMode = ListViewSelectionMode.None, Padding = new(0) }, "AssistMessages");
     private readonly TextBox assistInput = Id(new TextBox { Header = "質問・変更の依頼", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 72, MaxHeight = 160 }, "AssistInput");
     private readonly InfoBar assistFailure = FailureBar("AssistFailure", "AI アシストを続けられませんでした");
     private readonly Button assistSend = Id(new Button { Content = "送信" }, "AssistSend");
@@ -41,6 +42,9 @@ internal sealed partial class PlanWorkspaceView
     private int assistGeneration;
     private FrameworkElement? assistSettingsHeading;
     private Grid? assistEnabledContent;
+    private ScrollViewer? assistScroll;
+    private bool assistFollow, assistFollowQueued;
+    private double assistPreviousOffset, assistPreviousExtent;
     internal IAssistRuntime AssistRuntimeEdge { get; set; } = new AssistRuntime();
     internal IAssistSecretStore AssistSecrets { get; set; } = new AssistSecretStore();
 
@@ -58,6 +62,16 @@ internal sealed partial class PlanWorkspaceView
         work.Children.Add(assistPane); Grid.SetColumn(assistPane, 1);
         assistSend.Click += async (_, _) => await StartAssist();
         assistStop.Click += (_, _) => assistCancellation?.Cancel();
+        assistProgress.Visibility = Visibility.Collapsed;
+        ScrollViewer.SetHorizontalScrollMode(assistMessages, ScrollMode.Disabled);
+        ScrollViewer.SetHorizontalScrollBarVisibility(assistMessages, ScrollBarVisibility.Disabled);
+        assistMessages.Loaded += (_, _) => {
+            var scroll = FindAssistScroll(assistMessages);
+            if (scroll is null || ReferenceEquals(scroll, assistScroll)) return;
+            if (assistScroll is not null) assistScroll.ViewChanged -= AssistViewChanged;
+            assistScroll = scroll; scroll.ViewChanged += AssistViewChanged;
+        };
+        assistMessages.SizeChanged += (_, _) => FollowAssist();
         assistChip.Click += (_, _) => { assistDismissed = assistSelected; assistSelected = null; UpdateAssistSelection(); };
         assistInput.TextCompositionStarted += (_, _) => AssistCompositionStarted();
         assistInput.TextCompositionEnded += (_, _) => AssistCompositionEnded();
@@ -72,6 +86,7 @@ internal sealed partial class PlanWorkspaceView
         retry.Click += async (_, _) => { await EndAssist(); assistInput.Text = assistLastText ?? ""; await StartAssist(); };
         recovery.Children.Add(retry); assistFailure.Content = recovery;
         AutomationProperties.SetLiveSetting(assistFailure, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        AutomationProperties.SetLiveSetting(assistProgress, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         Loaded += async (_, _) => { assistLoaded = LoadAssist(); await assistLoaded; };
     }
 
@@ -123,8 +138,10 @@ internal sealed partial class PlanWorkspaceView
         panel.Children.Add(assistFailure); Grid.SetRow(assistFailure, 2);
         panel.Children.Add(assistChip); Grid.SetRow(assistChip, 3);
         panel.Children.Add(assistInput); Grid.SetRow(assistInput, 4);
+        var actions = new StackPanel { Spacing = 4 };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        buttons.Children.Add(assistSend); buttons.Children.Add(assistStop); buttons.Children.Add(assistProgress); panel.Children.Add(buttons); Grid.SetRow(buttons, 5);
+        buttons.Children.Add(assistSend); buttons.Children.Add(assistStop);
+        actions.Children.Add(buttons); actions.Children.Add(assistProgress); panel.Children.Add(actions); Grid.SetRow(actions, 5);
         assistPane.Child = panel; UpdateAssistVisibility();
     }
     private void UpdateAssistSelection()
@@ -170,9 +187,14 @@ internal sealed partial class PlanWorkspaceView
                         assistSettings.Mode == AssistMode.Byok ? AssistSecrets.Read() : null);
                 }
                 UpdateAssistSelection(); assistLastText = text; assistInput.Text = ""; assistFailure.IsOpen = false;
+                assistFollow = true;
+                assistPreviousOffset = assistScroll?.VerticalOffset ?? 0;
+                assistPreviousExtent = assistScroll?.ExtentHeight ?? 0;
                 assistMessages.Items.Add(Label("あなた: " + text));
                 var answer = Id(Label(""), "AssistAnswer" + assistMessages.Items.Count);
+                answer.SizeChanged += (_, _) => FollowAssist();
                 assistMessages.Items.Add(answer);
+                FollowAssist();
                 assistCancellation = new(); SetAssistBusy(true);
                 assistTurn = StreamAssist(assistConversation, text, assistSelected, answer, assistGeneration, assistCancellation.Token);
             }
@@ -181,6 +203,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private async Task StreamAssist(IAssistTurn conversation, string text, string? selected, TextBlock answer, int generation, CancellationToken token)
     {
+        var rawAnswer = new StringBuilder();
         var channel = Channel.CreateBounded<AssistEvent>(new BoundedChannelOptions(64) { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true });
         var producer = Task.Run(async () => {
             try { await foreach (var e in conversation.Send(text, selected, token).ConfigureAwait(false)) await channel.Writer.WriteAsync(e, token); }
@@ -197,14 +220,15 @@ internal sealed partial class PlanWorkspaceView
                 while (batch.Count < 32 && channel.Reader.TryRead(out var e)) batch.Add(e);
                 await DispatchAssist(() => {
                     if (generation != assistGeneration || closing) return;
-                    var delta = new StringBuilder();
                     foreach (var e in batch) {
-                        if (e.Kind == AssistEventKind.Delta) delta.Append(e.Text);
-                        else if (e.Kind == AssistEventKind.Message) { answer.Text = e.Text ?? answer.Text; delta.Clear(); }
+                        if (e.Kind == AssistEventKind.Delta) rawAnswer.Append(e.Text);
+                        else if (e.Kind == AssistEventKind.Message && e.Text is { } message) { rawAnswer.Clear(); rawAnswer.Append(message); }
+                        else if (e.Kind == AssistEventKind.Progress) { assistProgressBase = e.Text ?? ""; ShowAssistProgress(); }
                         if (e.Failure is { } failure) ShowAssistFailure(failure.Message);
                         if (e.Kind == AssistEventKind.TurnEnd) AddAssistResults(e);
                     }
-                    answer.Text += delta.ToString();
+                    answer.Text = AssistAnswerText.Plain(rawAnswer.ToString());
+                    FollowAssist();
                 });
             }
         }
@@ -231,10 +255,57 @@ internal sealed partial class PlanWorkspaceView
     {
         assistInput.IsEnabled = assistSend.IsEnabled = !busy;
         assistStop.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        assistProgress.Text = busy ? "回答しています…" : "";
+        assistProgressBase = busy ? "回答しています…" : "";
+        // Models can think for minutes between events; the elapsed time shows the turn is still alive.
+        assistElapsed.Restart(); assistElapsedTimer ??= CreateAssistElapsedTimer();
+        if (busy) assistElapsedTimer.Start(); else assistElapsedTimer.Stop();
+        ShowAssistProgress();
+        assistProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        FollowAssist();
+    }
+    private string assistProgressBase = "";
+    private readonly System.Diagnostics.Stopwatch assistElapsed = new();
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? assistElapsedTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer CreateAssistElapsedTimer()
+    {
+        var timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromSeconds(1);
+        timer.Tick += (_, _) => ShowAssistProgress(); return timer;
+    }
+    private void ShowAssistProgress()
+    {
+        var elapsed = assistElapsed.Elapsed;
+        assistProgress.Text = assistProgressBase.Length == 0 || elapsed < TimeSpan.FromSeconds(10) ? assistProgressBase
+            : $"{assistProgressBase}　経過 {(int)elapsed.TotalMinutes}:{elapsed.Seconds:00}";
+    }
+    private static ScrollViewer? FindAssistScroll(DependencyObject parent)
+    {
+        if (parent is ScrollViewer scroll) return scroll;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            if (FindAssistScroll(VisualTreeHelper.GetChild(parent, i)) is { } child) return child;
+        return null;
+    }
+    private void AssistViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
+    {
+        if (assistScroll is not { } scroll) return;
+        // A shrinking answer or viewport adjustment is not the PMO scrolling toward earlier text.
+        if (scroll.VerticalOffset < assistPreviousOffset - 1 && scroll.ExtentHeight >= assistPreviousExtent - 1)
+            assistFollow = false;
+        assistPreviousOffset = scroll.VerticalOffset; assistPreviousExtent = scroll.ExtentHeight;
+    }
+    private void FollowAssist()
+    {
+        if (!assistFollow || assistFollowQueued || closing || assistMessages.Items.Count == 0) return;
+        assistFollowQueued = true;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
+            assistFollowQueued = false;
+            if (!assistFollow || closing || !assistMessages.IsLoaded || assistMessages.Items.Count == 0) return;
+            assistMessages.ScrollIntoView(assistMessages.Items[^1], ScrollIntoViewAlignment.Default);
+            assistMessages.UpdateLayout();
+            assistScroll?.ChangeView(null, assistScroll.ScrollableHeight, null, true);
+        });
     }
     private void ShowAssistFailure(string message) { assistFailure.Message = message; assistFailure.IsOpen = true; }
-    private void ClearAssistMessages() { assistMessages.Items.Clear(); assistProposals.Clear(); assistFailure.IsOpen = false; }
+    private void ClearAssistMessages() { assistFollow = false; assistMessages.Items.Clear(); assistProposals.Clear(); assistFailure.IsOpen = false; }
     private async Task EndAssist()
     {
         var elapsed = System.Diagnostics.Stopwatch.StartNew();
@@ -265,7 +336,7 @@ internal sealed partial class PlanWorkspaceView
         var referenceSession = assistSession;
         if (result.References is { Count: > 0 } references) {
             assistMessages.Items.Add(Label("参照したタスク"));
-            foreach (var task in references) {
+            foreach (var task in references.Take(5)) {
                 var link = Id(new HyperlinkButton { Content = new TextBlock { Text = $"{task.Id} {task.Title}", TextWrapping = TextWrapping.Wrap, MaxWidth = 304 }, HorizontalAlignment = HorizontalAlignment.Left }, $"AssistTask{task.Identity}-{assistMessages.Items.Count}");
                 AutomationProperties.SetName(link, $"{task.Id} {task.Title}");
                 link.Click += async (_, _) => await Run(() => {
@@ -274,35 +345,51 @@ internal sealed partial class PlanWorkspaceView
                 });
                 assistMessages.Items.Add(link);
             }
+            if (references.Count > 5) {
+                var all = Button($"参照した {references.Count} 件を計画で表示", "AssistAllReferences" + assistMessages.Items.Count, () => {
+                    if (workspace.Session != referenceSession) return Task.CompletedTask;
+                    sheet?.FilterTasks(references.Select(t => t.Identity).ToHashSet(), "アシストの参照タスク"); Show("tasks");
+                    return Task.CompletedTask;
+                });
+                all.HorizontalAlignment = HorizontalAlignment.Left; assistMessages.Items.Add(all);
+            }
         }
         if (result.Proposal is not { } proposal || assistProposals.Any(p => p.Proposal.Id == proposal.Id)) return;
         var card = new StackPanel { Spacing = 6 };
         card.Children.Add(Label($"変更の提案 {proposal.Changes.Count} 件"));
-        var table = new Grid { ColumnSpacing = 6, RowSpacing = 4 };
-        foreach (var width in new[] { 1d, 1d, 1d, 1d }) table.ColumnDefinitions.Add(new() { Width = new(width, GridUnitType.Star) });
-        void Row(params string[] values) {
-            var row = table.RowDefinitions.Count; table.RowDefinitions.Add(new() { Height = GridLength.Auto });
-            for (var col = 0; col < values.Length; col++) { var cell = Label(values[col]); table.Children.Add(cell); Grid.SetRow(cell, row); Grid.SetColumn(cell, col); }
-        }
-        Row("タスク", "項目", "現在", "提案");
-        card.Children.Add(table);
         var changes = new ListView { SelectionMode = ListViewSelectionMode.None, MaxHeight = 280, Padding = new(0),
             ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
                 new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch), new Setter(Control.PaddingProperty, new Thickness(0, 2, 0, 2)) } },
             ItemsSource = proposal.Changes.Select(c => new AssistChangeView($"{c.Task.Id} {c.Task.Title}", PlanSheetColumns.ReviewName(c.Field), c.Current, c.Proposed)).ToArray(),
             ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load("""
                 <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-                  <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Task}" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Field}" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Current}" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Proposed}" TextWrapping="Wrap"/>
+                  <Grid ColumnSpacing="8" RowSpacing="4" Padding="0,4,0,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="64"/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock Grid.ColumnSpan="3" Text="{Binding Task}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Row="1" Text="項目" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="現在" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="提案" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Grid.Row="2" Text="{Binding Field}" TextWrapping="Wrap"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Current}" TextWrapping="Wrap"/>
+                    <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Proposed}" TextWrapping="Wrap"/>
                   </Grid>
                 </DataTemplate>
                 """) };
-        card.Children.Add(changes); card.Children.Add(Label($"日程が変わるタスク {proposal.ScheduleEffect.Total} 件"));
-        foreach (var change in proposal.ScheduleEffect.Items)
-            card.Children.Add(Label($"{change.Task.Id} {change.Task.Title}: {change.PreviousStart:yyyy-MM-dd}–{change.PreviousEnd:yyyy-MM-dd} → {change.Start:yyyy-MM-dd}–{change.End:yyyy-MM-dd}"));
+        card.Children.Add(changes);
+        var effect = proposal.ScheduleEffect;
+        card.Children.Add(Label($"日程が変わるタスク {effect.Total} 件" + (effect.Complete ? "" : $"（先頭 {effect.Items.Count} 件）")));
+        if (effect.Items.Count > 0) {
+            var effects = new ListView { SelectionMode = ListViewSelectionMode.None, MaxHeight = 120, Padding = new(0),
+                ItemContainerStyle = changes.ItemContainerStyle,
+                ItemsSource = effect.Items.Select(c => $"{c.Task.Id} {c.Task.Title}\n{c.PreviousStart:yyyy-MM-dd}–{c.PreviousEnd:yyyy-MM-dd} → {c.Start:yyyy-MM-dd}–{c.End:yyyy-MM-dd}").ToArray(),
+                ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load("""
+                    <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                      <TextBlock Text="{Binding}" TextWrapping="Wrap" Padding="0,2,0,6"/>
+                    </DataTemplate>
+                    """) };
+            AutomationProperties.SetName(effects, "日程が変わるタスク"); card.Children.Add(effects);
+        }
         var state = Id(Label(""), "AssistProposalState" + proposal.Id); card.Children.Add(state);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var owner = assistTools!;
@@ -320,7 +407,10 @@ internal sealed partial class PlanWorkspaceView
         var discard = Id(new Button { Content = "破棄" }, "AssistDiscard" + proposal.Id);
         discard.Click += (_, _) => { if (owner.PendingProposal?.Id == proposal.Id) owner.DiscardProposal(); state.Text = "破棄しました。"; UpdateAssistProposals(); };
         buttons.Children.Add(apply); buttons.Children.Add(discard); card.Children.Add(buttons);
-        assistProposals.Add((proposal, apply, discard, state)); assistMessages.Items.Add(card); UpdateAssistProposals();
+        var surface = Id(new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"],
+            Margin = new(0, 4, 0, 4), Padding = new(10), Child = card }, "AssistProposal" + proposal.Id);
+        surface.SizeChanged += (_, _) => FollowAssist();
+        assistProposals.Add((proposal, apply, discard, state)); assistMessages.Items.Add(surface); UpdateAssistProposals();
     }
     private void UpdateAssistProposals()
     {

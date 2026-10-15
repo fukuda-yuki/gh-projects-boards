@@ -10,7 +10,7 @@ internal sealed partial class PlanWorkspaceView
     private void RenderAssistSettings()
     {
         settings.Children.Add(new Border { Height = 1, Margin = new(0, 12, 0, 8), Background = PlanSheetView.Brush("WorkspaceCardStrokeBrush") });
-        assistSettingsHeading = Id(Label("AI アシスト"), "AssistSettingsHeading"); settings.Children.Add(assistSettingsHeading);
+        assistSettingsHeading = Id(SettingsHeading("AI アシスト"), "AssistSettingsHeading"); settings.Children.Add(assistSettingsHeading);
         settings.Children.Add(Label("この PC のすべてのプロジェクトに適用します。"));
         var section = new StackPanel { Spacing = 8 };
         var mode = Id(new ComboBox { Header = "接続先", ItemsSource = new[] { "使わない", "GitHub Copilot", "API キー（BYOK）" }, SelectedIndex = (int)assistSettings.Mode }, "AssistMode");
@@ -24,15 +24,14 @@ internal sealed partial class PlanWorkspaceView
         var keyState = Id(Label(""), "AssistKeyState");
         var feedback = Id(Label(assistSettingsError ?? ""), "AssistSettingsResult");
         AutomationProperties.SetLiveSetting(feedback, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
-        var byok = new StackPanel { Spacing = 8 };
         var enabled = new StackPanel { Spacing = 8 };
         var keyButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var register = Id(new Button { Content = "登録" }, "AssistRegisterKey");
         var delete = Id(new Button { Content = "削除" }, "AssistDeleteKey");
         keyButtons.Children.Add(register); keyButtons.Children.Add(delete);
-        byok.Children.Add(provider); byok.Children.Add(endpoint); byok.Children.Add(wire); byok.Children.Add(header);
-        byok.Children.Add(password); byok.Children.Add(keyState); byok.Children.Add(keyButtons);
-        enabled.Children.Add(model); enabled.Children.Add(suggestions); enabled.Children.Add(byok);
+        FrameworkElement[] byok = [provider, endpoint, wire, header, password, keyState, keyButtons];
+        foreach (var control in new FrameworkElement[] { provider, endpoint, model, suggestions, wire, header, password, keyState, keyButtons })
+            enabled.Children.Add(control);
         var check = Id(new Button { Content = "接続を確認" }, "AssistCheck"); enabled.Children.Add(check);
         section.Children.Add(mode); section.Children.Add(enabled); section.Children.Add(feedback); settings.Children.Add(section);
         var generation = settingsGeneration;
@@ -45,8 +44,9 @@ internal sealed partial class PlanWorkspaceView
             ConversationIdHeader = mode.SelectedIndex != 2 ? accepted.ConversationIdHeader : string.IsNullOrWhiteSpace(header.Text) ? null : header.Text.Trim() };
         void ShowModes() {
             enabled.Visibility = mode.SelectedIndex == 0 ? Visibility.Collapsed : Visibility.Visible;
-            byok.Visibility = mode.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
-            wire.Visibility = provider.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var control in byok) control.Visibility = mode.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+            wire.Visibility = mode.SelectedIndex == 2 && provider.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (mode.SelectedIndex != 1) suggestions.Visibility = Visibility.Collapsed;
         }
         void Registered() {
             try { var registered = AssistSecrets.IsRegistered; keyState.Text = registered ? "登録済み" : "未登録"; delete.IsEnabled = registered; }
@@ -116,7 +116,7 @@ internal sealed partial class PlanWorkspaceView
                 var result = await checkTask;
                 if (generation != settingsGeneration || closing || cancellation.IsCancellationRequested) return;
                 feedback.Text = result.Succeeded ? $"接続できました: {result.Model}" : result.Failure?.Message ?? "接続できませんでした。";
-                suggestions.ItemsSource = result.Models; suggestions.Visibility = result.Models.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                suggestions.ItemsSource = result.Models; suggestions.Visibility = mode.SelectedIndex == 1 && result.Models.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
             catch (OperationCanceledException) { if (!closing && generation == settingsGeneration) feedback.Text = "接続確認を停止しました。"; }
             catch (Exception ex) when (ex is not OutOfMemoryException) { if (!closing && generation == settingsGeneration) feedback.Text = "接続を確認できませんでした。設定と API キーを確認してください。"; }

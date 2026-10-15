@@ -19,6 +19,29 @@ internal sealed class AssistStorageTests
         sessions.Add(session); Assert.That((await session.FlushAsync()).Succeeded, Is.True); return session;
     }
     [Test]
+    public async Task ProposalAndExplicitDetailReferencesPrecedeSearchResultsAndResetEachTurn()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        tools.BeginTurn(); tools.FindTasks(new()); tools.GetTasks(["B"]);
+        Assert.That(tools.References.Select(r => r.Identity), Is.EqualTo(new[] { "B", "R", "A" }));
+        tools.ProposeChanges([new("A", PlanField.Title, JsonSerializer.SerializeToElement("設計を見直す"))]);
+        tools.SummarizePlan();
+        Assert.That(tools.References.Select(r => r.Identity), Is.EqualTo(new[] { "A", "B", "R" }));
+        tools.BeginTurn();
+        Assert.That(tools.References, Is.Empty);
+        tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("検証を見直す"))]);
+        Assert.That(tools.References.Select(r => r.Identity), Is.EqualTo(new[] { "B" }));
+    }
+
+    [Test]
+    public async Task PlanSummaryAddsNoTaskReferences()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        tools.BeginTurn(); tools.SummarizePlan();
+        Assert.That(tools.References, Is.Empty);
+    }
+
+    [Test]
     public async Task ReadAndProposeLeaveHistoryStorageAndUnpublishedStateUntouchedThenApplyIsOneTypingUndo()
     {
         var session = await Create(); var typed = await Create("typed");

@@ -51,6 +51,124 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
+    public async Task AssistAnswerStripsSplitMarkdown()
+    {
+        var runtime = await EnableAssist();
+        runtime.Answer = "## 計画を確認しました\n**遅れがあります**\n| 担当者 | 対応 |\n| --- | --- |\n| person-U1 | 日程を確認 |";
+        await AskAssist();
+        await Ui.Run(() => {
+            var answer = Ui.Tree(view).OfType<TextBlock>().Single(t => AutomationProperties.GetAutomationId(t).StartsWith("AssistAnswer"));
+            Assert.That(answer.Text, Is.EqualTo("計画を確認しました\n遅れがあります\n担当者 / 対応\nperson-U1 / 日程を確認"));
+        });
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistFollowsTheNewProposalAfterALongAnswer()
+    {
+        var runtime = await EnableAssist();
+        runtime.Answer = "計画を確認しました\n" + string.Join('\n', Enumerable.Repeat("担当者と日程を確認しています。", 35));
+        await AskAssist("追加の提案をお願いします");
+        await Ui.Until(() => AssistVisible(Ui.Find<Button>("AssistApply" + runtime.ProposalId)));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "assist-follow-proposal"));
+    }
+
+    private bool AssistVisible(FrameworkElement element)
+    {
+        var list = Ui.Tree(Ui.Find<Border>("PlanAssistPane")).OfType<ListView>().First();
+        var rect = element.TransformToVisual(list).TransformBounds(new(0, 0, element.ActualWidth, element.ActualHeight));
+        return element.IsLoaded && element.ActualHeight > 0 && element.ActualWidth > 0
+            && rect.Top >= 0 && rect.Bottom <= list.ActualHeight && rect.Right <= list.ActualWidth;
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistRespectsScrollingUpUntilTheNextSend()
+    {
+        var runtime = await EnableAssist(); runtime.PauseBeforeEnd = true;
+        runtime.Answer = "計画を確認しました\n" + string.Join('\n', Enumerable.Repeat("日程と担当者を確認しています。", 40));
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "日程を確認"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => runtime.WaitingForEnd && AssistScroll().VerticalOffset > 100);
+        await Ui.Run(() => AssistScroll().ChangeView(null, 0, null, true));
+        await Ui.Until(() => AssistScroll().VerticalOffset < 1);
+        runtime.EndAnswer.TrySetResult();
+        await Ui.Until(() => Ui.Find<Button>("AssistSend").IsEnabled);
+        await Ui.Run(() => Assert.That(AssistScroll().VerticalOffset, Is.LessThan(1), "A new card must not pull the PMO away from earlier text."));
+        runtime.PauseBeforeEnd = false; runtime.Hold = true;
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "続きを確認"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => runtime.Prompts.Count == 2 && AssistScroll().VerticalOffset > 100);
+        await Ui.Run(() => Ui.Click("AssistStop"));
+        await Ui.Until(() => Ui.Find<Button>("AssistSend").IsEnabled);
+    }
+
+    private ScrollViewer AssistScroll() => Ui.Tree(Ui.Tree(Ui.Find<Border>("PlanAssistPane")).OfType<ListView>().First()).OfType<ScrollViewer>().First();
+
+    [TestCase(false), TestCase(true), Category("Assist")]
+    public async Task AssistToolProgressKeepsStopAvailableAndClearsOnEnd(bool cancel)
+    {
+        var runtime = await EnableAssist(); runtime.ToolProgress = true;
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "調査してください"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => Ui.Find<TextBlock>("AssistProgress").Text == "計画を調べています（3 回目）…");
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("AssistStop").IsEnabled && Ui.Find<Button>("AssistStop").Visibility == Visibility.Visible, Is.True));
+        runtime.ContinueTools.TrySetResult();
+        await Ui.Until(() => Ui.Find<TextBlock>("AssistProgress").Text == "変更案を検証しています…");
+        if (cancel) await Ui.Run(() => Ui.Click("AssistStop"));
+        else runtime.FinishTools.TrySetResult();
+        await Ui.Until(() => Ui.Find<Button>("AssistSend").IsEnabled);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("AssistProgress").Text, Is.Empty);
+            Assert.That(Ui.Find<Button>("AssistStop").Visibility, Is.EqualTo(Visibility.Collapsed));
+        });
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistByokSettingsFollowTheConnectionOrderAndUseASectionHeading()
+    {
+        await EnableAssist(byok: true); await Settings();
+        await Ui.Until(() => Ui.Find<TextBox>("AssistModel").ActualHeight > 0 && Ui.Find<PasswordBox>("AssistKey").ActualHeight > 0);
+        await Ui.Run(() => {
+            var ids = new[] { "AssistProvider", "AssistEndpoint", "AssistModel", "AssistWireApi", "AssistHeader", "AssistKey", "AssistCheck", "AssistSettingsResult" };
+            var positions = ids.Select(id => Ui.Find<FrameworkElement>(id).TransformToVisual(view).TransformPoint(new()).Y).ToArray();
+            Assert.That(positions.Zip(positions.Skip(1), (a, b) => b > a), Is.All.True, "Each connection field must occupy a later rendered row.");
+            Assert.That(Ui.Find<TextBlock>("AssistSettingsHeading").FontWeight.Weight, Is.GreaterThan(Ui.Find<TextBlock>("AssistSettingsResult").FontWeight.Weight));
+            Ui.Find<TextBlock>("AssistSettingsHeading").StartBringIntoView(new() { AnimationDesired = false, VerticalAlignmentRatio = 0 });
+        });
+        await Ui.Idle();
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "assist-settings-order"));
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistShowsFiveReferencesAndFiltersAllReferencedTasks()
+    {
+        var fake = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, fake with { Issues = [.. Enumerable.Range(1, 13).Select(i =>
+            new PlanFakeIssue(new($"I{i}", i == 1 ? "設計" : i == 13 ? "検索対象外" : $"R24 PS-{i:000} 詳細設計 データ", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true))], NextId = 14 });
+        var runtime = await EnableAssist(); runtime.ManyReferences = true;
+        await Ui.Run(() => ResizeWorkspace(1920, 1032));
+        await Ui.Until(() => Math.Abs(view.ActualWidth - 1920) < 1);
+        await Ui.Run(() => Ui.Click("PlanShowSummary"));
+        await AskAssist();
+        await Ui.Run(() => {
+            var links = Ui.Tree(view).OfType<HyperlinkButton>().Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AssistTask")).ToArray();
+            Assert.That(links.Length, Is.EqualTo(5));
+            Assert.That(AutomationProperties.GetName(links[0]), Does.StartWith("1 "));
+            Assert.That(AutomationProperties.GetName(links[1]), Does.StartWith("12 "));
+            var all = Ui.Tree(view).OfType<Button>().Single(b => AutomationProperties.GetAutomationId(b).StartsWith("AssistAllReferences"));
+            Assert.That(all.Content, Is.EqualTo("参照した 12 件を計画で表示"));
+            Ui.Click(AutomationProperties.GetAutomationId(all));
+        });
+        await Ui.Until(() => Ui.Find<SelectorBarItem>("PlanShowTasks").IsSelected);
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<PlanSheetView>().Single().RowIds.Where(id => id.Length > 0), Is.EquivalentTo(Enumerable.Range(1, 12).Select(i => $"I{i}")));
+            Assert.That(Ui.Find<Border>("PlanAssistPane").Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "アシストの参照タスク"), Is.True);
+            Assert.That(Ui.Find<TextBlock>("PlanSheetFilterCount").Text, Is.EqualTo("12 件"));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+        await Ui.Until(() => AssistVisible(Ui.Find<Button>("AssistApply" + runtime.ProposalId)));
+        await Ui.Until(() => AssistVisible(Ui.Find<Border>("AssistProposal" + runtime.ProposalId)));
+        await Ui.Run(async () => await RenderedEvidence.Capture(view, "assist-references-proposal"));
+    }
+
+    [Test, Category("Assist")]
     public async Task AssistReferencesNavigateToPlanAndProposalIsOneUndoWithNoRemoteWrites()
     {
         var runtime = await EnableAssist();
@@ -354,6 +472,13 @@ internal sealed partial class PlanWorkspaceHostedTests
         internal bool Hold, Fail;
         internal int Disposed;
         internal bool Propose = true;
+        internal string? Answer;
+        internal bool ManyReferences;
+        internal bool ToolProgress;
+        internal bool PauseBeforeEnd, WaitingForEnd;
+        internal readonly TaskCompletionSource EndAnswer = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal readonly TaskCompletionSource ContinueTools = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal readonly TaskCompletionSource FinishTools = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal decimal? Remaining;
         internal bool HungShutdown, Forced;
         internal string? StatePath;
@@ -382,15 +507,26 @@ internal sealed partial class PlanWorkspaceHostedTests
                     cancellation.ThrowIfCancellationRequested();
                 }
                 if (owner.Fail) { yield return new(AssistEventKind.Error, Failure: new(AssistFailureKind.Unreachable, "接続できませんでした。", "再試行")); yield break; }
-                var tasks = tools.GetTasks(["I1"]);
+                if (owner.ToolProgress) {
+                    yield return new(AssistEventKind.Progress, "計画を調べています（3 回目）…");
+                    await owner.ContinueTools.Task.WaitAsync(cancellation);
+                    yield return new(AssistEventKind.Progress, "変更案を検証しています…");
+                    await owner.FinishTools.Task.WaitAsync(cancellation);
+                }
+                if (owner.ManyReferences) { tools.FindTasks(new() { Title = "詳細設計", Limit = 100 }); tools.GetTasks(["I12"]); }
+                else tools.GetTasks(["I1"]);
                 if (owner.Propose) {
                     var changes = new List<AssistEdit> { new("I1", PlanField.Title, JsonSerializer.SerializeToElement("提案したタイトル")) };
+                    if (owner.ManyReferences) changes.Add(new("I12", PlanField.Remaining, JsonSerializer.SerializeToElement(16m)));
                     if (owner.Remaining is { } remaining) changes.Add(new("I1", PlanField.Remaining, JsonSerializer.SerializeToElement(remaining)));
                     owner.ProposalId = tools.ProposeChanges(changes).Proposal!.Id;
                 }
-                yield return new(AssistEventKind.Delta, "計画を");
-                await Task.Yield();
-                yield return new(AssistEventKind.Delta, "確認しました");
+                var answer = owner.Answer ?? "計画を確認しました";
+                foreach (var character in answer) {
+                    yield return new(AssistEventKind.Delta, character.ToString());
+                    await Task.Yield();
+                }
+                if (owner.PauseBeforeEnd) { owner.WaitingForEnd = true; await owner.EndAnswer.Task.WaitAsync(cancellation); }
                 yield return new(AssistEventKind.TurnEnd, References: tools.References, Proposal: tools.TurnProposal);
             }
             public async ValueTask DisposeAsync() {

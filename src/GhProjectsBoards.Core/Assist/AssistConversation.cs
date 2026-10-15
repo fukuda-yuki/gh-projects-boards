@@ -8,7 +8,7 @@ using Microsoft.Extensions.AI;
 
 namespace GhProjectsBoards.Core.Assist;
 
-internal enum AssistEventKind { Delta, Message, TurnEnd, Error, Cancelled }
+internal enum AssistEventKind { Delta, Message, TurnEnd, Error, Cancelled, Progress }
 internal sealed record AssistEvent(AssistEventKind Kind, string? Text = null, AssistFailure? Failure = null,
     IReadOnlyList<AssistTaskReference>? References = null, AssistProposal? Proposal = null);
 internal sealed record AssistConnectionCheck(bool Succeeded, string Model, AssistFailure? Failure, IReadOnlyList<string> Models);
@@ -37,7 +37,11 @@ internal sealed class AssistConversation : IAsyncDisposable
     public AssistFailure? CleanupFailure { get; private set; }
     public static void CleanupLeftovers(string dataRoot) => AssistRuntimeDirectory.CleanupLeftovers(dataRoot);
     internal const string SystemPrompt = """
-        あなたは PMO の計画を支援します。日本語で簡潔に回答してください。
+        あなたは PMO の計画を支援します。結論から始め、日本語の平文と短い「・」の箇条書きだけで、全体をおおむね10行以内にまとめてください。
+        Markdown の見出し（#）、強調（**）、表などの記号は使わないでください。
+        回答ではタスクを表示 ID とタイトル（例: 610 R24 PS-002 詳細設計 データ）、担当者をシートに表示される Name（例: person-U4）で呼んでください。
+        Identity の値（I610、U4 など）、ツール名、ツールの引数、提案 id は回答に書かないでください。
+        変更を提案した場合は「変更案を下に示しました。内容を確認してください。」と案内してください。
         find_tasks は条件でタスクを探し、get_tasks は最大20件の詳細・日程理由・発行済みとの差を取得します。
         summarize_plan は工程・担当者別の進捗と負荷、上限超過、マイルストーンを計算します。
         read_manual はマニュアルの Markdown を検索します。propose_changes は既存タスクの変更を提案するだけです。
@@ -145,7 +149,9 @@ internal sealed class AssistConversation : IAsyncDisposable
             var failure = await Start(cancellation).ConfigureAwait(false);
             if (failure is not null) { output.TryWrite(new(AssistEventKind.Error, Failure: failure)); await StopRuntime().ConfigureAwait(false); return; }
             var errored = false;
+            var progress = new AssistToolProgress();
             subscription = session!.On<SessionEvent>(e => {
+                if (progress.Observe(e) is { } update) output.TryWrite(update);
                 switch (e) {
                     case AssistantMessageDeltaEvent delta: output.TryWrite(new(AssistEventKind.Delta, delta.Data.DeltaContent)); break;
                     case AssistantMessageEvent message: output.TryWrite(new(AssistEventKind.Message, message.Data.Content, References: tools?.References, Proposal: tools?.TurnProposal)); break;

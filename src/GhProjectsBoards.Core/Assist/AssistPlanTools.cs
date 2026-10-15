@@ -6,14 +6,21 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
 {
     private readonly object gate = new();
     private readonly Dictionary<string, AssistTaskReference> references = [];
+    private readonly Dictionary<string, int> referencePriority = [];
     private AssistProposal? pending;
     private AssistProposal? turnProposal;
-    public IReadOnlyList<AssistTaskReference> References { get { lock (gate) return references.Values.OrderBy(t => t.Id).ToArray(); } }
+    public IReadOnlyList<AssistTaskReference> References { get { lock (gate) return references.Values.OrderBy(t => referencePriority[t.Identity]).ThenBy(t => t.Id).ToArray(); } }
     public AssistProposal? PendingProposal { get { lock (gate) return pending; } }
     public AssistProposal? TurnProposal { get { lock (gate) return turnProposal; } }
     public bool ProposalIsStale { get { lock (gate) return pending is { } p && session.CaptureRevision().Revision != p.Revision; } }
-    public void BeginTurn() { lock (gate) { references.Clear(); turnProposal = null; } }
-    private void Record(IEnumerable<AssistTaskReference> tasks) { foreach (var t in tasks) references[t.Identity] = t; }
+    public void BeginTurn() { lock (gate) { references.Clear(); referencePriority.Clear(); turnProposal = null; } }
+    private void Record(IEnumerable<AssistTaskReference> tasks, int priority = 2)
+    {
+        foreach (var t in tasks) {
+            references[t.Identity] = t;
+            referencePriority[t.Identity] = Math.Min(referencePriority.GetValueOrDefault(t.Identity, priority), priority);
+        }
+    }
     public AssistPage<AssistTaskReference> FindTasks(AssistFindTasks filter)
     {
         lock (gate) { var result = new AssistPlanReader(session.Document, today).FindTasks(filter); Record(result.Items); return result; }
@@ -22,13 +29,14 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
     {
         lock (gate) {
             var result = new AssistPlanReader(session.Document, today).GetTasks(identities);
-            foreach (var t in result.Items) { Record([t.Task]); if (t.Requirement is { } r) Record([r]); Record(t.Predecessors); Record(t.Successors); }
+            foreach (var t in result.Items) { Record([t.Task], 1); if (t.Requirement is { } r) Record([r]); Record(t.Predecessors); Record(t.Successors); }
             return result;
         }
     }
     public AssistPlanSummary SummarizePlan()
     {
-        lock (gate) { var result = new AssistPlanReader(session.Document, today).SummarizePlan(); Record(result.Tasks); return result; }
+        // The summary spans the whole plan, so listing its tasks as references would name every row.
+        lock (gate) return new AssistPlanReader(session.Document, today).SummarizePlan();
     }
     public AssistPage<AssistManualSection> ReadManual(string query, int offset = 0, int limit = 5) => AssistManual.Read(manualMarkdown, query, offset, limit);
     public AssistProposalResult ProposeChanges(IReadOnlyList<AssistEdit> changes)
@@ -36,7 +44,11 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
         lock (gate) {
             var (document, revision) = session.CaptureRevision();
             var result = AssistProposal.Create(document, revision, today, changes);
-            if (result.Proposal is { } proposal) pending = turnProposal = proposal;
+            if (result.Proposal is { } proposal) {
+                pending = turnProposal = proposal;
+                Record(proposal.Changes.Select(c => c.Task), 0);
+                Record(proposal.ScheduleEffect.Items.Select(c => c.Task));
+            }
             return result;
         }
     }

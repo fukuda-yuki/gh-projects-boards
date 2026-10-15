@@ -365,6 +365,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private static T Id<T>(T control, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(control, id); return control; }
     private static TextBlock Label(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap };
+    private static TextBlock SettingsHeading(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap,
+        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
     private Button Button(string text, string id, Func<Task> action, bool commitPending = true)
     {
         var button = Id(new Button { Content = text }, id);
@@ -632,7 +634,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             var generation = ++settingsGeneration; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); settings.Children.Clear();
             var value = session.Document.State.Settings;
-            settings.Children.Add(Label("GitHub のフィールド"));
+            settings.Children.Add(SettingsHeading("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)
             {
                 var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type)).ToArray();
@@ -660,7 +662,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
             }));
-            settings.Children.Add(Label("カレンダー"));
+            settings.Children.Add(SettingsHeading("カレンダー"));
             settings.Children.Add(Label("月–金  09:00–13:00 / 14:00–18:00"));
             var holidays = value.ImportedHolidays?.ToPreset() ?? PlanningContract.BundledHolidays();
             var holidayList = new Expander { Header = $"日本の祝日 {holidays.FirstYear}–{holidays.LastYear}", Content =
@@ -673,7 +675,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }));
             settings.Children.Add(DateListSetting("会社休日", "PlanCompanyDaysOff", () => session.Document.State.Settings.CompanyDaysOff,
                 dates => ChangeSettings(s => s with { CompanyDaysOff = dates })));
-            settings.Children.Add(Label("担当者"));
+            settings.Children.Add(SettingsHeading("担当者"));
             var people = workspace.People;
             foreach (var person in people)
             {
@@ -711,14 +713,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 line.Children.Add(allowance);
                 settings.Children.Add(line);
             }
-            settings.Children.Add(Label("期間"));
+            settings.Children.Add(SettingsHeading("期間"));
             settings.Children.Add(TextSetting("開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
                 () => workspace.Session!.Document.State.Settings.ProjectStart?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(TextSetting("終了日", "PlanProjectEnd", value.ProjectEnd?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
                 () => workspace.Session!.Document.State.Settings.ProjectEnd?.ToString("yyyy-MM-dd") ?? ""));
-            settings.Children.Add(Label("工程"));
+            settings.Children.Add(SettingsHeading("工程"));
             var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
             var phaseTargets = new StackPanel { Spacing = 4 };
             void ShowPhases()
@@ -787,7 +789,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var heading = new Grid { ColumnSpacing = 12 };
         heading.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         heading.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        columnSettingsHeading = Id(Label("計画シートの列"), "PlanColumnSettings");
+        columnSettingsHeading = Id(SettingsHeading("計画シートの列"), "PlanColumnSettings");
         columnSettingsHeading.VerticalAlignment = VerticalAlignment.Center;
         heading.Children.Add(columnSettingsHeading);
         var reset = Button("既定に戻す", "PlanColumnReset", async () => { await ChangeSettings(s => s with { SheetColumns = [] }); RenderSettings(); });

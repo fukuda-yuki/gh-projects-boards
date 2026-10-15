@@ -8,6 +8,29 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class AssistSdkBoundaryTests
 {
+    [Test]
+    public void SdkToolEventsReportSafeProgressAndKeepConcurrentWorkVisible()
+    {
+        var progress = new AssistToolProgress();
+        AssistEvent? Start(string id, string name) => progress.Observe(new ToolExecutionStartEvent {
+            Data = new() { ToolCallId = id, ToolName = name }
+        });
+        AssistEvent? Complete(string id) => progress.Observe(new ToolExecutionCompleteEvent { Data = new() { ToolCallId = id, Success = true } });
+        Assert.That(Start("one", "find_tasks")?.Text, Is.EqualTo("計画を調べています（1 回目）…"));
+        Assert.That(Start("two", "custom:get_tasks")?.Text, Is.EqualTo("計画を調べています（2 回目）…"));
+        Assert.That(Start("three", "summarize_plan")?.Text, Is.EqualTo("計画を調べています（3 回目）…"));
+        Assert.That(Start("proposal", "propose_changes")?.Text, Is.EqualTo("変更案を検証しています…"));
+        Assert.That(Complete("one")?.Text, Is.EqualTo("変更案を検証しています…"));
+        Assert.That(Complete("proposal")?.Text, Is.EqualTo("計画を調べています（3 回目）…"));
+        Complete("two");
+        Assert.That(Complete("three")?.Text, Is.EqualTo("回答しています…"));
+        Assert.That(Start("manual", "read_manual")?.Text, Is.EqualTo("マニュアルを調べています…"));
+        Assert.That(Start("unknown", "untrusted-secret-tool"), Is.Null);
+        Assert.That(Complete("unknown"), Is.Null);
+        Assert.That(new AssistToolProgress().Observe(new ToolExecutionStartEvent { Data = new() { ToolCallId = "new", ToolName = "get_tasks" } })?.Text,
+            Is.EqualTo("計画を調べています（1 回目）…"));
+    }
+
     [TestCase(false), TestCase(true)]
     public async Task HungRuntimeShutdownUsesOneDeadlineAndForcesStopBeforeReturning(bool hangsOnDispose)
     {

@@ -26,6 +26,25 @@ internal sealed class AssistRulesTests
                 Columns = [new(PlanField.Phase, "phase", "工程", "SINGLE_SELECT")] }));
     }
     [Test]
+    public void ToolResultsUseSheetDisplayNamesEvenWhenSynchronizedNamesDiffer()
+    {
+        var document = Document();
+        document = document with { Sync = document.Sync with { PeopleNames = document.Sync.PeopleNames.Add("p1", "old-login") } };
+        var reader = new AssistPlanReader(document, Today);
+        var search = JsonSerializer.SerializeToElement(reader.FindTasks(new() { Title = "PS-004" }).Items.Single());
+        Assert.That(search.GetProperty("Id").GetInt32(), Is.EqualTo(2));
+        Assert.That(search.TryGetProperty("Assignees", out var people), Is.True, "Search must supply people display names with their identities.");
+        Assert.That(people[0].GetProperty("Identity").GetString(), Is.EqualTo("p1"));
+        Assert.That(people[0].GetProperty("Name").GetString(), Is.EqualTo("田中"));
+        Assert.That(reader.GetTasks(["A"]).Items.Single().Assignees.Single().Name, Is.EqualTo("田中"));
+        Assert.That(reader.SummarizePlan().Measures.People.Single(p => p.Identity == "p1").Name, Is.EqualTo("田中"));
+        var proposal = AssistProposal.Create(document, 0, Today,
+            [new("A", PlanField.Assignees, JsonSerializer.SerializeToElement(new[] { "p2" }))]).Proposal!;
+        Assert.That(proposal.Changes.Single().Current, Is.EqualTo("田中"));
+        Assert.That(proposal.Changes.Single().Proposed, Is.EqualTo("鈴木"));
+    }
+
+    [Test]
     public void ReadToolsReturnLocalScheduleRelationsAndBoundedPagesWithoutChangingDocument()
     {
         var document = Document(); var before = PlanJson.Text(document);
@@ -34,7 +53,7 @@ internal sealed class AssistRulesTests
         Assert.That(page.Total, Is.EqualTo(3)); Assert.That(page.Complete, Is.False);
         var task = reader.GetTasks(["A"]).Items.Single();
         Assert.Multiple(() => {
-            Assert.That(task.Task, Is.EqualTo(new AssistTaskReference("A", 2, "PS-004 設計")));
+            Assert.That((task.Task.Identity, task.Task.Id, task.Task.Title), Is.EqualTo(("A", 2, "PS-004 設計")));
             Assert.That(task.Requirement!.Identity, Is.EqualTo("R"));
             Assert.That(task.Phase, Is.EqualTo("PS")); Assert.That(task.Assignees.Single().Name, Is.EqualTo("田中"));
             Assert.That(task.Estimate, Is.EqualTo(8)); Assert.That(task.Actual, Is.EqualTo(4));
