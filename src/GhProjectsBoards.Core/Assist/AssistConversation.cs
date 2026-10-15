@@ -61,11 +61,18 @@ internal sealed class AssistConversation : IAsyncDisposable
         this.runtimePath = runtimePath ?? Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", "copilot-runtime.exe");
     }
     internal static CopilotClientOptions ClientOptions(AssistSettings settings, string baseDirectory, string runtimePath,
-        IReadOnlyDictionary<string, string> environment) => new() {
+        IReadOnlyDictionary<string, string> environment, string connectedHost = "github.com")
+    {
+        var curated = AssistEnvironment.Curate(environment);
+        // Inherited host overrides are removed; a non-default connection must still sign in where the app is connected.
+        if (settings.Mode == AssistMode.Copilot && !string.Equals(connectedHost, "github.com", StringComparison.OrdinalIgnoreCase))
+            curated["GH_HOST"] = connectedHost;
+        return new() {
             Mode = CopilotClientMode.Empty, Connection = RuntimeConnection.ForStdio(Path.GetFullPath(runtimePath)),
-            BaseDirectory = baseDirectory, WorkingDirectory = baseDirectory, Environment = AssistEnvironment.Curate(environment),
+            BaseDirectory = baseDirectory, WorkingDirectory = baseDirectory, Environment = curated,
             UseLoggedInUser = settings.Mode == AssistMode.Copilot, LogLevel = CopilotLogLevel.None, EnableRemoteSessions = false
         };
+    }
     internal static ProviderConfig? Provider(AssistSettings settings, string? key, string conversationId)
         => settings.Mode != AssistMode.Byok ? null : new() {
             Type = settings.Provider.ToString().ToLowerInvariant(), BaseUrl = settings.Endpoint, ModelId = settings.Model,
@@ -112,7 +119,7 @@ internal sealed class AssistConversation : IAsyncDisposable
             cancellation.ThrowIfCancellationRequested();
             directory = new(dataRoot, Id);
             var environment = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!, StringComparer.OrdinalIgnoreCase);
-            client = owned = new(ClientOptions(settings, directory.Path, runtimePath, environment));
+            client = owned = new(ClientOptions(settings, directory.Path, runtimePath, environment, connectedHost));
             runtimeStop = null;
         }
         await owned.StartAsync(cancellation).ConfigureAwait(false);

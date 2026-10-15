@@ -128,6 +128,13 @@ internal sealed class AssistSdkBoundaryTests
             Assert.That(config.Environment!.Keys, Is.EquivalentTo(new[] { "PATH" })); Assert.That(config.LogLevel, Is.EqualTo(CopilotLogLevel.None));
         });
     }
+    [TestCase("company.ghe.com", "company.ghe.com"), TestCase("github.com", null)]
+    public void CopilotRuntimeAuthenticatesAgainstTheConnectedHostNotAnInheritedOne(string connectedHost, string? expected)
+    {
+        var config = AssistConversation.ClientOptions(new() { Mode = AssistMode.Copilot }, "isolated", Path.Combine(TestContext.CurrentContext.WorkDirectory, "copilot-runtime.exe"),
+            new Dictionary<string, string> { ["PATH"] = "tools", ["GH_HOST"] = "inherited.example" }, connectedHost);
+        Assert.That(config.Environment!.GetValueOrDefault("GH_HOST"), Is.EqualTo(expected));
+    }
     [Test]
     public async Task ConnectionCheckConfigurationHasNoToolsOrPlanInstructionsAndDeniesPermissions()
     {

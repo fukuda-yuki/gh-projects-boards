@@ -258,8 +258,10 @@ internal sealed partial class PlanWorkspaceView
         assistStop.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         assistProgressBase = busy ? "回答しています…" : "";
         // Models can think for minutes between events; the elapsed time shows the turn is still alive.
-        assistElapsed.Restart(); assistElapsedTimer ??= CreateAssistElapsedTimer();
-        if (busy) assistElapsedTimer.Start(); else assistElapsedTimer.Stop();
+        assistElapsed.Restart();
+        // Create the timer only for a running turn and release it afterwards: a live timer keeps the workspace reachable.
+        if (busy) { assistElapsedTimer ??= CreateAssistElapsedTimer(); assistElapsedTimer.Start(); }
+        else if (assistElapsedTimer is { } timer) { timer.Stop(); timer.Tick -= AssistElapsedTick; assistElapsedTimer = null; }
         ShowAssistProgress();
         assistProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         FollowAssist();
@@ -270,8 +272,9 @@ internal sealed partial class PlanWorkspaceView
     private Microsoft.UI.Dispatching.DispatcherQueueTimer CreateAssistElapsedTimer()
     {
         var timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromSeconds(1);
-        timer.Tick += (_, _) => ShowAssistProgress(); return timer;
+        timer.Tick += AssistElapsedTick; return timer;
     }
+    private void AssistElapsedTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args) => ShowAssistProgress();
     private void ShowAssistProgress()
     {
         var elapsed = assistElapsed.Elapsed;

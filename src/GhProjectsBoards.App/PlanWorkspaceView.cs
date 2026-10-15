@@ -511,9 +511,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
-        closing = true;
+        closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide();
+        // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
+        operationCancellation?.Cancel();
         await EndAssist();
-        closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide(); operationCancellation?.Cancel(); await operation;
+        closing = true; await operation;
         try { await CommitPending(); await workspace.Flush(); return true; }
         catch (Exception ex)
         {
