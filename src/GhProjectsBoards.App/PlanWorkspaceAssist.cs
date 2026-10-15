@@ -306,10 +306,11 @@ internal sealed partial class PlanWorkspaceView
     private void AssistViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
         if (assistScroll is not { } scroll) return;
-        // A shrinking answer or viewport adjustment is not the PMO scrolling toward earlier text.
+        // A shrinking answer or larger viewport clamps the offset to the bottom; only an upward move that
+        // stops above the bottom is the PMO reading earlier text. Streaming changes the extent every
+        // frame, so requiring an unchanged extent would miss the PMO's scroll.
         if (!assistChangingView && scroll.VerticalOffset < assistPreviousOffset - 1
-            && Math.Abs(scroll.ExtentHeight - assistPreviousExtent) < 1
-            && Math.Abs(scroll.ViewportHeight - assistPreviousViewport) < 1)
+            && scroll.ScrollableHeight - scroll.VerticalOffset > 1)
             assistFollow = false;
         assistPreviousOffset = scroll.VerticalOffset; assistPreviousExtent = scroll.ExtentHeight;
         assistPreviousViewport = scroll.ViewportHeight;
