@@ -188,7 +188,7 @@ internal static class PlanPublishPlan
             }
         }
         var oldOrder = document.Baseline.Rows.Select(r => r.Identity).ToArray();
-        var currentOrder = oldOrder.Concat(rows.Where(r => !baseline.ContainsKey(r.Identity)).Select(r => r.Identity)).ToList();
+        var moved = PlanOrder.Moved(oldOrder, rows.Select(r => r.Identity));
         foreach (var parent in rows.Where(r => r.Parent is not null).Select(r => r.Parent!).Distinct())
         {
             if (!rows.Any(r => r.Identity == parent)) continue;
@@ -207,9 +207,8 @@ internal static class PlanPublishPlan
         for (var i = 0; i < rows.Length; i++)
         {
             var id = rows[i].Identity;
-            if (currentOrder[i] == id && baseline.ContainsKey(id)) continue;
-            changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? currentOrder.IndexOf(id).ToString(CultureInfo.InvariantCulture) : null, i.ToString(CultureInfo.InvariantCulture)));
-            currentOrder.Remove(id); currentOrder.Insert(i, id);
+            if (!moved.Contains(id) && baseline.ContainsKey(id)) continue;
+            changes.Add(new(id, PlanField.Order, baseline.ContainsKey(id) ? Array.IndexOf(oldOrder, id).ToString(CultureInfo.InvariantCulture) : null, i.ToString(CultureInfo.InvariantCulture)));
             Add(id, PlanPublishStage.Order, "updateProjectV2ItemPosition", "UpdateProjectV2ItemPositionInput",
                 new { projectId = document.Project.NodeId, itemId = "item:" + id, afterId = i == 0 ? null : "item:" + rows[i - 1].Identity }, "items { totalCount }");
         }

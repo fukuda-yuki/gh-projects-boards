@@ -399,9 +399,7 @@ internal static class PlanOperations
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string>>();
         var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, string Field)>();
         var baseline = d.Baseline.Rows.ToDictionary(r => r.Identity);
-        var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
-        var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
-        var moved = order.Where((id, i) => id != oldOrder[i]).ToHashSet();
+        var moved = PlanOrder.Moved(d.Baseline.Rows.Select(r => r.Identity), d.State.Rows.Select(r => r.Identity));
         foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];

@@ -130,10 +130,15 @@ internal sealed partial class PlanWorkspaceView
             })));
             Group(conflict.Identity).Lines.Add(line);
         }
-        if (changes.Fields.Any(p => p.Value.Contains(PlanField.Order)))
+        var baselinePositions = document.Baseline.Rows.Select((row, index) => (row.Identity, Position: index + 1))
+            .ToDictionary(p => p.Identity, p => p.Position);
+        foreach (var (row, index) in document.State.Rows.Select((row, index) => (row, index)))
         {
-            Group(document.Project.NodeId).HasWritableChanges = true;
-            Group(document.Project.NodeId).Lines.Add(new("表示順  " + string.Join("、", document.Baseline.Rows.Select(r => Caption(document, r.Identity))) + " → " + string.Join("、", document.State.Rows.Select(r => Caption(document, r.Identity)))));
+            if (!changes.Fields.TryGetValue(row.Identity, out var fields) ||
+                !fields.Contains(PlanField.Order) && !fields.Contains(PlanField.NewTask)) continue;
+            var before = baselinePositions.TryGetValue(row.Identity, out var position) ? position.ToString() : "—";
+            Group(row.Identity).HasWritableChanges = true;
+            Group(row.Identity).Lines.Add(new($"表示順  {before} → {index + 1}"));
         }
         foreach (var identity in document.Sync.Unavailable)
         {

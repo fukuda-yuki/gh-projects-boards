@@ -1183,6 +1183,25 @@ internal sealed partial class PlanPublisherTests
         Assert.That(creates.Zip(reserved, (sent, reservation) => sent >= reservation.Started), Is.All.True, "No create batch reaches GitHub before its reserved start.");
     }
     [Test]
+    public async Task MovingBlockDownPublishesOnlyThatBlockAndRemoteMatchesPlan()
+    {
+        await Start(8);
+        await session.Execute(new MovePlanRows(["I1", "I2"], "I7"), Today);
+        var expected = new[] { "I3", "I4", "I5", "I6", "I1", "I2", "I7", "I8" };
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(expected));
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        var positions = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"))
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+            .Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
+        Assert.That(positions.Select(v => v.GetProperty("itemId").GetString()), Is.EqualTo(new[] { "T-I1", "T-I2" }));
+        Assert.That(positions.Select(v => v.GetProperty("afterId").GetString()), Is.EqualTo(new[] { "T-I6", "T-I1" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
+    [Test]
     public async Task PositionUpdatesCompleteWhenMultiAliasPositionRequestsLoseTheirResponsePartway()
     {
         await Start(8);
