@@ -20,7 +20,8 @@ internal sealed partial class PlanWorkspaceView
 {
     private readonly ToggleButton detailToggle = Id(new ToggleButton { Height = 32, MinHeight = 0, Padding = new(8, 0, 8, 0) }, "PlanDetail");
     private readonly Border detailPane = Id(new Border { Width = 380, Visibility = Visibility.Collapsed,
-        Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Padding = new(12) }, "PlanDetailPane");
+        Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Padding = new(12),
+        TabFocusNavigation = KeyboardNavigationMode.Cycle }, "PlanDetailPane");
     private readonly TextBlock detailId = Id(Label(""), "PlanDetailId"), detailReference = Id(Label(""), "PlanDetailReference"),
         detailTitle = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, MaxLines = 3, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold }, "PlanDetailTitle"),
         detailState = Id(Label(""), "PlanDetailState"), detailUpdated = Id(Label(""), "PlanDetailUpdated"),
@@ -114,6 +115,7 @@ internal sealed partial class PlanWorkspaceView
             if (args.Key != VirtualKey.I || !PlanSheetView.Down(VirtualKey.Control) || PlanSheetView.Down(VirtualKey.Menu)
                 || PlanSheetView.Down(VirtualKey.Shift) || !detailToggle.IsEnabled || sheet?.HasActiveCellEdit == true) return;
             args.Handled = true; detailToggle.IsChecked = detailToggle.IsChecked != true;
+            if (detailToggle.IsChecked != true) sheet?.FocusSelected();
         };
     }
     private bool DetailVisible => detailPane.Visibility == Visibility.Visible;
@@ -341,7 +343,7 @@ internal sealed partial class PlanWorkspaceView
             @media(forced-colors:active){body{color:CanvasText;background:Canvas}a{color:LinkText}}
             </style>
             """);
-        html.Append("<base href=\"").Append(WebUtility.HtmlEncode(new Uri(issue.Url).GetLeftPart(UriPartial.Authority) + "/"))
+        html.Append("<base href=\"").Append(WebUtility.HtmlEncode(issue.Url))
             .Append("\"></head><body>");
         html.Append(string.IsNullOrWhiteSpace(issue.BodyHtml) ? "<p>本文はありません</p>" : issue.BodyHtml);
         html.Append("<h2>").Append(DetailCommentHeading(issue.CommentCount)).Append("</h2>");

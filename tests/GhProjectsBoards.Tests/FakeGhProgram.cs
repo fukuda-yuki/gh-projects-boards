@@ -94,11 +94,12 @@ internal static class FakeGhProgram
             var empty = fault is "empty" or "marker";
             var commentCount = empty ? 0 : settings.TryGetProperty("detailCommentCount", out var count) && count.ValueKind == JsonValueKind.Number ? count.GetInt32() : 7;
             WriteHttp(new { data = new { node = new {
-                number, title = issue.Row.Title, url = issueUrl, state = issue.Row.Closed ? "CLOSED" : "OPEN", stateReason = (string?)null,
+                number, title = issue.Row.Title, url = issueUrl, state = issue.Row.Closed || fault == "closed" ? "CLOSED" : "OPEN", stateReason = (string?)null,
                 body = fault == "marker" ? "<!-- ghpb-plan:\nfixture marker\n-->\n " : empty ? "" : "<!-- ghpb-plan:fixture -->**Body " + issue.Row.Title + "**",
                 bodyHTML = empty ? "" : "<p><strong>Body " + System.Net.WebUtility.HtmlEncode(issue.Row.Title) + "</strong></p>"
                     + "<a id='fixture-link' href='https://example.com/read'>Read</a> <a id='fixture-new' target='_blank' href='https://example.com/new'>New</a>"
                     + "<a id='fixture-relative' href='/acme/repo/issues/2'>Relative</a>"
+                    + "<a id='fixture-fragment' href='#section'>Section</a>"
                     + "<a id='fixture-other' href='file:///ignored'>Other</a><input type='checkbox' checked disabled>",
                 updatedAt = "2026-10-15T08:30:00Z", repository = new { nameWithOwner = issue.Row.Repository },
                 comments = new { totalCount = commentCount, nodes = Enumerable.Range(1, Math.Min(commentCount, 5)).Select(i => new {

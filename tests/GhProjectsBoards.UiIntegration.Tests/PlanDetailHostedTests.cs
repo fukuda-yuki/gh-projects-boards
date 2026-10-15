@@ -81,8 +81,10 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         var title = string.Join(" ", Enumerable.Repeat("R24 設計レビューと担当者の作業計画を確認する", 4));
         var fake = FakePlanEditor.Load(root);
-        FakePlanEditor.Save(root, fake with { Issues = [fake.Issues[0] with { Row = fake.Issues[0].Row with { Title = title, Closed = closed } }] });
-        await Open(); await DetailFallback();
+        FakePlanEditor.Save(root, fake with { Issues = [fake.Issues[0] with { Row = fake.Issues[0].Row with { Title = title } }] });
+        await Open(title); await DetailFallback();
+        // The header state comes from the Issue read; a closed plan row would change what the open itself shows.
+        if (closed) DetailScenario("closed");
         await Ui.Run(() => { ResizeWorkspace(1920, 1032); SelectDetail("I1"); ToggleDetail(); });
         await DetailReady(title);
         await Ui.Until(() => Ui.Find<TextBlock>("PlanDetailUpdated").ActualWidth > 0 && Ui.Find<TextBlock>("PlanDetailTitle").ActualHeight > 20);
@@ -410,6 +412,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(async () => await Ui.Find<WebView2>("PlanDetailBody").CoreWebView2.ExecuteScriptAsync("document.getElementById('fixture-relative').click()"));
         await Ui.Until(() => external.Count == 3);
         Assert.That(external[2].AbsoluteUri, Is.EqualTo("https://github.com/acme/repo/issues/2"));
+        await Ui.Run(async () => await Ui.Find<WebView2>("PlanDetailBody").CoreWebView2.ExecuteScriptAsync("document.getElementById('fixture-fragment').click()"));
+        await Ui.Until(() => external.Count == 4);
+        Assert.That(external[3].AbsoluteUri, Is.EqualTo("https://github.com/acme/repo/issues/1#section"));
         await Ui.Run(async () => {
             var web = Ui.Find<WebView2>("PlanDetailBody");
             await web.CoreWebView2.ExecuteScriptAsync("document.getElementById('fixture-other').click()");
@@ -417,7 +422,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             await RenderedEvidence.Capture(view, "issue-detail-rendered");
         });
         Assert.That(external.All(u => u.Scheme == "https"), Is.True);
-        Assert.That(external.Count, Is.EqualTo(3));
+        Assert.That(external.Count, Is.EqualTo(4));
         await Ui.Run(() => {
             Assert.That(DetailSheet.Pending[("I1", PlanField.Title)].Text, Is.EqualTo("Pending while reading"));
             Assert.That(workspace.Session!.Document.State.Rows[0].Title, Is.EqualTo("設計"));
@@ -504,6 +509,58 @@ internal sealed partial class PlanWorkspaceHostedTests
         await SheetNativeInput.Press(VirtualKey.Escape, []);
         await SheetNativeInput.Press(VirtualKey.I, [VirtualKey.Control]);
         await Ui.Run(() => Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.False));
+    }
+
+    [TestCase(false), TestCase(true), Category("IssueDetail"), Category("PlanSheetNative")]
+    public async Task DetailBodyTabReturnsToHeaderForRegionShortcutsAndClose(bool reverse)
+    {
+        await Open(); await PrepareDetailKeyboard();
+        var before = workspace.Session!.Document;
+        await Ui.Run(ToggleDetail);
+        await DetailWebText("Body 設計");
+
+        await LeaveBody();
+        await SheetNativeInput.Press(VirtualKey.F6, reverse ? [VirtualKey.Shift] : []);
+        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot),
+            Ui.Find<FrameworkElement>(reverse ? "PlanShowTasks" : "PlanCell1_Title")));
+        await LeaveBody();
+        await SheetNativeInput.Press(VirtualKey.I, [VirtualKey.Control]);
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Collapsed &&
+            ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot), Ui.Find<PlanSheetCell>("PlanCell1_Title")));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session.Document, Is.SameAs(before));
+            Assert.That(workspace.Session.UndoCount, Is.Zero);
+            Assert.That(DetailSheet.Pending, Is.Empty);
+        });
+        Assert.That(DetailCalls().Any(c => c.GetProperty("mutation").GetBoolean()), Is.False);
+
+        async Task LeaveBody()
+        {
+            await Ui.Run(async () => {
+                var web = Ui.Find<WebView2>("PlanDetailBody");
+                Assert.That(web.Focus(FocusState.Programmatic), Is.True);
+                Assert.That(web.CoreWebView2.Settings.IsScriptEnabled, Is.False);
+                // Only position focus at a document boundary; the key itself uses native input.
+                await web.CoreWebView2.ExecuteScriptAsync(reverse
+                    ? "document.querySelector('a[href]').focus()"
+                    : "Array.from(document.querySelectorAll('a[href]')).at(-1).focus()");
+            });
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (true) {
+                var focused = false;
+                await Ui.Run(async () => focused = await Ui.Find<WebView2>("PlanDetailBody").CoreWebView2
+                    .ExecuteScriptAsync("document.hasFocus() && document.activeElement.tagName === 'A'") == "true");
+                if (focused) break;
+                if (DateTime.UtcNow >= deadline) Assert.Fail("The rendered Issue body did not receive native focus.");
+                await Task.Delay(20);
+            }
+            // Browser key-up need not bubble to the XAML root. Wait for the resulting native focus instead.
+            if (reverse) SheetNativeInput.Key(VirtualKey.Shift, true);
+            try { SheetNativeInput.Key(VirtualKey.Tab, true); SheetNativeInput.Key(VirtualKey.Tab, false); }
+            finally { if (reverse) SheetNativeInput.Key(VirtualKey.Shift, false); }
+            await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot),
+                Ui.Find<Button>(reverse ? "PlanDetailReload" : "PlanDetailOpen")));
+        }
     }
 
     private async Task PrepareDetailKeyboard()
