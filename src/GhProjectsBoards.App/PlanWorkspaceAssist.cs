@@ -67,7 +67,8 @@ internal sealed partial class PlanWorkspaceView
         ScrollViewer.SetHorizontalScrollBarVisibility(assistMessages, ScrollBarVisibility.Disabled);
         assistMessages.Loaded += (_, _) => {
             assistMessages.LayoutUpdated -= AssistLayoutUpdated;
-            assistMessages.LayoutUpdated += AssistLayoutUpdated;
+            // Loaded can arrive after Unloaded when the view is removed quickly; a late subscription would root the view.
+            if (assistMessages.IsLoaded) assistMessages.LayoutUpdated += AssistLayoutUpdated;
             AttachAssistScroll();
         };
         assistMessages.Unloaded += (_, _) => assistMessages.LayoutUpdated -= AssistLayoutUpdated;
@@ -300,6 +301,7 @@ internal sealed partial class PlanWorkspaceView
     {
         // Virtualized items can change the extent after the queued scroll has already run.
         // Subscribe only while loaded: LayoutUpdated is backed by the global layout manager.
+        if (!assistMessages.IsLoaded) { assistMessages.LayoutUpdated -= AssistLayoutUpdated; return; }
         if (assistFollow && assistMessages.ActualHeight > 0 && assistScroll is { } scroll
             && scroll.ScrollableHeight - scroll.VerticalOffset > 1) FollowAssist();
     }
