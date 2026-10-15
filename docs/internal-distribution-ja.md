@@ -26,6 +26,8 @@ Windows 11 x64向けの社内評価用です。ZIPを展開して使います。
 
 ## 同梱情報と評価
 
+AI アシスト用に GitHub Copilot SDK 1.0.22 と Copilot CLI 1.0.98 のランタイムを同梱しています。`runtimes/win-x64/native` を含めてフォルダー全体を保持してください。CLI は別プロセスとして動作します。同梱の `copilot_runtime.dll` は SDK が生成する同一ランタイムの別名で、本アプリでは直接読み込みません。GitHub Copilot CLI License と SDK・関連ライブラリの MIT 表示は `notices` にあります。
+
 操作の詳しい説明は、同梱の `マニュアル.md` をアプリの **ヘルプ** または **F1** で開いて確認できます。この導入ガイドは `使い方.md`、CSVテンプレートは `templates/new-tasks.csv` として同梱されています。
 
 `notices` に依存ソフトウェアの利用条件・著作権表示、`distribution-manifest.json` に配布物の識別情報があります。これらを保持してください。本アプリの配布物はMicrosoft製品の承認を示すものではありません。

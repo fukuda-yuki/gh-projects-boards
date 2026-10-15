@@ -175,7 +175,9 @@ internal sealed class AssistRulesTests
         Assert.That(result.Keys, Is.EquivalentTo(new[] { "PATH", "GH_CONFIG_DIR" }));
         Assert.That(source.Count, Is.EqualTo(12));
     }
-    [TestCase("gh-cli", "github.com", "pmo", true), TestCase("token", "github.com", "pmo", false),
+    [TestCase("gh-cli", "github.com", "pmo", true), TestCase("gh-cli", "https://github.com", "pmo", true),
+     TestCase("gh-cli", "HTTPS://GITHUB.COM/", "PMO", true), TestCase("gh-cli", "https://company.ghe.com/", "pmo", false),
+     TestCase("token", "github.com", "pmo", false),
      TestCase("gh-cli", "other.example", "pmo", false), TestCase("gh-cli", "github.com", "other", false)]
     public void CopilotIdentityMustMatchConnectedViewer(string type, string host, string login, bool accepted)
     {

@@ -105,7 +105,7 @@ The default UI selection excludes the infrastructure, native-input and performan
 
 ## Opt-in runs
 
-Release infrastructure is checked with `node --test scripts/release-policy.test.cjs` and `Invoke-Pester scripts/Test-ReleasePackage.Tests.ps1` (Pester 5.9.0). The [release workflow](../.github/workflows/release.yml) also builds the audited ZIP, verifies its extracted contents, and runs `Test-E2E.ps1 -AppPath <extracted executable>` against fake gh. This verifies the distributable on a hosted Windows runner, not a clean company PC, live GitHub or physical IME. The normal E2E invocation continues to use the development build.
+Release infrastructure is checked with `node --test scripts/release-policy.test.cjs` and `Invoke-Pester -Path scripts/Test-ReleasePackage.Tests.ps1,scripts/Copilot-RuntimeAudit.Tests.ps1` (Pester 5.9.0). The latter checks exact Copilot archive provenance and rejects changed archives, cached extractions and payloads, including unknown non-binary runtime assets. The [release workflow](../.github/workflows/release.yml) also builds the audited ZIP, verifies its extracted contents, and runs `Test-E2E.ps1 -AppPath <extracted executable>` against fake gh. This verifies the distributable on a hosted Windows runner, not a clean company PC, live GitHub or physical IME. The normal E2E invocation continues to use the development build.
 
 Each needs a stated reason and separate evidence.
 

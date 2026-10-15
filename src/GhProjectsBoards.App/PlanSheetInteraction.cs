@@ -69,6 +69,7 @@ internal sealed partial class PlanSheetView
         return row >= range.Row && row < range.Row + range.RowCount && column >= range.Column && column < range.Column + range.ColumnCount;
     }
     internal bool IsSelectedRow(string identity) => identity == selected;
+    internal event Action? SelectionChanged;
     internal bool IsRangeEnd(string identity, string field) => identity == selected && field == selectedField;
     internal void Select(string identity, string field, bool extend)
     {
@@ -81,7 +82,7 @@ internal sealed partial class PlanSheetView
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
             if (!disposed && IsLoaded && selectedField == field) EnsureColumnVisible(field);
         });
-        UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previousRange);
+        UpdateReason(); RefreshOverviewCommands(); RefreshRealized(previousRange); SelectionChanged?.Invoke();
     }
     // Selection that leaves keyboard focus on another cell lets that cell reclaim it
     // through GotFocus, so typing or a command would act on the previous task.

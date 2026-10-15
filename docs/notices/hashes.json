@@ -104,5 +104,25 @@
     "sha256": "5BD32B369549741FFFCD199C9750967A988934243FA3D13CB67F33B13161431B",
     "source": "https://learn.microsoft.com/en-us/legal/windows-sdk/redist",
     "retrievedDate": "2026-10-08"
+  },
+  {
+    "file": "GitHub.Copilot.SDK-1.0.22-MIT.txt",
+    "sha256": "A1471E4724B8FA32EE4306B5547FE21F907B433B0D0F2F42AE73648FB10E284C"
+  },
+  {
+    "file": "Microsoft.Extensions.AI.Abstractions-10.2.0-MIT.txt",
+    "sha256": "A1471E4724B8FA32EE4306B5547FE21F907B433B0D0F2F42AE73648FB10E284C"
+  },
+  {
+    "file": "Microsoft.Extensions.DependencyInjection.Abstractions-10.0.2-MIT.txt",
+    "sha256": "A1471E4724B8FA32EE4306B5547FE21F907B433B0D0F2F42AE73648FB10E284C"
+  },
+  {
+    "file": "Microsoft.Extensions.Logging.Abstractions-10.0.2-MIT.txt",
+    "sha256": "A1471E4724B8FA32EE4306B5547FE21F907B433B0D0F2F42AE73648FB10E284C"
+  },
+  {
+    "file": "GitHub.Copilot.CLI-1.0.98-LICENSE.md",
+    "sha256": "B9680937E10425BF19862908856C16ED274E6B81A1368BD62BE7A757EAB21628"
   }
 ]

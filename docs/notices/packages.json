@@ -94,5 +94,29 @@
     "version": "9.0.0",
     "sha512": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A==",
     "source": "https://www.nuget.org/packages/System.Numerics.Tensors/9.0.0"
+  },
+  {
+    "id": "GitHub.Copilot.SDK",
+    "version": "1.0.22",
+    "sha512": "SDsgUS1YnxPgE3xVxs+eq+wTEY9K61CVpgWifCqdPVcGFPQs2mM/EIJ5UOwzVHMXYF5POvQBJo7ptqG4aqQ7lg==",
+    "source": "https://www.nuget.org/packages/GitHub.Copilot.SDK/1.0.22"
+  },
+  {
+    "id": "Microsoft.Extensions.AI.Abstractions",
+    "version": "10.2.0",
+    "sha512": "ONGlIBht0ygEdKc0bCt9XWUiq19/460dAu7fCKzPM34OFJSMQIohEDTJwjCJ8vVp8znNakloc9xFF9+R/eDCYQ==",
+    "source": "https://www.nuget.org/packages/Microsoft.Extensions.AI.Abstractions/10.2.0"
+  },
+  {
+    "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "version": "10.0.2",
+    "sha512": "zOIurr59+kUf9vNcsUkCvKWZv+fPosUZXURZesYkJCvl0EzTc9F7maAO4Cd2WEV7ZJJ0AZrFQvuH6Npph9wdBw==",
+    "source": "https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection.Abstractions/10.0.2"
+  },
+  {
+    "id": "Microsoft.Extensions.Logging.Abstractions",
+    "version": "10.0.2",
+    "sha512": "RZkez/JjpnO+MZ6efKkSynN6ZztLpw3WbxNzjLCPBd97wWj1S9ZYPWi0nmT4kWBRa6atHsdM1ydGkUr8GudyDQ==",
+    "source": "https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions/10.0.2"
   }
 ]

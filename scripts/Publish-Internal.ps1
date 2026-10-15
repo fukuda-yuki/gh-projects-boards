@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'Copilot-RuntimeAudit.ps1')
 if (-not $ArtifactsRoot) {
     & (Join-Path $PSScriptRoot 'Clear-TestResults.ps1')
     $ArtifactsRoot = Join-Path $repo 'TestResults/internal-distribution'
@@ -35,7 +36,7 @@ function Sources {
     @((Get-ChildItem -LiteralPath (Join-Path $repo 'src') -Recurse -File | Where-Object FullName -NotMatch '[\\/](bin|obj)[\\/]'),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'docs/notices') -File),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'docs/manual/images') -Filter '*.png' -File),
-      (Get-Item -LiteralPath $PSCommandPath, (Join-Path $repo 'docs/dependencies.md'), (Join-Path $repo 'docs/internal-distribution-ja.md'), (Join-Path $repo 'docs/user-manual.md')),
+      (Get-Item -LiteralPath $PSCommandPath, (Join-Path $PSScriptRoot 'Copilot-RuntimeAudit.ps1'), (Join-Path $repo 'docs/dependencies.md'), (Join-Path $repo 'docs/internal-distribution-ja.md'), (Join-Path $repo 'docs/user-manual.md')),
       (Get-ChildItem -LiteralPath (Join-Path $repo 'templates') -File)) | ForEach-Object { $_ } | Sort-Object FullName | ForEach-Object {
         [ordered]@{ path = [IO.Path]::GetRelativePath($repo, $_.FullName).Replace('\', '/'); sha256 = Hash $_.FullName }
     }
@@ -149,6 +150,15 @@ try {
     if (-not $runtimeLicense.Contains('Any files that are binplaced with your application')) { throw 'Runtime package grant changed; review exact terms.' }
     if (-not $binplacedPackages[$runtimeId[0]]) { throw 'Runtime package license does not match the retained reviewed terms.' }
     $origins = @{}
+    $cliArchives = @(Get-ChildItem -LiteralPath (Join-Path $build 'obj/GhProjectsBoards.App') -Recurse -File -Filter 'copilot.tgz' |
+        Where-Object FullName -Match '[\\/]copilot-cli[\\/]1\.0\.98[\\/]win32-x64[\\/]copilot\.tgz$')
+    if ($cliArchives.Count -ne 1) { throw 'Expected one isolated Copilot CLI 1.0.98 archive.' }
+    $cliCache = $cliArchives[0].DirectoryName
+    $copilotOrigins = Get-CopilotRuntimeOrigins $cliCache $package
+    foreach ($path in $copilotOrigins.Keys) { $origins[$path] = $copilotOrigins[$path] }
+    if ((Hash (Join-Path $cliCache 'LICENSE.md')) -ne (Hash (Join-Path $noticeSource 'GitHub.Copilot.CLI-1.0.98-LICENSE.md'))) {
+        throw 'Retained Copilot CLI licence differs from the verified archive.'
+    }
     foreach ($resource in $resources) { $origins[$resource.Replace('\', '/')] = 'application build resources' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead($runtimeMsix)
@@ -171,10 +181,21 @@ try {
     } finally { $archive.Dispose() }
     # Match remaining managed/native binaries by exact content, including implicit SDK runtime packs.
     $packageFiles = @{}
+    $assistMitPackages = @('GitHub.Copilot.SDK/1.0.22', 'Microsoft.Extensions.AI.Abstractions/10.2.0',
+        'Microsoft.Extensions.DependencyInjection.Abstractions/10.0.2', 'Microsoft.Extensions.Logging.Abstractions/10.0.2')
     foreach ($identity in ($packages.Keys | Sort-Object)) {
         # These packages retain their separately reviewed MIT/SDK redistribution boundaries.
         $separateTerms = $identity.Split('/')[0] -in 'Microsoft.Web.WebView2', 'System.Numerics.Tensors',
             'Microsoft.NETCore.App.Runtime.win-x64', 'Microsoft.Windows.SDK.NET.Ref'
+        if ($identity -in $assistMitPackages) {
+            $parts = $identity.Split('/')
+            [xml]$nuspec = Get-Content -LiteralPath (Join-Path $packages[$identity] ($parts[0].ToLowerInvariant() + '.nuspec')) -Raw
+            $noticeName = $identity.Replace('/', '-') + '-MIT.txt'
+            if ($nuspec.package.metadata.license.type -ne 'expression' -or $nuspec.package.metadata.license.InnerText -ne 'MIT' -or
+                @($noticeHashes | Where-Object file -EQ $noticeName).Count -ne 1 -or
+                -not (Test-Path -LiteralPath (Join-Path $noticeSource $noticeName) -PathType Leaf)) { throw "Unverified assist package licence: $identity" }
+            $separateTerms = $true
+        }
         if (-not $separateTerms -and -not $binplacedPackages[$identity]) { continue }
         foreach ($file in (Get-ChildItem -LiteralPath $packages[$identity] -Recurse -File | Where-Object Extension -In '.dll', '.exe', '.winmd' | Sort-Object FullName)) {
             if (-not $packageFiles.ContainsKey($file.Name)) { $packageFiles[$file.Name] = @() }
@@ -209,6 +230,7 @@ try {
     $manifest = [ordered]@{ format = 1; platform = 'Windows 11 x64'; packaging = 'unpackaged self-contained'; sdk = $sdk;
         version = $Version; sourceCommit = $head; sourceDirty = $status.Count -gt 0; sourceManifestSha256 = Hash (Join-Path $run 'source.json');
         runtimeMsix = [ordered]@{ package = $runtimeId[0]; sha256 = Hash $runtimeMsix };
+        copilotCliArchive = [ordered]@{ version = '1.0.98'; sha256 = Hash $cliArchives[0].FullName; files = $copilotOrigins.Count };
         validation = [ordered]@{ widgetProjectionExcluded = $true; binaryOriginsVerified = $true; applicationResourcesVerified = $resources;
             cleanPc = 'not established'; humanAcceptance = 'not established' };
         files = $payload }

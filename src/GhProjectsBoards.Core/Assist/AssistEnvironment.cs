@@ -20,8 +20,19 @@ internal static class AssistAuthentication
     internal static AssistFailure? Validate(bool authenticated, string? authType, string? host, string? login, string connectedHost, string connectedLogin)
     {
         if (!authenticated || authType != "gh-cli") return new(AssistFailureKind.Authentication, "接続済みの gh アカウントを利用できません。gh のログインを確認してください。", "設定を開く");
-        if (!string.Equals(host, connectedHost, StringComparison.OrdinalIgnoreCase) || !string.Equals(login, connectedLogin, StringComparison.OrdinalIgnoreCase))
+        if (NormalizeHost(host) is not { } actual || NormalizeHost(connectedHost) is not { } expected
+            || !string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase) || !string.Equals(login, connectedLogin, StringComparison.OrdinalIgnoreCase))
             return new(AssistFailureKind.WrongAccount, "AI アシストのアカウントが、接続中のアカウントと一致しません。", "設定を開く");
         return null;
+    }
+
+    private static string? NormalizeHost(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var address = value.Contains("://", StringComparison.Ordinal) ? value : "https://" + value;
+        return Uri.TryCreate(address, UriKind.Absolute, out var uri)
+            && uri.Scheme is "http" or "https" && uri.AbsolutePath == "/"
+            && uri.UserInfo.Length == 0 && uri.Query.Length == 0 && uri.Fragment.Length == 0 && uri.IsDefaultPort
+            ? uri.IdnHost : null;
     }
 }
