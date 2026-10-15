@@ -62,6 +62,18 @@ internal sealed class AssistStorageTests
         await session.Undo(AssistRulesTests.Today); Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
         tools.BeginTurn(); Assert.That(tools.References, Is.Empty);
     }
+    [Test]
+    public async Task HeldDateRecalculationCountMatchesTheNoticeShownAfterApplying()
+    {
+        var session = await PlanSession.CreateAsync(new(Path.Combine(root, "held")),
+            AssistRulesTests.Document() with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) }, AssistRulesTests.Today);
+        sessions.Add(session);
+        var tools = new AssistPlanTools(session, AssistRulesTests.Today, "");
+        var proposal = tools.ProposeChanges([new("B", PlanField.Title, JsonSerializer.SerializeToElement("変更"))]).Proposal!;
+        var applied = await tools.ApplyProposal(proposal.Id);
+        Assert.That(applied.Recalculation, Is.Not.Null);
+        Assert.That(proposal.RecalculatedTasks, Is.EqualTo(applied.Recalculation!.ChangedTasks.Count).And.Positive);
+    }
     [TestCase("edit"), TestCase("undo-redo"), TestCase("status-date"), TestCase("refresh"), TestCase("publish"), TestCase("reset")]
     public async Task EveryDocumentRevisionRefusesStaleProposal(string action)
     {

@@ -12,6 +12,8 @@ internal sealed record AssistProposalResult(AssistProposal? Proposal, IReadOnlyL
 internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<AssistProposedChange> Changes, AssistPage<AssistScheduleChange> ScheduleEffect)
 {
     internal EditPlanCells Command { get; init; } = null!;
+    public int RecalculatedTasks { get; init; }
+    public DateOnly StatusDate { get; init; }
     public const string StaleMessage = "計画が変わったため、この提案は適用できません。もう一度依頼してください。";
     internal static readonly string[] EditableFields = [PlanField.Assignees, PlanField.Estimate, PlanField.Actual, PlanField.Remaining,
         PlanField.Phase, PlanField.StartNoEarlierThan, PlanField.Fixed, PlanField.Start, PlanField.End, PlanField.Predecessors, PlanField.Title];
@@ -26,8 +28,13 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
                 return new PlanCellChange(e.Identity, e.Field, TypedValue(document, e, today));
             }).ToImmutableArray());
             var (state, _) = PlanOperations.Apply(document, command, today);
-            var candidate = document with { State = state, Dates = document.Dates.Held is { } origin ? new(null, origin) : document.Dates };
-            var beforeSchedule = PlanOperations.Schedule(document, today).ToDictionary(t => t.Input.Identity);
+            // Applying any edit releases held GitHub dates and recalculates the whole plan; measuring the
+            // effect from that recalculated plan keeps the proposal's own effect apart from the release.
+            var released = document.Dates.Held is { } origin ? document with { Dates = new(null, origin) } : document;
+            var recalculated = ReferenceEquals(released, document) ? 0 : PlanOperations.ChangedTaskDates(document, released, today).Count;
+            var candidate = released with { State = state };
+            var displayed = PlanOperations.Schedule(document, today).ToDictionary(t => t.Input.Identity);
+            var beforeSchedule = ReferenceEquals(released, document) ? displayed : PlanOperations.Schedule(released, today).ToDictionary(t => t.Input.Identity);
             var afterSchedule = PlanOperations.Schedule(candidate, today);
             var afterById = afterSchedule.ToDictionary(t => t.Input.Identity);
             var effect = afterSchedule.Where(t => !t.IsSummary &&
@@ -35,9 +42,10 @@ internal sealed record AssistProposal(string Id, long Revision, IReadOnlyList<As
                 .Select(t => new AssistScheduleChange(reader.Reference(t.Input.Identity), beforeSchedule[t.Input.Identity].Start.Value,
                     beforeSchedule[t.Input.Identity].End.Value, t.Start.Value, t.End.Value)).ToArray();
             var changes = edits.Select(e => new AssistProposedChange(reader.Reference(e.Identity), e.Field,
-                DisplayScheduled(document, document.State.Rows.Single(r => r.Identity == e.Identity), beforeSchedule[e.Identity], e.Field),
+                DisplayScheduled(document, document.State.Rows.Single(r => r.Identity == e.Identity), displayed[e.Identity], e.Field),
                 DisplayScheduled(candidate, state.Rows.Single(r => r.Identity == e.Identity), afterById[e.Identity], e.Field))).ToArray();
-            return new(new(Guid.NewGuid().ToString("N"), revision, changes, AssistPlanReader.Page(effect, 0, 10)) { Command = command }, []);
+            return new(new(Guid.NewGuid().ToString("N"), revision, changes, AssistPlanReader.Page(effect, 0, 10)) {
+                Command = command, RecalculatedTasks = recalculated, StatusDate = document.State.Settings.StatusDate ?? today }, []);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException or JsonException or OverflowException) {
             return new(null, [ex is JsonException or FormatException or OverflowException ? "変更する値の型または範囲が不正です。" : ex.Message]);

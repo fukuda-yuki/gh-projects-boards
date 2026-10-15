@@ -265,6 +265,30 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
+    [Test, Category("Assist")]
+    public async Task AssistCardStatesTheHeldDateRecalculationApartFromItsOwnEffectAndMatchesTheNoticeAfterApplying()
+    {
+        var runtime = await EnableAssist();
+        Assert.That(workspace.Session!.Document.Dates.Held, Is.Not.Null, "The first take-in holds GitHub dates.");
+        await AskAssist();
+        var notice = ""; var effect = "";
+        await Ui.Run(() => {
+            notice = Ui.Find<TextBlock>("AssistRecalculation" + runtime.ProposalId).Text;
+            effect = Ui.Tree(Ui.Find<Border>("AssistProposal" + runtime.ProposalId)).OfType<TextBlock>().Single(t => t.Text.StartsWith("日程が変わるタスク")).Text;
+        });
+        Assert.That(effect, Is.EqualTo("日程が変わるタスク 0 件"), "A title proposal moves no dates of its own.");
+        await Ui.Run(() => Ui.Click("AssistApply" + runtime.ProposalId));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanRefreshResult") is { IsOpen: true, Title: "日程を再計算しました" });
+        await Ui.Run(() => {
+            var message = Ui.Find<InfoBar>("PlanRefreshResult").Message;
+            var day = message["基準日 ".Length..message.IndexOf(" で", StringComparison.Ordinal)];
+            var count = message[(message.LastIndexOf(' ') + 1)..];
+            Assert.That(count, Is.Not.EqualTo("0"));
+            Assert.That(notice, Is.EqualTo($"適用すると、計画全体を基準日 {day} で再計算します（この変更とは別に {count} 件の日付が変わります）。"));
+        });
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
     [TestCase(false), TestCase(true), Category("Assist")]
     public async Task AssistProposalDiscardOrSubsequentEditPreventsApplication(bool stale)
     {

@@ -385,6 +385,11 @@ internal sealed partial class PlanWorkspaceView
         if (result.Proposal is not { } proposal || assistProposals.Any(p => p.Proposal.Id == proposal.Id)) return;
         var card = new StackPanel { Spacing = 6 };
         card.Children.Add(Label($"変更の提案 {proposal.Changes.Count} 件"));
+        if (proposal.RecalculatedTasks > 0) {
+            var culture = System.Globalization.CultureInfo.GetCultureInfo("ja-JP");
+            card.Children.Add(Id(Label($"適用すると、計画全体を基準日 {proposal.StatusDate.ToString("M/d (ddd)", culture)} で再計算します（この変更とは別に {proposal.RecalculatedTasks.ToString("N0", culture)} 件の日付が変わります）。"),
+                "AssistRecalculation" + proposal.Id));
+        }
         var changes = new ListView { SelectionMode = ListViewSelectionMode.None, MaxHeight = 280, Padding = new(0),
             ItemContainerStyle = new Style(typeof(ListViewItem)) { Setters = {
                 new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch), new Setter(Control.PaddingProperty, new Thickness(0, 2, 0, 2)) } },

@@ -141,11 +141,20 @@ internal sealed class AssistRulesTests
         Assert.That(PlanJson.Text(d), Is.EqualTo(before));
     }
     [Test]
-    public void HeldDatePreviewMatchesTheOrdinaryEditRelease()
+    public void HeldDatePreviewReportsTheReleaseRecalculationApartFromTheProposalEffect()
     {
-        var d = Document() with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
-        var result = AssistProposal.Create(d, 0, Today, [new("A", PlanField.Title, JsonSerializer.SerializeToElement("変更"))]);
-        Assert.That(result.Proposal!.ScheduleEffect.Total, Is.GreaterThan(0));
+        var unheld = Document(); var held = unheld with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        AssistProposal Propose(PlanDocument d, string field, object value) =>
+            AssistProposal.Create(d, 0, Today, [new("A", field, JsonSerializer.SerializeToElement(value))]).Proposal!;
+        var title = Propose(held, PlanField.Title, "変更");
+        Assert.That(title.ScheduleEffect.Total, Is.Zero, "A title change moves no dates of its own.");
+        Assert.That(title.RecalculatedTasks, Is.EqualTo(2), "Releasing the held dates recalculates both tasks.");
+        var remaining = Propose(held, PlanField.Remaining, 40m);
+        var expected = Propose(unheld, PlanField.Remaining, 40m);
+        static object[] Dates(AssistProposal p) => p.ScheduleEffect.Items.Select(c => (object)(c.Task.Identity, c.PreviousStart, c.PreviousEnd, c.Start, c.End)).ToArray();
+        Assert.That(Dates(remaining), Is.EqualTo(Dates(expected)).And.Not.Empty, "The effect is measured from the recalculated plan.");
+        Assert.That(remaining.RecalculatedTasks, Is.EqualTo(2));
+        Assert.That(expected.RecalculatedTasks, Is.Zero);
     }
     [Test]
     public void ProposalShowsScheduledCurrentDateRatherThanTheOldPublishedInput()
