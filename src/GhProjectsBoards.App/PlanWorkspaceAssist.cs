@@ -133,6 +133,8 @@ internal sealed partial class PlanWorkspaceView
         if (identity != assistSelected && identity != assistDismissed) assistDismissed = null;
         assistSelected = identity == assistDismissed ? null : identity;
         var row = workspace.Session?.Document.State.Rows.FirstOrDefault(r => r.Identity == assistSelected);
+        // Requirement header rows are selectable in the sheet but are not plan tasks; offer and send only tasks.
+        if (row is null) assistSelected = null;
         assistChip.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
         if (row is not null) {
             assistChip.Content = new TextBlock { Text = $"選択中: {sheet!.PlanIds.GetValueOrDefault(row.Identity)} {row.Title} ×", MaxWidth = 292, TextTrimming = TextTrimming.CharacterEllipsis };

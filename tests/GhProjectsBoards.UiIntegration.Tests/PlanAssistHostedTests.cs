@@ -291,6 +291,17 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("Assist")]
+    public async Task AssistSendsNoSelectedTaskWhenTheSheetInputRowIsSelected()
+    {
+        var runtime = await EnableAssist();
+        await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().Select("", PlanField.Title, false));
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<Button>("AssistSelectedTask").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        await AskAssist();
+        Assert.That(runtime.Selected, Is.EqualTo(new string?[] { null }));
+    }
+
+    [Test, Category("Assist")]
     public async Task AssistDockKeepsDefaultSheetColumnsVisibleAt1920AndAlsoOpensOnSummary()
     {
         await EnableAssist();
