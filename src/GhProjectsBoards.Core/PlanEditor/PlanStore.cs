@@ -32,11 +32,25 @@ internal sealed class PlanStore(string dataRoot)
             var path = FileFor(project); var bytes = await ReadExisting(path).ConfigureAwait(false);
             CheckInterrupted(path, bytes is null);
             if (bytes is null) return new(PlanLoadStatus.Missing, null, null, null);
-            var checkpoint = PlanJson.Read<PlanCheckpoint>(bytes); PlanJson.Validate(checkpoint, project);
+            PlanCheckpoint checkpoint;
+            try { checkpoint = PlanJson.Read<PlanCheckpoint>(bytes); PlanJson.Validate(checkpoint, project); }
+            catch (Exception ex) when (PlanJson.IsDataError(ex)) { return new(PlanLoadStatus.Unreadable, null, null, ex.Message); }
             return new(PlanLoadStatus.Loaded, checkpoint, Fingerprint(bytes), null);
         }
         catch (Exception ex) when (PlanJson.IsDataError(ex) || ex is IOException or UnauthorizedAccessException)
         { return new(PlanLoadStatus.Blocked, null, null, ex.Message); }
+    }
+    public async Task SetAsideUnreadable(ScopedId project)
+    {
+        var path = FileFor(project);
+        Directory.CreateDirectory(Root);
+        using var writer = new FileStream(path + ".writer.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        if ((await LoadAsync(project).ConfigureAwait(false)).Status != PlanLoadStatus.Unreadable)
+            throw new InvalidOperationException("読み込めない計画だけを別名で残せます。");
+        var kept = path + ".unreadable-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        // The backup moves first: a primary without its backup still loads as unreadable, while a lone backup reads as an interrupted save.
+        if (File.Exists(path + ".bak")) File.Move(path + ".bak", kept + ".bak");
+        File.Move(path, kept);
     }
     public async Task<PlanSaveResult> SaveAsync(PlanCheckpoint checkpoint, string? expectedFingerprint)
     {

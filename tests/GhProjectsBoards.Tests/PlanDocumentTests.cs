@@ -358,7 +358,7 @@ internal sealed class PlanDocumentTests
         Assert.That((await Reopen()).Document.State.Rows[0].Title, Is.EqualTo("Writer A"));
     }
 
-    [TestCase("json"), TestCase("version"), TestCase("scope"), TestCase("history"), TestCase("unknown property"), TestCase("personal days")]
+    [TestCase("json"), TestCase("version"), TestCase("scope"), TestCase("history"), TestCase("unknown property"), TestCase("personal days"), TestCase("earlier row format")]
     public async Task CorruptCheckpointIsPreservedAndCannotCreateANewSessionOverIt(string problem)
     {
         var store = new PlanStore(root); var session = await Create(store: store); await session.Execute(Edit(PlanField.Title, "Saved"), Today);
@@ -368,9 +368,14 @@ internal sealed class PlanDocumentTests
         if (problem == "history") node["undo"]![0]!["rows"]![0]!["after"]!["title"] = "Not current";
         if (problem == "unknown property") node["unexpected"] = true;
         if (problem == "personal days") node["document"]!["state"]!["settings"]!["people"]![0]!["daysOff"] = new JsonArray();
+        // A build from before #125/#127/#133 saved rows without these properties.
+        if (problem == "earlier row format")
+            foreach (var name in new[] { "milestoneTitle", "labels", "extraValues", "phase", "closeDate" })
+                node["document"]!["state"]!["rows"]![0]!.AsObject().Remove(name);
         var bad = problem == "json" ? "{broken" : node.ToJsonString(); await File.WriteAllTextAsync(store.FileFor(Project), bad);
         var opened = await PlanSession.OpenAsync(store, Project, Today);
-        Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Blocked)); Assert.That(opened.Session, Is.Null);
+        Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Unreadable)); Assert.That(opened.Session, Is.Null);
+        Assert.That(opened.Error, Is.Not.Empty);
         Assert.ThrowsAsync<InvalidOperationException>(async () => await PlanSession.CreateAsync(store, Initial(), Today));
         Assert.That(await File.ReadAllTextAsync(store.FileFor(Project)), Is.EqualTo(bad));
     }
@@ -382,6 +387,37 @@ internal sealed class PlanDocumentTests
         using var locked = new FileStream(store.FileFor(Project), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         var opened = await PlanSession.OpenAsync(store, Project, Today);
         Assert.That(opened.Status, Is.EqualTo(PlanLoadStatus.Blocked)); Assert.That(opened.Session, Is.Null);
+    }
+
+    [Test]
+    public async Task SettingAsideAnUnreadablePlanKeepsItsFilesAndAllowsAFreshPlan()
+    {
+        var store = new PlanStore(root); var session = await Create(store: store); await session.Execute(Edit(PlanField.Title, "Saved"), Today);
+        var path = store.FileFor(Project);
+        await File.WriteAllTextAsync(path, "{broken");
+        var backup = await File.ReadAllBytesAsync(path + ".bak");
+        await store.SetAsideUnreadable(Project);
+        Assert.That((await store.LoadAsync(Project)).Status, Is.EqualTo(PlanLoadStatus.Missing));
+        var kept = Directory.GetFiles(store.Root, Path.GetFileName(path) + ".unreadable-*");
+        Assert.That(kept.Select(f => f.EndsWith(".bak", StringComparison.Ordinal)), Is.EquivalentTo(new[] { false, true }));
+        Assert.That(await File.ReadAllTextAsync(kept.Single(f => !f.EndsWith(".bak", StringComparison.Ordinal))), Is.EqualTo("{broken"));
+        Assert.That(await File.ReadAllBytesAsync(kept.Single(f => f.EndsWith(".bak", StringComparison.Ordinal))), Is.EqualTo(backup));
+        var fresh = await PlanSession.CreateAsync(store, Initial(), Today);
+        sessions.Add(fresh);
+        Assert.That(fresh.Document.State.Rows[0].Title, Is.EqualTo(Initial().State.Rows[0].Title));
+        Assert.That((await store.LoadAsync(Project)).Status, Is.EqualTo(PlanLoadStatus.Loaded));
+    }
+
+    [TestCase("readable"), TestCase("missing"), TestCase("interrupted")]
+    public async Task OnlyAnUnreadablePlanCanBeSetAside(string state)
+    {
+        var store = new PlanStore(root);
+        if (state != "missing") await Create(store: store);
+        if (state == "interrupted") await File.WriteAllTextAsync(store.FileFor(Project) + ".unknown.tmp", "interrupted");
+        var before = Directory.Exists(store.Root) ? Directory.GetFiles(store.Root).Order().ToArray() : [];
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await store.SetAsideUnreadable(Project));
+        Assert.That(Directory.Exists(store.Root) ? Directory.GetFiles(store.Root).Where(f => !f.EndsWith(".writer.lock", StringComparison.Ordinal)).Order().ToArray() : [],
+            Is.EqualTo(before.Where(f => !f.EndsWith(".writer.lock", StringComparison.Ordinal)).ToArray()));
     }
 
     [Test]

@@ -19,6 +19,10 @@ internal static class PlanColumnMatching
 }
 
 internal sealed record PlanWorkspaceCatalog(int Version, ImmutableArray<ProjectChoice> Projects, ScopedId? Selected);
+internal sealed class PlanUnreadableException(ProjectChoice project, string? detail) : Exception(detail)
+{
+    public ProjectChoice Project { get; } = project;
+}
 internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
 {
     private readonly Dictionary<ScopedId, PlanSession> sessions = [];
@@ -126,6 +130,7 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         if (!sessions.TryGetValue(choice.Id, out var session))
         {
             var opened = await PlanSession.OpenAsync(store, choice.Id, today());
+            if (opened.Status == PlanLoadStatus.Unreadable) throw new PlanUnreadableException(choice, opened.Error);
             if (opened.Status == PlanLoadStatus.Blocked) throw new IOException(opened.Error);
             session = opened.Session;
             if (session is null)
@@ -161,6 +166,12 @@ internal sealed class PlanWorkspace(PlanStore store, Func<DateOnly> today)
         var candidate = catalog with { Projects = catalog.Projects.Where(p => p.Id != choice.Id).Append(choice).ToImmutableArray(), Selected = choice.Id };
         catalog = await SaveCatalog(candidate);
         Selected = choice; Session = session;
+    }
+    public async Task ReadAgain(ProjectChoice choice, CancellationToken token = default, IProgress<RemoteProgress>? progress = null)
+    {
+        if (Service is null || Context is null || choice.Id.Scope != Scope) throw new InvalidOperationException("接続先が一致しません。");
+        await store.SetAsideUnreadable(choice.Id);
+        await Open(choice, token, progress);
     }
     private static async Task<ImmutableDictionary<string, string>> ReadAssignablePeople(
         GhProjectsBoards.App.GitHub.GhConnectionService.OperationLease lease,

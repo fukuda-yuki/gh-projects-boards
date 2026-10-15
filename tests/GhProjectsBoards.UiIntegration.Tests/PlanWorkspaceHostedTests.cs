@@ -2228,6 +2228,53 @@ internal sealed partial class PlanWorkspaceHostedTests
     }
 
     [Test, Category("PlanWorkspaceReview")]
+    public async Task ConnectingToAnEarlierVersionsPlanOffersReadingTheProjectAgainFromGitHub()
+    {
+        await Open();
+        var choice = workspace.Selected!;
+        await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.True));
+        await Ui.Unmount(view, check: false);
+        var store = new PlanStore(root);
+        var path = store.FileFor(choice.Id);
+        // A build from before #125/#127/#133 saved rows without these properties.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        foreach (var name in new[] { "milestoneTitle", "labels", "extraValues", "phase", "closeDate" })
+            node["document"]!["state"]!["rows"]![0]!.AsObject().Remove(name);
+        var unreadable = node.ToJsonString();
+        await File.WriteAllTextAsync(path, unreadable);
+
+        workspace = new(store, () => readDay);
+        await Ui.Run(() => view = new(workspace, (_, host) => new(FakeExecutable, host,
+            new GhProcessRunner(new Dictionary<string, string?> { ["GH_CONFIG_DIR"] = root }))));
+        await Ui.Mount(view);
+        await Ui.Run(() => Ui.Click("PlanConnect"));
+        await Ui.Until(() => Ui.Find<InfoBar>("PlanOpenFailure").IsOpen || Ui.Find<TextBlock>("PlanError").Text.Length > 0);
+        await Ui.Ready<Button>("PlanReadAgain");
+        await Ui.Run(() => {
+            var failure = Ui.Find<InfoBar>("PlanOpenFailure");
+            Assert.That(failure.Title, Is.EqualTo("計画を開けませんでした"));
+            Assert.That(failure.Message, Does.Contain("「開発計画」").And.Contain("以前の版").And.Contain("未発行の変更は引き継がれません"));
+            Assert.That(((Button)failure.ActionButton).Content, Is.EqualTo("GitHub から読み直す"));
+            Assert.That(Ui.Find<InfoBar>("PlanSaveFailure").IsOpen, Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanError").Text, Is.Empty);
+            var others = Ui.Find<ListView>("AvailableProjects");
+            Assert.That(others.Items.Count, Is.EqualTo(2)); Assert.That(others.ActualHeight, Is.GreaterThan(0), "The other Projects stay reachable.");
+        });
+        Assert.That(await File.ReadAllTextAsync(path), Is.EqualTo(unreadable), "Showing the failure never changes the stored plan.");
+
+        await Ui.Run(() => Ui.Click("PlanReadAgain"));
+        await Ui.Until(() => workspace.Session is not null);
+        await Ui.Until(() => Ui.Tree(view).OfType<TextBox>().Any(t => t.Text == "設計"));
+        await Ui.Idle();
+        await Ui.Run(() => Assert.That(Ui.Find<InfoBar>("PlanOpenFailure").IsOpen, Is.False));
+        Assert.That(workspace.Selected!.Id, Is.EqualTo(choice.Id));
+        var kept = Directory.GetFiles(store.Root, Path.GetFileName(path) + ".unreadable-*").Where(f => !f.EndsWith(".bak", StringComparison.Ordinal));
+        Assert.That(await File.ReadAllTextAsync(kept.Single()), Is.EqualTo(unreadable));
+        Assert.That((await store.LoadAsync(choice.Id)).Status, Is.EqualTo(PlanLoadStatus.Loaded));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PlanWorkspaceReview")]
     public async Task FailedCatalogSaveKeepsSettingsAndSelectionOnTheOriginalProject()
     {
         await Open();

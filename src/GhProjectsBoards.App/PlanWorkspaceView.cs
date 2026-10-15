@@ -29,6 +29,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private readonly InfoBar refreshFailure = FailureBar("PlanRefreshFailure", "最新の情報に更新できませんでした");
     private readonly InfoBar publishFailure = FailureBar("PlanPublishFailure", "発行できませんでした");
     private readonly InfoBar saveFailure = FailureBar("PlanSaveFailure", "保存できませんでした");
+    private readonly InfoBar openFailure = FailureBar("PlanOpenFailure", "計画を開けませんでした");
+    private ProjectChoice? unreadableProject;
     private readonly Flyout projectFlyout = new() { AreOpenCloseAnimationsEnabled = false };
     private readonly Button projectPicker = Id(new Button(), "PlanProjectPicker");
     private readonly TextBlock projectMetadata = new();
@@ -201,10 +203,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
         failures.Children.Add(refreshResult);
         AutomationProperties.SetLiveSetting(csvExportResult, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         failures.Children.Add(csvExportResult);
-        failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
+        openFailure.ActionButton = Button("GitHub から読み直す", "PlanReadAgain", () => OpenProject(unreadableProject!, readAgain: true));
+        failures.Children.Add(refreshFailure); failures.Children.Add(publishFailure); failures.Children.Add(openFailure); failures.Children.Add(saveFailure); failures.Children.Add(sheetFailureHost);
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
+            openFailure.IsOpen = false;
             await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
             RefreshLists(); RenderTasks();
             if (workspace.DiscoveryWarning is { } warning) error.Text = warning;
@@ -379,7 +383,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
             {
                 if (ex is OperationCanceledException && cancellation.IsCancellationRequested) return;
                 RefreshLists();
-                if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show("connection"); }
+                if (workspace.Session is null) { taskArea.Children.Clear(); sheet = null; unpublished.Text = ""; Show(ex is PlanUnreadableException && workspace.Context is not null ? "chooser" : "connection"); }
+                if (ex is PlanUnreadableException unreadable) { ShowUnreadable(unreadable); return; }
                 if (ex is IOException or UnauthorizedAccessException) { ShowSaveFailure(ex.Message); return; }
                 error.Text = ex is DiscoveryException ? "プロジェクトを取得できません。接続先とURLを確認してください。" : ex is FormatException ? "日付は yyyy-MM-dd または yyyy/M/d で入力してください。" : ex.Message;
             }
@@ -389,6 +394,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private static InfoBar FailureBar(string id, string title) => Id(new InfoBar {
         Title = title, Severity = InfoBarSeverity.Error, IsClosable = false, IsOpen = false
     }, id);
+    private void ShowUnreadable(PlanUnreadableException unreadable)
+    {
+        unreadableProject = unreadable.Project;
+        openFailure.Message = $"このPCに保存されている「{unreadable.Project.Title}」の計画を読み込めません。以前の版のアプリで保存されたか、ファイルが壊れています。"
+            + "「GitHub から読み直す」を選ぶと、保存されている計画を別名で残し、GitHub の内容からプロジェクトを開き直します。このPCの未発行の変更は引き継がれません。"
+            + Environment.NewLine + "詳細: " + unreadable.Message;
+        openFailure.IsOpen = true;
+    }
     private void ShowSaveFailure(string message)
     {
         sheet?.ClearSaveFailure();
@@ -483,7 +496,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         sheet?.SetRemoteBusy(busy);
         if (summaryView is not null) summaryView.IsEnabled = !busy;
         settingsScroll.IsEnabled = settingsBack.IsEnabled = !busy;
-        foreach (var bar in new[] { refreshFailure, publishFailure, saveFailure, sheet?.SaveFailure })
+        foreach (var bar in new[] { refreshFailure, publishFailure, openFailure, saveFailure, sheet?.SaveFailure })
             if (bar?.ActionButton is Button retry) retry.IsEnabled = !busy;
     }
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
