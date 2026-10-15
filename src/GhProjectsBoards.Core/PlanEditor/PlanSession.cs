@@ -47,6 +47,16 @@ internal sealed class PlanSession
         lastSave = new(true, PlanSaveFailure.None, null, fingerprint);
     }
     public PlanDocument Document { get { lock (gate) return checkpoint.Document; } }
+    internal (PlanDocument Document, long Revision) CaptureRevision()
+    { lock (gate) return (checkpoint.Document, checkpoint.Revision); }
+    internal Task<PlanSaveResult> ExecuteAtRevision(EditPlanCells command, DateOnly today, long revision, string staleMessage)
+    {
+        // Keep the check and existing command on the same gate; Undo back to equal values is still stale.
+        lock (gate) {
+            if (checkpoint.Revision != revision) throw new InvalidOperationException(staleMessage);
+            return Execute(command, today);
+        }
+    }
     public int UndoCount { get { lock (gate) return checkpoint.Undo.Length; } }
     public int RedoCount { get { lock (gate) return checkpoint.Redo.Length; } }
     public static async Task<PlanSession> CreateAsync(PlanStore store, PlanDocument document, DateOnly today)

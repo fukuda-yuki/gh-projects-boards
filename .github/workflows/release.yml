@@ -82,7 +82,7 @@ jobs:
             Install-Module Pester -RequiredVersion $pester -Scope CurrentUser -Force
           }
           Import-Module Pester -RequiredVersion $pester
-          $result = Invoke-Pester -Path scripts/Test-ReleasePackage.Tests.ps1 -PassThru -Output Detailed
+          $result = Invoke-Pester -Path scripts/Test-ReleasePackage.Tests.ps1,scripts/Copilot-RuntimeAudit.Tests.ps1 -PassThru -Output Detailed
           if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) { throw 'Package verification tests failed.' }
       - name: Publish self-contained Windows x64 package and audit dependencies
         run: ./scripts/Publish-Internal.ps1 -ArtifactsRoot "$env:RUNNER_TEMP/ghpb-package" -Version $env:RELEASE_VERSION

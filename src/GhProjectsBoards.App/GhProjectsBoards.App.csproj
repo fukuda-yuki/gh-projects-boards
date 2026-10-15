@@ -21,6 +21,8 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.5.1]" />
     <!-- Unused Widgets component assets have different redistribution terms from the Runtime MSIX. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.Widgets" Version="[2.0.5]" ExcludeAssets="all" />
+    <!-- Acquires the pinned Copilot CLI runtime for this RID beside the executable. -->
+    <PackageReference Include="GitHub.Copilot.SDK" Version="[1.0.22]" />
     <ProjectReference Include="../GhProjectsBoards.Core/GhProjectsBoards.Core.csproj" />
   </ItemGroup>
 </Project>

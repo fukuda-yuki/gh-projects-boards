@@ -208,6 +208,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
+            await EndAssist(); ClearAssistMessages();
             openFailure.IsOpen = false;
             await workspace.Connect(this.factory(executable.Text, host.Text), OperationToken);
             RefreshLists(); RenderTasks();
@@ -248,7 +249,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         cardContent.Children.Add(failures); cardContent.Children.Add(surfaceHost); Grid.SetRow(surfaceHost, 1);
         InitializeBusy(cardContent);
         var card = Id(new Border { Style = (Style)Application.Current.Resources["WorkspaceCardStyle"], Child = cardContent }, "PlanWorkCard");
-        root.Children.Add(card); Grid.SetRow(card, 3);
+        var work = new Grid();
+        work.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        work.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+        work.Children.Add(card); InitializeAssist(work, titleCommands);
+        root.Children.Add(work); Grid.SetRow(work, 3);
         var statusContent = new Grid();
         statusContent.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         statusContent.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
@@ -277,6 +282,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             WorkspaceTitleBar.LeftHeader = null; WorkspaceTitleBar.Content = null; WorkspaceTitleBar.RightHeader = null;
             if (captionRoot is { } oldRoot) oldRoot.Changed -= CaptionRootChanged;
             captionRoot = null;
+            _ = EndAssist();
             if (projectFlyout.IsOpen) projectFlyout.Hide(); ClearSettingsInputProblem(); closing = true; settingsGeneration++; operationCancellation?.Cancel();
         };
         Content = root;
@@ -320,6 +326,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void UpdateStatus()
     {
+        UpdateAssistSelection(); UpdateAssistProposals();
         UpdateCommandAvailability();
         ClearObsoletePublishResult();
         if (workspace.Session is not { } session) return;
@@ -358,6 +365,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private static T Id<T>(T control, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(control, id); return control; }
     private static TextBlock Label(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap };
+    private static TextBlock SettingsHeading(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap,
+        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
     private Button Button(string text, string id, Func<Task> action, bool commitPending = true)
     {
         var button = Id(new Button { Content = text }, id);
@@ -502,7 +511,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
-        closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide(); operationCancellation?.Cancel(); await operation;
+        closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide();
+        // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
+        operationCancellation?.Cancel();
+        await EndAssist();
+        closing = true; await operation;
         try { await CommitPending(); await workspace.Flush(); return true; }
         catch (Exception ex)
         {
@@ -516,7 +529,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     private void Show(string page)
     {
         if (page != "tasks") sheet?.CancelPendingFilter();
-        currentPage = page; SyncTabs();
+        currentPage = page; SyncTabs(); UpdateAssistVisibility();
         openPublish.Style = page == "publish" ? null : (Style)Application.Current.Resources["AccentButtonStyle"];
         legend.Visibility = page == "tasks" ? Visibility.Visible : Visibility.Collapsed;
         summaryArea.Visibility = page == "summary" ? Visibility.Visible : Visibility.Collapsed;
@@ -553,6 +566,9 @@ internal sealed partial class PlanWorkspaceView : UserControl
     }
     private void RenderTasks()
     {
+        if (assistSession is not null && (assistSession != workspace.Session || !ReferenceEquals(assistContext, workspace.Context))) {
+            _ = EndAssist(); ClearAssistMessages();
+        }
         if (workspace.Session is not { } session) return;
         title.Text = workspace.Selected!.Title;
         if (sheet?.Session != session)
@@ -565,6 +581,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                         command.Focus(FocusState.Keyboard);
                 };
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
+                next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) UpdateAssistSelection(); };
                 next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { UpdateCommandAvailability(); ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
                 sheets.Add(session.Document.Project, next);
             }
@@ -619,7 +636,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         {
             var generation = ++settingsGeneration; pendingSettings.Clear(); settingsTextInputs.Clear(); ClearSettingsInputProblem(); settings.Children.Clear();
             var value = session.Document.State.Settings;
-            settings.Children.Add(Label("GitHub のフィールド"));
+            settings.Children.Add(SettingsHeading("GitHub のフィールド"));
             foreach (var role in PlanColumnMatching.Roles)
             {
                 var choices = new[] { new PlanColumnDefinition("", "未設定", role.Type) }.Concat(session.Document.Baseline.Columns.Where(c => c.DataType == role.Type)).ToArray();
@@ -647,7 +664,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Succeeded) throw new InvalidOperationException(result.Error);
                 await workspace.Refresh(OperationToken); RenderTasks(); RenderSettings();
             }));
-            settings.Children.Add(Label("カレンダー"));
+            settings.Children.Add(SettingsHeading("カレンダー"));
             settings.Children.Add(Label("月–金  09:00–13:00 / 14:00–18:00"));
             var holidays = value.ImportedHolidays?.ToPreset() ?? PlanningContract.BundledHolidays();
             var holidayList = new Expander { Header = $"日本の祝日 {holidays.FirstYear}–{holidays.LastYear}", Content =
@@ -660,7 +677,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             }));
             settings.Children.Add(DateListSetting("会社休日", "PlanCompanyDaysOff", () => session.Document.State.Settings.CompanyDaysOff,
                 dates => ChangeSettings(s => s with { CompanyDaysOff = dates })));
-            settings.Children.Add(Label("担当者"));
+            settings.Children.Add(SettingsHeading("担当者"));
             var people = workspace.People;
             foreach (var person in people)
             {
@@ -698,14 +715,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 line.Children.Add(allowance);
                 settings.Children.Add(line);
             }
-            settings.Children.Add(Label("期間"));
+            settings.Children.Add(SettingsHeading("期間"));
             settings.Children.Add(TextSetting("開始日", "PlanProjectStart", value.ProjectStart?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectStart = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
                 () => workspace.Session!.Document.State.Settings.ProjectStart?.ToString("yyyy-MM-dd") ?? ""));
             settings.Children.Add(TextSetting("終了日", "PlanProjectEnd", value.ProjectEnd?.ToString("yyyy-MM-dd") ?? "",
                 text => ChangeSettings(s => s with { ProjectEnd = string.IsNullOrWhiteSpace(text) ? null : PlanDateInput.Parse(text.Trim()) }),
                 () => workspace.Session!.Document.State.Settings.ProjectEnd?.ToString("yyyy-MM-dd") ?? ""));
-            settings.Children.Add(Label("工程"));
+            settings.Children.Add(SettingsHeading("工程"));
             var phaseDetails = Id(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanPhaseOptions");
             var phaseTargets = new StackPanel { Spacing = 4 };
             void ShowPhases()
@@ -764,6 +781,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 if (!result.Warnings.IsEmpty) error.Text = string.Join("\n", result.Warnings);
             }));
             settings.Children.Add(files);
+            RenderAssistSettings();
             settings.Children.Add(Id(Label($"計画対象外: ドラフト {session.Document.Sync.DraftCount} 件・プルリクエスト {session.Document.Sync.PullRequestCount} 件・参照できない項目 {session.Document.Sync.InaccessibleCount} 件"), "PlanExcludedCounts"));
         }
         finally { rendering = false; }
@@ -773,7 +791,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var heading = new Grid { ColumnSpacing = 12 };
         heading.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         heading.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        columnSettingsHeading = Id(Label("計画シートの列"), "PlanColumnSettings");
+        columnSettingsHeading = Id(SettingsHeading("計画シートの列"), "PlanColumnSettings");
         columnSettingsHeading.VerticalAlignment = VerticalAlignment.Center;
         heading.Children.Add(columnSettingsHeading);
         var reset = Button("既定に戻す", "PlanColumnReset", async () => { await ChangeSettings(s => s with { SheetColumns = [] }); RenderSettings(); });

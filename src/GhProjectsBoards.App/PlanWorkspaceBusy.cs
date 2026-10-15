@@ -141,6 +141,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private async Task OpenProject(ProjectChoice? choice, string? address = null, bool readAgain = false)
     {
+        await EndAssist(); ClearAssistMessages();
         openFailure.IsOpen = false;
         var previousPage = currentPage;
         title.Text = choice?.Title ?? "プロジェクトを開いています";

@@ -10,7 +10,9 @@ Describe 'Extracted release package' {
         $script:Root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory $script:Root | Out-Null
         $files = foreach ($name in @('GhProjectsBoards.App.exe', 'GhProjectsBoards.App.dll', 'coreclr.dll', 'hostpolicy.dll',
-            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'manual/images/01-help.png', 'templates/new-tasks.csv', 'notices/license.txt')) {
+            'Microsoft.UI.Xaml.dll', 'GhProjectsBoards.App.pri', 'App.xbf', '使い方.md', 'マニュアル.md', 'manual/images/01-help.png', 'templates/new-tasks.csv', 'notices/license.txt',
+            'runtimes/win-x64/native/copilot-runtime.exe', 'runtimes/win-x64/native/runtime.node',
+            'notices/GitHub.Copilot.CLI-1.0.98-LICENSE.md', 'notices/GitHub.Copilot.SDK-1.0.22-MIT.txt')) {
             $path = Join-Path $script:Root $name
             New-Item -ItemType Directory (Split-Path $path -Parent) -Force | Out-Null
             Set-Content -LiteralPath $path 'fixture payload'
@@ -36,7 +38,9 @@ Describe 'Extracted release package' {
         { & $script:Verify $script:Root abc123 '1.2.3-rc.1' } | Should -Throw '*Unexpected payload*'
     }
     It 'rejects a package missing <Required> even if the manifest agrees' -TestCases @(
-        @{ Required = 'coreclr.dll' }, @{ Required = 'マニュアル.md' }, @{ Required = 'manual/images/01-help.png' }
+        @{ Required = 'coreclr.dll' }, @{ Required = 'マニュアル.md' }, @{ Required = 'manual/images/01-help.png' },
+        @{ Required = 'runtimes/win-x64/native/copilot-runtime.exe' }, @{ Required = 'runtimes/win-x64/native/runtime.node' },
+        @{ Required = 'notices/GitHub.Copilot.CLI-1.0.98-LICENSE.md' }, @{ Required = 'notices/GitHub.Copilot.SDK-1.0.22-MIT.txt' }
     ) {
         param($Required)
         Remove-Item (Join-Path $script:Root $Required)

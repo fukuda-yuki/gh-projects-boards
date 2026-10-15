@@ -105,7 +105,7 @@ The default UI selection excludes the infrastructure, native-input and performan
 
 ## Opt-in runs
 
-Release infrastructure is checked with `node --test scripts/release-policy.test.cjs` and `Invoke-Pester scripts/Test-ReleasePackage.Tests.ps1` (Pester 5.9.0). The [release workflow](../.github/workflows/release.yml) also builds the audited ZIP, verifies its extracted contents, and runs `Test-E2E.ps1 -AppPath <extracted executable>` against fake gh. This verifies the distributable on a hosted Windows runner, not a clean company PC, live GitHub or physical IME. The normal E2E invocation continues to use the development build.
+Release infrastructure is checked with `node --test scripts/release-policy.test.cjs` and `Invoke-Pester -Path scripts/Test-ReleasePackage.Tests.ps1,scripts/Copilot-RuntimeAudit.Tests.ps1` (Pester 5.9.0). The latter checks exact Copilot archive provenance and rejects changed archives, cached extractions and payloads, including unknown non-binary runtime assets. The [release workflow](../.github/workflows/release.yml) also builds the audited ZIP, verifies its extracted contents, and runs `Test-E2E.ps1 -AppPath <extracted executable>` against fake gh. This verifies the distributable on a hosted Windows runner, not a clean company PC, live GitHub or physical IME. The normal E2E invocation continues to use the development build.
 
 Each needs a stated reason and separate evidence.
 
@@ -117,6 +117,7 @@ Each needs a stated reason and separate evidence.
 | Plan sheet frame timing and Core/storage timing | See [performance measurement](../docs/performance.md) | Idle machine |
 | Live GitHub connection and Project read | `./scripts/Test-LiveGitHub.ps1`, `./scripts/Test-ProjectRead.ps1` | Sandbox authorization |
 | Live publisher proof | Below | Sandbox authorization |
+| Live AI assist against OpenCode Go | `dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter 'FullyQualifiedName~AssistLiveTests'` | Explicit `LiveAssist` fixture; `OPENCODE_GO_API_KEY`, `OPENCODE_GO_BASE_URL` and `GHPB_ASSIST_RUNTIME_PATH` (the cached 1.0.98 stdio wrapper beside `runtime.node`) in the process environment. Never print the key. Uses only the offline evaluation plan and does not publish. Excluded from ordinary runs by NUnit `Explicit`. |
 
 ### Live GitHub
 
