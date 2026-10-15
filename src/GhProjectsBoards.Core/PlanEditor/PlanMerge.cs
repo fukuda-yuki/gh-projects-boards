@@ -146,15 +146,19 @@ internal static class PlanMerge
             local[row.Identity] = local[row.Identity] with { ExtraValues = local[row.Identity].ExtraValues.RemoveRange(removed.Keys) };
         }
         // Compare order only among identities present in all three snapshots; membership is merged separately.
-        var shared = baseline.Keys.Where(incoming.ContainsKey).ToHashSet();
-        string Order(IEnumerable<PlanRow> rows) => JsonSerializer.Serialize(rows.Where(r => shared.Contains(r.Identity)).Select(r => r.Identity));
+        var localIds = document.State.Rows.Select(r => r.Identity).ToHashSet();
+        var shared = baseline.Keys.Where(id => incoming.ContainsKey(id) && localIds.Contains(id)).ToHashSet();
+        string[] Order(IEnumerable<PlanRow> rows) => rows.Where(r => shared.Contains(r.Identity)).Select(r => r.Identity).ToArray();
         var bo = Order(document.Baseline.Rows); var lo = Order(document.State.Rows); var ro = Order(remote.Rows);
+        var localChanged = PlanOrder.Moved(bo, lo).Count > 0;
+        var remoteChanged = PlanOrder.Moved(bo, ro).Count > 0;
+        var ordersDiffer = PlanOrder.Moved(lo, ro).Count > 0;
         var priorOrder = document.Sync.Conflicts.FirstOrDefault(c => c.Field == PlanField.Order);
-        var adoptOrder = lo == bo || lo == ro;
-        if (lo != ro && (priorOrder is not null || lo != bo && ro != bo))
+        var adoptOrder = !localChanged || !ordersDiffer;
+        if (ordersDiffer && (priorOrder is not null || localChanged && remoteChanged))
         {
             adoptOrder = false;
-            conflicts.Add(new("", PlanField.Order, priorOrder?.Baseline ?? bo, lo, ro));
+            conflicts.Add(new("", PlanField.Order, priorOrder?.Baseline ?? JsonSerializer.Serialize(bo), JsonSerializer.Serialize(lo), JsonSerializer.Serialize(ro)));
         }
         var order = MergeOrder((adoptOrder ? remote.Rows : document.State.Rows).Select(r => r.Identity),
             (adoptOrder ? document.State.Rows : remote.Rows).Select(r => r.Identity));

@@ -108,6 +108,8 @@ internal sealed partial class PlanSheetView
     internal string RemoteProblem(string identity) => PlanSheetText.RemoteProblem(Session.Document.Sync, identity);
     private void UpdateReason()
     {
+        selection.MaxWidth = double.PositiveInfinity;
+        ToolTipService.SetToolTip(selection, null);
         selection.Text = PlanIds.TryGetValue(selected, out var number) ? $"ID {number}" : "";
         selectedTitle.Text = Rows.GetValueOrDefault(selected)?.Title ?? "";
         ToolTipService.SetToolTip(selectedTitle, selectedTitle.Text);
@@ -196,12 +198,13 @@ internal sealed partial class PlanSheetView
         FocusSelected();
     }
     private (string Identity, string Field)? requestedFocus;
-    internal void FocusSelected()
+    internal void FocusSelected() => FocusCell(selected, selectedField);
+    private void FocusCell(string identity, string field, bool scrollIntoView = true)
     {
-        requestedFocus = (selected, selectedField);
+        requestedFocus = (identity, field);
         List.LayoutUpdated -= FocusAfterLayout;
         List.LayoutUpdated += FocusAfterLayout;
-        List.ScrollIntoView(selected);
+        if (scrollIntoView) List.ScrollIntoView(identity);
         TryRestoreFocus();
     }
     private void FocusAfterLayout(object? sender, object args) => TryRestoreFocus();
@@ -443,11 +446,21 @@ internal sealed partial class PlanSheetView
     {
         var rows = RangeRows(Range); Check(await Session.Execute(new IndentPlanRows(rows.ToImmutableArray(), outdent), Today)); Refresh();
     }
-    private sealed record Drag(bool Fill, string Source, string Field, uint PointerId, PlanState State)
+    private sealed record Drag(bool Fill, string Source, string Field, uint PointerId, PlanState InitialState)
     {
+        internal PlanState State = InitialState;
+        internal bool Move, Ready;
+        internal ImmutableArray<string> Targets = [];
+        internal PlanOutlineGaps? Gaps;
+        internal PlanOutlineGap? Destination;
+        internal string? MoveReason;
+        internal string MoveScope = "";
+        internal int MoveCount;
         internal Point Position;
         internal string End = Source;
         internal bool Moved;
+        // A press inside the selected rows keeps them for a drag; a plain click then narrows to the pressed row.
+        internal bool Narrow;
     }
     private Drag? drag;
     private UIElement? capture;
@@ -503,12 +516,18 @@ internal sealed partial class PlanSheetView
     private void UpdateDrag(Point point)
     {
         if (drag is not { } operation) return;
+        if (operation.Move && !operation.Ready) return;
         if (!ReferenceEquals(operation.State, Session.Document.State)) { CancelDrag(); return; }
         if (!operation.Moved && Math.Abs(point.Y - operation.Position.Y) < 4 && Math.Abs(point.X - operation.Position.X) < 4) return;
         operation.Moved = true; operation.Position = point;
         var scroll = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
         if (scroll is null) return;
         var top = List.TransformToVisual(this).TransformPoint(new()).Y;
+        if (operation.Move) {
+            var gap = (point.Y - top + scroll.VerticalOffset) / RowHeight;
+            if (point.Y < top || point.Y > top + List.ActualHeight || point.X < 0 || point.X > SheetViewport) gap = -1;
+            UpdateMoveDrag(operation, gap, scroll.VerticalOffset); return;
+        }
         var index = Math.Clamp((int)((point.Y - top + scroll.VerticalOffset) / RowHeight), 0, RowIds.Count - 1);
         operation.End = RowIds[index];
         if (operation.Fill)
@@ -536,7 +555,17 @@ internal sealed partial class PlanSheetView
         UpdateDrag(args.GetCurrentPoint(this).Position);
         var valid = ReferenceEquals(operation.State, Session.Document.State);
         drag = null; dragScroll.Stop(); capture?.ReleasePointerCaptures(); capture = null; args.Handled = true;
-        if (valid && operation.Fill && operation.Moved)
+        moveIndicator.Visibility = Visibility.Collapsed;
+        if (operation.Move && !disposed) UpdateReason();
+        if (operation.Move && operation.Narrow && !operation.Moved && !disposed) SelectWholeRow(operation.Source, false);
+        if (valid && operation.Move && operation.Moved && operation.Destination is { } destination) {
+            await Run(async () => {
+                await CommitPending();
+                if (MoveUnavailable is { } reason) throw new ArgumentException(reason);
+                if (ReferenceEquals(operation.State, Session.Document.State)) await ExecuteOutline(new MovePlanSubtrees(operation.Targets, destination.Before));
+            }, "Move outline");
+        }
+        else if (valid && operation.Fill && operation.Moved)
         {
             await Run(async () => {
                 var range = Range; var targets = RangeRows(range); RequireNoPending(targets, [operation.Field]);
@@ -549,6 +578,8 @@ internal sealed partial class PlanSheetView
     {
         if (drag is not { } operation) return;
         drag = null; dragScroll.Stop(); capture?.ReleasePointerCaptures(); capture = null;
+        moveIndicator.Visibility = Visibility.Collapsed;
+        if (operation.Move && !disposed) UpdateReason();
         if (operation.Fill && !disposed) Select(operation.Source, operation.Field, false);
     }
 }

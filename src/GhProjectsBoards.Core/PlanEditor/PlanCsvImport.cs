@@ -133,7 +133,7 @@ internal static class PlanCsvImport
             if (errors.Count == 0) errors.Add(new(1, ex.Message));
         }
         catch (ArgumentException ex) { errors.Add(new(1, ex.Message)); }
-        return errors.Count > 0 ? Invalid() : new([], command, duplicate);
+        return errors.Count > 0 ? Invalid() : new([], command with { Rows = new PlanOutline(command.Rows).Arrange() }, duplicate);
     }
     private static IEnumerable<string> Split(string value) => value.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 }

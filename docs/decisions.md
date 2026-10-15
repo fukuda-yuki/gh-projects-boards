@@ -152,7 +152,7 @@ Use an immutable baseline/current document and bounded before/after operation pa
 
 Autosave runs in one background loop and coalesces pending revisions while retaining their operation history. Memory becomes current before disk completion; the save task and explicit flush own durability. Atomic replacement follows the existing stores' mechanics, with a per-Project lock and expected file fingerprint to refuse competing or corrupt source replacement. Keep failed state in memory and surface only actionable save failures to the UI.
 
-Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout. Row order and hierarchy are independent: moving selected rows preserves parent identities; indent/outdent changes parent identities without an implicit reorder. Core commands apply prepared inputs; CSV parsing, network refresh/publish and UI orchestration remain at their respective boundaries.
+Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout. Moving subtrees preserves parent identities; indent/outdent changes parent identities. Outdent also moves the selected subtrees after the former parent's complete subtree, as specified in #207. Opening and refresh never implicitly repair hierarchy order. Core commands apply prepared inputs; CSV parsing, network refresh/publish and UI orchestration remain at their respective boundaries.
 
 ## CSV import identity and validation (#82)
 
@@ -216,3 +216,7 @@ Use the .NET Copilot SDK in the existing C# Core rather than add a Rust boundary
 Copilot authentication uses the runtime's `gh-cli` fallback, verified against the connected host and viewer before sending plan data; the app never obtains a GitHub token. BYOK stores its key only in user-scoped Windows Credential Manager and passes it to provider configuration in memory. Non-secret settings are app-wide. Sent data is limited to PMO text, an optional selected row identity, the listed task/schedule/summary fields and matching manual Markdown; no Issue bodies or comments are loaded. Runtime session state is isolated and removed when the conversation ends, with startup cleanup of leftovers.
 
 The PMO reviews proposals and applies one existing `EditPlanCells` operation. Reusing that command preserves sheet validation, unpublished changes, autosave and operation-level Undo without an agent write path. Any intervening document revision invalidates the proposal. Publication stays an explicit ordinary review, and all planning remains usable with assist off or failed.
+
+## One row order and explicit outline repair (#207)
+
+Project item order remains authoritative. Opening, refresh and reset never normalize it implicitly. Local commands preserve contiguous outlines; explicit undoable **階層順に並べ替え** repairs scattered hierarchies in stable parent-first order. External parents are top-level for traversal. A separately sorted display (option a) is rejected because displayed IDs, export and publish would disagree. No Order ID column is introduced. Moves reorder siblings; indent/outdent own reparenting.

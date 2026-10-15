@@ -97,7 +97,7 @@ internal sealed partial class PlanSheetView : Grid
     private HashSet<DateOnly> nonWorkingDates = [];
     private Dictionary<string, DateOnly?> publishedEnds = [];
     internal DateOnly? PublishedEnd(string identity) => publishedEnds.GetValueOrDefault(identity);
-    private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetSelection");
+    private readonly TextBlock selection = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush"), TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis }, "PlanSheetSelection");
     private readonly TextBlock selectedTitle = new() { MaxWidth = 272, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock slip = Id(new TextBlock { Foreground = Brush("SystemFillColorCriticalBrush") }, "PlanSheetSlip");
     private readonly TextBlock latenessDetail = Id(new TextBlock { Foreground = Brush("TextFillColorSecondaryBrush") }, "PlanSheetLatenessDetail");
@@ -153,6 +153,12 @@ internal sealed partial class PlanSheetView : Grid
             button.KeyboardAcceleratorTextOverride = shortcut;
             commands.PrimaryCommands.Remove(button); commands.SecondaryCommands.Add(button); return button;
         }
+        moveUp = Overflow("上へ移動", "PlanSheetMoveUp", Symbol.Up, () => MoveOneSibling(false), "Alt+Shift+↑");
+        moveDown = Overflow("下へ移動", "PlanSheetMoveDown", Symbol.Download, () => MoveOneSibling(true), "Alt+Shift+↓");
+        moveUp.Icon = CommandIcon("M7,15 V4 L3,8 L2,7 L8,1 L14,7 L13,8 L9,4 V15 Z");
+        moveDown.Icon = CommandIcon("M7,1 V12 L3,8 L2,9 L8,15 L14,9 L13,8 L9,12 V1 Z");
+        arrangeOutline = Overflow("階層順に並べ替え", "PlanSheetArrangeOutline", Symbol.Sort, ArrangeOutline);
+        commands.SecondaryCommands.Add(new AppBarSeparator());
         Overflow("コピー", "PlanSheetCopy", Symbol.Copy, () => KeyboardCommand(VirtualKey.C), "Ctrl+C", queued: false);
         Overflow("貼り付け", "PlanSheetPaste", Symbol.Paste, () => KeyboardCommand(VirtualKey.V), "Ctrl+V", queued: false);
         Overflow("下へコピー", "PlanSheetFillDown", Symbol.Download, () => Fill(PlanOperationKind.CtrlD), "Ctrl+D").Icon = CommandIcon("F0 M2,1 H14 V5 H2 Z M3,2 V4 H13 V2 Z M7,7 H9 V11 H12 L8,15 L4,11 H7 Z");
@@ -217,6 +223,8 @@ internal sealed partial class PlanSheetView : Grid
         Children.Add(chartBackground); SetRow(chartBackground, 4);
         Children.Add(List); SetRow(List, 4);
         Children.Add(chartStatus); SetRow(chartStatus, 4);
+        moveIndicator.Background = Brush("SheetSelectionStrokeBrush");
+        Children.Add(moveIndicator); SetRow(moveIndicator, 4);
         List.SizeChanged += (_, _) => { RenderTimelineHeader(); if (Problems.Count > 0) UpdateInputProblem(); };
         List.Loaded += (_, _) => {
             var current = Descendants(List).OfType<ScrollViewer>().FirstOrDefault();
@@ -451,8 +459,16 @@ internal sealed partial class PlanSheetView : Grid
     private async Task ChangeHistory(bool redo)
     {
         await CommitPending();
+        var before = Session.Document.State.Rows.Select(r => r.Identity).ToArray();
         Check(redo ? await Session.Redo(Today) : await Session.Undo(Today));
-        Refresh();
+        var after = Session.Document.State.Rows.Select(r => r.Identity).ToArray();
+        if (!before.SequenceEqual(after) && before.Length == after.Length && before.ToHashSet().SetEquals(after)) {
+            var active = selected;
+            RefreshOrderKeepingViewport(() => {
+                Refresh();
+                if (RowIndexes.ContainsKey(active)) FocusCell(active, selectedField, false);
+            }, active);
+        } else Refresh();
     }
     private async Task CommitPending()
     {

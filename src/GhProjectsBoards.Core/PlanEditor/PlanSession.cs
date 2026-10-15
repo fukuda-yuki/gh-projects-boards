@@ -93,6 +93,7 @@ internal sealed class PlanSession
             else PlanOperations.Require(remoteOperation && checkpoint.Document.Sync.Publish is null, "列設定を変更できません。");
             var document = checkpoint.Document;
             var (state, kind) = PlanOperations.Apply(document, command, today);
+            if (command is MovePlanSubtrees or ArrangePlanOutline && state.Rows.SequenceEqual(document.State.Rows)) return CurrentSave();
             var priorSettings = checkpoint.Document.State.Settings;
             var mappingOnly = command is ReplacePlanSettings && PlanOperations.SettingsEqual(priorSettings, state.Settings with { PhaseMilestones = priorSettings.PhaseMilestones, SheetColumns = priorSettings.SheetColumns });
             // Column presentation and milestone targets do not change the held schedule.

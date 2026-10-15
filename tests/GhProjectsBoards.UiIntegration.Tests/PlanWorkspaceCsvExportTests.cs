@@ -18,7 +18,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(async () => {
             var session = workspace.Session!;
             var parent = PlanRow.New("要求事項", "acme/repo");
-            await session.Execute(new InsertPlanRows([parent, PlanRow.New("隠れた子", "acme/repo") with { Parent = parent.Identity }]), readDay);
+            await session.Execute(new InsertPlanRows([parent, PlanRow.New("隠れた子", "acme/repo") with { Parent = parent.Identity }], Kind: PlanOperationKind.CsvImport), readDay);
             var sheet = Ui.Tree(view).OfType<PlanSheetView>().Single();
             sheet.Refresh();
             view.PickFile = purpose => { Assert.That(purpose, Is.EqualTo("csv-export")); return Task.FromResult<string?>(path); };

@@ -71,6 +71,30 @@ internal sealed class PlanPublishReviewHostedTests
         finally { Environment.SetEnvironmentVariable("GHPB_TODAY", previousToday); Ui.EndTest(); }
     }
     [Test, Category("PublishOutcome")]
+    public async Task OrderReviewNamesOnlyTheMovedRowsAndCountsTheirTasks()
+    {
+        // Published dates leave the order as the only difference.
+        readDay = new(2026, 10, 6);
+        await Open(6, readDay);
+        await Ui.Run(async () => {
+            await workspace.Session!.Execute(new MovePlanRows(["I1", "I2"], null), Today);
+            Ui.Click("PlanPublish");
+        });
+        await Ui.Until(() => Ui.Find<ListView>("PlanPublishLines").ContainerFromIndex(1) is ListViewItem { IsLoaded: true });
+        await Ui.Run(() => {
+            var list = Ui.Find<ListView>("PlanPublishLines");
+            Assert.That(list.Items.Count, Is.EqualTo(2));
+            var names = Enumerable.Range(0, 2).Select(i =>
+                new Microsoft.UI.Xaml.Automation.Peers.ListViewItemAutomationPeer((ListViewItem)list.ContainerFromIndex(i)).GetName()).ToArray();
+            Assert.That(names[0], Does.Contain("要求タスク 1").And.Contain("表示順  1 → 5"));
+            Assert.That(names[1], Does.Contain("要求タスク 2").And.Contain("表示順  2 → 6"));
+            Assert.That(Ui.Find<TextBlock>("PlanPublishSummary").Text, Does.Contain("の 2 タスクを GitHub に書き込みます"));
+        });
+        Assert.That(workspace.Session!.Changes(Today).TaskCount, Is.EqualTo(2));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("PublishOutcome")]
     public async Task ReviewNamesDestinationAndChangesAndClosingKeepsWork()
     {
         await Open(2);

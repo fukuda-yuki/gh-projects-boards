@@ -105,6 +105,8 @@ internal sealed record InsertPlanRows(ImmutableArray<PlanRow> Rows, string? Befo
     public bool AllowDuplicateCsv { get; init; }
 }
 internal sealed record IndentPlanRows(ImmutableArray<string> Targets, bool Outdent = false) : PlanCommand;
+internal sealed record MovePlanSubtrees(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
+internal sealed record ArrangePlanOutline() : PlanCommand;
 internal sealed record MovePlanRows(ImmutableArray<string> Targets, string? Before = null) : PlanCommand;
 internal sealed record ReplacePlanSettings(ProjectPlanSettings Settings) : PlanCommand;
 internal sealed record PlanRowChange(string Identity, PlanRow? Before, PlanRow? After);

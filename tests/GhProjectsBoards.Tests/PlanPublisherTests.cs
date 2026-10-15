@@ -656,7 +656,7 @@ internal sealed partial class PlanPublisherTests
         var rows = imported.Select(r => r with { Identity = ids[r.Identity], Parent = r.Parent is null ? null : ids[r.Parent],
             Predecessors = r.Predecessors.Select(id => ids[id]).ToImmutableArray() }).ToImmutableArray();
         await Start(0, settings: document.State.Settings);
-        await session.Execute(new InsertPlanRows(rows), Today);
+        await session.Execute(new InsertPlanRows(rows, Kind: PlanOperationKind.CsvImport), Today);
         Scenario(fault);
         var before = runner.Count;
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -730,7 +730,7 @@ internal sealed partial class PlanPublisherTests
         for (var i = 3; i < (reopen ? 24 : 12); i++)
                 rows.Add(PlanRow.New("Task " + (i + 100), "acme/repo") with { Parent = parent.Identity, Predecessors = [rows[^1].Identity],
                     Estimate = 16, Remaining = 8, Actual = 2, Assignees = ["U1"], StartNoEarlierThan = Today.AddDays(2) });
-        await session.Execute(new InsertPlanRows(rows.ToImmutableArray()), Today);
+        await session.Execute(new InsertPlanRows(rows.ToImmutableArray(), Kind: PlanOperationKind.CsvImport), Today);
         var dates = session.Schedule(Today).ToDictionary(r => r.Input.Identity, r => (r.Start.Value, r.End.Value));
         if (reopen)
         {
@@ -1058,7 +1058,7 @@ internal sealed partial class PlanPublisherTests
         await Start(5);
         var random = new Random(seed); var trace = new List<string>(); var audits = 0;
         var counts = new Dictionary<string, int>();
-        var operations = Enumerable.Range(0, 30).Select(i => i % 12).OrderBy(_ => random.Next()).ToArray();
+        var operations = Enumerable.Range(0, 30).Select(i => i % 14).OrderBy(_ => random.Next()).ToArray();
         for (var step = 0; step < operations.Length; step++)
         {
             var rows = session.Document.State.Rows;
@@ -1075,6 +1075,8 @@ internal sealed partial class PlanPublisherTests
                 5 => new EditPlanCells(PlanOperationKind.Cell, [new(row.Identity, PlanField.Predecessors,
                     random.Next(2) == 0 ? ImmutableArray<string>.Empty : ImmutableArray.Create(other.Identity))]),
                 6 => new InsertPlanRows([new PlanRow("local:" + seed.ToString("x16") + step.ToString("x16"), $"New {seed}/{step}", "acme/repo")], other.Identity),
+                12 => new MovePlanSubtrees([row.Identity], random.Next(2) == 0 ? null : other.Identity),
+                13 => new ArrangePlanOutline(),
                 _ => null
             };
             try
@@ -1180,6 +1182,25 @@ internal sealed partial class PlanPublisherTests
         Assert.That((reserved[1].Started - reserved[0].Started).TotalSeconds, Is.InRange(10, 13), "Ten created Issues reserve the next ten seconds start-to-start, even when the following batch contains only one Issue.");
         Assert.That(creates.Zip(reserved, (sent, reservation) => sent >= reservation.Started), Is.All.True, "No create batch reaches GitHub before its reserved start.");
     }
+    [Test]
+    public async Task MovingBlockDownPublishesOnlyThatBlockAndRemoteMatchesPlan()
+    {
+        await Start(8);
+        await session.Execute(new MovePlanRows(["I1", "I2"], "I7"), Today);
+        var expected = new[] { "I3", "I4", "I5", "I6", "I1", "I2", "I7", "I8" };
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(expected));
+        var result = await publisher.PublishAsync(session, Today);
+        Assert.That(result.Succeeded, Is.True, result.Error);
+        Assert.That(FakePlanEditor.Load(root).Issues.Select(i => i.Row.Identity), Is.EqualTo(expected));
+        var positions = File.ReadAllLines(Path.Combine(root, "plan-mutations.jsonl"))
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone())
+            .Where(r => r.GetProperty("query").GetString()!.Contains("updateProjectV2ItemPosition"))
+            .SelectMany(r => r.GetProperty("variables").EnumerateObject().Select(v => v.Value)).ToArray();
+        Assert.That(positions.Select(v => v.GetProperty("itemId").GetString()), Is.EqualTo(new[] { "T-I1", "T-I2" }));
+        Assert.That(positions.Select(v => v.GetProperty("afterId").GetString()), Is.EqualTo(new[] { "T-I6", "T-I1" }));
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
+
     [Test]
     public async Task PositionUpdatesCompleteWhenMultiAliasPositionRequestsLoseTheirResponsePartway()
     {

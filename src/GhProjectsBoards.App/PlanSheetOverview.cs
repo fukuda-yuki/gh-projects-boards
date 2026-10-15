@@ -30,6 +30,7 @@ internal sealed partial class PlanSheetView
 
     private void RefreshOverviewCommands()
     {
+        RefreshOutlineCommands();
         collapseAll.IsEnabled = expandAll.IsEnabled = FoldingEnabled && SummaryIds.Count > 0;
         var reason = acceptedFilter.Length > 0 ? "絞り込み中は折りたためません" : "";
         foreach (var button in new[] { collapseAll, expandAll }) {
