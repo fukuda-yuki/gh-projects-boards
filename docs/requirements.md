@@ -18,6 +18,8 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 - Delegate authentication and API access to GitHub CLI (`gh api`); do not require manually issued PATs or a custom GitHub App.
 - Start with local development and the designated sandbox. Company GHEC + EMU behavior remains unverified until tested there.
 
+AI assist is optional and off by default. It uses GitHub Copilot through the connected gh login or a BYOK provider. It answers from the open local plan and proposes edits that the PMO applies locally as one Undo step; it never publishes. Planning and the weekly job never depend on it ([#208](https://github.com/fukuda-yuki/gh-projects-boards/issues/208)).
+
 ## Planning rules
 
 - Effort is entered and shown in person-hours (h). One working day is eight hours: weekdays 09:00–13:00 and 14:00–18:00, excluding Japanese public holidays and explicit company days off. Personal days off are not maintained: versions run for months and the PMO cannot keep them current ([#128](https://github.com/fukuda-yuki/gh-projects-boards/issues/128)).
@@ -39,6 +41,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 | Internal distribution without a development environment | [#92](https://github.com/fukuda-yuki/gh-projects-boards/issues/92) |
 | Backlog: mass Issue creation within GitHub limits | [#90](https://github.com/fukuda-yuki/gh-projects-boards/issues/90) |
 | Owner review 2026-10-10: busy state, read-only summary rows, Japanese terms, discarding local changes, summary view, flicker, configurable columns, no personal days off | [#118](https://github.com/fukuda-yuki/gh-projects-boards/issues/118) |
+| Optional AI assist: plan questions and locally applied proposals | [#208](https://github.com/fukuda-yuki/gh-projects-boards/issues/208) |
 | Backlog: optional comparison against an agreed plan | [#93](https://github.com/fukuda-yuki/gh-projects-boards/issues/93) |
 
 ## Explicit exclusions

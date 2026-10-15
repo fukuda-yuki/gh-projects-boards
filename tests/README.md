@@ -117,6 +117,7 @@ Each needs a stated reason and separate evidence.
 | Plan sheet frame timing and Core/storage timing | See [performance measurement](../docs/performance.md) | Idle machine |
 | Live GitHub connection and Project read | `./scripts/Test-LiveGitHub.ps1`, `./scripts/Test-ProjectRead.ps1` | Sandbox authorization |
 | Live publisher proof | Below | Sandbox authorization |
+| Live AI assist against OpenCode Go | `dotnet test tests/GhProjectsBoards.Tests/GhProjectsBoards.Tests.csproj -c Release --no-build --no-restore --filter 'FullyQualifiedName~AssistLiveTests'` | Explicit `LiveAssist` fixture; `OPENCODE_GO_API_KEY`, `OPENCODE_GO_BASE_URL` and `GHPB_ASSIST_RUNTIME_PATH` (the cached 1.0.98 stdio wrapper beside `runtime.node`) in the process environment. Never print the key. Uses only the offline evaluation plan and does not publish. Excluded from ordinary runs by NUnit `Explicit`. |
 
 ### Live GitHub
 
