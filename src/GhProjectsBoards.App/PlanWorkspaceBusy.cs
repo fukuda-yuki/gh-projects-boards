@@ -139,8 +139,9 @@ internal sealed partial class PlanWorkspaceView
         var peer = FrameworkElementAutomationPeer.FromElement(statusCounts) ?? FrameworkElementAutomationPeer.CreatePeerForElement(statusCounts);
         peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, message, "PlanRemoteOperation");
     }
-    private async Task OpenProject(ProjectChoice? choice, string? address = null)
+    private async Task OpenProject(ProjectChoice? choice, string? address = null, bool readAgain = false)
     {
+        openFailure.IsOpen = false;
         var previousPage = currentPage;
         title.Text = choice?.Title ?? "プロジェクトを開いています";
         projectMetadata.Text = choice is null ? "" : $"{choice.OwnerLogin} · プロジェクト {choice.Number}";
@@ -156,7 +157,7 @@ internal sealed partial class PlanWorkspaceView
                 busyHeading.Text = choice.Title + " を開いています";
                 UpdateBusyProgress(new("プロジェクトの項目を取得"));
             }
-            await workspace.Open(choice, OperationToken, reporter);
+            await (readAgain ? workspace.ReadAgain(choice, OperationToken, reporter) : workspace.Open(choice, OperationToken, reporter));
             Opened(); outcome = choice.Title + " を開きました";
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) {

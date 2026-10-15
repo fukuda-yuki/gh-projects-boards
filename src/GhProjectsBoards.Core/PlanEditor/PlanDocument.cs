@@ -123,7 +123,7 @@ internal sealed record PlanPatch(PlanOperationKind Kind, ImmutableArray<PlanRowC
     public ImmutableArray<PlanConflict>? AfterConflicts { get; init; }
 }
 internal sealed record PlanCheckpoint(int Version, long Revision, PlanDocument Document, ImmutableArray<PlanPatch> Undo, ImmutableArray<PlanPatch> Redo);
-internal enum PlanLoadStatus { Missing, Loaded, Blocked }
+internal enum PlanLoadStatus { Missing, Loaded, Blocked, Unreadable }
 internal enum PlanSaveFailure { None, Io, ChangedFile, InvalidFile }
 internal sealed record PlanSaveResult(bool Succeeded, PlanSaveFailure Failure, string? Error, string? Fingerprint)
 {
