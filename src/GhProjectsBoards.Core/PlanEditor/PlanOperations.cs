@@ -200,7 +200,11 @@ internal static class PlanOperations
                 Require(index >= 0, "挿入先がありません。");
                 var additions = insert.Rows.Select(r => r with { Repository = r.Repository.Length == 0 ? state.Settings.DefaultRepository ?? "" : r.Repository }).ToArray();
                 Require(additions.All(r => IsLocal(r.Identity) && !(r.Estimate < 0 || r.Remaining < 0 || r.Actual < 0) && (!TaskInput(r).KeepsDates || !(TaskInput(r).KeptDates.Start > TaskInput(r).KeptDates.End))), "新規行の識別子、工数または日付が不正です。");
-                rows.InsertRange(index, additions);
+                if (kind == PlanOperationKind.CsvImport) rows = new PlanOutline(state.Rows).Import([.. additions]).ToList();
+                else {
+                    var inheritedParent = insert.Before is not null && byId[insert.Before].Parent is { } owner && byId.ContainsKey(owner) ? owner : null;
+                    rows.InsertRange(index, additions.Select(r => r with { Parent = inheritedParent }));
+                }
                 break;
             case IndentPlanRows indent:
                 kind = indent.Outdent ? PlanOperationKind.Outdent : PlanOperationKind.Indent;
@@ -222,7 +226,16 @@ internal static class PlanOperations
                     Require(first > 0, "直前の同階層タスクがありません。"); newParent = siblings[first - 1].Identity;
                 }
                 var ids = selected.Select(r => r.Identity).ToHashSet();
-                rows = rows.Select(r => ids.Contains(r.Identity) ? r with { Parent = newParent } : r).ToList();
+                rows = indent.Outdent ? new PlanOutline(state.Rows).Outdent(indent.Targets).ToList()
+                    : rows.Select(r => ids.Contains(r.Identity) ? r with { Parent = newParent } : r).ToList();
+                break;
+            case MovePlanSubtrees outlineMove:
+                kind = PlanOperationKind.Move;
+                rows = new PlanOutline(state.Rows).Move(outlineMove.Targets, outlineMove.Before).ToList();
+                break;
+            case ArrangePlanOutline:
+                kind = PlanOperationKind.Move;
+                rows = new PlanOutline(state.Rows).Arrange().ToList();
                 break;
             case MovePlanRows move:
                 kind = PlanOperationKind.Move;
@@ -386,9 +399,7 @@ internal static class PlanOperations
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string>>();
         var recalculated = ImmutableHashSet.CreateBuilder<(string Identity, string Field)>();
         var baseline = d.Baseline.Rows.ToDictionary(r => r.Identity);
-        var oldOrder = d.Baseline.Rows.Select(r => r.Identity).ToArray();
-        var order = d.State.Rows.Where(r => baseline.ContainsKey(r.Identity)).Select(r => r.Identity).ToArray();
-        var moved = order.Where((id, i) => id != oldOrder[i]).ToHashSet();
+        var moved = PlanOrder.Moved(d.Baseline.Rows.Select(r => r.Identity), d.State.Rows.Select(r => r.Identity));
         foreach (var calculated in schedule ?? Schedule(d, today))
         {
             var r = d.State.Rows[calculated.Input.RowId - 1];

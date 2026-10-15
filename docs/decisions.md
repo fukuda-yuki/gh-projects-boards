@@ -152,7 +152,7 @@ Use an immutable baseline/current document and bounded before/after operation pa
 
 Autosave runs in one background loop and coalesces pending revisions while retaining their operation history. Memory becomes current before disk completion; the save task and explicit flush own durability. Atomic replacement follows the existing stores' mechanics, with a per-Project lock and expected file fingerprint to refuse competing or corrupt source replacement. Keep failed state in memory and surface only actionable save failures to the UI.
 
-Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout. Row order and hierarchy are independent: moving selected rows preserves parent identities; indent/outdent changes parent identities without an implicit reorder. Core commands apply prepared inputs; CSV parsing, network refresh/publish and UI orchestration remain at their respective boundaries.
+Settings exports are portable and account-independent. Retain unfamiliar people/field identities with warnings instead of silently changing imported intent. Do not persist UI layout. Moving subtrees preserves parent identities; indent/outdent changes parent identities. Outdent also moves the selected subtrees after the former parent's complete subtree, as specified in #207. Opening and refresh never implicitly repair hierarchy order. Core commands apply prepared inputs; CSV parsing, network refresh/publish and UI orchestration remain at their respective boundaries.
 
 ## CSV import identity and validation (#82)
 
@@ -208,3 +208,7 @@ Use GitHub repository milestones as the source of target dates and Issue members
 ## Period and milestone mapping on first open (#195)
 
 GitHub Projects has no native Project period. Initialize empty local settings from the first complete read: earliest Issue start, latest due date among the grouped milestones this Project's Issues belong to (or latest Issue end when none has a due date), and uniquely matching phase milestone titles among those milestones, where the option name appears case-insensitively at an ASCII letter/digit token boundary. One repository can run several versions in parallel, each a separate Project with separate milestones (owner, 2026-10-13), so milestones that no Issue of this Project uses never contribute, and version-prefixed titles such as `第2027.04版 SA 完了` still map. Leave an inverted period empty. Do this only at document creation, preserving held dates, zero unpublished tasks and empty Undo history. Never re-derive on refresh, reopen or reset, so explicit settings and user clears always win. Settings date inputs share the sheet's full-date formats, `yyyy-MM-dd` and `yyyy/M/d`, with ISO display.
+
+## One row order and explicit outline repair (#207)
+
+Project item order remains authoritative. Opening, refresh and reset never normalize it implicitly. Local commands preserve contiguous outlines; explicit undoable **階層順に並べ替え** repairs scattered hierarchies in stable parent-first order. External parents are top-level for traversal. A separately sorted display (option a) is rejected because displayed IDs, export and publish would disagree. No Order ID column is introduced. Moves reorder siblings; indent/outdent own reparenting.

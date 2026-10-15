@@ -59,7 +59,8 @@ internal sealed class PlanPublishTests
     [Test]
     public void MovingAChildRowPublishesTheReorderThatMoveImplies()
     {
-        var document = SiblingPlan("I2,I3", "I3,I2", "I2,I3");
+        var document = SiblingPlan("I2,I3", "I2,I3", "I2,I3");
+        document = document with { State = PlanOperations.Apply(document, new MovePlanSubtrees(["I3"], "I2"), Day).State };
         var changes = PlanOperations.Changes(document, Day);
         var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
         Assert.That(changes.Fields["I1"], Is.EquivalentTo(new[] { PlanField.SubIssueOrder }));
@@ -79,7 +80,7 @@ internal sealed class PlanPublishTests
         var document = SiblingPlan("I2,I3", "I3,I2", "I3,I2");
         var changes = PlanOperations.Changes(document, Day);
         var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
-        Assert.That(changes.Fields["I3"], Does.Contain(PlanField.Order));
+        Assert.That(changes.Fields.Where(p => p.Value.Contains(PlanField.Order)).Select(p => p.Key), Is.EqualTo(new[] { "I2" }));
         Assert.That(review.Changes.Any(c => c.Field == PlanField.SubIssueOrder), Is.False);
         Assert.That(review.Writes.Any(w => w.Mutation == "reprioritizeSubIssue"), Is.False);
     }

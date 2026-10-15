@@ -25,7 +25,7 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         await Open();
         if (summary) {
-            await workspace.Session!.Execute(new InsertPlanRows([PlanRow.New("Child", "acme/repo") with { Parent = "I1" }]), readDay);
+            await workspace.Session!.Execute(new InsertPlanRows([PlanRow.New("Child", "acme/repo") with { Parent = "I1" }], Kind: PlanOperationKind.CsvImport), readDay);
             await Ui.Run(() => Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh()); await Ui.Idle();
         }
         var cellId = summary ? "PlanCell1_Estimate" : "PlanCell1_Title";
@@ -504,8 +504,9 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(X(dividers[1]), Is.GreaterThan(X(redo) + redo.ActualWidth - 1).And.LessThan(X(Ui.Find<TextBlock>("PlanUnpublished"))));
             var commands = Ui.Find<CommandBar>("PlanSheetCommands").SecondaryCommands;
             Assert.That(commands.Select(c => c is AppBarButton b ? b.Label : "|"),
-                Is.EqualTo(new[] { "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
-            Assert.That(commands.OfType<AppBarButton>().Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
+                Is.EqualTo(new[] { "上へ移動", "下へ移動", "階層順に並べ替え", "|", "コピー", "貼り付け", "下へコピー", "クリア", "|", "CSV から追加…", "CSV に書き出し…", "表示列" }));
+            Assert.That(commands.OfType<AppBarButton>().Take(2).Select(b => b.KeyboardAcceleratorTextOverride), Is.EqualTo(new[] { "Alt+Shift+↑", "Alt+Shift+↓" }));
+            Assert.That(commands.OfType<AppBarButton>().Skip(3).Take(4).Select(b => b.KeyboardAcceleratorTextOverride),
                 Is.EqualTo(new[] { "Ctrl+C", "Ctrl+V", "Ctrl+D", "Delete" }));
         });
     }
@@ -825,7 +826,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var parent = PlanRow.New("CSV group", "acme/repo");
         var row = PlanRow.New("CSV task", "acme/repo") with { Estimate = 16, Parent = parent.Identity };
         await Ui.Run(async () => {
-            await workspace.Session!.Execute(new InsertPlanRows([parent, row]), DateOnly.FromDateTime(DateTime.Today));
+            await workspace.Session!.Execute(new InsertPlanRows([parent, row], Kind: PlanOperationKind.CsvImport), DateOnly.FromDateTime(DateTime.Today));
             await workspace.Session.SaveSync(workspace.Session.Document.Sync with { Failures = [new(row.Identity, PlanField.NewTask, reason)] });
             Ui.Tree(view).OfType<PlanSheetView>().Single().Refresh();
             Ui.Click("PlanPublish");
@@ -1499,7 +1500,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         FakePlanEditor.Save(root, state with { Issues = state.Issues.Add(new(new("I2", "前提作業", "acme/repo"), "", true)), NextId = 3 });
         await Open();
         var newRow = PlanRow.New("子タスク", "acme/repo") with { Parent = "I1", Predecessors = ["I2"] };
-        await workspace.Session!.Execute(new InsertPlanRows([newRow]), DateOnly.FromDateTime(DateTime.Today));
+        await workspace.Session!.Execute(new InsertPlanRows([newRow], Kind: PlanOperationKind.CsvImport), DateOnly.FromDateTime(DateTime.Today));
         await workspace.Session.Execute(new MovePlanRows(["I2"], "I1"), DateOnly.FromDateTime(DateTime.Today));
         var stages = new List<string>(); long callback = 0;
         await Ui.Run(() => {
