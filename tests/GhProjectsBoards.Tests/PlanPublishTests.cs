@@ -59,7 +59,8 @@ internal sealed class PlanPublishTests
     [Test]
     public void MovingAChildRowPublishesTheReorderThatMoveImplies()
     {
-        var document = SiblingPlan("I2,I3", "I3,I2", "I2,I3");
+        var document = SiblingPlan("I2,I3", "I2,I3", "I2,I3");
+        document = document with { State = PlanOperations.Apply(document, new MovePlanSubtrees(["I3"], "I2"), Day).State };
         var changes = PlanOperations.Changes(document, Day);
         var review = PlanPublishPlan.Build(document, SiblingRemote(document), Day, Guid.NewGuid().ToString("N"));
         Assert.That(changes.Fields["I1"], Is.EquivalentTo(new[] { PlanField.SubIssueOrder }));

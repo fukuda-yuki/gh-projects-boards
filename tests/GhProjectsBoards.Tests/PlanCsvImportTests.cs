@@ -117,6 +117,7 @@ internal sealed class PlanCsvImportTests
             Assert.That(session.UndoCount, Is.EqualTo(1));
             Assert.That(PlanOperations.Schedule(session.Document, Today).All(r => r.Start.Value.HasValue && r.End.Value.HasValue), Is.True);
             Assert.That(session.Document.State.Settings.People.Single().Identity, Is.EqualTo("U1"));
+            var importedState = PlanJson.Text(session.Document.State);
             var reopened = (await PlanSession.OpenAsync(new(root), session.Document.Project, Today)).Session!;
             var duplicate = PlanCsvImport.Prepare(reopened.Document, file, Catalog, Today);
             Assert.That(duplicate.IsDuplicate, Is.True);
@@ -129,6 +130,8 @@ internal sealed class PlanCsvImportTests
             Assert.That(reopened.Document.State.Rows, Is.Empty);
             Assert.That(reopened.Document.State.Settings.People, Is.Empty);
             Assert.That(PlanCsvImport.Prepare(reopened.Document, file, Catalog, Today).IsDuplicate, Is.False);
+            await reopened.Redo(Today);
+            Assert.That(PlanJson.Text(reopened.Document.State), Is.EqualTo(importedState));
         }
         finally { await session.FlushAsync(); Directory.Delete(root, true); }
     }

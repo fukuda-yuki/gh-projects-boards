@@ -29,6 +29,7 @@ public sealed class PlanSheetRow : Grid
     private readonly Canvas dependencyChart = new(), taskChart = new();
     private readonly TextBlock id = new() { FontSize = 13, TextAlignment = TextAlignment.Right, Padding = new(4, 3, 8, 0) };
     private readonly Grid idCell = new();
+    private readonly PlanRowHandle idHandle;
     private readonly Border selectionAccent = new() { Width = 3, Height = 16, CornerRadius = new(1.5),
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
     private readonly FontIcon indicator = new() { FontSize = 13, Width = 28, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = true };
@@ -80,7 +81,14 @@ public sealed class PlanSheetRow : Grid
         chartClip.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         chartClip.PointerWheelChanged += (_, args) => Owner?.ScrollTimeline(args);
         Children.Add(sheetClip); Children.Add(chartClip); SetColumn(chartClip, 1);
-        idCell.Children.Add(id); idCell.Children.Add(selectionAccent);
+        idHandle = new(this) { Content = id };
+        idCell.Children.Add(idHandle); idCell.Children.Add(selectionAccent);
+        idHandle.Click += (_, _) => Owner?.SelectWholeRow(Identity, PlanSheetView.Down(VirtualKey.Shift));
+        idHandle.PreviewKeyDown += (_, args) => {
+            if (Owner is not { } owner) return;
+            if (args.Key == VirtualKey.Escape) { owner.CancelDrag(); args.Handled = true; }
+            else if (owner.HandleOutlineShortcut(args.Key)) args.Handled = true;
+        };
         line.Children.Add(idCell); line.Children.Add(indicator);
         Microsoft.UI.Xaml.Documents.Typography.SetNumeralAlignment(id, FontNumeralAlignment.Tabular);
         fold.Click += async (_, _) => {
@@ -133,7 +141,7 @@ public sealed class PlanSheetRow : Grid
     }
     private void ClearIds()
     {
-        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(indicator, "");
+        AutomationProperties.SetAutomationId(id, ""); AutomationProperties.SetAutomationId(idHandle, ""); AutomationProperties.SetAutomationId(indicator, "");
         AutomationProperties.SetAutomationId(selectionAccent, "");
         foreach (var cell in Cells) { AutomationProperties.SetAutomationId(cell, ""); cell.Rebind(); }
         foreach (var display in summaryCells.Values) AutomationProperties.SetAutomationId(display, "");
@@ -175,6 +183,8 @@ public sealed class PlanSheetRow : Grid
         ToolTipService.SetToolTip(id, string.Join("\n", warnings) + remoteProblem);
         AutomationProperties.SetName(id, number == 0 ? "新しいタスク" : $"ID {number}" + (warnings.Count > 0 ? " " + string.Join(" / ", warnings) : ""));
         AutomationProperties.SetAutomationId(id, "PlanRowId" + number);
+        AutomationProperties.SetAutomationId(idHandle, "PlanRowHandle" + number);
+        AutomationProperties.SetName(idHandle, $"ID {number} 行を選択・移動");
         var depth = 0; var parent = owner.Rows.GetValueOrDefault(Identity)?.Parent;
         while (parent is not null && owner.Rows.TryGetValue(parent, out var ancestor) && depth < 30) { depth++; parent = ancestor.Parent; }
         var summary = owner.SummaryIds.Contains(Identity);
@@ -675,7 +685,8 @@ internal sealed class PlanSheetCell : TextBox
         if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
         if (Composing || endedThisTurn) { base.OnPreviewKeyDown(args); return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
-        if (!Editing && owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; }
+        else if (!Editing && owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
         else if (args.Key == VirtualKey.Escape)
         {
             args.Handled = true; owner.CancelDrag(); owner.CancelEdit(row.Identity, Field); EndEditing();
@@ -755,6 +766,7 @@ internal sealed class PlanSummaryCell : ContentControl
     {
         if (row.Owner is not { } owner) { base.OnPreviewKeyDown(args); return; }
         var control = PlanSheetView.Down(VirtualKey.Control); var shift = PlanSheetView.Down(VirtualKey.Shift);
+        if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; return; }
         if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
         if (owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
         else if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
@@ -803,5 +815,31 @@ internal static class PlanListIndex
     {
         for (var i = 0; i < values.Count; i++) if (EqualityComparer<T>.Default.Equals(values[i], value)) return i;
         return -1;
+    }
+}
+
+// Pointer gestures belong to the sheet; Button still supplies keyboard and automation invocation.
+internal sealed class PlanRowHandle : Button
+{
+    private readonly PlanSheetRow row;
+    internal PlanRowHandle(PlanSheetRow row)
+    {
+        this.row = row;
+        Padding = new(0); MinWidth = MinHeight = 0;
+        HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        VerticalContentAlignment = VerticalAlignment.Stretch;
+        BorderThickness = new(0); Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+    }
+    protected override void OnPointerPressed(PointerRoutedEventArgs args)
+        => row.Owner?.BeginRowMove(row.Identity, this, args);
+    protected override void OnPointerReleased(PointerRoutedEventArgs args)
+        => row.Owner?.EndDrag(this, args);
+    protected override void OnPointerCaptureLost(PointerRoutedEventArgs args)
+    {
+        row.Owner?.CancelDrag(); base.OnPointerCaptureLost(args);
+    }
+    protected override void OnPointerCanceled(PointerRoutedEventArgs args)
+    {
+        row.Owner?.CancelDrag(); base.OnPointerCanceled(args);
     }
 }

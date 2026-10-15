@@ -146,6 +146,45 @@ internal sealed class PlanDocumentTests
     }
     private static EditPlanCells Edit(string field, object? value, string id = "issue:1") => new(PlanOperationKind.Cell, [new(id, field, value)]);
 
+    [TestCase(false), TestCase(true)]
+    public async Task OutlineCommandPersistsOneExactUndoRedoStepAcrossReopening(bool arrange)
+    {
+        var initial = PlanOutlineTests.Document();
+        var session = await Create(initial);
+        var before = Text(session.Document);
+        await session.Execute(arrange ? new ArrangePlanOutline() : new MovePlanSubtrees(["a"]), Today);
+        var after = Text(session.Document);
+        Assert.That(session.UndoCount, Is.EqualTo(1));
+        session = await Reopen(project: initial.Project);
+        Assert.That(Text(session.Document), Is.EqualTo(after));
+        await session.Undo(Today);
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+        session = await Reopen(project: initial.Project);
+        Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo((0, 1)));
+        await session.Redo(Today);
+        Assert.That(Text(session.Document), Is.EqualTo(after));
+    }
+    [Test]
+    public async Task NoOpOutlineCommandsKeepHeldDatesAndHistoryUnchanged()
+    {
+        var initial = PlanOutlineTests.Document("p,a,c,b,q") with { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        var session = await Create(initial);
+        var before = Text(session.Document);
+        await session.Execute(new ArrangePlanOutline(), Today);
+        await session.Execute(new MovePlanSubtrees(["a"], "b"), Today);
+        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(Text(session.Document), Is.EqualTo(before));
+    }
+    [Test]
+    public async Task UnchangedRefreshKeepsScatteredProjectOrderWithoutLocalChanges()
+    {
+        var initial = PlanOutlineTests.Document();
+        var session = await Create(initial);
+        await session.AcceptRefresh(new(initial.Baseline, ImmutableDictionary<string, string>.Empty, [], 0, 0), Today);
+        Assert.That(session.Document.State.Rows.Select(r => r.Identity), Is.EqualTo(new[] { "p", "a", "b", "c", "q" }));
+        Assert.That(session.UndoCount, Is.Zero);
+        Assert.That(session.Changes(Today).TaskCount, Is.Zero);
+    }
     [TestCase(PlanOperationKind.Cell), TestCase(PlanOperationKind.Paste), TestCase(PlanOperationKind.Fill), TestCase(PlanOperationKind.CtrlD)]
     [TestCase(PlanOperationKind.Clear), TestCase(PlanOperationKind.Insert), TestCase(PlanOperationKind.CsvImport)]
     [TestCase(PlanOperationKind.Indent), TestCase(PlanOperationKind.Outdent), TestCase(PlanOperationKind.Move), TestCase(PlanOperationKind.Settings)]
