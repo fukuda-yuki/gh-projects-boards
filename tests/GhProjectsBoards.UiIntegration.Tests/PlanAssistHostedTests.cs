@@ -29,9 +29,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => { view.AssistRuntimeEdge = runtime; view.AssistSecrets = new TestAssistSecrets(); });
         await Settings();
         await Ui.Run(() => {
-            Ui.Find<ComboBox>("AssistMode").SelectedIndex = byok ? 2 : 1;
             Ui.Find<TextBox>("AssistModel").Text = "test-model";
             if (byok) Ui.Find<TextBox>("AssistEndpoint").Text = "https://provider.example/v1";
+            Ui.Find<ComboBox>("AssistMode").SelectedIndex = byok ? 2 : 1;
             Ui.Click("PlanSettingsBack");
         });
         await Ui.Until(() => Ui.Find<ScrollViewer>("PlanSettingsScroll").Visibility == Visibility.Collapsed);
@@ -48,6 +48,82 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Count(t => t.Text.Contains("計画を確認しました")) > answers);
         await Ui.Until(() => Ui.Find<Button>("AssistSend").IsLoaded && Ui.Find<Button>("AssistSend").IsEnabled);
         await Ui.Until(() => Ui.Tree(view).OfType<Button>().Any(b => AutomationProperties.GetAutomationId(b).StartsWith("AssistApply") && b.IsLoaded));
+    }
+
+    [TestCase("", "auto"), TestCase("chosen-model", "chosen-model"), Category("Assist")]
+    public async Task AssistCopilotModelIsSavedAndCanCheckBeforeDiscoveringSuggestions(string initial, string expected)
+    {
+        await Open(); var runtime = new ScriptedAssistRuntime();
+        await Ui.Run(() => view.AssistRuntimeEdge = runtime);
+        await Settings();
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("AssistModel").Text = initial;
+            Ui.Find<ComboBox>("AssistMode").SelectedIndex = 1;
+        });
+        await Ui.Until(() => Ui.Find<TextBox>("AssistModel").Text == expected);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("AssistModel").IsReadOnly, Is.False);
+            Ui.Click("AssistCheck");
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("AssistSettingsResult").Text == "接続できました: " + expected);
+        Assert.That(runtime.CheckModel, Is.EqualTo(expected));
+        var stored = await new AssistSettingsStore(root).LoadAsync();
+        Assert.That(stored.Error, Is.Null);
+        Assert.That(stored.Settings.Mode, Is.EqualTo(AssistMode.Copilot));
+        Assert.That(stored.Settings.Model, Is.EqualTo(expected));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<ComboBox>("AssistModels").Visibility, Is.EqualTo(Visibility.Visible));
+            Assert.That(Ui.Find<ComboBox>("AssistModels").Items.Cast<string>(), Is.EqualTo(new[] { "test-model" }));
+        });
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistByokEmptyModelBlocksCheckWithoutSavingOrStartingRuntime()
+    {
+        await Open(); var runtime = new ScriptedAssistRuntime();
+        await Ui.Run(() => view.AssistRuntimeEdge = runtime);
+        await Settings();
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("AssistEndpoint").Text = "https://provider.example/v1";
+            Ui.Find<ComboBox>("AssistMode").SelectedIndex = 2;
+            Ui.Click("AssistCheck");
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("AssistSettingsResult").Text == "モデルを入力してください。");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("AssistModel").Text, Is.Empty));
+        Assert.That(runtime.CheckModel, Is.Null);
+        Assert.That(File.Exists(new AssistSettingsStore(root).FilePath), Is.False);
+        await Ui.Run(() => Ui.Find<ComboBox>("AssistMode").SelectedIndex = 0);
+    }
+
+    [TestCase(1032), TestCase(640), Category("Assist")]
+    public async Task AssistTurnEndShowsProposalActionsAfterReferencesInAnAlreadyLongConversation(int height)
+    {
+        var fake = FakePlanEditor.Load(root);
+        FakePlanEditor.Save(root, fake with { Issues = [.. Enumerable.Range(1, 12).Select(i =>
+            new PlanFakeIssue(new($"I{i}", i == 1 ? "設計" : $"R24 PS-{i:000} 詳細設計 データ", "acme/repo") { Estimate = 8, Remaining = 8, Assignees = ["U1"] }, "", true))], NextId = 13 });
+        var runtime = await EnableAssist(); runtime.Propose = false;
+        await Ui.Run(() => ResizeWorkspace(1920, height));
+        await Ui.Until(() => Math.Abs(view.ActualHeight - height) < 1);
+        runtime.Answer = "前の回答\n" + string.Join('\n', Enumerable.Repeat("担当者と日程を確認しました。", 60));
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "先に現状を確認"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => runtime.Prompts.Count == 1 && Ui.Find<Button>("AssistSend").IsEnabled && AssistScroll().ScrollableHeight > 500);
+        runtime.Propose = true; runtime.ManyReferences = true; runtime.PauseBeforeEnd = true;
+        runtime.Answer = "変更案を下に示しました。";
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "変更を提案"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => runtime.WaitingForEnd && AssistScroll().VerticalOffset > 500);
+        runtime.EndAnswer.TrySetResult();
+        await Ui.Until(() => runtime.Prompts.Count == 2 && Ui.Find<Button>("AssistSend").IsEnabled);
+        await Ui.Until(() => new[] { "AssistApply", "AssistDiscard" }.All(prefix =>
+            Ui.Tree(view).OfType<Button>().FirstOrDefault(b => AutomationProperties.GetAutomationId(b) == prefix + runtime.ProposalId)
+                is { } button && AssistVisible(button)), () => $"offset={AssistScroll().VerticalOffset}, extent={AssistScroll().ExtentHeight}, viewport={AssistScroll().ViewportHeight}");
+        await Ui.Run(async () => {
+            var items = Ui.Find<ListView>("AssistMessages").Items.OfType<FrameworkElement>().ToArray();
+            Assert.That(items.OfType<HyperlinkButton>().Count(), Is.EqualTo(6), "The first turn has one reference, the second has five.");
+            Assert.That(items.OfType<Button>().Any(b => Equals(b.Content, "参照した 12 件を計画で表示")), Is.True);
+            await RenderedEvidence.Capture(view, "assist-long-conversation-turn-end-" + height);
+        });
+        Assert.That(workspace.Session!.UndoCount, Is.Zero);
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
     [Test, Category("Assist")]
@@ -482,12 +558,12 @@ internal sealed partial class PlanWorkspaceHostedTests
         internal decimal? Remaining;
         internal bool HungShutdown, Forced;
         internal string? StatePath;
-        internal string? ProposalId, CheckKey;
+        internal string? ProposalId, CheckKey, CheckModel;
         internal readonly List<string> Prompts = [];
         internal readonly List<string?> Selected = [];
         public IAssistTurn Create(AssistSettings settings, string root, string host, string login, AssistPlanTools tools, string? key) => new Turn(this, tools, root);
         public Task<AssistConnectionCheck> Check(AssistSettings settings, string root, string host, string login, string? key, CancellationToken cancellation) {
-            CheckKey = key; return Task.FromResult(new AssistConnectionCheck(true, settings.Model, null, ["test-model"]));
+            CheckKey = key; CheckModel = settings.Model; return Task.FromResult(new AssistConnectionCheck(true, settings.Model, null, ["test-model"]));
         }
         private sealed class Turn(ScriptedAssistRuntime owner, AssistPlanTools tools, string root) : IAssistTurn
         {

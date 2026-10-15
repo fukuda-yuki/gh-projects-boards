@@ -8,6 +8,36 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class AssistSdkBoundaryTests
 {
+    [TestCase(false), TestCase(true)]
+    public void SdkExternalToolRequestsReportProgressOnceAcrossBothEventFamilies(bool externalFirst)
+    {
+        var progress = new AssistToolProgress();
+        AssistEvent? Request(string request, string call, string name) => progress.Observe(new ExternalToolRequestedEvent {
+            Data = new() { RequestId = request, ToolCallId = call, ToolName = name, SessionId = "session" }
+        });
+        AssistEvent? Start(string call, string name) => progress.Observe(new ToolExecutionStartEvent {
+            Data = new() { ToolCallId = call, ToolName = name }
+        });
+        AssistEvent? Complete(string request) => progress.Observe(new ExternalToolCompletedEvent { Data = new() { RequestId = request } });
+        Assert.That(externalFirst ? Request("r1", "c1", "find_tasks")?.Text : Start("c1", "find_tasks")?.Text,
+            Is.EqualTo("計画を調べています（1 回目）…"));
+        Assert.That(externalFirst ? Start("c1", "find_tasks") : Request("r1", "c1", "find_tasks"), Is.Null);
+        Assert.That(Request("r2", "c2", "get_tasks")?.Text, Is.EqualTo("計画を調べています（2 回目）…"));
+        Assert.That(Request("r3", "c3", "summarize_plan")?.Text, Is.EqualTo("計画を調べています（3 回目）…"));
+        Assert.That(Request("rp", "cp", "propose_changes")?.Text, Is.EqualTo("変更案を検証しています…"));
+        Assert.That(Complete("r1")?.Text, Is.EqualTo("変更案を検証しています…"));
+        Assert.That(progress.Observe(new ToolExecutionCompleteEvent { Data = new() { ToolCallId = "cp", Success = true } })?.Text,
+            Is.EqualTo("計画を調べています（3 回目）…"));
+        Assert.That(Complete("rp"), Is.Null);
+        Complete("r2");
+        Assert.That(Complete("r3")?.Text, Is.EqualTo("回答しています…"));
+        Assert.That(Request("rm", "cm", "read_manual")?.Text, Is.EqualTo("マニュアルを調べています…"));
+        Assert.That(Complete("rm")?.Text, Is.EqualTo("回答しています…"));
+        Assert.That(Start("c1", "find_tasks"), Is.Null, "A late duplicate must not reactivate a completed call.");
+        Assert.That(Request("unknown", "unknown", "untrusted-secret-tool"), Is.Null);
+        Assert.That(Complete("unknown"), Is.Null);
+    }
+
     [Test]
     public void SdkToolEventsReportSafeProgressAndKeepConcurrentWorkVisible()
     {

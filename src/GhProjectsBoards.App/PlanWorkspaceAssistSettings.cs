@@ -89,7 +89,8 @@ internal sealed partial class PlanWorkspaceView
             };
             input.LostFocus += async (_, _) => { if (!rendering) await Run(() => Save(), commitPending: false); };
         }
-        foreach (var combo in new[] { mode, provider, wire }) combo.SelectionChanged += async (_, _) => {
+        foreach (var combo in new[] { mode, provider, wire }) combo.SelectionChanged += async (sender, _) => {
+            if (ReferenceEquals(sender, mode) && mode.SelectedIndex == 1 && string.IsNullOrWhiteSpace(model.Text)) model.Text = "auto";
             ShowModes(); await Run(() => Save(), commitPending: false);
         };
         suggestions.SelectionChanged += async (_, _) => {

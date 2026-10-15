@@ -43,8 +43,8 @@ internal sealed partial class PlanWorkspaceView
     private FrameworkElement? assistSettingsHeading;
     private Grid? assistEnabledContent;
     private ScrollViewer? assistScroll;
-    private bool assistFollow, assistFollowQueued;
-    private double assistPreviousOffset, assistPreviousExtent;
+    private bool assistFollow, assistFollowQueued, assistChangingView;
+    private double assistPreviousOffset, assistPreviousExtent, assistPreviousViewport;
     internal IAssistRuntime AssistRuntimeEdge { get; set; } = new AssistRuntime();
     internal IAssistSecretStore AssistSecrets { get; set; } = new AssistSecretStore();
 
@@ -66,11 +66,11 @@ internal sealed partial class PlanWorkspaceView
         ScrollViewer.SetHorizontalScrollMode(assistMessages, ScrollMode.Disabled);
         ScrollViewer.SetHorizontalScrollBarVisibility(assistMessages, ScrollBarVisibility.Disabled);
         assistMessages.Loaded += (_, _) => {
-            var scroll = FindAssistScroll(assistMessages);
-            if (scroll is null || ReferenceEquals(scroll, assistScroll)) return;
-            if (assistScroll is not null) assistScroll.ViewChanged -= AssistViewChanged;
-            assistScroll = scroll; scroll.ViewChanged += AssistViewChanged;
+            assistMessages.LayoutUpdated -= AssistLayoutUpdated;
+            assistMessages.LayoutUpdated += AssistLayoutUpdated;
+            AttachAssistScroll();
         };
+        assistMessages.Unloaded += (_, _) => assistMessages.LayoutUpdated -= AssistLayoutUpdated;
         assistMessages.SizeChanged += (_, _) => FollowAssist();
         assistChip.Click += (_, _) => { assistDismissed = assistSelected; assistSelected = null; UpdateAssistSelection(); };
         assistInput.TextCompositionStarted += (_, _) => AssistCompositionStarted();
@@ -190,6 +190,7 @@ internal sealed partial class PlanWorkspaceView
                 assistFollow = true;
                 assistPreviousOffset = assistScroll?.VerticalOffset ?? 0;
                 assistPreviousExtent = assistScroll?.ExtentHeight ?? 0;
+                assistPreviousViewport = assistScroll?.ViewportHeight ?? 0;
                 assistMessages.Items.Add(Label("あなた: " + text));
                 var answer = Id(Label(""), "AssistAnswer" + assistMessages.Items.Count);
                 answer.SizeChanged += (_, _) => FollowAssist();
@@ -284,24 +285,47 @@ internal sealed partial class PlanWorkspaceView
             if (FindAssistScroll(VisualTreeHelper.GetChild(parent, i)) is { } child) return child;
         return null;
     }
+    private void AttachAssistScroll()
+    {
+        // The ListView template may not be applied at its first Loaded, so the first turn resolves it again.
+        var scroll = FindAssistScroll(assistMessages);
+        if (scroll is null || ReferenceEquals(scroll, assistScroll)) return;
+        if (assistScroll is not null) assistScroll.ViewChanged -= AssistViewChanged;
+        assistScroll = scroll; scroll.ViewChanged += AssistViewChanged;
+    }
+    private void AssistLayoutUpdated(object? sender, object e)
+    {
+        // Virtualized items can change the extent after the queued scroll has already run.
+        // Subscribe only while loaded: LayoutUpdated is backed by the global layout manager.
+        if (assistFollow && assistMessages.ActualHeight > 0 && assistScroll is { } scroll
+            && scroll.ScrollableHeight - scroll.VerticalOffset > 1) FollowAssist();
+    }
     private void AssistViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
         if (assistScroll is not { } scroll) return;
         // A shrinking answer or viewport adjustment is not the PMO scrolling toward earlier text.
-        if (scroll.VerticalOffset < assistPreviousOffset - 1 && scroll.ExtentHeight >= assistPreviousExtent - 1)
+        if (!assistChangingView && scroll.VerticalOffset < assistPreviousOffset - 1
+            && Math.Abs(scroll.ExtentHeight - assistPreviousExtent) < 1
+            && Math.Abs(scroll.ViewportHeight - assistPreviousViewport) < 1)
             assistFollow = false;
         assistPreviousOffset = scroll.VerticalOffset; assistPreviousExtent = scroll.ExtentHeight;
+        assistPreviousViewport = scroll.ViewportHeight;
     }
     private void FollowAssist()
     {
         if (!assistFollow || assistFollowQueued || closing || assistMessages.Items.Count == 0) return;
         assistFollowQueued = true;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => {
-            assistFollowQueued = false;
-            if (!assistFollow || closing || !assistMessages.IsLoaded || assistMessages.Items.Count == 0) return;
-            assistMessages.ScrollIntoView(assistMessages.Items[^1], ScrollIntoViewAlignment.Default);
-            assistMessages.UpdateLayout();
-            assistScroll?.ChangeView(null, assistScroll.ScrollableHeight, null, true);
+            try {
+                if (!assistFollow || closing || !assistMessages.IsLoaded || assistMessages.Items.Count == 0) return;
+                AttachAssistScroll();
+                assistChangingView = true;
+                if (assistMessages.Items[^1] is FrameworkElement { IsLoaded: false } last)
+                    assistMessages.ScrollIntoView(last, ScrollIntoViewAlignment.Default);
+                assistMessages.UpdateLayout();
+                assistScroll?.ChangeView(null, assistScroll.ScrollableHeight, null, true);
+            }
+            finally { assistChangingView = false; assistFollowQueued = false; }
         });
     }
     private void ShowAssistFailure(string message) { assistFailure.Message = message; assistFailure.IsOpen = true; }
