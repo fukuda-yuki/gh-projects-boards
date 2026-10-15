@@ -16,6 +16,7 @@ internal sealed record AssistConnectionCheck(bool Succeeded, string Model, Assis
 internal sealed class AssistConversation : IAsyncDisposable
 {
     private static readonly TimeSpan StopGrace = TimeSpan.FromSeconds(2);
+    internal static readonly TimeSpan ShutdownDeadline = TimeSpan.FromSeconds(3);
     private readonly AssistSettings settings;
     private readonly string dataRoot;
     private readonly string connectedHost;
@@ -31,6 +32,7 @@ internal sealed class AssistConversation : IAsyncDisposable
     private readonly object disposalGate = new();
     private readonly object runtimeGate = new();
     private Task? disposal;
+    private Task? runtimeStop;
     public string Id { get; } = Guid.NewGuid().ToString("N");
     public AssistFailure? CleanupFailure { get; private set; }
     public static void CleanupLeftovers(string dataRoot) => AssistRuntimeDirectory.CleanupLeftovers(dataRoot);
@@ -107,6 +109,7 @@ internal sealed class AssistConversation : IAsyncDisposable
             directory = new(dataRoot, Id);
             var environment = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!, StringComparer.OrdinalIgnoreCase);
             client = owned = new(ClientOptions(settings, directory.Path, runtimePath, environment));
+            runtimeStop = null;
         }
         await owned.StartAsync(cancellation).ConfigureAwait(false);
         if (settings.Mode == AssistMode.Copilot) {
@@ -145,16 +148,16 @@ internal sealed class AssistConversation : IAsyncDisposable
             subscription = session!.On<SessionEvent>(e => {
                 switch (e) {
                     case AssistantMessageDeltaEvent delta: output.TryWrite(new(AssistEventKind.Delta, delta.Data.DeltaContent)); break;
-                    case AssistantMessageEvent message: output.TryWrite(new(AssistEventKind.Message, message.Data.Content, References: tools?.References, Proposal: tools?.PendingProposal)); break;
+                    case AssistantMessageEvent message: output.TryWrite(new(AssistEventKind.Message, message.Data.Content, References: tools?.References, Proposal: tools?.TurnProposal)); break;
                     case SessionErrorEvent error: errored = true; output.TryWrite(new(AssistEventKind.Error, Failure: Failure(error.Data.Message, error.Data.StatusCode))); break;
                 }
             });
             var prompt = selectedIdentity is null ? text : text + "\n選択中のタスク Identity: " + JsonSerializer.Serialize(selectedIdentity);
             await session.SendAndWaitAsync(new MessageOptions { Prompt = prompt }, TimeSpan.FromMinutes(5), cancellation).ConfigureAwait(false);
-            if (!errored) output.TryWrite(new(AssistEventKind.TurnEnd, References: tools?.References, Proposal: tools?.PendingProposal));
+            if (!errored) output.TryWrite(new(AssistEventKind.TurnEnd, References: tools?.References, Proposal: tools?.TurnProposal));
         }
         catch (OperationCanceledException) {
-            if (session is not null) {
+            if (!lifetime.IsCancellationRequested && session is not null) {
                 try { await session.AbortAsync().WaitAsync(StopGrace).ConfigureAwait(false); }
                 catch { await StopRuntime().ConfigureAwait(false); }
             } else await StopRuntime().ConfigureAwait(false);
@@ -186,6 +189,8 @@ internal sealed class AssistConversation : IAsyncDisposable
         await using var check = new AssistConversation(settings, dataRoot, host, login, null, apiKey, runtimePath);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
+        // A cancelled check must start shutdown now, not after a hung send/abort finishes.
+        using var shutdown = timeout.Token.Register(() => { _ = check.DisposeAsync(); });
         AssistFailure? failure = null; var ended = false;
         await foreach (var e in check.SendAsync("接続を確認します。短く回答してください。", cancellation: timeout.Token)) {
             if (e.Kind == AssistEventKind.Error) failure = e.Failure;
@@ -202,37 +207,54 @@ internal sealed class AssistConversation : IAsyncDisposable
         }
         return new(ended && failure is null, settings.Model, failure, models);
     }
-    private async Task StopRuntime()
+    private Task StopRuntime()
     {
-        CopilotClient? owned; CopilotSession? ownedSession; AssistRuntimeDirectory? state;
-        lock (runtimeGate) { owned = client; ownedSession = session; state = directory; client = null; session = null; directory = null; }
+        lock (runtimeGate) {
+            // Cancellation, close and the turn's error path must await the same owned stop.
+            if (runtimeStop is not null) return runtimeStop;
+            var owned = client; var ownedSession = session; var state = directory;
+            client = null; session = null; directory = null;
+            return runtimeStop = StopOwned();
+            async Task StopOwned() {
+                async Task Graceful() {
+                    if (owned is null) return;
+                    try {
+                        if (ownedSession is not null) {
+                            await ownedSession.DisposeAsync().ConfigureAwait(false);
+                            await owned.DeleteSessionAsync(Id).ConfigureAwait(false);
+                        }
+                    } finally { await owned.StopAsync().ConfigureAwait(false); }
+                }
+                if (!await StopOwnedRuntime(Graceful, () => owned?.ForceStopAsync() ?? Task.CompletedTask,
+                    () => owned?.DisposeAsync() ?? ValueTask.CompletedTask, state).ConfigureAwait(false))
+                    CleanupFailure = new(AssistFailureKind.Runtime, "AI アシストの終了処理を完了できませんでした。アプリを閉じ、次回起動時に再試行してください。", "再試行");
+            }
+        }
+    }
+    // The delegates are the SDK's unmanaged process operations; storage and deadline policy stay real.
+    internal static async Task<bool> StopOwnedRuntime(Func<Task> gracefulStop, Func<Task> forceStop,
+        Func<ValueTask> dispose, AssistRuntimeDirectory? state)
+    {
+        using var deadline = new CancellationTokenSource(ShutdownDeadline);
         var stopped = true;
-        if (owned is not null) {
-            async Task Graceful() {
-                try {
-                    if (ownedSession is not null) {
-                        await ownedSession.DisposeAsync().ConfigureAwait(false);
-                        await owned.DeleteSessionAsync(Id).ConfigureAwait(false);
-                    }
-                } finally { await owned.StopAsync().ConfigureAwait(false); }
+        async Task Graceful() { await gracefulStop().ConfigureAwait(false); await dispose().ConfigureAwait(false); }
+        var graceful = Graceful();
+        try { await graceful.WaitAsync(StopGrace).ConfigureAwait(false); }
+        catch {
+            try {
+                // Invoke before testing the remaining deadline: close may never skip the hard stop.
+                var forced = forceStop();
+                _ = forced.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                await forced.WaitAsync(deadline.Token).ConfigureAwait(false);
             }
-            var graceful = Graceful();
-            try { await graceful.WaitAsync(StopGrace).ConfigureAwait(false); }
-            catch {
-                try { await owned.ForceStopAsync().WaitAsync(StopGrace).ConfigureAwait(false); }
-                catch { stopped = false; }
-                _ = graceful.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
-            }
-            if (stopped) {
-                try { await owned.DisposeAsync().AsTask().WaitAsync(StopGrace).ConfigureAwait(false); }
-                catch { stopped = false; }
-            }
+            catch { stopped = false; }
+            _ = graceful.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
         }
         if (state is not null) {
             try { if (stopped) state.Dispose(); else state.ReleaseLease(); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { stopped = false; }
         }
-        if (!stopped) CleanupFailure = new(AssistFailureKind.Runtime, "AI アシストの終了処理を完了できませんでした。アプリを閉じ、次回起動時に再試行してください。", "再試行");
+        return stopped;
     }
     public ValueTask DisposeAsync()
     {
@@ -242,9 +264,8 @@ internal sealed class AssistConversation : IAsyncDisposable
     {
         lifetime.Cancel();
         try {
-            if (await turnGate.WaitAsync(StopGrace).ConfigureAwait(false)) {
-                try { await StopRuntime().ConfigureAwait(false); } finally { turnGate.Release(); }
-            } else await StopRuntime().ConfigureAwait(false);
+            // Stop immediately alongside cancellation; waiting for the turn would spend a second grace.
+            await StopRuntime().ConfigureAwait(false);
         }
         finally { apiKey = null; tools?.DiscardProposal(); }
     }

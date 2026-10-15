@@ -7,10 +7,12 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
     private readonly object gate = new();
     private readonly Dictionary<string, AssistTaskReference> references = [];
     private AssistProposal? pending;
+    private AssistProposal? turnProposal;
     public IReadOnlyList<AssistTaskReference> References { get { lock (gate) return references.Values.OrderBy(t => t.Id).ToArray(); } }
     public AssistProposal? PendingProposal { get { lock (gate) return pending; } }
+    public AssistProposal? TurnProposal { get { lock (gate) return turnProposal; } }
     public bool ProposalIsStale { get { lock (gate) return pending is { } p && session.CaptureRevision().Revision != p.Revision; } }
-    public void BeginTurn() { lock (gate) references.Clear(); }
+    public void BeginTurn() { lock (gate) { references.Clear(); turnProposal = null; } }
     private void Record(IEnumerable<AssistTaskReference> tasks) { foreach (var t in tasks) references[t.Identity] = t; }
     public AssistPage<AssistTaskReference> FindTasks(AssistFindTasks filter)
     {
@@ -34,7 +36,7 @@ internal sealed class AssistPlanTools(PlanSession session, DateOnly today, strin
         lock (gate) {
             var (document, revision) = session.CaptureRevision();
             var result = AssistProposal.Create(document, revision, today, changes);
-            if (result.Proposal is { } proposal) pending = proposal;
+            if (result.Proposal is { } proposal) pending = turnProposal = proposal;
             return result;
         }
     }

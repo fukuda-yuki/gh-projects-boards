@@ -88,6 +88,74 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
     }
 
+    [TestCase(false), TestCase(true), Category("Assist")]
+    public async Task AssistAcceptedProposalRefreshesTheScreenWhenSavingFails(bool onSummary)
+    {
+        var runtime = await EnableAssist(); runtime.Remaining = 16; await AskAssist();
+        if (onSummary) {
+            await Ui.Run(() => Ui.Click("PlanShowSummary"));
+            await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoad" && t.Text.Contains("残 8h")));
+        }
+        var session = workspace.Session!;
+        var undo = session.UndoCount;
+        using (var writer = new FileStream(new PlanStore(root).FileFor(session.Document.Project) + ".writer.lock",
+            FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) {
+            await Ui.Run(() => Ui.Click("AssistApply" + runtime.ProposalId));
+            await Ui.Until(() => Ui.Find<InfoBar>("PlanSaveFailure").IsOpen);
+            if (onSummary) await Ui.Until(() => Ui.Tree(view).OfType<TextBlock>().Any(t => AutomationProperties.GetAutomationId(t) == "SummaryRequiredLoad" && t.Text.Contains("残 16h")));
+            await Ui.Run(() => {
+                Ui.Trace($"Accepted proposal screen: title={Ui.Find<TextBox>("PlanCell1_Title").Text}; apply={Ui.Find<Button>("AssistApply" + runtime.ProposalId).IsEnabled}; state={Ui.Find<TextBlock>("AssistProposalState" + runtime.ProposalId).Text}");
+                Assert.That(Ui.Find<TextBox>("PlanCell1_Title").Text, Is.EqualTo("提案したタイトル"));
+                Assert.That(Ui.Find<Button>("AssistApply" + runtime.ProposalId).IsEnabled, Is.False);
+                Assert.That(Ui.Find<Button>("AssistDiscard" + runtime.ProposalId).IsEnabled, Is.False);
+                Assert.That(Ui.Find<TextBlock>("AssistProposalState" + runtime.ProposalId).Text, Is.EqualTo("適用しました。"));
+                AssertFailure("PlanSaveFailure", "保存できませんでした", "保存を再試行");
+                Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.True);
+            });
+            Assert.That(session.Document.State.Rows[0].Title, Is.EqualTo("提案したタイトル"));
+            Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+            Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+            Ui.Trace("Accepted edit, visible values, disabled proposal and save-failure feedback assertions completed.");
+            await Ui.Run(async () => await RenderedEvidence.Capture(view, onSummary ? "assist-summary-save-failed" : "assist-plan-save-failed"));
+        }
+        await Ui.Run(() => Ui.Click("PlanRetrySave"));
+        await Ui.Until(() => !Ui.Find<InfoBar>("PlanSaveFailure").IsOpen, () => Ui.Find<InfoBar>("PlanSaveFailure").Message);
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+    }
+
+    [Test, Category("Assist")]
+    public async Task AssistLaterAnswerWithoutProposalKeepsExactlyOneEarlierCard()
+    {
+        var runtime = await EnableAssist(); await AskAssist(); var first = runtime.ProposalId;
+        runtime.Propose = false;
+        await AskAssist("説明を続けてください");
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(view).OfType<Button>().Count(b => AutomationProperties.GetAutomationId(b) == "AssistApply" + first), Is.EqualTo(1));
+            Assert.That(Ui.Tree(view).OfType<TextBlock>().Count(t => t.Text == "変更の提案 1 件"), Is.EqualTo(1));
+            Assert.That(Ui.Find<Button>("AssistApply" + first).IsEnabled, Is.True);
+        });
+    }
+
+    [TestCase(false), TestCase(true), Category("Assist")]
+    public async Task AssistCloseForcesHungRuntimeAndDeletesItsStateBeforeReturning(bool alreadyEnding)
+    {
+        var runtime = await EnableAssist(); runtime.Hold = !alreadyEnding; runtime.HungShutdown = true;
+        await Ui.Run(() => { Ui.Find<TextBox>("AssistInput").Text = "終了まで待機"; Ui.Click("AssistSend"); });
+        await Ui.Until(() => runtime.Prompts.Count == 1);
+        Assert.That(Directory.Exists(runtime.StatePath!), Is.True);
+        if (alreadyEnding) {
+            await Ui.Until(() => Ui.Find<Button>("AssistSend").IsEnabled);
+            await Ui.Run(() => Ui.Click("AssistNewConversation"));
+            await Ui.Until(() => runtime.Disposed == 1);
+        }
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await Ui.Run(async () => Assert.That(await view.StopAsync(), Is.True));
+        Ui.Trace($"Close returned after {watch.Elapsed.TotalMilliseconds:F0} ms; force issued={runtime.Forced}; session state exists={Directory.Exists(runtime.StatePath!)}");
+        Assert.That(runtime.Forced, Is.True);
+        Assert.That(Directory.Exists(runtime.StatePath!), Is.False);
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(3.3)));
+    }
+
     [Test, Category("Assist")]
     public async Task AssistCompositionAndShiftEnterDoNotSendAndStopLeavesPlanEditable()
     {
@@ -274,29 +342,55 @@ internal sealed partial class PlanWorkspaceHostedTests
     {
         internal bool Hold, Fail;
         internal int Disposed;
+        internal bool Propose = true;
+        internal decimal? Remaining;
+        internal bool HungShutdown, Forced;
+        internal string? StatePath;
         internal string? ProposalId, CheckKey;
         internal readonly List<string> Prompts = [];
         internal readonly List<string?> Selected = [];
-        public IAssistTurn Create(AssistSettings settings, string root, string host, string login, AssistPlanTools tools, string? key) => new Turn(this, tools);
+        public IAssistTurn Create(AssistSettings settings, string root, string host, string login, AssistPlanTools tools, string? key) => new Turn(this, tools, root);
         public Task<AssistConnectionCheck> Check(AssistSettings settings, string root, string host, string login, string? key, CancellationToken cancellation) {
             CheckKey = key; return Task.FromResult(new AssistConnectionCheck(true, settings.Model, null, ["test-model"]));
         }
-        private sealed class Turn(ScriptedAssistRuntime owner, AssistPlanTools tools) : IAssistTurn
+        private sealed class Turn(ScriptedAssistRuntime owner, AssistPlanTools tools, string root) : IAssistTurn
         {
+            private readonly TaskCompletionSource killed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private AssistRuntimeDirectory? state;
             public async IAsyncEnumerable<AssistEvent> Send(string text, string? selected, [EnumeratorCancellation] CancellationToken cancellation)
             {
+                if (owner.HungShutdown) {
+                    state = new AssistRuntimeDirectory(root, Guid.NewGuid().ToString("N"));
+                    owner.StatePath = state.Path;
+                    File.WriteAllText(Path.Combine(state.Path, "session.json"), "temporary conversation");
+                }
                 owner.Prompts.Add(text); owner.Selected.Add(selected); tools.BeginTurn();
-                if (owner.Hold) await Task.Delay(Timeout.Infinite, cancellation);
+                if (owner.Hold) {
+                    if (owner.HungShutdown) await killed.Task;
+                    else await Task.Delay(Timeout.Infinite, cancellation);
+                    cancellation.ThrowIfCancellationRequested();
+                }
                 if (owner.Fail) { yield return new(AssistEventKind.Error, Failure: new(AssistFailureKind.Unreachable, "接続できませんでした。", "再試行")); yield break; }
                 var tasks = tools.GetTasks(["I1"]);
-                var proposal = tools.ProposeChanges([new("I1", PlanField.Title, JsonSerializer.SerializeToElement("提案したタイトル"))]).Proposal!;
-                owner.ProposalId = proposal.Id;
+                if (owner.Propose) {
+                    var changes = new List<AssistEdit> { new("I1", PlanField.Title, JsonSerializer.SerializeToElement("提案したタイトル")) };
+                    if (owner.Remaining is { } remaining) changes.Add(new("I1", PlanField.Remaining, JsonSerializer.SerializeToElement(remaining)));
+                    owner.ProposalId = tools.ProposeChanges(changes).Proposal!.Id;
+                }
                 yield return new(AssistEventKind.Delta, "計画を");
                 await Task.Yield();
                 yield return new(AssistEventKind.Delta, "確認しました");
-                yield return new(AssistEventKind.TurnEnd, References: tools.References, Proposal: proposal);
+                yield return new(AssistEventKind.TurnEnd, References: tools.References, Proposal: tools.TurnProposal);
             }
-            public ValueTask DisposeAsync() { owner.Disposed++; return ValueTask.CompletedTask; }
+            public async ValueTask DisposeAsync() {
+                owner.Disposed++;
+                if (!owner.HungShutdown) return;
+                using var ownedState = state;
+                var hung = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                await AssistConversation.StopOwnedRuntime(() => hung.Task,
+                    () => { owner.Forced = true; killed.TrySetResult(); hung.TrySetResult(); return Task.CompletedTask; },
+                    () => ValueTask.CompletedTask, ownedState);
+            }
         }
     }
 

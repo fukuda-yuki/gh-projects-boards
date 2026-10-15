@@ -8,6 +8,43 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class AssistSdkBoundaryTests
 {
+    [TestCase(false), TestCase(true)]
+    public async Task HungRuntimeShutdownUsesOneDeadlineAndForcesStopBeforeReturning(bool hangsOnDispose)
+    {
+        var root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "assist-stop-" + Guid.NewGuid().ToString("N"));
+        using var state = new AssistRuntimeDirectory(root, Guid.NewGuid().ToString("N"));
+        File.WriteAllText(Path.Combine(state.Path, "session.json"), "temporary conversation");
+        var hung = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var forced = false;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        try {
+            var stopped = await AssistConversation.StopOwnedRuntime(() => hangsOnDispose ? Task.CompletedTask : hung.Task,
+                () => { forced = true; hung.TrySetResult(); return Task.CompletedTask; },
+                () => new(hung.Task), state);
+            Assert.That(forced, Is.True, "Force stop must be issued even when graceful disposal hangs.");
+            Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(3.3)));
+            Assert.That(stopped, Is.True);
+            Assert.That(Directory.Exists(state.Path), Is.False);
+        } finally { hung.TrySetResult(); state.Dispose(); Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public async Task UnresponsiveForceStopReportsFailureWithinTheSameDeadlineAndRetainsStateForRecovery()
+    {
+        var root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "assist-stop-" + Guid.NewGuid().ToString("N"));
+        using var state = new AssistRuntimeDirectory(root, Guid.NewGuid().ToString("N"));
+        var hung = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var forced = false; var watch = System.Diagnostics.Stopwatch.StartNew();
+        try {
+            var stopped = await AssistConversation.StopOwnedRuntime(() => hung.Task,
+                () => { forced = true; return hung.Task; }, () => ValueTask.CompletedTask, state);
+            Assert.That(forced, Is.True);
+            Assert.That(stopped, Is.False);
+            Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(3.3)));
+            Assert.That(Directory.Exists(state.Path), Is.True);
+        } finally { hung.TrySetResult(); state.Dispose(); Directory.Delete(root, true); }
+    }
+
     [TestCase(AssistProvider.Openai, AssistWireApi.Completions, "openai", "completions")]
     [TestCase(AssistProvider.Openai, AssistWireApi.Responses, "openai", "responses")]
     [TestCase(AssistProvider.Anthropic, AssistWireApi.Completions, "anthropic", null)]

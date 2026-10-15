@@ -36,6 +36,7 @@ internal sealed partial class PlanWorkspaceView
     private object? assistContext;
     private CancellationTokenSource? assistCancellation, assistCheckCancellation;
     private Task assistTurn = Task.CompletedTask;
+    private Task assistShutdown = Task.CompletedTask;
     private Task assistCheckTask = Task.CompletedTask;
     private int assistGeneration;
     private FrameworkElement? assistSettingsHeading;
@@ -234,6 +235,7 @@ internal sealed partial class PlanWorkspaceView
     private void ClearAssistMessages() { assistMessages.Items.Clear(); assistProposals.Clear(); assistFailure.IsOpen = false; }
     private async Task EndAssist()
     {
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
         var generation = ++assistGeneration;
         var cancellation = assistCancellation; assistCancellation = null;
         cancellation?.Cancel(); assistCheckCancellation?.Cancel();
@@ -241,7 +243,12 @@ internal sealed partial class PlanWorkspaceView
         assistConversation = null; assistTools = null; assistSession = null; assistContext = null;
         try {
             var stop = conversation?.DisposeAsync().AsTask() ?? Task.CompletedTask;
-            await Task.WhenAll(stop, assistTurn, assistCheckTask).WaitAsync(TimeSpan.FromSeconds(3));
+            // Core owns the bounded graceful/force stop. Do not race it with a UI timeout.
+            // Close can overlap an already-started New conversation/settings shutdown.
+            assistShutdown = Task.WhenAll(assistShutdown.IsCompleted ? Task.CompletedTask : assistShutdown, stop);
+            await assistShutdown;
+            var remaining = AssistConversation.ShutdownDeadline - elapsed.Elapsed;
+            await Task.WhenAll(assistTurn, assistCheckTask).WaitAsync(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) {
             if (!closing && ex is not OperationCanceledException) ShowAssistFailure("会話を終了できませんでした。新しい会話で再試行してください。");
@@ -266,7 +273,7 @@ internal sealed partial class PlanWorkspaceView
                 assistMessages.Items.Add(link);
             }
         }
-        if (result.Proposal is not { } proposal) return;
+        if (result.Proposal is not { } proposal || assistProposals.Any(p => p.Proposal.Id == proposal.Id)) return;
         var card = new StackPanel { Spacing = 6 };
         card.Children.Add(Label($"変更の提案 {proposal.Changes.Count} 件"));
         var table = new Grid { ColumnSpacing = 6, RowSpacing = 4 };
@@ -299,7 +306,12 @@ internal sealed partial class PlanWorkspaceView
         var owner = assistTools!;
         var apply = Button("適用", "AssistApply" + proposal.Id, async () => {
             if (!ReferenceEquals(owner, assistTools) || workspace.Session != referenceSession) return;
-            try { Check(await owner.ApplyProposal(proposal.Id)); state.Text = "適用しました。"; RenderTasks(); }
+            try {
+                var save = owner.ApplyProposal(proposal.Id);
+                // Acceptance changes the document/history before persistence can fail.
+                state.Text = "適用しました。"; RenderTasks(); UpdateAssistProposals();
+                Check(await save);
+            }
             catch (InvalidOperationException ex) { state.Text = ex.Message; }
             UpdateAssistProposals();
         });

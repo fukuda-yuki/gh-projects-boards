@@ -70,6 +70,21 @@ internal sealed class AssistStorageTests
         Assert.ThrowsAsync<InvalidOperationException>(async () => await tools.ApplyProposal(first.Id));
         tools.DiscardProposal(); Assert.ThrowsAsync<InvalidOperationException>(async () => await tools.ApplyProposal(second.Id));
     }
+
+    [Test]
+    public async Task LaterTurnReportsNoOldProposalButKeepsItAvailableForApplication()
+    {
+        var tools = new AssistPlanTools(await Create(), AssistRulesTests.Today, "");
+        tools.BeginTurn();
+        var first = tools.ProposeChanges([new("A", PlanField.Remaining, JsonSerializer.SerializeToElement(24m))]).Proposal!;
+        Assert.That(tools.TurnProposal, Is.SameAs(first));
+        tools.BeginTurn(); tools.GetTasks(["A"]);
+        Assert.That(tools.TurnProposal, Is.Null);
+        Assert.That(tools.PendingProposal, Is.SameAs(first));
+        var second = tools.ProposeChanges([new("A", PlanField.Remaining, JsonSerializer.SerializeToElement(40m))]).Proposal!;
+        Assert.That(tools.TurnProposal, Is.SameAs(second));
+        Assert.That(tools.PendingProposal, Is.SameAs(second));
+    }
     [Test]
     public async Task ModelReceivesOnlyFiveCustomToolsAndNoApplyOrPublishTool()
     {
