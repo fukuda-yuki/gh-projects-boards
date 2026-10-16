@@ -79,11 +79,14 @@ internal sealed class PlanProjectChooser : Grid
         });
         projects.ContainerContentChanging += (_, e) => Row(e, item => {
             var choice = (ProjectChoice)item; var listing = listings.First(p => p.Choice.Id == choice.Id);
-            var row = new StackPanel { Spacing = 2, Padding = new(0, 6, 0, 6) }; row.Children.Add(Text(choice.Title));
+            var row = new StackPanel { Spacing = 2, Padding = new(0, 6, 0, 6) };
+            var heading = new Grid { ColumnSpacing = listing.Closed ? 8 : 0 }; heading.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); heading.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+            if (listing.Closed) heading.Children.Add(new Border { BorderThickness = new(1), CornerRadius = new(4), Padding = new(6, 0, 6, 1), VerticalAlignment = VerticalAlignment.Top,
+                BorderBrush = PlanSheetView.Brush("TextFillColorSecondaryBrush"), Child = Metadata("終了") });
+            var title = Text(choice.Title); heading.Children.Add(title); SetColumn(title, 1); row.Children.Add(heading);
             var names = listing.Repositories.Select(r => ProjectChooserFilter.RepositoryName(r, choice.OwnerLogin)).ToArray();
             var repositoriesText = names.Length == 0 ? "" : " · " + string.Join(", ", names.Take(2)) + (names.Length > 2 ? $" +{names.Length - 2}" : "");
             row.Children.Add(Metadata($"#{choice.Number} · 更新 {listing.UpdatedAt.ToString("yyyy/MM/dd", System.Globalization.CultureInfo.InvariantCulture)}{repositoriesText}"));
-            if (listing.Closed) row.Children.Add(Metadata("終了"));
             return row;
         });
         owners.SelectionChanged += (_, _) => { if (!syncing) StartLoad(); };

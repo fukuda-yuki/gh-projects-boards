@@ -16,8 +16,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true,"holdQuery":"RegistrationProjects"}""");
         await Ui.Run(() => Ui.Click("PlanConnect"));
         var marker = Path.Combine(root, "held-gh.pid");
-        await Ui.Until(() => File.Exists(marker));
-        using var process = System.Diagnostics.Process.GetProcessById(int.Parse(File.ReadAllText(marker)));
+        int pid = 0;
+        await Ui.Until(() => { try { return File.Exists(marker) && int.TryParse(File.ReadAllText(marker), out pid); } catch (IOException) { return false; } });
+        using var process = System.Diagnostics.Process.GetProcessById(pid);
         var previousContext = workspace.Context;
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanProjectListingStatus").Text, Is.EqualTo("読み込み中…"));
@@ -113,9 +114,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 1);
         await ProjectChooserTestActions.SelectOwner("fixture-user");
         await Ui.Run(() => Ui.Find<TextBox>("PlanProjectSearch").Text = "#3");
-        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").ContainerFromIndex(0) is ListViewItem { IsLoaded: true, IsEnabled: true } item && item.Content is ProjectChoice { Number: 3 });
-        await Ui.Run(() => ((ISelectionItemProvider)FrameworkElementAutomationPeer.CreatePeerForElement((ListViewItem)Ui.Find<ListView>("AvailableProjects").ContainerFromIndex(0))
-            .GetPattern(PatternInterface.SelectionItem)).Select());
+        await Ui.Until(() => Ui.Find<ListView>("AvailableProjects") is var list && list.ContainerFromIndex(0) is ListViewItem { IsLoaded: true, IsEnabled: true } item && list.ItemFromContainer(item) is ProjectChoice { Number: 3 });
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedIndex = 0);
         await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1"); await Ui.Idle();
         var requests = File.ReadAllLines(Path.Combine(root, "listing-requests.txt")).Length;
         await PickerCommand("PlanChooseProject");
