@@ -105,7 +105,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(Ui.Find<CheckBox>("PlanProjectShowClosed").IsChecked, Is.True);
             var owners = Ui.Find<ListView>("PlanProjectOwners"); owners.SelectedItem = owners.Items.Cast<OwnerChoice>().Single(o => o.Login == "broken");
         });
-        await Ui.Ready<Button>("PlanProjectsRetry");
+        // The retry button is part of the loaded tree while collapsed; gh retries a 500 before the failure is shown.
+        await Ui.Until(() => Ui.Find<Button>("PlanProjectsRetry").Visibility == Visibility.Visible);
         await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanProjectListingStatus").Text, Does.Contain("取得できません")));
         File.WriteAllText(Path.Combine(root, "recover-owner"), "");
         await Ui.Run(() => Ui.Click("PlanProjectsRetry"));
