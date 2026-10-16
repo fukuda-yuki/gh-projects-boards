@@ -12,6 +12,47 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 internal sealed partial class PlanWorkspaceHostedTests
 {
     [Test]
+    public async Task ColumnWidthSettingClearsRejectsAndResetsWithoutChangingOtherSettings()
+    {
+        await Open();
+        var session = workspace.Session!;
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBox>("PlanColumnWidthTitle");
+        await Ui.Run(() => {
+            var input = Ui.Find<TextBox>("PlanColumnWidthTitle");
+            Assert.That(input.Header, Is.Null);
+            Assert.That(input.PlaceholderText, Is.EqualTo("224"));
+            Assert.That(AutomationProperties.GetName(input), Is.EqualTo("タスク名 の幅"));
+            Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanColumnWidthIndicator"), Is.False);
+        });
+        await CommitText("PlanColumnWidthTitle", "320");
+        await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width == 320);
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        await CommitText("PlanColumnWidthTitle", "801");
+        await Ui.Until(() => AutomationProperties.GetHelpText(Ui.Find<TextBox>("PlanColumnWidthTitle")).Contains("40〜800"));
+        Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await CommitText("PlanColumnWidthTitle", "");
+        await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width is null);
+        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Ready<TextBlock>("PlanHeaderTitle");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 224);
+        await OpenColumnSettingsThroughOverflow();
+        await Ui.Ready<TextBox>("PlanColumnWidthTitle");
+        await CommitText("PlanColumnWidthTitle", "320");
+        await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width == 320);
+        var beforeReset = session.UndoCount;
+        await Ui.Run(() => Ui.Click("PlanColumnReset"));
+        await Ui.Until(() => session.Document.State.Settings.SheetColumns.IsEmpty);
+        Assert.That(session.UndoCount, Is.EqualTo(beforeReset + 1));
+        await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Ready<TextBlock>("PlanHeaderTitle");
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 224);
+        await Ui.Run(() => Ui.Click("PlanUndo"));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 320);
+    }
+
+    [Test]
     public async Task DeletedExtraEditIsVisibleAndDiscardableWithoutBlockingOtherChanges()
     {
         await Open();
@@ -61,7 +102,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         });
         await Ui.Run(() => {
             Assert.That(Ui.Find<TextBlock>("PlanColumnSettings").Text,Is.EqualTo("計画シートの列"));
-            Assert.That(Ui.Find<TextBlock>("PlanColumnIntro").Text,Is.EqualTo("表示する列、順序（ドラッグ）、表示名を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。"));
+            Assert.That(Ui.Find<TextBlock>("PlanColumnIntro").Text,Is.EqualTo("表示する列、順序（ドラッグ）、表示名、幅を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。"));
             Assert.That(Ui.Find<TextBlock>("PlanColumnFootnote").Text,Is.EqualTo("見出しにマウスを置くと GitHub のフィールド名を表示します。リポジトリは移すと Issue の移管になるため、読み取りのみです。"));
             var input = Ui.Find<TextBox>("PlanColumnNameTitle");
             Assert.That(input.Header,Is.Null);
@@ -168,6 +209,99 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 internal sealed partial class PlanSheetHostedTests
 {
+    [TestCase("Title", 320d, 224d), TestCase("Id", 100d, 52d)]
+    public async Task HeaderRangeValueResizesAlignedRowsAndUndoRestoresWidth(string key, double width, double original)
+    {
+        await Ui.Ready<FrameworkElement>("PlanHeaderGrip" + key);
+        var undo = session.UndoCount;
+        await Ui.Run(() => {
+            Assert.That(Ui.Tree(sheet).OfType<FrameworkElement>().Any(e => AutomationProperties.GetAutomationId(e) == "PlanHeaderGripIndicator"), Is.False);
+            var grip = Ui.Find<FrameworkElement>("PlanHeaderGrip" + key);
+            Assert.That(((Control)grip).IsTabStop, Is.False);
+            Assert.That(AutomationProperties.GetName(grip), Is.EqualTo((key == "Title" ? "タスク名" : "ID") + " の幅"));
+            var range = (IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(grip).GetPattern(PatternInterface.RangeValue);
+            Assert.That(range.Minimum, Is.EqualTo(40)); Assert.That(range.Maximum, Is.EqualTo(800));
+            Assert.That(range.Value, Is.EqualTo(original)); range.SetValue(width);
+        });
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).ActualWidth == width && session.UndoCount == undo + 1);
+        await Ui.Run(() => {
+            var header = Ui.Find<TextBlock>("PlanHeader" + key);
+            foreach (var row in sheet.Realized.Where(r => r.Identity.Length > 0 && r.IsLoaded)) {
+                var number = sheet.PlanIds[row.Identity];
+                var cell = key == "Id" ? Ui.Find<FrameworkElement>("PlanRowId" + number) : Ui.Find<FrameworkElement>("PlanCell" + number + "_Title");
+                Assert.That(cell.ActualWidth, Is.EqualTo(width).Within(4));
+                Assert.That(cell.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(header.TransformToVisual(sheet).TransformPoint(new()).X).Within(2));
+                Assert.That(row.ColumnDefinitions[0].ActualWidth, Is.EqualTo(sheet.SheetViewport).Within(1));
+            }
+        });
+        await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).ActualWidth == original && session.UndoCount == undo);
+    }
+
+    [Test]
+    public async Task InvalidPendingInputRejectsHeaderWidthWithoutAnUndoStep()
+    {
+        await Edit(1, "Remaining", "invalid");
+        var undo = session.UndoCount;
+        await Ui.Run(() => ((IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
+            Ui.Find<FrameworkElement>("PlanHeaderGripTitle")).GetPattern(PatternInterface.RangeValue)).SetValue(320));
+        await Ui.Run(async () => await sheet.Run(() => Task.CompletedTask));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(224));
+            Assert.That(Ui.Find<TextBox>("PlanCell1_Remaining").Text, Is.EqualTo("invalid"));
+        });
+        Assert.That(session.UndoCount, Is.EqualTo(undo));
+        await Edit(1, "Remaining", "9");
+    }
+
+    [TestCase(false), TestCase(true)]
+    public async Task LockedSettingsRejectHeaderWidthAndReportTheReason(bool publishPending)
+    {
+        await Ui.Ready<FrameworkElement>("PlanHeaderGripTitle");
+        var undo = session.UndoCount;
+        if (publishPending) Assert.That((await session.SaveSync(session.Document.Sync with { Publish = new(Guid.NewGuid().ToString("N"), []) })).Succeeded, Is.True);
+        using (publishPending ? null : session.BeginRemoteOperation()) {
+            await Ui.Run(() => ((IRangeValueProvider)FrameworkElementAutomationPeer.CreatePeerForElement(
+                Ui.Find<FrameworkElement>("PlanHeaderGripTitle")).GetPattern(PatternInterface.RangeValue)).SetValue(320));
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Contains(publishPending ? "発行結果を確認" : "更新または発行が進行中"));
+            await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").Width, Is.EqualTo(224)));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+            Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
+        }
+        if (publishPending) await session.SaveSync(session.Document.Sync with { Publish = null });
+    }
+
+    [Test, Category("PlanSheetNative")]
+    public async Task HeaderGripDragPreviewsThenCommitsAndDoubleClickFitsDisplayedCells()
+    {
+        var rows = ImmutableArray.Create(new PlanRow("I1", "Parent", "acme/repo"),
+            new PlanRow("I2", "A child title that should fit without being cut off", "acme/repo") { Parent = "I1" });
+        await MountPresentation(rows, rows);
+        var undo = session.UndoCount;
+        var start = await SheetNativeInput.PointFor("PlanHeaderGripTitle");
+        double scale = 1;
+        await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
+        await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth > 224);
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+            Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
+        });
+        await Ui.Until(() => session.UndoCount == undo + 1 && Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth - 288) <= 1);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth, Is.EqualTo(288).Within(1)));
+        var point = await SheetNativeInput.PointFor("PlanHeaderGripTitle");
+        SheetNativeInput.Move(point);
+        SheetNativeInput.Button(true); SheetNativeInput.Button(false);
+        SheetNativeInput.Button(true); SheetNativeInput.Button(false);
+        await Ui.Until(() => session.UndoCount == undo + 2 && Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth
+            == PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width);
+        await Ui.Run(() => {
+            var cell = Ui.Find<PlanSheetCell>("PlanCell2_Title");
+            var measure = new TextBlock { Text = rows[1].Title, FontSize = cell.FontSize, FontFamily = cell.FontFamily, FontWeight = cell.FontWeight };
+            measure.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth, Is.InRange(Math.Ceiling(measure.DesiredSize.Width + 40), Math.Ceiling(measure.DesiredSize.Width + 44)));
+        });
+    }
+
     [TestCase("TEXT", "\"held\""), TestCase("NUMBER", "8"), TestCase("DATE", "\"2026-10-14\""), TestCase("SINGLE_SELECT", "\"High\"")]
     public async Task UnenteredLocalExtraCopiesBlankAndDoesNotClearPasteDestination(string type, string held)
     {

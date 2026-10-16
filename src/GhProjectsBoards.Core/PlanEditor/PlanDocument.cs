@@ -43,7 +43,7 @@ internal sealed record PlanHolidayData(string Version, string Source, string Sou
     public HolidayPreset ToPreset() => new(Version, Source, SourceSha256, RetrievedAt, FirstYear, LastYear,
         Dates.Select(d => new HolidayDate(d.Date, d.Name)).ToArray());
 }
-internal sealed record PlanSheetColumnChoice(string Key, bool Visible, string? DisplayName);
+internal sealed record PlanSheetColumnChoice(string Key, bool Visible, string? DisplayName, double? Width = null);
 internal sealed record ProjectPlanSettings
 {
     public ImmutableArray<PlanSheetColumnChoice> SheetColumns { get; init; } = [];
