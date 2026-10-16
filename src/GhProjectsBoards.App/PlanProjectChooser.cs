@@ -16,8 +16,8 @@ internal sealed class PlanProjectChooser : Grid
     private readonly ListView owners = List("PlanProjectOwners", "組織", 1);
     private readonly ListView repositories = List("PlanProjectRepositories", "リポジトリ", 2);
     private readonly ListView projects = List("AvailableProjects", "プロジェクト", 6);
-    private readonly TextBox search = Named(new TextBox { PlaceholderText = "名前または番号で絞り込み", Header = "検索", TabIndex = 3 }, "PlanProjectSearch", "名前または番号で絞り込み");
-    private readonly ToggleSwitch closed = Named(new ToggleSwitch { Header = "終了済みも表示（0）", TabIndex = 4 }, "PlanProjectShowClosed", "終了済みも表示（0）");
+    private readonly TextBox search = Named(new TextBox { PlaceholderText = "名前または番号で絞り込み", TabIndex = 3, Width = 320 }, "PlanProjectSearch", "名前または番号で絞り込み");
+    private readonly CheckBox closed = Named(new CheckBox { Content = "終了済みも表示（0）", TabIndex = 4, MinWidth = 0 }, "PlanProjectShowClosed", "終了済みも表示（0）");
     private readonly Button reload = Named(new Button { Content = new SymbolIcon(Symbol.Refresh), TabIndex = 5 }, "PlanProjectsReload", "一覧を更新");
     private readonly Button retry = Named(new Button { Content = "再試行", Visibility = Visibility.Collapsed }, "PlanProjectsRetry", "再試行");
     private readonly TextBlock status = Named(new TextBlock { TextWrapping = TextWrapping.Wrap }, "PlanProjectListingStatus", "プロジェクトの取得状況");
@@ -51,16 +51,17 @@ internal sealed class PlanProjectChooser : Grid
         columns.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var ownerColumn = Column("組織", owners); var repositoryColumn = Column("リポジトリ", repositories);
         var projectColumn = new Grid { RowSpacing = 8 };
-        for (var i = 0; i < 4; i++) projectColumn.RowDefinitions.Add(new() { Height = GridLength.Auto });
+        for (var i = 0; i < 3; i++) projectColumn.RowDefinitions.Add(new() { Height = GridLength.Auto });
         projectColumn.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         projectColumn.Children.Add(Heading("プロジェクト"));
-        projectColumn.Children.Add(search); SetRow(search, 1);
-        var commands = new Grid(); commands.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); commands.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
-        commands.Children.Add(closed); commands.Children.Add(reload); SetColumn(reload, 1); reload.VerticalAlignment = VerticalAlignment.Center;
-        ToolTipService.SetToolTip(reload, "一覧を更新"); projectColumn.Children.Add(commands); SetRow(commands, 2);
+        var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
+        commands.Children.Add(search); commands.Children.Add(closed); commands.Children.Add(reload); reload.VerticalAlignment = VerticalAlignment.Center;
+        ToolTipService.SetToolTip(reload, "一覧を更新"); projectColumn.Children.Add(commands); SetRow(commands, 1);
         var feedback = new StackPanel { Spacing = 8 }; feedback.Children.Add(progress); feedback.Children.Add(status); feedback.Children.Add(retry);
-        projectColumn.Children.Add(feedback); SetRow(feedback, 3);
-        projectColumn.Children.Add(projects); SetRow(projects, 4);
+        projectColumn.Children.Add(feedback); SetRow(feedback, 2);
+        projectColumn.Children.Add(projects); SetRow(projects, 3);
+        // On wide screens a full-width list separates a title from its metadata; keep the column readable.
+        projectColumn.MaxWidth = 860; projectColumn.HorizontalAlignment = HorizontalAlignment.Left;
         columns.Children.Add(ownerColumn); columns.Children.Add(repositoryColumn); SetColumn(repositoryColumn, 1);
         columns.Children.Add(projectColumn); SetColumn(projectColumn, 2);
         Children.Add(columns); SetRow(columns, 2);
@@ -73,12 +74,12 @@ internal sealed class PlanProjectChooser : Grid
             row.Children.Add(Text(choice.DisplayText)); var count = Text(choice.Count.ToString()); count.Margin = new(12, 0, 0, 0); row.Children.Add(count); SetColumn(count, 1); return row;
         });
         recent.ContainerContentChanging += (_, e) => Row(e, item => {
-            var choice = (ProjectChoice)item; var row = new StackPanel { Width = 280, Spacing = 4 };
+            var choice = (ProjectChoice)item; var row = new StackPanel { Width = 280, Spacing = 2, Padding = new(0, 6, 0, 6) };
             var title = Text(choice.Title); title.MaxLines = 2; title.TextTrimming = TextTrimming.CharacterEllipsis; ToolTipService.SetToolTip(title, choice.Title); row.Children.Add(title); row.Children.Add(Metadata($"{choice.OwnerLogin} · プロジェクト {choice.Number}")); return row;
         });
         projects.ContainerContentChanging += (_, e) => Row(e, item => {
             var choice = (ProjectChoice)item; var listing = listings.First(p => p.Choice.Id == choice.Id);
-            var row = new StackPanel { Spacing = 4 }; row.Children.Add(Text(choice.Title));
+            var row = new StackPanel { Spacing = 2, Padding = new(0, 6, 0, 6) }; row.Children.Add(Text(choice.Title));
             var names = listing.Repositories.Select(r => ProjectChooserFilter.RepositoryName(r, choice.OwnerLogin)).ToArray();
             var repositoriesText = names.Length == 0 ? "" : " · " + string.Join(", ", names.Take(2)) + (names.Length > 2 ? $" +{names.Length - 2}" : "");
             row.Children.Add(Metadata($"#{choice.Number} · 更新 {listing.UpdatedAt.ToString("yyyy/MM/dd", System.Globalization.CultureInfo.InvariantCulture)}{repositoriesText}"));
@@ -88,7 +89,8 @@ internal sealed class PlanProjectChooser : Grid
         owners.SelectionChanged += (_, _) => { if (!syncing) StartLoad(); };
         repositories.SelectionChanged += (_, _) => { if (!syncing && loaded) Filter(); };
         search.TextChanged += (_, _) => { if (loaded) Filter(); };
-        closed.Toggled += (_, _) => { if (loaded) { RepositoryEntries(); Filter(); } };
+        RoutedEventHandler closedChanged = (_, _) => { if (loaded) { RepositoryEntries(); Filter(); } };
+        closed.Checked += closedChanged; closed.Unchecked += closedChanged;
         reload.Click += (_, _) => StartLoad(reload: true, resetRepository: false);
         retry.Click += (_, _) => StartLoad(reload: true, resetRepository: false);
         projects.SelectionChanged += async (_, _) => { if (!syncing && projects.SelectedItem is ProjectChoice choice) await Open(choice); };
@@ -133,7 +135,7 @@ internal sealed class PlanProjectChooser : Grid
     {
         loaded = false; syncing = true;
         try { projects.ItemsSource = null; repositories.ItemsSource = null; } finally { syncing = false; }
-        progress.Visibility = Visibility.Visible; closed.Header = "終了済みも表示"; AutomationProperties.SetName(closed, "終了済みも表示"); status.Text = "読み込み中…"; retry.Visibility = Visibility.Collapsed;
+        progress.Visibility = Visibility.Visible; closed.Content = "終了済みも表示"; AutomationProperties.SetName(closed, "終了済みも表示"); status.Text = "読み込み中…"; retry.Visibility = Visibility.Collapsed;
         try {
             var result = await workspace.Listings(owner.Login, reload, source.Token);
             if (version != generation || source.IsCancellationRequested || !ReferenceEquals(context, workspace.Context)) return;
@@ -152,7 +154,7 @@ internal sealed class PlanProjectChooser : Grid
     private void RepositoryEntries(ProjectRepositoryChoice? selection = null)
     {
         selection ??= repositories.SelectedItem as ProjectRepositoryChoice;
-        var entries = ProjectChooserFilter.Repositories(listings, ((OwnerChoice)owners.SelectedItem).Login, closed.IsOn);
+        var entries = ProjectChooserFilter.Repositories(listings, ((OwnerChoice)owners.SelectedItem).Login, closed.IsChecked == true);
         syncing = true;
         try { repositories.ItemsSource = entries;
             repositories.SelectedItem = entries.FirstOrDefault(e => e.Kind == selection?.Kind && string.Equals(e.NameWithOwner, selection.NameWithOwner, StringComparison.OrdinalIgnoreCase)) ?? entries[0]; }
@@ -161,11 +163,11 @@ internal sealed class PlanProjectChooser : Grid
     private void Filter()
     {
         if (repositories.SelectedItem is not ProjectRepositoryChoice repository) return;
-        var result = ProjectChooserFilter.Projects(listings, repository, closed.IsOn, search.Text);
+        var result = ProjectChooserFilter.Projects(listings, repository, closed.IsChecked == true, search.Text);
         syncing = true; try { projects.ItemsSource = result.Select(p => p.Choice).ToArray(); } finally { syncing = false; }
         var label = $"終了済みも表示（{ProjectChooserFilter.ClosedCount(listings, repository)}）";
-        closed.Header = label; AutomationProperties.SetName(closed, label);
-        status.Text = ProjectChooserFilter.EmptyReason(listings, repository, closed.IsOn, search.Text) switch {
+        closed.Content = label; AutomationProperties.SetName(closed, label);
+        status.Text = ProjectChooserFilter.EmptyReason(listings, repository, closed.IsChecked == true, search.Text) switch {
             ProjectChooserEmptyReason.NoProjects => "プロジェクトがありません。",
             ProjectChooserEmptyReason.AllClosed => "すべてのプロジェクトが終了済みです。終了済みも表示をオンにしてください。",
             ProjectChooserEmptyReason.NoSearchMatch => "検索条件に一致するプロジェクトがありません。", _ => "" };

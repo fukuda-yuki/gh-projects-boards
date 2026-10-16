@@ -56,7 +56,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(((OwnerChoice)Ui.Find<ListView>("PlanProjectOwners").SelectedItem).Login, Is.EqualTo("fixture-user"));
             Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Cast<ProjectChoice>().Select(p => p.Number),
                 Is.EqualTo(Enumerable.Range(1, 80).Where(i => i % 4 != 0).Select(i => i == 1 ? 3 : i + 10).Reverse()));
-            Assert.That(Ui.Find<ToggleSwitch>("PlanProjectShowClosed").Header, Is.EqualTo("終了済みも表示（20）"));
+            Assert.That(Ui.Find<CheckBox>("PlanProjectShowClosed").Content, Is.EqualTo("終了済みも表示（20）"));
             foreach (var id in new[] { "PlanProjectOwners", "PlanProjectRepositories", "AvailableProjects", "PlanProjectSearch", "PlanProjectShowClosed" }) {
                 var element = Ui.Find<FrameworkElement>(id);
                 var bounds = element.TransformToVisual(view).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
@@ -64,7 +64,7 @@ internal sealed partial class PlanWorkspaceHostedTests
                 Assert.That(bounds.Top, Is.GreaterThanOrEqualTo(0)); Assert.That(bounds.Bottom, Is.LessThanOrEqualTo(1032));
             }
             Assert.That(Ui.Tree(Ui.Find<ListView>("AvailableProjects")).OfType<ScrollViewer>().Any(s => s.ScrollableHeight > 0), Is.True);
-            Ui.Find<ToggleSwitch>("PlanProjectShowClosed").IsOn = true;
+            Ui.Find<CheckBox>("PlanProjectShowClosed").IsChecked = true;
         });
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 80);
         await Ui.Until(() => Ui.Tree(Ui.Find<ListView>("AvailableProjects")).OfType<TextBlock>().Any(t => t.Text == "終了"));
@@ -76,7 +76,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             list.SelectedItem = list.Items.Cast<ProjectRepositoryChoice>().Single(r => r.NameWithOwner == "fixture-user/alpha");
             Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Cast<ProjectChoice>().Select(p => p.Number),
                 Is.EquivalentTo(Enumerable.Range(1, 80).Where(i => i % 3 == 1).Select(i => i == 1 ? 3 : i + 10)));
-            Assert.That(Ui.Find<ToggleSwitch>("PlanProjectShowClosed").Header, Is.EqualTo("終了済みも表示（7）"));
+            Assert.That(Ui.Find<CheckBox>("PlanProjectShowClosed").Content, Is.EqualTo("終了済みも表示（7）"));
             list.SelectedItem = list.Items.Cast<ProjectRepositoryChoice>().Single(r => r.Kind == ProjectRepositoryKind.Unlinked);
             Assert.That(Ui.Find<ListView>("AvailableProjects").Items.Cast<ProjectChoice>().Select(p => p.Number),
                 Is.EquivalentTo(Enumerable.Range(1, 80).Where(i => i % 3 == 0).Select(i => i + 10)));
@@ -91,7 +91,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Run(() => {
             Assert.That(Ui.Find<ListView>("AvailableProjects").Items, Is.Empty);
             Assert.That(Ui.Find<TextBlock>("PlanProjectListingStatus").Text, Is.EqualTo("検索条件に一致するプロジェクトがありません。"));
-            Assert.That(Ui.Find<ToggleSwitch>("PlanProjectShowClosed").Header, Is.EqualTo("終了済みも表示（6）"));
+            Assert.That(Ui.Find<CheckBox>("PlanProjectShowClosed").Content, Is.EqualTo("終了済みも表示（6）"));
             Ui.Find<TextBox>("PlanProjectSearch").Text = "";
         });
         await Ui.Until(() => Ui.Find<ListView>("AvailableProjects").Items.Count == 26);
@@ -102,7 +102,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         await ProjectChooserTestActions.SelectOwner("acme");
         await Ui.Run(() => {
             Assert.That(((ProjectRepositoryChoice)Ui.Find<ListView>("PlanProjectRepositories").SelectedItem).Kind, Is.EqualTo(ProjectRepositoryKind.All));
-            Assert.That(Ui.Find<ToggleSwitch>("PlanProjectShowClosed").IsOn, Is.True);
+            Assert.That(Ui.Find<CheckBox>("PlanProjectShowClosed").IsChecked, Is.True);
             var owners = Ui.Find<ListView>("PlanProjectOwners"); owners.SelectedItem = owners.Items.Cast<OwnerChoice>().Single(o => o.Login == "broken");
         });
         await Ui.Ready<Button>("PlanProjectsRetry");
