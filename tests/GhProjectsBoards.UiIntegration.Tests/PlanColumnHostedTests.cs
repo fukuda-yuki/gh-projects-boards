@@ -38,9 +38,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width is null);
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 224);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 224);
         await OpenColumnSettingsThroughOverflow();
-        await Ui.Ready<TextBox>("PlanColumnWidthTitle");
+        // The page stays loaded while hidden; wait until the reopened settings can take focus.
+        await Ui.Until(() => Ui.Find<TextBox>("PlanColumnWidthTitle").Focus(FocusState.Programmatic));
         await CommitText("PlanColumnWidthTitle", "320");
         await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width == 320);
         var beforeReset = session.UndoCount;
@@ -49,9 +50,9 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(session.UndoCount, Is.EqualTo(beforeReset + 1));
         await Ui.Run(() => Ui.Click("PlanSettingsBack"));
         await Ui.Ready<TextBlock>("PlanHeaderTitle");
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 224);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 224);
         await Ui.Run(() => Ui.Click("PlanUndo"));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth == 320);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width == 320);
     }
 
     [Test]
@@ -211,6 +212,7 @@ internal sealed partial class PlanWorkspaceHostedTests
 
 internal sealed partial class PlanSheetHostedTests
 {
+    // A header TextBlock reports its text extent as ActualWidth; RenderSize is the arranged column width.
     [TestCase("Title", 320d, 224d), TestCase("Id", 100d, 52d)]
     public async Task HeaderRangeValueResizesAlignedRowsAndUndoRestoresWidth(string key, double width, double original)
     {
@@ -225,19 +227,22 @@ internal sealed partial class PlanSheetHostedTests
             Assert.That(range.Minimum, Is.EqualTo(40)); Assert.That(range.Maximum, Is.EqualTo(800));
             Assert.That(range.Value, Is.EqualTo(original)); range.SetValue(width);
         });
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).ActualWidth == width && session.UndoCount == undo + 1);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).RenderSize.Width == width && session.UndoCount == undo + 1);
         await Ui.Run(() => {
-            var header = Ui.Find<TextBlock>("PlanHeader" + key);
+            // Every later column starts where its header starts, which also proves a widened ID column.
             foreach (var row in sheet.Realized.Where(r => r.Identity.Length > 0 && r.IsLoaded)) {
                 var number = sheet.PlanIds[row.Identity];
-                var cell = key == "Id" ? Ui.Find<FrameworkElement>("PlanRowId" + number) : Ui.Find<FrameworkElement>("PlanCell" + number + "_Title");
-                Assert.That(cell.ActualWidth, Is.EqualTo(width).Within(4));
-                Assert.That(cell.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(header.TransformToVisual(sheet).TransformPoint(new()).X).Within(2));
+                foreach (var column in sheet.VisibleColumns.Where(c => c.Field is not null)) {
+                    var header = Ui.Find<TextBlock>("PlanHeader" + column.Field);
+                    var cell = Ui.Find<FrameworkElement>("PlanCell" + number + "_" + column.Field);
+                    Assert.That(cell.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(header.TransformToVisual(sheet).TransformPoint(new()).X).Within(2), column.Field);
+                }
+                if (key == "Title") Assert.That(Ui.Find<FrameworkElement>("PlanCell" + number + "_Title").RenderSize.Width, Is.EqualTo(width).Within(4));
                 Assert.That(row.ColumnDefinitions[0].ActualWidth, Is.EqualTo(sheet.SheetViewport).Within(1));
             }
         });
         await Ui.Run(async () => await sheet.KeyboardCommand(Windows.System.VirtualKey.Z));
-        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).ActualWidth == original && session.UndoCount == undo);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanHeader" + key).RenderSize.Width == original && session.UndoCount == undo);
     }
 
     [Test]
@@ -284,25 +289,25 @@ internal sealed partial class PlanSheetHostedTests
         await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
         using (session.BeginRemoteOperation()) {
             await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
-                await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth > 224);
+                await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 224);
                 Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
                 Assert.That(session.UndoCount, Is.EqualTo(undo));
             });
             await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Contains("更新または発行が進行中"));
             await SheetNativeInput.Rendered();
             await Ui.Run(() => {
-                foreach (var column in sheet.VisibleColumns) {
-                    var key = column.Indicator ? "Indicator" : column.Field ?? "Id";
+                // The ID number sizes to its text, so the ID column is covered by the next columns' positions and its grip.
+                foreach (var column in sheet.VisibleColumns.Where(c => c.Field is not null || c.Indicator)) {
+                    var key = column.Indicator ? "Indicator" : column.Field!;
                     var header = Ui.Find<TextBlock>("PlanHeader" + key);
-                    var cell = Ui.Find<FrameworkElement>(column.Indicator ? "PlanIndicator2"
-                        : column.Field is null ? "PlanRowId2" : "PlanCell2_" + key);
+                    var cell = Ui.Find<FrameworkElement>(column.Indicator ? "PlanIndicator2" : "PlanCell2_" + key);
                     var left = cell.TransformToVisual(sheet).TransformPoint(new()).X;
-                    Assert.That(header.ActualWidth, Is.EqualTo(cell.ActualWidth).Within(1), key);
+                    Assert.That(header.RenderSize.Width, Is.EqualTo(cell.RenderSize.Width).Within(1), key);
                     Assert.That(header.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(left).Within(1), key);
                     if (!column.Indicator) {
                         var grip = Ui.Find<FrameworkElement>("PlanHeaderGrip" + key);
                         Assert.That(grip.TransformToVisual(sheet).TransformPoint(new()).X + grip.ActualWidth / 2,
-                            Is.EqualTo(left + cell.ActualWidth).Within(1), key);
+                            Is.EqualTo(left + cell.RenderSize.Width).Within(1), key);
                     }
                 }
             });
@@ -322,23 +327,23 @@ internal sealed partial class PlanSheetHostedTests
         double scale = 1;
         await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
         await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
-            await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth > 224);
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width > 224);
             Assert.That(session.UndoCount, Is.EqualTo(undo));
             Assert.That(session.Document.State.Settings.SheetColumns, Is.Empty);
         });
-        await Ui.Until(() => session.UndoCount == undo + 1 && Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth - 288) <= 1);
-        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth, Is.EqualTo(288).Within(1)));
+        await Ui.Until(() => session.UndoCount == undo + 1 && Math.Abs(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width - 288) <= 1);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width, Is.EqualTo(288).Within(1)));
         var point = await SheetNativeInput.PointFor("PlanHeaderGripTitle");
         SheetNativeInput.Move(point);
         SheetNativeInput.Button(true); SheetNativeInput.Button(false);
         SheetNativeInput.Button(true); SheetNativeInput.Button(false);
-        await Ui.Until(() => session.UndoCount == undo + 2 && Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth
+        await Ui.Until(() => session.UndoCount == undo + 2 && Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width
             == PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width);
         await Ui.Run(() => {
             var cell = Ui.Find<PlanSheetCell>("PlanCell2_Title");
             var measure = new TextBlock { Text = rows[1].Title, FontSize = cell.FontSize, FontFamily = cell.FontFamily, FontWeight = cell.FontWeight };
             measure.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
-            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth, Is.InRange(Math.Ceiling(measure.DesiredSize.Width + 40), Math.Ceiling(measure.DesiredSize.Width + 44)));
+            Assert.That(Ui.Find<TextBlock>("PlanHeaderTitle").RenderSize.Width, Is.InRange(Math.Ceiling(measure.DesiredSize.Width + 40), Math.Ceiling(measure.DesiredSize.Width + 44)));
         });
     }
 
