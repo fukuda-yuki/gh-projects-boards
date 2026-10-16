@@ -813,7 +813,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var columns = PlanSheetColumns.All(session.Document);
         Grid Line() {
             var line = new Grid { ColumnSpacing = 8, MinHeight = 40 };
-            foreach (var width in new[] { 20d, 44, 210, 72, 180, 104, 116, 32, 32 }) line.ColumnDefinitions.Add(new() { Width = new(width) });
+            foreach (var width in new[] { 20d, 44, 170, 72, 160, 104, 116, 32, 32 }) line.ColumnDefinitions.Add(new() { Width = new(width) });
             return line;
         }
         void Cell(Grid line, FrameworkElement content, int column) {

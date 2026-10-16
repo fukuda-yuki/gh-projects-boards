@@ -24,6 +24,8 @@ internal sealed partial class PlanWorkspaceHostedTests
             Assert.That(input.PlaceholderText, Is.EqualTo("224"));
             Assert.That(AutomationProperties.GetName(input), Is.EqualTo("タスク名 の幅"));
             Assert.That(Ui.Tree(view).OfType<TextBox>().Any(t => AutomationProperties.GetAutomationId(t) == "PlanColumnWidthIndicator"), Is.False);
+            var list = Ui.Find<ListView>("PlanColumnList"); var down = Ui.Find<Button>("PlanColumnDownTitle");
+            Assert.That(down.TransformToVisual(list).TransformPoint(new(down.ActualWidth, 0)).X, Is.LessThanOrEqualTo(list.ActualWidth), "The row's last command stays inside the settings table.");
         });
         await CommitText("PlanColumnWidthTitle", "320");
         await Ui.Until(() => PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width == 320);
