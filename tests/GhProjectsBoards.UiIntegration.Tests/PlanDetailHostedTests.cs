@@ -138,6 +138,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         Assert.That(BodyWrites(), Is.Empty);
         await Ui.Until(() => DetailElement<Button>(overwrite ? "PlanDetailOverwrite" : "PlanDetailRevert") is { IsLoaded: true, IsEnabled: true });
         await Ui.Run(() => {
+            Assert.That(Ui.Find<InfoBar>("PlanDetailConflict").Severity, Is.EqualTo(InfoBarSeverity.Warning));
             Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("my draft"));
             Ui.Click(overwrite ? "PlanDetailOverwrite" : "PlanDetailRevert");
         });
@@ -152,7 +153,10 @@ internal sealed partial class PlanWorkspaceHostedTests
         await BeginBodyEdit(); DetailScenario("body-write");
         await PublishBodyDraft("retry draft");
         await Ui.Until(() => DetailElement<InfoBar>("PlanDetailPublishFailure")?.IsOpen == true);
-        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("retry draft")));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<InfoBar>("PlanDetailPublishFailure").Severity, Is.EqualTo(InfoBarSeverity.Error));
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("retry draft"));
+        });
         DetailScenario(); await Ui.Run(() => Ui.Click("PlanDetailPublishRetry"));
         await Ui.Until(() => DetailElement<TextBlock>("PlanDetailPublished")?.Visibility == Visibility.Visible);
         Assert.That(BodyWrites().Length, Is.EqualTo(2));

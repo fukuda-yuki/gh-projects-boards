@@ -39,6 +39,7 @@ internal sealed partial class PlanWorkspaceView
 
     private void InitializeDetailEditing(StackPanel header, StackPanel actions)
     {
+        detailConflict.Severity = InfoBarSeverity.Warning;
         detailEdit.Padding = new(6, 4, 6, 4); detailEdit.AllowFocusWhenDisabled = true;
         actions.Spacing = 4; actions.Children.Add(detailEdit);
         foreach (var text in new[] { detailEditing, detailPublished, detailPinnedNote }) {
