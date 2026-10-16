@@ -711,7 +711,9 @@ internal sealed class PlanSheetCell : TextBox
             var identity = row.Identity; var collapse = args.Key == VirtualKey.Left;
             _ = owner.Run(() => owner.SetFold(identity, collapse), "Fold requirement");
         }
-        else if (args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
+        else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
+        { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
+        else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
         else if (!Editing && control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y)
         { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key == VirtualKey.Delete) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
@@ -778,6 +780,7 @@ internal sealed class PlanSummaryCell : ContentControl
         if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; return; }
         if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
         if (owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        else if (control && args.Key == VirtualKey.F2) { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
             args.Handled = true; owner.MoveSelection(args.Key, shift);
         }
