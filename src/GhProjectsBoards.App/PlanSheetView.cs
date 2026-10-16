@@ -22,6 +22,7 @@ internal sealed partial class PlanSheetView : Grid
         if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
         commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        RefreshOverviewCommands();
         RefreshRealized();
     }
 
@@ -74,7 +75,7 @@ internal sealed partial class PlanSheetView : Grid
     private readonly ScrollViewer sheetHorizontal = Horizontal("PlanSheetHorizontal"), chartHorizontal = Horizontal("PlanGanttHorizontal");
     private ScrollViewer? rowScroll;
     private readonly Grid headers = new(), scrollbars = new(), sheetClip = new() { Height = 48 };
-    private readonly StackPanel sheetHead = new() { Orientation = Orientation.Horizontal };
+    private readonly Canvas sheetHead = new() { Height = 48, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom };
     private readonly Canvas chartHead = Id(new Canvas { Height = 48, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) }, "PlanGanttHeader");
     private readonly TextBlock reason = Id(new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis }, "PlanStartReason");
     private readonly TextBlock error = Id(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, "PlanSheetError");
@@ -175,7 +176,7 @@ internal sealed partial class PlanSheetView : Grid
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
-        for (var i = 0; i < 4; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
+        for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
         selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -188,9 +189,10 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
-        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 3);
+        InitializeDetailToggle(selectedLine);
+        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
-        selectedLine.Children.Add(totals); SetColumn(totals, 3);
+        selectedLine.Children.Add(totals); SetColumn(totals, 4);
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);
@@ -559,7 +561,7 @@ internal sealed partial class PlanSheetView : Grid
         var document = Session.Document;
         var configured = PlanSheetColumns.All(document).Select(c => {
             var standard = Columns.FirstOrDefault(s => (s.Indicator ? "Indicator" : s.Field ?? "Id") == c.Key);
-            return standard is null ? new Column(c.Key, c.Name, 140) : standard with { Label = c.Name };
+            return standard is null ? new Column(c.Key, c.Name, c.Width ?? 140) : standard with { Label = c.Name, Width = c.Width ?? standard.Width };
         }).ToArray();
         if (!ConfiguredColumns.SequenceEqual(configured)) ConfiguredColumns = configured;
         var choices = PlanSheetColumns.All(document).ToDictionary(c => c.Key);
@@ -776,7 +778,7 @@ internal sealed partial class PlanSheetView : Grid
         var bounds = cell.TransformToVisual(List).TransformBounds(new(0, 0, cell.ActualWidth, cell.ActualHeight));
         return bounds.Bottom > 0 && bounds.Top < List.ActualHeight && bounds.Right > 0 && bounds.Left < SheetViewport;
     }
-    private void RefreshLayout(bool preserveDateViewport = true)
+    private void RefreshLayout(bool preserveDateViewport = true, bool columnResize = false)
     {
         if (disposed) return;
         var previousOffset = ChartOffset;
@@ -785,7 +787,7 @@ internal sealed partial class PlanSheetView : Grid
         SheetViewport = Math.Clamp(dividerWidth ?? SheetWidth + 6, 160, Math.Max(160, width - minimumChartWidth));
         ChartViewport = width - SheetViewport;
         metrics.Mark("timeline-range-start");
-        var offsetShift = UpdateTimelineRange();
+        var offsetShift = columnResize ? 0 : UpdateTimelineRange();
         metrics.Mark("timeline-range");
         if (acceptedZoom == 3) DayWidth = (ChartViewport - 2 * ChartDateInset) / DayCount;
         if (divider is not null) divider.Margin = new(SheetViewport - 3, 0, 0, 0);
@@ -793,7 +795,7 @@ internal sealed partial class PlanSheetView : Grid
         sheetClip.Width = SheetViewport;
         foreach (var grid in new[] { headers, scrollbars })
         { grid.ColumnDefinitions[0].Width = new(SheetViewport); grid.ColumnDefinitions[1].Width = new(ChartViewport); }
-        ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth;
+        ((FrameworkElement)sheetHorizontal.Content).Width = SheetWidth + 4;
         ((FrameworkElement)chartHorizontal.Content).Width = DayCount * DayWidth + 2 * ChartDateInset;
         sheetHorizontal.Width = SheetViewport; chartHorizontal.Width = ChartViewport;
         metrics.Mark("layout-properties");
@@ -810,18 +812,25 @@ internal sealed partial class PlanSheetView : Grid
     }
     private void RefreshHeaders()
     {
-        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{c.Label}:{HeaderHelp(c)}"));
-        if (headerKey == key) return;
+        if (resizingColumn is not null) { LayoutColumnHeaders(); return; }
+        var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{c.Label}:{c.Width}:{HeaderHelp(c)}"));
+        if (headerKey == key) { LayoutColumnHeaders(); return; }
         headerKey = key;
         sheetHead.Children.Clear();
+        columnHeaders.Clear();
         foreach (var column in VisibleColumns)
         {
             var text = Id(new TextBlock { Text = column.Indicator ? "\uE946" : Header(column), Width = column.Width, Padding = new(8, 0, 4, 6), FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("TextFillColorSecondaryBrush") },
                 "PlanHeader" + (column.Indicator ? "Indicator" : column.Field?.ToString() ?? "Id"));
             if (column.Indicator) text.FontFamily = new FontFamily("Segoe Fluent Icons");
             AutomationProperties.SetName(text, FullName(column)); AutomationProperties.SetHelpText(text, HeaderHelp(column));
-            ToolTipService.SetToolTip(text, HeaderHelp(column)); sheetHead.Children.Add(text);
+            ToolTipService.SetToolTip(text, HeaderHelp(column));
+            var cell = new Grid { Height = 48, Width = column.Width }; cell.Children.Add(text); sheetHead.Children.Add(cell);
+            var grip = column.Indicator ? null : ColumnGrip(column);
+            columnHeaders.Add((cell, text, grip));
         }
+        foreach (var (_, _, grip) in columnHeaders) if (grip is not null) sheetHead.Children.Add(grip);
+        LayoutColumnHeaders();
         sheetHead.RenderTransform = new TranslateTransform { X = -SheetOffset };
     }
     private PlanDocument? milestoneDocument;

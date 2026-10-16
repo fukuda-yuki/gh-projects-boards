@@ -42,6 +42,18 @@ public sealed class PlanSheetRow : Grid
     private readonly Dictionary<string, PlanSummaryCell> summaryCells = [];
     internal Control? SelectionTarget(string field) => summaryCells.TryGetValue(field, out var display) && display.Visibility == Visibility.Visible
         ? display : Cells.FirstOrDefault(c => c.Field == field);
+    internal double FittedColumnWidth(string key)
+    {
+        if (key == "Id") return PlanSheetView.MeasureColumnText(id.Text, id.FontSize, id.FontFamily, id.FontWeight) + id.Padding.Left + id.Padding.Right;
+        var cell = Cells.Single(c => c.Field == key);
+        var width = summaryCells.TryGetValue(key, out var summary) && summary.Visibility == Visibility.Visible
+            ? PlanSheetView.MeasureColumnText(summary.Text.Text, summary.Text.FontSize, summary.Text.FontFamily, summary.Text.FontWeight)
+            : cell.AssigneeNameDisplay is { } name && !cell.Editing
+                ? PlanSheetView.MeasureColumnText(name.Text, name.FontSize, name.FontFamily, name.FontWeight)
+                    + PlanSheetView.MeasureColumnText(cell.AssigneeCountDisplay!.Text, name.FontSize, name.FontFamily, name.FontWeight)
+                : PlanSheetView.MeasureColumnText(cell.Text, cell.FontSize, cell.FontFamily, cell.FontWeight);
+        return width + cell.Padding.Left + cell.Padding.Right + 4;
+    }
     private string? boundIdentity;
     private double chartOffset = double.NaN;
     private sealed record ChartPresentation(string Identity, int Number, int RowIndex, DateOnly? Start, DateOnly? End,
@@ -173,7 +185,7 @@ public sealed class PlanSheetRow : Grid
         if (sheetGeometry.Rect != sheetBounds) sheetGeometry.Rect = sheetBounds;
         if (chartGeometry.Rect != chartBounds) chartGeometry.Rect = chartBounds;
         lineTranslation.X = -owner.SheetOffset;
-        idCell.Width = PlanSheetView.Columns[0].Width; idCell.Visibility = owner.Hidden.Contains(null) ? Visibility.Collapsed : Visibility.Visible;
+        idCell.Width = owner.ConfiguredColumns.Single(c => c.Field is null && !c.Indicator).Width; idCell.Visibility = owner.Hidden.Contains(null) ? Visibility.Collapsed : Visibility.Visible;
         selectionAccent.Background = PlanSheetView.Brush("SheetSelectionStrokeBrush");
         selectionAccent.Visibility = owner.IsSelectedRow(Identity) ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(selectionAccent, "PlanSelectionAccent" + number);
@@ -711,7 +723,9 @@ internal sealed class PlanSheetCell : TextBox
             var identity = row.Identity; var collapse = args.Key == VirtualKey.Left;
             _ = owner.Run(() => owner.SetFold(identity, collapse), "Fold requirement");
         }
-        else if (args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
+        else if (!Editing && control && !PlanSheetView.Down(VirtualKey.Menu) && args.Key == VirtualKey.F2)
+        { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
+        else if (!control && args.Key == VirtualKey.F2 && !IsReadOnly) { args.Handled = true; BeginEditing(); }
         else if (!Editing && control && args.Key is VirtualKey.C or VirtualKey.V or VirtualKey.D or VirtualKey.Z or VirtualKey.Y)
         { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
         else if (!Editing && args.Key == VirtualKey.Delete) { args.Handled = true; _ = owner.KeyboardCommand(args.Key); }
@@ -778,6 +792,7 @@ internal sealed class PlanSummaryCell : ContentControl
         if (owner.HandleOutlineShortcut(args.Key)) { args.Handled = true; return; }
         if (PlanSheetView.Down(VirtualKey.Menu)) { base.OnPreviewKeyDown(args); return; }
         if (owner.HandleFocusShortcut(args.Key)) { args.Handled = true; }
+        else if (control && args.Key == VirtualKey.F2) { args.Handled = true; _ = owner.LinkSelectedTasks(shift); }
         else if (!control && args.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right) {
             args.Handled = true; owner.MoveSelection(args.Key, shift);
         }

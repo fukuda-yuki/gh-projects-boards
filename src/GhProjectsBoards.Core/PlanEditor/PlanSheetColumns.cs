@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 namespace GhProjectsBoards.Core.PlanEditor;
 
-internal sealed record PlanSheetColumn(string Key, string DefaultName, string GitHub, string Editability, bool Visible, string? DisplayName)
+internal sealed record PlanSheetColumn(string Key, string DefaultName, string GitHub, string Editability, bool Visible, string? DisplayName, double? Width = null)
 {
     public string Type { get; init; } = "—";
     public string Name => string.IsNullOrWhiteSpace(DisplayName) ? DefaultName : DisplayName;
@@ -9,6 +9,7 @@ internal sealed record PlanSheetColumn(string Key, string DefaultName, string Gi
 }
 internal static class PlanSheetColumns
 {
+    internal const double MinimumWidth = 40, MaximumWidth = 800;
     internal static string ReviewName(string field, PlanSheetColumn? column = null)
         => column?.DisplayName is not null ? column.Name : field switch {
             PlanField.Estimate => "見積工数", PlanField.Remaining => "見込み残存工数", PlanField.Actual => "実績工数",
@@ -35,7 +36,8 @@ internal static class PlanSheetColumns
     {
         PlanOperations.Require(!choices.IsDefault && choices.All(c => c is not null &&
             (Standard.Any(s => s.Key == c.Key) || c.Key is "Labels" or "MilestoneTitle" or "Repository" || IsExtra(c.Key)) &&
-            (!(c.Key is "Id" or "Title") || c.Visible) && (c.DisplayName is null || !c.DisplayName.Any(char.IsControl))) &&
+            (!(c.Key is "Id" or "Title") || c.Visible) && (c.DisplayName is null || !c.DisplayName.Any(char.IsControl)) &&
+            (c.Width is null || c.Key != "Indicator" && c.Width >= MinimumWidth && c.Width <= MaximumWidth && c.Width == Math.Truncate(c.Width.Value))) &&
             choices.Select(c => c.Key).Distinct().Count() == choices.Length, "表示列の設定が不正です。");
     }
     internal static ImmutableArray<PlanSheetColumn> All(PlanDocument document)
@@ -60,24 +62,33 @@ internal static class PlanSheetColumns
             new("MilestoneTitle", "マイルストーン", "Milestone", "編集できる", false, null) { Type = "マイルストーン" },
             new("Repository", "リポジトリ", "Repository", "読み取りのみ", false, null) { Type = "リポジトリ" }]);
         var definitions = result.ToDictionary(c => c.Key);
-        var ordered = settings.SheetColumns.Where(c => definitions.ContainsKey(c.Key)).Select(c => definitions[c.Key] with { Visible = c.Visible, DisplayName = c.DisplayName }).ToList();
+        var ordered = settings.SheetColumns.Where(c => definitions.ContainsKey(c.Key)).Select(c => definitions[c.Key] with { Visible = c.Visible, DisplayName = c.DisplayName, Width = c.Width }).ToList();
         var used = ordered.Select(c => c.Key).ToHashSet();
         ordered.AddRange(result.Where(c => !used.Contains(c.Key)));
         return ordered.ToImmutableArray();
     }
-    internal static ProjectPlanSettings Change(PlanDocument document, string key, bool? visible = null, string? name = null, bool rename = false)
+    internal static ProjectPlanSettings Change(PlanDocument document, string key, bool? visible = null, string? name = null, bool rename = false, double? width = null, bool resize = false)
     {
         var columns = All(document);
         PlanOperations.Require(columns.Any(c => c.Key == key), "表示列が見つかりません。");
         return document.State.Settings with { SheetColumns = columns.Select(c => new PlanSheetColumnChoice(c.Key,
-            c.Key == key ? visible ?? c.Visible : c.Visible, c.Key == key && rename ? string.IsNullOrWhiteSpace(name) ? null : name : c.DisplayName)).ToImmutableArray() };
+            c.Key == key ? visible ?? c.Visible : c.Visible, c.Key == key && rename ? string.IsNullOrWhiteSpace(name) ? null : name : c.DisplayName,
+            c.Key == key && resize ? width : c.Width)).ToImmutableArray() };
+    }
+    internal static ProjectPlanSettings Reorder(PlanDocument document, IReadOnlyList<string> order)
+    {
+        var columns = All(document).ToDictionary(c => c.Key);
+        PlanOperations.Require(order.Count == columns.Count && order.Distinct().Count() == columns.Count && order.All(columns.ContainsKey), "列の移動先が不正です。");
+        return document.State.Settings with { SheetColumns = order.Select(key => {
+            var c = columns[key]; return new PlanSheetColumnChoice(c.Key, c.Visible, c.DisplayName, c.Width);
+        }).ToImmutableArray() };
     }
     internal static ProjectPlanSettings Move(PlanDocument document, string key, int index)
     {
-        var columns = All(document).Select(c => new PlanSheetColumnChoice(c.Key, c.Visible, c.DisplayName)).ToList();
-        var from = columns.FindIndex(c => c.Key == key);
+        var columns = All(document).Select(c => c.Key).ToList();
+        var from = columns.IndexOf(key);
         PlanOperations.Require(from >= 0 && index >= 0 && index < columns.Count, "列の移動先が不正です。");
         var item = columns[from]; columns.RemoveAt(from); columns.Insert(index, item);
-        return document.State.Settings with { SheetColumns = columns.ToImmutableArray() };
+        return Reorder(document, columns);
     }
 }

@@ -8,6 +8,7 @@ internal sealed record IssueDetailComment(string Author, DateTimeOffset CreatedA
 internal sealed record IssueDetail(int Number, string Repository, string Title, string Url, string State, string? StateReason,
     string Body, string BodyHtml, DateTimeOffset UpdatedAt, int CommentCount, ImmutableArray<IssueDetailComment> Comments)
 {
+    internal bool ViewerCanUpdate { get; init; }
     internal string Reference => $"{Repository}#{Number}";
 }
 internal sealed record IssueDetailRead(IssueDetail? Issue, ApiResult Result)
@@ -18,7 +19,7 @@ internal sealed record IssueDetailRead(IssueDetail? Issue, ApiResult Result)
 
 internal sealed class IssueDetailReader(GhConnectionService service)
 {
-    private const string Query = "query PlanIssueDetail($id:ID!){node(id:$id){... on Issue{number title url state stateReason body bodyHTML updatedAt repository{nameWithOwner} comments(last:5){totalCount nodes{author{login} createdAt url body bodyHTML}}}}}";
+    private const string Query = "query PlanIssueDetail($id:ID!){node(id:$id){... on Issue{number title url state stateReason body bodyHTML updatedAt viewerCanUpdate repository{nameWithOwner} comments(last:5){totalCount nodes{author{login} createdAt url body bodyHTML}}}}}";
 
     internal async Task<IssueDetailRead> Read(ConnectionContext context, string nodeId, CancellationToken token = default)
     {
@@ -40,7 +41,7 @@ internal sealed class IssueDetailReader(GhConnectionService service)
                 .OrderBy(c => c.CreatedAt).ToImmutableArray();
             var detail = new IssueDetail(node.GetProperty("number").GetInt32(), Text(node.GetProperty("repository"), "nameWithOwner"),
                 Text(node, "title"), Text(node, "url"), Text(node, "state"), node.GetProperty("stateReason").GetString(),
-                Text(node, "body"), Text(node, "bodyHTML"), node.GetProperty("updatedAt").GetDateTimeOffset(), connection.GetProperty("totalCount").GetInt32(), comments);
+                Text(node, "body"), Text(node, "bodyHTML"), node.GetProperty("updatedAt").GetDateTimeOffset(), connection.GetProperty("totalCount").GetInt32(), comments) { ViewerCanUpdate = node.GetProperty("viewerCanUpdate").GetBoolean() };
             if (detail.Number <= 0 || detail.State is not ("OPEN" or "CLOSED") || detail.CommentCount < comments.Length || comments.Length > 5)
                 return new(null, new(ApiOutcome.Failed, FailureKind.InvalidResponse));
             return new(detail, response);

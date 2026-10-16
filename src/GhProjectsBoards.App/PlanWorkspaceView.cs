@@ -212,6 +212,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         addressPanel.Children.Add(Button("開く", "PlanOpenUrl", () => OpenProject(null, url.Text)));
         address.Content = addressPanel; chooser = new(workspace, choice => Run(() => OpenProject(choice)), address);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
+            if (!await DiscardDetailEdit()) return;
             await chooser.Stop(); CancelDetail(clearCache: true); detailConnecting = true;
             try {
                 await EndAssist(); ClearAssistMessages();
@@ -361,7 +362,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var button = CommandButton(text, id, icon);
         if (id is "PlanUndo" or "PlanRedo" or "PlanChooseProject" or "PlanConnection")
             button.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
-        button.Click += async (_, _) => { if (button.IsLoaded) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(action); } };
+        button.Click += async (_, _) => { if (button.IsLoaded) {
+            if (projectFlyout.IsOpen) projectFlyout.Hide();
+            if (id is "PlanChooseProject" or "PlanConnection" && !await DiscardDetailEdit()) return;
+            await Run(action);
+        } };
         return button;
     }
     private static T Id<T>(T control, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(control, id); return control; }
@@ -504,6 +509,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (sheet is not null) sheet.statusDate.IsEnabled = !busy;
         if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
+        UpdateDetailEditCommands();
         if (summaryView is not null) summaryView.IsEnabled = !busy;
         settingsScroll.IsEnabled = settingsBack.IsEnabled = !busy;
         foreach (var bar in new[] { refreshFailure, publishFailure, openFailure, saveFailure, sheet?.SaveFailure })
@@ -512,6 +518,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
+        if (!await DiscardDetailEdit()) return false;
         closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide();
         CancelDetail(clearCache: true);
         // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
@@ -587,6 +594,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
                 };
                 next.PreservePendingFocus = IsDetailFocus;
+                next.SetDetailChecked(detailToggle.IsChecked == true);
+                next.DetailToggleRequested += async value => { if (ReferenceEquals(sheet, next)) await RequestDetailToggle(value); };
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) { UpdateAssistSelection(); UpdateDetailSelection(); } };
                 next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { UpdateCommandAvailability(); ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };
@@ -805,12 +814,12 @@ internal sealed partial class PlanWorkspaceView : UserControl
         heading.Children.Add(reset); Grid.SetColumn(reset, 1);
         settings.Children.Add(heading);
         settings.Children.Add(Id(new TextBlock {
-            Text = "表示する列、順序（ドラッグ）、表示名を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。",
+            Text = "表示する列、順序（ドラッグ）、表示名、幅を選びます。このプロジェクトのフィールドはすべて選べます。編集できる列は、計画シートで編集して発行します。",
             TextWrapping = TextWrapping.Wrap }, "PlanColumnIntro"));
         var columns = PlanSheetColumns.All(session.Document);
         Grid Line() {
             var line = new Grid { ColumnSpacing = 8, MinHeight = 40 };
-            foreach (var width in new[] { 20d, 44, 210, 180, 104, 116, 32, 32 }) line.ColumnDefinitions.Add(new() { Width = new(width) });
+            foreach (var width in new[] { 20d, 44, 170, 72, 160, 104, 116, 32, 32 }) line.ColumnDefinitions.Add(new() { Width = new(width) });
             return line;
         }
         void Cell(Grid line, FrameworkElement content, int column) {
@@ -818,7 +827,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
             line.Children.Add(content); Grid.SetColumn(content, column);
         }
         var headings = Line();
-        var captions = new[] { "表示", "表示名", "GitHub", "種類", "計画シートで" };
+        var captions = new[] { "表示", "表示名", "幅", "GitHub", "種類", "計画シートで" };
         for (var i = 0; i < captions.Length; i++) Cell(headings, Label(captions[i]), i + 1);
         var table = new StackPanel(); table.Children.Add(headings);
         var list = Id(new ListView { CanDragItems = true, AllowDrop = true, CanReorderItems = true,
@@ -852,20 +861,38 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 toggle.Checked += Changed; toggle.Unchecked += Changed; Cell(line, toggle, 1);
             }
             Button? up = null, down = null;
+            TextBox? widthInput = null;
             var name = TextSetting("表示名", "PlanColumnName" + column.Key, column.DisplayName ?? "", async text => {
                 await ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, name: text, rename: true));
                 var display = PlanSheetColumns.All(session.Document).Single(c => c.Key == column.Key).Name;
                 if (toggle is not null) AutomationProperties.SetName(toggle, display + " を表示");
                 if (up is not null) AutomationProperties.SetName(up, display + " を上へ");
                 if (down is not null) AutomationProperties.SetName(down, display + " を下へ");
+                if (widthInput is not null) AutomationProperties.SetName(widthInput, display + " の幅");
             });
             name.Header = null; name.MinWidth = 0; name.MinHeight = 32; name.Padding = new(8, 4, 8, 4);
             name.PlaceholderText = column.DefaultName; AutomationProperties.SetName(name, column.DefaultName + " の表示名");
             Cell(line, name, 2);
+            if (column.Key == "Indicator") Cell(line, Label("—"), 3);
+            else {
+                widthInput = TextSetting("幅", "PlanColumnWidth" + column.Key, column.Width?.ToString(CultureInfo.CurrentCulture) ?? "", async text => {
+                    double? width = null;
+                    if (!string.IsNullOrWhiteSpace(text)) {
+                        if (!double.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed)
+                            || !double.IsFinite(parsed) || parsed < PlanSheetColumns.MinimumWidth || parsed > PlanSheetColumns.MaximumWidth || parsed != Math.Truncate(parsed))
+                            throw new ArgumentException("幅は40〜800の整数で入力してください。");
+                        width = parsed;
+                    }
+                    await ChangeSettings(_ => PlanSheetColumns.Change(session.Document, column.Key, width: width, resize: true));
+                });
+                widthInput.Header = null; widthInput.MinWidth = 0; widthInput.MinHeight = 32; widthInput.Padding = new(8, 4, 8, 4);
+                widthInput.PlaceholderText = PlanSheetView.DefaultColumnWidth(column.Key).ToString(CultureInfo.CurrentCulture);
+                AutomationProperties.SetName(widthInput, column.Name + " の幅"); Cell(line, widthInput, 3);
+            }
             var source = new TextBlock { Text = column.GitHub, TextTrimming = TextTrimming.CharacterEllipsis };
-            ToolTipService.SetToolTip(source, column.GitHub); Cell(line, source, 3);
-            Cell(line, Id(Label(column.Type), "PlanColumnType" + column.Key), 4);
-            Cell(line, Id(Label(column.Editability), "PlanColumnMode" + column.Key), 5);
+            ToolTipService.SetToolTip(source, column.GitHub); Cell(line, source, 4);
+            Cell(line, Id(Label(column.Type), "PlanColumnType" + column.Key), 5);
+            Cell(line, Id(Label(column.Editability), "PlanColumnMode" + column.Key), 6);
             var index = columns.IndexOf(column);
             async Task Move(int target) { if (generation != settingsGeneration) return; await ChangeSettings(_ => PlanSheetColumns.Move(session.Document, column.Key, target)); RenderSettings(); }
             Button Arrow(string direction, string glyph, int target) {
@@ -877,14 +904,14 @@ internal sealed partial class PlanWorkspaceView : UserControl
                 ToolTipService.SetToolTip(button, direction); return button;
             }
             up = Arrow("上へ", "\uE70E", index - 1); down = Arrow("下へ", "\uE70D", index + 1);
-            Cell(line, up, 6); Cell(line, down, 7);
+            Cell(line, up, 7); Cell(line, down, 8);
             list.Items.Add(line);
         }
         list.DragItemsCompleted += async (_, _) => {
             if (rendering || generation != settingsGeneration) return;
             var order = list.Items.Cast<Grid>().Select(g => (string)g.Tag).ToArray();
             await Run(async () => {
-                await ChangeSettings(s => s with { SheetColumns = order.Select(key => { var c = PlanSheetColumns.All(session.Document).Single(c => c.Key == key); return new PlanSheetColumnChoice(key, c.Visible, c.DisplayName); }).ToImmutableArray() });
+                await ChangeSettings(_ => PlanSheetColumns.Reorder(session.Document, order));
                 RenderSettings();
             });
         };
