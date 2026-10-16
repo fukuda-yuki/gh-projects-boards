@@ -20,7 +20,7 @@ One PMO maintains one version, named 第YYYY.MM版 by its shipping date, in one 
 
 AI assist is optional and off by default. It uses GitHub Copilot through the connected gh login or a BYOK provider. It answers from the open local plan and proposes edits that the PMO applies locally as one Undo step; it never publishes. Planning and the weekly job never depend on it ([#208](https://github.com/fukuda-yuki/gh-projects-boards/issues/208)).
 
-The PMO can read the selected Issue's body and recent comments beside the plan in 詳細; Issue editing stays on GitHub ([#211](https://github.com/fukuda-yuki/gh-projects-boards/issues/211)).
+The PMO can read the selected Issue's body and recent comments beside the plan in 詳細, opened by a click next to the selected task ([#211](https://github.com/fukuda-yuki/gh-projects-boards/issues/211)). The PMO can also edit that one Issue's body there and publish it with its own button, after a check that nobody changed it on GitHub meanwhile. This per-Issue body publish is the one GitHub write outside 発行; it is not part of the plan's local edits, Undo or unpublished changes, and there is no bulk body publish. Titles and comments are edited on GitHub ([#216](https://github.com/fukuda-yuki/gh-projects-boards/issues/216)).
 
 ## Planning rules
 
@@ -44,7 +44,8 @@ The PMO can read the selected Issue's body and recent comments beside the plan i
 | Backlog: mass Issue creation within GitHub limits | [#90](https://github.com/fukuda-yuki/gh-projects-boards/issues/90) |
 | Owner review 2026-10-10: busy state, read-only summary rows, Japanese terms, discarding local changes, summary view, flicker, configurable columns, no personal days off | [#118](https://github.com/fukuda-yuki/gh-projects-boards/issues/118) |
 | Optional AI assist: plan questions and locally applied proposals | [#208](https://github.com/fukuda-yuki/gh-projects-boards/issues/208) |
-| Read-only selected Issue body and recent comments beside the plan | [#211](https://github.com/fukuda-yuki/gh-projects-boards/issues/211) |
+| Selected Issue body and recent comments beside the plan | [#211](https://github.com/fukuda-yuki/gh-projects-boards/issues/211) |
+| Opening 詳細 by click; editing and publishing one Issue body from it | [#216](https://github.com/fukuda-yuki/gh-projects-boards/issues/216) |
 | Backlog: optional comparison against an agreed plan | [#93](https://github.com/fukuda-yuki/gh-projects-boards/issues/93) |
 
 ## Explicit exclusions
