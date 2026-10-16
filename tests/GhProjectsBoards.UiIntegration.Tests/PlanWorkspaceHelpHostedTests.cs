@@ -123,6 +123,8 @@ internal sealed partial class PlanWorkspaceHostedTests
         var launched = new ConcurrentQueue<string>();
         File.Move(manual, retained);
         try {
+            // The title-bar commands load a layout pass after the view; a click must wait for them like a user would.
+            await Ui.Ready<Button>("PlanHelp");
             await Ui.Run(() => { view.OpenDocument = path => launched.Enqueue(path); Ui.Click("PlanHelp"); });
             await Ui.Until(() => Ui.Find<TextBlock>("PlanError").Text.StartsWith("マニュアルが見つかりません:"));
             await Ui.Run(() => {
