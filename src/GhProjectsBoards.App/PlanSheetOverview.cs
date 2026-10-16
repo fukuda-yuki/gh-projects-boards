@@ -14,11 +14,18 @@ internal sealed partial class PlanSheetView
     internal bool FoldingEnabled => !remoteBusy && acceptedFilter.Length == 0;
     internal bool IsFolded(string identity) => folded.Contains(identity);
     private AppBarButton collapseAll = null!, expandAll = null!, goToDate = null!, predecessorAdd = null!;
+    private AppBarButton linkTasks = null!, unlinkTasks = null!;
     private Flyout? predecessorFlyout;
 
     private void InitializeOverview(CommandBar commands)
     {
         predecessorAdd = AddCommand(commands, "先行タスクを追加…", "PlanSheetPredecessorAdd", Symbol.Link, OpenPredecessorSearch);
+        linkTasks = AddCommand(commands, "タスクをリンク", "PlanSheetLinkTasks", Symbol.Link, () => LinkSelectedTasks(false), queueInSheet: false);
+        unlinkTasks = AddCommand(commands, "リンクを解除", "PlanSheetUnlinkTasks", Symbol.Link, () => LinkSelectedTasks(true), queueInSheet: false);
+        linkTasks.Icon = CommandIcon("M1,2 H6 V6 H1 Z M10,10 H15 V14 H10 Z M3,7 H4 V11 H7 V9 L10,11.5 L7,14 V12 H3 Z");
+        unlinkTasks.Icon = CommandIcon("M1,2 H6 V6 H1 Z M10,10 H15 V14 H10 Z M3,7 H4 V12 H3 Z M6,8 L7,7 L9,9 L11,7 L12,8 L10,10 L12,12 L11,13 L9,11 L7,13 L6,12 L8,10 Z");
+        linkTasks.KeyboardAcceleratorTextOverride = "Ctrl+F2";
+        unlinkTasks.KeyboardAcceleratorTextOverride = "Ctrl+Shift+F2";
         commands.PrimaryCommands.Add(new AppBarSeparator());
         collapseAll = AddCommand(commands, "すべて折りたたむ", "PlanSheetCollapseAll", Symbol.Remove, () => FoldAll(true));
         expandAll = AddCommand(commands, "すべて展開", "PlanSheetExpandAll", Symbol.Add, () => FoldAll(false));
@@ -40,6 +47,28 @@ internal sealed partial class PlanSheetView
         }
         goToDate.IsEnabled = SelectedDate() is not null;
         predecessorAdd.IsEnabled = Rows.ContainsKey(selected);
+        foreach (var (button, unlink) in new[] { (linkTasks, false), (unlinkTasks, true) }) {
+            var unavailable = TaskLinkUnavailable(unlink) ?? PlanTaskLinks.Prepare(Session.Document.State, MoveTargets, unlink).Reason;
+            button.IsEnabled = unavailable is null; button.AllowFocusWhenDisabled = true;
+            AutomationProperties.SetHelpText(button, unavailable ?? "");
+            ToolTipService.SetToolTip(button, unavailable ?? button.Label);
+        }
+    }
+
+    private string? TaskLinkUnavailable(bool unlink) => remoteBusy ? "更新または発行が進行中です。"
+        : acceptedFilter.Length > 0 ? unlink ? "絞り込み中はリンクを解除できません" : "絞り込み中はリンクできません" : null;
+
+    internal Task LinkSelectedTasks(bool unlink)
+    {
+        var targets = MoveTargets;
+        return Run(async () => {
+            await CommitPending();
+            if (TaskLinkUnavailable(unlink) is { } unavailable) throw new ArgumentException(unavailable);
+            var (command, reason) = PlanTaskLinks.Prepare(Session.Document.State, targets, unlink);
+            if (reason is not null) throw new ArgumentException(reason);
+            Check(await Session.Execute(command!, Today));
+            Refresh();
+        });
     }
 
     private bool HiddenByFold(PlanRow row)

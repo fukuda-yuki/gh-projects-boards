@@ -22,6 +22,7 @@ internal sealed partial class PlanSheetView : Grid
         if (value) { CancelPendingFilter(); pendingMenuAction = null; commandMenu.Hide(); }
         remoteBusy = value;
         commandBar.IsEnabled = moreCommands.IsEnabled = filter.IsEnabled = zoom.IsEnabled = statusDate.IsEnabled = !value;
+        RefreshOverviewCommands();
         RefreshRealized();
     }
 

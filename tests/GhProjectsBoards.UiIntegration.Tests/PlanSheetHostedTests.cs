@@ -93,6 +93,54 @@ internal sealed partial class PlanSheetHostedTests
             }
         finally { Ui.EndTest(); }
     }
+    [Test, Category("PlanSheetNative")]
+    public async Task RequirementLinkShortcutsRenderChainUndoUnlinkAndFilterReasons()
+    {
+        ImmutableArray<PlanRow> rows = [new("I1", "Requirement", "acme/repo"),
+            new("I2", "Task A", "acme/repo") { Parent = "I1" },
+            new("I3", "Task B", "acme/repo") { Parent = "I1" },
+            new("I4", "Task C", "acme/repo") { Parent = "I1" }];
+        await MountPresentation(rows, rows);
+        await SelectFocusedCell(1, PlanField.Estimate);
+        var undo = session.UndoCount;
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == "2"
+            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        Assert.That(session.UndoCount, Is.EqualTo(undo + 1));
+        await SheetNativeInput.Press(Windows.System.VirtualKey.Z, Windows.System.VirtualKey.Control);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""
+            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "");
+        await SelectFocusedCell(2, PlanField.Title); await SelectFocusedCell(4, PlanField.Title, true);
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "3");
+        await SelectFocusedCell(1, PlanField.Estimate);
+        await SheetNativeInput.Press(Windows.System.VirtualKey.F2, Windows.System.VirtualKey.Control, Windows.System.VirtualKey.Shift);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanCell3_Predecessors").Text == ""
+            && Ui.Find<TextBox>("PlanCell4_Predecessors").Text == "");
+        await Ui.Run(() => Ui.Find<TextBox>("PlanSheetFilter").Text = "Task");
+        await Ui.Until(() => AutomationProperties.GetHelpText(Ui.CommandButton("PlanSheetLinkTasks")) == "絞り込み中はリンクできません");
+        await Ui.Run(() => {
+            foreach (var (id, label, reason) in new[] {
+                ("PlanSheetLinkTasks", "タスクをリンク", "絞り込み中はリンクできません"),
+                ("PlanSheetUnlinkTasks", "リンクを解除", "絞り込み中はリンクを解除できません") }) {
+                var button = Ui.CommandButton(id);
+                Assert.That(button.Label, Is.EqualTo(label)); Assert.That(button.IsEnabled, Is.False);
+                Assert.That(button.AllowFocusWhenDisabled, Is.True);
+                Assert.That(AutomationProperties.GetHelpText(button), Is.EqualTo(reason));
+                Assert.That(ToolTipService.GetToolTip(button), Is.EqualTo(reason));
+            }
+        });
+        await SelectFocusedCell(2, PlanField.Title);
+        var before = session.Document; var history = (session.UndoCount, session.RedoCount);
+        foreach (var unlink in new[] { false, true }) {
+            await SheetNativeInput.Press(Windows.System.VirtualKey.F2, unlink
+                ? [Windows.System.VirtualKey.Control, Windows.System.VirtualKey.Shift] : [Windows.System.VirtualKey.Control]);
+            var reason = unlink ? "絞り込み中はリンクを解除できません" : "絞り込み中はリンクできません";
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text == reason);
+            Assert.That(session.Document, Is.SameAs(before));
+            Assert.That((session.UndoCount, session.RedoCount), Is.EqualTo(history));
+        }
+    }
     [TestCase(false), TestCase(true)]
     public async Task SummaryCopiesBaselineFieldsAndExposesEveryAssignee(bool held)
     {
@@ -1019,7 +1067,7 @@ internal sealed partial class PlanSheetHostedTests
             var bar = Ui.Find<CommandBar>("PlanSheetCommands");
             Assert.That(bar.DefaultLabelPosition, Is.EqualTo(CommandBarDefaultLabelPosition.Right));
             var buttons = bar.PrimaryCommands.Concat(bar.SecondaryCommands).OfType<AppBarButton>().ToArray();
-            Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
+            Assert.That(buttons.Select(b => b.Label), Is.SupersetOf(new[] { "行を挿入", "インデント", "アウトデント", "先行タスクを追加…", "タスクをリンク", "リンクを解除", "すべて折りたたむ", "すべて展開", "選択タスクの日程へ移動", "コピー", "貼り付け", "下へコピー", "クリア", "表示列" }));
             Assert.That(bar.SecondaryCommands.OfType<AppBarButton>().Where(b => b.Label == "コピー").Single().KeyboardAcceleratorTextOverride, Is.EqualTo("Ctrl+C"));
             Ui.Click("PlanSheetMore");
         });
