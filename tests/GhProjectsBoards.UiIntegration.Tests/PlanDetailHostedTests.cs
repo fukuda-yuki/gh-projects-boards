@@ -18,6 +18,386 @@ namespace GhProjectsBoards.UiIntegration.Tests;
 
 internal sealed partial class PlanWorkspaceHostedTests
 {
+    private async Task BeginBodyEdit()
+    {
+        await Open(); await DetailFallback();
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); });
+        await DetailReady(); await Ui.Ready<Button>("PlanDetailEdit");
+        await Ui.Run(() => Ui.Click("PlanDetailEdit"));
+        await Ui.Ready<TextBox>("PlanDetailEditor");
+    }
+    private void RemoteBody(string body) => File.WriteAllText(Path.Combine(root, "detail-bodies.json"),
+        JsonSerializer.Serialize(new Dictionary<string, string> { ["I1"] = body }));
+    private JsonElement[] BodyWrites() => DetailCalls().Where(c => c.GetProperty("mutation").GetBoolean()).ToArray();
+    private async Task PublishBodyDraft(string draft)
+    {
+        await Ui.Run(() => Ui.Find<TextBox>("PlanDetailEditor").Text = draft);
+        await Ui.Until(() => DetailElement<Button>("PlanDetailPublishBody") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => Ui.Click("PlanDetailPublishBody"));
+    }
+    private async Task<bool> StopDetailTest()
+    {
+        var stop = view.StopAsync();
+        while (!stop.IsCompleted) {
+            if (Ui.Dialog("PlanDetailDiscard") is { IsLoaded: true } dialog && Ui.Tree(dialog).OfType<Button>().Any(b => b.Name == "PrimaryButton" && b.IsLoaded && b.IsEnabled))
+                Ui.DialogButton("PlanDetailDiscard", "PrimaryButton");
+            await Task.WhenAny(stop, Task.Delay(20));
+        }
+        return await stop;
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task SelectionLineToggleSharesStateAndPreservesPendingCellInputIncludingLocalRows()
+    {
+        await Open(); await DetailFallback();
+        await Ui.Run(() => {
+            SelectDetail(""); Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").Visibility, Is.EqualTo(Visibility.Collapsed));
+            SelectDetail("I1");
+            var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "pending";
+            var toggle = Ui.Find<ToggleButton>("PlanSheetDetail");
+            Assert.That(toggle.Visibility, Is.EqualTo(Visibility.Visible));
+            toggle.Focus(FocusState.Programmatic);
+            ((IToggleProvider)FrameworkElementAutomationPeer.CreatePeerForElement(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
+            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(DetailSheet.Pending[("I1", PlanField.Title)].Text, Is.EqualTo("pending"));
+            ToggleDetail(); Assert.That(toggle.IsChecked, Is.False);
+            DetailSheet.CancelEdit("I1", PlanField.Title);
+        });
+        var row = PlanRow.New("Local", "acme/repo");
+        await workspace.Session!.Execute(new InsertPlanRows([row]), readDay);
+        await Ui.Run(() => {
+            DetailSheet.Refresh(); SelectDetail(row.Identity);
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").Visibility, Is.EqualTo(Visibility.Visible));
+        });
+        Assert.That(BodyWrites(), Is.Empty);
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task BodyPublishChangesOnlyBodyAndPreservesPlanHistoryAndPendingInput()
+    {
+        await BeginBodyEdit();
+        var before = workspace.Session!.Document;
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("**Body 設計**"));
+            var cell = Ui.Find<TextBox>("PlanCell1_Title"); cell.Focus(FocusState.Programmatic); cell.Text = "pending";
+            Ui.Find<TextBox>("PlanDetailEditor").Focus(FocusState.Programmatic);
+        });
+        await PublishBodyDraft("New\rbody");
+        await Ui.Until(() => DetailElement<TextBlock>("PlanDetailPublished") is { Visibility: Visibility.Visible } text && text.Text.StartsWith("本文を発行しました"));
+        await Ui.Until(() => Ui.Tree(Ui.Find<ScrollViewer>("PlanDetailMarkdown")).OfType<TextBlock>().Any(t => t.Text.Contains("New\nbody")));
+        await Ui.Run(() => {
+            Assert.That(workspace.Session.Document, Is.SameAs(before));
+            Assert.That(workspace.Session.UndoCount, Is.Zero);
+            Assert.That(Ui.Find<Button>("PlanUndo").IsEnabled, Is.False);
+            Assert.That(Ui.Find<TextBlock>("PlanUnpublished").Text, Is.EqualTo("未発行 0 タスク"));
+            Assert.That(DetailSheet.Pending[("I1", PlanField.Title)].Text, Is.EqualTo("pending"));
+            Assert.That(FocusManager.GetFocusedElement(view.XamlRoot), Is.SameAs(Ui.Find<Button>("PlanDetailEdit")));
+            DetailSheet.CancelEdit("I1", PlanField.Title);
+        });
+        var input = BodyWrites().Single().GetProperty("bodyInput");
+        Assert.That(input.EnumerateObject().Select(p => p.Name), Is.EquivalentTo(new[] { "id", "body" }));
+        Assert.That(input.GetProperty("id").GetString(), Is.EqualTo("I1"));
+        Assert.That(input.GetProperty("body").GetString(), Is.EqualTo("New\nbody\n\n<!-- ghpb-plan:fixture -->"));
+        Assert.That(FakePlanEditor.Load(root).MutationBatches, Is.Zero);
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task BodyLineEndingOnlyEditCannotPublishAndCancelsWithoutPrompt()
+    {
+        RemoteBody("first\nsecond"); await Open(); await DetailFallback();
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); });
+        await Ui.Until(() => DetailElement<Button>("PlanDetailEdit")?.IsEnabled == true);
+        await Ui.Run(() => {
+            Ui.Click("PlanDetailEdit"); Ui.Find<TextBox>("PlanDetailEditor").Text = "first\rsecond";
+            Assert.That(Ui.Find<Button>("PlanDetailPublishBody").IsEnabled, Is.False);
+            Ui.Click("PlanDetailCancelEdit");
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Visibility, Is.EqualTo(Visibility.Collapsed));
+            Assert.That(VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot).Any(p => p.Child is ContentDialog), Is.False);
+        });
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task EditingPinsIssueUntilCancelShowsCurrentSelection()
+    {
+        SeedDetailRows(); await BeginBodyEdit();
+        await Ui.Run(() => {
+            SelectDetail("I2");
+            Assert.That(Ui.Find<TextBlock>("PlanDetailTitle").Text, Is.EqualTo("設計"));
+            Assert.That(Ui.Find<TextBlock>("PlanDetailPinnedNote").Visibility, Is.EqualTo(Visibility.Visible));
+            Ui.Click("PlanDetailCancelEdit");
+        });
+        await DetailReady("実装");
+    }
+
+    [TestCase(false), TestCase(true), Category("IssueDetail")]
+    public async Task BodyConflictKeepsDraftUntilOverwriteOrRevert(bool overwrite)
+    {
+        await BeginBodyEdit(); RemoteBody("remote changed");
+        await PublishBodyDraft("my draft");
+        await Ui.Until(() => DetailElement<InfoBar>("PlanDetailConflict")?.IsOpen == true);
+        Assert.That(BodyWrites(), Is.Empty);
+        await Ui.Until(() => DetailElement<Button>(overwrite ? "PlanDetailOverwrite" : "PlanDetailRevert") is { IsLoaded: true, IsEnabled: true });
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("my draft"));
+            Ui.Click(overwrite ? "PlanDetailOverwrite" : "PlanDetailRevert");
+        });
+        await Ui.Until(() => DetailElement<TextBox>("PlanDetailEditor")?.Visibility == Visibility.Collapsed);
+        await Ui.Until(() => Ui.Tree(Ui.Find<ScrollViewer>("PlanDetailMarkdown")).OfType<TextBlock>().Any(t => t.Text.Contains(overwrite ? "my draft" : "remote changed")));
+        Assert.That(BodyWrites().Length, Is.EqualTo(overwrite ? 1 : 0));
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task BodyFailureKeepsDraftAndExplicitRetrySucceeds()
+    {
+        await BeginBodyEdit(); DetailScenario("body-write");
+        await PublishBodyDraft("retry draft");
+        await Ui.Until(() => DetailElement<InfoBar>("PlanDetailPublishFailure")?.IsOpen == true);
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("retry draft")));
+        DetailScenario(); await Ui.Run(() => Ui.Click("PlanDetailPublishRetry"));
+        await Ui.Until(() => DetailElement<TextBlock>("PlanDetailPublished")?.Visibility == Visibility.Visible);
+        Assert.That(BodyWrites().Length, Is.EqualTo(2));
+    }
+
+    [TestCase("cancel"), TestCase("pane"), TestCase("sheet"), TestCase("assist"), TestCase("project"), TestCase("connection"), TestCase("stop"), Category("IssueDetail")]
+    public async Task DiscardReturnPreservesDraftAndCancelsTrigger(string trigger)
+    {
+        await BeginBodyEdit(); var session = workspace.Session; Task<bool>? stop = null;
+        if (trigger is "project" or "connection") {
+            await Ui.Run(() => Ui.Click("PlanProjectPicker"));
+            await Ui.Ready<Button>(trigger == "project" ? "PlanChooseProject" : "PlanConnection");
+        }
+        await Ui.Run(() => {
+            Ui.Find<TextBox>("PlanDetailEditor").Text = "keep draft";
+            switch (trigger) {
+                case "cancel": Ui.Click("PlanDetailCancelEdit"); break;
+                case "pane": ToggleDetail(); break;
+                case "sheet": Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked = false; break;
+                case "assist": ToggleAssist(); break;
+                case "project": Ui.Click("PlanChooseProject"); break;
+                case "connection": Ui.Click("PlanConnection"); break;
+                case "stop": stop = view.StopAsync(); break;
+            }
+        });
+        await Ui.Ready<ContentDialog>("PlanDetailDiscard");
+        await Ui.Run(() => {
+            var dialog = Ui.Find<ContentDialog>("PlanDetailDiscard");
+            Assert.That(dialog.Title, Is.EqualTo("本文の変更を破棄しますか？"));
+            Assert.That(dialog.DefaultButton, Is.EqualTo(ContentDialogButton.Close));
+            Ui.DialogButton("PlanDetailDiscard", "CloseButton");
+        });
+        if (stop is not null) Assert.That(await stop, Is.False);
+        await Ui.Idle();
+        await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot), Ui.Find<TextBox>("PlanDetailEditor")));
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("keep draft"));
+            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<ToggleButton>("PlanSheetDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<ToggleButton>("PlanAssist").IsChecked, Is.False);
+            Assert.That(workspace.Session, Is.SameAs(session));
+            Ui.Find<TextBox>("PlanDetailEditor").Text = "**Body 設計**"; Ui.Click("PlanDetailCancelEdit");
+        });
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Visibility == Visibility.Collapsed);
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task BodyUpdatePermissionExplainsDisabledEdit()
+    {
+        await Open(); await DetailFallback(); DetailScenario("readonly");
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); }); await DetailReady();
+        await Ui.Run(() => {
+            var button = Ui.Find<Button>("PlanDetailEdit");
+            Assert.That(button.IsEnabled, Is.False); Assert.That(button.AllowFocusWhenDisabled, Is.True);
+            Assert.That(AutomationProperties.GetHelpText(button), Is.EqualTo("この Issue の本文を編集する権限がありません"));
+        });
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task RemoteRefreshDisablesBodyPublishAndKeepsDraft()
+    {
+        await BeginBodyEdit();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true,"holdOperation":"api"}""");
+        await Ui.Run(() => { Ui.Find<TextBox>("PlanDetailEditor").Text = "waiting draft"; Ui.Click("PlanRefresh"); });
+        await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+        try {
+            await Ui.Run(() => {
+                Assert.That(Ui.Find<Button>("PlanDetailPublishBody").IsEnabled, Is.False);
+                Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>("PlanDetailEditor")).IsOffscreen(), Is.False);
+                Assert.That(Ui.Find<TextBox>("PlanDetailEditor").IsReadOnly, Is.True);
+                Assert.That(Ui.Find<TextBlock>("PlanDetailReference").Text, Is.EqualTo("acme/repo#1"));
+            });
+        }
+        finally { File.WriteAllText(Path.Combine(root, "release-gh"), ""); }
+        await Ui.Until(() => Ui.Find<Button>("PlanDetailPublishBody").IsEnabled);
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("waiting draft"));
+            Assert.That(FrameworkElementAutomationPeer.CreatePeerForElement(Ui.Find<TextBox>("PlanDetailEditor")).IsOffscreen(), Is.False);
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").IsReadOnly, Is.False);
+            Ui.Find<TextBox>("PlanDetailEditor").Text = "**Body 設計**"; Ui.Click("PlanDetailCancelEdit");
+        });
+    }
+
+    [TestCase(null), TestCase("body-mismatch"), TestCase("body-refresh"), Category("IssueDetail")]
+    public async Task UncertainBodyWriteRetryRecognizesPublishedBodyWithoutAnotherMutation(string? fault)
+    {
+        await BeginBodyEdit();
+        if (fault is not null) DetailScenario(fault);
+        else RemoteBody("completed\n\n<!-- ghpb-plan:fixture -->");
+        await PublishBodyDraft("completed");
+        if (fault is not null) {
+            await Ui.Until(() => DetailElement<InfoBar>("PlanDetailPublishFailure")?.IsOpen == true);
+            DetailScenario(); await Ui.Run(() => Ui.Click("PlanDetailPublishRetry"));
+        }
+        await Ui.Until(() => DetailElement<TextBlock>("PlanDetailPublished")?.Visibility == Visibility.Visible);
+        Assert.That(BodyWrites().Length, Is.EqualTo(fault is not null ? 1 : 0));
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task DiscardPrimaryClosesPaneAndSummaryAndSettingsKeepHiddenDraft()
+    {
+        await BeginBodyEdit();
+        await Ui.Run(() => { Ui.Find<TextBox>("PlanDetailEditor").Text = "hidden draft"; Ui.Click("PlanShowSummary"); });
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Collapsed);
+        await Ui.Run(() => Ui.Click("PlanShowTasks"));
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Visible);
+        await Settings(); await Ui.Run(() => Ui.Click("PlanSettingsBack"));
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Visible);
+        await Ui.Run(async () => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("hidden draft"));
+            await RenderedEvidence.Capture(view, "issue-body-editing"); ToggleDetail();
+        });
+        await Ui.DialogReady("PlanDetailDiscard");
+        await Ui.Run(() => Ui.DialogButton("PlanDetailDiscard", "PrimaryButton"));
+        await Ui.Until(() => Ui.Find<Border>("PlanDetailPane").Visibility == Visibility.Collapsed);
+        await Ui.Run(() => { ToggleDetail(); Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Visibility, Is.EqualTo(Visibility.Collapsed)); });
+        Assert.That(BodyWrites(), Is.Empty);
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task AppCloseWaitsForBodyPublishAndDoesNotCancelWrite()
+    {
+        await BeginBodyEdit();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true,"holdQuery":"PlanIssueBodyPublish"}""");
+        await PublishBodyDraft("closing body");
+        await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+        Task<bool>? stop = null;
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").IsReadOnly, Is.True);
+            Assert.That(Ui.Find<Button>("PlanDetailCancelEdit").IsEnabled, Is.False);
+            stop = view.StopAsync(); Assert.That(stop.IsCompleted, Is.False);
+        });
+        File.WriteAllText(Path.Combine(root, "release-gh"), "");
+        Assert.That(await stop!, Is.True);
+        Assert.That(BodyWrites().Length, Is.EqualTo(1));
+        Assert.That(JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(root, "detail-bodies.json")))!["I1"],
+            Is.EqualTo("closing body\n\n<!-- ghpb-plan:fixture -->"));
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task RegisteredProjectSwitchAsksBeforeDiscardAndReturnKeepsProject()
+    {
+        await Open(); await PickerCommand("PlanChooseProject");
+        await Ui.Run(() => Ui.Find<ListView>("AvailableProjects").SelectedItem = workspace.Available.Single(p => p.Id.NodeId == "P2"));
+        await Ui.Until(() => workspace.Selected?.Id.NodeId == "P2"); await Ui.Idle(); await DetailFallback();
+        await Ui.Run(() => { SelectDetail("I1"); ToggleDetail(); }); await DetailReady();
+        await Ui.Run(() => Ui.Click("PlanDetailEdit")); await Ui.Ready<TextBox>("PlanDetailEditor");
+        await Ui.Run(() => Ui.Find<TextBox>("PlanDetailEditor").Text = "project draft");
+        var session = workspace.Session;
+        foreach (var discard in new[] { false, true }) {
+            await OpenProjectPicker(); await WaitForProjectPickerItems("P2");
+            await Ui.Run(() => Ui.Find<ListView>("RegisteredProjects").SelectedItem = workspace.Registered.Single(p => p.Id.NodeId == "P1"));
+            await Ui.DialogReady("PlanDetailDiscard");
+            await Ui.Run(() => Ui.DialogButton("PlanDetailDiscard", discard ? "PrimaryButton" : "CloseButton"));
+            await Ui.Idle();
+            if (!discard) await Ui.Run(() => {
+                Assert.That(workspace.Session, Is.SameAs(session));
+                Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("project draft"));
+            });
+        }
+        await Ui.Until(() => workspace.Selected?.Id.NodeId == "P1");
+        await Ui.Run(() => Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Visibility, Is.EqualTo(Visibility.Collapsed)));
+        Assert.That(BodyWrites(), Is.Empty);
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task ExistingDialogPreventsSecondDiscardDialogAndKeepsDraft()
+    {
+        await BeginBodyEdit(); await Ui.Run(() => Ui.Find<TextBox>("PlanDetailEditor").Text = "modal draft");
+        await OpenResetDialog();
+        await Ui.Run(() => {
+            ToggleDetail();
+            Assert.That(Ui.Dialog("PlanDetailDiscard"), Is.Null);
+            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("modal draft"));
+            Ui.DialogButton("PlanResetConfirm", "CloseButton");
+        });
+        await Ui.Idle();
+    }
+
+    [Test, Category("IssueDetail")]
+    public async Task RemoteRefreshDoesNotCancelRunningBodyPublish()
+    {
+        await BeginBodyEdit();
+        File.WriteAllText(Path.Combine(root, "scenario.json"), """{"planEditor":true,"workspace":true,"holdQuery":"PlanIssueBodyPublish"}""");
+        await PublishBodyDraft("in flight");
+        await Ui.Until(() => File.Exists(Path.Combine(root, "held-gh.pid")));
+        await Ui.Run(() => Ui.Click("PlanRefresh"));
+        await Ui.Until(() => !Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        File.WriteAllText(Path.Combine(root, "release-gh"), "");
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Visibility == Visibility.Collapsed);
+        await Ui.Until(() => Ui.Find<SplitButton>("PlanRefresh").IsEnabled);
+        Assert.That(BodyWrites().Length, Is.EqualTo(1));
+        Assert.That(JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(root, "detail-bodies.json")))!["I1"],
+            Is.EqualTo("in flight\n\n<!-- ghpb-plan:fixture -->"));
+    }
+
+    [Test, Category("IssueDetail"), Category("PlanSheetNative")]
+    public async Task BodyEditorNativeUndoRedoAndEscapeStayOutsidePlanHistory()
+    {
+        await BeginBodyEdit(); await SheetNativeInput.ActivateWindow();
+        await workspace.Session!.Execute(new EditPlanCells(PlanOperationKind.Cell, [new("I1", PlanField.Title, "Local plan title")]), readDay);
+        await Ui.Run(() => DetailSheet.Refresh());
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(1));
+        var before = workspace.Session!.Document;
+        await Ui.Run(() => { var editor = Ui.Find<TextBox>("PlanDetailEditor"); editor.Focus(FocusState.Programmatic); editor.SelectAll(); });
+        await SheetNativeInput.Press(VirtualKey.Back);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Text.Length == 0);
+        await SheetNativeInput.Press(VirtualKey.Z, [VirtualKey.Control]);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Text == "**Body 設計**");
+        Assert.That(workspace.Session.UndoCount, Is.EqualTo(1));
+        await SheetNativeInput.Press(VirtualKey.Y, [VirtualKey.Control]);
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Text.Length == 0);
+        await SheetNativeInput.Press(VirtualKey.Escape);
+        await Ui.DialogReady("PlanDetailDiscard");
+        await Ui.Run(() => {
+            Assert.That(workspace.Session.Document, Is.SameAs(before)); Assert.That(workspace.Session.UndoCount, Is.EqualTo(1));
+            Ui.DialogButton("PlanDetailDiscard", "PrimaryButton");
+        });
+        await Ui.Until(() => Ui.Find<TextBox>("PlanDetailEditor").Visibility == Visibility.Collapsed);
+    }
+
+    [Test, Category("IssueDetail"), Category("PlanSheetNative")]
+    public async Task BodyEditorCtrlEnterPublishesAndCtrlIHonorsDiscardReturn()
+    {
+        await BeginBodyEdit(); await SheetNativeInput.ActivateWindow();
+        await Ui.Run(() => { var editor = Ui.Find<TextBox>("PlanDetailEditor"); editor.Focus(FocusState.Programmatic); editor.Text = "shortcut body"; });
+        await Ui.Until(() => Ui.Find<Button>("PlanDetailPublishBody").IsEnabled);
+        await SheetNativeInput.Press(VirtualKey.Enter, [VirtualKey.Control]);
+        await Ui.Until(() => Ui.Find<TextBlock>("PlanDetailPublished").Visibility == Visibility.Visible);
+        await Ui.Until(() => Ui.Find<Button>("PlanDetailEdit").IsEnabled);
+        await Ui.Run(() => Ui.Click("PlanDetailEdit"));
+        await Ui.Ready<TextBox>("PlanDetailEditor");
+        await Ui.Run(() => { var editor = Ui.Find<TextBox>("PlanDetailEditor"); editor.Focus(FocusState.Programmatic); editor.Text = "keep shortcut draft"; });
+        await SheetNativeInput.Press(VirtualKey.I, [VirtualKey.Control]);
+        await Ui.DialogReady("PlanDetailDiscard");
+        await Ui.Run(() => Ui.DialogButton("PlanDetailDiscard", "CloseButton")); await Ui.Idle();
+        await Ui.Run(() => {
+            Assert.That(Ui.Find<TextBox>("PlanDetailEditor").Text, Is.EqualTo("keep shortcut draft"));
+            Assert.That(Ui.Find<ToggleButton>("PlanDetail").IsChecked, Is.True);
+            Assert.That(FocusManager.GetFocusedElement(view.XamlRoot), Is.SameAs(Ui.Find<TextBox>("PlanDetailEditor")));
+        });
+        Assert.That(BodyWrites().Length, Is.EqualTo(1));
+    }
+
     private static void ToggleDetail()
     {
         var toggle = Ui.Find<ToggleButton>("PlanDetail");
@@ -559,7 +939,7 @@ internal sealed partial class PlanWorkspaceHostedTests
             try { SheetNativeInput.Key(VirtualKey.Tab, true); SheetNativeInput.Key(VirtualKey.Tab, false); }
             finally { if (reverse) SheetNativeInput.Key(VirtualKey.Shift, false); }
             await Ui.Until(() => ReferenceEquals(FocusManager.GetFocusedElement(view.XamlRoot),
-                Ui.Find<Button>(reverse ? "PlanDetailReload" : "PlanDetailOpen")));
+                Ui.Find<Button>(reverse ? "PlanDetailEdit" : "PlanDetailOpen")));
         }
     }
 

@@ -118,6 +118,7 @@ internal sealed partial class PlanSheetView
         AutomationProperties.SetName(selection, selection.Text + " " + selectedTitle.Text);
         var hasSelection = Schedule.TryGetValue(selected, out var task);
         emptyHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
+        detailToggle.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
         totals.Text = hasSelection ? "" : LatenessCounts(OverdueTasks, LaterTasks);
         totals.Visibility = totals.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetName(totals, totals.Text);

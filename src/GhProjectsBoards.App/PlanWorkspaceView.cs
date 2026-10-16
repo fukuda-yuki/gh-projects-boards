@@ -209,6 +209,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         root.Children.Add(problem); Grid.SetRow(problem, 2);
         connection.Children.Add(executable); connection.Children.Add(host);
         connection.Children.Add(Button("接続", "PlanConnect", async () => {
+            if (!await DiscardDetailEdit()) return;
             CancelDetail(clearCache: true); detailConnecting = true;
             try {
                 await EndAssist(); ClearAssistMessages();
@@ -366,7 +367,11 @@ internal sealed partial class PlanWorkspaceView : UserControl
         var button = CommandButton(text, id, icon);
         if (id is "PlanUndo" or "PlanRedo" or "PlanChooseProject" or "PlanConnection")
             button.Style = (Style)Application.Current.Resources["SubtleButtonStyle"];
-        button.Click += async (_, _) => { if (button.IsLoaded) { if (projectFlyout.IsOpen) projectFlyout.Hide(); await Run(action); } };
+        button.Click += async (_, _) => { if (button.IsLoaded) {
+            if (projectFlyout.IsOpen) projectFlyout.Hide();
+            if (id is "PlanChooseProject" or "PlanConnection" && !await DiscardDetailEdit()) return;
+            await Run(action);
+        } };
         return button;
     }
     private static T Id<T>(T control, string id) where T : DependencyObject { AutomationProperties.SetAutomationId(control, id); return control; }
@@ -509,6 +514,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
         if (sheet is not null) sheet.statusDate.IsEnabled = !busy;
         if (confirmPublish is not null) UpdatePublishAvailability();
         sheet?.SetRemoteBusy(busy);
+        UpdateDetailEditCommands();
         if (summaryView is not null) summaryView.IsEnabled = !busy;
         settingsScroll.IsEnabled = settingsBack.IsEnabled = !busy;
         foreach (var bar in new[] { refreshFailure, publishFailure, openFailure, saveFailure, sheet?.SaveFailure })
@@ -517,6 +523,7 @@ internal sealed partial class PlanWorkspaceView : UserControl
     internal string WorkDescription => $"operation={operation.Status}, closing={closing}, pendingSettings={pendingSettings.Count}, sheets=[{string.Join("; ", sheets.Values.Select(s => s.WorkDescription))}]";
     internal async Task<bool> StopAsync()
     {
+        if (!await DiscardDetailEdit()) return false;
         closing = true; if (projectFlyout.IsOpen) projectFlyout.Hide();
         CancelDetail(clearCache: true);
         // Cancel GitHub work before the assist's bounded shutdown so no further publish batches are sent meanwhile.
@@ -590,6 +597,8 @@ internal sealed partial class PlanWorkspaceView : UserControl
                     if (DetailVisible && PlanSheetView.Down(Windows.System.VirtualKey.Shift)) FocusDetail(); else FocusCommandRow();
                 };
                 next.PreservePendingFocus = IsDetailFocus;
+                next.SetDetailChecked(detailToggle.IsChecked == true);
+                next.DetailToggleRequested += async value => { if (ReferenceEquals(sheet, next)) await RequestDetailToggle(value); };
                 next.Changed += () => { if (ReferenceEquals(sheet, next)) UpdateStatus(); };
                 next.SelectionChanged += () => { if (ReferenceEquals(sheet, next)) { UpdateAssistSelection(); UpdateDetailSelection(); } };
                 next.SaveFeedbackChanged += result => { if (ReferenceEquals(sheet, next)) { UpdateCommandAvailability(); ShowPlanningResult(result); saveFailure.IsOpen = false; retrySave.Visibility = Visibility.Collapsed; } };

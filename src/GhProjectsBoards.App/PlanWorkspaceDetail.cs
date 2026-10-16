@@ -64,8 +64,8 @@ internal sealed partial class PlanWorkspaceView
         AutomationProperties.SetName(detailToggle, "詳細"); ToolTipService.SetToolTip(detailToggle, "詳細（Ctrl+I）");
         AutomationProperties.SetName(detailPane, "Issue の詳細");
         commands.Children.Insert(0, detailToggle);
-        detailToggle.Checked += (_, _) => { assistToggle.IsChecked = false; UpdateDetailVisibility(); };
-        detailToggle.Unchecked += (_, _) => UpdateDetailVisibility();
+        detailToggle.Checked += async (_, _) => await RequestDetailToggle(true);
+        detailToggle.Unchecked += async (_, _) => await RequestDetailToggle(false);
         work.Children.Add(detailPane); Grid.SetColumn(detailPane, 1);
         var panel = new Grid { RowSpacing = 8 };
         panel.RowDefinitions.Add(new() { Height = GridLength.Auto });
@@ -88,6 +88,7 @@ internal sealed partial class PlanWorkspaceView
         header.Children.Add(detailIdentityLine); header.Children.Add(detailTitle); header.Children.Add(detailStateLine);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         actions.Children.Add(detailOpen); actions.Children.Add(detailReload); header.Children.Add(actions);
+        InitializeDetailEditing(header, actions);
         detailHeader.Content = header;
         AutomationProperties.SetName(detailHeader, "Issue の詳細");
         panel.Children.Add(detailHeader); panel.Children.Add(detailBody); Grid.SetRow(detailBody, 1); detailPane.Child = panel;
@@ -111,10 +112,10 @@ internal sealed partial class PlanWorkspaceView
             args.Handled = true;
             if (PlanSheetView.Down(VirtualKey.Shift)) FocusCommandRow(); else sheet?.FocusSelected();
         };
-        root.PreviewKeyDown += (_, args) => {
+        root.PreviewKeyDown += async (_, args) => {
             if (args.Key != VirtualKey.I || !PlanSheetView.Down(VirtualKey.Control) || PlanSheetView.Down(VirtualKey.Menu)
                 || PlanSheetView.Down(VirtualKey.Shift) || !detailToggle.IsEnabled || sheet?.HasActiveCellEdit == true) return;
-            args.Handled = true; detailToggle.IsChecked = detailToggle.IsChecked != true;
+            args.Handled = true; await RequestDetailToggle(detailToggle.IsChecked != true);
             if (detailToggle.IsChecked != true) sheet?.FocusSelected();
         };
     }
@@ -122,6 +123,7 @@ internal sealed partial class PlanWorkspaceView
     private void UpdateDetailVisibility()
     {
         detailToggle.IsEnabled = workspace.Session is not null && currentPage == "tasks";
+        sheet?.SetDetailChecked(detailToggle.IsChecked == true);
         detailPane.Visibility = detailToggle.IsEnabled && detailToggle.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         if (DetailVisible) UpdateDetailSelection(); else CancelDetail();
     }
@@ -129,10 +131,11 @@ internal sealed partial class PlanWorkspaceView
     {
         detailGeneration++; detailIdentity = null;
         detailCancellation?.Cancel(); detailCancellation = null;
-        if (clearCache) detailCache.Clear();
+        if (clearCache) { detailCache.Clear(); detailPublishedIdentity = null; }
     }
     private void ClearDetailContent(bool keepHeader = false)
     {
+        detailLoadedIssue = null; UpdateDetailEditCommands();
         if (keepHeader && FocusManager.GetFocusedElement(XamlRoot) is DependencyObject focused && IsDetailFocus(focused)
             && !ReferenceEquals(focused, detailOpen) && !ReferenceEquals(focused, detailReload) && !ReferenceEquals(focused, detailToggle)) {
             if (detailReload.IsEnabled) detailReload.Focus(FocusState.Programmatic); else FocusDetail();
@@ -149,6 +152,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private void UpdateDetailSelection(bool reload = false)
     {
+        if (DetailEditing) { UpdateDetailPinnedNote(); return; }
         if (detailSession != workspace.Session || !ReferenceEquals(detailContext, workspace.Context) || workspace.Context?.IsInvalidated == true) {
             CancelDetail(clearCache: true); detailSession = workspace.Session; detailContext = workspace.Context;
         }
@@ -161,12 +165,14 @@ internal sealed partial class PlanWorkspaceView
         if (!reload && detailIdentity == identity) return;
         var keepHeader = reload && detailIdentity == identity;
         CancelDetail(); detailIdentity = identity;
+        if (reload || detailPublishedIdentity != identity) detailPublishedIdentity = null;
         ClearDetailContent(keepHeader); detailTitle.Text = row?.Title ?? "";
-        if (row is null) { detailEmpty.Visibility = Visibility.Visible; return; }
+        if (row is null) { detailEmpty.Visibility = Visibility.Visible; UpdateDetailEditCommands(); return; }
         if (workspace.Session!.Document.Sync.IssueLinks.GetValueOrDefault(identity) is not { } link) {
-            detailLocal.Visibility = Visibility.Visible; return;
+            detailLocal.Visibility = Visibility.Visible; UpdateDetailEditCommands(); return;
         }
         detailReference.Text = link.Caption; detailUrl = link.Url; detailOpen.IsEnabled = true;
+        UpdateDetailEditCommands();
         detailIdentitySeparator.Visibility = Visibility.Visible;
         detailHeader.IsTabStop = false;
         if (workspace.Context?.IsInvalidated != false || workspace.Service is null) {
@@ -197,6 +203,9 @@ internal sealed partial class PlanWorkspaceView
                 detailCache[identity] = issue = result.Issue;
             }
             await DisplayDetail(issue, generation, token);
+            if (!token.IsCancellationRequested && generation == detailGeneration && detailFocusEditAfterRead) {
+                detailFocusEditAfterRead = false; detailEdit.Focus(FocusState.Programmatic);
+            }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex) when (ex is not OutOfMemoryException) {
@@ -209,6 +218,7 @@ internal sealed partial class PlanWorkspaceView
     }
     private void ShowDetailFailure(string reason)
     {
+        detailLoadedIssue = null; UpdateDetailEditCommands();
         detailLoading.Visibility = Visibility.Collapsed;
         detailFailureText.Text = reason;
         detailFailure.Visibility = Visibility.Visible; detailFailure.IsOpen = true;
@@ -220,6 +230,7 @@ internal sealed partial class PlanWorkspaceView
     private async Task DisplayDetail(IssueDetail issue, int generation, CancellationToken token)
     {
         if (generation != detailGeneration || closing) return;
+        detailLoadedIssue = issue; UpdateDetailEditCommands();
         detailReference.Text = issue.Reference; detailTitle.Text = issue.Title;
         ToolTipService.SetToolTip(detailTitle, issue.Title);
         detailState.Text = issue.State == "CLOSED" ? "クローズ" : "オープン";
@@ -364,7 +375,7 @@ internal sealed partial class PlanWorkspaceView
     private bool IsDetailFocus(DependencyObject? target)
     {
         for (var node = target; node is not null; node = VisualTreeHelper.GetParent(node))
-            if (ReferenceEquals(node, detailPane) || ReferenceEquals(node, detailToggle)) return true;
+            if (ReferenceEquals(node, detailPane) || ReferenceEquals(node, detailToggle) || AutomationProperties.GetAutomationId(node) == "PlanSheetDetail") return true;
         return false;
     }
     private void FocusCommandRow()

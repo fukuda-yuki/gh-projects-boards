@@ -175,7 +175,7 @@ internal sealed partial class PlanSheetView : Grid
         controls.Children.Add(InitializeCommandMenu(commands));
         var selectedLine = new Grid { Height = 36, ColumnSpacing = 12, Padding = new(8, 0, 8, 0),
             Background = Brush("SheetSelectionLineBrush"), BorderBrush = Brush("WorkspaceCardStrokeBrush"), BorderThickness = new(0, 0, 0, 1) };
-        for (var i = 0; i < 4; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
+        for (var i = 0; i < 5; i++) selectedLine.ColumnDefinitions.Add(new() { Width = i == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
         selectedLine.Children.Add(selection); selectedLine.Children.Add(selectedTitle); SetColumn(selectedTitle, 1);
         var explanation = new Grid { ColumnSpacing = 10, HorizontalAlignment = HorizontalAlignment.Left };
         explanation.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -188,9 +188,10 @@ internal sealed partial class PlanSheetView : Grid
         explanation.Children.Add(reason); explanation.Children.Add(slipPill); SetColumn(slipPill, 1);
         explanation.Children.Add(latenessDetail); SetColumn(latenessDetail, 2);
         selectedLine.Children.Add(explanation); SetColumn(explanation, 2);
-        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 3);
+        InitializeDetailToggle(selectedLine);
+        selectedLine.Children.Add(issueLink); SetColumn(issueLink, 4);
         selectedLine.Children.Add(emptyHint); SetColumnSpan(emptyHint, 3);
-        selectedLine.Children.Add(totals); SetColumn(totals, 3);
+        selectedLine.Children.Add(totals); SetColumn(totals, 4);
         AutomationProperties.SetName(emptyHint, emptyHint.Text);
         foreach (var child in selectedLine.Children.OfType<FrameworkElement>()) child.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(selectedLine); SetRow(selectedLine, 2);

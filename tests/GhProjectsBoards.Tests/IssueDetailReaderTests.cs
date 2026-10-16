@@ -22,6 +22,7 @@ internal sealed class IssueDetailReaderTests
             Assert.That(issue.State, Is.EqualTo(state));
             Assert.That(issue.StateReason, Is.EqualTo("COMPLETED"));
             Assert.That(issue.Body, Is.EqualTo("**Body**"));
+            Assert.That(issue.ViewerCanUpdate, Is.True);
             Assert.That(issue.BodyHtml, Is.EqualTo("<p><strong>Body</strong></p>"));
             Assert.That(issue.UpdatedAt, Is.EqualTo(DateTimeOffset.Parse("2026-10-15T08:30:00Z")));
             Assert.That(issue.CommentCount, Is.EqualTo(7));
@@ -37,6 +38,15 @@ internal sealed class IssueDetailReaderTests
         Assert.That(query, Does.StartWith("query ").And.Contain("node(id:$id)").And.Contain("comments(last:5)"));
         Assert.That(json.RootElement.GetProperty("variables").GetProperty("id").GetString(), Is.EqualTo("I17"));
         Assert.That(runner.Calls.Any(c => c.StandardInput?.Contains("mutation") == true), Is.False);
+    }
+
+    [Test]
+    public async Task ViewerWithoutUpdatePermissionCanStillReadBody()
+    {
+        var result = await Read(new() { Response = Response().Replace("\"viewerCanUpdate\":true", "\"viewerCanUpdate\":false") });
+        Assert.That(result.Result.IsSuccess, Is.True);
+        Assert.That(result.Issue!.ViewerCanUpdate, Is.False);
+        Assert.That(result.Issue.Body, Is.EqualTo("**Body**"));
     }
 
     [Test]
@@ -106,7 +116,7 @@ internal sealed class IssueDetailReaderTests
 
     private static string Response(string state = "OPEN", bool empty = false) => JsonSerializer.Serialize(new { data = new { node = new {
         number = 17, title = "Planning evidence", url = "https://github.com/acme/repo/issues/17", state, stateReason = "COMPLETED",
-        body = empty ? "" : "**Body**", bodyHTML = empty ? "" : "<p><strong>Body</strong></p>", updatedAt = "2026-10-15T08:30:00Z",
+        body = empty ? "" : "**Body**", viewerCanUpdate = true, bodyHTML = empty ? "" : "<p><strong>Body</strong></p>", updatedAt = "2026-10-15T08:30:00Z",
         repository = new { nameWithOwner = "acme/repo" },
         comments = new { totalCount = empty ? 0 : 7, nodes = empty ? [] : new[] {
             new { author = (object?)new { login = "alice" }, createdAt = "2026-10-15T00:00:00Z", url = "https://github.com/acme/repo/issues/17#issuecomment-2", body = "Later", bodyHTML = "<p>Later</p>" },
