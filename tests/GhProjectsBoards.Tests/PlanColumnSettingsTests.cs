@@ -9,12 +9,75 @@ namespace GhProjectsBoards.Tests;
 [TestFixture]
 internal sealed class PlanColumnSettingsTests
 {
+    [TestCase(40), TestCase(800)]
+    public void WholeColumnWidthsRoundTripThroughSettings(int width)
+    {
+        var json = JsonNode.Parse(PlanJson.Text(new ProjectPlanSettings()))!;
+        json["sheetColumns"] = JsonNode.Parse($$"""[{"key":"Title","visible":true,"displayName":null,"width":{{width}}}]""");
+        var settings = PlanJson.Read<ProjectPlanSettings>(Encoding.UTF8.GetBytes(json.ToJsonString()));
+        PlanSheetColumns.Validate(settings.SheetColumns);
+        Assert.That(JsonNode.Parse(PlanJson.Text(settings))!["sheetColumns"]![0]!["width"]!.GetValue<double>(), Is.EqualTo(width));
+    }
+
+    [TestCase(39d), TestCase(801d), TestCase(40.5), TestCase(double.NaN), TestCase(double.PositiveInfinity), TestCase(double.NegativeInfinity)]
+    public void InvalidColumnWidthsAreRejected(double width)
+        => Assert.That(() => PlanSheetColumns.Validate([new("Title", true, null, width)]),
+            Throws.ArgumentException.With.Message.EqualTo("表示列の設定が不正です。"));
+
+    [Test]
+    public void IndicatorCannotHaveAConfiguredWidth()
+        => Assert.That(() => PlanSheetColumns.Validate([new("Indicator", true, null, 40)]),
+            Throws.ArgumentException.With.Message.EqualTo("表示列の設定が不正です。"));
+
+    [Test]
+    public void ColumnWidthChangeClearMoveReorderAndResetPreserveOtherChoices()
+    {
+        var d = ExtraDocument();
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Title", name: "作業", rename: true, width: 320, resize: true) } };
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Project:T", visible: true, width: 180, resize: true) } };
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Move(d, "Title", 0) } };
+        Assert.That(PlanSheetColumns.All(d)[0].Width, Is.EqualTo(320));
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Reorder(d, PlanSheetColumns.All(d).Select(c => c.Key).Reverse().ToArray()) } };
+        Assert.That(PlanSheetColumns.All(d)[^1].Width, Is.EqualTo(320));
+        Assert.That(PlanSheetColumns.All(d)[^1].Name, Is.EqualTo("作業"));
+        d = d with { State = d.State with { Settings = PlanSheetColumns.Change(d, "Title", resize: true) } };
+        Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "Title").Width, Is.Null);
+        Assert.That(PlanSheetColumns.All(d).Single(c => c.Key == "Project:T").Width, Is.EqualTo(180));
+        var reset = PlanOperations.Apply(d, new ReplacePlanSettings(d.State.Settings with { SheetColumns = [] }), Day).State;
+        Assert.That(PlanSheetColumns.All(d with { State = reset }).All(c => c.Width is null), Is.True);
+        Assert.That(reset.Rows, Is.EqualTo(d.State.Rows));
+    }
+
+    [Test]
+    public async Task WidthChangeIsOneUndoAndKeepsHeldDatesUnlikeScheduleSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ghpb-width-" + Guid.NewGuid().ToString("N"));
+        var row = new PlanRow("I1", "Task", "acme/repo") { Start = Day, End = Day.AddDays(3), Estimate = 8 };
+        var d = new PlanDocument(new(new("github.com", 1), "P1"), new([row], []),
+            new([row], new() { SheetColumns = [new("Title", true, null, 280)] })) { Dates = new(PlanDateHoldOrigin.FirstTakeIn) };
+        try {
+            var session = await PlanSession.CreateAsync(new(root), d, Day);
+            var before = PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)).ToArray();
+            var saved = await session.Execute(new ReplacePlanSettings(PlanSheetColumns.Change(session.Document, "Title", width: 360, resize: true)), Day);
+            Assert.That(saved.Succeeded, Is.True, saved.Error);
+            Assert.That(session.UndoCount, Is.EqualTo(1));
+            Assert.That(session.Document.Dates, Is.EqualTo(d.Dates));
+            Assert.That(PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)), Is.EqualTo(before));
+            await session.Undo(Day);
+            Assert.That(PlanSheetColumns.All(session.Document).Single(c => c.Key == "Title").Width, Is.EqualTo(280));
+            Assert.That(session.UndoCount, Is.Zero);
+            await session.Execute(new ReplacePlanSettings(session.Document.State.Settings with { ProjectStart = Day.AddDays(7) }), Day);
+            Assert.That(session.Document.Dates.Held, Is.Null);
+            Assert.That(PlanOperations.Schedule(session.Document, Day).Select(t => (t.Start, t.End)), Is.Not.EqualTo(before));
+        } finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
     [Test]
     public void ColumnChoicesRoundTripThroughStrictSettingsAndOneUndoPatch()
     {
         var settings = new ProjectPlanSettings();
         var json = JsonNode.Parse(PlanJson.Text(settings))!;
-        json["sheetColumns"] = JsonNode.Parse("""[{"key":"Title","visible":true,"displayName":"作業"},{"key":"Id","visible":true,"displayName":null}]""");
+        json["sheetColumns"] = JsonNode.Parse("""[{"key":"Title","visible":true,"displayName":"作業","width":null},{"key":"Id","visible":true,"displayName":null,"width":null}]""");
         var changed = PlanJson.Read<ProjectPlanSettings>(Encoding.UTF8.GetBytes(json.ToJsonString()));
         var row = new PlanRow("I1", "Task", "acme/repo");
         var document = new PlanDocument(new(new("github.com", 1), "P1"), new([row], []), new([row], settings));
@@ -235,7 +298,7 @@ internal sealed class PlanColumnSettingsTests
         try {
             var d=ExtraDocument() with {Dates=new(PlanDateHoldOrigin.FirstTakeIn)};
             var session=await PlanSession.CreateAsync(new(root),d,Day);
-            var settings=PlanSheetColumns.Change(d,"Project:T",true,"メモ",true);
+            var settings=PlanSheetColumns.Change(d,"Project:T",true,"メモ",true,width:180,resize:true);
             var saved=await session.Execute(new ReplacePlanSettings(settings),Day);
             Assert.That(saved.Succeeded,Is.True,saved.Error);
             Assert.That(session.UndoCount,Is.EqualTo(1));
@@ -245,9 +308,11 @@ internal sealed class PlanColumnSettingsTests
             var reopened=await PlanSession.OpenAsync(new(root),d.Project,Day);
             Assert.That(reopened.Status,Is.EqualTo(PlanLoadStatus.Loaded),reopened.Error);
             Assert.That(PlanSheetColumns.All(reopened.Session!.Document).Single(c=>c.Key=="Project:T").Name,Is.EqualTo("メモ"));
+            Assert.That(PlanSheetColumns.All(reopened.Session.Document).Single(c=>c.Key=="Project:T").Width,Is.EqualTo(180));
             await session.Undo(Day);
             var imported=await session.ImportSettingsAsync(file,Day);
             Assert.That(imported.Applied,Is.True,imported.Error);
+            Assert.That(PlanSheetColumns.All(session.Document).Single(c=>c.Key=="Project:T").Width,Is.EqualTo(180));
             Assert.That(session.UndoCount,Is.EqualTo(1));
             Assert.That(session.Document.Dates.Held,Is.EqualTo(PlanDateHoldOrigin.FirstTakeIn));
         } finally { Directory.Delete(root,true); }
