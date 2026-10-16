@@ -898,7 +898,7 @@ internal sealed partial class PlanWorkspaceHostedTests
         var stopped = false; var problem = "";
         try
         {
-            await Ui.Run(async () => { stopped = await view.StopAsync(); problem = Ui.Find<TextBlock>("PlanError", view).Text; });
+            await Ui.Run(async () => { stopped = await StopDetailTest(); problem = Ui.Find<TextBlock>("PlanError", view).Text; });
         }
         finally
         {
