@@ -272,6 +272,44 @@ internal sealed partial class PlanSheetHostedTests
     }
 
     [Test, Category("PlanSheetNative")]
+    public async Task RejectedHeaderDragRestoresEveryHeaderAndGripToTheRowColumns()
+    {
+        await Select(1, "Title");
+        await Ui.Ready<PlanSheetCell>("PlanCell2_Title");
+        var before = PlanJson.Text(session.Document); var undo = session.UndoCount;
+        var start = await SheetNativeInput.PointFor("PlanHeaderGripTitle");
+        double scale = 1;
+        await Ui.Run(() => scale = sheet.XamlRoot.RasterizationScale);
+        using (session.BeginRemoteOperation()) {
+            await SheetNativeInput.Drag(start, new(start.X + 64 * scale, start.Y), async () => {
+                await Ui.Until(() => Ui.Find<TextBlock>("PlanHeaderTitle").ActualWidth > 224);
+                Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+                Assert.That(session.UndoCount, Is.EqualTo(undo));
+            });
+            await Ui.Until(() => Ui.Find<TextBlock>("PlanSheetError").Text.Contains("更新または発行が進行中"));
+            await SheetNativeInput.Rendered();
+            await Ui.Run(() => {
+                foreach (var column in sheet.VisibleColumns) {
+                    var key = column.Indicator ? "Indicator" : column.Field ?? "Id";
+                    var header = Ui.Find<TextBlock>("PlanHeader" + key);
+                    var cell = Ui.Find<FrameworkElement>(column.Indicator ? "PlanIndicator2"
+                        : column.Field is null ? "PlanRowId2" : "PlanCell2_" + key);
+                    var left = cell.TransformToVisual(sheet).TransformPoint(new()).X;
+                    Assert.That(header.ActualWidth, Is.EqualTo(cell.ActualWidth).Within(1), key);
+                    Assert.That(header.TransformToVisual(sheet).TransformPoint(new()).X, Is.EqualTo(left).Within(1), key);
+                    if (!column.Indicator) {
+                        var grip = Ui.Find<FrameworkElement>("PlanHeaderGrip" + key);
+                        Assert.That(grip.TransformToVisual(sheet).TransformPoint(new()).X + grip.ActualWidth / 2,
+                            Is.EqualTo(left + cell.ActualWidth).Within(1), key);
+                    }
+                }
+            });
+            Assert.That(PlanJson.Text(session.Document), Is.EqualTo(before));
+            Assert.That(session.UndoCount, Is.EqualTo(undo));
+        }
+    }
+
+    [Test, Category("PlanSheetNative")]
     public async Task HeaderGripDragPreviewsThenCommitsAndDoubleClickFitsDisplayedCells()
     {
         var rows = ImmutableArray.Create(new PlanRow("I1", "Parent", "acme/repo"),

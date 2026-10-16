@@ -812,7 +812,7 @@ internal sealed partial class PlanSheetView : Grid
     {
         if (resizingColumn is not null) { LayoutColumnHeaders(); return; }
         var key = string.Join("|", VisibleColumns.Select(c => $"{c.Field}:{c.Indicator}:{c.Label}:{c.Width}:{HeaderHelp(c)}"));
-        if (headerKey == key) return;
+        if (headerKey == key) { LayoutColumnHeaders(); return; }
         headerKey = key;
         sheetHead.Children.Clear();
         columnHeaders.Clear();
